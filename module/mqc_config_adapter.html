@@ -211,17 +211,17 @@ Refuse a counterpoise this expansion cannot honour</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_keywords.html'>mqc_calculation_keywords</a></li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item"><a href='mqc_optimizer_types.html'>mqc_optimizer_types</a></li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_calculation_keywords.html'>mqc_calculation_keywords</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1626,7 +1626,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments"></span>
               logical,
             </td>
               <td>public</td>
@@ -1643,7 +1643,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~2"></span>
+              <span class="anchor" id="variable-bond_breaking"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1677,7 +1677,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~2"></span>
+              <span class="anchor" id="variable-cap_scale~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1711,7 +1711,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-counterpoise"></span>
+              <span class="anchor" id="variable-counterpoise~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1883,7 +1883,7 @@ and the expansion picks its own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown"></span>
+              <span class="anchor" id="variable-fragment_breakdown~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1917,7 +1917,7 @@ and the expansion picks its own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_potentials"></span>
+              <span class="anchor" id="variable-fragment_potentials~2"></span>
               character(len=256),
             </td>
               <td>public,</td>
@@ -1937,7 +1937,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~3"></span>
+              <span class="anchor" id="variable-global_groups~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1954,7 +1954,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~4"></span>
+              <span class="anchor" id="variable-hessian~14"></span>
               type(<a href='../type/hessian_keywords_t.html'>hessian_keywords_t</a>),
             </td>
               <td>public</td>
@@ -1971,7 +1971,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~2"></span>
+              <span class="anchor" id="variable-max_intersection_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -1988,7 +1988,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~8"></span>
+              <span class="anchor" id="variable-method_config~5"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2005,7 +2005,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlevel"></span>
+              <span class="anchor" id="variable-nlevel~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2022,7 +2022,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~3"></span>
+              <span class="anchor" id="variable-nodes_per_group"></span>
               integer,
             </td>
               <td>public</td>
@@ -2056,7 +2056,7 @@ cannot be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~2"></span>
+              <span class="anchor" id="variable-scf~5"></span>
               type(<a href='../type/scf_keywords_t.html'>scf_keywords_t</a>),
             </td>
               <td>public</td>
@@ -2235,7 +2235,7 @@ This function uses the pic_logger constants</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~6"></span>
+              <span class="anchor" id="variable-driver_config~8"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2250,7 +2250,7 @@ This function uses the pic_logger constants</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~48"></span>
+              <span class="anchor" id="variable-error~157"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2290,7 +2290,7 @@ This function uses the pic_logger constants</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~2"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2305,7 +2305,7 @@ This function uses the pic_logger constants</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~2"></span>
+              <span class="anchor" id="variable-nfrag~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2320,7 +2320,7 @@ This function uses the pic_logger constants</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~54"></span>
+              <span class="anchor" id="variable-error~163"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2377,7 +2377,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~3"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2422,7 +2422,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments~3"></span>
+              <span class="anchor" id="variable-n_fragments~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2441,7 +2441,7 @@ looks right. Pass the count from wherever the geometry came from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~46"></span>
+              <span class="anchor" id="variable-error~155"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -2502,7 +2502,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~25"></span>
+              <span class="anchor" id="variable-sys_geom~65"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2517,7 +2517,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~50"></span>
+              <span class="anchor" id="variable-error~159"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2587,7 +2587,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~7"></span>
+              <span class="anchor" id="variable-driver_config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2658,7 +2658,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~68"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2688,7 +2688,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~52"></span>
+              <span class="anchor" id="variable-error~161"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2729,7 +2729,7 @@ Treats entire system as a single monomer</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~2"></span>
+              <span class="anchor" id="variable-geom~7"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(in)</td>
@@ -2744,7 +2744,7 @@ Treats entire system as a single monomer</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~26"></span>
+              <span class="anchor" id="variable-sys_geom~66"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2800,7 +2800,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag"></span>
+              <span class="anchor" id="variable-nfrag~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2815,7 +2815,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~3"></span>
+              <span class="anchor" id="variable-geom~8"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(in)</td>
@@ -2830,7 +2830,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments"></span>
+              <span class="anchor" id="variable-fragments~6"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2845,7 +2845,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2860,7 +2860,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~3"></span>
+              <span class="anchor" id="variable-multiplicity~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2905,7 +2905,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~27"></span>
+              <span class="anchor" id="variable-sys_geom~67"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2920,7 +2920,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~51"></span>
+              <span class="anchor" id="variable-error~160"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2961,7 +2961,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol"></span>
+              <span class="anchor" id="variable-mol~5"></span>
               type(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2976,7 +2976,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~29"></span>
+              <span class="anchor" id="variable-sys_geom~69"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3021,7 +3021,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~53"></span>
+              <span class="anchor" id="variable-error~162"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3076,7 +3076,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~8"></span>
+              <span class="anchor" id="variable-driver_config~10"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3091,7 +3091,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~49"></span>
+              <span class="anchor" id="variable-error~158"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -3149,7 +3149,7 @@ what every other refusal in this file does.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config~7"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3204,7 +3204,7 @@ what every other refusal in this file does.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~4"></span>
+              <span class="anchor" id="variable-driver_config~6"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3219,7 +3219,7 @@ what every other refusal in this file does.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~47"></span>
+              <span class="anchor" id="variable-error~156"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -3262,7 +3262,7 @@ what every other refusal in this file does.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-08 01:50 +0000             </p>
+ on 2026-09-08 03:41 +0000             </p>
           </div>
         </div>
         <br>
