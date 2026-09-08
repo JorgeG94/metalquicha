@@ -1,5 +1,7 @@
 
 ---
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
   - repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
@@ -68,6 +70,18 @@ repos:
         language: system
         types: [file]
         files: '\.(f|F|f90|F90)$'
+      - id: mqc-no-agent-trailers
+        name: no agent session trailers
+        # A session link is unopenable by anyone but its author, dies with
+        # the session, and clutters every later `git log`. The instruction
+        # to add one lives in the agent's own configuration, which this
+        # repository cannot see or override -- so it is rejected here
+        # instead of asked against. Also run over a commit range in CI,
+        # since a commit-msg hook needs `pre-commit install` and yields to
+        # `--no-verify`.
+        entry: tools/lint/no_agent_trailers.sh
+        language: system
+        stages: [commit-msg]
       - id: fprettify
         name: fprettify
         entry: fprettify --silent -i 3 -l 122

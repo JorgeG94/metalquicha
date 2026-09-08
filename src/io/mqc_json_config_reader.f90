@@ -46,7 +46,13 @@ module mqc_json_config_reader
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
-   use json_module, only: json_file
+   ! `json_integer` and `json_string` are imported here and not inside
+   ! `read_neo`, where they are used: a routine-level `use json_module` in a
+   ! module that already imports it makes ifx (2026.0, and 2025.3 before it)
+   ! drop the default initialisation of every `json_file` local in the module
+   ! -- the parser's procedure-pointer component comes up null and the first
+   ! `load` jumps to address zero. gfortran is unaffected.
+   use json_module, only: json_file, json_integer, json_string
    implicit none
    private
 
@@ -785,7 +791,6 @@ contains
       !! element symbols; the first entry decides which, and the two are not
       !! mixed. A `neo` block without it is refused rather than read as "none":
       !! a deck that opened the block meant to quantise something.
-      use json_module, only: json_integer, json_string
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(inout) :: error
