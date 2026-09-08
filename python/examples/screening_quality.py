@@ -29,9 +29,22 @@ Two checks fall out of this and are worth more than the table:
 A distance screen is reported next to the energy screen at the *same term count*,
 because "the energy criterion is better than a cutoff" is the claim this script
 exists to test, and comparing them at different costs would not test it.
+
+--dump-terms TAU answers the question the table raises but cannot show: *which*
+terms. It writes one row per interaction term at that threshold -- kept or
+dropped, both deltas, and their difference -- and prints the ten largest of each
+to the screen. The column to read is `correction_ha`, delta_high - delta_low: the
+amount the low level misjudged that interaction by. That, and not delta_high, is
+what a dropped term costs. E(tau) leaves a dropped term at its low-level delta
+and the reference carries its high-level one, so the error is the sum of the
+corrections over the dropped terms alone -- which is why a screen that discards
+terms worth millihartrees can still be accurate to a fraction of a kcal/mol, and
+why sorting the dropped terms by |correction| names the interactions the screen
+should have kept. TAU need not be one of --thresholds.
 """
 
 import argparse
+import csv
 import sys
 
 import mqc
@@ -61,6 +74,15 @@ def parse_args(argv):
         "--thresholds",
         default="0,1e-7,1e-6,1e-5,5e-5,1e-4,5e-4,1e-3",
         help="comma-separated tau values in Hartree on the n-body delta",
+    )
+    p.add_argument(
+        "--dump-terms",
+        type=float,
+        default=None,
+        metavar="TAU",
+        help="write the per-term corrections at this threshold to "
+             "screening_terms_tau<TAU>.csv, and print the largest of them. "
+             "Needs no run of its own and need not be one of --thresholds.",
     )
     p.add_argument(
         "--verify",
@@ -186,6 +208,10 @@ def main(args):
         "carrying, and why leaving it out is not an option."
     )
 
+    # ---- optional: which terms, and what did dropping them cost? ---------
+    if args.dump_terms is not None:
+        term_dump(system, args, low_rows, high_rows, low_result, high_result)
+
     # ---- the comparison the script exists for ----------------------------
     distance_table(system, args, low_rows, high_rows, low_result, high_result, rows)
 
@@ -281,6 +307,122 @@ def verify(system, args, low_result, low_rows, high_rows, high_result, high_kwar
         f"  error vs reference: "
         f"{(actual - high_result.energy) * HARTREE_TO_KCAL:+.6f} kcal/mol"
     )
+
+
+# ---------------------------------------------------------------------------
+#  which terms, and what the dropped ones cost
+# ---------------------------------------------------------------------------
+
+DUMP_PREAMBLE = (
+    "# Per-term corrections at one screening threshold.",
+    "# The screen keeps an interaction on |delta_low| > tau. The error of E(tau)",
+    "# against the full high-level reference is NOT the sum of the delta_high of",
+    "# the dropped terms: a dropped term is not missing from E(tau), it is still",
+    "# there at its low-level delta, and only the reference carries it at the high",
+    "# level. So each term's contribution to the error is correction = delta_high -",
+    "# delta_low, and E(tau) - E_ref = -sum over the DROPPED terms of correction.",
+    "# Sorted by |correction| descending: the top of the dropped rows is where the",
+    "# low level misjudged an interaction, which is the only place a screen can",
+    "# lose accuracy. Monomers are not listed -- they are in every kept set, so",
+    "# their correction never reaches the error, and being the difference of two",
+    "# methods' absolute energies they would head the sort and mean nothing by it.",
+)
+
+DUMP_COLUMNS = (
+    "monomers", "level", "distance", "kept",
+    "delta_low_ha", "delta_high_ha", "correction_ha", "correction_kcal",
+)
+
+
+def dump_terms(low_rows, high_rows, closed, tau):
+    """Write one row per interaction term at `tau`, and return what was dropped.
+
+    Returns the path written and the sum of `correction` over the dropped
+    terms, in Hartree. Its negation is the error of E(tau) against the
+    reference, which the caller checks against the recombined total -- the two
+    are the same quantity by two routes.
+    """
+    path = f"screening_terms_tau{tau:g}.csv"
+    entries = []
+    for key, low in low_rows.items():
+        if low.level < 2:
+            continue
+        high = high_rows[key]
+        entries.append((key, low, high, high.delta - low.delta))
+    entries.sort(key=lambda entry: -abs(entry[3]))
+
+    with open(path, "w", newline="") as handle:
+        for line in DUMP_PREAMBLE:
+            handle.write(line + "\n")
+        writer = csv.writer(handle)
+        writer.writerow(DUMP_COLUMNS)
+        for key, low, high, correction in entries:
+            writer.writerow([
+                "-".join(str(m) for m in key),
+                low.level,
+                "" if low.distance is None else f"{low.distance:.6f}",
+                1 if key in closed else 0,
+                f"{low.delta:.12e}",
+                f"{high.delta:.12e}",
+                f"{correction:.12e}",
+                f"{correction * HARTREE_TO_KCAL:.8f}",
+            ])
+
+    dropped = sum(e[3] for e in entries if e[0] not in closed)
+    print(f"\n  wrote {path}: {len(entries)} interaction terms, "
+          f"{sum(1 for e in entries if e[0] in closed)} kept, "
+          f"{sum(1 for e in entries if e[0] not in closed)} dropped")
+    top_corrections(" largest corrections among the KEPT terms",
+                    [e for e in entries if e[0] in closed])
+    top_corrections(" largest corrections among the DROPPED terms -- the error",
+                    [e for e in entries if e[0] not in closed])
+    print(f"\n  dropped corrections sum to {dropped:+.10f} Ha "
+          f"({-dropped * HARTREE_TO_KCAL:+.6f} kcal/mol of error, sign flipped "
+          "because\n  a dropped term keeps its low-level delta rather than "
+          "vanishing)")
+    return path, dropped
+
+
+def top_corrections(title, entries, limit=10):
+    """The head of one half of the dump, or a line saying that half is empty."""
+    print(f"\n {title}:")
+    if not entries:
+        print("    (none)")
+        return
+    print("    monomers      lvl   delta_low       delta_high      "
+          "correction [kcal/mol]")
+    for key, low, high, correction in entries[:limit]:
+        print(f"    {'-'.join(str(m) for m in key):<12s}  {low.level:>3d}   "
+              f"{low.delta:+.6e}  {high.delta:+.6e}  "
+              f"{correction * HARTREE_TO_KCAL:+14.6f}")
+    if len(entries) > limit:
+        print(f"    ... and {len(entries) - limit} more")
+
+
+def term_dump(system, args, low_rows, high_rows, low_result, high_result):
+    """The dump at --dump-terms, and the identity it has to satisfy."""
+    tau = args.dump_terms
+    kept = {t.monomers for t in low_rows.values() if t.level > 1 and abs(t.delta) > tau}
+    # Computed here rather than looked up, so the threshold dumped need not be
+    # one of the ones tabulated above: closing a kept set costs nothing.
+    closed = close(system, args.level, kept)
+    print(f"\n[dump] tau={tau:g}: {len(closed)} terms kept (closed under subsets)")
+    _path, dropped = dump_terms(low_rows, high_rows, closed, tau)
+
+    total = recombine(low_result.energy, low_rows, high_rows, closed)
+    err = total - high_result.energy
+    # An identity, not a measurement: the same two breakdowns reached by two
+    # routes. Anything above rounding here is a bug in this script -- most
+    # likely a kept set that the dump and the recombination disagree about --
+    # and nothing to do with the screen or the chemistry.
+    print(f"  E(tau) - E_ref  = {err * HARTREE_TO_KCAL:+.6f} kcal/mol; "
+          f"identity residual {(err + dropped) * HARTREE_TO_KCAL:+.3e} kcal/mol")
+    # 1e-9 Ha rather than zero only because both sides are sums of thousands of
+    # doubles taken in different orders; a real disagreement is many orders above
+    # it, and nothing physical lives down there.
+    if abs(err + dropped) > 1e-9:
+        print("  WARNING: those two disagree. The dump and the recombination are "
+              "reading different kept sets; the dump is wrong, not the screen.")
 
 
 def describe(kwargs):
