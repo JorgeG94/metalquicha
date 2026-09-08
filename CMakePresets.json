@@ -53,9 +53,18 @@
       "name": "serial",
       "inherits": "base",
       "displayName": "No MPI",
-      "description": "pic-mpi's single-rank backend. For a machine with no MPI at all.",
+      "description": "pic-mpi's single-rank backend. For a machine with no MPI at all. Note this is MPI only -- OpenMP and tblite stay on; the preset that turns off all three is blas-only.",
       "cacheVariables": {
         "MQC_ENABLE_MPI": "OFF"
+      }
+    },
+    {
+      "name": "blas-only",
+      "inherits": "base",
+      "displayName": "No OpenMP, MPI or tblite",
+      "description": "MQC_ENABLE_SERIAL. Nothing threaded, nothing distributed, no xTB -- BLAS/LAPACK is the only parallel-adjacent dependency left. A portability mode for a compiler that cannot build the parallel forms, not a performance one.",
+      "cacheVariables": {
+        "MQC_ENABLE_SERIAL": "ON"
       }
     },
     {
@@ -121,6 +130,10 @@
     {
       "name": "serial",
       "configurePreset": "serial"
+    },
+    {
+      "name": "blas-only",
+      "configurePreset": "blas-only"
     },
     {
       "name": "coverage",

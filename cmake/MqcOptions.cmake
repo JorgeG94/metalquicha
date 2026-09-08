@@ -29,6 +29,49 @@ option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
 #
 option(MQC_ENABLE_MPI "Build with MPI. OFF uses pic-mpi's single-rank backend"
        ON)
+#
+# Build with no parallelism and no semi-empirical engine: BLAS/LAPACK, and the
+# libraries this project cannot be built without, and nothing else.
+#
+# This is one switch rather than three because the three are not independent.
+# tblite is built with OpenMP and cannot be configured without it, so "no
+# OpenMP" already implies "no tblite"; and a build with neither has no reason to
+# carry MPI either. Asking for them one at a time is how you discover that in
+# the wrong order.
+#
+# What it is for: a compiler that cannot yet build the parallel forms. LFortran
+# is the case that prompted it -- it compiles this project's sources and links
+# `libmetalquicha.a`, but its OpenMP support rejects a continued `!$omp`
+# directive, which is how nearly every directive here is written. Serial builds
+# what such a compiler can build instead of failing at the first `find_package`.
+#
+# It is not a performance mode. Nothing is threaded, nothing is distributed, and
+# the fragment loop runs one fragment at a time. Do not benchmark against it.
+#
+# Normal (non-cache) sets so this shadows the two options without rewriting the
+# cache, leaving a later reconfigure of the same tree without it intact -- the
+# same reason the Coverage-mqc block below does it that way.
+option(MQC_ENABLE_SERIAL
+       "Build with no OpenMP, MPI or tblite. Only BLAS/LAPACK remain" OFF)
+if(MQC_ENABLE_SERIAL)
+  set(MQC_ENABLE_MPI OFF)
+  set(MQC_ENABLE_TBLITE OFF)
+  # A dependency asks for OpenMP itself and gets it whatever this project
+  # decided -- libfint does, to make its shell-quartet workspace `!$omp
+  # threadprivate`, and its `find_package` is its own. That would put the flag
+  # back on the one library whose OpenMP a serial build most needs off: libfint
+  # is where LFortran's named-`critical` gap bites. Disabling the find is how
+  # CMake lets a parent answer for a subproject it does not own.
+  #
+  # It costs nothing here. libfint warns that shared workspaces are "only safe
+  # to call from one thread at a time", which is the serial build exactly.
+  set(CMAKE_DISABLE_FIND_PACKAGE_OpenMP ON)
+  message(
+    STATUS "Serial build: OpenMP, MPI and tblite disabled. Threading and rank "
+           "parallelism are both absent -- this is a portability mode, not a "
+           "performance one")
+endif()
+
 option(
   MQC_ENABLE_HDF5
   "Link to HDF5 for binary checkpoints (needed for gradient/Hessian restart)"
