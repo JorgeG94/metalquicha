@@ -864,7 +864,8 @@ contains
 
       call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
                       '"fragmentation": {"method": "efmo", "level": 2, '// &
-                      '"rcut": 1.25}, "efmo": {"charge_transfer": false}', &
+                      '"rcut": 1.25}, "efmo": {"charge_transfer": false, '// &
+                      '"induction_damping": 0.6}', &
                       "", two_atoms())
       call read_deck(config, parse_error)
 
@@ -876,6 +877,8 @@ contains
       if (allocated(error)) return
       call check(error,.not. config%efmo_charge_transfer, &
                  "charge_transfer: false should switch the far-pair CT term off")
+      if (allocated(error)) return
+      call check(error, close_enough(config%efmo_induction_damping, 0.6_dp))
       if (allocated(error)) return
 
       ! Silence leaves the paper's defaults: R_cut = 2.0, charge transfer on as
@@ -890,6 +893,20 @@ contains
       if (allocated(error)) return
       call check(error, config%efmo_charge_transfer, &
                  "charge transfer should default to on")
+      if (allocated(error)) return
+      ! The induction damping is the one EFMO key whose default is *not* what
+      ! GAMESS runs: zero, undamped, because that is what every reference in
+      ! this repository was pinned with.
+      call check(error, close_enough(config%efmo_induction_damping, 0.0_dp))
+      if (allocated(error)) return
+
+      ! A negative exponent would be a factor that grows with separation.
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"fragmentation": {"method": "efmo", "level": 2}, '// &
+                      '"efmo": {"induction_damping": -0.6}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a negative induction_damping should be refused")
    end subroutine test_efmo_keywords
 
    subroutine test_efmo_rcut_refused(error)

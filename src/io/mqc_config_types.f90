@@ -523,6 +523,16 @@ module mqc_config_types
       logical :: efmo_charge_transfer = .true.
          !! `keywords.efmo.charge_transfer`: include `E_IJ^CT` in the far pairs.
          !! GAMESS's EFMO has it; the 2012 method left it out.
+      real(dp) :: efmo_induction_damping = 0.0_dp
+         !! `keywords.efmo.induction_damping`: `a` of the Tang-Toennies-like
+         !! factor `1 - exp(-a R^2)(1 + a R^2)` that damps the induction field.
+         !!
+         !! **Zero, the default, is off.** A number rather than a switch
+         !! because the parameter is the physics: GAMESS's EFP2 damps at
+         !! `POLAB`, which its EFMO sets to 0.6 for a cluster of whole
+         !! molecules and to 0.1 for fragments cut across a bond, and a deck
+         !! that wants to reproduce a GAMESS run has to be able to say which.
+         !! Above 2.0 the factor is one again, GAMESS's own guard.
       integer :: max_intersection_level = DEFAULT_MAX_INTERSECTION  !! Maximum k-way intersection depth for GMBE
       character(len=:), allocatable :: bond_breaking
          !! How a fragment represents a covalent bond the partition cut.

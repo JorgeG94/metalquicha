@@ -81,7 +81,7 @@ Running one
      "model": {"method": "hf", "basis": "6-31g"},
      "keywords": {
        "fragmentation": {"method": "efmo", "level": 2, "rcut": 2.0},
-       "efmo": {"charge_transfer": true}
+       "efmo": {"charge_transfer": true, "induction_damping": 0.6}
      },
      "driver": "Energy"
    }
@@ -116,6 +116,19 @@ Keywords
        method used electrostatics alone. On the water prism at
        :math:`R_{\rm cut} = 0.3` it is -0.0113 Hartree, so leaving it out is a
        choice worth making deliberately -- hence ``true`` here.
+   * - ``keywords.efmo.induction_damping``
+     - ``0.0``
+     - :math:`a` of the Tang-Toennies-like factor
+       :math:`1 - e^{-aR^2}(1 + aR^2)` that damps every induction field between
+       two fragments -- the static field of the permanent multipoles and the
+       field of the other induced dipoles alike, and :math:`E_{IJ}^{\rm pol}`
+       and :math:`E_{\rm pol}^{\rm total}` alike, since eq 6 subtracts one
+       from the other. Zero is undamped. GAMESS's EFMO runs 0.6 for a cluster
+       of whole molecules and 0.1 where a fragment was cut across a bond
+       (``POLAB``, set from ``$FMO SCREEN``); above 2.0 the factor is one
+       again, which is GAMESS's own guard. **The default is off rather than
+       0.6** -- see the induction paragraph under *Against GAMESS*, which
+       measures what the key does and what it does not.
    * - ``keywords.efp.*``
      - --
      - The MAKEFP settings -- the response solve and the screening grid -- passed
@@ -187,16 +200,48 @@ Two terms differ on purpose, and neither is a disagreement about the same number
   energy must equal this program's own EFP -- and it is the accuracy the
   screening exists for. On the prism at :math:`R_{\rm cut} = 0.3` the two Coulomb
   sums are -0.1407 against -0.1323 Hartree.
-* **Induction.** GAMESS damps the induced-dipole field with a Tang-Toennies
-  factor at :math:`a_I = 0.6` for a molecular cluster; this code does not, so its
-  induction runs two to four per cent deeper. The *pair* induction
-  :math:`E_{IJ}^{\rm pol}` and the total :math:`E_{\rm pol}^{\rm total}` are the
-  same routine in both codes -- same screening, same self-consistent solve, same
-  convergence -- differing only in how many fragments are loaded, so the
-  subtraction is clean on both sides and the difference is the damping alone.
+* **Induction.** GAMESS damps the induction field with a Tang-Toennies-like
+  factor at :math:`a = 0.6` for a molecular cluster (``PENSAB`` in ``FRGFLD``
+  for the static field, ``P1`` in ``DIPIT`` for the induced-dipole field, both
+  in ``efintb.src``), and by default this code does not, so its induction runs
+  two to four per cent deeper. The *pair* induction :math:`E_{IJ}^{\rm pol}`
+  and the total :math:`E_{\rm pol}^{\rm total}` are the same routine in both
+  codes -- same screening, same self-consistent solve, same convergence --
+  differing only in how many fragments are loaded, so the subtraction is clean
+  on both sides.
 
-At :math:`R_{\rm cut} = 2.0`, where every pair of a water hexamer is quantum, the
-two totals sit 1.4e-4 to 5.8e-4 Hartree apart and all of it is that damping.
+  ``keywords.efmo.induction_damping`` applies exactly that factor, and running
+  it settles what the difference is made of. On the prism at
+  :math:`R_{\rm cut} = 1.0`, in Hartree:
+
+  .. list-table::
+     :header-rows: 1
+
+     * -
+       - undamped
+       - ``induction_damping: 0.6``
+       - GAMESS
+     * - :math:`\sum E_{IJ}^{\rm pol}`
+       - 0.013033887
+       - 0.012374267
+       - 0.012557400
+     * - :math:`E_{\rm pol}^{\rm total}`
+       - -0.026488526
+       - -0.025407237
+       - -0.025869694
+     * - total
+       - -456.004182669
+       - -456.003761000
+       - -456.004043215
+
+  So the damping is real and it *overshoots*: undamped we sit 2.4 per cent
+  deeper than GAMESS and damped 1.8 per cent shallower. About a third of the
+  induction gap is the damping and the rest is a difference in the undamped
+  induction itself, which the Tang-Toennies factor cannot be blamed for.
+  Damping the induced-dipole field alone moves the total by 5e-6 -- the static
+  field carries all of it. The default is therefore left undamped, which is
+  also what every reference in this repository was pinned with; set the key
+  when the point is to reproduce a GAMESS induction rather than to be right.
 
 Accuracy
 --------
@@ -230,6 +275,8 @@ What is not here yet
 * **Whole molecules only.** A partition that cuts a covalent bond is refused: a
   hydrogen cap's multipoles would act on the partner across the cut, and the
   adjusted frozen orbital route FMO uses is not wired in here.
-* **No damping on the induction.** The Tang-Toennies factor GAMESS applies is the
-  one remaining known difference between the two codes on a term both compute the
-  same way otherwise.
+* **The rest of the induction difference.** With
+  ``keywords.efmo.induction_damping`` set to GAMESS's 0.6 the two codes'
+  induction still differ by about two per cent, in the other direction; what is
+  left is a difference in the *undamped* induction and it is not yet accounted
+  for.

@@ -29,6 +29,8 @@ module test_mqc_czt_efmo_pieces
                                  pair_polarization_energy
    use mqc_czt_efmo_pairs, only: efmo_pair_distance, efmo_split_pairs, &
                                  vdw_scaled_distance
+   use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, &
+                                      polarization_energy, induction_damping_factor
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -71,7 +73,9 @@ contains
                   new_unittest("efmo_three_body_induction_vanishes_with_distance", &
                                test_three_body), &
                   new_unittest("efmo_pair_distance_and_split", test_split), &
-                  new_unittest("efmo_pair_terms_sum_to_the_all_pairs_energy", test_pair_terms) &
+                  new_unittest("efmo_pair_terms_sum_to_the_all_pairs_energy", test_pair_terms), &
+                  new_unittest("efmo_induction_damping_is_the_same_in_pair_and_total", &
+                               test_induction_damping) &
                   ]
    end subroutine collect_mqc_czt_efmo_pieces_tests
 
@@ -462,6 +466,99 @@ contains
       call check(error, swapped, pair, thr=1.0e-14_dp, &
                  message="the pair induction is not symmetric in I and J")
    end subroutine test_pair_pol
+
+   subroutine test_induction_damping(error)
+      !! The Tang-Toennies damping, and that the pair and the total share it
+      !!
+      !! **Phase 4's one physics addition.** GAMESS multiplies every induction
+      !! field between two fragments -- the static field of `FRGFLD` and the
+      !! induced-dipole field of `DIPIT` alike -- by
+      !! `1 - exp(-a R^2)(1 + a R^2)`, at `a = 0.6` for a cluster of whole
+      !! molecules. Three things are checked, and the third is the one that
+      !! would go wrong silently.
+      !!
+      !!   * The factor itself, against the closed form and against GAMESS's own
+      !!     two guards: `a` at or below zero is off, and so is `a` above two.
+      !!   * Damping makes the induction shallower. It is a screening of a
+      !!     field, so it cannot deepen the energy, and asking for `a = 0`
+      !!     reproduces the undamped number exactly rather than nearly.
+      !!   * **The pair term and the total are damped identically.** They are
+      !!     subtracted from one another in eq 6, so a damping applied to one
+      !!     and not the other would not show up as a wrong induction: it would
+      !!     show up as a many-body remainder that is not there, which is
+      !!     indistinguishable from physics by inspection. On two fragments the
+      !!     remainder is zero by construction, so the identity is exact.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: A = 0.6_dp
+      type(efp_fragment_t) :: frags(2)
+      type(efp_system_t) :: system
+      type(error_t) :: err
+      real(dp) :: shifts(3, 2)
+      real(dp) :: bare, damped, pair_bare, pair_damped, expect
+      real(dp) :: r
+
+      r = 3.0_dp*ANG
+      expect = 1.0_dp - exp(-A*r*r)*(1.0_dp + A*r*r)
+      call check(error, induction_damping_factor(A, r), expect, thr=1.0e-14_dp, &
+                 message="the damping factor is not 1 - exp(-a R^2)(1 + a R^2)")
+      if (allocated(error)) return
+      call check(error, induction_damping_factor(0.0_dp, r), 1.0_dp, thr=0.0_dp, &
+                 message="a = 0 has to leave the field untouched")
+      if (allocated(error)) return
+      call check(error, induction_damping_factor(2.5_dp, r), 1.0_dp, thr=0.0_dp, &
+                 message="a above two is GAMESS's own guard and has to be off")
+      if (allocated(error)) return
+
+      call water_fragment(frags(1), err)
+      call water_fragment(frags(2), err)
+      call check(error,.not. err%has_error(), "building the fragments failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      shifts = 0.0_dp
+      shifts(1, 2) = 3.0_dp*ANG
+      call build_efp_system(frags, shifts, system, err)
+      call check(error,.not. err%has_error(), "building the system failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      bare = polarization_energy(system, frags, err)
+      damped = polarization_energy(system, frags, err, damping=A)
+      call check(error,.not. err%has_error(), "the induction solve failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) then
+         call system%destroy()
+         return
+      end if
+      call check(error, polarization_energy(system, frags, err, damping=0.0_dp), bare, &
+                 thr=0.0_dp, message="asking for a = 0 changed the undamped induction")
+      if (allocated(error)) then
+         call system%destroy()
+         return
+      end if
+      call check(error, damped > bare, "damping the field has to make the induction "// &
+                 "shallower, not deeper")
+      if (allocated(error)) then
+         call system%destroy()
+         return
+      end if
+      call system%destroy()
+
+      pair_bare = pair_polarization_energy(frags(1), frags(2), shifts(:, 1), &
+                                           shifts(:, 2), err)
+      pair_damped = pair_polarization_energy(frags(1), frags(2), shifts(:, 1), &
+                                             shifts(:, 2), err, damping=A)
+      call check(error,.not. err%has_error(), "the pair induction failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, pair_bare, bare, thr=1.0e-12_dp, &
+                 message="the undamped pair induction is not the two-fragment total")
+      if (allocated(error)) return
+      call check(error, pair_damped, damped, thr=1.0e-12_dp, &
+                 message="the damped pair induction is not the damped two-fragment "// &
+                 "total, so eq 6 would subtract two different quantities")
+   end subroutine test_induction_damping
 
    subroutine test_three_body(error)
       !! What the pair subtraction leaves behind is three-body induction

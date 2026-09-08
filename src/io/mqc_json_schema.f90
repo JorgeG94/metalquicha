@@ -412,6 +412,7 @@ contains
       !! does with the pairs once split.
       type(key_set_t) :: keys
       call allow(keys, "charge_transfer")
+      call allow(keys, "induction_damping")
    end function efmo_keys
 
    function neo_keys() result(keys)

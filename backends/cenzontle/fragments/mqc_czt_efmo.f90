@@ -90,6 +90,16 @@ module mqc_czt_efmo
       logical :: charge_transfer = .true.
          !! Include `E_IJ^CT` in the far pairs. GAMESS's EFMO has it; the 2012
          !! method left it out, so it is switchable rather than assumed.
+      real(dp) :: induction_damping = 0.0_dp
+         !! Tang-Toennies-like damping of the induction field, `a` in
+         !! `1 - exp(-a R^2)(1 + a R^2)`. **Zero is off**, which is what every
+         !! reference pinned before Phase 4 was computed with; GAMESS's EFMO
+         !! runs 0.6 for a cluster of whole molecules and 0.1 where a fragment
+         !! was cut across a bond, and 0.6 is what closes our induction onto
+         !! its numbers. Applied to `E_IJ^pol` and to `E_pol^total` alike --
+         !! the two are the same solver on different systems and damping one
+         !! without the other would leave the difference in the many-body
+         !! remainder.
       character(len=32) :: guess = "auto"
          !! Initial guess for every SCF here, monomer and dimer alike.
       character(len=64) :: aux_basis = ""
@@ -271,7 +281,8 @@ contains
       res%far_exchange_repulsion = sum(far%exchange_repulsion)
       res%far_charge_transfer = sum(far%charge_transfer)
 
-      call total_polarization(frags, shifts, res%polarization_total, error)
+      call total_polarization(frags, shifts, opts%induction_damping, &
+                              res%polarization_total, error)
       if (error%has_error()) return
 
       res%energy = res%monomer_sum + res%dimer_correction - res%pair_polarization &
@@ -441,7 +452,8 @@ contains
          ! total below. A pair solved any other way would leave a residue in
          ! `E_pol^total - sum E_IJ^pol` that looks like three-body induction.
          e_pol = pair_polarization_energy(frags(a), frags(b), shifts(:, a), &
-                                          shifts(:, b), error)
+                                          shifts(:, b), error, &
+                                          damping=opts%induction_damping)
          if (error%has_error()) return
 
          res%pairs(k)%e_dimer = e_dimer
@@ -506,7 +518,7 @@ contains
       energy = scf%energy
    end subroutine dimer_energy
 
-   subroutine total_polarization(frags, shifts, energy, error)
+   subroutine total_polarization(frags, shifts, damping, energy, error)
       !! `E_pol^total`: induction over every fragment at once
       !!
       !! The same call `efp_interaction_energy` makes internally, on the same
@@ -514,6 +526,9 @@ contains
       !! against exactly what is here.
       type(efp_fragment_t), intent(in) :: frags(:)
       real(dp), intent(in) :: shifts(:, :)
+      real(dp), intent(in) :: damping
+         !! The same number every `E_IJ^pol` was solved with; see
+         !! `efmo_options_t%induction_damping`.
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
 
@@ -523,7 +538,7 @@ contains
       if (size(frags) < 2) return
       call build_efp_system(frags, shifts, system, error)
       if (error%has_error()) return
-      energy = polarization_energy(system, frags, error)
+      energy = polarization_energy(system, frags, error, damping=damping)
       call system%destroy()
    end subroutine total_polarization
 
@@ -537,6 +552,10 @@ contains
 
       call logger%info("============================================================")
       call logger%info("  EFMO, R_cut = "//to_char(opts%rcut)//" (unitless)")
+      if (opts%induction_damping > 0.0_dp) then
+         call logger%info("  induction field damped, a = "// &
+                          to_char(opts%induction_damping))
+      end if
       call logger%info("------------------------------------------------------------")
       call logger%info("  fragment           E_I^0 / Hartree")
       do k = 1, size(res%monomer_energy)

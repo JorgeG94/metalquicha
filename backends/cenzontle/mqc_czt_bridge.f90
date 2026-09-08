@@ -640,6 +640,7 @@ contains
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
                            fragment_charges, basis_name, rcut, charge_transfer, &
+                           induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
@@ -670,6 +671,9 @@ contains
       real(dp), intent(in) :: rcut
          !! `R_cut` of eq 2, unitless. See `efmo_config_t`.
       logical, intent(in) :: charge_transfer
+      real(dp), intent(in) :: induction_damping
+         !! `a` of the Tang-Toennies-like factor that damps every induction
+         !! field, pair and total alike. Zero is undamped.
       type(scf_numerics_t), intent(in) :: scf_drive
          !! How every SCF here is driven -- monomer and dimer alike. A
          !! `scf_numerics_t` rather than more scalars: it lives in
@@ -714,6 +718,7 @@ contains
       opts%basis = basis_name
       opts%rcut = rcut
       opts%charge_transfer = charge_transfer
+      opts%induction_damping = induction_damping
       opts%scf = scf_drive
       opts%scf_max_iter = scf_max_iter
       opts%scf_energy_tol = scf_energy_tol

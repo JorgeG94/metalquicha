@@ -1422,7 +1422,8 @@ contains
       call run_czt_efmo(sys_geom%element_numbers, symbols, sys_geom%coordinates, owner, &
                         charges, config%method_config%basis_set, &
                         config%method_config%efmo%rcut, &
-                        config%method_config%efmo%charge_transfer, efmo_scf, &
+                        config%method_config%efmo%charge_transfer, &
+                        config%method_config%efmo%induction_damping, efmo_scf, &
                         EFMO_SCF_MAX_ITER, EFMO_SCF_ENERGY_TOL, EFMO_SCF_DENSITY_TOL, &
                         EFMO_SCF_GRAD_TOL, trim(config%method_config%scf%guess), &
                         energy, terms, n_qm, n_efp, err, &

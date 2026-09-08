@@ -199,6 +199,7 @@ contains
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
                            fragment_charges, basis_name, rcut, charge_transfer, &
+                           induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
@@ -220,6 +221,9 @@ contains
       character(len=*), intent(in) :: basis_name
       real(dp), intent(in) :: rcut
       logical, intent(in) :: charge_transfer
+      real(dp), intent(in) :: induction_damping
+         !! `a` of the Tang-Toennies-like factor that damps every induction
+         !! field, pair and total alike. Zero is undamped.
       type(scf_numerics_t), intent(in) :: scf_drive
       integer, intent(in) :: scf_max_iter
       real(dp), intent(in) :: scf_energy_tol, scf_density_tol, scf_grad_tol
@@ -250,6 +254,7 @@ contains
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(guess) < 0) return
       if (rcut < -huge(1.0_dp) .or. charge_transfer) return
+      if (induction_damping < -huge(1.0_dp)) return
       if (scf_drive%max_iter < 0 .or. scf_max_iter < 0) return
       if (scf_energy_tol < 0.0_dp .or. scf_density_tol < 0.0_dp) return
       if (scf_grad_tol < 0.0_dp) return
