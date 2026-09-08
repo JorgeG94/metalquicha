@@ -378,6 +378,7 @@ contains
       call allow(keys, "diis")
       call allow(keys, "diis_size")
       call allow(keys, "accelerator")
+      call allow(keys, "eri_path")
       call allow(keys, "incremental_fock")
    end function scf_keys
 

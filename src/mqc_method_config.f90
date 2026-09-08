@@ -97,6 +97,12 @@ module mqc_method_config
          !!
          !! 'auto' lets the backend pick: the CPU path resolves it to 'sad'
          !! and cuEST to 'gwh'. An explicit spelling wins over both.
+      character(len=32) :: eri_path = "rys"
+         !! `keywords.scf.eri_path`: which four-centre integral path the CPU
+         !! backend takes. 'rys' (the default) for every quartet; 'rotaxis'
+         !! for the rotated-axis McMurchie-Davidson path on s, p and L shell
+         !! quartets, Rys on the rest; 'auto' is 'rotaxis' where the build has
+         !! it. Chosen once per run, in `set_eri_path`.
       type(guess_step_t), allocatable :: guess_steps(:)
          !! The basis ladder for 'basis_set_projection', one entry per
          !! preliminary SCF in order. The target basis is the model's and is not

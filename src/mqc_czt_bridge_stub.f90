@@ -23,8 +23,20 @@ module mqc_czt_bridge
    public :: czt_backend_available
    public :: xc_available
    public :: ecp_backend_available
+   public :: czt_set_eri_path
 
 contains
+
+   subroutine czt_set_eri_path(name, error)
+      !! No-op stand-in: with no CPU integral backend there is no path to choose
+      use mqc_error, only: error_t
+      character(len=*), intent(in) :: name
+      type(error_t), intent(inout) :: error
+
+      ! Nothing to choose and nothing to refuse; the arguments are the contract.
+      associate (unused_name => name, unused_error => error)
+      end associate
+   end subroutine czt_set_eri_path
 
    pure function ecp_backend_available() result(available)
       !! No libcint means no integral backend at all, so no ECP either.
