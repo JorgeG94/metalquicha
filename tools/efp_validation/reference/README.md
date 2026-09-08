@@ -215,8 +215,21 @@ remembering that ours finds a genuine minimum where GAMESS's search reaches its
 they are different fits, and only one of them reproduces GAMESS.
 
 **Basis.** This runs in 6-31G*, not the 6-311++G(3df,2p) usually recommended for
-EFP2, for two reasons. That set is not in the Basis Set Exchange bundle at all -- it
-carries `6-311++g`, `(2d,2p)`, `(3df,3pd)` and `**` -- and any basis with f functions
-cannot be emitted yet, because the AO-ordering map in `mqc_czt_efp_potential` handles
-Cartesian d and stops there. `6-311++G**` is d-only and would work once added to
-`MQC_BASIS_SETS`.
+EFP2, because that set is not in the Basis Set Exchange bundle -- it carries
+`6-311++g`, `(2d,2p)`, `(3df,3pd)` and `**`.
+
+**f functions are no longer the obstacle they were when this was written.** The
+AO-ordering map handles Cartesian f, and that has now been checked the same way
+this file's d numbers were: `validation/inputs/cpu/mqc/makefp/water_f_makefp.json`
+writes a 6-311++G(3df,3pd) potential, GAMESS reads it as a fragment, and on the
+same water dimer it agrees with GAMESS's own potential to 5e-10 on exchange
+repulsion and exactly on charge transfer -- the two terms built from orbital
+coefficients in GAMESS's AO order, and so the two that a wrong f slot would move.
+Electrostatics differs by 4.8e-06, which is the same screening-fit difference
+described above rather than anything to do with f.
+
+GAMESS's `$BASIS` group cannot put d functions on hydrogen, so `NDFUNC`/`NPFUNC`
+reach (3df,2p) and not (3df,3pd). The comparison above writes the contraction
+into `$DATA` explicitly instead, which also removes the ten-significant-figure
+basis-table floor described above: both codes then run the same numbers, and the
+two RHF energies agree to 5.5e-09.

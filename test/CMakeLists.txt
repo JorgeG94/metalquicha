@@ -190,6 +190,15 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_efp_read)
   target_link_libraries(test_mqc_czt_efp_read PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The same round trip in a basis with an f shell, which the 6-31G* case above
+  # cannot reach: wider records, ten coefficients a shell, and the f branch of
+  # the AO ordering maps. Whether that map matches GAMESS is not testable from
+  # inside the program -- see the module header -- and is what
+  # tools/efp_validation/dimer_energy.py covers.
+  addtest(mqc_czt_efp_f_functions)
+  target_link_libraries(test_mqc_czt_efp_f_functions
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # That the deck's SCF settings reach the one SCF a MakeFP run performs. Six of
   # them used to be dropped between the config and the call, which no deck test
   # can see -- the symptom is that the numbers are a default run's.

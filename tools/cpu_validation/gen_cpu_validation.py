@@ -346,6 +346,10 @@ HAND_MAINTAINED = {
     "cpu/mqc/makefp/water_makefp.json",
     "cpu/mqc/makefp/water_makefp_df.json",
     "cpu/mqc/makefp/hydronium_makefp.json",
+    # The same, in the basis EFMO recommends, which is the one with f functions.
+    # It writes `water_f_makefp.efp` beside itself; that potential is committed
+    # because the EFP2 case below consumes it and the sweep only removes decks.
+    "cpu/mqc/makefp/water_f_makefp.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -370,6 +374,15 @@ HAND_MAINTAINED = {
     # script cannot generate it either. It consumes the potential that
     # water_makefp.json writes beside itself, so that deck runs first.
     "cpu/mqc/efp/water_dimer_efp.json",
+    # The same interaction with f functions in the fragment basis, which is what
+    # `to_gamess_ao_order`'s f branch is on the path of. Its reference is ours
+    # and its check is GAMESS: handed our potential, GAMESS reports exchange
+    # repulsion within 2.7e-09, charge transfer within 8.3e-10, dispersion within
+    # 1.0e-09 and electrostatics within 1.5e-09 of what this deck prints, and its
+    # total differs by 6.4e-07 -- all of it polarization, which differs by the
+    # same amount when both codes are given GAMESS's own potential and so is not
+    # an f-mapping question. See the manifest entry's reference_note.
+    "cpu/mqc/efp/water_f_dimer_efp.json",
     # Ethane in the basis the quasi-atomic bonding papers use, which is the case
     # their published numbers can be checked against: 186 basis functions and a
     # full valence CAS(14,14) of 11,778,624 determinants. Deliberately absent
@@ -2610,6 +2623,16 @@ PRESERVED_TESTS = [
         "name": "EFP2 water dimer 6-31G* arbitrarily oriented (CPU)",
         "input": "inputs/cpu/mqc/efp/water_dimer_efp_turned.json",
         "expected_energy": 0.0030795778,
+        "type": "unfragmented",
+    },
+    # The f-function case. The monomer is w1 rotated out of every coordinate
+    # plane on purpose: planar water puts an exact zero in every f function with
+    # an odd power of the out-of-plane coordinate, so half the f slots would
+    # carry zero on both sides and a wrong slot could not move a number.
+    {
+        "name": "EFP2 water dimer 6-311++G(3df,3pd) (CPU)",
+        "input": "inputs/cpu/mqc/efp/water_f_dimer_efp.json",
+        "expected_energy": -0.0022505226,
         "type": "unfragmented",
     },
 ]

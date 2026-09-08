@@ -4714,6 +4714,13 @@
             "type": "unfragmented"
         },
         {
+            "name": "EFP2 water dimer 6-311++G(3df,3pd) (CPU)",
+            "input": "inputs/cpu/mqc/efp/water_f_dimer_efp.json",
+            "expected_energy": -0.0022505226,
+            "type": "unfragmented",
+            "reference_note": "EFP2 with f functions in the fragment basis, which no other case has. The reference is this code's own total and the check on it is GAMESS: the same potential, read by GAMESS as a fragment, gives electrostatics -0.0026782419, polarization -0.0004497904, exchange repulsion 0.0033714423, dispersion -0.0018903122 and charge transfer -0.0006029815, against -0.002678240373, -0.000450429992, 0.003371439639, -0.001890311249 and -0.000602980668 here. Exchange repulsion and charge transfer are the two terms built from orbital coefficients in GAMESS's AO order, so their agreement at 2.7e-09 and 8.3e-10 is what says the Cartesian f permutation and its three normalization classes are right. The 6.4e-07 in the total is polarization alone and appears equally when both codes are given GAMESS's own potential."
+        },
+        {
             "name": "ORMAS CI-SD H2O 3-21G against GAMESS (CPU)",
             "input": "inputs/cpu/mqc/mcscf/cpu_h2o_3-21g_ormas_cisd.json",
             "expected_energy": -75.7103507602,
