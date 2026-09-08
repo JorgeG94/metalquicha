@@ -26,6 +26,36 @@ jobs:
           pre-commit install
           pre-commit run --all-files
 
+  # The commit-msg hook above only fires for someone who has run
+  # `pre-commit install`, and `--no-verify` skips it. This re-checks the
+  # messages themselves, which is the half `pre-commit run --all-files`
+  # structurally cannot see: it reads the worktree, never the log.
+  commit_messages:
+    name: Check commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Commit messages are the subject here, so the log has to be
+          # present; the default shallow clone has one commit and would
+          # check whatever happened to be at the tip.
+          fetch-depth: 0
+
+      - name: Reject agent session trailers
+        run: |
+          base=$(git merge-base origin/main HEAD 2>/dev/null || echo "")
+          if [ -z "$base" ] || [ "$base" = "$(git rev-parse HEAD)" ]; then
+            # On main itself, or with no shared ancestor to compare
+            # against, check the tip alone rather than rewriting history's
+            # worth of commits nobody can amend now.
+            range="HEAD~1..HEAD"
+          else
+            range="$base..HEAD"
+          fi
+          echo "Checking $range"
+          tools/lint/no_agent_trailers.sh --range "$range"
+
   # Run Fortran linter with Fortitude
   linter_fortitude:
     name: Run Fortitude Linter
