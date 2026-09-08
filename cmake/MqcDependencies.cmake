@@ -556,6 +556,6 @@ target_link_libraries(${main_lib} PUBLIC ${libraries_to_link})
 
 # Add json-fortran module directory for Fortran USE statements and ensure
 # jsonfortran is built before metalquicha (for .mod files)
-target_include_directories(${main_lib}
-                           PUBLIC "$<BUILD_INTERFACE:${jsonfortran_BINARY_DIR}>")
+target_include_directories(
+  ${main_lib} PUBLIC "$<BUILD_INTERFACE:${jsonfortran_BINARY_DIR}>")
 add_dependencies(${main_lib} jsonfortran)
