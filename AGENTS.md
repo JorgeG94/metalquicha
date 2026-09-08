@@ -334,8 +334,8 @@ build.
 
 **LFortran** is why this exists, and it does not build the project yet. As of
 0.64.0 the serial configure is clean and 271 objects compile; what stops it is
-four compiler bugs, reproduced minimally in `lfortran-mre/` (run `./run.sh`
-there). The one with the widest reach is that a continued `!$omp` directive is
+four compiler bugs, each of which has a minimal reproducer kept outside this
+repository. The one with the widest reach is that a continued `!$omp` directive is
 rejected -- 359 of them across 23 files -- which is what makes serial the only
 shape worth trying. LFortran also needs `--implicit-interface`,
 `--mangle-underscore-external` and `--legacy-array-sections`, set in
@@ -539,7 +539,7 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
 | Intel ifx | Full support |
 | nvfortran | Partial (no tblite) |
 | LLVM Flang | Partial (no tblite) |
-| LFortran | Does not build yet; see "Building serially" and `lfortran-mre/` |
+| LFortran | Does not build yet; see "Building serially" |
 
 ## Useful Commands
 
