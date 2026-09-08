@@ -211,9 +211,9 @@ the cuEST backend.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1135,18 +1135,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1307.14,-377.72C1261.48,-370.83 1171.25,-357.21 1116.36,-348.92"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1116.62,-345.42 1106.2,-347.39 1115.57,-352.34 1116.62,-345.42"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_node39" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node39"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_cuest_iface~~UsedByGraph_node39"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1375.5,-352 1297.5,-352 1297.5,-328 1375.5,-328 1375.5,-352"/>
 <text text-anchor="middle" x="1336.5" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_cuest_iface~~UsedByGraph_edge55" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1297.25,-340.29C1249.38,-340.65 1167.47,-341.27 1116.31,-341.65"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="1116.17,-338.16 1106.19,-341.73 1116.22,-345.15 1116.17,-338.16"/>
 </g>
@@ -1390,7 +1390,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              <span class="anchor" id="variable-allow_crap_scf"></span>
               logical,
             </td>
               <td>public</td>
@@ -1461,7 +1461,7 @@ always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend"></span>
+              <span class="anchor" id="variable-backend~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1615,7 +1615,7 @@ once the orbitals are converged. &ldquo;none&rdquo; for none.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~2"></span>
+              <span class="anchor" id="variable-cartesian"></span>
               logical,
             </td>
               <td>public</td>
@@ -1633,7 +1633,7 @@ once the orbitals are converged. &ldquo;none&rdquo; for none.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_diis_size~2"></span>
+              <span class="anchor" id="variable-cc_diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -1650,7 +1650,7 @@ once the orbitals are converged. &ldquo;none&rdquo; for none.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_max_iter~2"></span>
+              <span class="anchor" id="variable-cc_max_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -1667,7 +1667,7 @@ once the orbitals are converged. &ldquo;none&rdquo; for none.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_spin_adapted~2"></span>
+              <span class="anchor" id="variable-cc_spin_adapted"></span>
               logical,
             </td>
               <td>public</td>
@@ -1685,7 +1685,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_tolerance~2"></span>
+              <span class="anchor" id="variable-cc_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1702,7 +1702,7 @@ CPU backend only; cuEST has no coupled cluster at all.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_triples~2"></span>
+              <span class="anchor" id="variable-cc_triples"></span>
               logical,
             </td>
               <td>public</td>
@@ -1754,7 +1754,7 @@ none were asked for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-corr_density_fitting~2"></span>
+              <span class="anchor" id="variable-corr_density_fitting"></span>
               logical,
             </td>
               <td>public</td>
@@ -1945,7 +1945,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~2"></span>
+              <span class="anchor" id="variable-functional"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1996,7 +1996,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~5"></span>
+              <span class="anchor" id="variable-guess"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2141,7 +2141,7 @@ dependent. Zero means the orthogonaliser&rsquo;s own cutoff. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -2245,7 +2245,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_cc~2"></span>
+              <span class="anchor" id="variable-run_cc"></span>
               logical,
             </td>
               <td>public</td>
@@ -2262,7 +2262,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_mp2~2"></span>
+              <span class="anchor" id="variable-run_mp2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2296,7 +2296,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os~2"></span>
+              <span class="anchor" id="variable-scs_os"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2313,7 +2313,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss~2"></span>
+              <span class="anchor" id="variable-scs_ss"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2364,7 +2364,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~2"></span>
+              <span class="anchor" id="variable-use_diis"></span>
               logical,
             </td>
               <td>public</td>
@@ -2381,7 +2381,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -2430,7 +2430,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~6"></span>
+              <span class="anchor" id="variable-method_type~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2480,7 +2480,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~5"></span>
+              <span class="anchor" id="variable-settings~2"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2535,7 +2535,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~6"></span>
+              <span class="anchor" id="variable-settings~3"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2550,7 +2550,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~2"></span>
+              <span class="anchor" id="variable-options"></span>
               class(<a href='../type/scf_options_t.html'>scf_options_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2590,7 +2590,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~8"></span>
+              <span class="anchor" id="variable-name~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2605,7 +2605,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~2"></span>
+              <span class="anchor" id="variable-kind~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2620,7 +2620,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~51"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2663,7 +2663,7 @@ backend only.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-08 00:03 +0000             </p>
+ on 2026-09-08 01:14 +0000             </p>
           </div>
         </div>
         <br>
