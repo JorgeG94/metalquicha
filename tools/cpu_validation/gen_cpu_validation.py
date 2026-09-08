@@ -153,6 +153,10 @@ MOLECULES = {
     "ph3": _mol("PH3", "P", pyramidal_ah3("P", "H", 1.4200, 93.50)),
     "h2s": _mol("H2S", "S", bent_ah2("S", "H", 1.3356, 92.11)),
     "hcl": _mol("HCl", "Cl", diatomic("Cl", "H", 1.2746)),
+    # HCN as PySCF-NEO's own tests have it, for the quantum-proton cases only:
+    # the proton at the origin, C and N along z. Held out of ALL below.
+    "hcn": _mol("HCN", "C", [("H", 0.0, 0.0, 0.0), ("C", 0.0, 0.0, 1.064),
+                             ("N", 0.0, 0.0, 2.220)]),
     # Open-shell species. Geometries already in the tree, so they are read
     # rather than written; both are radicals and appear only in OPEN_SHELL.
     "oh": Molecule(label="OH", element="O", xyz="sample_inputs/oh.xyz"),
@@ -196,7 +200,7 @@ ECP_MOLECULES = ["rbh", "agh", "snh4", "teh2", "hi", "i2", "sr", "csh",
                  "auh", "hgcl2", "pbh4", "iatom"]
 
 ALL = [m for m in MOLECULES
-       if m not in ("oh", "o2", "ch3", "w2dimer") and m not in ECP_MOLECULES]
+       if m not in ("oh", "o2", "ch3", "w2dimer", "hcn") and m not in ECP_MOLECULES]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -530,6 +534,30 @@ DH_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit", "mpw2plyp"),
 ]
 DH_TOLERANCE = 5.0e-5
+
+# Quantum nuclei, as (molecule, basis, quantum nuclei by 0-based index,
+# functional or None, epc or None, grid level or None, reference energy).
+#
+# The references are PySCF-NEO's -- the `pyscf/neo` module of Yang Yang's fork
+# (github.com/theorychemyang/pyscf, commit f9c0266) -- and are pasted rather than
+# computed here because the venv this script runs in carries stock PySCF, which
+# has no `neo`. `tools/neo/neo_references.py` reproduces them in a venv that
+# has the fork; run it there and paste when a case changes. PB4-D proton basis
+# throughout, spherical electronic basis, which is what both codes build for
+# cc-pVDZ.
+#
+# H2 with both protons quantised is the one case that reaches the other-proton
+# terms. The Kohn-Sham pair is at grid level 3 on both sides and lands within
+# 1e-9 of the reference; the tolerance is looser than the HF one only because
+# a grid is in the loop.
+NEO_CASES = [
+    ("h2", "cc-pvdz", [0, 1], None, None, None, -1.050784743607),
+    ("hcn", "cc-pvdz", [0], None, None, None, -92.843706356583),
+    ("hcn", "cc-pvdz", [0], "hyb_gga_xc_b3lyp5", None, 3, -93.339356183784),
+    ("hcn", "cc-pvdz", [0], "hyb_gga_xc_b3lyp5", "17-2", 3, -93.367049913633),
+]
+NEO_HF_TOLERANCE = 1.0e-8
+NEO_KS_TOLERANCE = 1.0e-7
 
 # Double hybrid gradients, as (molecule, basis, functional). Three entries and
 # not a sweep, because each one costs four converged SCF-plus-MP2 runs per
@@ -3477,6 +3505,37 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {functional:8s} grid={level}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, quantum, functional, epc, level, energy in NEO_CASES:
+        mol = MOLECULES[name]
+        tag = "neo"
+        if functional:
+            tag += "_" + functional.replace("hyb_gga_xc_", "").replace("-", "")
+        if epc:
+            tag += "_epc" + epc.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/neo", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft" if functional else "hf")
+            d["keywords"]["neo"] = {"quantum_nuclei": quantum, "nuclear_basis": "pb4-d"}
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": level}
+            if epc:
+                d["keywords"]["neo"]["epc"] = epc
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        what = "NEO-HF" if not functional else f"NEO-DFT {functional.upper()}"
+        if epc:
+            what += f" epc{epc}"
+        tests.append({
+            "name": f"{what} {mol.label} {basis} PB4-D, {len(quantum)} quantum "
+                    f"{'proton' if len(quantum) == 1 else 'protons'} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "tolerance": NEO_KS_TOLERANCE if functional else NEO_HF_TOLERANCE,
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {what:28s} E={energy:.12f}", flush=True)
 
     for name, basis, functional, level, mult in UDFT_CASES:
         mol = MOLECULES[name]

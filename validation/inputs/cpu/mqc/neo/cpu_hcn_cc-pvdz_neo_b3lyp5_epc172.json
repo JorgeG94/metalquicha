@@ -1,0 +1,40 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/hcn.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "dft",
+        "basis": "cc-pvdz",
+        "functional": "hyb_gga_xc_b3lyp5"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-12
+        },
+        "neo": {
+            "quantum_nuclei": [
+                0
+            ],
+            "nuclear_basis": "pb4-d",
+            "epc": "17-2"
+        },
+        "dft": {
+            "grid_level": 3
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}
