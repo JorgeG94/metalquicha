@@ -20,7 +20,8 @@ module test_mqc_czt_direct
    use pic_types, only: dp
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, set_eri_path, &
                                 eri_path_name, ROTAXIS_AVAILABLE, quartet_on_rotaxis, &
-                                rotaxis_libfint_covers
+                                rotaxis_libfint_covers, HGP_AVAILABLE, quartet_on_hgp, &
+                                hgp_libfint_covers
    use mqc_czt_rhf, only: build_fock
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
                              build_fock_direct_nosym, schwarz_bounds, &
@@ -68,6 +69,10 @@ contains
                                test_rotaxis_fock), &
                   new_unittest("the_dispatch_agrees_with_libfint_on_what_the_path_covers", &
                                test_rotaxis_coverage), &
+                  new_unittest("the_head_gordon_pople_path_builds_the_same_fock_matrix", &
+                               test_hgp_fock), &
+                  new_unittest("the_dispatch_agrees_with_libfint_on_what_hgp_covers", &
+                               test_hgp_coverage), &
                   new_unittest("nosym_handles_an_antisymmetric_density", &
                                test_nosym_antisymmetric), &
                   new_unittest("the_fast_build_announced_antisymmetric_is_exact", &
@@ -83,15 +88,18 @@ contains
                   ]
    end subroutine collect_mqc_czt_direct_tests
 
-   subroutine setup(mol, eri, bounds, zero_h, sym, anti, err)
+   subroutine setup(mol, eri, bounds, zero_h, sym, anti, err, basis)
       !! Water in 6-31G, its integrals, and one density of each symmetry
       type(czt_molecule_t), intent(out) :: mol
       real(dp), allocatable, intent(out) :: eri(:, :, :, :), bounds(:, :)
       real(dp), allocatable, intent(out) :: zero_h(:, :), sym(:, :), anti(:, :)
       type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: basis
+         !! Another basis instead, for a test that needs shells 6-31G lacks.
 
       real(dp) :: c(3, 3)
       real(dp), allocatable :: m(:, :)
+      character(len=:), allocatable :: basis_name
       integer :: n, i, j
 
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
@@ -101,7 +109,9 @@ contains
       ! contraction, so blocks with s1 == s2 and blocks with s1 /= s2 both occur
       ! in quantity. A one-shell-per-atom basis would exercise only some of the
       ! permutation cases and could let a wrong condition pass.
-      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+      basis_name = "6-31g"
+      if (present(basis)) basis_name = basis
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis_name, mol, err)
       if (err%has_error()) return
 
       n = mol%nao
@@ -241,6 +251,157 @@ contains
       call check(error, maxval(abs(rotaxis - rys)) < 1.0e-10_dp, &
                  "the rotated-axis and Rys Fock matrices disagree")
    end subroutine test_rotaxis_fock
+
+   subroutine test_hgp_coverage(error)
+      !! `HGP_MAX_L` never sends libfint a quartet it does not cover
+      !!
+      !! The same contract as `test_rotaxis_coverage`, one shell higher: over
+      !! every (i, j, i, j) quartet of water in cc-pVTZ, a quartet the dispatch
+      !! routes that libfint refuses is an error stop inside a Fock build.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp) :: c(3, 3)
+      integer :: ish, jsh, n_on, n_off
+      logical :: ours, theirs
+
+      if (.not. HGP_AVAILABLE) then
+         call check(error, .true.)
+         return
+      end if
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.4_dp, 1.1_dp, 0.0_dp, -1.4_dp, 1.1_dp], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvtz", mol, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      n_on = 0
+      n_off = 0
+      do ish = 1, mol%nbas
+         do jsh = 1, mol%nbas
+            ours = quartet_on_hgp([ish - 1, jsh - 1, ish - 1, jsh - 1], mol%bas)
+            theirs = hgp_libfint_covers([ish - 1, jsh - 1, ish - 1, jsh - 1], mol%bas, mol%nbas)
+            if (ours .and. .not. theirs) then
+               call check(error, .false., "the dispatch routes a quartet libfint does not cover")
+               call mol%destroy()
+               return
+            end if
+            if (ours) then
+               n_on = n_on + 1
+            else
+               n_off = n_off + 1
+            end if
+         end do
+      end do
+      call check(error, n_on > 0 .and. n_off > 0, &
+                 "cc-pVTZ water must have quartets on both sides of the limit")
+      ! And the limit is one shell above the rotated-axis one: d is on the
+      ! path, f is not, so the two constants cannot silently become the same.
+      ! The f shell is found rather than assumed to be last -- shells run atom
+      ! by atom, so the last one belongs to a hydrogen.
+      if (.not. allocated(error)) then
+         block
+            integer :: n_only_hgp, n_neither
+            ! Counted rather than indexed: shells run atom by atom, so which
+            ! index carries the f shell is a property of the basis file.
+            n_only_hgp = 0
+            n_neither = 0
+            do ish = 1, mol%nbas
+               if (quartet_on_hgp([ish - 1, 0, ish - 1, 0], mol%bas) .and. &
+                   .not. quartet_on_rotaxis([ish - 1, 0, ish - 1, 0], mol%bas)) then
+                  n_only_hgp = n_only_hgp + 1
+               end if
+               if (.not. quartet_on_hgp([ish - 1, 0, ish - 1, 0], mol%bas)) then
+                  n_neither = n_neither + 1
+               end if
+            end do
+            call check(error, quartet_on_hgp([0, 0, 0, 0], mol%bas), &
+                       "the first shell of O must be routed")
+            if (.not. allocated(error)) then
+               call check(error, n_only_hgp > 0, &
+                          "the d shells must be on hgp and off rotaxis")
+            end if
+            if (.not. allocated(error)) then
+               call check(error, n_neither > 0, &
+                          "the f shell must be off both paths")
+            end if
+         end block
+      end if
+      call mol%destroy()
+   end subroutine test_hgp_coverage
+
+   subroutine test_hgp_fock(error)
+      !! The Head-Gordon-Pople and hybrid paths agree with Rys through a Fock build
+      !!
+      !! Water/6-31G* rather than 6-31G, because d is what this path adds and a
+      !! basis without one would leave the new kernels untouched. Under
+      !! `hybrid` the same molecule splits: the s/p quartets go rotated-axis
+      !! and the d-touching ones Head-Gordon-Pople, so one build covers the
+      !! branch that chooses between them. Different algorithms, so agreement
+      !! is to 1e-10 rather than bitwise.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :), rys(:, :), hgp(:, :), hybrid(:, :)
+
+      if (.not. HGP_AVAILABLE) then
+         call set_eri_path("hgp", err)
+         call check(error, err%has_error(), &
+                    "a build without the path must refuse to be asked for it")
+         return
+      end if
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err, basis="6-31g_st_")
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      allocate (rys(mol%nao, mol%nao), hgp(mol%nao, mol%nao), hybrid(mol%nao, mol%nao))
+      call set_eri_path("rys", err)
+      call build_fock_direct(mol, zero_h, sym, bounds, rys, stats, err, &
+                             screen_tol=NO_SCREENING)
+      if (.not. err%has_error()) then
+         call set_eri_path("hgp", err)
+         call check(error, eri_path_name() == "hgp", "the path did not switch")
+         if (.not. allocated(error)) then
+            call build_fock_direct(mol, zero_h, sym, bounds, hgp, stats, err, &
+                                   screen_tol=NO_SCREENING)
+         end if
+      end if
+      if (.not. err%has_error() .and. .not. allocated(error)) then
+         call set_eri_path("hybrid", err)
+         call check(error, eri_path_name() == "hybrid", "the path did not switch")
+         if (.not. allocated(error)) then
+            call build_fock_direct(mol, zero_h, sym, bounds, hybrid, stats, err, &
+                                   screen_tol=NO_SCREENING)
+         end if
+      end if
+      ! Back to the default whatever happened, for the tests after this one.
+      block
+         type(error_t) :: reset
+         call set_eri_path("rys", reset)
+      end block
+      call mol%destroy()
+      if (allocated(error)) return
+      if (err%has_error()) then
+         call check(error, .false., "a build failed: "//err%get_message())
+         return
+      end if
+
+      call check(error, maxval(abs(hgp - rys)) < 1.0e-10_dp, &
+                 "the Head-Gordon-Pople and Rys Fock matrices disagree")
+      if (.not. allocated(error)) then
+         call check(error, maxval(abs(hybrid - rys)) < 1.0e-10_dp, &
+                    "the hybrid and Rys Fock matrices disagree")
+      end if
+   end subroutine test_hgp_fock
 
    subroutine test_nosym_symmetric(error)
       !! On a symmetric density the general build reduces to the fast one

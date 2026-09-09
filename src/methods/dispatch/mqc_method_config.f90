@@ -102,8 +102,11 @@ module mqc_method_config
          !! `keywords.scf.eri_path`: which four-centre integral path the CPU
          !! backend takes. 'rys' (the default) for every quartet; 'rotaxis'
          !! for the rotated-axis McMurchie-Davidson path on s, p and L shell
-         !! quartets, Rys on the rest; 'auto' is 'rotaxis' where the build has
-         !! it. Chosen once per run, in `set_eri_path`.
+         !! quartets, Rys on the rest; 'hgp' for the Obara-Saika path with the
+         !! Head-Gordon-Pople contract-then-transfer split, which reaches d as
+         !! well; 'hybrid' for rotated-axis up to L and Head-Gordon-Pople
+         !! above it; 'auto' is 'rotaxis' where the build has it. Chosen once
+         !! per run, in `set_eri_path`.
       type(guess_step_t), allocatable :: guess_steps(:)
          !! The basis ladder for 'basis_set_projection', one entry per
          !! preliminary SCF in order. The target basis is the model's and is not

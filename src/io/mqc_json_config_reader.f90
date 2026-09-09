@@ -782,11 +782,11 @@ contains
       end do
 
       select case (lowered)
-      case ("rys", "rotaxis", "auto")
+      case ("rys", "rotaxis", "hgp", "hybrid", "auto")
          config%scf_eri_path = lowered
       case default
          call error%set(ERROR_VALIDATION, "unknown keywords.scf.eri_path '"//trim(text)// &
-                        "'. Accepted: rys, rotaxis, auto")
+                        "'. Accepted: rys, rotaxis, hgp, hybrid, auto")
       end select
    end subroutine read_scf_eri_path
 
