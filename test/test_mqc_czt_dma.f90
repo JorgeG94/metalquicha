@@ -330,21 +330,33 @@ contains
       logical :: ok
       real(dp) :: worst
 
-      saved = omp_get_max_threads()
+      ! `!$` on every OpenMP line, not just the `use`. The import at the top of
+      ! this module is already conditional, so a build without OpenMP was
+      ! leaving these calls with nothing to resolve against -- gfortran reports
+      ! it as `omp_get_max_threads` having no implicit type, which does not
+      ! sound like a missing `use` and did not show up until MQC_ENABLE_SERIAL
+      ! made a build without OpenMP possible.
+      !
+      ! `saved` starting at 1 is what carries the no-OpenMP case: the early
+      ! return below is then the path taken, which is the right answer, because
+      ! a test that compares one thread against many has nothing to say when
+      ! there is only ever one.
+      saved = 1
+!$    saved = omp_get_max_threads()
       if (saved < 2) then
          ! Nothing to compare against; not a failure, just no information.
          return
       end if
 
-      call omp_set_num_threads(1)
+!$    call omp_set_num_threads(1)
       call dimer_multipoles(one, nelec, err, ok)
       call check(error, ok, "the single-threaded reference failed")
       if (allocated(error)) then
-         call omp_set_num_threads(saved)
+!$       call omp_set_num_threads(saved)
          return
       end if
 
-      call omp_set_num_threads(saved)
+!$    call omp_set_num_threads(saved)
       call dimer_multipoles(many, nelec, err, ok)
       call check(error, ok, "the threaded run failed: "//err%get_message())
       if (allocated(error)) return
