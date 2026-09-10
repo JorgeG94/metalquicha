@@ -205,13 +205,13 @@ Print debug information about GMBE intersections</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1018,18 +1018,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1082.14,-135.75C1036.48,-132.13 946.25,-124.98 891.36,-120.63"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="891.45,-117.13 881.2,-119.83 890.9,-124.11 891.45,-117.13"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_gmbe_utils~~UsedByGraph_node21" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node21"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1150.5,-108 1072.5,-108 1072.5,-84 1150.5,-84 1150.5,-108"/>
 <text text-anchor="middle" x="1111.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_gmbe_utils~~UsedByGraph_edge14" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1072.25,-99.03C1024.38,-102.82 942.47,-109.32 891.31,-113.37"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="890.88,-109.89 881.19,-114.17 891.44,-116.87 890.88,-109.89"/>
 </g>
@@ -1383,7 +1383,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~22"></span>
+              <span class="anchor" id="variable-n_atoms~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1434,7 +1434,7 @@ polymer(:) contains base fragment indices (1-based)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~43"></span>
+              <span class="anchor" id="variable-sys_geom~35"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1494,7 +1494,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~21"></span>
+              <span class="anchor" id="variable-n_atoms~18"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1534,7 +1534,7 @@ polymer(:) contains base fragment indices (1-based)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~41"></span>
+              <span class="anchor" id="variable-sys_geom~33"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1549,7 +1549,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~8"></span>
+              <span class="anchor" id="variable-monomers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1594,7 +1594,7 @@ polymer(:) contains base fragment indices (1-based)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~2"></span>
+              <span class="anchor" id="variable-max_intersection_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1695,7 +1695,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~44"></span>
+              <span class="anchor" id="variable-sys_geom~36"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1740,7 +1740,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1840,7 +1840,7 @@ This works with dynamically generated polymers, not just base fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~45"></span>
+              <span class="anchor" id="variable-sys_geom~37"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1960,7 +1960,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~78"></span>
+              <span class="anchor" id="variable-error~64"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2075,7 +2075,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2090,7 +2090,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2160,7 +2160,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~46"></span>
+              <span class="anchor" id="variable-sys_geom~38"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2175,7 +2175,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~6"></span>
+              <span class="anchor" id="variable-current_log_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2495,7 +2495,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~7"></span>
+              <span class="anchor" id="variable-coefficients~3"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -2540,7 +2540,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~79"></span>
+              <span class="anchor" id="variable-error~65"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2726,7 +2726,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~42"></span>
+              <span class="anchor" id="variable-sys_geom~34"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2741,7 +2741,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~9"></span>
+              <span class="anchor" id="variable-monomers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2771,7 +2771,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~17"></span>
+              <span class="anchor" id="variable-k~25"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2946,7 +2946,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~19"></span>
+              <span class="anchor" id="variable-k~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3091,7 +3091,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~8"></span>
+              <span class="anchor" id="variable-coefficients~4"></span>
               integer,
             </td>
 <td>intent(inout),</td>
@@ -3136,7 +3136,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~80"></span>
+              <span class="anchor" id="variable-error~66"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3294,7 +3294,7 @@ max_k_level limits the maximum intersection order to prevent combinatorial explo
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-08 13:55 +0000             </p>
+ on 2026-09-10 07:58 +0000             </p>
           </div>
         </div>
         <br>
