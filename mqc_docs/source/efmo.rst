@@ -1,11 +1,15 @@
 Effective Fragment Molecular Orbitals (EFMO)
 ============================================
 
-EFMO computes a cluster's energy as in-vacuo fragments and near dimers, effective
+EFMO computes a cluster's energy as in-vacuo fragments and near groups, effective
 fragment potentials for the far pairs, and one many-body induction over every
 fragment at once. Each fragment's potential is built on the fly by MAKEFP, from
 the very SCF that supplies the fragment's own energy, so a run needs no ``.efp``
 files and no second calculation.
+
+The near half runs to **any many-body order** -- ``keywords.fragmentation.level``,
+default 2, which is EFMO as published and as GAMESS runs it. See
+*Beyond pairs* below.
 
 The method is Steinmann, Fedorov and Jensen, *J. Phys. Chem. A* **114**, 8705
 (2010), in the form of Sattasathuchana *et al.*, *J. Chem. Theory Comput.* **20**,
@@ -13,6 +17,17 @@ The method is Steinmann, Fedorov and Jensen, *J. Phys. Chem. A* **114**, 8705
 
 The energy
 ----------
+
+.. math::
+
+   E = \sum_{S\ {\rm near},\ |S| \le n}
+         \left( \Delta E_S^0 - \Delta E_S^{\rm pol} \right)
+     + \sum_{I<J,\ R_{IJ} > R_{\rm cut}}
+         \left( E_{IJ}^{\rm Coul} + E_{IJ}^{\rm disp}
+              + E_{IJ}^{\rm ExRep} + E_{IJ}^{\rm CT} \right)
+     + E_{\rm pol}^{\rm total}
+
+At the default level :math:`n = 2` that is eq 6 of the paper written out,
 
 .. math::
 
@@ -24,19 +39,35 @@ The energy
               + E_{IJ}^{\rm ExRep} + E_{IJ}^{\rm CT} \right)
      + E_{\rm pol}^{\rm total}
 
-:math:`E_I^0` and :math:`E_{IJ}^0` are **in vacuo**: no embedding field, no
-monomer self-consistency. That is what separates EFMO from FMO, and it is what
-lets diffuse basis sets work -- there is no neighbouring point charge for a
-diffuse function to collapse onto.
+because :math:`\Delta E_I^0 = E_I^0`, :math:`\Delta E_{IJ}^0 = E_{IJ}^0 - E_I^0 -
+E_J^0`, :math:`\Delta E_I^{\rm pol} = 0` and :math:`\Delta E_{IJ}^{\rm pol} =
+E_{IJ}^{\rm pol}`.
 
-:math:`E_{IJ}^{\rm pol}` is the induction energy of the isolated pair
-:math:`IJ`. Every quantum dimer already contains its two fragments' mutual
-induction, and :math:`E_{\rm pol}^{\rm total}` -- the induction solved over every
-fragment together -- contains it again, so one copy is removed. What is left,
-:math:`E_{\rm pol}^{\rm total} - \sum_{IJ} E_{IJ}^{\rm pol}`, is the *many-body*
-part of the induction and is **not small**: for three waters at four angstrom it
-is 44 per cent of the total. The energy is quadratic in the field, and the square
-of a sum keeps cross terms no pair has.
+:math:`E_S^0` is **in vacuo**: no embedding field, no monomer
+self-consistency. That is what separates EFMO from FMO, and it is what lets
+diffuse basis sets work -- there is no neighbouring point charge for a diffuse
+function to collapse onto.
+
+.. note::
+
+   **Mutually polarized QM/EFP embedding is a separate method, not planned as
+   part of this one.** Solving a fragment's SCF in the field of the other
+   fragments' potentials, with the induction inside the SCF, makes a group's
+   energy depend on its environment -- so the many-body differences below stop
+   telescoping and the level = N identity stops holding. Nothing in this page
+   embeds anything; every SCF an EFMO run performs is on an isolated group of
+   fragments.
+
+:math:`E_S^{\rm pol}` is the induction energy of the isolated group :math:`S`
+-- at :math:`|S| = 2` the isolated pair. Every quantum group already contains its
+own fragments' mutual induction, and :math:`E_{\rm pol}^{\rm total}` -- the
+induction solved over every fragment together -- contains it again, so one copy is
+removed. What is left,
+:math:`E_{\rm pol}^{\rm total} - \sum_S \Delta E_S^{\rm pol}`, is the induction
+the truncated expansion does not reach, and at level two it is **not small**: for
+three waters at four angstrom it is 44 per cent of the total. The energy is
+quadratic in the field, and the square of a sum keeps cross terms no pair has. At
+level = N it is zero, exactly, and that is a test rather than a coincidence.
 
 The cutoff
 ----------
@@ -62,6 +93,117 @@ FMO's ``resppc`` measured the same way, deciding a different question.
 
 A value at or below zero is refused: it would leave no pair quantum mechanical at
 all, which is EFP with in-vacuo monomers rather than the method the deck asked for.
+
+Beyond pairs
+------------
+
+``keywords.fragmentation.level`` -- the same key MBE and FMO read; there is no
+EFMO-specific level -- truncates the many-body expansion of the near groups.
+Default 2. Level 1 is the fragment sum alone; the fragment count is exact.
+
+**Both series are differenced, and that is the whole of the generalization.**
+:math:`\Delta E_S^0` is the many-body difference of the in-vacuo energies of
+:math:`S` and its subsets, exactly what FMO's expansion already does.
+:math:`\Delta E_S^{\rm pol}` is the *same* difference applied to
+:math:`E_S^{\rm pol}`, the induction energy of that group's own effective
+fragment potentials -- the existing induction solver, same screening and same
+convergence, run on the group's fragments instead of on a pair. So at level
+three
+
+.. math::
+
+   \Delta E_{IJK}^{\rm pol} = E_{IJK}^{\rm pol} - E_{IJ}^{\rm pol}
+                            - E_{IK}^{\rm pol} - E_{JK}^{\rm pol},
+
+the non-additive remainder. Nothing in the expansion was ever two-body
+specific: no group's Hamiltonian depends on its environment, so the differences
+telescope exactly. GAMESS stops at two because ``efmo.src`` enumerates the
+levels by hand, not because the method does.
+
+**A group is near only if every pair inside it is near.** Not a convention: the
+far half of the energy is pairwise by construction -- electrostatics, exchange
+repulsion, dispersion and charge transfer are all two-body, and the induction is
+already all orders in :math:`E_{\rm pol}^{\rm total}` -- so there is **no far
+n-body term**, and a group holding a far pair would count that pair twice, once
+inside its own SCF and once in the effective-fragment sum. The criterion is also
+inherited by subsets, which is what makes the filtered group list one the
+difference operator can be applied to at all: every subset of an all-near group
+is all-near, so every group's share is actually subtracted.
+
+**Level = N with a huge cutoff is the unfragmented calculation.** Two series
+telescope at once: the in-vacuo one to the supersystem's own SCF energy, and the
+induction one to :math:`E_{\rm pol}^{\rm total}`, which therefore cancels the
+last term of the expression **entirely**. Nothing is left of the polarization
+correction and the answer is one RHF energy. That is the sharpest available check
+on the subset-induction bookkeeping -- a wrong sign, a missing group or a group
+induction solved over the wrong fragments all survive the level-two limits and
+break it -- and it is asserted in ``test/test_mqc_czt_efmo.f90`` and pinned as a
+validation case.
+
+**The cost is the binomial and nothing else**, so a raised level is not a small
+change: there are :math:`\binom{N}{n}` groups of size :math:`n` before the
+cutoff thins them, which on twenty fragments is up to 1140 SCFs at level three
+against 190 at level two. No level is refused, and a run at level three or above
+logs both the enumerated count and the count the cutoff kept before it computes
+any of them.
+
+Measured on the water prism, RHF/6-31G, :math:`R_{\rm cut} = 2.0` -- where the
+cutoff keeps every pair, so each level is the *complete* expansion at that order
+-- against the unfragmented RHF energy of the same cluster,
+-456.007613510775 Hartree:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 14 26 26 24
+
+   * - level
+     - near groups
+     - total / Hartree
+     - error / Hartree
+     - error per fragment
+   * - 2
+     - 15
+     - -456.005523966192
+     - 2.09e-3
+     - 0.219 kcal/mol
+   * - 3
+     - 35
+     - -456.007038360748
+     - 5.75e-4
+     - 0.060 kcal/mol
+   * - 4
+     - 50
+     - -456.007692948772
+     - -7.94e-5
+     - -0.008 kcal/mol
+   * - 5
+     - 56
+     - -456.007611814554
+     - 1.70e-6
+     - 0.0002 kcal/mol
+   * - 6
+     - 57
+     - -456.007613510751
+     - 2.4e-11
+     - 0
+   * - unfragmented
+     - --
+     - -456.007613510775
+     - --
+     - --
+
+Level six is the fragment count, so the expansion is exact and the 2.4e-11
+residual is accumulated SCF convergence over 57 groups and nothing else.
+
+**A raised level is not unconditionally better, and one case here shows it.**
+The same prism at :math:`R_{\rm cut} = 1.0` gives 0.359 kcal/mol per fragment at
+level 2 and 0.583 at level 3 -- *worse*. The reason is the near criterion, not
+the expansion: at that cutoff six of the fifteen pairs are effective, so only two
+of the twenty triples have all three of their pairs near and the three-body
+correction that gets added is two terms out of twenty. An expansion truncated
+*and* filtered is not variational in the level. Raise the cutoff along with the
+level, or read the level as a refinement of the quantum region rather than of the
+whole cluster.
 
 Running one
 -----------
@@ -103,6 +245,12 @@ Keywords
    * - ``keywords.fragmentation.method``
      - --
      - ``"efmo"`` selects this method. Required.
+   * - ``keywords.fragmentation.level``
+     - ``2``
+     - How far the many-body expansion of the near groups runs; see *Beyond
+       pairs*. The same key MBE and FMO read, and defaulted to 2 here rather
+       than to the shared default of 1, which for EFMO would drop every near
+       pair. A level below 1 is refused; a high one is warned about and run.
    * - ``keywords.fragmentation.rcut``
      - ``2.0``
      - :math:`R_{\rm cut}`, unitless. Sits here rather than under ``efmo``
@@ -197,7 +345,9 @@ Running it on several ranks
 
    mpirun -np 4 ./mqc efmo_prism.json
 
-The monomers and the quantum dimers are handed out round robin. **The balance
+The monomers and the quantum groups are handed out round robin -- one flat task
+list whatever the level, so the trimers and above distribute exactly as the pairs
+do. **The balance
 is struck on the monomers**, because a monomer is a MAKEFP -- an SCF, a
 localization and twelve frequency-dependent response solves -- against one SCF
 for a dimer. Every rank then needs every fragment's potential, since the far
@@ -221,27 +371,32 @@ Output
 ------
 
 The log carries a table of every :math:`E_I^0`, every pair with its
-:math:`R_{IJ}` and its class, and the eight sums. The JSON output repeats the sums
+:math:`R_{IJ}` and its class, one row per many-body level, and the eight sums. The JSON output repeats the sums
 under ``efmo``, with the pair counts:
 
 .. code-block:: json
 
    "efmo": {
      "monomer_sum": -455.897884059762,
-     "qm_dimer_correction": -0.094501684825,
-     "pair_polarization": -0.013350304484,
+     "qm_nmer_correction": -0.094501684825,
+     "induction_correction": -0.013350304484,
      "efp_electrostatics": 0.0,
      "efp_dispersion": 0.0,
      "efp_exchange_repulsion": 0.0,
      "efp_charge_transfer": 0.0,
      "polarization_total": -0.026488526089,
      "qm_dimers": 15,
-     "efp_dimers": 0
+     "efp_dimers": 0,
+     "qm_groups": 15
    }
 
-``pair_polarization`` is reported with the sign it has as a sum and is
-**subtracted** from the total, so that it can be compared against another code's
-pair induction directly.
+``qm_nmer_correction`` is :math:`\sum_S \Delta E_S^0` over the near groups of two
+or more fragments -- at level two the dimer corrections. ``induction_correction``
+is :math:`\sum_S \Delta E_S^{\rm pol}`, and is reported with the sign it has as a
+sum while being **subtracted** from the total, so that it can be compared against
+another code's pair induction directly. ``qm_groups`` counts the near groups and
+equals ``qm_dimers`` at level two; the log carries the same sums split per level,
+which is what says whether a raised level was worth its binomial.
 
 Against GAMESS
 --------------
@@ -341,6 +496,10 @@ What is not here yet
   different density; refused by name. So is coupled cluster, and so is
   spin-component-scaled MP2, which would be a different method from the one
   the paper runs.
+* **Mutually polarized QM/EFP embedding.** A separate method rather than a
+  missing feature: it puts the induction inside each group's SCF, which makes a
+  group's energy depend on its environment and stops the many-body differences
+  telescoping. Nothing in EFMO as implemented here embeds anything.
 * **Whole molecules only.** A partition that cuts a covalent bond is refused: a
   hydrogen cap's multipoles would act on the partner across the cut, and the
   adjusted frozen orbital route FMO uses is not wired in here.
