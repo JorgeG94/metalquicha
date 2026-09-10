@@ -470,6 +470,14 @@ module mqc_config_types
 
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.
+      logical :: frag_level_set = .false.
+         !! Whether `keywords.fragmentation.level` was written in the deck at
+         !! all. `frag_level` carries a default either way, which loses the
+         !! difference between "the user did not say" and "the user asked for
+         !! exactly the default" -- and EFMO needs it, because its own default
+         !! level is two while the shared `DEFAULT_FRAG_LEVEL` is one. A deck
+         !! that says nothing gets each method's own default rather than
+         !! whichever one the shared constant happens to hold.
       integer :: frag_level = DEFAULT_FRAG_LEVEL
          !! Which expansion runs. `keywords.fragmentation.method` is the only
          !! input: `allow_overlapping_fragments` and `expansion` were two more

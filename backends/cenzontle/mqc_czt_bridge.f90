@@ -639,11 +639,12 @@ contains
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
-                           fragment_charges, basis_name, rcut, charge_transfer, &
+                           fragment_charges, basis_name, rcut, level, charge_transfer, &
                            induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
-                           error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
+                           n_qm_groups, error, verbose, aux_basis, vdwscl, &
+                           quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
                            correlation, corr_aux_basis, freeze_core, n_frozen_core, &
@@ -656,10 +657,10 @@ contains
       !! numbered from one with no gaps; `fragment_charges(k)` is fragment k's
       !! net charge.
       !!
-      !! `terms` comes back ordered by `EFMO_TERM_NAMES` -- the six sums of eq
-      !! 6 with the far half reported term by term -- and `energy` is their
-      !! combination with `pair_polarization` subtracted, as `run_efmo` assembles
-      !! it rather than as this routine re-adds it.
+      !! `terms` comes back ordered by `EFMO_TERM_NAMES` -- the sums of the
+      !! energy expression with the far half reported term by term -- and
+      !! `energy` is their combination with `induction_correction` subtracted,
+      !! as `run_efmo` assembles it rather than as this routine re-adds it.
       use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo
       use mqc_program_limits, only: N_EFMO_TERMS
       use pic_mpi_lib, only: comm_t
@@ -673,6 +674,9 @@ contains
       character(len=*), intent(in) :: basis_name
       real(dp), intent(in) :: rcut
          !! `R_cut` of eq 2, unitless. See `efmo_config_t`.
+      integer, intent(in) :: level
+         !! `keywords.fragmentation.level`: how far the many-body expansion of
+         !! the near groups runs. Two is EFMO as published.
       logical, intent(in) :: charge_transfer
       real(dp), intent(in) :: induction_damping
          !! `a` of the Tang-Toennies-like factor that damps every induction
@@ -688,6 +692,9 @@ contains
       real(dp), intent(out) :: energy
       real(dp), intent(out) :: terms(N_EFMO_TERMS)
       integer, intent(out) :: n_qm_pairs, n_efp_pairs
+      integer, intent(out) :: n_qm_groups
+         !! Near groups of two or more fragments -- the SCFs the near half
+         !! cost. Equal to `n_qm_pairs` at level two.
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: verbose
       character(len=*), intent(in), optional :: aux_basis
@@ -723,6 +730,7 @@ contains
       terms = 0.0_dp
       n_qm_pairs = 0
       n_efp_pairs = 0
+      n_qm_groups = 0
 
       allocate (symbols(size(atomic_numbers)))
       do i = 1, size(atomic_numbers)
@@ -731,6 +739,7 @@ contains
 
       opts%basis = basis_name
       opts%rcut = rcut
+      opts%level = level
       opts%charge_transfer = charge_transfer
       opts%induction_damping = induction_damping
       opts%scf = scf_drive
@@ -763,11 +772,12 @@ contains
       if (error%has_error()) return
 
       energy = res%energy
-      terms = [res%monomer_sum, res%dimer_correction, res%pair_polarization, &
+      terms = [res%monomer_sum, res%nmer_correction, res%induction_correction, &
                res%far_electrostatics, res%far_dispersion, res%far_exchange_repulsion, &
                res%far_charge_transfer, res%polarization_total]
       n_qm_pairs = res%n_qm_pairs
       n_efp_pairs = res%n_efp_pairs
+      n_qm_groups = res%n_qm_groups
    end subroutine run_czt_efmo
 
    subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)

@@ -18,6 +18,7 @@ module test_mqc_json_reader
                                METHOD_TYPE_MCSCF
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       DEFAULT_FRAG_LEVEL, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -60,6 +61,8 @@ contains
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
+                  new_unittest("fragmentation_level_records_being_named", &
+                               test_frag_level_named), &
                   new_unittest("bond_breaking_defaults", test_bond_breaking_defaults), &
                   new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
                   new_unittest("df_without_aux_fails", test_df_without_aux), &
@@ -764,7 +767,51 @@ contains
       call check(error, config%cutoff_method, "distance")
       if (allocated(error)) return
       call check(error, config%distance_metric, "min")
+      if (allocated(error)) return
+      call check(error, config%frag_level_set, &
+                 "a deck that writes the level should record having written it")
    end subroutine test_fragmentation
+
+   subroutine test_frag_level_named(error)
+      !! A silent deck leaves the level unset, and that is not the same as one
+      !!
+      !! `frag_level` carries a default whether or not the deck names it, which
+      !! loses the difference between "the user did not say" and "the user asked
+      !! for exactly the default". EFMO needs it: its own default level is two
+      !! while the shared `DEFAULT_FRAG_LEVEL` is one, and treating a silent
+      !! deck as level one would drop every near pair from an EFMO energy. So
+      !! the flag is asserted in both directions, including that asking for
+      !! exactly the default still reads as *named*.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%frag_level_set, &
+                 "a deck that never wrote the level should not claim it did")
+      if (allocated(error)) return
+      call check(error, config%frag_level, DEFAULT_FRAG_LEVEL)
+      if (allocated(error)) return
+
+      ! And the value the shared default already holds, written out, still
+      ! counts as named -- which is the case a `value /= default` test would get
+      ! wrong.
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE", "level": 1}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%frag_level_set, &
+                 "writing the shared default explicitly should still read as named")
+      if (allocated(error)) return
+      call check(error, config%frag_level, 1)
+   end subroutine test_frag_level_named
 
    subroutine test_bond_breaking_defaults(error)
       !! A deck that names neither key keeps the behaviour this program had

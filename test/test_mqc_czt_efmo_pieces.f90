@@ -26,9 +26,9 @@ module test_mqc_czt_efmo_pieces
    use mqc_czt_efp_convert, only: potential_to_fragment
    use mqc_czt_efp_energy, only: efp_energy_t, efp_interaction_energy, &
                                  efp_pair_energy_t, efp_pair_terms, &
-                                 pair_polarization_energy
+                                 pair_polarization_energy, subset_polarization_energy
    use mqc_czt_efmo_pairs, only: efmo_pair_distance, efmo_split_pairs, &
-                                 vdw_scaled_distance
+                                 vdw_scaled_distance, efmo_near_subsets
    use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, &
                                       polarization_energy, induction_damping_factor
    use mqc_czt_efp_serialize, only: EFP_HEADER_INTS, fragment_header, &
@@ -84,7 +84,11 @@ contains
                   new_unittest("efmo_induction_damping_is_the_same_in_pair_and_total", &
                                test_induction_damping), &
                   new_unittest("efmo_fragment_survives_a_flat_buffer_round_trip", &
-                               test_serialize) &
+                               test_serialize), &
+                  new_unittest("efmo_near_subsets_are_all_near_ordered_and_closed", &
+                               test_near_subsets), &
+                  new_unittest("efmo_subset_induction_is_the_pair_solver_generalized", &
+                               test_subset_induction) &
                   ]
    end subroutine collect_mqc_czt_efmo_pieces_tests
 
@@ -879,6 +883,205 @@ contains
          end do
       end do
    end function three_pair_sum
+
+   subroutine test_near_subsets(error)
+      !! The group enumerator, its every-pair-near criterion, and its ordering
+      !!
+      !! **The one decision the general EFMO energy adds.** Above two fragments
+      !! a group is solved quantum mechanically only if *every* pair inside it
+      !! is within the cutoff. That is forced rather than chosen: the
+      !! effective-fragment half of the energy is pairwise -- electrostatics,
+      !! exchange repulsion, dispersion and charge transfer are two-body terms,
+      !! and induction is already all orders in `E_pol^total` -- so there is no
+      !! far n-body term for a group holding a far pair to correct, and
+      !! enumerating it would count that pair twice.
+      !!
+      !! Four fragments, mutually near except the pair 3-4, so the criterion has
+      !! something to exclude at every size:
+      !!
+      !!   * level 1: four singles, whatever the cutoff.
+      !!   * level 2: five pairs of the six, 3-4 being far.
+      !!   * level 3: two triples of the four -- 1-3-4 and 2-3-4 both hold 3-4.
+      !!   * level 4: none, the whole set holding it too.
+      !!
+      !! Also asserted: **subset closure**, which the many-body difference needs
+      !! of a filtered group list -- every proper subset of a listed group has
+      !! to be listed, or its share is never subtracted -- and the size-then-
+      !! lexicographic ordering, which is what makes a subset final before
+      !! anything containing it is reduced. No geometry and no SCF: the
+      !! separations are written down.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: RCUT = 2.0_dp
+      type(error_t) :: err
+      real(dp) :: r(4, 4)
+      integer, allocatable :: terms(:, :), term_size(:), dropped(:)
+      integer :: n_terms, t, u, a, b, m
+      logical :: found
+
+      r = 1.0_dp
+      do a = 1, 4
+         r(a, a) = 0.0_dp
+      end do
+      r(3, 4) = 5.0_dp
+      r(4, 3) = 5.0_dp
+
+      call efmo_near_subsets(r, RCUT, 1, terms, term_size, n_terms, err)
+      call check(error,.not. err%has_error(), "the enumerator failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_terms, 4, message="level one is not the four fragments")
+      if (allocated(error)) return
+
+      call efmo_near_subsets(r, RCUT, 2, terms, term_size, n_terms, err)
+      call check(error, n_terms, 9, &
+                 message="level two is not four singles and the five near pairs")
+      if (allocated(error)) return
+
+      call efmo_near_subsets(r, RCUT, 3, terms, term_size, n_terms, err)
+      call check(error, n_terms, 11, &
+                 message="level three is not level two plus the two all-near triples")
+      if (allocated(error)) return
+      call check(error, count(term_size(1:n_terms) == 3), 2, &
+                 message="a triple holding the far pair was enumerated")
+      if (allocated(error)) return
+
+      call efmo_near_subsets(r, RCUT, 4, terms, term_size, n_terms, err)
+      call check(error, n_terms, 11, &
+                 message="the whole set holds the far pair and must not be enumerated")
+      if (allocated(error)) return
+
+      ! Every enumerated group is all-near, and every proper subset of it is
+      ! itself enumerated.
+      do t = 1, n_terms
+         m = term_size(t)
+         do a = 1, m - 1
+            do b = a + 1, m
+               call check(error, r(terms(a, t), terms(b, t)) <= RCUT, &
+                          "an enumerated group holds a far pair")
+               if (allocated(error)) return
+            end do
+         end do
+         if (m < 2) cycle
+         do a = 1, m
+            ! The group with member `a` dropped has to be in the list. Dropping
+            ! one member at a time is enough: closure under that step gives
+            ! closure under every subset by induction on the size.
+            dropped = pack(terms(1:m, t), [(b /= a, b=1, m)])
+            found = .false.
+            do u = 1, n_terms
+               if (term_size(u) /= m - 1) cycle
+               if (all(terms(1:m - 1, u) == dropped)) found = .true.
+            end do
+            call check(error, found, "a proper subset of an enumerated group is "// &
+                       "missing, so its share is never subtracted")
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! Sizes ascend, and within a size the members ascend lexicographically.
+      do t = 2, n_terms
+         call check(error, term_size(t) >= term_size(t - 1), &
+                    "the groups are not ordered smallest first, so a subset can be "// &
+                    "reduced after the group containing it")
+         if (allocated(error)) return
+      end do
+      do t = 1, n_terms
+         do a = 2, term_size(t)
+            call check(error, terms(a, t) > terms(a - 1, t), &
+                       "a group's members are not ascending")
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! With nothing far, the criterion excludes nothing and the count is the
+      ! full subset lattice: 4 + 6 + 4 + 1.
+      r = 1.0_dp
+      call efmo_near_subsets(r, RCUT, 4, terms, term_size, n_terms, err)
+      call check(error, n_terms, 15, &
+                 message="with every pair near, level four is not every subset")
+      if (allocated(error)) return
+
+      ! And a level below one is refused rather than silently treated as one:
+      ! there is no expansion at all below the fragment sum.
+      call efmo_near_subsets(r, RCUT, 0, terms, term_size, n_terms, err)
+      call check(error, err%has_error(), "a level of zero was accepted")
+      if (err%has_error()) call err%clear()
+   end subroutine test_near_subsets
+
+   subroutine test_subset_induction(error)
+      !! The subset induction solver: the pair case exactly, and a telescoping series
+      !!
+      !! **What generalizing EFMO past pairs needs of the EFP side**, and it
+      !! needs nothing new: `subset_polarization_energy` is the same solver on
+      !! the same kind of system with a different number of fragments loaded.
+      !! Two things have to hold.
+      !!
+      !!   * On two fragments it is `pair_polarization_energy` **to the last
+      !!     bit**, so no reference pinned at level two can move.
+      !!   * The many-body series over the subsets of a trimer sums to the
+      !!     induction over all three at once, to the solver's own 1e-12: the
+      !!     pair terms cancel between the two-body and three-body entries and
+      !!     what is left is the three-fragment solve. That identity is what
+      !!     makes the whole polarization correction cancel at full level, and
+      !!     it is asserted here with no SCF anywhere near it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: frags(3)
+      type(error_t) :: err
+      real(dp) :: shifts(3, 3), series, three_body, total, pair, subset
+      integer :: a, b
+
+      call water_fragment(frags(1), err)
+      call water_fragment(frags(2), err)
+      call water_fragment(frags(3), err)
+      call check(error,.not. err%has_error(), "building the fragments failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      ! A triangle, close enough that the three-body induction is not noise.
+      shifts = 0.0_dp
+      shifts(:, 2) = [3.0_dp*ANG, 0.0_dp, 0.0_dp]
+      shifts(:, 3) = [1.5_dp*ANG, 2.6_dp*ANG, 0.0_dp]
+
+      pair = pair_polarization_energy(frags(1), frags(2), shifts(:, 1), shifts(:, 2), err)
+      subset = subset_polarization_energy(frags, shifts, [1, 2], err)
+      call check(error,.not. err%has_error(), "a pair induction failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, subset, pair, thr=0.0_dp, &
+                 message="the subset solver on two fragments is not exactly the pair "// &
+                 "solver, so a level-two energy would move")
+      if (allocated(error)) return
+
+      ! One fragment induces nothing, which is what makes the level-one term of
+      ! the series vanish rather than have to be subtracted away.
+      call check(error, subset_polarization_energy(frags, shifts, [2], err), 0.0_dp, &
+                 thr=0.0_dp, message="a single fragment was given an induction energy")
+      if (allocated(error)) return
+
+      series = 0.0_dp
+      three_body = subset_polarization_energy(frags, shifts, [1, 2, 3], err)
+      do a = 1, 2
+         do b = a + 1, 3
+            series = series + subset_polarization_energy(frags, shifts, [a, b], err)
+            three_body = three_body &
+                         - subset_polarization_energy(frags, shifts, [a, b], err)
+         end do
+      end do
+      total = subset_polarization_energy(frags, shifts, [1, 2, 3], err)
+      call check(error,.not. err%has_error(), "an induction solve failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, series + three_body, total, thr=1.0e-12_dp, &
+                 message="the induction expansion does not telescope to the "// &
+                 "three-fragment induction")
+      if (allocated(error)) return
+      call check(error, abs(three_body) > 1.0e-6_dp, &
+                 "the non-additive induction vanished at this geometry, so the "// &
+                 "telescoping cannot be told from three zeros")
+   end subroutine test_subset_induction
 
    subroutine test_split(error)
       !! `R_IJ` and the cutoff it decides, at a geometry worked out by hand

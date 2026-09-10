@@ -533,7 +533,8 @@ contains
 
       call require_string(json, "keywords.fragmentation.method", config%frag_method, error)
       if (error%has_error()) return
-      call optional_int(json, "keywords.fragmentation.level", config%frag_level)
+      call optional_int(json, "keywords.fragmentation.level", config%frag_level, &
+                        was_named=config%frag_level_set)
       call optional_int(json, "keywords.fragmentation.max_intersection_level", &
                         config%max_intersection_level)
       call optional_string(json, "keywords.fragmentation.counterpoise", config%counterpoise)
@@ -1548,17 +1549,23 @@ contains
       if (found .and. allocated(text)) value = text
    end subroutine optional_string
 
-   subroutine optional_int(json, path, value)
+   subroutine optional_int(json, path, value, was_named)
       !! Fetch an integer if present, leaving `value` at its default otherwise
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: path
       integer, intent(inout) :: value
+      logical, intent(out), optional :: was_named
+         !! Whether the deck wrote the key at all. A default left in place is
+         !! indistinguishable from a value that happens to equal it, and a
+         !! reader whose two consumers have different defaults -- as MBE and
+         !! EFMO do for the fragmentation level -- needs the difference.
 
       integer :: found_value
       logical :: found
 
       call json%get(path, found_value, found)
       if (found) value = found_value
+      if (present(was_named)) was_named = found
    end subroutine optional_int
 
    subroutine named(json, path, was_named)

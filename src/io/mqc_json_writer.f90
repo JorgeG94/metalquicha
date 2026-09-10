@@ -910,6 +910,7 @@ contains
       end do
       call json%add(efmo_obj, "qm_dimers", data%efmo_qm_dimers)
       call json%add(efmo_obj, "efp_dimers", data%efmo_efp_dimers)
+      call json%add(efmo_obj, "qm_groups", data%efmo_qm_groups)
    end subroutine write_efmo_section
 
    subroutine write_sapt_section(json, parent, data)
