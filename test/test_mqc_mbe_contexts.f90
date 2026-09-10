@@ -111,13 +111,19 @@ contains
       !!
       !! `init` copies the whole `method_config`, whose `basis_set` is where a
       !! deck's basis lands -- and leaves `context%basis`, which is what the FMO
-      !! run actually reads, at the type's default of 6-31g. The driver bridges
-      !! them by hand, one line after the `init` call, and any other caller
-      !! that forgets gets an FMO in 6-31g that converges and reports a number.
+      !! run actually reads, empty. The driver bridges them by hand, one line
+      !! after the `init` call.
       !!
-      !! This test does not assert that they agree, because they do not. It
-      !! pins the shape as it is, so that a change making `init` carry the
-      !! basis through breaks here and gets noticed, rather than silently
+      !! **A caller that forgets is now refused rather than answered.** That
+      !! field used to start at "6-31g", so a forgotten copy gave an FMO in a
+      !! basis nobody asked for, which converged and reported a number; it is
+      !! empty now and `run_serial` says so. The initialiser was dead either
+      !! way -- every real caller overwrites it, and a deck that omits
+      !! `model.basis` gets "sto-3g" from `mqc_method_config`, never 6-31G.
+      !!
+      !! This test does not assert that the two fields agree, because they do
+      !! not. It pins the shape as it is, so that a change making `init` carry
+      !! the basis through breaks here and gets noticed, rather than silently
       !! double-setting a field the driver is already setting.
       type(error_type), allocatable, intent(out) :: error
 
@@ -130,7 +136,7 @@ contains
       call check(error, trim(context%method_config%basis_set) == "cc-pvdz", &
                  "init did not copy the method configuration")
       if (allocated(error)) return
-      call check(error, trim(context%basis) == "6-31g", &
+      call check(error, len_trim(context%basis) == 0, &
                  "init now sets the context basis; the driver's copy of that "// &
                  "line is redundant and this test should say so")
       if (allocated(error)) return

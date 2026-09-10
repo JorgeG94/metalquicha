@@ -128,10 +128,14 @@ contains
       call logger%info("== "//label)
 
       call water_geometry(2, push, z, symbols, coords, owner)
+      ! Set before the supermolecular reference is computed, not after: that
+      ! call takes the basis from `opts`, which now starts empty rather than at
+      ! a dead "6-31g" initialiser, so the order used to be invisible and is
+      ! not any more.
+      opts%basis = "6-31g"
       call supermolecule(z, symbols, coords, opts%basis, exact, n_bad, error)
       if (error%has_error()) return
 
-      opts%basis = "6-31g"
       call run_fmo2(z, symbols, coords, owner, opts, fmo, error)
       if (failed(error, "fmo", n_bad)) return
 

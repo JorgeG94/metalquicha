@@ -73,6 +73,11 @@ contains
       which = from_c(scheme, scheme_len)
       if (len_trim(which) == 0) which = "chelpg"
       basis_name = from_c(basis, basis_len)
+      ! **A real default and not a dead initialiser**: the C caller may pass an
+      ! empty basis string, and unlike the deck path there is no JSON layer
+      ! behind it to supply one. So this is load-bearing and stays, where the
+      ! identical-looking "6-31g" on the fragmented methods' option types was
+      ! removed for never being read.
       if (len_trim(basis_name) == 0) basis_name = "6-31g"
 
       if (which /= "chelpg" .and. which /= "mulliken") then
