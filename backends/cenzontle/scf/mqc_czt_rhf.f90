@@ -680,6 +680,14 @@ contains
          st%density = guess_density
          call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, error)
          if (error%has_error()) return
+      case (SCF_GUESS_SAP)
+         ! Reachable: the shared parser accepts "sap" so the name can get to
+         ! a backend that has it, and terco does. Saying which one is the
+         ! whole value of naming it here instead of falling into the default.
+         call error%set(ERROR_VALIDATION, "RHF: the sap guess is built by the terco "// &
+                        "backend and not by this one; choose sad, gwh or core, or "// &
+                        "run this deck with the terco backend")
+         return
       case default
          call error%set(ERROR_VALIDATION, "RHF: unknown initial guess")
          return
@@ -1233,6 +1241,14 @@ contains
          call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
                                 e_elec, error)
          if (error%has_error()) return
+      case (SCF_GUESS_SAP)
+         ! Reachable: the shared parser accepts "sap" so the name can get to
+         ! a backend that has it, and terco does. Saying which one is the
+         ! whole value of naming it here instead of falling into the default.
+         call error%set(ERROR_VALIDATION, "UHF: the sap guess is built by the terco "// &
+                        "backend and not by this one; choose sad, gwh or core, or "// &
+                        "run this deck with the terco backend")
+         return
       case default
          call error%set(ERROR_VALIDATION, "UHF: unknown initial guess")
          return

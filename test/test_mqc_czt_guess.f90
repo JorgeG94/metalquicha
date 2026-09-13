@@ -28,7 +28,8 @@ module test_mqc_czt_guess
                                 subshell_layout
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, &
                           density_pseudo_orbitals, &
-                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
+                          SCF_GUESS_SAP
    use mqc_czt_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                    hund_multiplicity, spherical_average, &
                                    clear_atomic_cache
@@ -503,8 +504,23 @@ contains
       type(error_t) :: err
       integer :: kind
 
-      call parse_guess_name("sap", kind, err)
+      ! This used to use "sap" as its example of a name nobody knows, which
+      ! stopped being true when terco grew the guess and the parser learned
+      ! the spelling. The example has to be a name no backend claims, or the
+      ! test asserts the opposite of what it says.
+      call parse_guess_name("wolfsberg", kind, err)
       call check(error, err%has_error(), "an unknown guess name must be refused")
+      if (allocated(error)) return
+
+      ! And "sap" now has to be ACCEPTED by the parser, whatever any one
+      ! backend then does with it: the parser's job is the spelling, and
+      ! refusing it here would put the name out of reach of the backend that
+      ! implements it.
+      call err%clear()
+      call parse_guess_name("sap", kind, err)
+      call check(error,.not. err%has_error(), "'sap' must be accepted: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, kind == SCF_GUESS_SAP, "'sap' must resolve to SAP")
       if (allocated(error)) return
 
       call err%clear()
