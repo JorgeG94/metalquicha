@@ -13,6 +13,7 @@ module mqc_elements
    public :: element_mass              !! Get atomic mass by atomic number
    public :: element_covalent_radius   !! Get covalent radius by atomic number
    public :: element_vdw_radius        !! Get van der Waals radius by atomic number
+   public :: core_orbital_count        !! Orbitals a frozen core leaves out
 
    ! Periodic table data as module-level parameters
    integer, parameter :: n_elements = 118
@@ -153,5 +154,34 @@ contains
 
       radius = covalent_radius_cordero(atomic_number)
    end function element_covalent_radius
+
+   pure function core_orbital_count(atomic_numbers) result(n_core)
+      !! How many orbitals a frozen core leaves out, summed over the atoms
+      !!
+      !! The count per element is the number of filled shells below the valence
+      !! one: none for H and He, the 1s for Li through Ne, and so on -- the same
+      !! convention PySCF and most others use by default. An energy computed
+      !! with a different core is not comparable to a published one.
+      integer, intent(in) :: atomic_numbers(:)
+      integer :: n_core
+
+      integer :: i, z
+
+      n_core = 0
+      do i = 1, size(atomic_numbers)
+         z = atomic_numbers(i)
+         if (z <= 10) then
+            if (z > 2) n_core = n_core + 1   ! 1s, and nothing at all for H and He
+         else if (z <= 18) then
+            n_core = n_core + 5        ! 1s 2s 2p
+         else if (z <= 36) then
+            n_core = n_core + 9        ! + 3s 3p
+         else if (z <= 54) then
+            n_core = n_core + 18       ! + 3d 4s 4p
+         else
+            n_core = n_core + 27       ! + 4d 5s 5p
+         end if
+      end do
+   end function core_orbital_count
 
 end module mqc_elements

@@ -81,7 +81,7 @@ Running one
      "model": {"method": "hf", "basis": "6-31g"},
      "keywords": {
        "fragmentation": {"method": "efmo", "level": 2, "rcut": 2.0},
-       "efmo": {"charge_transfer": true}
+       "efmo": {"charge_transfer": true, "induction_damping": 0.6}
      },
      "driver": "Energy"
    }
@@ -116,6 +116,37 @@ Keywords
        method used electrostatics alone. On the water prism at
        :math:`R_{\rm cut} = 0.3` it is -0.0113 Hartree, so leaving it out is a
        choice worth making deliberately -- hence ``true`` here.
+   * - ``keywords.efmo.induction_damping``
+     - ``0.0``
+     - :math:`a` of the Tang-Toennies-like factor
+       :math:`1 - e^{-aR^2}(1 + aR^2)` that damps every induction field between
+       two fragments -- the static field of the permanent multipoles and the
+       field of the other induced dipoles alike, and :math:`E_{IJ}^{\rm pol}`
+       and :math:`E_{\rm pol}^{\rm total}` alike, since eq 6 subtracts one
+       from the other. Zero is undamped. GAMESS's EFMO runs 0.6 for a cluster
+       of whole molecules and 0.1 where a fragment was cut across a bond
+       (``POLAB``, set from ``$FMO SCREEN``); above 2.0 the factor is one
+       again, which is GAMESS's own guard. **The default is off rather than
+       0.6** -- see the induction paragraph under *Against GAMESS*, which
+       measures what the key does and what it does not.
+   * - ``model.method``
+     - --
+     - ``"hf"``, ``"mp2"`` or ``"ri-mp2"``. The correlation runs on the
+       orbitals each monomer and each quantum dimer already converged to, so
+       :math:`E_I^0` and :math:`E_{IJ}^0` become correlated energies and
+       nothing else in eq 6 moves: the fragment potentials, the far pairs and
+       the induction are Hartree-Fock constructions, MAKEFP being one. A
+       Kohn-Sham or coupled-cluster method is refused by name.
+   * - ``model.aux_basis``
+     - --
+     - The correlation-fitting (RIFIT) set ``"ri-mp2"`` needs. Required with
+       that method and unread otherwise.
+   * - ``keywords.correlation.freeze_core``
+     - ``true``
+     - Whether each fragment's core orbitals sit out the MP2. The count is
+       derived per fragment from its elements, so a dimer's core is the sum of
+       its two monomers' and :math:`E_{IJ} - E_I - E_J` differences the same
+       set of correlated orbitals on both sides.
    * - ``keywords.efp.*``
      - --
      - The MAKEFP settings -- the response solve and the screening grid -- passed
@@ -134,6 +165,57 @@ a whole-system run and is not settable: the near-dimer correction is
 :math:`E_{IJ}^0 - E_I^0 - E_J^0`, four orders smaller than any of the three, so a
 looser convergence leaves it with no significant figures. A looser EFMO would not
 be a cheaper one either -- the cost is MAKEFP.
+
+Correlated fragments
+--------------------
+
+``model.method: "ri-mp2"`` (or ``"mp2"``) runs the correlation on every
+monomer's and every quantum dimer's converged orbitals, which is the
+EFMO/RI-MP2 of the 2024 paper. The monomer's MP2 uses the SCF
+``make_efp_potential`` already ran -- there is no second determinant -- and the
+dimer's uses its own. What comes back is eq 6 with correlated :math:`E_I^0` and
+:math:`E_{IJ}^0` and every other term unchanged:
+
+.. code-block:: json
+
+   "model": {"method": "ri-mp2", "basis": "6-31g", "aux_basis": "cc-pvdz-rifit"}
+
+Two identities pin it, both exact rather than approximate and both in
+``test/test_mqc_czt_efmo.f90``: on two fragments EFMO/RI-MP2 is the dimer's own
+in-vacuo RI-MP2 energy, and with every pair quantum it is the RI-MP2 many-body
+pair sum plus the induction no pair holds. Switching the correlation off
+reproduces the Hartree-Fock total exactly.
+
+The run reports how much of the fragment sum and of the dimer correction is
+correlation. Those are reported *inside* the two sums and not beside them: a
+correlated :math:`E_I^0` is the monomer energy of eq 6, not a term added to it.
+
+Running it on several ranks
+---------------------------
+
+.. code-block:: bash
+
+   mpirun -np 4 ./mqc efmo_prism.json
+
+The monomers and the quantum dimers are handed out round robin. **The balance
+is struck on the monomers**, because a monomer is a MAKEFP -- an SCF, a
+localization and twelve frequency-dependent response solves -- against one SCF
+for a dimer. Every rank then needs every fragment's potential, since the far
+pairs and the one induction over all fragments are not decomposable by owner,
+so each potential is flattened into a pair of buffers and summed across ranks.
+That transfer is exact rather than nearly: what crosses is the bits, not the
+eight decimals a written ``.efp`` would carry.
+
+The far pairs and the induction stay replicated. They are milliseconds beside a
+potential, and replicating them means every rank reaches the same total without
+a second reduction -- so any rank could write the output file, and the leader
+does.
+
+**One rank and four are bit-identical**, measured on the water prism at
+:math:`R_{\rm cut}` 1.0 and 2.0 and on the EFMO/RI-MP2 trimer, at one thread.
+Across thread counts the usual OpenMP reduction-order scatter of about
+2 :math:`\times` 10\ :sup:`-12` applies, and it is a thread effect and not a
+rank one.
 
 Output
 ------
@@ -187,16 +269,48 @@ Two terms differ on purpose, and neither is a disagreement about the same number
   energy must equal this program's own EFP -- and it is the accuracy the
   screening exists for. On the prism at :math:`R_{\rm cut} = 0.3` the two Coulomb
   sums are -0.1407 against -0.1323 Hartree.
-* **Induction.** GAMESS damps the induced-dipole field with a Tang-Toennies
-  factor at :math:`a_I = 0.6` for a molecular cluster; this code does not, so its
-  induction runs two to four per cent deeper. The *pair* induction
-  :math:`E_{IJ}^{\rm pol}` and the total :math:`E_{\rm pol}^{\rm total}` are the
-  same routine in both codes -- same screening, same self-consistent solve, same
-  convergence -- differing only in how many fragments are loaded, so the
-  subtraction is clean on both sides and the difference is the damping alone.
+* **Induction.** GAMESS damps the induction field with a Tang-Toennies-like
+  factor at :math:`a = 0.6` for a molecular cluster (``PENSAB`` in ``FRGFLD``
+  for the static field, ``P1`` in ``DIPIT`` for the induced-dipole field, both
+  in ``efintb.src``), and by default this code does not, so its induction runs
+  two to four per cent deeper. The *pair* induction :math:`E_{IJ}^{\rm pol}`
+  and the total :math:`E_{\rm pol}^{\rm total}` are the same routine in both
+  codes -- same screening, same self-consistent solve, same convergence --
+  differing only in how many fragments are loaded, so the subtraction is clean
+  on both sides.
 
-At :math:`R_{\rm cut} = 2.0`, where every pair of a water hexamer is quantum, the
-two totals sit 1.4e-4 to 5.8e-4 Hartree apart and all of it is that damping.
+  ``keywords.efmo.induction_damping`` applies exactly that factor, and running
+  it settles what the difference is made of. On the prism at
+  :math:`R_{\rm cut} = 1.0`, in Hartree:
+
+  .. list-table::
+     :header-rows: 1
+
+     * -
+       - undamped
+       - ``induction_damping: 0.6``
+       - GAMESS
+     * - :math:`\sum E_{IJ}^{\rm pol}`
+       - 0.013033887
+       - 0.012374267
+       - 0.012557400
+     * - :math:`E_{\rm pol}^{\rm total}`
+       - -0.026488526
+       - -0.025407237
+       - -0.025869694
+     * - total
+       - -456.004182669
+       - -456.003761000
+       - -456.004043215
+
+  So the damping is real and it *overshoots*: undamped we sit 2.4 per cent
+  deeper than GAMESS and damped 1.8 per cent shallower. About a third of the
+  induction gap is the damping and the rest is a difference in the undamped
+  induction itself, which the Tang-Toennies factor cannot be blamed for.
+  Damping the induced-dipole field alone moves the total by 5e-6 -- the static
+  field carries all of it. The default is therefore left undamped, which is
+  also what every reference in this repository was pinned with; set the key
+  when the point is to reproduce a GAMESS induction rather than to be right.
 
 Accuracy
 --------
@@ -222,14 +336,16 @@ different isomers against each other with that in mind.
 What is not here yet
 --------------------
 
-* **One rank.** The monomers and dimers are not distributed; MAKEFP is the
-  monomer's cost and is what a parallel version would balance.
-* **Restricted Hartree-Fock fragments only.** A correlated :math:`E_I^0` runs on
-  the same orbitals afterwards and is not implemented; any other ``model.method``
-  is refused by name rather than silently run as Hartree-Fock.
+* **Kohn-Sham fragments.** MAKEFP is a Hartree-Fock construction, so a
+  density-functional :math:`E_I^0` would need a potential built from a
+  different density; refused by name. So is coupled cluster, and so is
+  spin-component-scaled MP2, which would be a different method from the one
+  the paper runs.
 * **Whole molecules only.** A partition that cuts a covalent bond is refused: a
   hydrogen cap's multipoles would act on the partner across the cut, and the
   adjusted frozen orbital route FMO uses is not wired in here.
-* **No damping on the induction.** The Tang-Toennies factor GAMESS applies is the
-  one remaining known difference between the two codes on a term both compute the
-  same way otherwise.
+* **The rest of the induction difference.** With
+  ``keywords.efmo.induction_damping`` set to GAMESS's 0.6 the two codes'
+  induction still differ by about two per cent, in the other direction; what is
+  left is a difference in the *undamped* induction and it is not yet accounted
+  for.

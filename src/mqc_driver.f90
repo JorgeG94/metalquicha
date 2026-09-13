@@ -220,7 +220,7 @@ contains
       ! embedding loop, only monomers, a pair split and one induction over
       ! everything. The whole expression is assembled inside the backend.
       if (config%expansion_kind == "efmo") then
-         call run_efmo_energy(config, sys_geom, resources%mpi_comms%world_comm%rank(), &
+         call run_efmo_energy(config, sys_geom, resources%mpi_comms%world_comm, &
                               wants_output, result_out)
          return
       end if
@@ -1312,12 +1312,14 @@ contains
       end if
    end subroutine refuse
 
-   subroutine run_efmo_energy(config, sys_geom, rank, write_output, result_out)
+   subroutine run_efmo_energy(config, sys_geom, comm, write_output, result_out)
       !! An effective fragment molecular orbital energy for a partitioned system
       !!
-      !! Rank zero only, as MAKEFP and NEO are: the work is one MAKEFP per
-      !! fragment and one SCF per near dimer, all threaded inside the integral
-      !! backend, and distributing it over ranks is Phase 4.
+      !! **Every rank runs this**, unlike MAKEFP and NEO. The monomers and the
+      !! quantum dimers are spread over the communicator inside the backend --
+      !! MAKEFP is the cost of the method and is what the balance is struck on
+      !! -- and every rank comes out with the same total, so only the leader
+      !! writes a file.
       !!
       !! Neither the fragmented nor the unfragmented path applies. EFMO is a
       !! fragmented method with no n-mer list: every fragment's potential is
@@ -1326,14 +1328,15 @@ contains
       !! runs over all of them. `run_czt_efmo` assembles it and hands back the
       !! breakdown.
       use mqc_czt_bridge, only: run_czt_efmo
-      use mqc_method_types, only: METHOD_TYPE_HF
+      use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_MP2
       use mqc_elements, only: element_number_to_symbol
-      use mqc_program_limits, only: N_EFMO_TERMS
+      use mqc_program_limits, only: N_EFMO_TERMS, EFMO_CORR_NONE, EFMO_CORR_MP2, &
+                                    EFMO_CORR_RI_MP2
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       use pic_logger, only: verbose_level
       type(driver_config_t), intent(in) :: config
       type(system_geometry_t), intent(in) :: sys_geom
-      integer, intent(in) :: rank
+      type(comm_t), intent(in) :: comm
       logical, intent(in) :: write_output
       type(calculation_result_t), intent(out), optional :: result_out
 
@@ -1344,6 +1347,7 @@ contains
       real(dp) :: terms(N_EFMO_TERMS)
       real(dp) :: energy
       type(scf_numerics_t) :: efmo_scf
+      integer :: correlation
       integer :: i, n_frag, n_qm, n_efp
 
       integer, parameter :: EFMO_SCF_MAX_ITER = 200
@@ -1360,20 +1364,41 @@ contains
          !! no significant figures. There is no deck key for these yet, since a
          !! looser EFMO is not a cheaper EFMO -- the cost is MAKEFP.
 
-      if (rank /= 0) return
-
-      ! Restricted Hartree-Fock only in this phase. A correlated `E_I^0` runs on
-      ! the same orbitals afterwards and is Phase 4; DFT would need a MAKEFP
-      ! that is not restricted to a Hartree-Fock reference. Refused by name
-      ! rather than silently run as HF.
-      if (config%method_config%method_type /= METHOD_TYPE_HF) then
-         call refuse(result_out, "EFMO runs restricted Hartree-Fock fragments for "// &
-                     "now, and model.method is '"// &
+      ! Hartree-Fock, MP2 or RI-MP2 fragments. The correlation runs on the same
+      ! orbitals the reference converged to and turns `E_I^0` and `E_IJ^0`
+      ! correlated, which is the whole of what a correlated EFMO is; the far
+      ! pairs and the induction come from the fragment potentials either way,
+      ! MAKEFP being a Hartree-Fock construction. Anything else -- Kohn-Sham
+      ! fragments, coupled cluster -- is refused by name rather than silently
+      ! run as Hartree-Fock.
+      select case (config%method_config%method_type)
+      case (METHOD_TYPE_HF)
+         correlation = EFMO_CORR_NONE
+      case (METHOD_TYPE_MP2)
+         ! `ri-mp2` and `mp2` parse to one method type, and which was written is
+         ! recovered from `corr%use_df` -- the same recovery every other MP2
+         ! path here makes.
+         if (config%method_config%corr%use_df) then
+            correlation = EFMO_CORR_RI_MP2
+         else
+            correlation = EFMO_CORR_MP2
+         end if
+         if (config%method_config%corr%use_scs) then
+            call refuse(result_out, "EFMO does not scale the spin components of "// &
+                        "its fragment MP2 energies. SCS-MP2 fragments would be a "// &
+                        "different method from the one the paper runs, so it is "// &
+                        "refused rather than quietly given plain MP2.")
+            return
+         end if
+      case default
+         call refuse(result_out, "EFMO runs Hartree-Fock, MP2 or RI-MP2 fragments, "// &
+                     "and model.method is '"// &
                      trim(method_type_to_string(config%method_config%method_type))// &
-                     "'. Correlated fragments and Kohn-Sham fragments are not "// &
-                     "implemented yet.")
+                     "'. Kohn-Sham fragments would need a MAKEFP that is not "// &
+                     "restricted to a Hartree-Fock reference, and coupled-cluster "// &
+                     "fragments are not implemented.")
          return
-      end if
+      end select
       if (config%method_config%scf%unrestricted) then
          call refuse(result_out, "EFMO is closed-shell for now: every fragment and "// &
                      "every dimer is solved with restricted Hartree-Fock, so "// &
@@ -1417,12 +1442,26 @@ contains
       efmo_scf%convergence_metric = config%method_config%scf%convergence_metric
       efmo_scf%allow_crap_scf = config%method_config%scf%allow_crap_scf
 
-      call logger%info("Running EFMO over "//to_char(n_frag)//" fragments")
+      if (comm%leader()) then
+         call logger%info("Running EFMO over "//to_char(n_frag)//" fragments")
+         if (comm%size() > 1) then
+            call logger%info("  monomers and quantum dimers over "// &
+                             to_char(comm%size())//" ranks")
+         end if
+      end if
+      if (comm%leader()) then
+         if (correlation == EFMO_CORR_RI_MP2) then
+            call logger%info("  RI-MP2 on every monomer and every quantum dimer")
+         else if (correlation == EFMO_CORR_MP2) then
+            call logger%info("  MP2 on every monomer and every quantum dimer")
+         end if
+      end if
 
       call run_czt_efmo(sys_geom%element_numbers, symbols, sys_geom%coordinates, owner, &
                         charges, config%method_config%basis_set, &
                         config%method_config%efmo%rcut, &
-                        config%method_config%efmo%charge_transfer, efmo_scf, &
+                        config%method_config%efmo%charge_transfer, &
+                        config%method_config%efmo%induction_damping, efmo_scf, &
                         EFMO_SCF_MAX_ITER, EFMO_SCF_ENERGY_TOL, EFMO_SCF_DENSITY_TOL, &
                         EFMO_SCF_GRAD_TOL, trim(config%method_config%scf%guess), &
                         energy, terms, n_qm, n_efp, err, &
@@ -1433,7 +1472,12 @@ contains
                         dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
                         response=config%method_config%efp%response, &
                         allow_crap_response=config%method_config%efp%allow_crap_response, &
-                        response_batch=config%method_config%efp%response_batch)
+                        response_batch=config%method_config%efp%response_batch, &
+                        correlation=correlation, &
+                        corr_aux_basis=trim(config%method_config%scf%aux_basis_set), &
+                        freeze_core=config%method_config%corr%freeze_core, &
+                        n_frozen_core=config%method_config%corr%n_frozen_core, &
+                        comm=comm)
       if (err%has_error()) then
          call refuse(result_out, "EFMO: "//err%get_message())
          return
@@ -1451,7 +1495,8 @@ contains
       ! `UNFRAGMENTED` because that is the shape of what is written -- one
       ! energy for one system, with a named breakdown beside it -- not a claim
       ! that the system has no fragments.
-      if (write_output .and. .not. config%skip_json_output) then
+      ! Every rank holds the same total; one writes it.
+      if (write_output .and. .not. config%skip_json_output .and. comm%leader()) then
          json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
          json_data%total_energy = energy
          json_data%has_energy = .true.

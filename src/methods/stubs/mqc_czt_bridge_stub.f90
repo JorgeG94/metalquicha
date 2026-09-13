@@ -199,11 +199,14 @@ contains
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
                            fragment_charges, basis_name, rcut, charge_transfer, &
+                           induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
                            error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
-                           allow_crap_response, response_batch)
+                           allow_crap_response, response_batch, &
+                           correlation, corr_aux_basis, freeze_core, n_frozen_core, &
+                           comm)
       !! No-op stand-in: EFMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -211,6 +214,7 @@ contains
       use pic_types, only: dp
       use mqc_error, only: error_t
       use mqc_scf_types, only: scf_numerics_t
+      use pic_mpi_lib, only: comm_t
       use mqc_program_limits, only: N_EFMO_TERMS
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
@@ -220,6 +224,9 @@ contains
       character(len=*), intent(in) :: basis_name
       real(dp), intent(in) :: rcut
       logical, intent(in) :: charge_transfer
+      real(dp), intent(in) :: induction_damping
+         !! `a` of the Tang-Toennies-like factor that damps every induction
+         !! field, pair and total alike. Zero is undamped.
       type(scf_numerics_t), intent(in) :: scf_drive
       integer, intent(in) :: scf_max_iter
       real(dp), intent(in) :: scf_energy_tol, scf_density_tol, scf_grad_tol
@@ -237,6 +244,17 @@ contains
       integer, intent(in), optional :: response
       logical, intent(in), optional :: allow_crap_response
       integer, intent(in), optional :: response_batch
+      integer, intent(in), optional :: correlation
+         !! `EFMO_CORR_NONE`, `EFMO_CORR_MP2` or `EFMO_CORR_RI_MP2`: what runs
+         !! on top of every monomer and near-dimer Hartree-Fock reference.
+         !! Absent is none, which is the Phase 3 energy exactly.
+      character(len=*), intent(in), optional :: corr_aux_basis
+         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
+      logical, intent(in), optional :: freeze_core
+      integer, intent(in), optional :: n_frozen_core
+      type(comm_t), intent(in), optional :: comm
+         !! Present means spread the monomers and the quantum dimers over this
+         !! communicator. Every rank gets the same total back.
 
       energy = 0.0_dp
       terms = 0.0_dp
@@ -250,6 +268,7 @@ contains
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(guess) < 0) return
       if (rcut < -huge(1.0_dp) .or. charge_transfer) return
+      if (induction_damping < -huge(1.0_dp)) return
       if (scf_drive%max_iter < 0 .or. scf_max_iter < 0) return
       if (scf_energy_tol < 0.0_dp .or. scf_density_tol < 0.0_dp) return
       if (scf_grad_tol < 0.0_dp) return
@@ -257,6 +276,9 @@ contains
       if (present(quadrupole_blocks) .or. present(dynamic_tol)) return
       if (present(dynamic_maxiter) .or. present(response)) return
       if (present(allow_crap_response) .or. present(response_batch)) return
+      if (present(correlation) .or. present(freeze_core)) return
+      if (present(corr_aux_basis) .or. present(n_frozen_core)) return
+      if (present(comm)) return
    end subroutine run_czt_efmo
 
    subroutine run_czt_makefp(atomic_numbers, element_symbols, coordinates, &

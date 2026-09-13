@@ -198,6 +198,11 @@ module mqc_method_config
       logical :: charge_transfer = .true.
          !! Include `E_IJ^CT` in the far pairs. GAMESS's EFMO does; the original
          !! 2012 method used electrostatics alone, so it is switchable.
+      real(dp) :: induction_damping = 0.0_dp
+         !! `keywords.efmo.induction_damping`: `a` in the Tang-Toennies-like
+         !! factor `1 - exp(-a R^2)(1 + a R^2)` applied to every induction
+         !! field, pair and total alike. Zero is off; 0.6 is GAMESS's cluster
+         !! value.
    end type efmo_config_t
 
    type :: neo_config_t

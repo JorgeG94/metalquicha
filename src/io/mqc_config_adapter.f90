@@ -321,6 +321,7 @@ contains
       ! place.
       driver_config%method_config%efmo%rcut = mqc_config%efmo_rcut
       driver_config%method_config%efmo%charge_transfer = mqc_config%efmo_charge_transfer
+      driver_config%method_config%efmo%induction_damping = mqc_config%efmo_induction_damping
       ! Quantum nuclei. The two lists are exclusive and one of them is absent.
       driver_config%method_config%neo%active = mqc_config%neo_active
       driver_config%method_config%neo%nuclear_basis = mqc_config%neo_nuclear_basis

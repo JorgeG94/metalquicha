@@ -182,7 +182,7 @@ contains
    end function efp_interaction_energy
 
    function pair_polarization_energy(frag_i, frag_j, translation_i, translation_j, &
-                                     error) result(energy)
+                                     error, damping) result(energy)
       !! The induction energy of one *isolated* pair of fragments
       !!
       !! **`E_IJ^pol` of the EFMO energy**, and the reason it exists: every
@@ -201,9 +201,15 @@ contains
       !! leave a residue in the total that looks like three-body induction.
       !!
       !! Cheap: two fragments carry a couple of dozen polarizable points.
+      !!
+      !! `damping` is forwarded whole, and forwarding it is not optional in
+      !! spirit: a pair induction damped differently from the total would put
+      !! the difference into `E_pol^total - sum E_IJ^pol`, where it would read
+      !! as many-body induction and not as a mismatched screening.
       type(efp_fragment_t), intent(in) :: frag_i, frag_j
       real(dp), intent(in) :: translation_i(3), translation_j(3)   !! Bohr
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: damping
       real(dp) :: energy
 
       type(efp_fragment_t) :: pair(2)
@@ -218,7 +224,11 @@ contains
 
       call build_efp_system(pair, shifts, system, error)
       if (error%has_error()) return
-      energy = polarization_energy(system, pair, error)
+      if (present(damping)) then
+         energy = polarization_energy(system, pair, error, damping=damping)
+      else
+         energy = polarization_energy(system, pair, error)
+      end if
       call system%destroy()
    end function pair_polarization_energy
 

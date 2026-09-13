@@ -29,6 +29,7 @@ module mqc_czt_efp_interaction
    public :: electrostatic_energy
    public :: dispersion_energy_e6
    public :: polarization_energy
+   public :: induction_damping_factor
    public :: CP_WEIGHT
 
    integer, parameter :: N_DIPOLE = 3
@@ -342,7 +343,7 @@ contains
             + qb*(15.0_dp*oa_rrr - 9.0_dp*r2*dot_product(r, oa_tr)))*inv7
    end function pair_energy
 
-   function polarization_energy(system, fragments, error, max_iter, tol) result(energy)
+   function polarization_energy(system, fragments, error, max_iter, tol, damping) result(energy)
       !! Polarization: induced dipoles at the orbital centroids, solved together
       !!
       !! Each polarizable point carries a static polarizability tensor and sits in
@@ -362,11 +363,28 @@ contains
       !! The polarizability tensor is not symmetric -- a localized-orbital
       !! polarizability has an antisymmetric part -- so `alpha F` is a genuine
       !! matrix-vector product and the order matters.
+      !!
+      !! **`damping` is GAMESS's `NEW_POL` screening**, the one physics gap
+      !! Phase 3 measured against it. Every field contribution between two
+      !! fragments -- the static one from the permanent multipoles *and* the
+      !! one from the other induced dipoles -- is multiplied by the
+      !! Tang-Toennies-like factor
+      !!
+      !!     1 - exp(-a R^2) (1 + a R^2)
+      !!
+      !! with `a = sqrt(a_I a_J)` per fragment pair, which for one number over
+      !! the whole system is just `a`. GAMESS applies it in `FRGFLD`
+      !! (`PENSAB`, static field) and in `DIPIT` (`P1`, induced-dipole field)
+      !! of `efintb.src`, at `POLAB = 0.6` for a cluster and `0.1` where a
+      !! fragment was cut across a bond (`efmo.src`). Absent or at or below
+      !! zero the field is undamped, which is what every reference pinned
+      !! before this argument existed was computed with.
       type(efp_system_t), intent(in) :: system
       type(efp_fragment_t), intent(in) :: fragments(:)
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), intent(in), optional :: damping
       real(dp) :: energy
 
       integer, parameter :: DEFAULT_ITER = 200
@@ -377,8 +395,10 @@ contains
       integer, allocatable :: owner(:)
       real(dp) :: r(3)
       real(dp) :: dist, inv3, inv5, change
+      real(dp) :: pensab
       integer :: n_pol, f, i, k, at, iter, limit, j
       real(dp) :: use_tol
+      real(dp) :: damp
       integer :: log_level
       logical :: show_iter
 
@@ -387,6 +407,10 @@ contains
       if (present(max_iter)) limit = max_iter
       use_tol = DEFAULT_TOL
       if (present(tol)) use_tol = tol
+      ! One number for the whole system, so `sqrt(a_I a_J)` of GAMESS reduces
+      ! to it. Zero means the factor below is identically one and is skipped.
+      damp = 0.0_dp
+      if (present(damping)) damp = max(damping, 0.0_dp)
 
       ! The caller (`run_efp`) is already rank-0 only, so no leader guard is
       ! needed around the per-iteration logging.
@@ -418,8 +442,8 @@ contains
       fstat = 0.0_dp
       ! Each polarizable point writes only its own column, so no reduction is
       ! needed here.
-      !$omp parallel do default(none) private(i, k, r, dist, inv3, inv5) &
-      !$omp shared(n_pol, system, centres, owner, fstat) schedule(static) &
+      !$omp parallel do default(none) private(i, k, r, dist, inv3, inv5, pensab) &
+      !$omp shared(n_pol, system, centres, owner, fstat, damp) schedule(static) &
       !$omp if(n_pol >= 32)
       do i = 1, n_pol
          do k = 1, system%n_points
@@ -428,12 +452,16 @@ contains
             dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
             inv3 = 1.0_dp/(dist*dist*dist)
             inv5 = inv3/(dist*dist)
+            ! One factor over the whole contribution of this point, charge,
+            ! dipole and quadrupole alike, which is how GAMESS's `PENSAB`
+            ! multiplies each of the three branches of `FRGFLD`.
+            pensab = induction_damping_factor(damp, dist)
             ! Charge, then dipole, then quadrupole -- the quadrupole carrying
             ! the same half the charge-quadrupole energy does.
-            fstat(:, i) = fstat(:, i) + system%charge(k)*r*inv3 &
-                          + 3.0_dp*r*dot_product(system%dipole(:, k), r)*inv5 &
-                          - system%dipole(:, k)*inv3 &
-                          - 0.5_dp*quadrupole_field(system%quad(:, :, k), r)
+            fstat(:, i) = fstat(:, i) + pensab*(system%charge(k)*r*inv3 &
+                                                + 3.0_dp*r*dot_product(system%dipole(:, k), r)*inv5 &
+                                                - system%dipole(:, k)*inv3 &
+                                                - 0.5_dp*quadrupole_field(system%quad(:, :, k), r))
          end do
       end do
       !$omp end parallel do
@@ -444,8 +472,8 @@ contains
          ! A Jacobi sweep: every new dipole is built from the previous
          ! iteration's set, so the points are independent within a sweep.
          change = 0.0_dp
-         !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field) &
-         !$omp shared(n_pol, owner, centres, mu, mu_new, fstat, pol) &
+         !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field, pensab) &
+         !$omp shared(n_pol, owner, centres, mu, mu_new, fstat, pol, damp) &
          !$omp schedule(static) reduction(max:change) if(n_pol >= 32)
          do i = 1, n_pol
             field = fstat(:, i)
@@ -455,8 +483,12 @@ contains
                dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
                inv3 = 1.0_dp/(dist*dist*dist)
                inv5 = inv3/(dist*dist)
-               field = field + 3.0_dp*r*dot_product(mu(:, j), r)*inv5 &
-                       - mu(:, j)*inv3
+               ! The same factor again: GAMESS's `DIPIT` builds it as `P1` and
+               ! adds it to the one that multiplies the whole dipole field
+               ! tensor, with its second screening term `P2` left at zero.
+               pensab = induction_damping_factor(damp, dist)
+               field = field + pensab*(3.0_dp*r*dot_product(mu(:, j), r)*inv5 &
+                                       - mu(:, j)*inv3)
             end do
             mu_new(:, i) = matmul(pol(:, :, i), field)
             ! Convergence measured inside the same loop, as a max reduction,
@@ -482,6 +514,28 @@ contains
 
       deallocate (centres, pol, owner, fstat, mu, mu_new)
    end function polarization_energy
+
+   pure function induction_damping_factor(a, dist) result(factor)
+      !! The Tang-Toennies-like factor GAMESS damps an induction field with
+      !!
+      !!     f(R) = 1 - exp(-a R^2) (1 + a R^2)
+      !!
+      !! Note the **squared** separation in the exponent, which is what
+      !! `efintb.src` writes (`AR2 = AA*R2`, `R2 = X*X + Y*Y + Z*Z`); it is
+      !! Tang-Toennies-*like* and not the two-term Tang-Toennies incomplete
+      !! gamma in `R`. `a` at or below zero is off, and so is `a` above 2,
+      !! which is GAMESS's own guard: a damping that steep is not a damping.
+      real(dp), intent(in) :: a
+      real(dp), intent(in) :: dist    !! `R`, Bohr
+      real(dp) :: factor
+
+      real(dp) :: ar2
+
+      factor = 1.0_dp
+      if (a <= 0.0_dp .or. a > 2.0_dp) return
+      ar2 = a*dist*dist
+      factor = 1.0_dp - exp(-ar2)*(1.0_dp + ar2)
+   end function induction_damping_factor
 
    pure function quadrupole_field(quad, r) result(f)
       !! `Q_jk T3_ijk`, the shape the quadrupole's field takes

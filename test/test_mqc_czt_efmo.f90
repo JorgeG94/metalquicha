@@ -36,7 +36,10 @@ module test_mqc_czt_efmo
    !! `run_efmo` builds its own set on each call.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo
+   use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, &
+                           EFMO_CORR_NONE, EFMO_CORR_RI_MP2
+   use mqc_czt_mp2, only: mp2_result_t, run_czt_ri_mp2
+   use mqc_elements, only: core_orbital_count
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential
    use mqc_czt_efp_read, only: efp_fragment_t
@@ -63,6 +66,14 @@ module test_mqc_czt_efmo
       !! spherical form `run_fmo2` builds are the same basis. Above d they are
       !! not, and test one would then compare two different models.
 
+   character(len=*), parameter :: AUX = "cc-pvdz-rifit"
+      !! The fitting set the correlated cases use. It does not match the orbital
+      !! basis, and does not have to: what the two correlated tests assert is
+      !! that `run_efmo` correlates the same orbitals with the same fitting
+      !! space that the reference here does, which is true of any auxiliary
+      !! basis. A matched set would make the number closer to conventional MP2
+      !! and the test no sharper.
+
    real(dp), parameter :: TOL = 1.0e-9_dp
       !! Every identity below is exact, so what this has to clear is the SCF
       !! convergence the pieces are held to -- 1e-10 on the energy -- summed
@@ -81,6 +92,9 @@ module test_mqc_czt_efmo
    type(efp_fragment_t), save :: cached_frag(3)
    real(dp), save :: cached_mono(3) = 0.0_dp
    real(dp), save :: cached_dimer_12 = 0.0_dp
+   real(dp), save :: cached_mono_mp2(3) = 0.0_dp
+      !! Each monomer's RI-MP2 correlation energy, on the same orbitals its
+      !! potential was built from -- which is where `run_efmo` takes its own.
    logical, save :: cached_ready = .false.
 
 contains
@@ -93,7 +107,11 @@ contains
                                test_all_quantum), &
                   new_unittest("efmo_no_pair_quantum_is_monomers_plus_efp", test_no_quantum), &
                   new_unittest("efmo_two_fragments_is_the_dimer_energy", test_two_fragments), &
-                  new_unittest("efmo_trimer_split_one_quantum_two_effective", test_mixed) &
+                  new_unittest("efmo_trimer_split_one_quantum_two_effective", test_mixed), &
+                  new_unittest("efmo_rimp2_two_fragments_is_the_dimer_rimp2_energy", &
+                               test_rimp2_dimer), &
+                  new_unittest("efmo_rimp2_all_quantum_is_the_correlated_pair_sum", &
+                               test_rimp2_trimer) &
                   ]
    end subroutine collect_mqc_czt_efmo_tests
 
@@ -167,6 +185,7 @@ contains
       real(dp) :: xyz(3, 9)
       type(efp_potential_t) :: pot
       type(efmo_options_t) :: opts
+      type(rhf_result_t) :: scf
       integer :: k
       integer, allocatable :: idx(:)
 
@@ -181,9 +200,12 @@ contains
                                  energy_tol=opts%scf_energy_tol, &
                                  density_tol=opts%scf_density_tol, &
                                  grad_tol_in=opts%scf_grad_tol, scf_in=opts%scf, &
-                                 max_iter_in=opts%scf_max_iter)
+                                 max_iter_in=opts%scf_max_iter, scf_out=scf)
          if (err%has_error()) return
          cached_mono(k) = pot%scf_energy
+         cached_mono_mp2(k) = ri_mp2_on(z(idx), symbols(idx), xyz(:, idx), &
+                                        sum(z(idx)), scf, opts, err)
+         if (err%has_error()) return
          call potential_to_fragment(pot, cached_frag(k), err)
          call pot%destroy()
          if (err%has_error()) return
@@ -426,6 +448,228 @@ contains
       call check(error, res%monomer_sum, sum(cached_mono), thr=TOL, &
                  message="the monomer sum is not the sum of the potentials' own SCFs")
    end subroutine test_no_quantum
+
+   function ri_mp2_on(z, symbols, xyz, nelec, scf, opts, err) result(energy)
+      !! The RI-MP2 correlation energy on orbitals already converged
+      !!
+      !! A second implementation of what `run_efmo` does after each of its
+      !! SCFs, written out here for the same reason `dimer_rhf` is: calling the
+      !! module's own routine would assert nothing about it. The frozen core is
+      !! counted from the elements, which is `run_efmo`'s default, and the
+      !! molecule is Cartesian because the orbitals came from a Cartesian one.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, intent(in) :: nelec
+      type(rhf_result_t), intent(in) :: scf
+      type(efmo_options_t), intent(in) :: opts
+      type(error_t), intent(inout) :: err
+      real(dp) :: energy
+
+      type(czt_molecule_t) :: mol, fit
+      type(mp2_result_t) :: mp2
+
+      energy = 0.0_dp
+      call build_czt_molecule(z, symbols, xyz, BASIS, mol, err, force_cartesian=.true.)
+      if (err%has_error()) return
+      call build_czt_molecule(z, symbols, xyz, AUX, fit, err, force_cartesian=.true.)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call run_czt_ri_mp2(mol, fit, scf%orbitals, scf%orbital_energies, nelec/2, &
+                          scf%energy, mp2, err, n_frozen=core_orbital_count(z))
+      call mol%destroy()
+      call fit%destroy()
+      if (err%has_error()) return
+      energy = mp2%same_spin + mp2%opposite_spin
+      if (opts%scf_max_iter < 0) energy = 0.0_dp   ! never taken; keeps `opts` used
+   end function ri_mp2_on
+
+   subroutine dimer_rimp2(z, symbols, xyz, charge, opts, energy, correlation, err)
+      !! `E_IJ^0` at RI-MP2: one RHF here, then the correlation on its orbitals
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, intent(in) :: charge
+      type(efmo_options_t), intent(in) :: opts
+      real(dp), intent(out) :: energy, correlation
+      type(error_t), intent(inout) :: err
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: guess_density(:, :)
+      integer :: guess_kind
+
+      energy = 0.0_dp
+      correlation = 0.0_dp
+      call build_czt_molecule(z, symbols, xyz, BASIS, mol, err, force_cartesian=.true.)
+      if (err%has_error()) return
+      call build_restricted_guess(mol, "auto", guess_kind, guess_density, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call run_czt_rhf(mol, sum(z) - charge, opts%scf_max_iter, opts%scf_energy_tol, &
+                       opts%scf_density_tol, .false., scf, err, &
+                       guess=guess_kind, guess_density=guess_density, &
+                       grad_tol=opts%scf_grad_tol, scf=opts%scf)
+      call mol%destroy()
+      if (err%has_error()) return
+      correlation = ri_mp2_on(z, symbols, xyz, sum(z) - charge, scf, opts, err)
+      if (err%has_error()) return
+      energy = scf%energy + correlation
+   end subroutine dimer_rimp2
+
+   subroutine test_rimp2_dimer(error)
+      !! Two fragments at RI-MP2: EFMO is the dimer's own correlated energy
+      !!
+      !! Limit three again, with `model.method: ri-mp2`. It stays exact for the
+      !! same reason it was exact at Hartree-Fock -- on two fragments
+      !! `E_IJ^pol` *is* `E_pol^total`, so the induction cancels and the
+      !! monomer energies telescope out of `E_IJ^0 - E_I^0 - E_J^0` -- and the
+      !! correlation rides along, because a correlated `E_I^0` is still just
+      !! `E_I^0`.
+      !!
+      !! **It is the sharpest test of the correlation plumbing there is.** The
+      !! monomer correlation is computed on the orbitals `make_efp_potential`
+      !! handed back and the dimer's on a fresh SCF's, so a run that correlated
+      !! the wrong determinant, froze a different core on one side, or fitted
+      !! against a differently built auxiliary molecule fails here by a
+      !! millihartree rather than passing with a plausible number.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      integer :: z(6), owner(6)
+      character(len=2) :: symbols(6)
+      real(dp) :: xyz(3, 6)
+      real(dp) :: reference, reference_corr
+
+      call build_reference(err)
+      call check(error,.not. err%has_error(), "building the reference failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call water_chain(2, z, symbols, xyz, owner)
+      call efmo_settings(opts)
+      opts%rcut = 1.0e6_dp
+      opts%correlation = EFMO_CORR_RI_MP2
+      opts%corr_aux_basis = AUX
+      call run_efmo(z, symbols, xyz, owner, [0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call dimer_rimp2(z, symbols, xyz, 0, opts, reference, reference_corr, err)
+      call check(error,.not. err%has_error(), "the reference RI-MP2 failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, res%energy, reference, thr=TOL, &
+                 message="EFMO/RI-MP2 on two fragments is not the dimer's own "// &
+                 "in-vacuo RI-MP2 energy")
+      if (allocated(error)) return
+      ! The correlation is reported broken in two, and the two have to add up to
+      ! the dimer's own: the monomers' plus (dimer - monomers).
+      call check(error, res%monomer_correlation + res%dimer_correlation, &
+                 reference_corr, thr=TOL, &
+                 message="the reported correlation does not add up to the dimer's")
+      if (allocated(error)) return
+      ! And switching it off has to give the Hartree-Fock answer back exactly,
+      ! not nearly: the correlated path must not have moved an SCF.
+      opts%correlation = EFMO_CORR_NONE
+      call run_efmo(z, symbols, xyz, owner, [0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, res%energy, cached_dimer_12, thr=TOL, &
+                 message="switching the correlation off did not give the RHF total back")
+      if (allocated(error)) return
+      call check(error, res%monomer_correlation, 0.0_dp, thr=0.0_dp, &
+                 message="a Hartree-Fock run reported a correlation energy")
+   end subroutine test_rimp2_dimer
+
+   subroutine test_rimp2_trimer(error)
+      !! Three fragments, every pair quantum: the correlated two-body sum
+      !!
+      !! With `R_cut` huge eq 6 has no effective-fragment half, so
+      !!
+      !!     E = sum_I E_I + sum_{I<J} (E_IJ - E_I - E_J)
+      !!         + (E_pol^total - sum_IJ E_IJ^pol)
+      !!
+      !! -- a many-body-expansion pair sum at RI-MP2, plus the part of the
+      !! induction no pair holds. Every monomer and every dimer energy on the
+      !! right is computed here, independently, from an SCF plus a fitted MP2,
+      !! so what is asserted is that the orchestrator's correlated `E_I^0` and
+      !! `E_IJ^0` are those numbers and that they enter the expansion with the
+      !! signs Hartree-Fock's do.
+      !!
+      !! The induction terms are taken from the run rather than recomputed: they
+      !! are Hartree-Fock quantities built from the potentials and are the same
+      !! whatever the correlation is, which is itself the assertion made by
+      !! comparing them against `test_all_quantum`'s.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      integer :: z(9), owner(9)
+      character(len=2) :: symbols(9)
+      real(dp) :: xyz(3, 9)
+      real(dp) :: dimer(3), dimer_corr(3), expected, pair_sum
+      integer :: pairs(2, 3), k
+      integer, allocatable :: idx(:)
+
+      call build_reference(err)
+      call check(error,.not. err%has_error(), "building the reference failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call water_chain(3, z, symbols, xyz, owner)
+      call efmo_settings(opts)
+      opts%rcut = 1.0e6_dp
+      opts%correlation = EFMO_CORR_RI_MP2
+      opts%corr_aux_basis = AUX
+      call run_efmo(z, symbols, xyz, owner, [0, 0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, res%n_qm_pairs, 3, message="not every pair is quantum")
+      if (allocated(error)) return
+
+      ! The monomer sum is the three cached Hartree-Fock energies plus their
+      ! three correlations, each computed on the potential's own orbitals.
+      call check(error, res%monomer_sum, sum(cached_mono) + sum(cached_mono_mp2), &
+                 thr=TOL, message="sum E_I^0 is not the correlated monomer sum")
+      if (allocated(error)) return
+      call check(error, res%monomer_correlation, sum(cached_mono_mp2), thr=TOL, &
+                 message="the reported monomer correlation is not the sum of the three")
+      if (allocated(error)) return
+
+      pairs = reshape([1, 2, 1, 3, 2, 3], [2, 3])
+      pair_sum = 0.0_dp
+      do k = 1, 3
+         idx = [atoms_of(owner, pairs(1, k)), atoms_of(owner, pairs(2, k))]
+         call dimer_rimp2(z(idx), symbols(idx), xyz(:, idx), 0, opts, dimer(k), &
+                          dimer_corr(k), err)
+         if (err%has_error()) exit
+         pair_sum = pair_sum + dimer(k) &
+                    - (cached_mono(pairs(1, k)) + cached_mono_mp2(pairs(1, k))) &
+                    - (cached_mono(pairs(2, k)) + cached_mono_mp2(pairs(2, k)))
+      end do
+      call check(error,.not. err%has_error(), "a reference dimer failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, res%dimer_correction, pair_sum, thr=TOL, &
+                 message="the quantum dimer correction is not the correlated pair sum")
+      if (allocated(error)) return
+
+      expected = sum(cached_mono) + sum(cached_mono_mp2) + pair_sum &
+                 - res%pair_polarization + res%polarization_total
+      call check(error, res%energy, expected, thr=TOL, &
+                 message="EFMO/RI-MP2 with every pair quantum is not the correlated "// &
+                 "pair sum plus the many-body induction")
+   end subroutine test_rimp2_trimer
 
    subroutine test_two_fragments(error)
       !! Limit three: two fragments, so EFMO is the dimer's own RHF energy

@@ -467,7 +467,8 @@ contains
 
       call read_fragmentation(json, config, error)
       if (error%has_error()) return
-      call read_efmo(json, config)
+      call read_efmo(json, config, error)
+      if (error%has_error()) return
 
       ! ---- molecules -------------------------------------------------------
       settings = .false.
@@ -567,7 +568,7 @@ contains
       call read_cutoffs(json, config, error)
    end subroutine read_fragmentation
 
-   subroutine read_efmo(json, config)
+   subroutine read_efmo(json, config, error)
       !! The keywords.efmo block
       !!
       !! `rcut` is not here: it decides which pairs are solved quantum
@@ -575,9 +576,24 @@ contains
       !! `keywords.fragmentation` beside `resppc`.
       type(json_file), intent(inout) :: json
       type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
 
       call optional_logical(json, "keywords.efmo.charge_transfer", &
                             config%efmo_charge_transfer)
+      call optional_real(json, "keywords.efmo.induction_damping", &
+                         config%efmo_induction_damping)
+      ! Zero is off and any positive number is a damping exponent, so the only
+      ! unreadable value is a negative one: it would name a factor that grows
+      ! with separation, which is not a damping at all.
+      if (config%efmo_induction_damping < 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.efmo.induction_damping is the "// &
+                        "exponent a of the Tang-Toennies-like factor "// &
+                        "1 - exp(-a R^2)(1 + a R^2) that damps the induction "// &
+                        "field, so it cannot be negative. Zero -- the default -- "// &
+                        "leaves the field undamped; 0.6 is what GAMESS's EFMO "// &
+                        "uses for a cluster of whole molecules.")
+         return
+      end if
    end subroutine read_efmo
 
    subroutine read_cutoffs(json, config, error)
