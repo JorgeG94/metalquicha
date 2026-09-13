@@ -6,11 +6,12 @@ module mqc_terco_driver
    !! and not a driver in the sense the cuEST one is: there is no iteration
    !! here to interleave with.
    !!
-   !! **The guess is computed on the CPU on purpose.** terco's own fallback is
-   !! the core Hamiltonian, which for anything past a few atoms costs more SCF
-   !! iterations than the superposition-of-atomic-densities guess saves. The
-   !! CPU path already has SAD, and a density is small next to the integrals,
-   !! so it is cheaper to build it here and ship it than to teach terco how.
+   !! **The guess is built by terco**, and only its name crosses the
+   !! interface. This module once built the density on the CPU and shipped
+   !! it, on the reasoning that terco's only fallback was the core
+   !! Hamiltonian; terco has had its own free-atom SAD for a while, and now
+   !! SAP as well, so there is nothing left to ship. What mqc still decides
+   !! is WHICH guess, because the deck spelling and the refusals live here.
    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_ptr, c_char, &
                                                                              c_null_ptr, c_null_char, c_loc
    use pic_types, only: dp
@@ -25,14 +26,15 @@ module mqc_terco_driver
    use mqc_czt_bridge, only: core_orbital_count
    use libcint_fortran, only: LIBCINT_NCTR_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_COEFF
    use mqc_czt_atomic_guess, only: parse_guess_name
-   use mqc_czt_rhf, only: SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+   use mqc_czt_rhf, only: SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
+                          SCF_GUESS_SAP
    use trc_c_interfaces, only: trc_create, trc_destroy, trc_set_molecule, trc_set_basis_libcint, &
                                trc_set_aux_libcint, trc_set_method, trc_set_convergence, &
                                trc_set_screening, trc_set_guess, trc_set_verbose, trc_set_rimp2, &
                                trc_run_scf, trc_run_rimp2, trc_nao, trc_energy, trc_iterations, &
                                trc_rimp2_energy, trc_message, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
-                               TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD
+                               TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD, TRC_GUESS_SAP
    implicit none
    private
 
@@ -186,16 +188,28 @@ contains
       nspin = 1
       if (unrestricted) nspin = 2
 
-      ! ---- the initial density, built on the CPU ---------------------------
+      ! ---- which guess -----------------------------------------------------
       !
-      ! `guess_total` comes back unallocated for core and GWH, which terco is
-      ! told by a null pointer: it then builds the core guess itself. An atomic
-      ! guess that will not build has already warned and fallen back to GWH
-      ! inside `build_restricted_guess`, so there is nothing to handle here.
-      ! ---- which guess. terco builds SAD itself (one free-atom SCF per
-      ! element, spin-averaged); core and GWH are its own; SAC is the same
-      ! spherical atom under another name; a projection ladder is refused
-      ! here as it was refused by the CPU guess builder.
+      ! EVERY ONE OF THESE IS BUILT BY TERCO, not here. `trc_set_guess` is
+      ! given a null density pointer and a kind, and terco does the work: its
+      ! own core and GWH, its own free-atom SCF for SAD, and for SAP the
+      ! free-atom screening potentials on a quadrature. Nothing about the
+      ! guess crosses the interface except the name. (The module header used
+      ! to say the guess was computed on the CPU on purpose; that stopped
+      ! being true when terco grew SAD, and this comment replaces it.)
+      !
+      ! SAC IS NOT PASSED THROUGH. terco has a TRC_GUESS_SAC, but it is not
+      ! this SAC: terco's superposes free atoms carrying the MOLECULE'S
+      ! CHARGE, while mqc's keeps each neutral atom's own alpha/beta split
+      ! (`d_alpha`, `d_beta` rather than `d_half` in build_atomic_guess).
+      ! Two different guesses share three letters, so this keeps mapping SAC
+      ! to terco's SAD -- the spin-averaged free atom, which is what mqc's
+      ! SAC reduces to once terco's restricted SCF averages the spins -- and
+      ! does not quietly hand a charge model to a deck that asked for a spin
+      ! one. Deciding what `sac` should mean across the two codes is a naming
+      ! decision and not one to make inside a mapping table.
+      !
+      ! A projection ladder is refused here as it was by the CPU builder.
       call parse_guess_name(settings%guess, guess_kind, error)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, "backend 'terco': "//error%get_message())
@@ -210,10 +224,12 @@ contains
          guess_c = TRC_GUESS_GWH
       case (SCF_GUESS_SAD, SCF_GUESS_SAC)
          guess_c = TRC_GUESS_SAD
+      case (SCF_GUESS_SAP)
+         guess_c = TRC_GUESS_SAP
       case default
          call result%error%set(ERROR_VALIDATION, "backend 'terco': guess '"// &
                                trim(settings%guess)//"' has no terco counterpart; use "// &
-                               "'sad', 'core' or 'gwh'.")
+                               "'sap', 'sad', 'core' or 'gwh'.")
          result%has_error = .true.
          result%has_energy = .false.
          return

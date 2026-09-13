@@ -32,7 +32,8 @@ module mqc_czt_atomic_guess
    use mqc_string_utils, only: int_to_text
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, subshell_layout
    use mqc_czt_rhf, only: SCF_GUESS_PROJ, rhf_result_t, run_czt_uhf, &
-                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
+                          SCF_GUESS_SAP
    implicit none
    private
 
@@ -114,11 +115,13 @@ contains
          kind = SCF_GUESS_SAD
       case ("basis_set_projection", "projection")
          kind = SCF_GUESS_PROJ
+      case ("sap")
+         kind = SCF_GUESS_SAP
       case default
          kind = SCF_GUESS_SAD
          call error%set(ERROR_VALIDATION, "unknown initial guess '"//trim(adjustl(text))// &
-                        "'; the CPU backend has core, gwh, sac, sad and "// &
-                        "basis_set_projection")
+                        "'; the guesses are core, gwh, sac, sad, "// &
+                        "basis_set_projection and sap")
       end select
    end subroutine parse_guess_name
 
@@ -151,6 +154,17 @@ contains
          return
       end if
 
+      ! SAP is recognised by the parser so that a deck asking for it reaches
+      ! the backend that has it, and refused HERE so that the CPU path says
+      ! so rather than quietly starting from something else. Delete this when
+      ! the CPU SAP lands; nothing else about the name has to change.
+      if (guess_kind == SCF_GUESS_SAP) then
+         call error%set(ERROR_VALIDATION, "the sap guess is built by the terco backend and "// &
+                        "not yet by this one; choose sad, gwh or core, or run this deck "// &
+                        "with the terco backend")
+         return
+      end if
+
       if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD) then
          call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error)
          if (guess_error%has_error()) then
@@ -179,6 +193,8 @@ contains
          name = "basis_set_projection"
       case (SCF_GUESS_SAD)
          name = "sad"
+      case (SCF_GUESS_SAP)
+         name = "sap"
       case default
          name = "unknown"
       end select

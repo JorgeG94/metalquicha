@@ -48,6 +48,7 @@ module mqc_czt_rhf
    integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
+   integer, parameter, public :: SCF_GUESS_SAP = 5    !! Superposed atomic potentials
 
    integer, parameter :: LINE_LEN = 160
       !! Buffer length for a formatted table line handed to the logger.
