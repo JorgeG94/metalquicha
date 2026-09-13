@@ -50,12 +50,21 @@
       }
     },
     {
-      "name": "serial",
+      "name": "shared-mem",
       "inherits": "base",
-      "displayName": "No MPI",
-      "description": "pic-mpi's single-rank backend. For a machine with no MPI at all.",
+      "displayName": "Threads, no ranks",
+      "description": "pic-mpi's single-rank backend, with OpenMP and tblite untouched. One node, threaded. For a machine with no MPI at all. This preset was called serial until that name was needed for a build with no threads either.",
       "cacheVariables": {
         "MQC_ENABLE_MPI": "OFF"
+      }
+    },
+    {
+      "name": "serial",
+      "inherits": "base",
+      "displayName": "No OpenMP, MPI or tblite",
+      "description": "MQC_ENABLE_SERIAL. Nothing threaded, nothing distributed, no xTB -- BLAS/LAPACK is the only parallel-adjacent dependency left. A portability mode for a compiler that cannot build the parallel forms, not a performance one.",
+      "cacheVariables": {
+        "MQC_ENABLE_SERIAL": "ON"
       }
     },
     {
@@ -119,6 +128,10 @@
       "configurePreset": "xtb-only"
     },
     {
+      "name": "shared-mem",
+      "configurePreset": "shared-mem"
+    },
+    {
       "name": "serial",
       "configurePreset": "serial"
     },
@@ -153,6 +166,11 @@
       "name": "mqc-libcint",
       "inherits": "mqc",
       "configurePreset": "libcint"
+    },
+    {
+      "name": "mqc-shared-mem",
+      "inherits": "mqc",
+      "configurePreset": "shared-mem"
     },
     {
       "name": "mqc-serial",

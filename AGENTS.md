@@ -66,6 +66,8 @@ metalquicha/
 │   │   └── mqc_czt_bridge.f90   #   the ONLY way in; nothing reaches past it
 │   ├── cuest/                   # GPU, via NVIDIA cuEST
 │   └── crest/ dlfind/ hdf5/     # thin adapters to foreign libraries
+├── compat/                      # `omp_lib` for MQC_ENABLE_SERIAL, outside
+│                                #   src/ so fpm never globs it
 ├── test/                        # Unit tests (test-drive framework)
 ├── validation/                  # Physics validation test cases
 ├── cmake/                       # CMake configuration
@@ -305,6 +307,40 @@ is an outline of four `include()`s, every dependency is declared in its own
 `mqc_add_validation_program`. `CMakePresets.json` carries the configurations
 worth remembering, `perlmutter` among them.
 
+### Building serially
+
+`-DMQC_ENABLE_SERIAL=ON` turns off OpenMP, MPI and tblite together, leaving
+BLAS/LAPACK as the only parallel-adjacent dependency. The three go together
+because they are not independent: tblite is built with OpenMP and cannot be
+configured without it, and a build with neither has no reason to carry MPI.
+
+It exists for a compiler that cannot yet build the parallel forms, not for
+speed -- nothing is threaded, nothing is distributed, and the fragment loop
+runs one fragment at a time. Do not benchmark against it.
+
+Two things it does that are not obvious. It sets
+`CMAKE_DISABLE_FIND_PACKAGE_OpenMP`, because libfint runs its own
+`find_package(OpenMP)` to make its shell-quartet workspace `!$omp
+threadprivate` and would otherwise put the flag back. And it compiles
+`compat/omp_lib_serial.f90`, which answers the OpenMP runtime API as one
+thread: the `!$omp` directives vanish without the flag but the twenty-odd
+unguarded `use omp_lib` statements do not, and gfortran leaves
+`omp_get_max_threads_` in libgomp. Linking libgomp instead would work and would
+be one line, but it restores the dependency the mode exists to remove and
+reports the machine's core count in a build with no parallel region to use it.
+
+The whole CPU validation suite -- 307 cases -- passes on a serial gfortran
+build.
+
+**LFortran** is why this exists, and it does not build the project yet. As of
+0.64.0 the serial configure is clean and 271 objects compile; what stops it is
+four compiler bugs, each of which has a minimal reproducer kept outside this
+repository. The one with the widest reach is that a continued `!$omp` directive is
+rejected -- 359 of them across 23 files -- which is what makes serial the only
+shape worth trying. LFortran also needs `--implicit-interface`,
+`--mangle-underscore-external` and `--legacy-array-sections`, set in
+`cmake/CMakeLists.txt`; each is load-bearing and each is commented there.
+
 ## Coding Conventions
 
 See `FORTRAN_STYLE.md` for the complete style guide, and `CMAKE_STYLE.md`
@@ -503,6 +539,7 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
 | Intel ifx | Full support |
 | nvfortran | Partial (no tblite) |
 | LLVM Flang | Partial (no tblite) |
+| LFortran | Does not build yet; see "Building serially" |
 
 ## Useful Commands
 

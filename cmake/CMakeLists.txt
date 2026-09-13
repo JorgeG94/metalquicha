@@ -131,6 +131,40 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
   set(FLAGS_WARNINGS "")
   set(FLAGS_COVERAGE "")
 
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LFortran")
+  # LFortran is alpha and this configuration is exploratory; it is here so that
+  # a build with it fails on the source rather than on the flags.
+  #
+  # `--implicit-interface` is not a style concession. CMake's own probes are
+  # written the way FORTRAN 77 was -- `external sgemm` and a bare `call sgemm()`
+  # is the whole of the program FindBLAS compiles to decide a BLAS works -- and
+  # LFortran rejects that as a semantic error, so without this flag the BLAS
+  # search reports "Looking for Fortran sgemm - not found" against a perfectly
+  # good libopenblas and the configure stops there. FindMPI probes the same way.
+  #
+  # `--mangle-underscore-external` is the other half of the same story, and it
+  # is what the BLAS depends on. LFortran emits a call to an external procedure
+  # under its bare name -- `sgemm`, not `sgemm_` -- while every BLAS built by a
+  # conventional Fortran compiler exports only the trailing-underscore spelling.
+  # Without this the FindBLAS probe links a perfectly good libopenblas and still
+  # reports an undefined reference to `sgemm`, and every BLAS call in this
+  # project would fail the same way at link time.
+  #
+  # `--legacy-array-sections` restores sequence association -- passing `rho(1)`
+  # where the dummy is an array, which LFortran rejects by default. libxc's own
+  # Fortran example is written that way, so a build without this stops inside a
+  # dependency.
+  #
+  # There is no RELEASE tuning: `-march=native` is not an LFortran flag, and the
+  # Release configuration's `-O3` comes from CMake's own LFortran module.
+  set(FLAGS_STANDARD
+      "--implicit-interface --mangle-underscore-external --legacy-array-sections"
+  )
+  set(FLAGS_DEBUG "")
+  set(FLAGS_RELEASE "")
+  set(FLAGS_WARNINGS "")
+  set(FLAGS_COVERAGE "")
+
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
   # CrayPE's ftn wrapper driving the Cray Fortran compiler (CCE). CMake already
   # supplies the module flags (-em -J) and, for a PIC build, -h PIC.
