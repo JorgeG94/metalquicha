@@ -43,6 +43,10 @@ module mqc_config_adapter
 
       ! Fragmentation settings
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
+      logical :: nlevel_set = .false.
+         !! Whether the deck wrote `keywords.fragmentation.level`. EFMO's own
+         !! default level is two and this is how it tells that apart from a deck
+         !! that asked for one.
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       character(len=16) :: expansion_kind = "mbe"  !! "mbe", "fmo" or "ee-mbe"
       character(len=16) :: embedding = ""
@@ -191,6 +195,7 @@ contains
       else
          driver_config%nlevel = mqc_config%frag_level
       end if
+      driver_config%nlevel_set = mqc_config%frag_level_set
 
       ! **`keywords.fragmentation.method` decides the expansion.** It used to be
       ! required, validated for presence and then never read -- the choice came

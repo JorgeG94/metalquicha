@@ -140,6 +140,11 @@ module mqc_json_output_types
          !! How the pairs split at `R_cut`. Together they are every pair, so a
          !! deck can check the cutoff did what was intended without recomputing
          !! the separations.
+      integer :: efmo_qm_groups = 0
+         !! Near groups of two or more fragments -- the SCFs the near half of
+         !! the energy cost. Equal to `efmo_qm_dimers` at level two, larger
+         !! above it, and the only place the output says how much a raised
+         !! `keywords.fragmentation.level` actually enumerated.
       logical :: has_efmo = .false.
 
    contains
@@ -219,6 +224,7 @@ contains
       this%has_efmo = .false.
       this%efmo_qm_dimers = 0
       this%efmo_efp_dimers = 0
+      this%efmo_qm_groups = 0
       this%has_ieda = .false.
       this%has_fukui = .false.
       this%ieda_formation = 0.0_dp

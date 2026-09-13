@@ -361,6 +361,7 @@ HAND_MAINTAINED = {
     "cpu/mqc/efmo/efmo_prism_rcut1_damped.json",
     "cpu/mqc/efmo/efmo_cage_rcut2.json",
     "cpu/mqc/efmo/efmo_w3_rimp2.json",
+    "cpu/mqc/efmo/efmo_w3_level3.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -2655,6 +2656,14 @@ PRESERVED_TESTS = [
         "tolerance": 1.0e-8,
         "type": "fragmented",
         "reference_note": "reference is this program's own EFMO/RI-MP2 total. No other code computes this number: GAMESS's EFMO/RI-MP2 uses its own fitting basis handling and PySCF has no EFMO, so what pins it is the pair of identities in test_mqc_czt_efmo, which are exact by construction -- on two fragments EFMO/RI-MP2 equals the dimer's own in-vacuo RI-MP2 energy, and with every pair quantum it equals the RI-MP2 many-body pair sum plus the induction no pair holds, each against an independently driven SCF and fitted MP2. The deck is the water trimer of w3.xyz at rcut 2.0, which splits 2 quantum / 1 effective, so both halves of eq 6 carry something and the correlated half is only the quantum one: the fragment potentials, the far pair and the induction are Hartree-Fock constructions and do not move when model.method changes. Of the total, -0.383415520 is monomer correlation and -0.000528358 the correlation in the quantum dimer correction. The Hartree-Fock energy of the same deck is -227.970376276.",
+    },
+    {
+        "name": "EFMO water trimer 6-31G, level 3 = N, rcut 100 (CPU)",
+        "input": "inputs/cpu/mqc/efmo/efmo_w3_level3.json",
+        "expected_energy": -227.970497639041,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "reference_note": "reference is the unfragmented RHF/6-31G energy of the same cluster, -227.970497639044, which EFMO has to reproduce here: the deck runs level 3 on three fragments with rcut 100, so the level is the fragment count and every group is near. Both series then telescope -- the in-vacuo one to the supersystem's own SCF and the induction one to E_pol^total, which it therefore cancels entirely, leaving no polarization correction at all -- and the answer is one RHF energy. Measured residual 3e-12 Ha, which is the accumulated convergence of the seven SCFs (three monomers, three dimers, one trimer) against the one. So unlike the other four EFMO cases this reference is not this program's own number: it is an identity the method has, and it is the sharpest check on the subset-induction bookkeeping there is, since a wrong sign, a missing group or a group induction solved over the wrong fragments all leave the level-two limits intact and break it. The same identity on the water prism at level 6 holds to 2.4e-11 over 57 groups. keywords.fragmentation.level is the same key MBE and FMO read; EFMO defaults it to 2, which is the method as published, so every other deck here is unaffected.",
     },
     {
         "name": "EFP2 water dimer 6-31G* (CPU)",

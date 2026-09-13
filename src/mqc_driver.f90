@@ -215,10 +215,11 @@ contains
          return
       end if
 
-      ! EFMO takes neither path either. It is a fragmented method, but not a
-      ! many-body expansion: there is no term list, no subset closure and no
-      ! embedding loop, only monomers, a pair split and one induction over
-      ! everything. The whole expression is assembled inside the backend.
+      ! EFMO takes neither path either. It is a fragmented method with a
+      ! many-body expansion of its own -- over the groups whose every pair is
+      ! near, differencing the in-vacuo energy and the subset induction alike --
+      ! and with no embedding loop. Neither this file's MBE term list nor its
+      ! screening applies; the whole expression is assembled inside the backend.
       if (config%expansion_kind == "efmo") then
          call run_efmo_energy(config, sys_geom, resources%mpi_comms%world_comm, &
                               wants_output, result_out)
@@ -1322,11 +1323,15 @@ contains
       !! writes a file.
       !!
       !! Neither the fragmented nor the unfragmented path applies. EFMO is a
-      !! fragmented method with no n-mer list: every fragment's potential is
-      !! built, the pairs are split at `R_cut`, the near ones get an in-vacuo
-      !! dimer and the far ones four effective-fragment terms, and one induction
-      !! runs over all of them. `run_czt_efmo` assembles it and hands back the
-      !! breakdown.
+      !! fragmented method whose n-mer list is its own: every fragment's
+      !! potential is built, the pairs are split at `R_cut`, the groups whose
+      !! every pair is near get an in-vacuo SCF and a subset induction, the far
+      !! pairs get four effective-fragment terms, and one induction runs over
+      !! all of them. `run_czt_efmo` assembles it and hands back the breakdown.
+      !!
+      !! `keywords.fragmentation.level` truncates that expansion and is the same
+      !! key MBE and FMO read, but is defaulted **here**, to two: the shared
+      !! `DEFAULT_FRAG_LEVEL` is one, which for EFMO would drop every near pair.
       use mqc_czt_bridge, only: run_czt_efmo
       use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_MP2
       use mqc_elements, only: element_number_to_symbol
@@ -1348,7 +1353,13 @@ contains
       real(dp) :: energy
       type(scf_numerics_t) :: efmo_scf
       integer :: correlation
-      integer :: i, n_frag, n_qm, n_efp
+      integer :: i, n_frag, n_qm, n_efp, n_groups, level
+
+      integer, parameter :: EFMO_DEFAULT_LEVEL = 2
+         !! What `keywords.fragmentation.level` means when the deck omits it.
+         !! Two, because that is EFMO as published and as every reference in
+         !! this repository was pinned; the shared `DEFAULT_FRAG_LEVEL` is one,
+         !! which for EFMO would silently drop every near pair.
 
       integer, parameter :: EFMO_SCF_MAX_ITER = 200
       real(dp), parameter :: EFMO_SCF_ENERGY_TOL = 1.0e-10_dp
@@ -1406,6 +1417,20 @@ contains
          return
       end if
 
+      ! The level EFMO's near groups are expanded to. Read from the same key
+      ! MBE and FMO read -- there is no EFMO-specific level -- but defaulted
+      ! here rather than in the adapter, since the shared default is one and
+      ! EFMO's is two.
+      level = EFMO_DEFAULT_LEVEL
+      if (config%nlevel_set) level = config%nlevel
+      if (level < 1) then
+         call refuse(result_out, "EFMO needs keywords.fragmentation.level of at "// &
+                     "least 1, and the deck asked for "//to_char(level)//". Level 1 "// &
+                     "is the fragment sum alone, 2 is EFMO as published, and the "// &
+                     "fragment count is exact.")
+         return
+      end if
+
       call fragment_owner_map(sys_geom, owner, n_frag)
       if (n_frag < 2) then
          call refuse(result_out, "EFMO needs at least two fragments: with one there "// &
@@ -1443,9 +1468,10 @@ contains
       efmo_scf%allow_crap_scf = config%method_config%scf%allow_crap_scf
 
       if (comm%leader()) then
-         call logger%info("Running EFMO over "//to_char(n_frag)//" fragments")
+         call logger%info("Running EFMO over "//to_char(n_frag)//" fragments, "// &
+                          "level "//to_char(min(level, n_frag)))
          if (comm%size() > 1) then
-            call logger%info("  monomers and quantum dimers over "// &
+            call logger%info("  monomers and quantum groups over "// &
                              to_char(comm%size())//" ranks")
          end if
       end if
@@ -1459,12 +1485,12 @@ contains
 
       call run_czt_efmo(sys_geom%element_numbers, symbols, sys_geom%coordinates, owner, &
                         charges, config%method_config%basis_set, &
-                        config%method_config%efmo%rcut, &
+                        config%method_config%efmo%rcut, level, &
                         config%method_config%efmo%charge_transfer, &
                         config%method_config%efmo%induction_damping, efmo_scf, &
                         EFMO_SCF_MAX_ITER, EFMO_SCF_ENERGY_TOL, EFMO_SCF_DENSITY_TOL, &
                         EFMO_SCF_GRAD_TOL, trim(config%method_config%scf%guess), &
-                        energy, terms, n_qm, n_efp, err, &
+                        energy, terms, n_qm, n_efp, n_groups, err, &
                         verbose=(logger%log_level >= verbose_level), &
                         vdwscl=config%method_config%efp%vdw_scale, &
                         quadrupole_blocks=config%method_config%efp%quadrupole_blocks, &
@@ -1503,6 +1529,7 @@ contains
          json_data%efmo_terms = terms
          json_data%efmo_qm_dimers = n_qm
          json_data%efmo_efp_dimers = n_efp
+         json_data%efmo_qm_groups = n_groups
          json_data%has_efmo = .true.
          json_data%fragment_breakdown = config%fragment_breakdown
          call write_json_output(json_data)

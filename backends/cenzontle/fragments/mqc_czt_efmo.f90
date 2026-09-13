@@ -3,10 +3,39 @@ module mqc_czt_efmo
    !! EFMO (Sattasathuchana, Xu, Bertoni, Kim, Leang, Pham, Gordon, JCTC 20,
    !! 2445 (2024), eq 6; Steinmann, Fedorov, Jensen, JPCA 114, 8705 (2010)):
    !!
-   !!     E = sum_I E_I^0
-   !!       + sum_{I<J, R_IJ <= R_cut} ( E_IJ^0 - E_I^0 - E_J^0 - E_IJ^pol )
+   !!     E = sum over near groups S, |S| <= n, of ( dE_S^0 - dE_S^pol )
    !!       + sum_{I<J, R_IJ >  R_cut} ( E_IJ^Coul + E_IJ^disp + E_IJ^ExRep + E_IJ^CT )
    !!       + E_pol^total
+   !!
+   !! **EFMO to any many-body order.** `dE_S^0` is the many-body difference of
+   !! the *in-vacuo* energies of `S` and its subsets and `dE_S^pol` is the same
+   !! difference applied to the induction energy of the same group's potentials,
+   !! both from [[mqc_czt_subsets]]. At `n = 2` that is eq 6 of the paper
+   !! written out -- `dE_I^0 = E_I^0`, `dE_IJ^0 = E_IJ^0 - E_I^0 - E_J^0`,
+   !! `dE_I^pol = 0` and `dE_IJ^pol = E_IJ^pol` -- and the level-two total is
+   !! unchanged to the last bit. At `n = 3` the group terms are the usual
+   !! three-body forms, `E_IJK^pol - E_IJ^pol - E_IK^pol - E_JK^pol` being the
+   !! non-additive part of the trimer's induction.
+   !!
+   !! **Nothing in the expansion is two-body specific**, which is why this
+   !! generalises at all: no group's Hamiltonian depends on its environment, so
+   !! the many-body differences telescope exactly. GAMESS stops at two because
+   !! it enumerates the levels by hand, not because the method does.
+   !!
+   !! **A group is near only if EVERY pair inside it is near.** The far half of
+   !! the energy is pairwise by construction -- the four effective-fragment
+   !! terms are two-body and the induction is already all orders in
+   !! `E_pol^total` -- so there is no far n-body term, and a group holding a far
+   !! pair would count that pair twice. `efmo_near_subsets` implements exactly
+   !! that, and the criterion is inherited by subsets, which is what makes the
+   !! filtered group list a valid one to difference over.
+   !!
+   !! **At level = N with `R_cut` huge the whole polarization correction
+   !! cancels**: the induction series telescopes to `E_pol^total`, the last term
+   !! of the energy, and the in-vacuo series telescopes to the supersystem's own
+   !! energy. So EFMO at full level *is* the unfragmented calculation, which is
+   !! the sharpest available check on the subset-induction bookkeeping and is
+   !! asserted in `test_mqc_czt_efmo`.
    !!
    !! **Nothing here is self-consistent across fragments.** `E_I^0` and `E_IJ^0`
    !! are *in vacuo* energies -- no embedding field, no monomer loop -- which is
@@ -16,7 +45,7 @@ module mqc_czt_efmo
    !! potentials, one per fragment, each built by MAKEFP from the same SCF that
    !! produced `E_I^0`.
    !!
-   !! **`E_IJ^pol` is subtracted from every near dimer, and it is not small.**
+   !! **`E_S^pol` is subtracted from every near group, and it is not small.**
    !! A quantum dimer already contains the mutual induction of its two
    !! fragments, and `E_pol^total` -- the induction solved over every fragment
    !! at once -- contains it too, so one copy has to go. What survives,
@@ -47,10 +76,18 @@ module mqc_czt_efmo
    !! would not be an interaction energy at all. Below d functions the two forms
    !! coincide and the choice is invisible.
    !!
-   !! **One rank, closed shell, whole molecules.** Distributing the monomers and
-   !! dimers is Phase 4 and covalent fragments are Phase 5; a partition that
-   !! cuts a bond is refused here rather than capped, since a cap's multipoles
-   !! would act on the partner across the cut.
+   !! **No embedding, quantum or effective, anywhere.** Every group's SCF runs
+   !! in vacuo: the neighbouring fragments' potentials are not in its
+   !! Hamiltonian. That is deliberate and is what the whole expansion above
+   !! rests on. Mutually polarized QM/EFP embedding -- the fragment SCF solved
+   !! in the field of the other potentials, with the induction inside the SCF --
+   !! is a **separate method for later**, not a refinement of this one: it makes
+   !! a group's energy depend on its environment, so the many-body differences
+   !! no longer telescope and the level = N identity above stops holding.
+   !!
+   !! **Closed shell, whole molecules.** Covalent fragments are Phase 5; a
+   !! partition that cuts a bond is refused here rather than capped, since a
+   !! cap's multipoles would act on the partner across the cut.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -66,9 +103,10 @@ module mqc_czt_efmo
    use mqc_czt_efp_read, only: efp_fragment_t
    use mqc_czt_efp_convert, only: potential_to_fragment
    use mqc_czt_efp_energy, only: efp_pair_energy_t, efp_pair_terms, &
-                                 pair_polarization_energy
+                                 subset_polarization_energy
    use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, polarization_energy
-   use mqc_czt_efmo_pairs, only: efmo_split_pairs, efmo_pair_distance
+   use mqc_czt_efmo_pairs, only: efmo_split_pairs, efmo_near_subsets
+   use mqc_czt_subsets, only: subtract_subsets, n_choose
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
    use mqc_program_limits, only: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
@@ -87,7 +125,14 @@ module mqc_czt_efmo
 
    type :: efmo_options_t
       !! What to run, and how hard
-      character(len=64) :: basis = "6-31g"
+      character(len=64) :: basis = ""
+         !! **Empty on purpose, and refused rather than defaulted.** This field
+         !! used to start at "6-31g", which no run ever saw: every caller
+         !! overwrites it from the deck, and a deck that omits `model.basis`
+         !! gets "sto-3g" from `mqc_method_config`. So the initialiser named a
+         !! basis nothing was ever computed in, which is worse than no default
+         !! at all -- a plumbing bug that lost the deck's basis would have
+         !! silently produced 6-31G numbers.
       real(dp) :: rcut = 2.0_dp
          !! `R_cut` of eq 2, **unitless**: each interatomic distance is divided
          !! by the two van der Waals radii, so 1 is contact. A pair at or inside
@@ -95,6 +140,21 @@ module mqc_czt_efmo
          !! below zero every pair is effective, which is EFP with in-vacuo
          !! monomers; huge, every pair is quantum, which is FMO2 in vacuo plus
          !! the many-body induction. Both limits run, and both are tested.
+      integer :: level = 2
+         !! Truncate the many-body expansion of the near groups here.
+         !! `keywords.fragmentation.level`, the same key MBE and FMO read.
+         !!
+         !! Two is EFMO as published and as GAMESS runs it. One is the fragment
+         !! sum alone -- every near pair then contributes nothing, which is a
+         !! legitimate truncation and a poor one. Above two the near groups are
+         !! trimers and beyond, each an in-vacuo SCF and a subset induction; at
+         !! the fragment count the whole expansion is exact, and with `rcut`
+         !! huge it reproduces the unfragmented energy.
+         !!
+         !! **The cost is the binomial.** There are C(N, n) groups of size n
+         !! before the near criterion thins them, so level three on twenty
+         !! fragments is up to 1140 SCFs against 190 for level two. No level is
+         !! refused; the count is reported before any of them is computed.
       logical :: charge_transfer = .true.
          !! Include `E_IJ^CT` in the far pairs. GAMESS's EFMO has it; the 2012
          !! method left it out, so it is switchable rather than assumed.
@@ -182,17 +242,22 @@ module mqc_czt_efmo
       !! The total, and the six sums it is made of
       !!
       !! `energy` is exactly
-      !! `monomer_sum + dimer_correction - pair_polarization + far_electrostatics
+      !! `monomer_sum + nmer_correction - induction_correction + far_electrostatics
       !! + far_dispersion + far_exchange_repulsion + far_charge_transfer
-      !! + polarization_total`, with `pair_polarization` held positive and
+      !! + polarization_total`, with `induction_correction` held positive and
       !! subtracted, since that is how eq 6 writes it.
       real(dp) :: energy = 0.0_dp
       real(dp) :: monomer_sum = 0.0_dp
          !! `sum_I E_I^0`
-      real(dp) :: dimer_correction = 0.0_dp
-         !! `sum (E_IJ^0 - E_I^0 - E_J^0)` over the quantum dimers
-      real(dp) :: pair_polarization = 0.0_dp
-         !! `sum E_IJ^pol` over the quantum dimers, **subtracted** from the total
+      real(dp) :: nmer_correction = 0.0_dp
+         !! `sum over near groups with |S| >= 2 of dE_S^0`. At level two that is
+         !! `sum (E_IJ^0 - E_I^0 - E_J^0)` over the quantum dimers exactly.
+      real(dp) :: induction_correction = 0.0_dp
+         !! `sum over near groups of dE_S^pol`, **subtracted** from the total.
+         !! At level two that is `sum E_IJ^pol` over the quantum dimers; above
+         !! it, the pair sum plus the non-additive remainders of the larger
+         !! groups. Reported with the sign it has as a sum, not the sign it
+         !! enters with, so it can be compared against another code's directly.
       real(dp) :: far_electrostatics = 0.0_dp
       real(dp) :: far_dispersion = 0.0_dp
       real(dp) :: far_exchange_repulsion = 0.0_dp
@@ -200,9 +265,19 @@ module mqc_czt_efmo
          !! The four EFP terms, summed over the effective dimers
       real(dp) :: polarization_total = 0.0_dp
          !! `E_pol^total`, induction over every fragment at once
+      real(dp), allocatable :: level_vacuum(:)
+         !! `sum over |S| = m of dE_S^0`, for m = 1 to the level run. Slot one
+         !! is `monomer_sum`; the rest add up to `nmer_correction`. Per level
+         !! rather than one number because the whole question a level-three run
+         !! answers is how much the three-body term was worth.
+      real(dp), allocatable :: level_induction(:)
+         !! `sum over |S| = m of dE_S^pol`. Slot one is zero -- one fragment
+         !! induces nothing -- and the rest add up to `induction_correction`.
+      integer, allocatable :: level_count(:)
+         !! How many near groups of each size there were
       real(dp) :: monomer_correlation = 0.0_dp
-      real(dp) :: dimer_correlation = 0.0_dp
-         !! How much of `monomer_sum` and `dimer_correction` above is
+      real(dp) :: nmer_correlation = 0.0_dp
+         !! How much of `monomer_sum` and `nmer_correction` above is
          !! correlation rather than Hartree-Fock. Reported, not summed: the two
          !! sums already hold them, because a correlated `E_I^0` *is* the
          !! monomer energy of eq 6. Zero on a Hartree-Fock run.
@@ -211,6 +286,9 @@ module mqc_czt_efmo
          !! Every pair, quantum ones first, each carrying its `R_IJ`
       integer :: n_qm_pairs = 0
       integer :: n_efp_pairs = 0
+      integer :: n_qm_groups = 0
+         !! Near groups of two or more fragments -- the SCFs the near half
+         !! cost. Equal to `n_qm_pairs` at level two.
    end type efmo_result_t
 
 contains
@@ -233,13 +311,13 @@ contains
       type(efmo_result_t), intent(out) :: res
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
-         !! Spread the monomers and the quantum dimers over these ranks. Every
+         !! Spread the monomers and the quantum groups over these ranks. Every
          !! rank runs this same routine on the same geometry and comes out with
          !! the same total; nothing is gathered to a leader.
          !!
          !! **What is distributed is what costs.** A monomer is a MAKEFP -- an
          !! SCF, a localization and twelve frequency-dependent response solves
-         !! -- against one SCF for a dimer, so the monomer loop is what the
+         !! -- against one SCF for a group, so the monomer loop is what the
          !! balance is struck on, exactly as `run_fmo2` balances on its
          !! fragments. The far pairs and the induction stay replicated: they are
          !! milliseconds beside a potential, and replicating them means every
@@ -249,9 +327,11 @@ contains
       type(efp_pair_energy_t), allocatable :: far(:)
       real(dp), allocatable :: shifts(:, :)
       integer, allocatable :: qm_pairs(:, :), efp_pairs(:, :)
-      integer, allocatable :: idx_i(:), idx_j(:)
+      integer, allocatable :: terms(:, :), term_size(:)
+      real(dp), allocatable :: separation(:, :)
       integer, allocatable :: count_of(:)
       real(dp), allocatable :: monomer_corr(:)
+      integer :: n_terms
       type(timing_report_t) :: clk
          !! Where an EFMO run's wall time goes, stage by stage. The paper's Fig
          !! 7 makes the same split and the claim it supports -- that the
@@ -268,6 +348,14 @@ contains
       end if
       if (n_atoms < 1) then
          call error%set(ERROR_VALIDATION, "efmo: there are no atoms to fragment")
+         return
+      end if
+      if (len_trim(opts%basis) == 0) then
+         call error%set(ERROR_VALIDATION, "efmo: no orbital basis was named. Every "// &
+                        "caller sets it from the deck, so an empty one is a plumbing "// &
+                        "fault rather than a request for a default -- and guessing a "// &
+                        "basis here would return plausible numbers for a basis "// &
+                        "nobody asked for.")
          return
       end if
       if (minval(owner) < 1) then
@@ -303,23 +391,35 @@ contains
       res%monomer_sum = sum(res%monomer_energy)
       res%monomer_correlation = sum(monomer_corr)
 
+      ! One matrix of separations decides both halves: which pairs are far, and
+      ! which groups are near enough to be solved quantum mechanically.
       call efmo_split_pairs(owner, atomic_numbers, coordinates, opts%rcut, &
-                            qm_pairs, efp_pairs, error)
+                            qm_pairs, efp_pairs, error, r=separation)
       if (error%has_error()) return
       res%n_qm_pairs = size(qm_pairs, 2)
       res%n_efp_pairs = size(efp_pairs, 2)
       allocate (res%pairs(res%n_qm_pairs + res%n_efp_pairs))
 
-      call clk%begin("quantum dimers")
-      call quantum_dimers(atomic_numbers, symbols, coordinates, owner, &
-                          fragment_charges, qm_pairs, frags, shifts, opts, &
-                          monomer_corr, res, error, comm)
-      call clk%lap("quantum dimers")
+      call efmo_near_subsets(separation, opts%rcut, opts%level, terms, term_size, &
+                             n_terms, error)
+      if (error%has_error()) return
+      res%n_qm_groups = count(term_size(1:n_terms) >= 2)
+      if (is_leader(comm)) call announce_cost(res, opts, n_frag)
+
+      call clk%begin("quantum groups")
+      call quantum_subsets(atomic_numbers, symbols, coordinates, owner, &
+                           fragment_charges, terms, term_size, n_terms, separation, &
+                           frags, shifts, opts, monomer_corr, res, error, comm)
+      call clk%lap("quantum groups")
       if (error%has_error()) return
 
-      ! The far half. `efp_pair_terms` takes the pair list directly, so the near
-      ! pairs contribute nothing here -- which is the point, since their
-      ! electrostatics, exchange and dispersion are inside their dimer SCF.
+      ! The far half, and it stays pairwise however high the level goes: the
+      ! effective-fragment electrostatics, exchange repulsion, dispersion and
+      ! charge transfer are all two-body terms and the induction is already all
+      ! orders in `E_pol^total`, so there is no far n-body term to add.
+      ! `efp_pair_terms` takes the pair list directly, so the near pairs
+      ! contribute nothing here -- which is the point, since their
+      ! electrostatics, exchange and dispersion are inside their group's SCF.
       call clk%begin("effective-fragment pairs")
       far = efp_pair_terms(frags, shifts, efp_pairs, error, &
                            charge_transfer_on=opts%charge_transfer)
@@ -329,12 +429,7 @@ contains
          res%pairs(p)%i = efp_pairs(1, k)
          res%pairs(p)%j = efp_pairs(2, k)
          res%pairs(p)%qm = .false.
-         idx_i = gather(owner, efp_pairs(1, k))
-         idx_j = gather(owner, efp_pairs(2, k))
-         call efmo_pair_distance(atomic_numbers(idx_i), coordinates(:, idx_i), &
-                                 atomic_numbers(idx_j), coordinates(:, idx_j), &
-                                 res%pairs(p)%r, error)
-         if (error%has_error()) return
+         res%pairs(p)%r = separation(efp_pairs(1, k), efp_pairs(2, k))
          res%pairs(p)%electrostatics = far(k)%electrostatics
          res%pairs(p)%dispersion = far(k)%dispersion
          res%pairs(p)%exchange_repulsion = far(k)%exchange_repulsion
@@ -353,7 +448,7 @@ contains
       call clk%finish()
       if (error%has_error()) return
 
-      res%energy = res%monomer_sum + res%dimer_correction - res%pair_polarization &
+      res%energy = res%monomer_sum + res%nmer_correction - res%induction_correction &
                    + res%far_electrostatics + res%far_dispersion &
                    + res%far_exchange_repulsion + res%far_charge_transfer &
                    + res%polarization_total
@@ -730,96 +825,231 @@ contains
       energy = mp2%same_spin + mp2%opposite_spin
    end subroutine fragment_correlation
 
-   subroutine quantum_dimers(z, symbols, xyz, owner, charges, qm_pairs, &
-                             frags, shifts, opts, monomer_corr, res, error, comm)
-      !! Every near pair: one in-vacuo dimer SCF, and its pair induction
+   subroutine announce_cost(res, opts, n_frag)
+      !! What the near half is about to cost, before any of it is paid
+      !!
+      !! **The binomial is the whole story**, so it is said out loud rather than
+      !! left in a docstring: `C(N, n)` groups of size `n` before the near
+      !! criterion thins them, each one an in-vacuo SCF. A level a user picked
+      !! without doing that arithmetic is better met with a warning than with a
+      !! refusal -- the run may be exactly what was wanted -- and better with a
+      !! warning than with silence, because the cost is superlinear in a number
+      !! typed as a single digit.
+      type(efmo_result_t), intent(in) :: res
+      type(efmo_options_t), intent(in) :: opts
+      integer, intent(in) :: n_frag
+
+      integer :: level, m, unscreened
+
+      level = min(opts%level, n_frag)
+      call logger%info("  efmo: "//to_char(res%n_qm_groups)//" quantum groups up to "// &
+                       "level "//to_char(level)//", "//to_char(res%n_efp_pairs)// &
+                       " effective-fragment pairs")
+      if (level < 3) return
+
+      unscreened = 0
+      do m = 2, level
+         unscreened = unscreened + n_choose(n_frag, m)
+      end do
+      call logger%warning("efmo at level "//to_char(level)//" on "//to_char(n_frag)// &
+                          " fragments enumerates up to "//to_char(unscreened)// &
+                          " groups, of which the cutoff kept "// &
+                          to_char(res%n_qm_groups)//". The count is the binomial "// &
+                          "C(N, n) and each group is an SCF, so a level raised by "// &
+                          "one is not a small change.")
+   end subroutine announce_cost
+
+   subroutine quantum_subsets(z, symbols, xyz, owner, charges, terms, term_size, &
+                              n_terms, separation, frags, shifts, opts, monomer_corr, &
+                              res, error, comm)
+      !! Every near group: one in-vacuo SCF, its subset induction, and the
+      !! many-body difference of both
+      !!
+      !! **Two expansions, one operator.** `dE_S^0` and `dE_S^pol` are the same
+      !! difference from [[mqc_czt_subsets]] applied to two different quantities
+      !! -- the group's in-vacuo energy and the induction energy of the group's
+      !! own potentials -- and the near sum of the EFMO energy is the first minus
+      !! the second. Applying it to the induction as well is the whole of the
+      !! generalization: at level two `dE_IJ^pol` is `E_IJ^pol` and this reduces
+      !! to eq 6 bit for bit, and at level N with a huge cutoff the induction
+      !! series telescopes to `E_pol^total` and cancels it.
+      !!
+      !! Groups of one are not computed here: their energy is the monomer energy
+      !! `build_potentials` already has and their induction is zero, and they are
+      !! in the list only because the difference operator needs them to be.
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: xyz(:, :)
       integer, intent(in) :: owner(:), charges(:)
-      integer, intent(in) :: qm_pairs(:, :)
+      integer, intent(in) :: terms(:, :), term_size(:)
+         !! The near groups, smallest first, from `efmo_near_subsets`
+      integer, intent(in) :: n_terms
+      real(dp), intent(in) :: separation(:, :)
+         !! `R_IJ` for every pair, for the reported pair table
       type(efp_fragment_t), intent(in) :: frags(:)
       real(dp), intent(in) :: shifts(:, :)
       type(efmo_options_t), intent(in) :: opts
       real(dp), intent(in) :: monomer_corr(:)
-         !! Each `E_I^0`'s correlation part, so the dimer correction's own can
-         !! be reported beside it.
+         !! Each `E_I^0`'s correlation part, differenced the same way so the
+         !! correlation inside the group corrections can be reported beside them.
       type(efmo_result_t), intent(inout) :: res
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
 
-      integer, allocatable :: idx_i(:), idx_j(:), idx(:)
-      real(dp), allocatable :: e_dimer(:), e_pol(:), e_corr(:)
-      integer :: k, a, b, n_pairs
+      integer, allocatable :: idx(:), members(:)
+      real(dp), allocatable :: raw_vac(:), raw_pol(:), raw_corr(:)
+      real(dp), allocatable :: group_vac(:), group_pol(:), group_corr(:)
+      integer :: t, m, a, task, n_groups, level, pair
 
-      n_pairs = size(qm_pairs, 2)
-      allocate (e_dimer(n_pairs), e_pol(n_pairs), e_corr(n_pairs), source=0.0_dp)
+      n_groups = count(term_size(1:n_terms) >= 2)
+      level = 1
+      if (n_terms > 0) level = maxval(term_size(1:n_terms))
+      allocate (group_vac(max(n_groups, 1)), group_pol(max(n_groups, 1)), &
+                group_corr(max(n_groups, 1)), source=0.0_dp)
 
-      do k = 1, n_pairs
-         a = qm_pairs(1, k)
-         b = qm_pairs(2, k)
-         idx_i = gather(owner, a)
-         idx_j = gather(owner, b)
+      task = 0
+      do t = 1, n_terms
+         m = term_size(t)
+         if (m < 2) cycle
+         task = task + 1
 
-         ! Filled on every rank: it is a distance, not a calculation, and it
-         ! keeps the pair table below identical everywhere without a reduction.
-         res%pairs(k)%i = a
-         res%pairs(k)%j = b
-         res%pairs(k)%qm = .true.
-         call efmo_pair_distance(z(idx_i), xyz(:, idx_i), z(idx_j), xyz(:, idx_j), &
-                                 res%pairs(k)%r, error)
-         if (error%has_error()) return
-
-         if (.not. mine(k, comm)) cycle
-         idx = [idx_i, idx_j]
-         call logger%verbose("  efmo: dimer "//to_char(a)//"-"//to_char(b)// &
-                             ", "//to_char(size(idx))//" atoms")
-         call dimer_energy(z(idx), symbols(idx), xyz(:, idx), charges(a) + charges(b), &
-                           opts, e_dimer(k), e_corr(k), error)
+         ! Round robin over the flat group list, which at level two is the pair
+         ! list in the order it was built -- so a level-two run distributes
+         ! exactly as it did before there were larger groups to distribute.
+         if (.not. mine(task, comm)) cycle
+         members = terms(1:m, t)
+         idx = group_atoms(owner, members)
+         call logger%verbose("  efmo: group "//members_text(members)//", "// &
+                             to_char(size(idx))//" atoms")
+         call nmer_energy(z(idx), symbols(idx), xyz(:, idx), sum(charges(members)), &
+                          opts, group_vac(task), group_corr(task), error)
          if (error%has_error()) exit
 
-         ! The same induction solver on the two fragments alone -- the same
+         ! The same induction solver on the group's fragments alone -- the same
          ! screening, the same static field rank, the same tolerance as the
-         ! total below. A pair solved any other way would leave a residue in
-         ! `E_pol^total - sum E_IJ^pol` that looks like three-body induction.
-         e_pol(k) = pair_polarization_energy(frags(a), frags(b), shifts(:, a), &
-                                             shifts(:, b), error, &
-                                             damping=opts%induction_damping)
+         ! total below. A group solved any other way would leave a residue in
+         ! the induction expansion that looks like non-additive induction.
+         group_pol(task) = subset_polarization_energy(frags, shifts, members, error, &
+                                                      damping=opts%induction_damping)
          if (error%has_error()) exit
       end do
       call share_failure(error, comm)
       if (error%has_error()) return
 
-      ! Each rank filled only its own pairs and left the rest at zero, so a sum
-      ! gathers them. Summed *before* they are accumulated, not after, so the
-      ! order the terms are added in does not depend on the rank count and one
-      ! rank against four is an identity rather than a rounding question.
+      ! Each rank filled only its own groups and left the rest at zero, so a sum
+      ! gathers them. Summed *before* they are differenced and accumulated, not
+      ! after, so the order the terms are added in does not depend on the rank
+      ! count and one rank against four is an identity rather than a rounding
+      ! question.
       if (spread_over(comm)) then
-         call allreduce(comm, e_dimer, n_pairs, MPI_SUM)
-         call allreduce(comm, e_pol, n_pairs, MPI_SUM)
-         call allreduce(comm, e_corr, n_pairs, MPI_SUM)
+         call allreduce(comm, group_vac, size(group_vac), MPI_SUM)
+         call allreduce(comm, group_pol, size(group_pol), MPI_SUM)
+         call allreduce(comm, group_corr, size(group_corr), MPI_SUM)
       end if
 
-      do k = 1, n_pairs
-         a = qm_pairs(1, k)
-         b = qm_pairs(2, k)
-         res%pairs(k)%e_dimer = e_dimer(k)
-         res%pairs(k)%e_pair_pol = e_pol(k)
-         res%dimer_correction = res%dimer_correction + e_dimer(k) &
-                                - res%monomer_energy(a) - res%monomer_energy(b)
-         res%pair_polarization = res%pair_polarization + e_pol(k)
-         res%dimer_correlation = res%dimer_correlation + e_corr(k) &
-                                 - monomer_corr(a) - monomer_corr(b)
+      ! The three quantities on every group, singles included: the monomer
+      ! energies the potentials came with, no induction at all, and the monomer
+      ! correlation. Differencing needs them in the same list as the groups.
+      allocate (raw_vac(max(n_terms, 1)), raw_pol(max(n_terms, 1)), &
+                raw_corr(max(n_terms, 1)), source=0.0_dp)
+      task = 0
+      pair = 0
+      do t = 1, n_terms
+         m = term_size(t)
+         if (m == 1) then
+            a = terms(1, t)
+            raw_vac(t) = res%monomer_energy(a)
+            raw_corr(t) = monomer_corr(a)
+            cycle
+         end if
+         task = task + 1
+         raw_vac(t) = group_vac(task)
+         raw_pol(t) = group_pol(task)
+         raw_corr(t) = group_corr(task)
+         if (m /= 2) cycle
+         ! The pair table, filled on every rank from reduced numbers so it is
+         ! identical everywhere. Pairs come out of the enumeration in the order
+         ! `efmo_split_pairs` built its quantum list in, which is the order
+         ! `res%pairs` reserves its first slots in.
+         pair = pair + 1
+         res%pairs(pair)%i = terms(1, t)
+         res%pairs(pair)%j = terms(2, t)
+         res%pairs(pair)%qm = .true.
+         res%pairs(pair)%r = separation(terms(1, t), terms(2, t))
+         res%pairs(pair)%e_dimer = group_vac(task)
+         res%pairs(pair)%e_pair_pol = group_pol(task)
       end do
-   end subroutine quantum_dimers
 
-   subroutine dimer_energy(z, symbols, xyz, charge, opts, energy, correlation, error)
-      !! One dimer's restricted Hartree-Fock energy, in vacuo
+      call subtract_subsets(terms, term_size, n_terms, raw_vac)
+      call subtract_subsets(terms, term_size, n_terms, raw_pol)
+      call subtract_subsets(terms, term_size, n_terms, raw_corr)
+
+      allocate (res%level_vacuum(level), res%level_induction(level), source=0.0_dp)
+      allocate (res%level_count(level), source=0)
+      do t = 1, n_terms
+         m = term_size(t)
+         res%level_count(m) = res%level_count(m) + 1
+         if (m == 1) cycle
+         res%level_vacuum(m) = res%level_vacuum(m) + raw_vac(t)
+         res%level_induction(m) = res%level_induction(m) + raw_pol(t)
+      end do
+      ! Slot one is the fragment sum, taken from `monomer_sum` rather than
+      ! re-added here: `dE_I^0` *is* `E_I^0`, and one sum of the same numbers is
+      ! enough.
+      res%level_vacuum(1) = res%monomer_sum
+      do m = 2, level
+         res%nmer_correction = res%nmer_correction + res%level_vacuum(m)
+         res%induction_correction = res%induction_correction + res%level_induction(m)
+      end do
+      do t = 1, n_terms
+         if (term_size(t) < 2) cycle
+         res%nmer_correlation = res%nmer_correlation + raw_corr(t)
+      end do
+   end subroutine quantum_subsets
+
+   pure function group_atoms(owner, members) result(idx)
+      !! Every atom of a group of fragments, fragment by fragment in group order
+      integer, intent(in) :: owner(:)
+      integer, intent(in) :: members(:)
+      integer, allocatable :: idx(:)
+
+      integer :: k
+
+      ! Fragment by fragment in group order, which is the order the group's
+      ! basis functions come out in and the order a dimer was assembled in
+      ! before there were larger groups.
+      idx = gather(owner, members(1))
+      do k = 2, size(members)
+         idx = [idx, gather(owner, members(k))]
+      end do
+   end function group_atoms
+
+   function members_text(members) result(text)
+      !! A group's fragments as `1-2-5`, for a log line
+      integer, intent(in) :: members(:)
+      character(len=:), allocatable :: text
+
+      integer :: k
+
+      text = to_char(members(1))
+      do k = 2, size(members)
+         text = text//"-"//to_char(members(k))
+      end do
+   end function members_text
+
+   subroutine nmer_energy(z, symbols, xyz, charge, opts, energy, correlation, error)
+      !! One group's restricted Hartree-Fock energy, in vacuo
       !!
-      !! Cartesian, to match the monomer SCFs `make_efp_potential` ran; see the
-      !! module header. No embedding of any kind: the neighbouring fragments'
-      !! potentials are not felt by this SCF, and their interaction with the
-      !! pair is carried by the EFP terms and the total induction instead.
+      !! Two fragments or twenty: the group arrives as one atom list and this is
+      !! an ordinary closed-shell SCF on it. Cartesian, to match the monomer
+      !! SCFs `make_efp_potential` ran; see the module header.
+      !!
+      !! **No embedding of any kind**, and that is a property of the method and
+      !! not a simplification: the fragments outside the group are not in this
+      !! Hamiltonian, their interaction with it being carried by the
+      !! effective-fragment pair terms and the one total induction. It is also
+      !! what makes the many-body differences telescope, so an embedded variant
+      !! would be a different method rather than a better version of this one.
       integer, intent(in) :: z(:)
       character(len=2), intent(in) :: symbols(:)
       real(dp), intent(in) :: xyz(:, :)
@@ -840,10 +1070,10 @@ contains
       correlation = 0.0_dp
       nelec = sum(z) - charge
       if (nelec < 2 .or. mod(nelec, 2) /= 0) then
-         call error%set(ERROR_VALIDATION, "efmo: a dimer with "//to_char(nelec)// &
+         call error%set(ERROR_VALIDATION, "efmo: a group with "//to_char(nelec)// &
                         " electrons is not closed-shell. EFMO is restricted "// &
                         "Hartree-Fock for now, so the fragment charges have to "// &
-                        "leave every fragment and every dimer with an even count.")
+                        "leave every fragment and every group with an even count.")
          return
       end if
 
@@ -863,21 +1093,22 @@ contains
       call mol%destroy()
       if (error%has_error()) return
       if (.not. scf%converged .and. .not. opts%scf%allow_crap_scf) then
-         call error%set(ERROR_VALIDATION, "efmo: a dimer SCF did not converge, so the "// &
-                        "pair correction it feeds is not trustworthy. Set "// &
+         call error%set(ERROR_VALIDATION, "efmo: a group SCF did not converge, so the "// &
+                        "many-body correction it feeds is not trustworthy. Set "// &
                         "keywords.scf.allow_crap_scf to finish anyway.")
          return
       end if
       energy = scf%energy
 
-      ! The same correlation step the monomers got, on the dimer's own
-      ! orbitals. `E_IJ^0 - E_I^0 - E_J^0` is then a difference of three
-      ! energies of one model, which is the only reading under which it is an
-      ! interaction energy.
+      ! The same correlation step the monomers got, on the group's own
+      ! orbitals. `dE_S^0` is then a difference of energies of one model, which
+      ! is the only reading under which it is an interaction energy. The frozen
+      ! core is counted from this group's elements, so it is the sum of its
+      ! fragments' cores and both sides of the difference freeze the same set.
       call fragment_correlation(z, symbols, xyz, nelec, scf, opts, correlation, error)
       if (error%has_error()) return
       energy = energy + correlation
-   end subroutine dimer_energy
+   end subroutine nmer_energy
 
    subroutine total_polarization(frags, shifts, damping, energy, error)
       !! `E_pol^total`: induction over every fragment at once
@@ -912,7 +1143,9 @@ contains
       integer :: k
 
       call logger%info("============================================================")
-      call logger%info("  EFMO, R_cut = "//to_char(opts%rcut)//" (unitless)")
+      call logger%info("  EFMO, level "//to_char(min(opts%level, &
+                                                     size(res%monomer_energy)))//", R_cut = "//to_char(opts%rcut)// &
+                       " (unitless)")
       if (opts%induction_damping > 0.0_dp) then
          call logger%info("  induction field damped, a = "// &
                           to_char(opts%induction_damping))
@@ -939,10 +1172,22 @@ contains
          end if
          call logger%info(trim(line))
       end do
+      if (size(res%level_vacuum) >= 2) then
+         ! Per level rather than one lumped correction: what a level-three run
+         ! is *for* is the size of its three-body term, and a single number
+         ! cannot say whether the expansion is converging.
+         call logger%info("------------------------------------------------------------")
+         call logger%info("  level  groups        sum dE_S^0          sum dE_S^pol")
+         do k = 1, size(res%level_vacuum)
+            write (line, "(A,I5,I8,F20.10,F22.10)") "  ", k, res%level_count(k), &
+               res%level_vacuum(k), res%level_induction(k)
+            call logger%info(trim(line))
+         end do
+      end if
       call logger%info("------------------------------------------------------------")
       call logger%info("  monomers            sum E_I^0        "//to_char(res%monomer_sum))
-      call logger%info("  QM dimers           E_IJ - E_I - E_J "//to_char(res%dimer_correction))
-      call logger%info("  QM dimers           - sum E_IJ^pol   "//to_char(-res%pair_polarization))
+      call logger%info("  QM groups           sum dE_S^0       "//to_char(res%nmer_correction))
+      call logger%info("  QM groups           - sum dE_S^pol   "//to_char(-res%induction_correction))
       call logger%info("  EFP dimers          Coulomb          "//to_char(res%far_electrostatics))
       call logger%info("  EFP dimers          dispersion       "//to_char(res%far_dispersion))
       call logger%info("  EFP dimers          exchange rep.    "//to_char(res%far_exchange_repulsion))
@@ -953,11 +1198,12 @@ contains
          ! the monomer energy of eq 6 and not a term added to it.
          call logger%info("    of which correlation, monomers  "// &
                           to_char(res%monomer_correlation))
-         call logger%info("    of which correlation, QM dimers "// &
-                          to_char(res%dimer_correlation))
+         call logger%info("    of which correlation, QM groups "// &
+                          to_char(res%nmer_correlation))
       end if
       call logger%info("------------------------------------------------------------")
-      call logger%info("  QM dimers "//to_char(res%n_qm_pairs)//", EFP dimers "// &
+      call logger%info("  QM groups "//to_char(res%n_qm_groups)//" (of which pairs "// &
+                       to_char(res%n_qm_pairs)//"), EFP dimers "// &
                        to_char(res%n_efp_pairs))
       call logger%info("  EFMO total energy   "//to_char(res%energy)//" Hartree")
       call logger%info("============================================================")

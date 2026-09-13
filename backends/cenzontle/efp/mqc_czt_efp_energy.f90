@@ -44,6 +44,7 @@ module mqc_czt_efp_energy
    public :: efp_pair_energy_t
    public :: efp_pair_terms
    public :: pair_polarization_energy
+   public :: subset_polarization_energy
 
    ! How far a deck atom may sit from where the potential's own geometry puts it,
    ! after the rigid shift, before the placement is refused. A fragment is rigid,
@@ -213,24 +214,100 @@ contains
       real(dp) :: energy
 
       type(efp_fragment_t) :: pair(2)
-      type(efp_system_t) :: system
       real(dp) :: shifts(3, 2)
 
-      energy = 0.0_dp
       pair(1) = frag_i
       pair(2) = frag_j
       shifts(:, 1) = translation_i
       shifts(:, 2) = translation_j
 
-      call build_efp_system(pair, shifts, system, error)
+      ! The two-fragment case of `subset_polarization_energy` and nothing more.
+      ! Written as a call rather than as its own copy of the four lines so that
+      ! the pair induction subtracted from a dimer and the subset induction
+      ! subtracted from a trimer cannot drift apart: they are one routine on
+      ! systems of different size, which is what makes their difference the
+      ! non-additive remainder and not a mismatch of two solvers.
+      if (present(damping)) then
+         energy = subset_polarization_energy(pair, shifts, [1, 2], error, damping=damping)
+      else
+         energy = subset_polarization_energy(pair, shifts, [1, 2], error)
+      end if
+   end function pair_polarization_energy
+
+   function subset_polarization_energy(fragments, translations, members, error, damping) &
+      result(energy)
+      !! The induction energy of one *isolated* group of fragments
+      !!
+      !! **`E_S^pol` of the general EFMO energy.** Every quantum group of eq 6
+      !! -- a dimer, a trimer, an n-mer -- holds the mutual induction of its own
+      !! fragments, which `E_pol^total` holds again, so the group's own
+      !! induction is subtracted from it under the same many-body difference
+      !! that assembles the in-vacuo energies. At `|S| = 1` there is nothing to
+      !! induce and the energy is zero; at `|S| = 2` this is
+      !! `pair_polarization_energy`; summed to the fragment count it telescopes
+      !! back to `E_pol^total` exactly, which is the identity the bookkeeping is
+      !! checked against.
+      !!
+      !! `members` indexes `fragments`; only those fragments are loaded, so what
+      !! is solved is the group alone with nothing else in the field.
+      !!
+      !! Same solver, same screening from `build_efp_system`, same static field
+      !! rank and the same default convergence as the total, because no optional
+      !! is passed here and none is passed by `efp_interaction_energy` either. A
+      !! group solved with a different convergence or a different field rank
+      !! would leave a residue in `E_pol^total - sum_S dE_S^pol` that looks like
+      !! non-additive induction.
+      !!
+      !! Cheap: a handful of fragments carry a few dozen polarizable points.
+      !!
+      !! `damping` is forwarded whole, and forwarding it is not optional in
+      !! spirit: a group induction damped differently from the total would put
+      !! the difference into the remainder, where it would read as many-body
+      !! induction and not as a mismatched screening.
+      type(efp_fragment_t), intent(in) :: fragments(:)
+      real(dp), intent(in) :: translations(:, :)   !! (3, n_fragments), Bohr
+      integer, intent(in) :: members(:)            !! Indices into `fragments`
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: damping
+      real(dp) :: energy
+
+      type(efp_fragment_t), allocatable :: group(:)
+      type(efp_system_t) :: system
+      real(dp), allocatable :: shifts(:, :)
+      integer :: n, k
+
+      energy = 0.0_dp
+      n = size(members)
+      if (size(translations, 1) /= 3 .or. size(translations, 2) /= size(fragments)) then
+         call error%set(ERROR_VALIDATION, "efp: one translation per fragment is "// &
+                        "needed, as (3, n_fragments)")
+         return
+      end if
+      if (any(members < 1) .or. any(members > size(fragments))) then
+         call error%set(ERROR_VALIDATION, "efp: a group names a fragment that is not "// &
+                        "in the list")
+         return
+      end if
+      ! One fragment induces nothing: there is no other field for its
+      ! polarizable points to sit in. Returned as zero rather than solved, which
+      ! is also what makes the level-one term of the induction expansion vanish.
+      if (n < 2) return
+
+      allocate (group(n), shifts(3, n))
+      do k = 1, n
+         group(k) = fragments(members(k))
+         shifts(:, k) = translations(:, members(k))
+      end do
+
+      call build_efp_system(group, shifts, system, error)
       if (error%has_error()) return
       if (present(damping)) then
-         energy = polarization_energy(system, pair, error, damping=damping)
+         energy = polarization_energy(system, group, error, damping=damping)
       else
-         energy = polarization_energy(system, pair, error)
+         energy = polarization_energy(system, group, error)
       end if
       call system%destroy()
-   end function pair_polarization_energy
+   end function subset_polarization_energy
 
    function efp_pair_terms(fragments, translations, pairs, error, charge_transfer_on) &
       result(terms)

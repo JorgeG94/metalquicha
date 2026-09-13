@@ -198,11 +198,12 @@ contains
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
-                           fragment_charges, basis_name, rcut, charge_transfer, &
+                           fragment_charges, basis_name, rcut, level, charge_transfer, &
                            induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
-                           error, verbose, aux_basis, vdwscl, quadrupole_blocks, &
+                           n_qm_groups, error, verbose, aux_basis, vdwscl, &
+                           quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
                            correlation, corr_aux_basis, freeze_core, n_frozen_core, &
@@ -223,6 +224,7 @@ contains
       integer, intent(in) :: fragment_charges(:)
       character(len=*), intent(in) :: basis_name
       real(dp), intent(in) :: rcut
+      integer, intent(in) :: level
       logical, intent(in) :: charge_transfer
       real(dp), intent(in) :: induction_damping
          !! `a` of the Tang-Toennies-like factor that damps every induction
@@ -234,6 +236,7 @@ contains
       real(dp), intent(out) :: energy
       real(dp), intent(out) :: terms(N_EFMO_TERMS)
       integer, intent(out) :: n_qm_pairs, n_efp_pairs
+      integer, intent(out) :: n_qm_groups
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: verbose
       character(len=*), intent(in), optional :: aux_basis
@@ -260,6 +263,7 @@ contains
       terms = 0.0_dp
       n_qm_pairs = 0
       n_efp_pairs = 0
+      n_qm_groups = 0
       call error%set(ERROR_VALIDATION, &
                      "EFMO needs the CPU integral backend; build with "// &
                      "-DMQC_ENABLE_CZT=ON")
@@ -267,7 +271,7 @@ contains
       if (size(fragment_charges) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
       if (len_trim(basis_name)*len_trim(guess) < 0) return
-      if (rcut < -huge(1.0_dp) .or. charge_transfer) return
+      if (rcut < -huge(1.0_dp) .or. charge_transfer .or. level < 0) return
       if (induction_damping < -huge(1.0_dp)) return
       if (scf_drive%max_iter < 0 .or. scf_max_iter < 0) return
       if (scf_energy_tol < 0.0_dp .or. scf_density_tol < 0.0_dp) return

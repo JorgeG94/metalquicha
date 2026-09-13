@@ -18,6 +18,18 @@ module mqc_czt_efmo_pairs
    !! exactly one of the two lists, so a pair counted in neither -- or in both --
    !! is a hole in the energy that no term reports.
    !!
+   !! **Above two fragments the same cutoff decides a group, not just a pair.**
+   !! `efmo_near_subsets` keeps a group of fragments only if **every** pair
+   !! inside it is near. That is not a convention: the far half of the EFMO
+   !! energy is pairwise by construction -- the effective-fragment
+   !! electrostatics, exchange repulsion, dispersion and charge transfer are all
+   !! two-body terms and the induction is already all-orders in
+   !! `E_pol^total` -- so there is no far n-body term for a group holding a far
+   !! pair to contribute to, and enumerating it as a quantum group would count
+   !! that pair twice. The criterion is also inherited by subsets, which is what
+   !! the many-body difference in [[mqc_czt_subsets]] needs of a filtered group
+   !! list: every subset of an all-near group is all-near.
+   !!
    !! `vdw_scaled_distance` here is the kernel `mqc_czt_fmo`'s
    !! `unitless_distance` is written in terms of, so FMO's point-charge
    !! approximation cutoff and EFMO's dimer split measure separation with one
@@ -27,12 +39,15 @@ module mqc_czt_efmo_pairs
    use mqc_atomic_radii, only: vdw_radius_fmo
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use pic_io, only: to_char
+   use mqc_czt_subsets, only: enumerate_subsets
    implicit none
    private
 
    public :: vdw_scaled_distance
    public :: efmo_pair_distance
    public :: efmo_split_pairs
+   public :: efmo_pair_matrix
+   public :: efmo_near_subsets
 
    type :: fragment_atoms_t
       !! One fragment's atoms, gathered out of the owner list
@@ -106,33 +121,27 @@ contains
       end do
    end subroutine efmo_pair_distance
 
-   subroutine efmo_split_pairs(owner, z, xyz, rcut, qm_pairs, efp_pairs, error)
-      !! Every fragment pair, sorted into the quantum-mechanical and the EFP list
+   subroutine efmo_pair_matrix(owner, z, xyz, r, error)
+      !! `R_IJ` for every fragment pair of a partitioned system
       !!
       !! `owner(i)` is the fragment atom `i` belongs to, numbered from one and
-      !! contiguous -- the same `owner(atom)` partition `run_fmo2` takes. The two
-      !! lists come back as `(2, n_pairs)` with `I < J`, and together they hold
-      !! every unordered pair exactly once: a pair is quantum-mechanical when
-      !! `R_IJ <= rcut` and effective otherwise, which is eq 6's split.
+      !! contiguous. `r` comes back `(n_frag, n_frag)`, symmetric, with its
+      !! diagonal at zero -- a fragment has no separation from itself and no
+      !! caller has a use for one.
       !!
-      !! `rcut` at or below zero puts every pair in the EFP list and `rcut` huge
-      !! puts every pair in the QM one; both are limits worth being able to run,
-      !! since the first is EFP with in-vacuo monomers and the second is FMO2 in
-      !! vacuo plus the induction correction.
+      !! Computed once and handed to whoever needs it: the pair split, the
+      !! group criterion and the reported table all measure the same distances,
+      !! and computing them in three places is how they come to disagree.
       integer, intent(in) :: owner(:)          !! (n_atoms), fragment of each atom
       integer, intent(in) :: z(:)              !! (n_atoms)
       real(dp), intent(in) :: xyz(:, :)        !! (3, n_atoms), Bohr
-      real(dp), intent(in) :: rcut             !! Unitless, the `R_cut` of eq 2
-      integer, allocatable, intent(out) :: qm_pairs(:, :)    !! (2, n_qm)
-      integer, allocatable, intent(out) :: efp_pairs(:, :)   !! (2, n_efp)
+      real(dp), allocatable, intent(out) :: r(:, :)   !! (n_frag, n_frag), unitless
       type(error_t), intent(inout) :: error
 
-      integer :: n_atoms, n_frag, i, j, k, n_qm, n_efp
+      integer :: n_atoms, n_frag, i, j, k
       integer, allocatable :: count_of(:), at(:)
-      integer, allocatable :: list(:, :)
-      logical, allocatable :: near(:)
-      real(dp) :: r
       type(fragment_atoms_t), allocatable :: frag(:)
+      real(dp) :: this
 
       n_atoms = size(owner)
       if (size(z) /= n_atoms .or. size(xyz, 1) /= 3 .or. size(xyz, 2) /= n_atoms) then
@@ -144,12 +153,12 @@ contains
          call error%set(ERROR_VALIDATION, "efmo: there are no atoms to fragment")
          return
       end if
-      n_frag = maxval(owner)
       if (minval(owner) < 1) then
          call error%set(ERROR_VALIDATION, "efmo: every atom must belong to a fragment "// &
                         "numbered from one")
          return
       end if
+      n_frag = maxval(owner)
 
       ! Gathered per fragment once, rather than scanned per pair: the pair loop
       ! is quadratic in the fragment count and would otherwise be quadratic in
@@ -175,19 +184,64 @@ contains
          frag(k)%xyz(:, at(k)) = xyz(:, i)
       end do
 
+      allocate (r(n_frag, n_frag), source=0.0_dp)
+      do i = 1, n_frag - 1
+         do j = i + 1, n_frag
+            call efmo_pair_distance(frag(i)%z, frag(i)%xyz, frag(j)%z, frag(j)%xyz, &
+                                    this, error)
+            if (error%has_error()) return
+            r(i, j) = this
+            r(j, i) = this
+         end do
+      end do
+   end subroutine efmo_pair_matrix
+
+   subroutine efmo_split_pairs(owner, z, xyz, rcut, qm_pairs, efp_pairs, error, r)
+      !! Every fragment pair, sorted into the quantum-mechanical and the EFP list
+      !!
+      !! `owner(i)` is the fragment atom `i` belongs to, numbered from one and
+      !! contiguous -- the same `owner(atom)` partition `run_fmo2` takes. The two
+      !! lists come back as `(2, n_pairs)` with `I < J`, and together they hold
+      !! every unordered pair exactly once: a pair is quantum-mechanical when
+      !! `R_IJ <= rcut` and effective otherwise, which is eq 6's split.
+      !!
+      !! `rcut` at or below zero puts every pair in the EFP list and `rcut` huge
+      !! puts every pair in the QM one; both are limits worth being able to run,
+      !! since the first is EFP with in-vacuo monomers and the second is the
+      !! in-vacuo many-body expansion plus the induction correction.
+      integer, intent(in) :: owner(:)          !! (n_atoms), fragment of each atom
+      integer, intent(in) :: z(:)              !! (n_atoms)
+      real(dp), intent(in) :: xyz(:, :)        !! (3, n_atoms), Bohr
+      real(dp), intent(in) :: rcut             !! Unitless, the `R_cut` of eq 2
+      integer, allocatable, intent(out) :: qm_pairs(:, :)    !! (2, n_qm)
+      integer, allocatable, intent(out) :: efp_pairs(:, :)   !! (2, n_efp)
+      type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: r(:, :)
+         !! The separations the split was made on, `(n_frag, n_frag)`. Handed
+         !! back rather than recomputed by a caller that also needs them --
+         !! `run_efmo` needs them for the group criterion and for its reported
+         !! table -- so that one matrix decides every question about distance.
+
+      integer :: n_frag, i, j, k, n_qm, n_efp
+      integer, allocatable :: list(:, :)
+      logical, allocatable :: near(:)
+      real(dp), allocatable :: separation(:, :)
+
+      call efmo_pair_matrix(owner, z, xyz, separation, error)
+      if (error%has_error()) return
+      n_frag = size(separation, 1)
+      if (present(r)) r = separation
+
       allocate (list(2, n_frag*(n_frag - 1)/2))
       allocate (near(n_frag*(n_frag - 1)/2))
       k = 0
       do i = 1, n_frag - 1
          do j = i + 1, n_frag
-            call efmo_pair_distance(frag(i)%z, frag(i)%xyz, frag(j)%z, frag(j)%xyz, &
-                                    r, error)
-            if (error%has_error()) return
             k = k + 1
             list(:, k) = [i, j]
             ! At the cutoff exactly the pair is quantum-mechanical: eq 6 writes
             ! the near sum as `R_IJ <= R_cut`.
-            near(k) = r <= rcut
+            near(k) = separation(i, j) <= rcut
          end do
       end do
 
@@ -206,5 +260,74 @@ contains
          end if
       end do
    end subroutine efmo_split_pairs
+
+   subroutine efmo_near_subsets(r, rcut, level, terms, term_size, n_terms, error)
+      !! Every group of up to `level` fragments whose every internal pair is near
+      !!
+      !! The quantum half of the general EFMO energy. A group is enumerated here
+      !! -- and so gets an in-vacuo SCF and a subset induction -- only if all
+      !! `|S|(|S|-1)/2` of its pairs satisfy `R_IJ <= rcut`. A group holding even
+      !! one far pair is not enumerated: that pair's interaction is already
+      !! carried, whole, by the four effective-fragment pair terms, and there is
+      !! no far n-body term for the group to correct.
+      !!
+      !! Single fragments have no pair and are therefore always in, whatever the
+      !! cutoff -- `sum_I E_I^0` is the leading term of eq 6 at every cutoff.
+      !!
+      !! Groups come back smallest first, and within a size in lexicographic
+      !! order, so the size-two groups are exactly `efmo_split_pairs`'s
+      !! `qm_pairs` in the same order. [[mqc_czt_subsets]]'s difference operator
+      !! needs both the ordering and the subset closure the criterion gives it.
+      real(dp), intent(in) :: r(:, :)          !! `R_IJ`, from `efmo_pair_matrix`
+      real(dp), intent(in) :: rcut             !! Unitless, the `R_cut` of eq 2
+      integer, intent(in) :: level
+         !! Truncation: no group larger than this. One is the fragment sum
+         !! alone, two is the pair expansion EFMO was published as. Clamped to
+         !! the fragment count, above which there is nothing left to enumerate.
+      integer, allocatable, intent(out) :: terms(:, :), term_size(:)
+      integer, intent(out) :: n_terms
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: all_terms(:, :), all_size(:)
+      integer :: n_frag, n_all, t, m, a, b, use_level
+      logical :: all_near
+
+      n_terms = 0
+      n_frag = size(r, 1)
+      if (size(r, 2) /= n_frag) then
+         call error%set(ERROR_VALIDATION, "efmo: the pair separations must be a "// &
+                        "square (n_fragments, n_fragments) matrix")
+         return
+      end if
+      if (level < 1) then
+         call error%set(ERROR_VALIDATION, "efmo: a truncation level of "// &
+                        to_char(level)//" leaves not even the fragment sum. The "// &
+                        "lowest meaningful keywords.fragmentation.level is 1.")
+         return
+      end if
+      use_level = min(level, n_frag)
+
+      call enumerate_subsets(n_frag, use_level, all_terms, all_size, n_all)
+      allocate (terms(use_level, max(n_all, 1)), source=0)
+      allocate (term_size(max(n_all, 1)), source=0)
+
+      do t = 1, n_all
+         m = all_size(t)
+         all_near = .true.
+         do a = 1, m - 1
+            do b = a + 1, m
+               if (r(all_terms(a, t), all_terms(b, t)) > rcut) then
+                  all_near = .false.
+                  exit
+               end if
+            end do
+            if (.not. all_near) exit
+         end do
+         if (.not. all_near) cycle
+         n_terms = n_terms + 1
+         terms(1:m, n_terms) = all_terms(1:m, t)
+         term_size(n_terms) = m
+      end do
+   end subroutine efmo_near_subsets
 
 end module mqc_czt_efmo_pairs

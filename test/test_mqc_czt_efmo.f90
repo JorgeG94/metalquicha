@@ -23,6 +23,22 @@ module test_mqc_czt_efmo
    !!   4. `R_cut` between the pair separations of a trimer: one quantum dimer
    !!      and two effective ones, against a total assembled here by hand from
    !!      the Phase 1 pieces.
+   !!   5. Level two through the general many-body machinery is the pair form
+   !!      **to the last bit**, not to a tolerance: the difference operator
+   !!      applied to a pair has to be the subtraction that was written out
+   !!      before it existed, or every reference in the tree moves.
+   !!   6. Level equal to the fragment count with `R_cut` huge is the
+   !!      *unfragmented* energy. The in-vacuo series telescopes to the
+   !!      supersystem's own SCF and the induction series telescopes to
+   !!      `E_pol^total`, which then cancels the last term of the expression
+   !!      exactly -- so the whole polarization correction disappears and what
+   !!      is left is one RHF energy. It is the sharpest check there is on the
+   !!      subset-induction bookkeeping: a wrong sign, a missing subset or a
+   !!      group induction solved on the wrong fragments all survive the
+   !!      level-two limits and fail here.
+   !!   7. The induction series alone: `sum_S dE_S^pol` over every subset of a
+   !!      trimer is `E_pol^total`, asserted apart from the energy so that a
+   !!      failure in six names which half moved.
    !!
    !! **Limit 1 is not "EFMO is nearly FMO2".** The induction is strongly
    !! non-additive -- three waters at four Angstrom carry 44 per cent of their
@@ -46,7 +62,7 @@ module test_mqc_czt_efmo
    use mqc_czt_efp_convert, only: potential_to_fragment
    use mqc_czt_efp_energy, only: efp_energy_t, efp_interaction_energy, &
                                  efp_pair_energy_t, efp_pair_terms, &
-                                 pair_polarization_energy
+                                 pair_polarization_energy, subset_polarization_energy
    use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, polarization_energy
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
@@ -111,7 +127,13 @@ contains
                   new_unittest("efmo_rimp2_two_fragments_is_the_dimer_rimp2_energy", &
                                test_rimp2_dimer), &
                   new_unittest("efmo_rimp2_all_quantum_is_the_correlated_pair_sum", &
-                               test_rimp2_trimer) &
+                               test_rimp2_trimer), &
+                  new_unittest("efmo_level_two_reduces_to_the_pair_form_exactly", &
+                               test_level_two_is_the_pair_form), &
+                  new_unittest("efmo_full_level_is_the_unfragmented_energy", &
+                               test_full_level), &
+                  new_unittest("efmo_induction_series_sums_to_the_total", &
+                               test_induction_series) &
                   ]
    end subroutine collect_mqc_czt_efmo_tests
 
@@ -382,7 +404,7 @@ contains
       call check(error, res%polarization_total, e_pol_total, thr=1.0e-12_dp, &
                  message="E_pol^total")
       if (allocated(error)) return
-      call check(error, res%pair_polarization, e_pol_pairs, thr=1.0e-12_dp, &
+      call check(error, res%induction_correction, e_pol_pairs, thr=1.0e-12_dp, &
                  message="sum E_IJ^pol")
       if (allocated(error)) return
       ! The remainder is a term of the method, not a residue: assert it is not
@@ -427,10 +449,10 @@ contains
       if (allocated(error)) return
       call check(error, res%n_efp_pairs, 3, message="a zero cutoff lost an EFP pair")
       if (allocated(error)) return
-      call check(error, res%dimer_correction, 0.0_dp, thr=0.0_dp, &
+      call check(error, res%nmer_correction, 0.0_dp, thr=0.0_dp, &
                  message="there is no quantum dimer, so there is no dimer correction")
       if (allocated(error)) return
-      call check(error, res%pair_polarization, 0.0_dp, thr=0.0_dp, &
+      call check(error, res%induction_correction, 0.0_dp, thr=0.0_dp, &
                  message="there is no quantum dimer, so nothing subtracts pair induction")
       if (allocated(error)) return
 
@@ -572,7 +594,7 @@ contains
       if (allocated(error)) return
       ! The correlation is reported broken in two, and the two have to add up to
       ! the dimer's own: the monomers' plus (dimer - monomers).
-      call check(error, res%monomer_correlation + res%dimer_correlation, &
+      call check(error, res%monomer_correlation + res%nmer_correlation, &
                  reference_corr, thr=TOL, &
                  message="the reported correlation does not add up to the dimer's")
       if (allocated(error)) return
@@ -660,16 +682,217 @@ contains
                  err%get_full_trace())
       if (allocated(error)) return
 
-      call check(error, res%dimer_correction, pair_sum, thr=TOL, &
+      call check(error, res%nmer_correction, pair_sum, thr=TOL, &
                  message="the quantum dimer correction is not the correlated pair sum")
       if (allocated(error)) return
 
       expected = sum(cached_mono) + sum(cached_mono_mp2) + pair_sum &
-                 - res%pair_polarization + res%polarization_total
+                 - res%induction_correction + res%polarization_total
       call check(error, res%energy, expected, thr=TOL, &
                  message="EFMO/RI-MP2 with every pair quantum is not the correlated "// &
                  "pair sum plus the many-body induction")
    end subroutine test_rimp2_trimer
+
+   subroutine test_level_two_is_the_pair_form(error)
+      !! Level two through the general machinery is the pair form, bit for bit
+      !!
+      !! The energy is now assembled by a difference operator over subsets, and
+      !! at level two that operator has to reproduce the subtraction the pair
+      !! expression was written as -- `E_IJ^0 - E_I^0 - E_J^0` and `E_IJ^pol` --
+      !! in the same floating-point order, or every EFMO reference in this
+      !! repository moves in its last digits for no physical reason.
+      !!
+      !! **So the tolerance is zero.** Both sums are recomputed here from the
+      !! run's own reported per-pair numbers, accumulated in the order the pair
+      !! table is in, and required to be exactly equal. A tolerance here would
+      !! test nothing that the four limit tests above do not already test.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      integer :: z(9), owner(9)
+      character(len=2) :: symbols(9)
+      real(dp) :: xyz(3, 9), pair_form, pol_form, total
+      integer :: k
+
+      call water_chain(3, z, symbols, xyz, owner)
+      call efmo_settings(opts)
+      opts%rcut = 1.0e6_dp
+      opts%level = 2
+      call run_efmo(z, symbols, xyz, owner, [0, 0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, res%n_qm_groups, 3, &
+                 message="level two on three fragments is three groups")
+      if (allocated(error)) return
+      call check(error, size(res%level_vacuum), 2, &
+                 message="a level-two run reported more than two levels")
+      if (allocated(error)) return
+
+      pair_form = 0.0_dp
+      pol_form = 0.0_dp
+      do k = 1, size(res%pairs)
+         if (.not. res%pairs(k)%qm) cycle
+         ! Parenthesised on purpose: the many-body difference is formed per
+         ! pair and *then* accumulated, so the reference here has to associate
+         ! the same way to be comparable at zero tolerance.
+         pair_form = pair_form + (res%pairs(k)%e_dimer &
+                                  - res%monomer_energy(res%pairs(k)%i) &
+                                  - res%monomer_energy(res%pairs(k)%j))
+         pol_form = pol_form + res%pairs(k)%e_pair_pol
+      end do
+
+      call check(error, res%nmer_correction, pair_form, thr=0.0_dp, &
+                 message="the many-body difference at level two is not exactly the "// &
+                 "pair subtraction")
+      if (allocated(error)) return
+      call check(error, res%level_vacuum(2), pair_form, thr=0.0_dp, &
+                 message="the level-two vacuum sum is not exactly the pair subtraction")
+      if (allocated(error)) return
+      call check(error, res%induction_correction, pol_form, thr=0.0_dp, &
+                 message="the induction difference at level two is not exactly the "// &
+                 "sum of the pair inductions")
+      if (allocated(error)) return
+      call check(error, res%level_vacuum(1), res%monomer_sum, thr=0.0_dp, &
+                 message="level one is not the fragment sum")
+      if (allocated(error)) return
+      call check(error, res%level_induction(1), 0.0_dp, thr=0.0_dp, &
+                 message="a single fragment was given an induction energy")
+      if (allocated(error)) return
+
+      ! And that the total is those sums and nothing else, again exactly.
+      total = res%monomer_sum + res%nmer_correction - res%induction_correction &
+              + res%far_electrostatics + res%far_dispersion &
+              + res%far_exchange_repulsion + res%far_charge_transfer &
+              + res%polarization_total
+      call check(error, res%energy, total, thr=0.0_dp, &
+                 message="the total is not the reported sums")
+   end subroutine test_level_two_is_the_pair_form
+
+   subroutine test_full_level(error)
+      !! Level = N with `R_cut` huge is the unfragmented energy of the cluster
+      !!
+      !! **The strongest statement the method makes, and the sharpest test of
+      !! the subset-induction bookkeeping.** With every group near and the level
+      !! at the fragment count, two series each telescope:
+      !!
+      !!   * `sum_S dE_S^0` over every subset is the in-vacuo energy of the
+      !!     whole cluster -- one ordinary RHF, computed here independently.
+      !!   * `sum_S dE_S^pol` over every subset is `E_pol^total`, the last term
+      !!     of the energy, which it therefore cancels **entirely**.
+      !!
+      !! So EFMO at full level is not "close to" the supersystem: it *is* the
+      !! supersystem's RHF energy, to SCF convergence, with no induction
+      !! correction left over at all. A missing subset, a sign, or a group
+      !! induction solved over the wrong fragments all leave the level-two
+      !! limits intact and break this.
+      !!
+      !! Three waters, so the run is three MAKEFPs, three dimer SCFs and one
+      !! trimer SCF.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      integer :: z(9), owner(9)
+      character(len=2) :: symbols(9)
+      real(dp) :: xyz(3, 9), supersystem
+
+      call water_chain(3, z, symbols, xyz, owner)
+      call efmo_settings(opts)
+      opts%rcut = 1.0e6_dp
+      opts%level = 3
+      call run_efmo(z, symbols, xyz, owner, [0, 0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      ! Three pairs and one trimer: the whole subset lattice above the monomers.
+      call check(error, res%n_qm_groups, 4, &
+                 message="full level on three fragments is not four groups")
+      if (allocated(error)) return
+      call check(error, res%level_count(3), 1, message="the trimer was not enumerated")
+      if (allocated(error)) return
+
+      ! The polarization correction cancels the total induction exactly, which
+      ! is the induction series telescoping. Held to the induced-dipole solve's
+      ! own tolerance rather than to the SCF's: no SCF enters either side.
+      call check(error, res%induction_correction, res%polarization_total, &
+                 thr=1.0e-12_dp, &
+                 message="the induction series does not sum to E_pol^total, so the "// &
+                 "polarization correction does not cancel at full level")
+      if (allocated(error)) return
+      ! And that the three-body induction is not zero, so the cancellation above
+      ! is an identity being satisfied and not two zeros agreeing.
+      call check(error, abs(res%level_induction(3)) > 1.0e-6_dp, &
+                 "the three-body induction vanished, so this geometry cannot tell a "// &
+                 "telescoping series from a dropped one")
+      if (allocated(error)) return
+
+      call dimer_rhf(z, symbols, xyz, 0, opts, supersystem, err)
+      call check(error,.not. err%has_error(), "the supersystem RHF failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, res%energy, supersystem, thr=TOL, &
+                 message="EFMO at level = N with a huge cutoff is not the "// &
+                 "unfragmented RHF energy of the cluster")
+   end subroutine test_full_level
+
+   subroutine test_induction_series(error)
+      !! `sum_S dE_S^pol` over every subset of a trimer is `E_pol^total`
+      !!
+      !! The induction half of the identity above, asserted on the potentials
+      !! alone -- no SCF, no energy, no cutoff -- so that a failure in the
+      !! full-level test names which of the two series moved. Written out here
+      !! against the subset solver directly:
+      !!
+      !!     dE_I^pol = 0
+      !!     dE_IJ^pol = E_IJ^pol
+      !!     dE_IJK^pol = E_IJK^pol - E_IJ^pol - E_IK^pol - E_JK^pol
+      !!
+      !! whose sum is `E_IJK^pol`, the induction over all three at once, because
+      !! every pair term appears once with each sign.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp) :: shifts(3, 3), series, three_body, total
+      integer :: a, b
+
+      call build_reference(err)
+      call check(error,.not. err%has_error(), "building the reference failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      shifts = 0.0_dp
+      series = 0.0_dp
+      three_body = subset_polarization_energy(cached_frag, shifts, [1, 2, 3], err)
+      do a = 1, 2
+         do b = a + 1, 3
+            series = series + subset_polarization_energy(cached_frag, shifts, [a, b], err)
+            three_body = three_body &
+                         - subset_polarization_energy(cached_frag, shifts, [a, b], err)
+         end do
+      end do
+      series = series + three_body
+      total = total_induction(cached_frag, err)
+      call check(error,.not. err%has_error(), "an induction solve failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, series, total, thr=1.0e-12_dp, &
+                 message="the induction expansion does not telescope to the "// &
+                 "induction over all three fragments")
+      if (allocated(error)) return
+
+      ! And that the pair entry of the series is the two-fragment routine to the
+      ! last bit, so the general solver has not changed what a pair means.
+      call check(error, subset_polarization_energy(cached_frag, shifts, [1, 2], err), &
+                 pair_polarization_energy(cached_frag(1), cached_frag(2), shifts(:, 1), &
+                                          shifts(:, 2), err), thr=0.0_dp, &
+                 message="the subset induction on two fragments is not exactly the "// &
+                 "pair induction")
+   end subroutine test_induction_series
 
    subroutine test_two_fragments(error)
       !! Limit three: two fragments, so EFMO is the dimer's own RHF energy
@@ -706,7 +929,7 @@ contains
 
       call check(error, res%n_qm_pairs, 1, message="the one pair is not quantum")
       if (allocated(error)) return
-      call check(error, res%pair_polarization, res%polarization_total, thr=1.0e-12_dp, &
+      call check(error, res%induction_correction, res%polarization_total, thr=1.0e-12_dp, &
                  message="on two fragments the pair induction is not the total")
       if (allocated(error)) return
       call check(error, res%energy, cached_dimer_12, thr=TOL, &
@@ -782,11 +1005,11 @@ contains
       ! And each of the six sums separately, so a failure names its term.
       call check(error, res%monomer_sum, sum(cached_mono), thr=TOL, message="sum E_I^0")
       if (allocated(error)) return
-      call check(error, res%dimer_correction, &
+      call check(error, res%nmer_correction, &
                  cached_dimer_12 - cached_mono(1) - cached_mono(2), thr=TOL, &
                  message="the QM dimer correction")
       if (allocated(error)) return
-      call check(error, res%pair_polarization, e_pair_pol, thr=1.0e-12_dp, &
+      call check(error, res%induction_correction, e_pair_pol, thr=1.0e-12_dp, &
                  message="sum E_IJ^pol")
       if (allocated(error)) return
       call check(error, res%far_electrostatics, sum(far%electrostatics), thr=1.0e-12_dp, &
