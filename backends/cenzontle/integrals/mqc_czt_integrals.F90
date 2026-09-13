@@ -341,6 +341,9 @@ contains
             return
          end if
       case (ERI_PATH_HYBRID)
+         ! Narrowest path that covers the quartet, which is the order the
+         ! measurements put them in: rotated-axis wins at s, p and L, and
+         ! Head-Gordon-Pople from d up.
          if (quartet_on_rotaxis(shls, bas)) then
             if (cartesian) then
                ret = libcint_2e_rotaxis_cart(buf, shls, atm, natm, bas, nbas, env)
@@ -348,7 +351,8 @@ contains
                ret = libcint_2e_rotaxis_sph(buf, shls, atm, natm, bas, nbas, env)
             end if
             return
-         else if (quartet_on_hgp(shls, bas)) then
+         end if
+         if (quartet_on_hgp(shls, bas)) then
             if (cartesian) then
                ret = libcint_2e_hgp_cart(buf, shls, atm, natm, bas, nbas, env)
             else
@@ -356,6 +360,9 @@ contains
             end if
             return
          end if
+      case default
+         ! ERI_PATH_RYS, and any quartet the cases above declined: both fall
+         ! through to the Rys call below rather than being handled here.
       end select
 #endif
       if (cartesian) then
