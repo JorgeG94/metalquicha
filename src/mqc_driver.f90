@@ -215,6 +215,17 @@ contains
          return
       end if
 
+      ! EFMO takes neither path either. It is a fragmented method with a
+      ! many-body expansion of its own -- over the groups whose every pair is
+      ! near, differencing the in-vacuo energy and the subset induction alike --
+      ! and with no embedding loop. Neither this file's MBE term list nor its
+      ! screening applies; the whole expression is assembled inside the backend.
+      if (config%expansion_kind == "efmo") then
+         call run_efmo_energy(config, sys_geom, resources%mpi_comms%world_comm, &
+                              wants_output, result_out)
+         return
+      end if
+
       ! SAPT takes neither path either: it returns the interaction between two
       ! monomers rather than the energy of one system.
       if (config%method_config%method_type == METHOD_TYPE_SAPT0 .or. &
@@ -1301,6 +1312,230 @@ contains
          result_out%has_error = .true.
       end if
    end subroutine refuse
+
+   subroutine run_efmo_energy(config, sys_geom, comm, write_output, result_out)
+      !! An effective fragment molecular orbital energy for a partitioned system
+      !!
+      !! **Every rank runs this**, unlike MAKEFP and NEO. The monomers and the
+      !! quantum dimers are spread over the communicator inside the backend --
+      !! MAKEFP is the cost of the method and is what the balance is struck on
+      !! -- and every rank comes out with the same total, so only the leader
+      !! writes a file.
+      !!
+      !! Neither the fragmented nor the unfragmented path applies. EFMO is a
+      !! fragmented method whose n-mer list is its own: every fragment's
+      !! potential is built, the pairs are split at `R_cut`, the groups whose
+      !! every pair is near get an in-vacuo SCF and a subset induction, the far
+      !! pairs get four effective-fragment terms, and one induction runs over
+      !! all of them. `run_czt_efmo` assembles it and hands back the breakdown.
+      !!
+      !! `keywords.fragmentation.level` truncates that expansion and is the same
+      !! key MBE and FMO read, but is defaulted **here**, to two: the shared
+      !! `DEFAULT_FRAG_LEVEL` is one, which for EFMO would drop every near pair.
+      use mqc_czt_bridge, only: run_czt_efmo
+      use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_MP2
+      use mqc_elements, only: element_number_to_symbol
+      use mqc_program_limits, only: N_EFMO_TERMS, EFMO_CORR_NONE, EFMO_CORR_MP2, &
+                                    EFMO_CORR_RI_MP2
+      use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
+      use pic_logger, only: verbose_level
+      type(driver_config_t), intent(in) :: config
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(comm_t), intent(in) :: comm
+      logical, intent(in) :: write_output
+      type(calculation_result_t), intent(out), optional :: result_out
+
+      type(error_t) :: err
+      type(json_output_data_t) :: json_data
+      character(len=8), allocatable :: symbols(:)
+      integer, allocatable :: owner(:), charges(:)
+      real(dp) :: terms(N_EFMO_TERMS)
+      real(dp) :: energy
+      type(scf_numerics_t) :: efmo_scf
+      integer :: correlation
+      integer :: i, n_frag, n_qm, n_efp, n_groups, level
+
+      integer, parameter :: EFMO_DEFAULT_LEVEL = 2
+         !! What `keywords.fragmentation.level` means when the deck omits it.
+         !! Two, because that is EFMO as published and as every reference in
+         !! this repository was pinned; the shared `DEFAULT_FRAG_LEVEL` is one,
+         !! which for EFMO would silently drop every near pair.
+
+      integer, parameter :: EFMO_SCF_MAX_ITER = 200
+      real(dp), parameter :: EFMO_SCF_ENERGY_TOL = 1.0e-10_dp
+      real(dp), parameter :: EFMO_SCF_DENSITY_TOL = 1.0e-8_dp
+      real(dp), parameter :: EFMO_SCF_GRAD_TOL = 1.0e-8_dp
+         !! What every SCF in an EFMO run is converged to, monomer and dimer
+         !! alike, and `make_efp_potential`'s own defaults.
+         !!
+         !! Not read from `keywords.scf`, and deliberately tighter than a
+         !! whole-system run's: the near-dimer correction is
+         !! `E_IJ^0 - E_I^0 - E_J^0`, four orders smaller than any of the three,
+         !! so a monomer and its dimer converged to 1e-6 leave a correction with
+         !! no significant figures. There is no deck key for these yet, since a
+         !! looser EFMO is not a cheaper EFMO -- the cost is MAKEFP.
+
+      ! Hartree-Fock, MP2 or RI-MP2 fragments. The correlation runs on the same
+      ! orbitals the reference converged to and turns `E_I^0` and `E_IJ^0`
+      ! correlated, which is the whole of what a correlated EFMO is; the far
+      ! pairs and the induction come from the fragment potentials either way,
+      ! MAKEFP being a Hartree-Fock construction. Anything else -- Kohn-Sham
+      ! fragments, coupled cluster -- is refused by name rather than silently
+      ! run as Hartree-Fock.
+      select case (config%method_config%method_type)
+      case (METHOD_TYPE_HF)
+         correlation = EFMO_CORR_NONE
+      case (METHOD_TYPE_MP2)
+         ! `ri-mp2` and `mp2` parse to one method type, and which was written is
+         ! recovered from `corr%use_df` -- the same recovery every other MP2
+         ! path here makes.
+         if (config%method_config%corr%use_df) then
+            correlation = EFMO_CORR_RI_MP2
+         else
+            correlation = EFMO_CORR_MP2
+         end if
+         if (config%method_config%corr%use_scs) then
+            call refuse(result_out, "EFMO does not scale the spin components of "// &
+                        "its fragment MP2 energies. SCS-MP2 fragments would be a "// &
+                        "different method from the one the paper runs, so it is "// &
+                        "refused rather than quietly given plain MP2.")
+            return
+         end if
+      case default
+         call refuse(result_out, "EFMO runs Hartree-Fock, MP2 or RI-MP2 fragments, "// &
+                     "and model.method is '"// &
+                     trim(method_type_to_string(config%method_config%method_type))// &
+                     "'. Kohn-Sham fragments would need a MAKEFP that is not "// &
+                     "restricted to a Hartree-Fock reference, and coupled-cluster "// &
+                     "fragments are not implemented.")
+         return
+      end select
+      if (config%method_config%scf%unrestricted) then
+         call refuse(result_out, "EFMO is closed-shell for now: every fragment and "// &
+                     "every dimer is solved with restricted Hartree-Fock, so "// &
+                     "keywords.scf.unrestricted cannot be honoured.")
+         return
+      end if
+
+      ! The level EFMO's near groups are expanded to. Read from the same key
+      ! MBE and FMO read -- there is no EFMO-specific level -- but defaulted
+      ! here rather than in the adapter, since the shared default is one and
+      ! EFMO's is two.
+      level = EFMO_DEFAULT_LEVEL
+      if (config%nlevel_set) level = config%nlevel
+      if (level < 1) then
+         call refuse(result_out, "EFMO needs keywords.fragmentation.level of at "// &
+                     "least 1, and the deck asked for "//to_char(level)//". Level 1 "// &
+                     "is the fragment sum alone, 2 is EFMO as published, and the "// &
+                     "fragment count is exact.")
+         return
+      end if
+
+      call fragment_owner_map(sys_geom, owner, n_frag)
+      if (n_frag < 2) then
+         call refuse(result_out, "EFMO needs at least two fragments: with one there "// &
+                     "is no pair to split and the energy is an ordinary SCF.")
+         return
+      end if
+      if (any(owner == 0)) then
+         call refuse(result_out, "EFMO: some atom belongs to no fragment. Every atom "// &
+                     "has to be in exactly one, since each fragment's potential is "// &
+                     "built from its own atoms alone.")
+         return
+      end if
+
+      allocate (charges(n_frag), source=0)
+      if (allocated(sys_geom%fragment_charges)) charges = sys_geom%fragment_charges
+
+      allocate (symbols(sys_geom%total_atoms))
+      do i = 1, sys_geom%total_atoms
+         symbols(i) = element_number_to_symbol(sys_geom%element_numbers(i))
+      end do
+
+      ! `keywords.scf` drives every SCF here, monomer and dimer alike, the same
+      ! way it drives a MakeFP run. The tolerances below are deliberately not
+      ! taken from it: a fragment potential and the dimer whose difference
+      ! against it is an interaction energy are converged tighter than a
+      ! whole-system run would be, and `make_efp_potential` already holds those
+      ! defaults.
+      efmo_scf%level_shift = config%method_config%scf%level_shift
+      efmo_scf%linear_dependence = config%method_config%scf%linear_dependence
+      efmo_scf%use_diis = config%method_config%scf%use_diis
+      efmo_scf%diis_size = config%method_config%scf%diis_size
+      efmo_scf%incremental_fock = config%method_config%scf%incremental_fock
+      efmo_scf%accelerator = config%method_config%scf%accelerator
+      efmo_scf%convergence_metric = config%method_config%scf%convergence_metric
+      efmo_scf%allow_crap_scf = config%method_config%scf%allow_crap_scf
+
+      if (comm%leader()) then
+         call logger%info("Running EFMO over "//to_char(n_frag)//" fragments, "// &
+                          "level "//to_char(min(level, n_frag)))
+         if (comm%size() > 1) then
+            call logger%info("  monomers and quantum groups over "// &
+                             to_char(comm%size())//" ranks")
+         end if
+      end if
+      if (comm%leader()) then
+         if (correlation == EFMO_CORR_RI_MP2) then
+            call logger%info("  RI-MP2 on every monomer and every quantum dimer")
+         else if (correlation == EFMO_CORR_MP2) then
+            call logger%info("  MP2 on every monomer and every quantum dimer")
+         end if
+      end if
+
+      call run_czt_efmo(sys_geom%element_numbers, symbols, sys_geom%coordinates, owner, &
+                        charges, config%method_config%basis_set, &
+                        config%method_config%efmo%rcut, level, &
+                        config%method_config%efmo%charge_transfer, &
+                        config%method_config%efmo%induction_damping, efmo_scf, &
+                        EFMO_SCF_MAX_ITER, EFMO_SCF_ENERGY_TOL, EFMO_SCF_DENSITY_TOL, &
+                        EFMO_SCF_GRAD_TOL, trim(config%method_config%scf%guess), &
+                        energy, terms, n_qm, n_efp, n_groups, err, &
+                        verbose=(logger%log_level >= verbose_level), &
+                        vdwscl=config%method_config%efp%vdw_scale, &
+                        quadrupole_blocks=config%method_config%efp%quadrupole_blocks, &
+                        dynamic_tol=config%method_config%efp%dynamic_tolerance, &
+                        dynamic_maxiter=config%method_config%efp%dynamic_maxiter, &
+                        response=config%method_config%efp%response, &
+                        allow_crap_response=config%method_config%efp%allow_crap_response, &
+                        response_batch=config%method_config%efp%response_batch, &
+                        correlation=correlation, &
+                        corr_aux_basis=trim(config%method_config%scf%aux_basis_set), &
+                        freeze_core=config%method_config%corr%freeze_core, &
+                        n_frozen_core=config%method_config%corr%n_frozen_core, &
+                        comm=comm)
+      if (err%has_error()) then
+         call refuse(result_out, "EFMO: "//err%get_message())
+         return
+      end if
+
+      if (present(result_out)) then
+         ! In the `scf` slot, which is what `energy_t%total()` reports. It is
+         ! not one SCF energy -- it is a sum over fragments, dimers and pair
+         ! terms -- but an expansion total has no correlation breakdown to put
+         ! anywhere else, which is what the MBE path does with its own.
+         result_out%energy%scf = energy
+         result_out%has_energy = .true.
+      end if
+
+      ! `UNFRAGMENTED` because that is the shape of what is written -- one
+      ! energy for one system, with a named breakdown beside it -- not a claim
+      ! that the system has no fragments.
+      ! Every rank holds the same total; one writes it.
+      if (write_output .and. .not. config%skip_json_output .and. comm%leader()) then
+         json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+         json_data%total_energy = energy
+         json_data%has_energy = .true.
+         json_data%efmo_terms = terms
+         json_data%efmo_qm_dimers = n_qm
+         json_data%efmo_efp_dimers = n_efp
+         json_data%efmo_qm_groups = n_groups
+         json_data%has_efmo = .true.
+         json_data%fragment_breakdown = config%fragment_breakdown
+         call write_json_output(json_data)
+         call json_data%destroy()
+      end if
+   end subroutine run_efmo_energy
 
    subroutine run_makefp(config, sys_geom, rank, result_out)
       !! Build an effective fragment potential for the whole system and write it

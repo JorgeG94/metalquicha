@@ -168,7 +168,14 @@ module mqc_many_body_expansion
       integer, allocatable :: owner(:)
          !! Fragment index per atom, numbered from one with no gaps
       integer :: n_fragments = 0
-      character(len=64) :: basis = "6-31g"
+      character(len=64) :: basis = ""
+         !! **Empty on purpose, and refused rather than defaulted.** This field
+         !! used to start at "6-31g", which no run ever saw: every caller
+         !! overwrites it from the deck, and a deck that omits `model.basis`
+         !! gets "sto-3g" from `mqc_method_config`. So the initialiser named a
+         !! basis nothing was ever computed in, which is worse than no default
+         !! at all -- a plumbing bug that lost the deck's basis would have
+         !! silently produced 6-31G numbers.
       character(len=16) :: esp = "exact"
       character(len=16) :: expansion = "fmo"
       character(len=16) :: bond_breaking = "none"
@@ -322,6 +329,12 @@ contains
          call logger%error("fmo_run_serial: no fragment partition set")
          return
       end if
+      if (len_trim(this%basis) == 0) then
+         call logger%error("fmo_run_serial: no orbital basis set. The caller fills "// &
+                           "this from the deck, so an empty one is a plumbing fault "// &
+                           "rather than a request for a default.")
+         return
+      end if
 
       allocate (symbols(this%sys_geom%total_atoms))
       do i = 1, this%sys_geom%total_atoms
@@ -389,6 +402,12 @@ contains
       end if
       if (.not. allocated(this%owner)) then
          call logger%error("fmo_run_distributed: no fragment partition set")
+         return
+      end if
+      if (len_trim(this%basis) == 0) then
+         call logger%error("fmo_run_distributed: no orbital basis set. The caller "// &
+                           "fills this from the deck, so an empty one is a plumbing "// &
+                           "fault rather than a request for a default.")
          return
       end if
 

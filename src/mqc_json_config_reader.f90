@@ -467,6 +467,8 @@ contains
 
       call read_fragmentation(json, config, error)
       if (error%has_error()) return
+      call read_efmo(json, config, error)
+      if (error%has_error()) return
 
       ! ---- molecules -------------------------------------------------------
       settings = .false.
@@ -531,12 +533,26 @@ contains
 
       call require_string(json, "keywords.fragmentation.method", config%frag_method, error)
       if (error%has_error()) return
-      call optional_int(json, "keywords.fragmentation.level", config%frag_level)
+      call optional_int(json, "keywords.fragmentation.level", config%frag_level, &
+                        was_named=config%frag_level_set)
       call optional_int(json, "keywords.fragmentation.max_intersection_level", &
                         config%max_intersection_level)
       call optional_string(json, "keywords.fragmentation.counterpoise", config%counterpoise)
       call optional_string(json, "keywords.fragmentation.far_field", config%fmo_far_field)
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
+      call optional_real(json, "keywords.fragmentation.rcut", config%efmo_rcut)
+      ! Unitless and a *ratio* of a distance to a van der Waals contact, so
+      ! zero or negative is not "no cutoff" the way a negative `resppc` is: it
+      ! would put every pair in the effective list, which is EFP with in-vacuo
+      ! monomers and not the method the deck asked for. Refused rather than run.
+      if (config%efmo_rcut <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.rcut must be "// &
+                        "positive. It is a separation in units of van der Waals "// &
+                        "contact, so 1.0 is touching and 2.0 (the default) is twice "// &
+                        "that; a value at or below zero leaves no pair quantum "// &
+                        "mechanical at all.")
+         return
+      end if
       call optional_int(json, "keywords.fragmentation.max_outer", config%fmo_max_outer)
       call optional_real(json, "keywords.fragmentation.outer_tolerance", config%fmo_tolerance)
       call optional_int(json, "keywords.fragmentation.scf_max_iter", config%fmo_scf_max_iter)
@@ -552,6 +568,34 @@ contains
 
       call read_cutoffs(json, config, error)
    end subroutine read_fragmentation
+
+   subroutine read_efmo(json, config, error)
+      !! The keywords.efmo block
+      !!
+      !! `rcut` is not here: it decides which pairs are solved quantum
+      !! mechanically, which is a property of the partition, so it is read from
+      !! `keywords.fragmentation` beside `resppc`.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      call optional_logical(json, "keywords.efmo.charge_transfer", &
+                            config%efmo_charge_transfer)
+      call optional_real(json, "keywords.efmo.induction_damping", &
+                         config%efmo_induction_damping)
+      ! Zero is off and any positive number is a damping exponent, so the only
+      ! unreadable value is a negative one: it would name a factor that grows
+      ! with separation, which is not a damping at all.
+      if (config%efmo_induction_damping < 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.efmo.induction_damping is the "// &
+                        "exponent a of the Tang-Toennies-like factor "// &
+                        "1 - exp(-a R^2)(1 + a R^2) that damps the induction "// &
+                        "field, so it cannot be negative. Zero -- the default -- "// &
+                        "leaves the field undamped; 0.6 is what GAMESS's EFMO "// &
+                        "uses for a cluster of whole molecules.")
+         return
+      end if
+   end subroutine read_efmo
 
    subroutine read_cutoffs(json, config, error)
       !! Per-level distance cutoffs from keywords.fragmentation.cutoffs
@@ -1505,17 +1549,23 @@ contains
       if (found .and. allocated(text)) value = text
    end subroutine optional_string
 
-   subroutine optional_int(json, path, value)
+   subroutine optional_int(json, path, value, was_named)
       !! Fetch an integer if present, leaving `value` at its default otherwise
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: path
       integer, intent(inout) :: value
+      logical, intent(out), optional :: was_named
+         !! Whether the deck wrote the key at all. A default left in place is
+         !! indistinguishable from a value that happens to equal it, and a
+         !! reader whose two consumers have different defaults -- as MBE and
+         !! EFMO do for the fragmentation level -- needs the difference.
 
       integer :: found_value
       logical :: found
 
       call json%get(path, found_value, found)
       if (found) value = found_value
+      if (present(was_named)) was_named = found
    end subroutine optional_int
 
    subroutine named(json, path, was_named)

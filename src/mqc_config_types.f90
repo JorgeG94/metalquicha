@@ -470,6 +470,14 @@ module mqc_config_types
 
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.
+      logical :: frag_level_set = .false.
+         !! Whether `keywords.fragmentation.level` was written in the deck at
+         !! all. `frag_level` carries a default either way, which loses the
+         !! difference between "the user did not say" and "the user asked for
+         !! exactly the default" -- and EFMO needs it, because its own default
+         !! level is two while the shared `DEFAULT_FRAG_LEVEL` is one. A deck
+         !! that says nothing gets each method's own default rather than
+         !! whichever one the shared constant happens to hold.
       integer :: frag_level = DEFAULT_FRAG_LEVEL
          !! Which expansion runs. `keywords.fragmentation.method` is the only
          !! input: `allow_overlapping_fragments` and `expansion` were two more
@@ -509,6 +517,30 @@ module mqc_config_types
          !! convergence each monomer and n-mer SCF is held to. Independent of the
          !! outer loop above, and of a top-level `keywords.scf`, so a fragment run
          !! can be converged more loosely than a whole-system one would be.
+      real(dp) :: efmo_rcut = 2.0_dp
+         !! `keywords.fragmentation.rcut`: where EFMO stops solving a dimer.
+         !!
+         !! **Unitless, not an Angstrom distance.** Each interatomic separation
+         !! is divided by the two van der Waals radii, so 1 is contact and the
+         !! 2.0 default is twice that -- a threshold that means the same thing
+         !! for two waters and for two aromatic rings, which
+         !! `keywords.fragmentation.cutoffs` (Angstrom, and MBE's) does not.
+         !! It is the `resppc` of FMO measured the same way, on a different
+         !! decision: a pair inside it is a quantum dimer, a pair beyond it is
+         !! four effective-fragment terms.
+      logical :: efmo_charge_transfer = .true.
+         !! `keywords.efmo.charge_transfer`: include `E_IJ^CT` in the far pairs.
+         !! GAMESS's EFMO has it; the 2012 method left it out.
+      real(dp) :: efmo_induction_damping = 0.0_dp
+         !! `keywords.efmo.induction_damping`: `a` of the Tang-Toennies-like
+         !! factor `1 - exp(-a R^2)(1 + a R^2)` that damps the induction field.
+         !!
+         !! **Zero, the default, is off.** A number rather than a switch
+         !! because the parameter is the physics: GAMESS's EFP2 damps at
+         !! `POLAB`, which its EFMO sets to 0.6 for a cluster of whole
+         !! molecules and to 0.1 for fragments cut across a bond, and a deck
+         !! that wants to reproduce a GAMESS run has to be able to say which.
+         !! Above 2.0 the factor is one again, GAMESS's own guard.
       integer :: max_intersection_level = DEFAULT_MAX_INTERSECTION  !! Maximum k-way intersection depth for GMBE
       character(len=:), allocatable :: bond_breaking
          !! How a fragment represents a covalent bond the partition cut.
