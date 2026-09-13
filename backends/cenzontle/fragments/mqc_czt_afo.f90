@@ -52,7 +52,14 @@ module mqc_czt_afo
 
    type :: afo_options_t
       !! What to solve the model system with
-      character(len=64) :: basis = "6-31g"
+      character(len=64) :: basis = ""
+         !! **Empty on purpose, and refused rather than defaulted.** This field
+         !! used to start at "6-31g", which no run ever saw: every caller
+         !! overwrites it from the deck, and a deck that omits `model.basis`
+         !! gets "sto-3g" from `mqc_method_config`. So the initialiser named a
+         !! basis nothing was ever computed in, which is worse than no default
+         !! at all -- a plumbing bug that lost the deck's basis would have
+         !! silently produced 6-31G numbers.
       type(scf_numerics_t) :: scf
          !! How the model system's SCF is driven. **Only the drive settings are
          !! read** -- the accelerator, DIIS subspace, level shift,
@@ -417,6 +424,14 @@ contains
       if (model%bda_local < 1 .or. model%baa_local < 1) then
          call error%set(ERROR_VALIDATION, "afo: the model does not say where the cut "// &
                         "bond sits in it")
+         return
+      end if
+      if (len_trim(opts%basis) == 0) then
+         call error%set(ERROR_VALIDATION, "afo: no orbital basis was named for the "// &
+                        "model system. It has to be the one the fragment is solved "// &
+                        "in -- the hybrid is transferred between the two through a "// &
+                        "shared atomic block -- so there is no basis to default to "// &
+                        "here.")
          return
       end if
 

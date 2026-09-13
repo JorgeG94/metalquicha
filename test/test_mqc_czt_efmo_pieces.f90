@@ -26,9 +26,13 @@ module test_mqc_czt_efmo_pieces
    use mqc_czt_efp_convert, only: potential_to_fragment
    use mqc_czt_efp_energy, only: efp_energy_t, efp_interaction_energy, &
                                  efp_pair_energy_t, efp_pair_terms, &
-                                 pair_polarization_energy
+                                 pair_polarization_energy, subset_polarization_energy
    use mqc_czt_efmo_pairs, only: efmo_pair_distance, efmo_split_pairs, &
-                                 vdw_scaled_distance
+                                 vdw_scaled_distance, efmo_near_subsets
+   use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, &
+                                      polarization_energy, induction_damping_factor
+   use mqc_czt_efp_serialize, only: EFP_HEADER_INTS, fragment_header, &
+                                    fragment_buffer_sizes, fragment_pack, fragment_unpack
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -40,6 +44,11 @@ module test_mqc_czt_efmo_pieces
    private
 
    public :: collect_mqc_czt_efmo_pieces_tests
+
+   interface same_reals
+      !! One name for the four ranks the fragment's arrays come in
+      module procedure same_reals_1d, same_reals_2d, same_reals_3d, same_reals_4d
+   end interface same_reals
 
    real(dp), parameter :: ANG = ANGSTROM_TO_BOHR
       !! Angstrom to Bohr, so the geometries below can be written the way they
@@ -71,7 +80,15 @@ contains
                   new_unittest("efmo_three_body_induction_vanishes_with_distance", &
                                test_three_body), &
                   new_unittest("efmo_pair_distance_and_split", test_split), &
-                  new_unittest("efmo_pair_terms_sum_to_the_all_pairs_energy", test_pair_terms) &
+                  new_unittest("efmo_pair_terms_sum_to_the_all_pairs_energy", test_pair_terms), &
+                  new_unittest("efmo_induction_damping_is_the_same_in_pair_and_total", &
+                               test_induction_damping), &
+                  new_unittest("efmo_fragment_survives_a_flat_buffer_round_trip", &
+                               test_serialize), &
+                  new_unittest("efmo_near_subsets_are_all_near_ordered_and_closed", &
+                               test_near_subsets), &
+                  new_unittest("efmo_subset_induction_is_the_pair_solver_generalized", &
+                               test_subset_induction) &
                   ]
    end subroutine collect_mqc_czt_efmo_pieces_tests
 
@@ -463,6 +480,298 @@ contains
                  message="the pair induction is not symmetric in I and J")
    end subroutine test_pair_pol
 
+   subroutine test_induction_damping(error)
+      !! The Tang-Toennies damping, and that the pair and the total share it
+      !!
+      !! **Phase 4's one physics addition.** GAMESS multiplies every induction
+      !! field between two fragments -- the static field of `FRGFLD` and the
+      !! induced-dipole field of `DIPIT` alike -- by
+      !! `1 - exp(-a R^2)(1 + a R^2)`, at `a = 0.6` for a cluster of whole
+      !! molecules. Three things are checked, and the third is the one that
+      !! would go wrong silently.
+      !!
+      !!   * The factor itself, against the closed form and against GAMESS's own
+      !!     two guards: `a` at or below zero is off, and so is `a` above two.
+      !!   * Damping makes the induction shallower. It is a screening of a
+      !!     field, so it cannot deepen the energy, and asking for `a = 0`
+      !!     reproduces the undamped number exactly rather than nearly.
+      !!   * **The pair term and the total are damped identically.** They are
+      !!     subtracted from one another in eq 6, so a damping applied to one
+      !!     and not the other would not show up as a wrong induction: it would
+      !!     show up as a many-body remainder that is not there, which is
+      !!     indistinguishable from physics by inspection. On two fragments the
+      !!     remainder is zero by construction, so the identity is exact.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: A = 0.6_dp
+      type(efp_fragment_t) :: frags(2)
+      type(efp_system_t) :: system
+      type(error_t) :: err
+      real(dp) :: shifts(3, 2)
+      real(dp) :: bare, damped, pair_bare, pair_damped, expect
+      real(dp) :: r
+
+      r = 3.0_dp*ANG
+      expect = 1.0_dp - exp(-A*r*r)*(1.0_dp + A*r*r)
+      call check(error, induction_damping_factor(A, r), expect, thr=1.0e-14_dp, &
+                 message="the damping factor is not 1 - exp(-a R^2)(1 + a R^2)")
+      if (allocated(error)) return
+      call check(error, induction_damping_factor(0.0_dp, r), 1.0_dp, thr=0.0_dp, &
+                 message="a = 0 has to leave the field untouched")
+      if (allocated(error)) return
+      call check(error, induction_damping_factor(2.5_dp, r), 1.0_dp, thr=0.0_dp, &
+                 message="a above two is GAMESS's own guard and has to be off")
+      if (allocated(error)) return
+
+      call water_fragment(frags(1), err)
+      call water_fragment(frags(2), err)
+      call check(error,.not. err%has_error(), "building the fragments failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      shifts = 0.0_dp
+      shifts(1, 2) = 3.0_dp*ANG
+      call build_efp_system(frags, shifts, system, err)
+      call check(error,.not. err%has_error(), "building the system failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      bare = polarization_energy(system, frags, err)
+      damped = polarization_energy(system, frags, err, damping=A)
+      call check(error,.not. err%has_error(), "the induction solve failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) then
+         call system%destroy()
+         return
+      end if
+      call check(error, polarization_energy(system, frags, err, damping=0.0_dp), bare, &
+                 thr=0.0_dp, message="asking for a = 0 changed the undamped induction")
+      if (allocated(error)) then
+         call system%destroy()
+         return
+      end if
+      call check(error, damped > bare, "damping the field has to make the induction "// &
+                 "shallower, not deeper")
+      if (allocated(error)) then
+         call system%destroy()
+         return
+      end if
+      call system%destroy()
+
+      pair_bare = pair_polarization_energy(frags(1), frags(2), shifts(:, 1), &
+                                           shifts(:, 2), err)
+      pair_damped = pair_polarization_energy(frags(1), frags(2), shifts(:, 1), &
+                                             shifts(:, 2), err, damping=A)
+      call check(error,.not. err%has_error(), "the pair induction failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, pair_bare, bare, thr=1.0e-12_dp, &
+                 message="the undamped pair induction is not the two-fragment total")
+      if (allocated(error)) return
+      call check(error, pair_damped, damped, thr=1.0e-12_dp, &
+                 message="the damped pair induction is not the damped two-fragment "// &
+                 "total, so eq 6 would subtract two different quantities")
+   end subroutine test_induction_damping
+
+   subroutine test_serialize(error)
+      !! A fragment flattened into two buffers and rebuilt is the same fragment
+      !!
+      !! **What MPI distribution rests on.** A rank builds a third of the
+      !! potentials and needs all of them, so each one is packed into an
+      !! integer and a real buffer, summed across ranks, and unpacked on the
+      !! ranks that did not build it. Every field has to survive that, and a
+      !! field that quietly does not would not show up as a crash: it would
+      !! show up as a four-rank energy differing from a one-rank energy in some
+      !! digit, on some system, later.
+      !!
+      !! So this checks the round trip **bit for bit**, not to a tolerance --
+      !! there is no arithmetic in a memory copy -- and it checks the
+      !! `allocated` state of every array as well as its contents, because a
+      !! block the potential does not carry has to come back absent rather than
+      !! present and zero: `build_efp_system` and the dispersion sum both
+      !! branch on exactly those flags.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: frag, copy
+      type(error_t) :: err
+      integer :: header(EFP_HEADER_INTS)
+      integer, allocatable :: ibuf(:)
+      real(dp), allocatable :: rbuf(:)
+      integer :: n_ints, n_reals
+
+      call water_fragment(frag, err)
+      call check(error,.not. err%has_error(), "building the fragment failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call fragment_header(frag, header)
+      call fragment_buffer_sizes(header, n_ints, n_reals)
+      call check(error, n_reals > 0, "a water potential packed to no reals at all")
+      if (allocated(error)) return
+      allocate (ibuf(max(n_ints, 1)), source=0)
+      allocate (rbuf(max(n_reals, 1)), source=0.0_dp)
+
+      call fragment_pack(frag, header, ibuf(1:n_ints), rbuf(1:n_reals), err)
+      call check(error,.not. err%has_error(), "packing failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call fragment_unpack(header, ibuf(1:n_ints), rbuf(1:n_reals), copy, err)
+      call check(error,.not. err%has_error(), "unpacking failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, copy%n_points, frag%n_points, message="n_points")
+      if (allocated(error)) return
+      call check(error, copy%n_atoms, frag%n_atoms, message="n_atoms")
+      if (allocated(error)) return
+      call check(error, copy%n_lmo, frag%n_lmo, message="n_lmo")
+      if (allocated(error)) return
+      call check(error, copy%n_freq, frag%n_freq, message="n_freq")
+      if (allocated(error)) return
+      call check(error, copy%n_pol, frag%n_pol, message="n_pol")
+      if (allocated(error)) return
+      call check(error, copy%n_shells, frag%n_shells, message="n_shells")
+      if (allocated(error)) return
+      call check(error, copy%nao_proj, frag%nao_proj, message="nao_proj")
+      if (allocated(error)) return
+      call check(error, copy%n_lmo_proj, frag%n_lmo_proj, message="n_lmo_proj")
+      if (allocated(error)) return
+      call check(error, copy%n_mo_ct, frag%n_mo_ct, message="n_mo_ct")
+      if (allocated(error)) return
+      call check(error, copy%name == frag%name, "the fragment name did not survive")
+      if (allocated(error)) return
+      call check(error, all(copy%labels == frag%labels), "the point labels did not survive")
+      if (allocated(error)) return
+
+      ! The presence flags, which decide whether a term is computed at all.
+      call check(error, copy%has_screen2 .eqv. frag%has_screen2, "has_screen2")
+      if (allocated(error)) return
+      call check(error, copy%has_dynamic .eqv. frag%has_dynamic, "has_dynamic")
+      if (allocated(error)) return
+      call check(error, copy%has_static_pol .eqv. frag%has_static_pol, "has_static_pol")
+      if (allocated(error)) return
+      call check(error, copy%has_basis .eqv. frag%has_basis, "has_basis")
+      if (allocated(error)) return
+      call check(error, copy%has_lmo .eqv. frag%has_lmo, "has_lmo")
+      if (allocated(error)) return
+      call check(error, copy%has_fock .eqv. frag%has_fock, "has_fock")
+      if (allocated(error)) return
+      call check(error, copy%has_ctvec .eqv. frag%has_ctvec, "has_ctvec")
+      if (allocated(error)) return
+      call check(error, copy%has_dipquad .eqv. frag%has_dipquad, "has_dipquad")
+      if (allocated(error)) return
+      call check(error, copy%has_quadquad .eqv. frag%has_quadquad, "has_quadquad")
+      if (allocated(error)) return
+
+      call same_reals(error, copy%points, frag%points, "points")
+      if (allocated(error)) return
+      call same_reals(error, copy%q_elec, frag%q_elec, "q_elec")
+      if (allocated(error)) return
+      call same_reals(error, copy%q_nuc, frag%q_nuc, "q_nuc")
+      if (allocated(error)) return
+      call same_reals(error, copy%charge, frag%charge, "charge")
+      if (allocated(error)) return
+      call same_reals(error, copy%mass, frag%mass, "mass")
+      if (allocated(error)) return
+      call same_reals(error, copy%dipole, frag%dipole, "dipole")
+      if (allocated(error)) return
+      call same_reals(error, copy%quadrupole, frag%quadrupole, "quadrupole")
+      if (allocated(error)) return
+      call same_reals(error, copy%octopole, frag%octopole, "octopole")
+      if (allocated(error)) return
+      call same_reals(error, copy%screen2, frag%screen2, "screen2")
+      if (allocated(error)) return
+      call same_reals(error, copy%dyn_pol, frag%dyn_pol, "dyn_pol")
+      if (allocated(error)) return
+      call same_reals(error, copy%centroids, frag%centroids, "centroids")
+      if (allocated(error)) return
+      call same_reals(error, copy%frequencies, frag%frequencies, "frequencies")
+      if (allocated(error)) return
+      call same_reals(error, copy%static_pol, frag%static_pol, "static_pol")
+      if (allocated(error)) return
+      call same_reals(error, copy%pol_points, frag%pol_points, "pol_points")
+      if (allocated(error)) return
+      call same_reals(error, copy%dipquad, frag%dipquad, "dipquad")
+      if (allocated(error)) return
+      call same_reals(error, copy%quadquad, frag%quadquad, "quadquad")
+      if (allocated(error)) return
+      call same_reals(error, copy%prim_expo, frag%prim_expo, "prim_expo")
+      if (allocated(error)) return
+      call same_reals(error, copy%prim_coef, frag%prim_coef, "prim_coef")
+      if (allocated(error)) return
+      call same_reals(error, copy%lmo_gamess, frag%lmo_gamess, "lmo_gamess")
+      if (allocated(error)) return
+      call same_reals(error, copy%fock_lmo, frag%fock_lmo, "fock_lmo")
+      if (allocated(error)) return
+      call same_reals(error, copy%ctvec_gamess, frag%ctvec_gamess, "ctvec_gamess")
+      if (allocated(error)) return
+      call same_reals(error, copy%eps_occ, frag%eps_occ, "eps_occ")
+      if (allocated(error)) return
+
+      call check(error, all(copy%shell_atom == frag%shell_atom), "shell_atom")
+      if (allocated(error)) return
+      call check(error, all(copy%shell_l == frag%shell_l), "shell_l")
+      if (allocated(error)) return
+      call check(error, all(copy%shell_first == frag%shell_first), "shell_first")
+      if (allocated(error)) return
+      call check(error, all(copy%shell_nprim == frag%shell_nprim), "shell_nprim")
+   end subroutine test_serialize
+
+   subroutine same_reals_1d(error, got, want, name)
+      !! Two real arrays, equal bit for bit, both allocated or both not
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:), want(:)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, size(got) == size(want), name//": the sizes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_1d
+
+   subroutine same_reals_2d(error, got, want, name)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:, :), want(:, :)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, all(shape(got) == shape(want)), name//": the shapes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_2d
+
+   subroutine same_reals_3d(error, got, want, name)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:, :, :), want(:, :, :)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, all(shape(got) == shape(want)), name//": the shapes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_3d
+
+   subroutine same_reals_4d(error, got, want, name)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable, intent(in) :: got(:, :, :, :), want(:, :, :, :)
+      character(len=*), intent(in) :: name
+
+      call check(error, allocated(got) .eqv. allocated(want), &
+                 name//": one side is allocated and the other is not")
+      if (allocated(error)) return
+      if (.not. allocated(want)) return
+      call check(error, all(shape(got) == shape(want)), name//": the shapes differ")
+      if (allocated(error)) return
+      call check(error, all(got == want), name//": a value did not survive the round trip")
+   end subroutine same_reals_4d
+
    subroutine test_three_body(error)
       !! What the pair subtraction leaves behind is three-body induction
       !!
@@ -575,6 +884,205 @@ contains
       end do
    end function three_pair_sum
 
+   subroutine test_near_subsets(error)
+      !! The group enumerator, its every-pair-near criterion, and its ordering
+      !!
+      !! **The one decision the general EFMO energy adds.** Above two fragments
+      !! a group is solved quantum mechanically only if *every* pair inside it
+      !! is within the cutoff. That is forced rather than chosen: the
+      !! effective-fragment half of the energy is pairwise -- electrostatics,
+      !! exchange repulsion, dispersion and charge transfer are two-body terms,
+      !! and induction is already all orders in `E_pol^total` -- so there is no
+      !! far n-body term for a group holding a far pair to correct, and
+      !! enumerating it would count that pair twice.
+      !!
+      !! Four fragments, mutually near except the pair 3-4, so the criterion has
+      !! something to exclude at every size:
+      !!
+      !!   * level 1: four singles, whatever the cutoff.
+      !!   * level 2: five pairs of the six, 3-4 being far.
+      !!   * level 3: two triples of the four -- 1-3-4 and 2-3-4 both hold 3-4.
+      !!   * level 4: none, the whole set holding it too.
+      !!
+      !! Also asserted: **subset closure**, which the many-body difference needs
+      !! of a filtered group list -- every proper subset of a listed group has
+      !! to be listed, or its share is never subtracted -- and the size-then-
+      !! lexicographic ordering, which is what makes a subset final before
+      !! anything containing it is reduced. No geometry and no SCF: the
+      !! separations are written down.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: RCUT = 2.0_dp
+      type(error_t) :: err
+      real(dp) :: r(4, 4)
+      integer, allocatable :: terms(:, :), term_size(:), dropped(:)
+      integer :: n_terms, t, u, a, b, m
+      logical :: found
+
+      r = 1.0_dp
+      do a = 1, 4
+         r(a, a) = 0.0_dp
+      end do
+      r(3, 4) = 5.0_dp
+      r(4, 3) = 5.0_dp
+
+      call efmo_near_subsets(r, RCUT, 1, terms, term_size, n_terms, err)
+      call check(error,.not. err%has_error(), "the enumerator failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, n_terms, 4, message="level one is not the four fragments")
+      if (allocated(error)) return
+
+      call efmo_near_subsets(r, RCUT, 2, terms, term_size, n_terms, err)
+      call check(error, n_terms, 9, &
+                 message="level two is not four singles and the five near pairs")
+      if (allocated(error)) return
+
+      call efmo_near_subsets(r, RCUT, 3, terms, term_size, n_terms, err)
+      call check(error, n_terms, 11, &
+                 message="level three is not level two plus the two all-near triples")
+      if (allocated(error)) return
+      call check(error, count(term_size(1:n_terms) == 3), 2, &
+                 message="a triple holding the far pair was enumerated")
+      if (allocated(error)) return
+
+      call efmo_near_subsets(r, RCUT, 4, terms, term_size, n_terms, err)
+      call check(error, n_terms, 11, &
+                 message="the whole set holds the far pair and must not be enumerated")
+      if (allocated(error)) return
+
+      ! Every enumerated group is all-near, and every proper subset of it is
+      ! itself enumerated.
+      do t = 1, n_terms
+         m = term_size(t)
+         do a = 1, m - 1
+            do b = a + 1, m
+               call check(error, r(terms(a, t), terms(b, t)) <= RCUT, &
+                          "an enumerated group holds a far pair")
+               if (allocated(error)) return
+            end do
+         end do
+         if (m < 2) cycle
+         do a = 1, m
+            ! The group with member `a` dropped has to be in the list. Dropping
+            ! one member at a time is enough: closure under that step gives
+            ! closure under every subset by induction on the size.
+            dropped = pack(terms(1:m, t), [(b /= a, b=1, m)])
+            found = .false.
+            do u = 1, n_terms
+               if (term_size(u) /= m - 1) cycle
+               if (all(terms(1:m - 1, u) == dropped)) found = .true.
+            end do
+            call check(error, found, "a proper subset of an enumerated group is "// &
+                       "missing, so its share is never subtracted")
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! Sizes ascend, and within a size the members ascend lexicographically.
+      do t = 2, n_terms
+         call check(error, term_size(t) >= term_size(t - 1), &
+                    "the groups are not ordered smallest first, so a subset can be "// &
+                    "reduced after the group containing it")
+         if (allocated(error)) return
+      end do
+      do t = 1, n_terms
+         do a = 2, term_size(t)
+            call check(error, terms(a, t) > terms(a - 1, t), &
+                       "a group's members are not ascending")
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! With nothing far, the criterion excludes nothing and the count is the
+      ! full subset lattice: 4 + 6 + 4 + 1.
+      r = 1.0_dp
+      call efmo_near_subsets(r, RCUT, 4, terms, term_size, n_terms, err)
+      call check(error, n_terms, 15, &
+                 message="with every pair near, level four is not every subset")
+      if (allocated(error)) return
+
+      ! And a level below one is refused rather than silently treated as one:
+      ! there is no expansion at all below the fragment sum.
+      call efmo_near_subsets(r, RCUT, 0, terms, term_size, n_terms, err)
+      call check(error, err%has_error(), "a level of zero was accepted")
+      if (err%has_error()) call err%clear()
+   end subroutine test_near_subsets
+
+   subroutine test_subset_induction(error)
+      !! The subset induction solver: the pair case exactly, and a telescoping series
+      !!
+      !! **What generalizing EFMO past pairs needs of the EFP side**, and it
+      !! needs nothing new: `subset_polarization_energy` is the same solver on
+      !! the same kind of system with a different number of fragments loaded.
+      !! Two things have to hold.
+      !!
+      !!   * On two fragments it is `pair_polarization_energy` **to the last
+      !!     bit**, so no reference pinned at level two can move.
+      !!   * The many-body series over the subsets of a trimer sums to the
+      !!     induction over all three at once, to the solver's own 1e-12: the
+      !!     pair terms cancel between the two-body and three-body entries and
+      !!     what is left is the three-fragment solve. That identity is what
+      !!     makes the whole polarization correction cancel at full level, and
+      !!     it is asserted here with no SCF anywhere near it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(efp_fragment_t) :: frags(3)
+      type(error_t) :: err
+      real(dp) :: shifts(3, 3), series, three_body, total, pair, subset
+      integer :: a, b
+
+      call water_fragment(frags(1), err)
+      call water_fragment(frags(2), err)
+      call water_fragment(frags(3), err)
+      call check(error,.not. err%has_error(), "building the fragments failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      ! A triangle, close enough that the three-body induction is not noise.
+      shifts = 0.0_dp
+      shifts(:, 2) = [3.0_dp*ANG, 0.0_dp, 0.0_dp]
+      shifts(:, 3) = [1.5_dp*ANG, 2.6_dp*ANG, 0.0_dp]
+
+      pair = pair_polarization_energy(frags(1), frags(2), shifts(:, 1), shifts(:, 2), err)
+      subset = subset_polarization_energy(frags, shifts, [1, 2], err)
+      call check(error,.not. err%has_error(), "a pair induction failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, subset, pair, thr=0.0_dp, &
+                 message="the subset solver on two fragments is not exactly the pair "// &
+                 "solver, so a level-two energy would move")
+      if (allocated(error)) return
+
+      ! One fragment induces nothing, which is what makes the level-one term of
+      ! the series vanish rather than have to be subtracted away.
+      call check(error, subset_polarization_energy(frags, shifts, [2], err), 0.0_dp, &
+                 thr=0.0_dp, message="a single fragment was given an induction energy")
+      if (allocated(error)) return
+
+      series = 0.0_dp
+      three_body = subset_polarization_energy(frags, shifts, [1, 2, 3], err)
+      do a = 1, 2
+         do b = a + 1, 3
+            series = series + subset_polarization_energy(frags, shifts, [a, b], err)
+            three_body = three_body &
+                         - subset_polarization_energy(frags, shifts, [a, b], err)
+         end do
+      end do
+      total = subset_polarization_energy(frags, shifts, [1, 2, 3], err)
+      call check(error,.not. err%has_error(), "an induction solve failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, series + three_body, total, thr=1.0e-12_dp, &
+                 message="the induction expansion does not telescope to the "// &
+                 "three-fragment induction")
+      if (allocated(error)) return
+      call check(error, abs(three_body) > 1.0e-6_dp, &
+                 "the non-additive induction vanished at this geometry, so the "// &
+                 "telescoping cannot be told from three zeros")
+   end subroutine test_subset_induction
+
    subroutine test_split(error)
       !! `R_IJ` and the cutoff it decides, at a geometry worked out by hand
       !!
@@ -593,9 +1101,12 @@ contains
       !! whole QM/EFP decision of eq 6.
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp), parameter :: O_VDW = 1.52_dp, H_VDW = 1.10_dp
-         !! Bondi, as `mqc_elements` carries them. Written out so the geometry
-         !! below is derived here rather than read back from the code.
+      real(dp), parameter :: O_VDW = 1.40_dp, H_VDW = 1.20_dp
+         !! GAMESS's `$FMO VDWRAD` table, as `mqc_atomic_radii` carries it.
+         !! Written out so the geometry below is derived here rather than read
+         !! back from the code. Bondi's 1.52 and 1.10 are *not* what the cutoff
+         !! is measured in -- the FMO literature quotes `R_cut` against this
+         !! table, and the two disagree by six per cent on a water pair.
       real(dp), parameter :: RCUT = 2.0_dp
       type(error_t) :: err
       integer :: z(3), owner(6), z_pair(6)

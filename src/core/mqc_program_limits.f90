@@ -14,9 +14,47 @@ module mqc_program_limits
    !! Maximum MBE truncation order (1-body, 2-body, ..., N-body)
    !! Higher orders require factorial growth in fragment combinations
 
+   integer, parameter, public :: EFMO_CORR_NONE = 0
+   integer, parameter, public :: EFMO_CORR_MP2 = 1
+   integer, parameter, public :: EFMO_CORR_RI_MP2 = 2
+   !! What an EFMO run puts on top of every fragment's Hartree-Fock reference.
+   !!
+   !! Here rather than in the backend because the driver has to choose one from
+   !! `model.method` and hand it across, and the driver compiles against the
+   !! stub bridge as readily as against the real one.
+   !!
+   !! **The choice is per run and not per fragment.** `E_IJ^0 - E_I^0 - E_J^0`
+   !! is a difference of three energies, and is an interaction energy only if
+   !! all three are the same model.
+
    integer, parameter, public :: N_EFP_TERMS = 6
    !! Terms in an EFP2 interaction energy: electrostatics, polarization,
    !! exchange repulsion, dispersion, charge transfer, and their total.
+
+   integer, parameter, public :: N_EFMO_TERMS = 8
+   !! The sums an EFMO energy is reported as; `EFMO_TERM_NAMES` names them in
+   !! slot order. Eight rather than the six of the energy expression because the far half is
+   !! reported term by term: the four effective-fragment terms are what a
+   !! comparison against another code is made of, and adding them up first
+   !! would hide which one disagreed.
+
+   character(len=*), parameter, public :: EFMO_TERM_NAMES(N_EFMO_TERMS) = &
+                                          [character(len=24) :: "monomer_sum", &
+                                                                 "qm_nmer_correction", "induction_correction", &
+                                                                 "efp_electrostatics", "efp_dispersion", &
+                                                                 "efp_exchange_repulsion", "efp_charge_transfer", &
+                                                                 "polarization_total"]
+   !! The slot each EFMO sum occupies, and the name it is written out under.
+   !!
+   !! `qm_nmer_correction` is `sum_S dE_S^0` over the near groups of two or
+   !! more fragments -- at level two the dimer corrections
+   !! `E_IJ^0 - E_I^0 - E_J^0`, above it those plus the higher many-body terms.
+   !!
+   !! `induction_correction` is `sum_S dE_S^pol`, the same many-body difference
+   !! applied to each group's own induction, and is **subtracted** from the
+   !! total; at level two it is `sum_IJ E_IJ^pol`. It is reported with the sign
+   !! it has as a sum, not with the sign it enters with, so that it can be
+   !! compared against another code's pair induction directly.
 
    integer, parameter, public :: N_SAPT_TERMS = 12
    !! Terms a SAPT0 interaction energy is reported as; `SAPT_TERM_NAMES` names

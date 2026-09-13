@@ -43,6 +43,10 @@ module mqc_config_adapter
 
       ! Fragmentation settings
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
+      logical :: nlevel_set = .false.
+         !! Whether the deck wrote `keywords.fragmentation.level`. EFMO's own
+         !! default level is two and this is how it tells that apart from a deck
+         !! that asked for one.
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       character(len=16) :: expansion_kind = "mbe"  !! "mbe", "fmo" or "ee-mbe"
       character(len=16) :: embedding = ""
@@ -191,6 +195,7 @@ contains
       else
          driver_config%nlevel = mqc_config%frag_level
       end if
+      driver_config%nlevel_set = mqc_config%frag_level_set
 
       ! **`keywords.fragmentation.method` decides the expansion.** It used to be
       ! required, validated for presence and then never read -- the choice came
@@ -316,6 +321,12 @@ contains
       driver_config%method_config%efp%response = mqc_config%efp_response
       driver_config%method_config%efp%vdw_scale = mqc_config%efp_vdw_scale
       driver_config%method_config%efp%quadrupole_blocks = mqc_config%efp_quadrupole_blocks
+      ! EFMO. `rcut` comes from `keywords.fragmentation` and the switch from
+      ! `keywords.efmo`; both land in one object here so the backend reads one
+      ! place.
+      driver_config%method_config%efmo%rcut = mqc_config%efmo_rcut
+      driver_config%method_config%efmo%charge_transfer = mqc_config%efmo_charge_transfer
+      driver_config%method_config%efmo%induction_damping = mqc_config%efmo_induction_damping
       ! Quantum nuclei. The two lists are exclusive and one of them is absent.
       driver_config%method_config%neo%active = mqc_config%neo_active
       driver_config%method_config%neo%nuclear_basis = mqc_config%neo_nuclear_basis

@@ -6,4 +6,5 @@ target_sources(
           mqc_czt_efp_pair.f90
           mqc_czt_efp_rotate.f90
           mqc_czt_efp_energy.f90
-          mqc_czt_efp_convert.f90)
+          mqc_czt_efp_convert.f90
+          mqc_czt_efp_serialize.f90)

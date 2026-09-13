@@ -18,6 +18,7 @@ module test_mqc_json_reader
                                METHOD_TYPE_MCSCF
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       DEFAULT_FRAG_LEVEL, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -60,10 +61,14 @@ contains
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
+                  new_unittest("fragmentation_level_records_being_named", &
+                               test_frag_level_named), &
                   new_unittest("bond_breaking_defaults", test_bond_breaking_defaults), &
                   new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
                   new_unittest("df_without_aux_fails", test_df_without_aux), &
                   new_unittest("fragmentation_cutoffs", test_cutoffs), &
+                  new_unittest("efmo_keywords", test_efmo_keywords), &
+                  new_unittest("efmo_rcut_must_be_positive", test_efmo_rcut_refused), &
                   new_unittest("cutoffs_must_decrease", test_cutoffs_monotonic), &
                   new_unittest("global_groups", test_global_groups), &
                   new_unittest("nodes_per_group", test_nodes_per_group), &
@@ -762,7 +767,51 @@ contains
       call check(error, config%cutoff_method, "distance")
       if (allocated(error)) return
       call check(error, config%distance_metric, "min")
+      if (allocated(error)) return
+      call check(error, config%frag_level_set, &
+                 "a deck that writes the level should record having written it")
    end subroutine test_fragmentation
+
+   subroutine test_frag_level_named(error)
+      !! A silent deck leaves the level unset, and that is not the same as one
+      !!
+      !! `frag_level` carries a default whether or not the deck names it, which
+      !! loses the difference between "the user did not say" and "the user asked
+      !! for exactly the default". EFMO needs it: its own default level is two
+      !! while the shared `DEFAULT_FRAG_LEVEL` is one, and treating a silent
+      !! deck as level one would drop every near pair from an EFMO energy. So
+      !! the flag is asserted in both directions, including that asking for
+      !! exactly the default still reads as *named*.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%frag_level_set, &
+                 "a deck that never wrote the level should not claim it did")
+      if (allocated(error)) return
+      call check(error, config%frag_level, DEFAULT_FRAG_LEVEL)
+      if (allocated(error)) return
+
+      ! And the value the shared default already holds, written out, still
+      ! counts as named -- which is the case a `value /= default` test would get
+      ! wrong.
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"fragmentation": {"method": "MBE", "level": 1}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%frag_level_set, &
+                 "writing the shared default explicitly should still read as named")
+      if (allocated(error)) return
+      call check(error, config%frag_level, 1)
+   end subroutine test_frag_level_named
 
    subroutine test_bond_breaking_defaults(error)
       !! A deck that names neither key keeps the behaviour this program had
@@ -845,6 +894,93 @@ contains
       if (allocated(error)) return
       call check(error, close_enough(config%fmo_scf_energy_tol, 1.0e-9_dp))
    end subroutine test_fmo_scf_keywords
+
+   subroutine test_efmo_keywords(error)
+      !! EFMO's two settings reach the config, and their defaults survive silence
+      !!
+      !! They come from two blocks on purpose: `rcut` decides which pairs get a
+      !! quantum dimer, which is a property of the partition and so sits in
+      !! `keywords.fragmentation` beside FMO's `resppc`; `charge_transfer` says
+      !! what EFMO does with the far pairs and sits in `keywords.efmo`. A case
+      !! rather than trust, because a key added to the wrong allow-list is
+      !! refused by the schema and a key read from the wrong path is silently
+      !! ignored.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"fragmentation": {"method": "efmo", "level": 2, '// &
+                      '"rcut": 1.25}, "efmo": {"charge_transfer": false, '// &
+                      '"induction_damping": 0.6}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%frag_method, "efmo")
+      if (allocated(error)) return
+      call check(error, close_enough(config%efmo_rcut, 1.25_dp))
+      if (allocated(error)) return
+      call check(error,.not. config%efmo_charge_transfer, &
+                 "charge_transfer: false should switch the far-pair CT term off")
+      if (allocated(error)) return
+      call check(error, close_enough(config%efmo_induction_damping, 0.6_dp))
+      if (allocated(error)) return
+
+      ! Silence leaves the paper's defaults: R_cut = 2.0, charge transfer on as
+      ! GAMESS's EFMO has it.
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"fragmentation": {"method": "efmo", "level": 2}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, close_enough(config%efmo_rcut, 2.0_dp))
+      if (allocated(error)) return
+      call check(error, config%efmo_charge_transfer, &
+                 "charge transfer should default to on")
+      if (allocated(error)) return
+      ! The induction damping is the one EFMO key whose default is *not* what
+      ! GAMESS runs: zero, undamped, because that is what every reference in
+      ! this repository was pinned with.
+      call check(error, close_enough(config%efmo_induction_damping, 0.0_dp))
+      if (allocated(error)) return
+
+      ! A negative exponent would be a factor that grows with separation.
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"fragmentation": {"method": "efmo", "level": 2}, '// &
+                      '"efmo": {"induction_damping": -0.6}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a negative induction_damping should be refused")
+   end subroutine test_efmo_keywords
+
+   subroutine test_efmo_rcut_refused(error)
+      !! `rcut` at or below zero is refused rather than run
+      !!
+      !! It is a ratio of a separation to a van der Waals contact, so unlike
+      !! FMO's `resppc` -- where negative means "no approximation" -- there is
+      !! no reading under which a non-positive value is a request. It would put
+      !! every pair in the effective list, which is EFP with in-vacuo monomers
+      !! and a different method from the one the deck named.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"fragmentation": {"method": "efmo", "level": 2, '// &
+                      '"rcut": 0.0}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "rcut: 0.0 should be refused")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "6-31g"', "Energy", &
+                      '"fragmentation": {"method": "efmo", "level": 2, '// &
+                      '"rcut": -1.0}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a negative rcut should be refused")
+   end subroutine test_efmo_rcut_refused
 
    subroutine test_cutoffs(error)
       !! Named and numeric n-mer keys both land at the right level

@@ -90,6 +90,7 @@ module mqc_czt_fmo
    use pic_mpi_lib, only: comm_t, allreduce, MPI_SUM
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_efmo_pairs, only: vdw_scaled_distance
+   use mqc_czt_subsets, only: enumerate_subsets, subtract_subsets
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_bond_perception, only: connected_components, find_severed_bonds, severed_bond_t
    use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_hybrid_t, build_afo_model, &
@@ -112,7 +113,14 @@ module mqc_czt_fmo
 
    type :: fmo_options_t
       !! What to run, and how hard
-      character(len=64) :: basis = "6-31g"
+      character(len=64) :: basis = ""
+         !! **Empty on purpose, and refused rather than defaulted.** This field
+         !! used to start at "6-31g", which no run ever saw: every caller
+         !! overwrites it from the deck, and a deck that omits `model.basis`
+         !! gets "sto-3g" from `mqc_method_config`. So the initialiser named a
+         !! basis nothing was ever computed in, which is worse than no default
+         !! at all -- a plumbing bug that lost the deck's basis would have
+         !! silently produced 6-31G numbers.
       character(len=16) :: esp = "exact"
          !! How a fragment's neighbours are represented to it.
          !!
@@ -376,6 +384,14 @@ contains
       if (size(owner) /= n_atoms .or. size(coordinates, 2) /= n_atoms) then
          call error%set(ERROR_VALIDATION, "fmo: owner and coordinates must cover "// &
                         "every atom")
+         return
+      end if
+      if (len_trim(opts%basis) == 0) then
+         call error%set(ERROR_VALIDATION, "fmo: no orbital basis was named. Every "// &
+                        "caller sets it from the deck, so an empty one is a plumbing "// &
+                        "fault rather than a request for a default -- and guessing a "// &
+                        "basis here would return plausible numbers for a basis "// &
+                        "nobody asked for.")
          return
       end if
 
@@ -1543,7 +1559,7 @@ contains
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
 
-      call enumerate_terms(n_frag, level, terms, term_size, n_terms)
+      call enumerate_subsets(n_frag, level, terms, term_size, n_terms)
       allocate (correction(n_terms), source=0.0_dp)
 
       ! Count the n-mers (size >= 2) so the progress below has a denominator;
@@ -1617,111 +1633,6 @@ contains
          if (term_size(t) >= 2) res%pair_sum = res%pair_sum + correction(t)
       end do
    end subroutine calculate_polymers
-
-   subroutine enumerate_terms(n_frag, level, terms, term_size, n_terms)
-      !! Every combination of fragments from one up to `level`, smallest first
-      !!
-      !! Size order matters: the correction for a term is reduced by its
-      !! subsets, so each subset has to be final before anything containing it
-      !! is touched.
-      integer, intent(in) :: n_frag, level
-      integer, allocatable, intent(out) :: terms(:, :), term_size(:)
-      integer, intent(out) :: n_terms
-
-      integer, allocatable :: pick(:)
-      integer :: m, total, k
-
-      total = 0
-      do m = 1, level
-         total = total + n_choose(n_frag, m)
-      end do
-      allocate (terms(level, total), source=0)
-      allocate (term_size(total), source=0)
-
-      n_terms = 0
-      do m = 1, level
-         allocate (pick(m))
-         do k = 1, m
-            pick(k) = k
-         end do
-         do
-            n_terms = n_terms + 1
-            terms(1:m, n_terms) = pick
-            term_size(n_terms) = m
-            if (.not. step_combination(pick, m, n_frag)) exit
-         end do
-         deallocate (pick)
-      end do
-   end subroutine enumerate_terms
-
-   function step_combination(pick, m, n) result(more)
-      !! Advance a combination in lexicographic order; false when exhausted
-      integer, intent(inout) :: pick(:)
-      integer, intent(in) :: m, n
-      logical :: more
-
-      integer :: i, k
-
-      more = .false.
-      do i = m, 1, -1
-         if (pick(i) < n - m + i) then
-            pick(i) = pick(i) + 1
-            do k = i + 1, m
-               pick(k) = pick(k - 1) + 1
-            end do
-            more = .true.
-            return
-         end if
-      end do
-   end function step_combination
-
-   function n_choose(n, k) result(c)
-      !! Binomial coefficient, built up rather than from factorials
-      integer, intent(in) :: n, k
-      integer :: c
-
-      integer :: i
-
-      c = 1
-      do i = 1, k
-         c = c*(n - k + i)/i
-      end do
-   end function n_choose
-
-   subroutine subtract_subsets(terms, term_size, n_terms, correction)
-      !! Reduce each term by the corrections its own subsets already carry
-      integer, intent(in) :: terms(:, :)
-      integer, intent(in) :: term_size(:)
-      integer, intent(in) :: n_terms
-      real(dp), intent(inout) :: correction(:)
-
-      integer :: t, u
-
-      do t = 1, n_terms
-         if (term_size(t) < 2) cycle
-         do u = 1, n_terms
-            if (term_size(u) >= term_size(t)) cycle
-            if (.not. is_subset(terms(1:term_size(u), u), terms(1:term_size(t), t))) cycle
-            correction(t) = correction(t) - correction(u)
-         end do
-      end do
-   end subroutine subtract_subsets
-
-   function is_subset(small, big) result(inside)
-      !! Whether every member of `small` appears in `big`
-      integer, intent(in) :: small(:), big(:)
-      logical :: inside
-
-      integer :: i
-
-      inside = .true.
-      do i = 1, size(small)
-         if (.not. any(big == small(i))) then
-            inside = .false.
-            return
-         end if
-      end do
-   end function is_subset
 
    function spread_over(comm) result(many)
       !! Whether there is more than one rank to spread over

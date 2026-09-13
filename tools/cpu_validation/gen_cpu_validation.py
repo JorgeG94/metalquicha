@@ -350,6 +350,18 @@ HAND_MAINTAINED = {
     # It writes `water_f_makefp.efp` beside itself; that potential is committed
     # because the EFP2 case below consumes it and the sweep only removes decks.
     "cpu/mqc/makefp/water_f_makefp.json",
+    # EFMO. The reference is *ours*, checked against GAMESS rather than generated
+    # from it: GAMESS's EFMO and this one agree on the fragment sum, the quantum
+    # dimer corrections and the exchange repulsion, and differ by construction on
+    # the electrostatics (GAMESS's EFMO runs its multipoles unscreened) and on the
+    # induction (GAMESS damps the induced-dipole field, this does not), so no
+    # GAMESS number is the same quantity. PySCF has no EFMO at all. See
+    # PRESERVED_TESTS below for the per-term comparison.
+    "cpu/mqc/efmo/efmo_prism_rcut1.json",
+    "cpu/mqc/efmo/efmo_prism_rcut1_damped.json",
+    "cpu/mqc/efmo/efmo_cage_rcut2.json",
+    "cpu/mqc/efmo/efmo_w3_rimp2.json",
+    "cpu/mqc/efmo/efmo_w3_level3.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -2613,6 +2625,46 @@ def pyscf_rhf(atoms, basis, aux="", multiplicity=1, ecp=""):
 # because that is the assertion -- an EFP2 interaction must not depend on how the
 # fragments are placed.
 PRESERVED_TESTS = [
+    {
+        "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
+        "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1.json",
+        "expected_energy": -456.004182668797,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "reference_note": "reference is this program's own EFMO total from a build converging every monomer and dimer SCF to 1e-12 in energy and 1e-10 in density; the shipped 1e-10/1e-8 defaults reproduce it to 1e-12, and one thread against four moves it 2e-12, which is what the tolerance is sized from. GAMESS 2026 (gamess-hollerith, $FMO IEFMO=1 MODEFM(1)=0,16,1,1,1 RESDIM=1.0 RESPPC=-1 RESPAP=0, RHF/6-31G) gives -456.004043215 for the same deck, 1.39e-4 Ha away, and the split is the same 9 quantum / 6 effective dimers. Term by term against GAMESS, in Hartree: monomer sum -455.897884060 vs -455.897884083; quantum dimer correction -0.080550071 vs -0.080550070; exchange repulsion -0.000173890 vs -0.000173890; dispersion -0.000414173 vs -0.000498590, which is not a disagreement either: that GAMESS run asked for MODEFM(3)=1, its E6 plus a third of E6, while this code sums damped E6+E7+E8. Asked for E6+E7+E8 (MODEFM(3)=32) GAMESS gives -0.004814275 against our -0.004781495 on the same cluster at rcut 0.3, where every pair is effective and the term is ten times larger; electrostatics -0.011699269 vs -0.011620536, ours the more negative because GAMESS's EFMO runs its multipoles with no charge-penetration screening while this code applies the potential's own; pair induction 0.013033887 vs 0.012557400 and total induction -0.026488526 vs -0.025869694, ours the more negative because GAMESS damps the induced-dipole field with a Tang-Toennies factor at a = 0.6 and this code does not. Neither difference is a disagreement about the same number. Phase 4 measured that last attribution and it is only partly right: with keywords.efmo.induction_damping set to 0.6 this code gives pair induction 0.012374267 and total induction -0.025407237, past GAMESS's numbers rather than onto them, so about a third of the induction gap is the damping and the rest is a difference in the undamped induction itself. See efmo_prism_rcut1_damped.",
+    },
+    {
+        "name": "EFMO water prism 6-31G rcut 1.0, induction damped a=0.6 (CPU)",
+        "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1_damped.json",
+        "expected_energy": -456.003760999734,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "reference_note": "reference is this program's own EFMO total with the induction field damped as GAMESS damps it -- the Tang-Toennies-like factor 1 - exp(-a R^2)(1 + a R^2) at a = 0.6, applied to the static field and to the induced-dipole field alike, and to E_IJ^pol and E_pol^total alike. The same deck as efmo_prism_rcut1 with keywords.efmo.induction_damping added, so the pair carries the whole effect of the key: pair induction 0.013033887 -> 0.012374267 and total induction -0.026488526 -> -0.025407237, moving the total from -456.004182669 to -456.003761000. GAMESS on this deck gives -456.004043215 with pair induction 0.012557400 and total -0.025869694, so the damping is real and overshoots: undamped we are 2.4 per cent deeper than GAMESS and damped 1.8 per cent shallower, which says the induction gap Phase 3 attributed entirely to damping is only partly damping. Damping the induced-dipole field alone moves the total by 5e-6; the static field carries all of it. The default stays undamped so that every reference pinned before this key existed is unchanged.",
+    },
+    {
+        "name": "EFMO water cage 6-31G rcut 2.0, all dimers quantum (CPU)",
+        "input": "inputs/cpu/mqc/efmo/efmo_cage_rcut2.json",
+        "expected_energy": -456.001105444487,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "reference_note": "reference is this program's own EFMO total, same 1e-12 build and same tolerance reasoning as the prism case. rcut 2.0 puts all fifteen pairs in the quantum list, so this case pins the fragment sum, the dimer corrections and the induction with no effective-fragment term at all -- the complement of the prism deck. GAMESS gives -456.000949506, 1.56e-4 Ha away, all of it the induction damping described there. That last clause is Phase 3's attribution and Phase 4 showed it to be only partly right; see efmo_prism_rcut1_damped.",
+    },
+    {
+        "name": "EFMO/RI-MP2 water trimer 6-31G rcut 2.0 (CPU)",
+        "input": "inputs/cpu/mqc/efmo/efmo_w3_rimp2.json",
+        "expected_energy": -228.354320154232,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "reference_note": "reference is this program's own EFMO/RI-MP2 total. No other code computes this number: GAMESS's EFMO/RI-MP2 uses its own fitting basis handling and PySCF has no EFMO, so what pins it is the pair of identities in test_mqc_czt_efmo, which are exact by construction -- on two fragments EFMO/RI-MP2 equals the dimer's own in-vacuo RI-MP2 energy, and with every pair quantum it equals the RI-MP2 many-body pair sum plus the induction no pair holds, each against an independently driven SCF and fitted MP2. The deck is the water trimer of w3.xyz at rcut 2.0, which splits 2 quantum / 1 effective, so both halves of eq 6 carry something and the correlated half is only the quantum one: the fragment potentials, the far pair and the induction are Hartree-Fock constructions and do not move when model.method changes. Of the total, -0.383415520 is monomer correlation and -0.000528358 the correlation in the quantum dimer correction. The Hartree-Fock energy of the same deck is -227.970376276.",
+    },
+    {
+        "name": "EFMO water trimer 6-31G, level 3 = N, rcut 100 (CPU)",
+        "input": "inputs/cpu/mqc/efmo/efmo_w3_level3.json",
+        "expected_energy": -227.970497639041,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "reference_note": "reference is the unfragmented RHF/6-31G energy of the same cluster, -227.970497639044, which EFMO has to reproduce here: the deck runs level 3 on three fragments with rcut 100, so the level is the fragment count and every group is near. Both series then telescope -- the in-vacuo one to the supersystem's own SCF and the induction one to E_pol^total, which it therefore cancels entirely, leaving no polarization correction at all -- and the answer is one RHF energy. Measured residual 3e-12 Ha, which is the accumulated convergence of the seven SCFs (three monomers, three dimers, one trimer) against the one. So unlike the other four EFMO cases this reference is not this program's own number: it is an identity the method has, and it is the sharpest check on the subset-induction bookkeeping there is, since a wrong sign, a missing group or a group induction solved over the wrong fragments all leave the level-two limits intact and break it. The same identity on the water prism at level 6 holds to 2.4e-11 over 57 groups. keywords.fragmentation.level is the same key MBE and FMO read; EFMO defaults it to 2, which is the method as published, so every other deck here is unaffected.",
+    },
     {
         "name": "EFP2 water dimer 6-31G* (CPU)",
         "input": "inputs/cpu/mqc/efp/water_dimer_efp.json",
