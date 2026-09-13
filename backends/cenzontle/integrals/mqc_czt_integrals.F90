@@ -30,6 +30,8 @@ module mqc_czt_integrals
    use mqc_czt_ecp, only: ecp_matrix, ECP_AVAILABLE
    use mqc_json_ecp_reader, only: build_molecular_ecp_json
    use mqc_basis_utils, only: find_basis_file
+   use mqc_elements, only: element_number_to_symbol
+   use mqc_physical_constants, only: PI
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use pic_lapack_interfaces, only: pic_syevd, pic_potrf
    use libcint_fortran, only: libcint_1e_ovlp_sph, libcint_1e_kin_sph, &
@@ -101,6 +103,7 @@ module mqc_czt_integrals
    public :: rotaxis_libfint_covers
    public :: build_czt_molecule
    public :: build_df_tensor
+   public :: build_sap_potential
    public :: build_df_mo_tensor
    public :: build_df_mo_block
    ! The one place that maps "is this basis Cartesian?" onto libcint's two sets
@@ -1247,6 +1250,114 @@ contains
       deallocate (buf)
       !$omp end parallel
    end subroutine one_electron
+
+   subroutine build_sap_potential(orb, sap_basis, v, error)
+      !! The screening potential a superposition of atomic potentials guess adds to H
+      !!
+      !! `V(mu,nu) = sum_A (mu nu | rho_A)`, where `rho_A` is one fitted
+      !! spherical charge distribution per atom that has electrons, from a
+      !! `sap_*` set on the Basis Set Exchange. Its Coulomb potential is what an electron sees from the
+      !! *other* electrons of a free atom, so the guess Fock matrix is
+      !! `H + V` -- the nuclear attraction is already in H and is not repeated
+      !! here.
+      !!
+      !! **The fit is not a basis set and is not normalised like one.** The
+      !! published coefficients expand `-Z(r)/r` directly, so turning them into
+      !! charge distributions takes `c -> -c (alpha/pi)^(3/2)` over *unnormalised*
+      !! primitives (Lehtola, doi:10.1063/5.0004046). The reader folds
+      !! `libcint_gto_norm` into every coefficient it loads, as libcint requires,
+      !! so that factor is divided back out here. Skipping either half leaves a
+      !! potential wrong by an element-dependent constant, which looks like a bad
+      !! guess rather than like a bug.
+      type(czt_molecule_t), intent(in) :: orb
+         !! The orbital basis the guess is being built in
+      character(len=*), intent(in) :: sap_basis
+         !! Which fit, e.g. 'sap_helfem_large'
+      real(dp), allocatable, intent(out) :: v(:, :)
+         !! (nao, nao), Hartree
+      type(error_t), intent(inout) :: error
+
+      type(czt_molecule_t) :: sap
+      character(len=2), allocatable :: symbols(:)
+      integer, allocatable :: elements(:)
+      real(dp), allocatable :: three(:, :), coords(:, :)
+      integer :: iatom, n_screening
+
+      if (.not. allocated(orb%atomic_numbers)) then
+         call error%set(ERROR_VALIDATION, "SAP guess: the molecule carries no elements")
+         return
+      end if
+
+      ! Ghost atoms carry basis functions and no electrons, so they screen
+      ! nothing: a counterpoise fragment must see the potential of the atoms
+      ! that are really there and not of the basis it borrowed. `charges` is
+      ! what knows -- it is zero exactly on a ghost.
+      n_screening = count(orb%charges > 0.0_dp)
+      if (n_screening == 0) then
+         allocate (v(orb%nao, orb%nao))
+         v = 0.0_dp
+         return
+      end if
+
+      allocate (symbols(n_screening), elements(n_screening), coords(3, n_screening))
+      n_screening = 0
+      do iatom = 1, orb%natm
+         if (orb%charges(iatom) <= 0.0_dp) cycle
+         n_screening = n_screening + 1
+         elements(n_screening) = orb%atomic_numbers(iatom)
+         symbols(n_screening) = element_number_to_symbol(orb%atomic_numbers(iatom))
+         coords(:, n_screening) = orb%coords(:, iatom)
+      end do
+
+      ! The same angular form as the orbital basis: one libcint call carries all
+      ! three centres of (mu nu | P) in one convention, as `three_centre` says.
+      call build_czt_molecule(elements, symbols, coords, sap_basis, sap, error, &
+                              normalize_contractions=.false., force_cartesian=orb%cartesian)
+      if (error%has_error()) then
+         call error%set(ERROR_VALIDATION, "SAP guess: "//error%get_message())
+         return
+      end if
+
+      call sap_charge_convention(sap)
+      call three_centre(orb, sap, three)
+      allocate (v(orb%nao, orb%nao))
+      v = reshape(sum(three, dim=2), [orb%nao, orb%nao])
+      call sap%destroy()
+   end subroutine build_sap_potential
+
+   subroutine sap_charge_convention(sap)
+      !! Turn loaded SAP coefficients into the charge distributions they stand for
+      !!
+      !! In place, on the `env` the integrals read. See `build_sap_potential` for
+      !! why the first two factors are needed. Every SAP shell is a single s
+      !! function, so there is one contraction column and `libcint_gto_norm`
+      !! takes `l = 0`.
+      !!
+      !! The third factor, `2 sqrt(pi)`, is libcint's and not the fit's: a
+      !! three-centre integral carries `1/(2 sqrt(pi))` on its auxiliary index,
+      !! from the unit shell that stands in for the missing fourth centre.
+      !! **Density fitting never sees it** -- the two-centre metric carries the
+      !! same factor squared, and `(mn|P) (P|Q)^-1 (Q|ls)` cancels it exactly --
+      !! so this is the first caller here to use a three-centre integral on its
+      !! own, and the first that has to put it back. Without it the potential is
+      !! a uniform 3.54 times too weak, which still converges, just slowly, and
+      !! so does not announce itself.
+      type(czt_molecule_t), intent(inout) :: sap
+
+      real(dp) :: alpha, raw
+      integer :: ish, iprim, nprim, exp_at, coeff_at
+
+      do ish = 1, sap%nbas
+         nprim = sap%bas(LIBCINT_NPRIM_OF, ish)
+         exp_at = sap%bas(LIBCINT_PTR_EXP, ish)
+         coeff_at = sap%bas(LIBCINT_PTR_COEFF, ish)
+         do iprim = 1, nprim
+            alpha = sap%env(exp_at + iprim)
+            raw = sap%env(coeff_at + iprim)/libcint_gto_norm(0, alpha)
+            sap%env(coeff_at + iprim) = -raw*(alpha/PI)**1.5_dp*2.0_dp*sqrt(PI)
+         end do
+      end do
+   end subroutine sap_charge_convention
 
    subroutine build_df_tensor(orb, aux, b, error, omega)
       !! B(mu nu, P) = sum_Q (mu nu | Q) [(P|Q)^(-1/2)]_QP

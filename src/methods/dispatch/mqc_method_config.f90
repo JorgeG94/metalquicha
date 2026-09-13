@@ -93,7 +93,7 @@ module mqc_method_config
       character(len=32) :: convergence_metric = "standard"
          !! `keywords.scf.convergence_metric`; see `mqc_scf_convergence`.
       character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'sap', 'basis_set_projection',
          !! or 'auto'
          !!
          !! 'auto' lets the backend pick: the CPU path resolves it to 'sad'

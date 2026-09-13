@@ -72,7 +72,7 @@ module mqc_scf_types
       logical :: allow_crap_scf = .false.
          !! Keep a non-converged SCF instead of failing
       character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection'
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'sap', 'basis_set_projection'
          !! or 'auto', where the backend picks.
          !!
          !! **Not the same key as `mqc_config_t%fukui_guess`**, which takes

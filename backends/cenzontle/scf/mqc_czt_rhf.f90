@@ -20,7 +20,7 @@ module mqc_czt_rhf
    use mqc_fock_projector, only: fock_projector_t
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                              direct_stats_t
-   use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor
+   use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
@@ -48,6 +48,14 @@ module mqc_czt_rhf
    integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
+   integer, parameter, public :: SCF_GUESS_SAP = 5    !! Superposition of atomic potentials
+   character(len=*), parameter, public :: SAP_BASIS_DEFAULT = "sap_helfem_large"
+      !! Which fitted atomic potential `sap` uses unless a deck names another.
+      !!
+      !! The fully numerical HelFEM fit rather than a GRASP one: the relativistic
+      !! sets exist for heavy elements and buy nothing below them, and this is
+      !! the set Psi4 defaults to, which keeps a cross-code comparison of the
+      !! *guess* about the guess.
 
    integer, parameter :: LINE_LEN = 160
       !! Buffer length for a formatted table line handed to the logger.
@@ -665,6 +673,9 @@ contains
          st%fock = ops%h
       case (SCF_GUESS_GWH)
          call guess_fock(ops%s, ops%h, st%fock)
+      case (SCF_GUESS_SAP)
+         call sap_fock(mol, ops%h, st%fock, error)
+         if (error%has_error()) return
       case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. present(guess_density)) then
             call error%set(ERROR_VALIDATION, "RHF: an atomic guess was asked for but no "// &
@@ -1215,6 +1226,10 @@ contains
          fock_b = h
       case (SCF_GUESS_GWH)
          call guess_fock(s, h, fock_a)
+         fock_b = fock_a
+      case (SCF_GUESS_SAP)
+         call sap_fock(mol, h, fock_a, error)
+         if (error%has_error()) return
          fock_b = fock_a
       case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. (present(guess_density_alpha) .and. present(guess_density_beta))) then
@@ -1942,6 +1957,27 @@ contains
          end do
       end do
    end subroutine guess_fock
+
+   subroutine sap_fock(mol, h, fock, error)
+      !! Starting Fock from a superposition of atomic potentials
+      !!
+      !!   F = H + V_SAP
+      !!
+      !! `V_SAP` is the screening one electron feels from the electrons of the
+      !! free atoms, fitted to Gaussians and contracted against three-centre
+      !! integrals -- no quadrature grid and no free-atom SCF, which is what
+      !! separates it from SAD. `H` already carries the nuclear attraction.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :)
+      real(dp), intent(out) :: fock(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: v(:, :)
+
+      call build_sap_potential(mol, SAP_BASIS_DEFAULT, v, error)
+      if (error%has_error()) return
+      fock = h + v
+   end subroutine sap_fock
 
    subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error)
       !! One Fock build from a guess density, through whichever path is active

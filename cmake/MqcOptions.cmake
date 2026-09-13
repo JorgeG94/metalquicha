@@ -202,6 +202,11 @@ set(MQC_BASIS_SETS
     "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
     "def2-qzvp;def2-qzvp-rifit;def2-qzvpd;def2-qzvpp;def2-qzvpp-rifit;def2-qzvppd;def2-qzvppd-rifit"
     "def2-mtzvp;def2-mtzvpp;def2-mtzvpp-rij;def2-universal-jfit;def2-universal-jkfit;def2-ecp"
+    # Fitted atomic potentials for the `sap` initial guess. Not basis sets: each
+    # is one s shell per element whose coefficients expand -Z(r)/r, and the BSE
+    # ships them with role `guess`. Both families, since which one is better
+    # above the third row is a question the guess assessment can now ask.
+    "sap_helfem_large;sap_helfem_small;sap_grasp_large;sap_grasp_small"
     CACHE STRING "Basis sets to extract from ${MQC_BASIS_BUNDLE}")
 
 include(ExtractBasisSets)

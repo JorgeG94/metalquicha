@@ -35,6 +35,8 @@ both has not said which it means.
                              calculation.
 ``sad``                      Superposition of spherically averaged atomic densities.
 ``sac``                      Superposition of the free atoms' own spin densities.
+``sap``                      Superposition of fitted atomic potentials. Needs no
+                             atomic calculation.
 ``basis_set_projection``     Converge in smaller bases first and project forward.
 ``auto``                     Let the backend choose.
 ============================ =========================================================
@@ -56,6 +58,15 @@ cycles. It is useful for debugging -- it is the one guess that depends on nothin
 solving anything, so it costs nothing beyond the integrals already in hand. It is
 a large improvement on ``core`` for no work, which is why it is the fallback when
 something better is unavailable.
+
+**sap** adds a screening potential to the core Hamiltonian, :math:`F = H +
+V_{\text{SAP}}`, where :math:`V_{\text{SAP}}` is the field of the free atoms'
+electrons. It is read from a published Gaussian fit of the atomic potentials
+rather than computed, so unlike ``sad`` it solves no free atom and needs no
+quadrature grid: the cost is one three-centre contraction against one s function
+per atom. The fits come from the Basis Set Exchange, which distributes them with
+role ``guess``; ``sap_helfem_large`` is the one used here. See Lehtola,
+*J. Chem. Theory Comput.* **15**, 1593 (2019).
 
 **sad** solves each *element* once as a free atom, caches it, and superposes the
 spherically averaged densities. The atomic solves are reused across every atom of

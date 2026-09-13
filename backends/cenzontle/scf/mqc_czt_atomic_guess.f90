@@ -32,7 +32,8 @@ module mqc_czt_atomic_guess
    use mqc_string_utils, only: int_to_text
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, subshell_layout
    use mqc_czt_rhf, only: SCF_GUESS_PROJ, rhf_result_t, run_czt_uhf, &
-                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
+                          SCF_GUESS_SAP
    implicit none
    private
 
@@ -112,12 +113,14 @@ contains
          kind = SCF_GUESS_SAC
       case ("sad")
          kind = SCF_GUESS_SAD
+      case ("sap")
+         kind = SCF_GUESS_SAP
       case ("basis_set_projection", "projection")
          kind = SCF_GUESS_PROJ
       case default
          kind = SCF_GUESS_SAD
          call error%set(ERROR_VALIDATION, "unknown initial guess '"//trim(adjustl(text))// &
-                        "'; the CPU backend has core, gwh, sac, sad and "// &
+                        "'; the CPU backend has core, gwh, sac, sad, sap and "// &
                         "basis_set_projection")
       end select
    end subroutine parse_guess_name
@@ -129,7 +132,8 @@ contains
       !! closed shell takes. An atomic guess that will not build warns and falls
       !! back to GWH rather than failing the run.
       !!
-      !! Core and GWH need nothing here -- the SCF builds them from H and S -- so
+      !! Core, GWH and SAP need nothing here -- the SCF builds them from H, S and
+      !! the fitted atomic potentials -- so
       !! `guess_total` comes back unallocated and only the kind is set.
       !! Basis-set projection needs a sub-SCF ladder the caller drives and is
       !! refused.
@@ -177,6 +181,8 @@ contains
          name = "sac"
       case (SCF_GUESS_PROJ)
          name = "basis_set_projection"
+      case (SCF_GUESS_SAP)
+         name = "superposition of atomic potentials"
       case (SCF_GUESS_SAD)
          name = "sad"
       case default
