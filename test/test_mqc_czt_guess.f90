@@ -25,10 +25,11 @@ module test_mqc_czt_guess
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
-                                subshell_layout
+                                subshell_layout, build_sap_potential
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, &
                           density_pseudo_orbitals, &
-                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+                          SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
+                          SCF_GUESS_SAP, SAP_BASIS_DEFAULT
    use mqc_czt_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                    hund_multiplicity, spherical_average, &
                                    clear_atomic_cache
@@ -55,7 +56,8 @@ contains
                   new_unittest("closed_shell_atom_gives_one_guess", test_closed_atom), &
                   new_unittest("guess_is_block_diagonal_over_atoms", test_block_diagonal), &
                   new_unittest("hund_multiplicities_are_right", test_hund), &
-                  new_unittest("unknown_guess_name_is_refused", test_bad_name) &
+                  new_unittest("unknown_guess_name_is_refused", test_bad_name), &
+                  new_unittest("the_sap_potential_is_the_field_of_z_electrons", test_sap_far_field) &
                   ]
    end subroutine collect_mqc_czt_guess_tests
 
@@ -92,7 +94,7 @@ contains
    end subroutine single_atom
 
    subroutine test_same_energy(error)
-      !! Four guesses, one answer
+      !! Five guesses, one answer
       !!
       !! A guess decides how the SCF gets there, not where. The exception is an
       !! open-shell system that can converge onto a different stationary point,
@@ -102,18 +104,18 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(czt_molecule_t) :: mol
       type(error_t) :: err
-      type(rhf_result_t) :: r(4)
+      type(rhf_result_t) :: r(5)
       real(dp), allocatable :: g_a(:, :), g_b(:, :), total(:, :)
       integer :: i
-      integer, parameter :: KINDS(4) = [SCF_GUESS_CORE, SCF_GUESS_GWH, &
-                                        SCF_GUESS_SAC, SCF_GUESS_SAD]
+      integer, parameter :: KINDS(5) = [SCF_GUESS_CORE, SCF_GUESS_GWH, &
+                                        SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_SAP]
 
       call clear_atomic_cache()
       call water(mol, err, "cc-pvdz")
       call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
       if (allocated(error)) return
 
-      do i = 1, 4
+      do i = 1, size(KINDS)
          if (KINDS(i) == SCF_GUESS_SAC .or. KINDS(i) == SCF_GUESS_SAD) then
             call build_atomic_guess(mol, KINDS(i), g_a, g_b, err)
             call check(error,.not. err%has_error(), "the atomic guess must build: "//err%get_full_trace())
@@ -132,7 +134,7 @@ contains
          if (allocated(error)) return
       end do
 
-      do i = 2, 4
+      do i = 2, size(KINDS)
          call check(error, abs(r(i)%energy - r(1)%energy) < 1.0e-9_dp, &
                     "a guess changed the converged energy")
          if (allocated(error)) return
@@ -497,13 +499,68 @@ contains
                  "Cl's unpaired count must have the parity of its electron count")
    end subroutine test_hund
 
+   subroutine test_sap_far_field(error)
+      !! Far from an atom, the SAP potential is the field of its Z electrons
+      !!
+      !! The one check that pins the *absolute scale* of `V_SAP`, and the reason
+      !! it is worth a test of its own: three separate conventions multiply into
+      !! that scale -- the fit's own, `libcint_gto_norm`, and the `1/(2 sqrt(pi))`
+      !! a three-centre integral carries on its auxiliary index -- and getting
+      !! any of them wrong leaves a potential that is uniformly too weak or too
+      !! strong. Nothing else notices. The SCF still converges, to the same
+      !! energy, a few iterations later, so a guess that is silently 3.54 times
+      !! too weak looks exactly like a guess that is merely mediocre.
+      !!
+      !! A compact probe far from a lone oxygen samples `V_SAP` at one point,
+      !! where a screening cloud of Z electrons must look like `Z/R`.
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: probe
+      type(error_t) :: err
+      real(dp), allocatable :: v(:, :), s_probe(:, :)
+      real(dp) :: coords(3, 2), sampled, expected
+      real(dp), parameter :: R = 100.0_dp   !! Bohr, far enough that erf(sqrt(a) R) is 1
+
+      ! Oxygen at the origin and a *ghost* hydrogen probe far along x. The probe
+      ! carries basis functions and no electrons, so it screens nothing and the
+      ! potential it samples is the oxygen's alone.
+      coords = reshape([0.0_dp, 0.0_dp, 0.0_dp, R, 0.0_dp, 0.0_dp], [3, 2])
+      call build_czt_molecule([8, 1], ["O ", "H "], coords, "sto-3g", probe, err, &
+                              ghost=[.false., .true.])
+      call check(error,.not. err%has_error(), "the probe must build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call build_sap_potential(probe, SAP_BASIS_DEFAULT, v, err)
+      call check(error,.not. err%has_error(), "the SAP potential must build: "//err%get_full_trace())
+      if (.not. allocated(error)) then
+         call probe%overlap(s_probe)
+      end if
+      if (allocated(error)) then
+         call probe%destroy()
+         return
+      end if
+
+      ! The probe's last basis function is its own 1s, centred at R.
+      sampled = v(probe%nao, probe%nao)/s_probe(probe%nao, probe%nao)
+      expected = 8.0_dp/R
+      call probe%destroy()
+
+      ! Loose by the standards of an integral test, because the probe is a
+      ! contracted 1s of finite extent rather than a point. An error in one of
+      ! the conventions is a factor of 3.54 or 0.28, not a per cent.
+      call check(error, sampled > 0.0_dp, "the SAP potential must be repulsive")
+      if (.not. allocated(error)) then
+         call check(error, abs(sampled/expected - 1.0_dp) < 0.01_dp, &
+                    "the SAP potential is not the field of Z electrons at long range")
+      end if
+   end subroutine test_sap_far_field
+
    subroutine test_bad_name(error)
       !! An unrecognised guess is refused, not silently substituted
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       integer :: kind
 
-      call parse_guess_name("sap", kind, err)
+      call parse_guess_name("huckel", kind, err)
       call check(error, err%has_error(), "an unknown guess name must be refused")
       if (allocated(error)) return
 

@@ -122,7 +122,7 @@ module mqc_cuest_iface
       character(len=32) :: convergence_metric = "standard"
          !! See `mqc_scf_convergence`.
       character(len=32) :: guess = "auto"
-         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'basis_set_projection',
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', 'sap', 'basis_set_projection',
          !! or 'auto'. 'auto' lets the backend pick -- the CPU path resolves it
          !! to 'sad' and cuEST to 'gwh'; an explicit spelling wins over both.
       type(guess_step_t), allocatable :: guess_steps(:)
