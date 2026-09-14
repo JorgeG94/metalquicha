@@ -54,7 +54,9 @@ module mqc_czt_integrals
                               LIBCINT_PTR_ENV_START, LIBCINT_KAPPA_OF
 #ifdef MQC_WITH_LIBFINT
    use libcint_fortran, only: libcint_2e_rotaxis_sph, libcint_2e_rotaxis_cart, &
-                              libcint_rotaxis_supported
+                              libcint_rotaxis_supported, &
+                              libcint_2e_hgp_sph, libcint_2e_hgp_cart, &
+                              libcint_hgp_supported
 #endif
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
@@ -84,16 +86,33 @@ module mqc_czt_integrals
       !! 47 s per Fock build), against 0.63x for the s/p/L classes, so it was
       !! dropped. May never exceed what `rotaxis_supported` covers, which
       !! `test_mqc_czt_direct` checks; if the kernels grow, raise this.
+   integer, parameter, public :: ERI_PATH_HGP = 3
+      !! Quartets of shells up to `HGP_MAX_L` through the Obara-Saika path
+      !! with the Head-Gordon-Pople contract-then-transfer split,
+      !! `libcint_2e_hgp_*`; anything above stays on Rys.
+   integer, parameter, public :: ERI_PATH_HYBRID = 4
+      !! Rotated-axis where it reaches, Head-Gordon-Pople where it does not,
+      !! Rys above both. Each quartet takes the narrowest path that covers it,
+      !! on the measured expectation that a specialised kernel beats a general
+      !! one at its own angular momentum.
+   integer, parameter, public :: HGP_MAX_L = 2
+      !! The highest angular momentum sent down the Head-Gordon-Pople path:
+      !! s, p, L and d, which is what libfint's kernels cover. Held to
+      !! `hgp_supported` by `test_mqc_czt_direct`, the same way `ROTAXIS_MAX_L`
+      !! is.
    integer, protected, public :: eri_path = ERI_PATH_RYS
       !! Which path `two_electron_block` takes, for the whole run. Set once
       !! by `set_eri_path`, before any quartet is evaluated, and read from
       !! inside the threaded quartet loops after; never written there.
 #ifdef MQC_WITH_LIBFINT
    logical, parameter, public :: ROTAXIS_AVAILABLE = .true.
+   logical, parameter, public :: HGP_AVAILABLE = .true.
 #else
    logical, parameter, public :: ROTAXIS_AVAILABLE = .false.
       !! libcint has no rotated-axis path, so a build against it has one
-      !! path and `set_eri_path` refuses the other.
+      !! path and `set_eri_path` refuses the others.
+   logical, parameter, public :: HGP_AVAILABLE = .false.
+      !! Nor a Head-Gordon-Pople one.
 #endif
 
    public :: czt_molecule_t
@@ -101,6 +120,8 @@ module mqc_czt_integrals
    public :: eri_path_name
    public :: quartet_on_rotaxis
    public :: rotaxis_libfint_covers
+   public :: quartet_on_hgp
+   public :: hgp_libfint_covers
    public :: build_czt_molecule
    public :: build_df_tensor
    public :: build_sap_potential
@@ -300,7 +321,8 @@ contains
       ! error-stops on anything else rather than falling back, so the choice
       ! is made here, per quartet, from the angular momenta alone. It ignores
       ! `opt`.
-      if (eri_path == ERI_PATH_ROTAXIS) then
+      select case (eri_path)
+      case (ERI_PATH_ROTAXIS)
          if (quartet_on_rotaxis(shls, bas)) then
             if (cartesian) then
                ret = libcint_2e_rotaxis_cart(buf, shls, atm, natm, bas, nbas, env)
@@ -309,7 +331,39 @@ contains
             end if
             return
          end if
-      end if
+      case (ERI_PATH_HGP)
+         if (quartet_on_hgp(shls, bas)) then
+            if (cartesian) then
+               ret = libcint_2e_hgp_cart(buf, shls, atm, natm, bas, nbas, env)
+            else
+               ret = libcint_2e_hgp_sph(buf, shls, atm, natm, bas, nbas, env)
+            end if
+            return
+         end if
+      case (ERI_PATH_HYBRID)
+         ! Narrowest path that covers the quartet, which is the order the
+         ! measurements put them in: rotated-axis wins at s, p and L, and
+         ! Head-Gordon-Pople from d up.
+         if (quartet_on_rotaxis(shls, bas)) then
+            if (cartesian) then
+               ret = libcint_2e_rotaxis_cart(buf, shls, atm, natm, bas, nbas, env)
+            else
+               ret = libcint_2e_rotaxis_sph(buf, shls, atm, natm, bas, nbas, env)
+            end if
+            return
+         end if
+         if (quartet_on_hgp(shls, bas)) then
+            if (cartesian) then
+               ret = libcint_2e_hgp_cart(buf, shls, atm, natm, bas, nbas, env)
+            else
+               ret = libcint_2e_hgp_sph(buf, shls, atm, natm, bas, nbas, env)
+            end if
+            return
+         end if
+      case default
+         ! ERI_PATH_RYS, and any quartet the cases above declined: both fall
+         ! through to the Rys call below rather than being handled here.
+      end select
 #endif
       if (cartesian) then
          if (present(opt)) then
@@ -339,6 +393,37 @@ contains
       covered = all(bas(LIBCINT_ANG_OF, shls + 1) <= ROTAXIS_MAX_L)
    end function quartet_on_rotaxis
 
+   pure function quartet_on_hgp(shls, bas) result(covered)
+      !! Whether every shell of a quartet is within `HGP_MAX_L`
+      !!
+      !! What the Head-Gordon-Pople path covers. `shls` is 0-based, as libcint
+      !! counts.
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: bas(:, :)
+      logical :: covered
+
+      covered = all(bas(LIBCINT_ANG_OF, shls + 1) <= HGP_MAX_L)
+   end function quartet_on_hgp
+
+   function hgp_libfint_covers(shls, bas, nbas) result(covered)
+      !! libfint's own answer to whether a quartet is on the Head-Gordon-Pople
+      !! path
+      !!
+      !! For the test that holds `HGP_MAX_L` to it; the dispatch itself never
+      !! asks. Always false on a libcint build.
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      logical :: covered
+
+#ifdef MQC_WITH_LIBFINT
+      covered = libcint_hgp_supported(shls, bas, nbas)
+#else
+      covered = .false.
+      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
+#endif
+   end function hgp_libfint_covers
+
    function rotaxis_libfint_covers(shls, bas, nbas) result(covered)
       !! libfint's own answer to whether a quartet is on the rotated-axis path
       !!
@@ -363,9 +448,13 @@ contains
       !!
       !! 'rys' is the default and the only path a libcint build has;
       !! 'rotaxis' takes the rotated-axis path on every quartet within
-      !! `ROTAXIS_MAX_L` and Rys on the rest; 'auto' is 'rotaxis' where the build has it and 'rys'
-      !! otherwise. Case-insensitive. Refuses 'rotaxis' on a build without it
-      !! rather than quietly running Rys under that name.
+      !! `ROTAXIS_MAX_L` and Rys on the rest; 'hgp' takes the
+      !! Head-Gordon-Pople path within `HGP_MAX_L` and Rys on the rest;
+      !! 'hybrid' takes rotated-axis where it reaches, Head-Gordon-Pople where
+      !! it does not and Rys above both; 'auto' is 'rotaxis' where the build
+      !! has it and 'rys' otherwise. Case-insensitive. Refuses a libfint-only
+      !! path on a build without it rather than quietly running Rys under that
+      !! name.
       character(len=*), intent(in) :: name
       type(error_t), intent(inout) :: error
 
@@ -390,6 +479,22 @@ contains
             return
          end if
          eri_path = ERI_PATH_ROTAXIS
+      case ("hgp")
+         if (.not. HGP_AVAILABLE) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.eri_path 'hgp' needs a "// &
+                           "build against libfint; this one links libcint, which has "// &
+                           "only the Rys path")
+            return
+         end if
+         eri_path = ERI_PATH_HGP
+      case ("hybrid")
+         if (.not. (ROTAXIS_AVAILABLE .and. HGP_AVAILABLE)) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.eri_path 'hybrid' needs a "// &
+                           "build against libfint; this one links libcint, which has "// &
+                           "only the Rys path")
+            return
+         end if
+         eri_path = ERI_PATH_HYBRID
       case ("auto")
          if (ROTAXIS_AVAILABLE) then
             eri_path = ERI_PATH_ROTAXIS
@@ -398,7 +503,7 @@ contains
          end if
       case default
          call error%set(ERROR_VALIDATION, "unknown keywords.scf.eri_path '"//trim(name)// &
-                        "'. Accepted: rys, rotaxis, auto")
+                        "'. Accepted: rys, rotaxis, hgp, hybrid, auto")
       end select
    end subroutine set_eri_path
 
@@ -406,11 +511,16 @@ contains
       !! The path in force, spelled as the keyword spells it
       character(len=:), allocatable :: name
 
-      if (eri_path == ERI_PATH_ROTAXIS) then
+      select case (eri_path)
+      case (ERI_PATH_ROTAXIS)
          name = "rotaxis"
-      else
+      case (ERI_PATH_HGP)
+         name = "hgp"
+      case (ERI_PATH_HYBRID)
+         name = "hybrid"
+      case default
          name = "rys"
-      end if
+      end select
    end function eri_path_name
 
    subroutine two_electron_optimizer(cartesian, opt, atm, natm, bas, nbas, env)

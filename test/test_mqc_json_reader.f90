@@ -179,6 +179,24 @@ contains
       if (allocated(error)) return
 
       call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"scf": {"eri_path": "HGP"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_eri_path == "hgp", &
+                 "scf.eri_path must accept hgp, got '"//config%scf_eri_path//"'")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
+                      '"scf": {"eri_path": "hybrid"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_eri_path == "hybrid", &
+                 "scf.eri_path must accept hybrid, got '"//config%scf_eri_path//"'")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", &
                       '"scf": {"eri_path": "rotated"}', "", two_atoms())
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &

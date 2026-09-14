@@ -844,9 +844,12 @@ SCF Options
 - ``eri_path``: Which four-centre integral path the CPU backend takes
   (default: ``rys``). ``rotaxis`` evaluates every quartet of s, p and L shells
   by the rotated-axis McMurchie-Davidson path libfint carries and the rest by
-  Rys; ``auto`` is ``rotaxis`` on a libfint build and ``rys`` on a libcint
-  one. The two paths agree to about 1e-12 scaled and are not bit-identical.
-  A libcint build refuses ``rotaxis``.
+  Rys; ``hgp`` evaluates every quartet up to d by libfint's Obara-Saika path
+  with the Head-Gordon-Pople contract-then-transfer split, and the rest by Rys;
+  ``hybrid`` takes ``rotaxis`` up to L, ``hgp`` for the quartets that touch d,
+  and Rys above; ``auto`` is ``rotaxis`` on a libfint build and ``rys`` on a
+  libcint one. The paths agree to about 1e-12 scaled and are not
+  bit-identical. A libcint build refuses everything but ``rys``.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
 - ``level_shift``: Hartree added to the virtual orbitals before each

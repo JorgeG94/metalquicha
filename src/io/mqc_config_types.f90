@@ -178,7 +178,8 @@ module mqc_config_types
          !! and hands over to DIIS below `ACCEL_SWITCH`, so naming one asks for
          !! a different opening, not a different endgame.
       character(len=:), allocatable :: scf_eri_path
-         !! `keywords.scf.eri_path`: 'rys', 'rotaxis' or 'auto'. Unallocated
+         !! `keywords.scf.eri_path`: 'rys', 'rotaxis', 'hgp', 'hybrid' or
+         !! 'auto'. Unallocated
          !! when the deck says nothing, which leaves the backend's default.
       character(len=:), allocatable :: scf_guess
          !! Initial guess name from `keywords.scf.guess`.
