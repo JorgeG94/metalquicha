@@ -45,7 +45,7 @@ module mqc_czt_rhf
    ! -- and Fortran has no circular `use`.
    integer, parameter, public :: SCF_GUESS_CORE = 0   !! F = H
    integer, parameter, public :: SCF_GUESS_GWH = 1    !! Generalized Wolfsberg-Helmholz
-   integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
+   integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic spin densities, unaveraged
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
    integer, parameter, public :: SCF_GUESS_SAP = 5    !! Superposition of atomic potentials
