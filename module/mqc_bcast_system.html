@@ -194,10 +194,10 @@ extents, so the receiving side never assumes a shape.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_bcast.html'>mqc_bcast</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -818,7 +818,7 @@ sent as one message.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~14"></span>
+              <span class="anchor" id="variable-comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -833,7 +833,7 @@ sent as one message.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~54"></span>
+              <span class="anchor" id="variable-sys_geom~51"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -848,7 +848,7 @@ sent as one message.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~19"></span>
+              <span class="anchor" id="variable-root~20"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -888,7 +888,7 @@ sent as one message.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~18"></span>
+              <span class="anchor" id="variable-comm~17"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -903,7 +903,7 @@ sent as one message.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~14"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -918,7 +918,7 @@ sent as one message.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~23"></span>
+              <span class="anchor" id="variable-root~24"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -933,7 +933,7 @@ sent as one message.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_root~5"></span>
+              <span class="anchor" id="variable-is_root~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -973,7 +973,7 @@ sent as one message.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~15"></span>
+              <span class="anchor" id="variable-comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -997,91 +997,6 @@ sent as one message.</p>
             </td>
             <td>::</td>
             <td><strong>array</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-root~20"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>root</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-is_root~2"></span>
-              logical,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>is_root</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-bcast_int_2d"></span> <h3>private  subroutine <a href='../proc/bcast_int_2d.html'>bcast_int_2d</a>(comm, array, root, is_root)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>One default-integer matrix, with both extents</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-comm~16"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-array~3"></span>
-              integer,
-            </td>
-<td>intent(inout),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>array</strong>(:,:)</td>
             <td>
 
             </td>
@@ -1124,11 +1039,11 @@ sent as one message.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-bcast_real_2d"></span> <h3>private  subroutine <a href='../proc/bcast_real_2d.html'>bcast_real_2d</a>(comm, array, root, is_root)  
+    <div class="card-header codesum"><span class="anchor" id="proc-bcast_int_2d"></span> <h3>private  subroutine <a href='../proc/bcast_int_2d.html'>bcast_int_2d</a>(comm, array, root, is_root)  
 </h3></div>
     <div class="card-body">
           
-  <p>One double matrix, with both extents &ndash; the coordinates, in Bohr</p>
+  <p>One default-integer matrix, with both extents</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1143,7 +1058,7 @@ sent as one message.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~17"></span>
+              <span class="anchor" id="variable-comm~15"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1158,8 +1073,8 @@ sent as one message.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~4"></span>
-              real(kind=dp),
+              <span class="anchor" id="variable-array~3"></span>
+              integer,
             </td>
 <td>intent(inout),</td>
               <td></td>            <td>
@@ -1208,6 +1123,91 @@ sent as one message.</p>
     </div>
   </div>
 
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-bcast_real_2d"></span> <h3>private  subroutine <a href='../proc/bcast_real_2d.html'>bcast_real_2d</a>(comm, array, root, is_root)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>One double matrix, with both extents &ndash; the coordinates, in Bohr</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-comm~16"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-array~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>array</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~23"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-is_root~5"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>is_root</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
         </section>
         <br>
 
@@ -1231,7 +1231,7 @@ sent as one message.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-14 19:10 +0000             </p>
+ on 2026-09-14 19:16 +0000             </p>
           </div>
         </div>
         <br>
