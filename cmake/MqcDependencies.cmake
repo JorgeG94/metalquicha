@@ -469,6 +469,50 @@ if(MQC_ENABLE_DLFIND)
   message(STATUS "DL-FIND enabled: geometry optimization via libdlfind")
 endif()
 
+# OpenTrustRegion, for second-order orbital optimization. Today's one consumer
+# is the SCF stability analysis.
+#
+# Unlike DL-FIND above this is an ordinary Fortran dependency -- compiled in,
+# `.mod` coupling, no C ABI and no separate shared object. MPL-2.0 is file-level
+# copyleft and permits the Larger Work, so nothing has to be kept relinkable;
+# cmake/MqcOptions.cmake sets that reasoning out beside the option, and
+# cmake/modules/Findopentrustregion.cmake says why INTEGER_SIZE,
+# HOST_PROVIDES_BLAS and ENABLE_XHOST are forced the way they are.
+#
+# The bridge that consumes the library is a source file of ${main_lib} like any
+# other, added from backends/cenzontle/stability by that backend's own
+# CMakeLists. It compiles against `opentrustregion.mod`, which is reachable
+# because the include directory below is a property of ${main_lib} and target
+# properties are resolved at generate time rather than in the order the
+# directories were added -- so this block does not have to precede the backend.
+#
+# The backend is refused rather than silently ignored without the CPU integrals.
+# The stability analysis is the electronic Hessian of a converged SCF, and the
+# only thing in this program that can apply that Hessian is cenzontle's response
+# operator. An OTR build with no CPU integrals would compile a bridge with
+# nothing behind it, so it is a configure error and not a runtime one.
+if(MQC_ENABLE_OTR)
+  if(NOT MQC_ENABLE_CZT)
+    message(
+      FATAL_ERROR
+        "MQC_ENABLE_OTR needs MQC_ENABLE_CZT: the stability analysis applies "
+        "the electronic Hessian through cenzontle's response operator, and "
+        "there is no other implementation of it. Configure with "
+        "-DMQC_ENABLE_CZT=ON or -DMQC_ENABLE_OTR=OFF.")
+  endif()
+  find_package(opentrustregion REQUIRED)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_OTR)
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:opentrustregion>)
+  # PUBLIC, for the reason the libxc and libcint include lines above give:
+  # nvfortran opens every transitively used module file, not only the ones a
+  # source names itself, so `opentrustregion.mod` has to be on the executable's
+  # include path even though app/main.f90 never names it.
+  target_include_directories(
+    ${main_lib} PUBLIC $<BUILD_INTERFACE:${opentrustregion_BINARY_DIR}>)
+  message(
+    STATUS "OpenTrustRegion enabled: ${MQC_OTR_REPOSITORY}@${MQC_OTR_TAG}")
+endif()
+
 # Cray: settle which BLAS the binary binds to, because the wrapper does not.
 #
 # `find_package(MPI)` learns what to link by asking the `ftn` wrapper for its

@@ -144,6 +144,29 @@ endif()
 option(MQC_ENABLE_DLFIND "Fetch libdlfind (DL-FIND) for geometry optimization"
        OFF)
 
+# Off by default, and the reason is again licensing -- but not the same
+# licensing. OpenTrustRegion is MPL-2.0, whose copyleft is file-level: the
+# obligation attaches to the library's own source files and to modifications of
+# them, and it explicitly permits combining them into a Larger Work under other
+# terms. DL-FIND, three lines above, is LGPL-3, whose obligation attaches to the
+# combined work and is discharged only by keeping the two relinkable -- which is
+# why that one is a shared library reached through a C ABI and this one is not.
+# MPL-2.0 asks for none of that, so OpenTrustRegion is consumed the way libxc
+# and libfint are: a Fortran dependency, .mod coupling, compiled into the same
+# static library, with its own files staying under its own license.
+#
+# It is off by default all the same, because a license a user did not choose is
+# still a license a user did not choose, and because the only consumer so far is
+# one optional analysis.
+option(MQC_ENABLE_OTR
+       "Fetch OpenTrustRegion for second-order orbital optimization" OFF)
+set(MQC_OTR_REPOSITORY
+    "https://github.com/eriksen-lab/opentrustregion"
+    CACHE STRING "Where to fetch OpenTrustRegion from")
+set(MQC_OTR_TAG
+    "8fa7769ae66233a566868a6bf03cdcbdb1ee69d0"
+    CACHE STRING "OpenTrustRegion revision to build against")
+
 # Which CODATA revision the Bohr radius in mqc_physical_constants follows. Only
 # the length conversion is selected this way; see that module for why.
 set(MQC_CODATA_YEAR
