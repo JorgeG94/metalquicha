@@ -215,6 +215,17 @@ contains
                         json_data%has_energy = result%has_energy
                         json_data%has_vibrational = .true.
 
+                        ! Whether the reference the whole calculation rests on
+                        ! is a minimum, when `keywords.scf.stability` asked.
+                        if (result%has_stability) then
+                           json_data%stability_stable = result%stability_stable
+                           json_data%stability_curvature = result%stability_curvature
+                           json_data%stability_has_curvature = &
+                              result%stability_has_curvature
+                           json_data%stability_rotations = result%stability_rotations
+                           json_data%has_stability = .true.
+                        end if
+
                         ! Copy vibrational data
                         allocate (json_data%frequencies(n_modes))
                         allocate (json_data%reduced_masses(n_modes))
@@ -341,6 +352,17 @@ contains
                json_data%fukui_anion_bound = result%fukui_anion_bound
                json_data%fukui_scheme = result%fukui_scheme
                json_data%has_fukui = .true.
+            end if
+
+            ! Whether the reference the whole calculation rests on
+            ! is a minimum, when `keywords.scf.stability` asked.
+            if (result%has_stability) then
+               json_data%stability_stable = result%stability_stable
+               json_data%stability_curvature = result%stability_curvature
+               json_data%stability_has_curvature = &
+                  result%stability_has_curvature
+               json_data%stability_rotations = result%stability_rotations
+               json_data%has_stability = .true.
             end if
          end if
       end block

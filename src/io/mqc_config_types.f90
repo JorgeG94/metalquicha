@@ -14,6 +14,8 @@ module mqc_config_types
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_AIMD_DT, &
+                                       DEFAULT_STABILITY_TOL, &
+                                       DEFAULT_STABILITY_MAX_ITER, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -380,6 +382,15 @@ module mqc_config_types
          !! `keywords.scf.diis`. Off is a diagnostic rather than a setting: an
          !! SCF without DIIS is how you find out whether DIIS is the thing
          !! hiding a problem, not a way to run one.
+      logical :: scf_stability = .false.
+         !! `keywords.scf.stability`. Diagonalise the electronic Hessian once
+         !! the SCF has converged and say whether the solution is a minimum.
+         !! Off by default because it costs Fock builds -- one per Davidson
+         !! iteration -- on a calculation that has already produced its energy.
+      real(dp) :: scf_stability_tolerance = DEFAULT_STABILITY_TOL
+         !! `keywords.scf.stability_tolerance`, where that diagonalisation stops.
+      integer :: scf_stability_maxiter = DEFAULT_STABILITY_MAX_ITER
+         !! `keywords.scf.stability_maxiter`, how long it may take.
       integer :: scf_diis_size = 8
          !! `keywords.scf.diis_size`, the subspace the extrapolation is drawn
          !! from. Widening it to 12-20 is the first thing to try on an

@@ -109,6 +109,14 @@ module mqc_cuest_iface
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
+      logical :: stability = .false.
+         !! Run the wavefunction stability analysis once the SCF converges.
+         !! Only the cenzontle backend acts on it; the others leave it alone.
+      real(dp) :: stability_tol = 1.0e-6_dp
+      integer :: stability_max_iter = 100
+         !! Where the stability analysis' eigensolve stops and how long it may
+         !! take. See `mqc_calculation_defaults` for why the tolerance is
+         !! looser than the response solve's.
       real(dp) :: hessian_response_tol = 1.0e-9_dp
       integer :: hessian_response_max_iter = 50
       integer :: hessian_response_batch = 12
@@ -226,6 +234,9 @@ contains
       settings%verbose = options%verbose
       settings%device_rank = options%device_rank
       settings%pcm = options%pcm
+      settings%stability = options%stability
+      settings%stability_tol = options%stability_tol
+      settings%stability_max_iter = options%stability_max_iter
       settings%hessian_response_tol = options%hessian_response_tol
       settings%hessian_response_max_iter = options%hessian_response_max_iter
       settings%hessian_response_batch = options%hessian_response_batch
