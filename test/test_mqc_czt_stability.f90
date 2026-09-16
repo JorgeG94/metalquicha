@@ -37,6 +37,7 @@ module test_mqc_czt_stability
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp, default_int
    use pic_lapack_interfaces, only: pic_syev
+   use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -661,6 +662,14 @@ contains
       call check(error, dense_low > 0.0_dp, "the verdict agreed with the eigensolver "// &
                  "but the matrix has a negative eigenvalue "//real_to_text(dense_low))
       if (allocated(error)) return
+      ! Printed, not only compared. The tolerance says the two agree; the
+      ! numbers say by how much, which is what anyone asking "how well does the
+      ! matrix-free solver do on a real molecule" actually wants, and it costs
+      ! one line to not have to instrument the test to find out.
+      call logger%info("  water/STO-3G lowest curvature: native "// &
+                       real_to_text(result%lowest_curvature)//", dense "// &
+                       real_to_text(dense_low)//", difference "// &
+                       real_to_text(result%lowest_curvature - dense_low))
       call check(error, abs(result%lowest_curvature - dense_low) < 1.0e-7_dp, &
                  "the native curvature "//real_to_text(result%lowest_curvature)// &
                  " disagrees with the dense diagonalisation's "//real_to_text(dense_low))
@@ -706,6 +715,10 @@ contains
                  "both should report a curvature for an unstable reference")
       if (allocated(error)) return
       difference = abs(native%lowest_curvature - borrowed%lowest_curvature)
+      call logger%info("  synthetic Hessian lowest curvature: native "// &
+                       real_to_text(native%lowest_curvature)//", opentrustregion "// &
+                       real_to_text(borrowed%lowest_curvature)//", difference "// &
+                       real_to_text(difference))
       call check(error, difference < 1.0e-8_dp, "the native lowest curvature "// &
                  real_to_text(native%lowest_curvature)//" and OpenTrustRegion's "// &
                  real_to_text(borrowed%lowest_curvature)//" differ by "// &
@@ -738,7 +751,7 @@ contains
 
       character(len=32) :: buffer
 
-      write (buffer, "(es14.6)") value
+      write (buffer, "(es22.14)") value
       text = trim(adjustl(buffer))
    end function real_to_text
 

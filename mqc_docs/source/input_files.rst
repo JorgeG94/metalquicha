@@ -1071,10 +1071,42 @@ minimum.
 **The honest cost.** Count Fock builds, not iterations. One second-order
 iteration costs one Fock build per trial step -- accepted or rejected -- plus
 one per Hessian-vector product inside the Newton solve, of which there are up to
-twenty. On a well-behaved closed shell it therefore converges in *fewer
-iterations and more Fock builds* than DIIS, and is the wrong choice. It earns
-its cost in two places: where DIIS oscillates or stalls, and where the answer
-has to be a minimum rather than merely a stationary point.
+twenty. The run prints the product count, because it is an integral pass each
+and appears in no row of the timing table.
+
+Measured on seven closed shells -- water, methane, ethane, HCN, a water trimer
+and N2 in 3-21G through cc-pVDZ, plus water with PBE0 -- all converged on the
+same commutator threshold of 1e-9:
+
+.. list-table::
+   :header-rows: 1
+
+   * - path
+     - iterations
+     - Fock builds (energies)
+     - Hessian-vector products
+   * - DIIS
+     - 9-14
+     - 10-15
+     - 0
+   * - second order
+     - 5-6
+     - 7-8
+     - 13-18
+
+So on a well-behaved closed shell it converges in *fewer iterations and roughly
+twice the integral passes*, and is the wrong choice. The energies agree with the
+DIIS ones to between 0 and 9e-13 hartree, which is arithmetic noise at that
+threshold -- they are the same stationary point.
+
+It earns its cost in two places: where DIIS oscillates or stalls, and where the
+answer has to be a minimum rather than merely a stationary point. For the
+second, N2 at 1.6 A in 6-31G is the case to keep in mind. DIIS converges from
+the core, GWH and SAD guesses alike to a stationary point ``stability`` reports
+as a saddle -- curvature -1.29e-1 from core, -6.77e-2 from the other two. With
+``second_order: true`` the same run reaches -108.5718 hartree, between 0.020 and
+0.242 hartree lower, at a curvature of -1e-12: a minimum. It costs 225 integral
+passes against DIIS's 12, and DIIS's answer is wrong.
 
 Closed-shell restricted references only. A restricted Kohn-Sham reference is
 supported -- the exchange-correlation kernel enters the Hessian through the same

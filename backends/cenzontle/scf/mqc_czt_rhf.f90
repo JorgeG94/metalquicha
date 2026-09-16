@@ -913,17 +913,27 @@ contains
       ! `assemble_fock` itself, so there is deliberately no lap here.
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
-      ! The honest cost of a second-order run, in the only unit that compares
-      ! with DIIS: the energy-producing Fock builds and the Hessian-vector
-      ! products are both Fock builds, and the second number is the one a
-      ! reader would otherwise not see.
+      ! The honest cost of a second-order run.
+      !
+      ! **The Hessian-vector products and nothing else**, because they are the
+      ! one part of the cost nothing else reports. The timing table below counts
+      ! every `assemble_fock` in its "Fock builds" row -- the DIIS iterations,
+      ! the Newton phase's entry build and one per trial step -- and that row is
+      ! directly comparable with a DIIS run's. The products are an integral pass
+      ! each and appear in no row at all, so a reader comparing the two would
+      ! otherwise miss the largest term in the second-order one.
+      !
+      ! `full_fock_builds` is deliberately not quoted here: it counts only what
+      ! the incremental bookkeeping saw, which on the in-core and fitted paths
+      ! is nothing, so it would read as a much cheaper run than the timing row
+      ! says.
       if (result%second_order_started_at > 0 .and. verbose) then
-         write (line, "(a,i0,a,i0,a,i0,a,i0,a)") &
+         write (line, "(a,i0,a,i0,a,i0,a)") &
             "  second order: handed over after DIIS iteration ", &
             result%second_order_started_at, ", ", result%second_order_iterations, &
-            " Newton steps, ", result%full_fock_builds, " Fock builds for energies "// &
-            "and ", result%second_order_hessian_products, &
-            " Hessian-vector products"
+            " Newton steps, ", result%second_order_hessian_products, &
+            " Hessian-vector products (one integral pass each, counted in no"// &
+            " timing row)"
          call logger%info(trim(line))
       end if
       call energy_components(verbose, mol, result%density, result%electronic, &
