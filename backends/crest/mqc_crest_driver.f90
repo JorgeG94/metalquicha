@@ -336,6 +336,7 @@ contains
    end subroutine crest_engrad
 
    subroutine remove_file(path)
+      !! Delete a file if it is there, and say nothing if it is not
       character(len=*), intent(in) :: path
 
       integer :: unit, io
@@ -343,7 +344,9 @@ contains
 
       inquire (file=path, exist=exists)
       if (.not. exists) return
-      open (newunit=unit, file=path, status="old", iostat=io)
+      ! `readwrite` rather than `read`: the unit exists only so that the close
+      ! can remove the file, which is not a read.
+      open (newunit=unit, file=path, status="old", action="readwrite", iostat=io)
       if (io == 0) close (unit, status="delete")
    end subroutine remove_file
 
