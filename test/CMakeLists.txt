@@ -357,6 +357,14 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_neo)
   target_link_libraries(test_mqc_czt_neo PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The wavefunction stability analysis. Registered unconditionally within this
+  # block, not behind MQC_ENABLE_OTR: the case that asks whether the operator
+  # really is the electronic Hessian needs no eigensolver and is the one worth
+  # running everywhere, and the cases that do need OpenTrustRegion return early
+  # without it -- see the module header for why that is a pass and not a skip.
+  addtest(mqc_czt_stability)
+  target_link_libraries(test_mqc_czt_stability PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The linear algebra threaded from outside the sequential BLAS -- the split
   # products and the blocked LU -- against the single BLAS call each replaces.
   addtest(mqc_czt_gemm_threads)
