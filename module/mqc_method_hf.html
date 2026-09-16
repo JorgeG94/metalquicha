@@ -192,18 +192,18 @@ the orbital basis.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1563,7 +1563,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1633,7 +1633,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~5"></span>
+              <span class="anchor" id="variable-backend~4"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1667,7 +1667,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~5"></span>
+              <span class="anchor" id="variable-cartesian~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1701,7 +1701,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cc_max_iter"></span>
+              <span class="anchor" id="variable-cc_max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1769,7 +1769,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1822,7 +1822,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1856,7 +1856,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size"></span>
+              <span class="anchor" id="variable-diis_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1890,7 +1890,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1944,7 +1944,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1957,7 +1957,7 @@ test or a new call path.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;sap&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~8" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~4" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -1980,7 +1980,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement~2"></span>
+              <span class="anchor" id="variable-hessian_displacement"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1992,12 +1992,12 @@ preliminary SCF in order.</p>
 <td> =</td>
                 <td>DEFAULT_DISPLACEMENT</td>
             <td>
-<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_response_batch~3"></span>
+              <span class="anchor" id="variable-hessian_response_batch~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2015,7 +2015,7 @@ long it may take, and how many perturbations share a pass.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_response_max_iter~3"></span>
+              <span class="anchor" id="variable-hessian_response_max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2032,7 +2032,7 @@ long it may take, and how many perturbations share a pass.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_response_tol~3"></span>
+              <span class="anchor" id="variable-hessian_response_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2049,7 +2049,7 @@ long it may take, and how many perturbations share a pass.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2069,7 +2069,7 @@ which is the first thing to rule out when a run stalls.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2087,7 +2087,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2173,7 +2173,7 @@ functional, so every extending type inherits it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_cc"></span>
+              <span class="anchor" id="variable-run_cc~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2191,7 +2191,7 @@ the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-run_mp2"></span>
+              <span class="anchor" id="variable-run_mp2~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2209,7 +2209,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_os"></span>
+              <span class="anchor" id="variable-scs_os~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2226,7 +2226,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scs_ss"></span>
+              <span class="anchor" id="variable-scs_ss~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2260,7 +2260,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~4"></span>
+              <span class="anchor" id="variable-unrestricted~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2277,7 +2277,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~2"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2294,7 +2294,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~13"></span>
+              <span class="anchor" id="variable-verbose~9"></span>
               logical,
             </td>
               <td>public</td>
@@ -2344,7 +2344,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~109"></span>
+              <span class="anchor" id="variable-this~137"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2359,7 +2359,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~29"></span>
+              <span class="anchor" id="variable-fragment~28"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2374,7 +2374,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~31"></span>
+              <span class="anchor" id="variable-result~43"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2414,7 +2414,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~111"></span>
+              <span class="anchor" id="variable-this~139"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2429,7 +2429,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~31"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2444,7 +2444,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~33"></span>
+              <span class="anchor" id="variable-result~45"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2484,7 +2484,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~112"></span>
+              <span class="anchor" id="variable-this~140"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2499,7 +2499,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~32"></span>
+              <span class="anchor" id="variable-fragment~31"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2514,7 +2514,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~34"></span>
+              <span class="anchor" id="variable-result~46"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2554,7 +2554,7 @@ from the method name, not by a deck keyword.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~110"></span>
+              <span class="anchor" id="variable-this~138"></span>
               class(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2569,7 +2569,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~30"></span>
+              <span class="anchor" id="variable-fragment~29"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2584,7 +2584,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~32"></span>
+              <span class="anchor" id="variable-result~44"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2599,7 +2599,7 @@ from the method name, not by a deck keyword.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~7"></span>
+              <span class="anchor" id="variable-want_gradient~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2658,7 +2658,7 @@ what reaches it; the backend decides, not this routine.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-16 03:23 +0000             </p>
+ on 2026-09-16 19:55 +0000             </p>
           </div>
         </div>
         <br>
