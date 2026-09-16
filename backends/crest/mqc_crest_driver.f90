@@ -97,10 +97,13 @@ contains
       type(timer) :: tim
       type(calculation_settings) :: refine_level
       character(len=:), allocatable :: argv(:)
-      character(len=:), allocatable :: threads_text
+      character(len=:), allocatable :: threads_text, charge_text, uhf_text
       character(len=*), parameter :: START_FILE = "crest_input.xyz"
       character(len=*), parameter :: THREAD_FLAG = "-T"
-      integer :: unit, i, io
+      character(len=*), parameter :: CHARGE_FLAG = "-chrg"
+      character(len=*), parameter :: UHF_FLAG = "-uhf"
+      integer, parameter :: N_ARGS = 7
+      integer :: unit, i, io, arg_len
       integer :: n_threads, parallel_jobs, cores_per_job
 
       ! The thread count the launcher asked for, read before anything below
@@ -158,12 +161,34 @@ contains
       ! `-T n`, which is how CREST is told a thread count on a real command
       ! line; going through its parser rather than assigning `env%threads` also
       ! sets the two flags that stop it overriding the value later.
+      !
+      ! `-chrg` and `-uhf` for the same reason. The sampling level is built
+      ! from `env%chrg` and `env%uhf` at the end of the parse, and the xyz file
+      ! carries neither, so without them a charged or open-shell molecule is
+      ! sampled as a neutral singlet -- and only the refinement level, which
+      ! reads `sys_geom`, would have known otherwise. Passed even when zero, so
+      ! a stale `.CHRG` from some other run can never be what CREST trips on.
       threads_text = int_text(n_threads)
-      allocate (character(len=max(len(START_FILE), len(threads_text))) :: argv(3))
+      charge_text = int_text(sys_geom%charge)
+      uhf_text = int_text(sys_geom%multiplicity - 1)
+      arg_len = max(len(START_FILE), len(threads_text), len(CHARGE_FLAG), &
+                    len(charge_text), len(uhf_text))
+      allocate (character(len=arg_len) :: argv(N_ARGS))
       argv(1) = START_FILE
       argv(2) = THREAD_FLAG
       argv(3) = threads_text
-      call parseflags(env, argv, 3)
+      argv(4) = CHARGE_FLAG
+      argv(5) = charge_text
+      argv(6) = UHF_FLAG
+      argv(7) = uhf_text
+      call parseflags(env, argv, N_ARGS)
+
+      ! CREST's parser writes `.CHRG` and `.UHF` into the working directory as
+      ! it reads those two flags, and refuses to start in any directory that
+      ! has either without the flag. Nothing after the parse reads them, so
+      ! they are removed rather than left to break a later CREST run here.
+      call remove_file(".CHRG")
+      call remove_file(".UHF")
 
       ! The OpenMP setup `crest_main` does after its own parse, which nothing
       ! else performs: every sampling stage divides `env%threads`, but the
@@ -309,6 +334,21 @@ contains
       call omp_set_num_threads(saved_threads)
       !$omp end critical(mqc_crest_engrad)
    end subroutine crest_engrad
+
+   subroutine remove_file(path)
+      !! Delete a file if it is there, and say nothing if it is not
+      character(len=*), intent(in) :: path
+
+      integer :: unit, io
+      logical :: exists
+
+      inquire (file=path, exist=exists)
+      if (.not. exists) return
+      ! `readwrite` rather than `read`: the unit exists only so that the close
+      ! can remove the file, which is not a read.
+      open (newunit=unit, file=path, status="old", action="readwrite", iostat=io)
+      if (io == 0) close (unit, status="delete")
+   end subroutine remove_file
 
    pure function int_text(value) result(text)
       integer, intent(in) :: value
