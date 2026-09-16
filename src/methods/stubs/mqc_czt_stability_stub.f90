@@ -21,8 +21,8 @@ module mqc_czt_stability
    public :: otr_available
 
    character(len=*), parameter :: REFUSAL = &
-      "a wavefunction stability analysis needs the second-order orbital "// &
-      "optimizer; build with -DMQC_ENABLE_OTR=ON"
+                                  "a wavefunction stability analysis needs the second-order orbital "// &
+                                  "optimizer; build with -DMQC_ENABLE_OTR=ON"
 
 contains
 

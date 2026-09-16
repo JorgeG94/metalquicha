@@ -24,21 +24,21 @@
 # `dsyev` against whatever this project already linked. That is what keeps one
 # BLAS in the binary: the library's own `find_package(BLAS)` would pick up
 # threaded MKL here, and a second threaded BLAS in the same process is the
-# failure mode this project spends cmake/MqcCheckBlasBinding.cmake detecting.
-# It also needs the same integer width, which is why the option is documented
+# failure mode this project spends cmake/MqcCheckBlasBinding.cmake detecting. It
+# also needs the same integer width, which is why the option is documented
 # upstream as requiring INTEGER_SIZE to be set -- the two are one decision.
 #
 # `OpenTrustRegion_ENABLE_XHOST` defaults ON upstream and appends -march=native
 # (or -xHost) to its Release flags. This project settles architecture flags
-# once, in MQC_ARCH_FLAGS, precisely so that a build on a login node runs on
-# the compute nodes; a dependency quietly compiling for the build host breaks
-# every cross-compiled cluster build with an illegal instruction at run time
-# rather than at link time. Forced OFF.
+# once, in MQC_ARCH_FLAGS, precisely so that a build on a login node runs on the
+# compute nodes; a dependency quietly compiling for the build host breaks every
+# cross-compiled cluster build with an illegal instruction at run time rather
+# than at link time. Forced OFF.
 #
-# `OpenTrustRegion_BUILD_TESTING` would build a shared test library that links
-# a BLAS at build time, which the option above has just declined to find.
-# Upstream already defaults it to PROJECT_IS_TOP_LEVEL, false here; forced for
-# the same reason every other dependency's suite is forced off in
+# `OpenTrustRegion_BUILD_TESTING` would build a shared test library that links a
+# BLAS at build time, which the option above has just declined to find. Upstream
+# already defaults it to PROJECT_IS_TOP_LEVEL, false here; forced for the same
+# reason every other dependency's suite is forced off in
 # cmake/MqcDependencies.cmake.
 #
 # These are set before the fetch because they are what the subproject's own
