@@ -37,6 +37,7 @@ module mqc_czt_integrals
    use libcint_fortran, only: libcint_1e_ovlp_sph, libcint_1e_kin_sph, &
                               libcint_3c2e_sph, libcint_2c2e_sph, &
                               libcint_1e_nuc_sph, libcint_2e_sph, &
+                              libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
                               libcint_cgto_sph, libcint_tot_cgto_sph, &
                               libcint_1e_ovlp_cart, libcint_1e_kin_cart, &
                               libcint_3c2e_cart, libcint_2c2e_cart, &
@@ -56,7 +57,11 @@ module mqc_czt_integrals
    use libcint_fortran, only: libcint_2e_rotaxis_sph, libcint_2e_rotaxis_cart, &
                               libcint_rotaxis_supported, &
                               libcint_2e_hgp_sph, libcint_2e_hgp_cart, &
-                              libcint_hgp_supported
+                              libcint_hgp_supported, &
+                              libcint_2e_ip1_rotaxis_sph, libcint_2e_ip1_rotaxis_cart, &
+                              libcint_rotaxis_grad_supported, &
+                              libcint_2e_ip1_hgp_sph, libcint_2e_ip1_hgp_cart, &
+                              libcint_hgp_grad_supported
 #endif
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
@@ -115,7 +120,48 @@ module mqc_czt_integrals
       !! Nor a Head-Gordon-Pople one.
 #endif
 
+   integer, parameter, public :: GRAD_KINDS = 4
+      !! How many shell kinds a gradient class is keyed on: s, p, L and d.
+   integer, parameter, public :: GRAD_CODES = GRAD_KINDS**4
+      !! Every ordered quartet of those kinds, which is what a gradient class
+      !! is named by and therefore how many distinct answers
+      !! `eri_grad_dispatch_t` can ever need.
+
+   type, public :: eri_grad_dispatch_t
+      !! Which gradient path each quartet of a given molecule may take
+      !!
+      !! **Why this exists rather than a bound on the angular momentum.** The
+      !! energy paths cover every quartet up to `ROTAXIS_MAX_L`/`HGP_MAX_L`, so
+      !! a comparison against four `ANG_OF` values answers them. The gradient
+      !! sets do not: they are generated per *ordered* combination of shell
+      !! kinds, so `(sp|pp)` can be present while `(ps|pp)` is absent, and only
+      !! libfint knows which. Its `libcint_*_grad_supported` is the authority
+      !! and copies the whole shell table on every call, which is unaffordable
+      !! four loops deep.
+      !!
+      !! What makes the cache exact is that the predicate reads nothing but
+      !! `ANG_OF` and `KAPPA_OF` of each shell -- that is, its kind -- so two
+      !! quartets of the same four kinds always get the same answer. There are
+      !! `GRAD_CODES` of those, so libfint is asked at most that many times per
+      !! molecule instead of once per quartet.
+      integer, allocatable :: kind(:)
+         !! (nbas), 0-based kind of each shell, or -1 for f and above, which no
+         !! gradient path covers. Indexed by 1-based shell, as `bas` is.
+      logical :: rotaxis(0:GRAD_CODES - 1) = .false.
+         !! Whether the rotated-axis gradient covers each ordered kind code
+      logical :: hgp(0:GRAD_CODES - 1) = .false.
+         !! Whether the Head-Gordon-Pople gradient covers each ordered kind code
+   contains
+      procedure :: destroy => grad_dispatch_destroy
+   end type eri_grad_dispatch_t
+
    public :: czt_molecule_t
+   public :: build_eri_grad_dispatch
+   public :: two_electron_ip1_block
+   public :: rotaxis_grad_cached
+   public :: hgp_grad_cached
+   public :: rotaxis_grad_libfint
+   public :: hgp_grad_libfint
    public :: set_eri_path
    public :: eri_path_name
    public :: quartet_on_rotaxis
@@ -392,6 +438,283 @@ contains
 
       covered = all(bas(LIBCINT_ANG_OF, shls + 1) <= ROTAXIS_MAX_L)
    end function quartet_on_rotaxis
+
+   subroutine grad_dispatch_destroy(this)
+      !! Release the per-shell kind map
+      class(eri_grad_dispatch_t), intent(inout) :: this
+
+      if (allocated(this%kind)) deallocate (this%kind)
+      this%rotaxis = .false.
+      this%hgp = .false.
+   end subroutine grad_dispatch_destroy
+
+   pure function grad_shell_kind(bas, ish) result(kind)
+      !! The kind libfint keys a gradient class on: s, p, L or d
+      !!
+      !! 0, 1, 2 and 3 for s, p, L and d, matching the order libfint builds its
+      !! class code in, and -1 for f and above, which neither gradient path
+      !! covers. An L shell reports `ANG_OF` 1 like a p shell and is told apart
+      !! by `KAPPA_OF`, which is where `build_sp_view` writes `KAPPA_SP_SHELL`.
+      !! `ish` is 1-based, as `bas` is.
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: ish
+      integer :: kind
+
+      if (bas(LIBCINT_KAPPA_OF, ish) == KAPPA_SP_SHELL) then
+         kind = 2
+         return
+      end if
+      select case (bas(LIBCINT_ANG_OF, ish))
+      case (0)
+         kind = 0
+      case (1)
+         kind = 1
+      case (2)
+         kind = 3
+      case default
+         kind = -1
+      end select
+   end function grad_shell_kind
+
+   pure function grad_code(kinds) result(code)
+      !! The four shell kinds of a quartet packed into one index
+      !!
+      !! Base `GRAD_KINDS` with the first shell most significant, so the code is
+      !! ordered the way libfint's class names are. Callers must have checked
+      !! that no kind is -1 first.
+      integer, intent(in) :: kinds(4)
+      integer :: code
+
+      code = ((kinds(1)*GRAD_KINDS + kinds(2))*GRAD_KINDS + kinds(3))*GRAD_KINDS + kinds(4)
+   end function grad_code
+
+   subroutine build_eri_grad_dispatch(bas, nbas, disp)
+      !! Ask libfint once per kind combination which gradient paths cover it
+      !!
+      !! Built once per molecule and read from inside the threaded quartet
+      !! loops; see `eri_grad_dispatch_t` for why the per-quartet query cannot
+      !! be used directly. A code whose kinds are not all present in this
+      !! molecule is left false and never asked about, since no quartet can
+      !! reach it.
+      !!
+      !! On a libcint build every entry stays false, which leaves every quartet
+      !! on Rys -- the only gradient path such a build has.
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      type(eri_grad_dispatch_t), intent(out) :: disp
+
+      integer :: ish, k, code
+      integer :: kinds(4), shls(4)
+      integer :: witness(0:GRAD_KINDS - 1)
+
+      allocate (disp%kind(nbas))
+      do ish = 1, nbas
+         disp%kind(ish) = grad_shell_kind(bas, ish)
+      end do
+
+#ifdef MQC_WITH_LIBFINT
+      ! One shell of each kind the molecule actually has, to ask libfint with.
+      ! Which shell does not matter: the predicate reads only its kind.
+      witness = -1
+      do ish = nbas, 1, -1
+         if (disp%kind(ish) >= 0) witness(disp%kind(ish)) = ish - 1
+      end do
+
+      do code = 0, GRAD_CODES - 1
+         k = code
+         do ish = 4, 1, -1
+            kinds(ish) = mod(k, GRAD_KINDS)
+            k = k/GRAD_KINDS
+         end do
+         if (any(witness(kinds) < 0)) cycle
+         shls = witness(kinds)
+         disp%rotaxis(code) = libcint_rotaxis_grad_supported(shls, bas, nbas)
+         disp%hgp(code) = libcint_hgp_grad_supported(shls, bas, nbas)
+      end do
+#else
+      ! Silence the unused arguments on a build with one gradient path.
+      if (.false.) disp%rotaxis(0) = nbas > 0 .and. size(bas) > 0
+#endif
+   end subroutine build_eri_grad_dispatch
+
+   pure function rotaxis_grad_cached(disp, shls) result(covered)
+      !! Whether the rotated-axis gradient covers a quartet, from the cache
+      !!
+      !! What the dispatch itself asks. `shls` is 0-based, as libcint counts.
+      type(eri_grad_dispatch_t), intent(in) :: disp
+      integer, intent(in) :: shls(4)
+      logical :: covered
+
+      integer :: kinds(4)
+
+      kinds = disp%kind(shls + 1)
+      if (any(kinds < 0)) then
+         covered = .false.
+         return
+      end if
+      covered = disp%rotaxis(grad_code(kinds))
+   end function rotaxis_grad_cached
+
+   pure function hgp_grad_cached(disp, shls) result(covered)
+      !! Whether the Head-Gordon-Pople gradient covers a quartet, from the cache
+      type(eri_grad_dispatch_t), intent(in) :: disp
+      integer, intent(in) :: shls(4)
+      logical :: covered
+
+      integer :: kinds(4)
+
+      kinds = disp%kind(shls + 1)
+      if (any(kinds < 0)) then
+         covered = .false.
+         return
+      end if
+      covered = disp%hgp(grad_code(kinds))
+   end function hgp_grad_cached
+
+   function rotaxis_grad_libfint(shls, bas, nbas) result(covered)
+      !! libfint's own answer, which the cache must reproduce exactly
+      !!
+      !! For the test that holds the two together; the dispatch never asks,
+      !! since this copies the whole shell table per call. Always false on a
+      !! libcint build.
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      logical :: covered
+
+#ifdef MQC_WITH_LIBFINT
+      covered = libcint_rotaxis_grad_supported(shls, bas, nbas)
+#else
+      covered = .false.
+      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
+#endif
+   end function rotaxis_grad_libfint
+
+   function hgp_grad_libfint(shls, bas, nbas) result(covered)
+      !! libfint's own answer for the Head-Gordon-Pople gradient
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      logical :: covered
+
+#ifdef MQC_WITH_LIBFINT
+      covered = libcint_hgp_grad_supported(shls, bas, nbas)
+#else
+      covered = .false.
+      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
+#endif
+   end function hgp_grad_libfint
+
+   function two_electron_ip1_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt, disp) &
+      result(have)
+      !! One `(nabla i j|kl)` shell quartet, by whichever path `eri_path` chose
+      !!
+      !! The gradient twin of `two_electron_block`, and the one place any
+      !! four-centre first derivative is evaluated. The centre differentiated is
+      !! whichever shell the caller put in slot 0, and no path permutes the
+      !! quartet internally, so a caller that walks the three surviving
+      !! permutations itself keeps doing exactly that.
+      !!
+      !! `disp` is what says which specialised path may take a quartet; absent,
+      !! or built by a libcint build, every quartet goes to Rys. False means
+      !! libfint found the quartet zero, as `libcint_2e_ip1_*` reports it.
+      logical, intent(in) :: cartesian
+      real(dp), intent(inout), contiguous :: buf(:)
+      integer, intent(in) :: shls(4)
+      integer, intent(in), contiguous :: atm(:, :)
+      integer, intent(in) :: natm
+      integer, intent(in), contiguous :: bas(:, :)
+      integer, intent(in) :: nbas
+      real(dp), intent(in), contiguous :: env(:)
+      type(c_ptr), intent(in) :: opt
+      type(eri_grad_dispatch_t), intent(in), optional :: disp
+      logical :: have
+
+      integer :: ret
+
+#ifdef MQC_WITH_LIBFINT
+      if (present(disp) .and. eri_path /= ERI_PATH_RYS) then
+         select case (eri_path)
+         case (ERI_PATH_ROTAXIS)
+            if (rotaxis_grad_cached(disp, shls)) then
+               have = ip1_rotaxis(cartesian, buf, shls, atm, natm, bas, nbas, env)
+               return
+            end if
+         case (ERI_PATH_HGP)
+            if (hgp_grad_cached(disp, shls)) then
+               have = ip1_hgp(cartesian, buf, shls, atm, natm, bas, nbas, env)
+               return
+            end if
+         case (ERI_PATH_HYBRID)
+            ! Narrowest path that covers the quartet, as the energy dispatch
+            ! orders them.
+            if (rotaxis_grad_cached(disp, shls)) then
+               have = ip1_rotaxis(cartesian, buf, shls, atm, natm, bas, nbas, env)
+               return
+            end if
+            if (hgp_grad_cached(disp, shls)) then
+               have = ip1_hgp(cartesian, buf, shls, atm, natm, bas, nbas, env)
+               return
+            end if
+         case default
+            ! Rys, and anything the cases above declined: both fall through to
+            ! the Rys call below.
+         end select
+      end if
+#endif
+      if (cartesian) then
+         ret = libcint_2e_ip1_cart(buf, shls, atm, natm, bas, nbas, env, opt)
+      else
+         ret = libcint_2e_ip1_sph(buf, shls, atm, natm, bas, nbas, env, opt)
+      end if
+      have = ret /= 0
+   end function two_electron_ip1_block
+
+#ifdef MQC_WITH_LIBFINT
+   function ip1_rotaxis(cartesian, buf, shls, atm, natm, bas, nbas, env) result(have)
+      !! The rotated-axis gradient quartet, in whichever angular form is in force
+      logical, intent(in) :: cartesian
+      real(dp), intent(inout), contiguous :: buf(:)
+      integer, intent(in) :: shls(4)
+      integer, intent(in), contiguous :: atm(:, :)
+      integer, intent(in) :: natm
+      integer, intent(in), contiguous :: bas(:, :)
+      integer, intent(in) :: nbas
+      real(dp), intent(in), contiguous :: env(:)
+      logical :: have
+
+      integer :: ret
+
+      if (cartesian) then
+         ret = libcint_2e_ip1_rotaxis_cart(buf, shls, atm, natm, bas, nbas, env)
+      else
+         ret = libcint_2e_ip1_rotaxis_sph(buf, shls, atm, natm, bas, nbas, env)
+      end if
+      have = ret /= 0
+   end function ip1_rotaxis
+
+   function ip1_hgp(cartesian, buf, shls, atm, natm, bas, nbas, env) result(have)
+      !! The Head-Gordon-Pople gradient quartet, in whichever angular form is in force
+      logical, intent(in) :: cartesian
+      real(dp), intent(inout), contiguous :: buf(:)
+      integer, intent(in) :: shls(4)
+      integer, intent(in), contiguous :: atm(:, :)
+      integer, intent(in) :: natm
+      integer, intent(in), contiguous :: bas(:, :)
+      integer, intent(in) :: nbas
+      real(dp), intent(in), contiguous :: env(:)
+      logical :: have
+
+      integer :: ret
+
+      if (cartesian) then
+         ret = libcint_2e_ip1_hgp_cart(buf, shls, atm, natm, bas, nbas, env)
+      else
+         ret = libcint_2e_ip1_hgp_sph(buf, shls, atm, natm, bas, nbas, env)
+      end if
+      have = ret /= 0
+   end function ip1_hgp
+#endif
 
    pure function quartet_on_hgp(shls, bas) result(covered)
       !! Whether every shell of a quartet is within `HGP_MAX_L`

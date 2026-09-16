@@ -16,6 +16,8 @@ module mqc_czt_mp2_gradient
    !! Lagrangian rather than from the Z-vector.
    use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_czt_integrals, only: eri_grad_dispatch_t, build_eri_grad_dispatch, &
+                                two_electron_ip1_block
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim, max_block, atom_ao_blocks, &
                                 two_electron_block, three_centre, two_centre, &
                                 metric_inverse_sqrt
@@ -30,8 +32,7 @@ module mqc_czt_mp2_gradient
                                fitted_reference_gradient, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply
-   use libcint_fortran, only: libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
-                              libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
+   use libcint_fortran, only: libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
                               libcint_del_optimizer
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    use mqc_czt_ecp, only: ecp_refuses_derivatives
@@ -1268,6 +1269,7 @@ contains
       real(dp), allocatable :: de_local(:, :), vhf_local(:, :, :, :)
       integer, allocatable :: offsets(:), counts(:), shell_atom(:)
       type(c_ptr) :: opt
+      type(eri_grad_dispatch_t) :: disp
       integer :: shls(4)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx
@@ -1314,6 +1316,9 @@ contains
       if (want_eri) eri_out => eri_blk
 
       opt = c_null_ptr
+      ! Which gradient path each quartet may take, asked once rather than per
+      ! quartet inside the loop below.
+      call build_eri_grad_dispatch(mol%bas, nbas, disp)
       if (mol%cartesian) then
          call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
       else
@@ -1321,7 +1326,7 @@ contains
       end if
 
       !$omp parallel default(none) &
-      !$omp    shared(mol, gamma_ao, hf_density, de2, vhf1, opt, mx, nao, nbas, natm, &
+      !$omp    shared(mol, gamma_ao, hf_density, de2, vhf1, opt, mx, nao, nbas, natm, disp, &
       !$omp           shell_atom, first, last, off, want_eri, want_gamma, want_ref, eri_out, kx) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, g0, gi, shls, ia, buf, &
@@ -1356,14 +1361,8 @@ contains
                   lo = mol%shell_offset(lsh)
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
 
-                  if (mol%cartesian) then
-                     ret = libcint_2e_ip1_cart(buf, shls, mol%atm, mol%natm, &
-                                               mol%bas, nbas, mol%env, opt)
-                  else
-                     ret = libcint_2e_ip1_sph(buf, shls, mol%atm, mol%natm, &
-                                              mol%bas, nbas, mol%env, opt)
-                  end if
-                  if (ret == 0) cycle
+                  if (.not. two_electron_ip1_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                                   mol%bas, nbas, mol%env, opt, disp)) cycle
 
                   ! The same quartet undifferentiated, where the caller wants
                   ! it. Written rather than accumulated, because each quartet
