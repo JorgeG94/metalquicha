@@ -134,6 +134,11 @@ module mqc_json_output_types
          !! Whether that eigenvalue was recovered at all. The eigensolver
          !! returns it only for an unstable reference; `mqc_czt_stability` says
          !! why.
+      character(len=16) :: stability_engine = ""
+         !! Which eigensolver produced the two fields above: 'native' or 'otr'.
+         !! Reported because the point of having both is that a reader can tell
+         !! which one answered, and because only one of them always returns the
+         !! eigenvalue.
       integer :: stability_rotations = 0
          !! How many non-redundant orbital rotations were searched.
       logical :: has_stability = .false.
@@ -246,6 +251,7 @@ contains
       this%stability_stable = .true.
       this%stability_has_curvature = .false.
       this%stability_curvature = 0.0_dp
+      this%stability_engine = ""
       this%stability_rotations = 0
       this%ieda_formation = 0.0_dp
    end subroutine json_output_data_reset

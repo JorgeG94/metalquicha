@@ -9,9 +9,13 @@ module mqc_czt_stability
    !! `otr_available` is how a caller asks in advance, so the refusal can name
    !! the build option -- and so that a test can skip rather than fail.
    !!
-   !! The Hessian itself is not stubbed: `mqc_czt_ov_hessian` needs nothing
-   !! from OpenTrustRegion and is compiled either way. What is missing without
-   !! the library is only the eigensolver that would diagonalise it.
+   !! **This is not the stability analysis being unavailable.** Neither the
+   !! Hessian nor the eigensolver that diagonalises it is optional:
+   !! `mqc_czt_ov_hessian` needs nothing from OpenTrustRegion and
+   !! `mqc_czt_native_stability` diagonalises it with this program's own
+   !! Davidson, in every build. What is missing here is the *second*
+   !! implementation, the one `keywords.scf.stability_engine: otr` asks for and
+   !! the one the native path is cross-checked against.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
@@ -25,8 +29,9 @@ module mqc_czt_stability
    public :: otr_available
 
    character(len=*), parameter :: REFUSAL = &
-                                  "a wavefunction stability analysis needs the second-order orbital "// &
-                                  "optimizer; build with -DMQC_ENABLE_OTR=ON"
+                                  "keywords.scf.stability_engine 'otr' needs OpenTrustRegion; build "// &
+                                  "with -DMQC_ENABLE_OTR=ON, or leave the engine at 'native', which "// &
+                                  "needs nothing"
 
 contains
 

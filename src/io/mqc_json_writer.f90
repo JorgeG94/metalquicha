@@ -447,6 +447,9 @@ contains
          call json%add(section, "lowest_curvature", data%stability_curvature)
       end if
       call json%add(section, "rotations", data%stability_rotations)
+      if (len_trim(data%stability_engine) > 0) then
+         call json%add(section, "engine", trim(data%stability_engine))
+      end if
       ! Said out loud rather than implied, because "stable" on its own reads
       ! as a stronger claim than the matrix supports.
       call json%add(section, "wrt", "real closed-shell orbital rotations")
