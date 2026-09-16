@@ -271,6 +271,10 @@ contains
                          config%scf_stability_tolerance)
       call optional_int(json, "keywords.scf.stability_maxiter", &
                         config%scf_stability_maxiter)
+      call optional_fixed_string(json, "keywords.scf.stability_engine", &
+                                 config%scf_stability_engine)
+      call optional_logical(json, "keywords.scf.second_order", config%scf_second_order)
+      call optional_real(json, "keywords.scf.soscf_start", config%scf_soscf_start)
       call optional_string(json, "keywords.guess.type", config%guess_type)
       call read_guess_steps(json, config, error)
       if (error%has_error()) return
@@ -1553,6 +1557,26 @@ contains
       call json%get(path, text, found)
       if (found .and. allocated(text)) value = text
    end subroutine optional_string
+
+   subroutine optional_fixed_string(json, path, value)
+      !! `optional_string` for a target that has a length rather than allocating one
+      !!
+      !! Most string keys in this file land in a deferred-length allocatable,
+      !! whose unallocated state spells "the deck said nothing". A key whose
+      !! type carries a real default -- `keywords.scf.stability_engine`, whose
+      !! default is 'native' at every layer below this one -- has no use for
+      !! that sentinel, and assigning a deferred-length actual to a
+      !! fixed-length dummy is not the same argument.
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: path
+      character(len=*), intent(inout) :: value
+
+      character(len=:), allocatable :: text
+      logical :: found
+
+      call json%get(path, text, found)
+      if (found .and. allocated(text)) value = text
+   end subroutine optional_fixed_string
 
    subroutine optional_int(json, path, value, was_named)
       !! Fetch an integer if present, leaving `value` at its default otherwise

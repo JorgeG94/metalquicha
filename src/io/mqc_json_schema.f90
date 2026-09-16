@@ -390,6 +390,12 @@ contains
       call allow(keys, "stability")
       call allow(keys, "stability_tolerance")
       call allow(keys, "stability_maxiter")
+      call allow(keys, "stability_engine")
+      ! How the SCF itself is converged: by DIIS throughout, or by DIIS until
+      ! the commutator falls below `soscf_start` and then by trust-region
+      ! Newton on the orbital rotations.
+      call allow(keys, "second_order")
+      call allow(keys, "soscf_start")
    end function scf_keys
 
    function efp_keys() result(keys)
