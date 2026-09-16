@@ -1196,7 +1196,7 @@ contains
       real(dp) :: trust, scaling, lowest, predicted
       real(dp) :: e_cur, e_try, de, drms, gnorm, largest
       integer :: iteration, trial, products, builds, n_ao, n_mo
-      logical :: accepted, saddle, took_a_step
+      logical :: accepted, saddle
 
       integer, parameter :: MAX_BACKTRACKS = 12
 
@@ -1222,7 +1222,6 @@ contains
 
       call soscf_table_header(ctrl%verbose)
       trust = MAX_ROTATION
-      took_a_step = .false.
 
       do iteration = 1, max_steps
          builds = 0
@@ -1321,7 +1320,6 @@ contains
                e_cur = e_try
                trust = min(MAX_ROTATION, trust*TRUST_GROWTH)
                accepted = .true.
-               took_a_step = .true.
                exit
             end if
             trust = 0.5_dp*trust
@@ -1351,12 +1349,17 @@ contains
       ! that stopped short of convergence they are semicanonical, which is the
       ! honest thing to report: nothing downstream can canonicalise them without
       ! a Fock matrix of its own.
+      !
+      ! `st%density` is deliberately left alone. This last rotation mixes
+      ! occupied orbitals among themselves and virtuals among themselves, and a
+      ! closed-shell density is invariant under both, so rebuilding it would
+      ! produce the same matrix to rounding and lose the one the accepted step's
+      ! energy was computed from.
       if (allocated(fock_mo)) deallocate (fock_mo, energies)
       call soscf_semicanonicalize(fock_cur, st%coeff, ops%n_occ, fock_mo, energies, &
                                   error)
       if (error%has_error()) return
       st%eigenvalues = energies
-      if (took_a_step) call build_density_closed_shell(st%coeff, ops%n_occ, st%density)
       result%full_fock_builds = st%incr%full_builds
       result%incremental_updates = st%incr%updates
 
