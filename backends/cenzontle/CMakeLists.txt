@@ -40,6 +40,7 @@ add_subdirectory(fragments)
 add_subdirectory(efp)
 add_subdirectory(sapt)
 add_subdirectory(neo)
+add_subdirectory(stability)
 
 target_sources(${main_lib} PRIVATE mqc_czt_bridge.f90)
 
