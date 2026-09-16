@@ -1,0 +1,61 @@
+name: OpenTrustRegion stability check
+
+# The one job that builds MQC_ENABLE_OTR=ON, so it is the only place the
+# OpenTrustRegion dependency is exercised at all: that the pinned commit is
+# reachable and builds, that its options take (INTEGER_SIZE=4 to match pic's
+# default_int, HOST_PROVIDES_BLAS so it takes ours rather than finding its own,
+# ENABLE_XHOST off so it does not smuggle -march=native into a build this
+# project controls through MQC_ARCH_FLAGS), and that the bridge still agrees
+# with a dense diagonalisation of the same Hessian.
+#
+# Deliberately gfortran only and deliberately one test. The dependency is
+# consumed as Fortran, so a second compiler here would be checking .mod
+# compatibility rather than this feature, and every other compiler is covered
+# for the rest of the tree by the main build. Keeping it to the one test is what
+# makes this short enough to run on every branch; the full suite has a job
+# already.
+on: [push, workflow_dispatch]
+
+concurrency:
+  group: otr-stability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  otr-stability:
+    name: Stability check (gfortran)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          miniforge-version: latest
+
+      - name: Install conda environment
+        shell: bash -el {0}
+        run: |
+          conda env create --name mqc --file environment.yml
+          conda install -c conda-forge -n mqc gfortran=14.2.0
+
+      # tblite and libxc are off because neither is on the path this job
+      # checks -- the analysis is closed-shell Hartree-Fock -- and leaving them
+      # on is most of the build time. The integrals backend is not optional
+      # here: the operator the bridge hands OpenTrustRegion is the cenzontle
+      # response operator, and configure refuses OTR without it.
+      - name: Execute cmake and build
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          export FC=gfortran
+          cmake -DMQC_ENABLE_OTR=ON \
+                -DMQC_ENABLE_CZT=ON \
+                -DMQC_ENABLE_TBLITE=OFF \
+                -DMQC_ENABLE_LIBXC=OFF \
+                -B build
+          cmake --build build --parallel 2
+
+      - name: Run the stability tests
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          ctest --test-dir build -V -R "mqc_czt_stability"
