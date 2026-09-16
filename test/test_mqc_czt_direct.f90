@@ -21,7 +21,9 @@ module test_mqc_czt_direct
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, set_eri_path, &
                                 eri_path_name, ROTAXIS_AVAILABLE, quartet_on_rotaxis, &
                                 rotaxis_libfint_covers, HGP_AVAILABLE, quartet_on_hgp, &
-                                hgp_libfint_covers
+                                hgp_libfint_covers, eri_grad_dispatch_t, &
+                                build_eri_grad_dispatch, rotaxis_grad_cached, &
+                                hgp_grad_cached, rotaxis_grad_libfint, hgp_grad_libfint
    use mqc_czt_rhf, only: build_fock
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
                              build_fock_direct_nosym, schwarz_bounds, &
@@ -73,6 +75,8 @@ contains
                                test_hgp_fock), &
                   new_unittest("the_dispatch_agrees_with_libfint_on_what_hgp_covers", &
                                test_hgp_coverage), &
+                  new_unittest("the_gradient_dispatch_agrees_with_libfint_quartet_by_quartet", &
+                               test_grad_dispatch), &
                   new_unittest("nosym_handles_an_antisymmetric_density", &
                                test_nosym_antisymmetric), &
                   new_unittest("the_fast_build_announced_antisymmetric_is_exact", &
@@ -332,6 +336,89 @@ contains
       end if
       call mol%destroy()
    end subroutine test_hgp_coverage
+
+   subroutine test_grad_dispatch(error)
+      !! The cached gradient dispatch answers exactly as libfint would, per quartet
+      !!
+      !! `eri_grad_dispatch_t` replaces a per-quartet call to
+      !! `libcint_*_grad_supported` with a table looked up by the quartet's four
+      !! shell kinds, because that call copies the whole shell table and the
+      !! quartet loop is four deep. The replacement is only sound if the two
+      !! agree everywhere, so this asks both about every (i, j, i, j) quartet of
+      !! a molecule carrying s, p, L, d and f shells and requires them to match
+      !! -- not merely that the cache is conservative. A cache that said yes
+      !! where libfint says no is an error stop inside a gradient; one that said
+      !! no where libfint says yes is a silent loss of the path.
+      !!
+      !! It also requires that *something* is routed and something is not, since
+      !! a table of all-false would agree with nothing being dispatched and pass
+      !! a weaker test while quietly disabling the feature.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(eri_grad_dispatch_t) :: disp
+      type(error_t) :: err
+      real(dp) :: c(3, 3)
+      integer :: ish, jsh, shls(4), n_rot, n_hgp, n_off
+      logical :: theirs
+
+      if (.not. (ROTAXIS_AVAILABLE .and. HGP_AVAILABLE)) then
+         call check(error, .true.)
+         return
+      end if
+
+      ! cc-pVTZ for the f shells the gradient sets do not cover, and a geometry
+      ! with no symmetry so nothing is zero by accident.
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.4_dp, 1.1_dp, 0.0_dp, -1.4_dp, 1.1_dp], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvtz", mol, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      call build_eri_grad_dispatch(mol%bas, mol%nbas, disp)
+
+      n_rot = 0
+      n_hgp = 0
+      n_off = 0
+      do ish = 1, mol%nbas
+         do jsh = 1, mol%nbas
+            shls = [ish - 1, jsh - 1, ish - 1, jsh - 1]
+            theirs = rotaxis_grad_cached(disp, shls)
+            if (theirs .neqv. rotaxis_grad_libfint(shls, mol%bas, mol%nbas)) then
+               call check(error, .false., "the cached rotated-axis gradient dispatch "// &
+                          "disagrees with libfint")
+               call mol%destroy()
+               return
+            end if
+            if (theirs) n_rot = n_rot + 1
+
+            theirs = hgp_grad_cached(disp, shls)
+            if (theirs .neqv. hgp_grad_libfint(shls, mol%bas, mol%nbas)) then
+               call check(error, .false., "the cached Head-Gordon-Pople gradient dispatch "// &
+                          "disagrees with libfint")
+               call mol%destroy()
+               return
+            end if
+            if (theirs) n_hgp = n_hgp + 1
+            if (.not. (rotaxis_grad_cached(disp, shls) .or. hgp_grad_cached(disp, shls))) then
+               n_off = n_off + 1
+            end if
+         end do
+      end do
+      call mol%destroy()
+      call disp%destroy()
+
+      if (.not. allocated(error)) then
+         call check(error, n_rot > 0, "no quartet reached the rotated-axis gradient")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, n_hgp > 0, "no quartet reached the Head-Gordon-Pople gradient")
+      end if
+      if (.not. allocated(error)) then
+         call check(error, n_off > 0, "cc-pVTZ has f shells, which neither gradient covers")
+      end if
+   end subroutine test_grad_dispatch
 
    subroutine test_hgp_fock(error)
       !! The Head-Gordon-Pople and hybrid paths agree with Rys through a Fock build

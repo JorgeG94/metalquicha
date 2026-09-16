@@ -29,7 +29,9 @@ module mqc_czt_gradient
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim, max_block, atom_ao_blocks, &
                                 build_df_shell_table, three_centre, two_centre, &
                                 metric_inverse_sqrt, eri_shell_table_t, &
-                                eri_shell_table, eri_schwarz_collapse
+                                eri_shell_table, eri_schwarz_collapse, &
+                                eri_grad_dispatch_t, build_eri_grad_dispatch, &
+                                two_electron_ip1_block
    use mqc_czt_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP, &
                          shell_extents, block_significant_aos, eval_rho
    use mqc_czt_xc, only: xc_context_t, xc_grid_lda_quantities, &
@@ -42,7 +44,6 @@ module mqc_czt_gradient
                               libcint_1e_ipkin_sph, libcint_1e_ipkin_cart, &
                               libcint_1e_ipnuc_sph, libcint_1e_ipnuc_cart, &
                               libcint_1e_iprinv_sph, libcint_1e_iprinv_cart, &
-                              libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
                               libcint_3c2e_ip1_sph, libcint_3c2e_ip1_cart, &
                               libcint_3c2e_ip2_sph, libcint_3c2e_ip2_cart, &
                               libcint_2c2e_ip1_sph, libcint_2c2e_ip1_cart, &
@@ -1827,6 +1828,7 @@ contains
       logical :: do_j
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
+      type(eri_grad_dispatch_t) :: disp
       integer :: shls(4)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
       integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx, nao, nbas
@@ -1840,6 +1842,9 @@ contains
       ! shell's s and p coefficients are applied on, which is what makes the
       ! view usable for a multi-component integral at all.
       call eri_shell_table(mol, tab)
+      ! Which gradient path each quartet may take, asked once here rather than
+      ! per quartet inside the loops below.
+      call build_eri_grad_dispatch(tab%bas, tab%nbas, disp)
       mx = tab%block_max
       nao = mol%nao
       nbas = tab%nbas
@@ -1930,7 +1935,7 @@ contains
       ! schedule(dynamic) because the `l <= k` triangle makes the work per `ish`
       ! uneven.
       !$omp parallel default(none) &
-      !$omp    shared(mol, tab, density, exchange_from, opt, vj, vk, mx, nao, nbas, &
+      !$omp    shared(mol, tab, density, exchange_from, opt, vj, vk, mx, nao, nbas, disp, &
       !$omp           dims, offs, bq, bra_bound, dsh, esh, tol, env_use, do_j) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
@@ -1969,14 +1974,8 @@ contains
 
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
 
-                  if (mol%cartesian) then
-                     ret = libcint_2e_ip1_cart(buf, shls, mol%atm, mol%natm, &
-                                               tab%bas, nbas, env_use, opt)
-                  else
-                     ret = libcint_2e_ip1_sph(buf, shls, mol%atm, mol%natm, &
-                                              tab%bas, nbas, env_use, opt)
-                  end if
-                  if (ret == 0) cycle
+                  if (.not. two_electron_ip1_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                                   tab%bas, nbas, env_use, opt, disp)) cycle
 
                   do comp = 1, 3
                      do l = 1, dl
@@ -2074,6 +2073,7 @@ contains
       logical :: do_j, unrestricted, have1, have2, have3, same_bra, same_pair
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
+      type(eri_grad_dispatch_t) :: disp
       integer :: shls(4)
       integer :: itask, ij, kl, npair, ipair, nbas, mx, n, nprim, ptr
       integer :: s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4
@@ -2087,6 +2087,9 @@ contains
       end if
 
       call eri_shell_table(mol, tab)
+      ! Which gradient path each quartet may take, asked once here rather than
+      ! per quartet inside the loops below.
+      call build_eri_grad_dispatch(tab%bas, tab%nbas, disp)
       mx = tab%block_max
       nbas = tab%nbas
       dims = tab%dims
@@ -2172,7 +2175,7 @@ contains
       ! Each thread accumulates a (3, natm) of its own and adds it in once:
       ! the whole of what a quartet touches is four atoms.
       !$omp parallel default(none) &
-      !$omp    shared(mol, tab, density, da, db, opt, mx, nbas, &
+      !$omp    shared(mol, tab, density, da, db, opt, mx, nbas, disp, &
       !$omp           dims, offs, atom_of, bq, dfac, dsh, dsa, dsb, tol, env_use, jx, kx, &
       !$omp           pair_i, pair_j, order, npair, gradient) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
@@ -2230,19 +2233,19 @@ contains
             if (have1) then
                shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
                have1 = ip1_block(mol%cartesian, buf1, shls, mol%atm, mol%natm, &
-                                 tab%bas, nbas, env_use, opt)
+                                 tab%bas, nbas, env_use, opt, disp)
                if (same_bra) have2 = have1
                if (same_pair) have3 = have1
             end if
             if (have2 .and. .not. same_bra) then
                shls = [s2 - 1, s1 - 1, s3 - 1, s4 - 1]
                have2 = ip1_block(mol%cartesian, buf2, shls, mol%atm, mol%natm, &
-                                 tab%bas, nbas, env_use, opt)
+                                 tab%bas, nbas, env_use, opt, disp)
             end if
             if (have3 .and. .not. same_pair) then
                shls = [s3 - 1, s4 - 1, s1 - 1, s2 - 1]
                have3 = ip1_block(mol%cartesian, buf3, shls, mol%atm, mol%natm, &
-                                 tab%bas, nbas, env_use, opt)
+                                 tab%bas, nbas, env_use, opt, disp)
             end if
             if (.not. (have1 .or. have2 .or. have3)) cycle
 
@@ -2308,7 +2311,7 @@ contains
       call libcint_del_optimizer(opt)
    end subroutine two_electron_gradient
 
-   function ip1_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt) result(have)
+   function ip1_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt, disp) result(have)
       !! One `int2e_ip1` shell quartet; false when libcint found it zero
       logical, intent(in) :: cartesian
       real(dp), intent(inout), contiguous :: buf(:)
@@ -2319,16 +2322,10 @@ contains
       integer, intent(in) :: nbas
       real(dp), intent(in), contiguous :: env(:)
       type(c_ptr), intent(in) :: opt
+      type(eri_grad_dispatch_t), intent(in) :: disp
       logical :: have
 
-      integer :: ret
-
-      if (cartesian) then
-         ret = libcint_2e_ip1_cart(buf, shls, atm, natm, bas, nbas, env, opt)
-      else
-         ret = libcint_2e_ip1_sph(buf, shls, atm, natm, bas, nbas, env, opt)
-      end if
-      have = ret /= 0
+      have = two_electron_ip1_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt, disp)
    end function ip1_block
 
    subroutine df_two_electron_gradient(orb, aux, total_density, orbitals, n_occupied, &
