@@ -120,6 +120,32 @@ module mqc_czt_integrals
       !! Nor a Head-Gordon-Pople one.
 #endif
 
+   integer, parameter, public :: HYBRID_ROTAXIS_MIN_PAIR = 2
+      !! Primitives in a bra pair below which the hybrid gradient does not take
+      !! the rotated-axis path
+      !!
+      !! The rotated frame moves component work out one loop level, which is
+      !! worth `43 n^2 + 549 n` against Head-Gordon-Pople's `402 n^2` for `n`
+      !! primitive pairs a side -- so it wins from two up and loses at one,
+      !! crossing near 1.5. libfint measured the gradient there, microseconds
+      !! per quartet over s and p shells:
+      !!
+      !!     prims   rys     rotaxis   hgp      rot/rys
+      !!       1       2.27     3.13     2.20     0.72
+      !!       2      13.23     6.57    10.23     2.01
+      !!       3      58.68    17.80    40.96     3.30
+      !!       6     893.68   186.67   588.27     4.79
+      !!
+      !! Choosing on angular momentum alone made `hybrid` the *worst* of the
+      !! three on adenine/6-311G -- 0.87x Rys, where Rys is the default -- since
+      !! that basis carries single-primitive L shells the rotated-axis path
+      !! cannot amortise. At one primitive neither specialised path is worth
+      !! much (HGP 1.03x Rys, rotated-axis 0.72x), so the rule is to leave that
+      !! case alone rather than to win it.
+      !!
+      !! The quantity is the *pair* product `nprim_i * nprim_j`, not a per-shell
+      !! count, and only the bra pair: the derivative is on the first centre, so
+      !! it is the bra whose work the frame moves.
    integer, parameter, public :: GRAD_KINDS = 4
       !! How many shell kinds a gradient class is keyed on: s, p, L and d.
    integer, parameter, public :: GRAD_CODES = GRAD_KINDS**4
@@ -147,6 +173,9 @@ module mqc_czt_integrals
       integer, allocatable :: kind(:)
          !! (nbas), 0-based kind of each shell, or -1 for f and above, which no
          !! gradient path covers. Indexed by 1-based shell, as `bas` is.
+      integer, allocatable :: nprim(:)
+         !! (nbas), primitives per shell, `NPRIM_OF`. What the hybrid keys on
+         !! besides the kind: see `HYBRID_ROTAXIS_MIN_PAIR`.
       logical :: rotaxis(0:GRAD_CODES - 1) = .false.
          !! Whether the rotated-axis gradient covers each ordered kind code
       logical :: hgp(0:GRAD_CODES - 1) = .false.
@@ -444,6 +473,7 @@ contains
       class(eri_grad_dispatch_t), intent(inout) :: this
 
       if (allocated(this%kind)) deallocate (this%kind)
+      if (allocated(this%nprim)) deallocate (this%nprim)
       this%rotaxis = .false.
       this%hgp = .false.
    end subroutine grad_dispatch_destroy
@@ -507,9 +537,10 @@ contains
       integer :: kinds(4), shls(4)
       integer :: witness(0:GRAD_KINDS - 1)
 
-      allocate (disp%kind(nbas))
+      allocate (disp%kind(nbas), disp%nprim(nbas))
       do ish = 1, nbas
          disp%kind(ish) = grad_shell_kind(bas, ish)
+         disp%nprim(ish) = bas(LIBCINT_NPRIM_OF, ish)
       end do
 
 #ifdef MQC_WITH_LIBFINT
@@ -646,11 +677,15 @@ contains
                return
             end if
          case (ERI_PATH_HYBRID)
-            ! Narrowest path that covers the quartet, as the energy dispatch
-            ! orders them.
-            if (rotaxis_grad_cached(disp, shls)) then
-               have = ip1_rotaxis(cartesian, buf, shls, atm, natm, bas, nbas, env)
-               return
+            ! Contraction first, angular momentum second -- unlike the energy
+            ! dispatch, which has only the second. A thinly contracted bra pair
+            ! never reaches the rotated-axis path, which is behind even Rys
+            ! there; see `HYBRID_ROTAXIS_MIN_PAIR`.
+            if (disp%nprim(shls(1) + 1)*disp%nprim(shls(2) + 1) >= HYBRID_ROTAXIS_MIN_PAIR) then
+               if (rotaxis_grad_cached(disp, shls)) then
+                  have = ip1_rotaxis(cartesian, buf, shls, atm, natm, bas, nbas, env)
+                  return
+               end if
             end if
             if (hgp_grad_cached(disp, shls)) then
                have = ip1_hgp(cartesian, buf, shls, atm, natm, bas, nbas, env)
