@@ -2,6 +2,34 @@
 
 find_package(Threads REQUIRED)
 
+# Link a test the fast way, which is the only thing separating a suite that
+# builds in half a minute from one that takes an hour and a half.
+#
+# libfint compiles with `-flto=auto -ffat-lto-objects` and exports `-flto=auto`
+# as a PUBLIC link option, so every consumer inherits it. That is right for
+# `mqc`, where it is worth about 18 per cent on the integrals, and wrong for a
+# test executable, which is built to be correct rather than fast: link-time
+# optimisation over a 32 MB archive costs about 47 seconds *per binary*, and
+# there are over a hundred of them.
+#
+# `-fno-lto` rather than trying to strip the inherited flag, for two reasons. A
+# PUBLIC option cannot be removed by a consumer, and removing it from the
+# command line would not work anyway -- the GNU plugin still finds the IR in the
+# objects and optimises regardless, which measures 22 s rather than 47.
+# `-fno-lto` instead tells the driver to use the machine code that
+# `-ffat-lto-objects` already put in the archive beside the IR, so nothing is
+# recompiled and the link is a plain one: 0.24 s, measured on the same target.
+#
+# The cost is that a test runs against un-inlined integrals. That is a property
+# of how long the tests take, not of what they check.
+function(mqc_test_link_fast target)
+  include(CheckFortranCompilerFlag)
+  CHECK_Fortran_COMPILER_FLAG("-fno-lto" MQC_HAVE_FNO_LTO)
+  if(MQC_HAVE_FNO_LTO)
+    target_link_options(${target} PRIVATE -fno-lto)
+  endif()
+endfunction()
+
 # Macro to add a test executable for .f90 files
 macro(ADDTEST name)
   add_executable(test_${name} test_${name}.f90)
@@ -11,6 +39,7 @@ macro(ADDTEST name)
   target_include_directories(test_${name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(test_${name} PRIVATE "${main_lib}"
                                              "test-drive::test-drive")
+  mqc_test_link_fast(test_${name})
   add_test(
     NAME ${project_name}/${name}
     COMMAND $<TARGET_FILE:test_${name}>
@@ -42,6 +71,7 @@ macro(ADDTESTPP name)
   target_include_directories(test_${name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(test_${name} PRIVATE "${main_lib}"
                                              "test-drive::test-drive")
+  mqc_test_link_fast(test_${name})
   add_test(
     NAME ${project_name}/${name}
     COMMAND $<TARGET_FILE:test_${name}>
