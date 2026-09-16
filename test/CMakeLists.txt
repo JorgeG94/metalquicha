@@ -365,6 +365,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_stability)
   target_link_libraries(test_mqc_czt_stability PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The second-order SCF. Needs no optional dependency: the gradient, the
+  # Hessian and the step are all this program's own, and the two cases that
+  # matter most are finite differences of the energy, which settle the sign and
+  # the factor of four that no amount of reading can.
+  addtest(mqc_czt_soscf)
+  target_link_libraries(test_mqc_czt_soscf PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The linear algebra threaded from outside the sequential BLAS -- the split
   # products and the blocked LU -- against the single BLAS call each replaces.
   addtest(mqc_czt_gemm_threads)
