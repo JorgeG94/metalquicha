@@ -98,11 +98,12 @@ contains
       type(calculation_settings) :: refine_level
       character(len=:), allocatable :: argv(:)
       character(len=:), allocatable :: threads_text, charge_text, uhf_text
+      character(len=:), allocatable :: solv_flag, solv_name
       character(len=*), parameter :: START_FILE = "crest_input.xyz"
       character(len=*), parameter :: THREAD_FLAG = "-T"
       character(len=*), parameter :: CHARGE_FLAG = "-chrg"
       character(len=*), parameter :: UHF_FLAG = "-uhf"
-      integer, parameter :: N_ARGS = 7
+      integer :: n_args
       integer :: unit, i, io, arg_len
       integer :: n_threads, parallel_jobs, cores_per_job
 
@@ -133,6 +134,44 @@ contains
          call error%set(ERROR_VALIDATION, "conformer sampling needs a molecule")
          return
       end if
+
+      ! **Solvation reaches the sampling level through a flag or not at all.**
+      ! CREST builds its own xTB calculator from `env` at the end of the parse
+      ! and copies a solvation model onto it only when a flag set `env%gbsa`
+      ! (`env2calc` in `legacy_wrappers.f90`); the calculator is then cloned per
+      ! thread for the MD runs. Leave the flag out and the metadynamics, the
+      ! optimisations and the energy window that prunes the ensemble are all gas
+      ! phase, while the refinement level here -- which reads `config` and knows
+      ! about the solvent -- re-ranks in solution what was selected in vacuum.
+      ! The pruning is what makes that worse than either consistent choice: a
+      ! conformer stable only in solution is gone before refinement sees it.
+      solv_flag = ""
+      solv_name = ""
+      associate (xtb => config%method_config%xtb)
+         if (len_trim(xtb%solvent) > 0) then
+            select case (trim(xtb%solvation_model))
+            case ("gbsa")
+               solv_flag = "-gbsa"
+            case ("alpb", "")
+               ! Empty is ALPB, matching `xtb_configure`, which defaults an
+               ! unnamed model rather than leaving the solvent unused.
+               solv_flag = "-alpb"
+            case default
+               call error%set(ERROR_VALIDATION, "conformer sampling cannot sample with the "// &
+                              trim(xtb%solvation_model)//" solvation model. CREST samples with "// &
+                              "an xTB of its own that offers ALPB and GBSA only, and a model "// &
+                              "it cannot be told would leave the search in gas phase while "// &
+                              "the refined energies reported a solvent.")
+               return
+            end select
+            solv_name = trim(xtb%solvent)
+         else if (xtb%dielectric > 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "conformer sampling needs a solvent name rather "// &
+                           "than a bare dielectric. CREST's solvation flag takes a name and "// &
+                           "looks the constant up itself, so there is nothing to hand it.")
+            return
+         end if
+      end associate
 
       ! The starting structure, written once. This is not the file-based
       ! gradient exchange the callback exists to avoid: CREST reads it at
@@ -171,9 +210,11 @@ contains
       threads_text = int_text(n_threads)
       charge_text = int_text(sys_geom%charge)
       uhf_text = int_text(sys_geom%multiplicity - 1)
+      n_args = 7
+      if (len(solv_flag) > 0) n_args = 9
       arg_len = max(len(START_FILE), len(threads_text), len(CHARGE_FLAG), &
-                    len(charge_text), len(uhf_text))
-      allocate (character(len=arg_len) :: argv(N_ARGS))
+                    len(charge_text), len(uhf_text), len(solv_flag), len(solv_name))
+      allocate (character(len=arg_len) :: argv(n_args))
       argv(1) = START_FILE
       argv(2) = THREAD_FLAG
       argv(3) = threads_text
@@ -181,7 +222,15 @@ contains
       argv(5) = charge_text
       argv(6) = UHF_FLAG
       argv(7) = uhf_text
-      call parseflags(env, argv, N_ARGS)
+      ! The name goes in the same vector directly after its flag. CREST reads
+      ! `arg(i+1)` the moment it sees the flag and checks only what that entry
+      ! holds, never that there is one, so a flag in last place reads past the
+      ! end of the vector.
+      if (n_args == 9) then
+         argv(8) = solv_flag
+         argv(9) = solv_name
+      end if
+      call parseflags(env, argv, n_args)
 
       ! CREST's parser writes `.CHRG` and `.UHF` into the working directory as
       ! it reads those two flags, and refuses to start in any directory that
@@ -223,6 +272,9 @@ contains
       call logger%info("  conformer sampling: CREST samples, this program refines")
       call logger%info("  sampling threads: "//int_text(parallel_jobs)// &
                        ", "//int_text(cores_per_job)//" per calculation")
+      if (len(solv_name) > 0) then
+         call logger%info("  sampling solvation: "//solv_flag(2:)//" with solvent = "//solv_name)
+      end if
 
       call crest_search_imtdgc(env, tim)
 

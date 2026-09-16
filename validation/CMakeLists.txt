@@ -52,6 +52,7 @@ if(MQC_ENABLE_CREST)
   mqc_add_validation_program(check_crest_callback)
   mqc_add_validation_program(check_crest_search)
   mqc_add_validation_program(check_crest_refine)
+  mqc_add_validation_program(check_crest_solvation)
 endif()
 
 # Finite-difference check on the analytic gradient. Not a ctest case: it needs a
