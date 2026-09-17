@@ -7,5 +7,5 @@ mqc_fetch(
   GIT_REPOSITORY
   "https://github.com/JorgeG94/pic/"
   GIT_TAG
-  "v0.9.0"
+  "v0.9.2"
   NAMESPACED_TARGET)

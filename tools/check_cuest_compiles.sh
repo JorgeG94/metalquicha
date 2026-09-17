@@ -52,15 +52,8 @@ INC=(-I"$BUILD/modules" -I"$BUILD/modules_shared" -I"$WORK")
 # is not: it would also keep working when one went missing, and quietly put
 # some other library's directory on the include path. A name that stops being
 # right should stop the build.
-#
-# pic-mpi is deliberately absent. v0.6.2 still writes its .mod files into
-# `${CMAKE_BINARY_DIR}/modules` -- this build tree's own, not its -- so
-# `pic_mpi_lib.mod` arrives through the first `-I` above. Its main has since
-# moved to the same convention pic and pic-blas use, but does not yet create
-# the directory at configure time, so a consumer cannot generate against it.
-# When a release carries that too, pic-mpi joins this loop.
 
-for _dep in pic pic-blas; do
+for _dep in pic pic-blas pic-mpi; do
    _moddir="$BUILD/_deps/${_dep}-build/modules"
    if [[ ! -d $_moddir ]]; then
       echo "error: $_moddir not found." >&2
