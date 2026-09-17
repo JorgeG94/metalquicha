@@ -51,8 +51,16 @@ unset(_pic_mpi_opt)
 if(DEFINED MQC_ENABLE_MPI
    AND NOT MQC_ENABLE_MPI
    AND NOT FETCHCONTENT_SOURCE_DIR_PIC-MPI)
-  string(REGEX REPLACE "^v" "" _rev_number "${_rev}")
-  if(_rev_number VERSION_LESS _serial_min)
+  # Only a `vX.Y.Z` pin can be compared. A branch name is not a version, and
+  # CMake reads one as 0 -- so `main`, which is ahead of every release, would
+  # fail this check claiming to be older than v0.6.0. A branch is pinned
+  # deliberately and by someone who knows what is on it, which is the same
+  # reason FETCHCONTENT_SOURCE_DIR_PIC-MPI is exempt above.
+  set(_rev_number "")
+  if(_rev MATCHES "^v?[0-9]+\\.[0-9]+\\.[0-9]+$")
+    string(REGEX REPLACE "^v" "" _rev_number "${_rev}")
+  endif()
+  if(_rev_number AND _rev_number VERSION_LESS _serial_min)
     message(
       FATAL_ERROR
         "MQC_ENABLE_MPI=OFF needs a pic-mpi with the single-rank backend "
