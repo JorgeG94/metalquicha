@@ -39,6 +39,31 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
 INC=(-I"$BUILD/modules" -I"$BUILD/modules_shared" -I"$WORK")
+
+# The dependencies that carry Fortran modules, named one by one.
+#
+# A CMake target never needs this: pic, pic-blas and pic-mpi each export their
+# module directory as a BUILD_INTERFACE include, so linking `pic::pic` carries
+# it and cannot be got wrong. This script compiles by hand, outside CMake, and
+# so has to say where they are.
+#
+# Spelled out rather than globbed over `_deps/*/modules`. A glob would keep
+# working when a dependency moved its modules, which sounds like a virtue and
+# is not: it would also keep working when one went missing, and quietly put
+# some other library's directory on the include path. A name that stops being
+# right should stop the build.
+
+for _dep in pic pic-blas pic-mpi; do
+   _moddir="$BUILD/_deps/${_dep}-build/modules"
+   if [[ ! -d $_moddir ]]; then
+      echo "error: $_moddir not found." >&2
+      echo "$_dep either did not build or has moved its .mod files; this script" >&2
+      echo "names the directory and has to be told when it changes." >&2
+      exit 2
+   fi
+   INC+=(-I"$_moddir")
+done
+
 if [[ -d $BUILD/_deps/jsonfortran-build/include ]]; then
    INC+=(-I"$BUILD/_deps/jsonfortran-build/include")
 fi
