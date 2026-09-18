@@ -21,6 +21,8 @@ module test_mqc_json_reader
                                        DEFAULT_FRAG_LEVEL, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
+                                       DEFAULT_STABILITY_TOL, &
+                                       DEFAULT_STABILITY_MAX_ITER, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
                                        EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
@@ -97,6 +99,7 @@ contains
                   new_unittest("optimization_hess_end", test_hess_end), &
                   new_unittest("optimization_target", test_opt_target), &
                   new_unittest("scf_diis_controls", test_diis_keywords), &
+                  new_unittest("scf_stability_controls", test_stability_keywords), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
                   new_unittest("fukui_scf_inherits_keywords_scf", test_fukui_scf_inherit), &
                   new_unittest("fukui_scf_overrides_per_key", test_fukui_scf_override), &
@@ -2178,6 +2181,50 @@ contains
       call check(error, parse_error%has_error(), &
                  "a misspelled setting inside the avas block should be refused")
    end subroutine test_avas_keywords
+
+   subroutine test_stability_keywords(error)
+      !! `keywords.scf.stability` and the two knobs on the eigensolve
+      !!
+      !! The keyword asks a question about the reference rather than about the
+      !! iteration, so it is off by default and a deck that does not mention it
+      !! must not pay for it. That default is the thing worth pinning: the
+      !! analysis is one Fock build per Davidson iteration on a calculation
+      !! that has already produced its energy.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"stability": true, "stability_tolerance": 1.0e-7, '// &
+                      '"stability_maxiter": 250}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_stability, "the request should be read")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_stability_tolerance, 1.0e-7_dp), &
+                 "the eigensolve tolerance should be read")
+      if (allocated(error)) return
+      call check(error, config%scf_stability_maxiter == 250, &
+                 "the iteration cap should be read")
+      if (allocated(error)) return
+
+      ! Never mentioned: the defaults are the ones in the type, not a second
+      ! copy written into the reader.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_stability, "the analysis defaults off")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_stability_tolerance, &
+                                     DEFAULT_STABILITY_TOL), &
+                 "the default tolerance is the one in mqc_calculation_defaults")
+      if (allocated(error)) return
+      call check(error, config%scf_stability_maxiter == DEFAULT_STABILITY_MAX_ITER, &
+                 "the default iteration cap is the one in mqc_calculation_defaults")
+   end subroutine test_stability_keywords
 
    subroutine test_diis_keywords(error)
       !! `keywords.scf.diis` and `keywords.scf.diis_size`

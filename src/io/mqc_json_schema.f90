@@ -383,6 +383,13 @@ contains
       call allow(keys, "accelerator")
       call allow(keys, "eri_path")
       call allow(keys, "incremental_fock")
+      ! Whether the converged solution is a minimum, and the two knobs on the
+      ! eigensolve that decides. Here rather than under `properties` because it
+      ! is a statement about the reference itself and not a quantity derived
+      ! from it.
+      call allow(keys, "stability")
+      call allow(keys, "stability_tolerance")
+      call allow(keys, "stability_maxiter")
    end function scf_keys
 
    function efp_keys() result(keys)

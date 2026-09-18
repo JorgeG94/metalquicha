@@ -153,6 +153,7 @@ contains
       call write_ieda_section(json, main_obj, data)
       call write_charges_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
+      call write_stability_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
@@ -415,6 +416,41 @@ contains
       end do
    end subroutine write_fukui_section
 
+   subroutine write_stability_section(json, parent, data)
+      !! Whether the reference is a minimum, for something other than a reader
+      !!
+      !! `stable` is the answer and the rest is provenance. `lowest_curvature`
+      !! is emitted only when it exists, rather than as a zero: a zero written
+      !! into the field unconditionally would read as a reference sitting
+      !! exactly on the edge -- the one value that would most alarm whoever is
+      !! reading this. `curvature_known` says which case it is, because a
+      !! consumer that only looks for the key cannot tell an absent number
+      !! from a missing feature.
+      !!
+      !! `rotations` is the size of the space that was searched, which is what
+      !! makes the verdict checkable: a stability analysis over the wrong space
+      !! is the failure mode that looks like success.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section
+
+      if (.not. data%has_stability) return
+
+      call json%create_object(section, "stability")
+      call json%add(parent, section)
+      call json%add(section, "stable", data%stability_stable)
+      call json%add(section, "curvature_known", data%stability_has_curvature)
+      if (data%stability_has_curvature) then
+         call json%add(section, "lowest_curvature", data%stability_curvature)
+      end if
+      call json%add(section, "rotations", data%stability_rotations)
+      ! Said out loud rather than implied, because "stable" on its own reads
+      ! as a stronger claim than the matrix supports.
+      call json%add(section, "wrt", "real closed-shell orbital rotations")
+   end subroutine write_stability_section
+
    subroutine write_unconverged_section(json, parent, data)
       !! The fragments whose SCF failed, in a form a follow-up job can be built from
       !!
@@ -627,6 +663,11 @@ contains
          call json%add(main_obj, "lumo", data%lumo)
          call json%add(main_obj, "homo_lumo_gap_ev", (data%lumo - data%homo)*HARTREE_TO_EV)
       end if
+
+      ! The same block the energy-only writer emits. A frequency run rests on
+      ! the same reference, and a saddle point there is what produces the
+      ! imaginary modes below.
+      call write_stability_section(json, main_obj, data)
 
       ! Dipole
       if (data%has_dipole .and. allocated(data%dipole)) then

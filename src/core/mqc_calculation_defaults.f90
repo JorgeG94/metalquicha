@@ -23,6 +23,16 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_RESPONSE_MAX_ITER = 50
    !! Krylov cycles the solve may take before it reports non-convergence.
 
+   real(dp), parameter, public :: DEFAULT_STABILITY_TOL = 1.0e-6_dp
+   !! Root-mean-square residual at which a wavefunction stability analysis
+   !! accepts its lowest orbital-rotation eigenpair. Looser than the response
+   !! solve above on purpose: that one's answer is a Hessian and the error
+   !! propagates into it, while this one's answer is the *sign* of an
+   !! eigenvalue, and every iteration spent tightening it is a Fock build.
+   integer, parameter, public :: DEFAULT_STABILITY_MAX_ITER = 100
+   !! Davidson iterations the stability analysis may take before it reports
+   !! non-convergence.
+
    ! =========================================================================
    ! SCF
    ! =========================================================================
