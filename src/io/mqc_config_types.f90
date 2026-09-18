@@ -16,6 +16,8 @@ module mqc_config_types
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_AIMD_DT, &
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
+                                       DEFAULT_STABILITY_ENGINE, &
+                                       DEFAULT_SOSCF_START, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -391,6 +393,25 @@ module mqc_config_types
          !! `keywords.scf.stability_tolerance`, where that diagonalisation stops.
       integer :: scf_stability_maxiter = DEFAULT_STABILITY_MAX_ITER
          !! `keywords.scf.stability_maxiter`, how long it may take.
+      character(len=16) :: scf_stability_engine = DEFAULT_STABILITY_ENGINE
+         !! `keywords.scf.stability_engine`: 'native' or 'otr'.
+         !!
+         !! Which eigensolver diagonalises the electronic Hessian, and nothing
+         !! else -- the matrix is the same either way. 'native' is the default;
+         !! 'otr' exists so that the two can be compared, and is refused in a
+         !! build without OpenTrustRegion.
+      logical :: scf_second_order = .false.
+         !! `keywords.scf.second_order`. Converge the closed-shell SCF by
+         !! trust-region Newton in the orbital-rotation space once DIIS has got
+         !! it close, instead of by DIIS all the way.
+         !!
+         !! Off by default, and honestly so: each Newton step costs several
+         !! Fock builds, so on a well-behaved system it converges in fewer
+         !! iterations and more Fock builds than DIIS. It earns its cost where
+         !! DIIS oscillates or stalls.
+      real(dp) :: scf_soscf_start = DEFAULT_SOSCF_START
+         !! `keywords.scf.soscf_start`, the commutator at which the switch from
+         !! DIIS to Newton happens. See `DEFAULT_SOSCF_START`.
       integer :: scf_diis_size = 8
          !! `keywords.scf.diis_size`, the subspace the extrapolation is drawn
          !! from. Widening it to 12-20 is the first thing to try on an

@@ -24,6 +24,12 @@ module test_mqc_czt_stability
    !! because the *number* has to be known independently, not because a real one
    !! was unavailable; the real one is checked above, as a matrix.
    !!
+   !! **And do the two eigensolvers agree?** The native path -- this program's
+   !! own Davidson, which is what a deck gets -- and the OpenTrustRegion one are
+   !! independent implementations over the same operator, which is the entire
+   !! reason the borrowed one is kept. `test_native_agrees_with_otr` hands both
+   !! the same matrix and compares the eigenvalue they return.
+   !!
    !! Every case that needs the optional backend returns early without it,
    !! which test-drive records as a pass. There is no skip status here, and the
    !! alternative -- a red square on every build that did not fetch an optional
@@ -31,6 +37,7 @@ module test_mqc_czt_stability
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp, default_int
    use pic_lapack_interfaces, only: pic_syev
+   use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -39,6 +46,8 @@ module test_mqc_czt_stability
    use mqc_czt_response, only: response_operator_t
    use mqc_czt_ov_hessian, only: ov_hessian_t, stability_result_t, build_scf_ov_hessian
    use mqc_czt_stability, only: stability_of_hessian, otr_available
+   use mqc_czt_native_stability, only: native_stability_of_hessian, &
+                                       native_scf_stability
    implicit none
    private
 
@@ -84,7 +93,13 @@ contains
                   new_unittest("stability_water_is_a_minimum", test_water_is_a_minimum), &
                   new_unittest("stability_refuses_without_an_operator", &
                                test_refuses_without_operator), &
-                  new_unittest("stability_refused_when_disabled", test_refused_when_disabled) &
+                  new_unittest("stability_refused_when_disabled", test_refused_when_disabled), &
+                  new_unittest("native_lowest_eigenvalue", test_native_lowest_eigenvalue), &
+                  new_unittest("native_reports_a_stable_curvature", &
+                               test_native_reports_stable_curvature), &
+                  new_unittest("native_water_is_a_minimum", test_native_water), &
+                  new_unittest("native_agrees_with_opentrustregion", &
+                               test_native_agrees_with_otr) &
                   ]
    end subroutine collect_mqc_czt_stability_tests
 
@@ -460,7 +475,12 @@ contains
    end subroutine test_refuses_without_operator
 
    subroutine test_refused_when_disabled(error)
-      !! Without the backend the request is declined, and the message names the option
+      !! Without the library the *borrowed* path is declined, and says so precisely
+      !!
+      !! Only reachable in a build with no OpenTrustRegion, where
+      !! `mqc_czt_stability` is the stub. The native path above is unaffected --
+      !! which is what the refusal has to make clear, or a reader concludes the
+      !! whole feature needs a dependency.
       type(error_type), allocatable, intent(out) :: error
 
       type(toy_response_t), target :: operator
@@ -481,7 +501,229 @@ contains
       call check(error, index(err%get_message(), "MQC_ENABLE_OTR") > 0, &
                  "the refusal should name the build option; it said: "// &
                  err%get_message())
+      if (allocated(error)) return
+      ! And it should say what does work, because the analysis itself is not
+      ! what is missing -- only this second implementation of it.
+      call check(error, index(err%get_message(), "native") > 0, &
+                 "the refusal should point at the engine that needs nothing; it "// &
+                 "said: "//err%get_message())
    end subroutine test_refused_when_disabled
+
+   ! ---- the native eigensolver -------------------------------------------
+
+   subroutine test_native_lowest_eigenvalue(error)
+      !! The native analysis against a dense diagonalisation of the same matrix
+      !!
+      !! The check that depends on neither eigensolver being right: the matrix
+      !! is interrogated column by column through the operator and handed to
+      !! `pic_syev`, and the number that comes back is the reference. Needs no
+      !! optional dependency, so it runs on every build with CPU integrals.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(toy_response_t), target :: operator
+      type(ov_hessian_t) :: hessian
+      type(stability_result_t) :: result
+      type(error_t) :: err
+      real(dp), allocatable :: dense(:, :), image(:)
+      real(dp) :: dense_low, residual
+      logical :: ok
+
+      call toy_hessian(operator, hessian, -2.0_dp)
+      call dense_from_operator(hessian, dense, ok)
+      call check(error, ok, "applying the synthetic Hessian failed")
+      if (allocated(error)) return
+      dense_low = lowest_eigenvalue(dense, ok)
+      call check(error, ok, "the dense diagonalisation failed")
+      if (allocated(error)) return
+      call check(error, dense_low < -1.0e-2_dp, "the synthetic Hessian was meant to "// &
+                 "have a clearly negative eigenvalue and does not, so this case is "// &
+                 "not testing what it says")
+      if (allocated(error)) return
+
+      call native_stability_of_hessian(hessian, result, err, conv_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error(), "the native stability analysis failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, result%ran, "the native analysis reported that it did not run")
+      if (allocated(error)) return
+      call check(error,.not. result%stable, "a Hessian with eigenvalue "// &
+                 real_to_text(dense_low)//" was called stable")
+      if (allocated(error)) return
+      call check(error, abs(result%lowest_curvature - dense_low) < 1.0e-8_dp, &
+                 "the native lowest curvature "// &
+                 real_to_text(result%lowest_curvature)//" disagrees with the dense "// &
+                 "diagonalisation's "//real_to_text(dense_low))
+      if (allocated(error)) return
+      call check(error, result%n_products > 0, "the native analysis reported no "// &
+                 "Hessian-vector products")
+      if (allocated(error)) return
+
+      call check(error, allocated(result%rotation), "an unstable reference should "// &
+                 "come back with a rotation that lowers the energy")
+      if (allocated(error)) return
+      allocate (image(size(result%rotation)))
+      call hessian%apply(result%rotation, image)
+      residual = sqrt(sum((image - dense_low*result%rotation)**2))
+      call check(error, residual < 1.0e-7_dp, "the returned rotation is not an "// &
+                 "eigenvector of the Hessian; residual norm "//real_to_text(residual))
+   end subroutine test_native_lowest_eigenvalue
+
+   subroutine test_native_reports_stable_curvature(error)
+      !! A minimum comes back with its eigenvalue, not just a verdict
+      !!
+      !! This is the whole difference from the borrowed path, which can only
+      !! recover the eigenvalue for an unstable reference because the library
+      !! returns the eigenvector and not the eigenvalue. How stiff a minimum is
+      !! is as much of an answer as which way a saddle falls, so the native
+      !! path reports it always -- and a test says so, because a field that is
+      !! merely usually filled is a field nobody can rely on.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(toy_response_t), target :: operator
+      type(ov_hessian_t) :: hessian
+      type(stability_result_t) :: result
+      type(error_t) :: err
+      real(dp), allocatable :: dense(:, :)
+      real(dp) :: dense_low
+      logical :: ok
+
+      call toy_hessian(operator, hessian, 0.1_dp)
+      call dense_from_operator(hessian, dense, ok)
+      call check(error, ok, "applying the synthetic Hessian failed")
+      if (allocated(error)) return
+      dense_low = lowest_eigenvalue(dense, ok)
+      call check(error, ok, "the dense diagonalisation failed")
+      if (allocated(error)) return
+      call check(error, dense_low > 0.0_dp, "the synthetic Hessian was meant to be "// &
+                 "positive definite and is not")
+      if (allocated(error)) return
+
+      call native_stability_of_hessian(hessian, result, err, conv_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error(), "the native stability analysis failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, result%stable, "a positive definite Hessian was called unstable")
+      if (allocated(error)) return
+      call check(error, result%has_curvature, "the native analysis must report the "// &
+                 "eigenvalue for a stable reference too; that gap is why it exists")
+      if (allocated(error)) return
+      call check(error, abs(result%lowest_curvature - dense_low) < 1.0e-8_dp, &
+                 "the native lowest curvature "// &
+                 real_to_text(result%lowest_curvature)//" disagrees with the dense "// &
+                 "diagonalisation's "//real_to_text(dense_low))
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%rotation), "there is no downhill "// &
+                 "direction from a minimum, so none should be returned")
+      if (allocated(error)) return
+      call check(error, result%n_parameters == TOY_OV, "the wrong number of rotations "// &
+                 "was searched")
+   end subroutine test_native_reports_stable_curvature
+
+   subroutine test_native_water(error)
+      !! A well-behaved closed shell, end to end, with no optional dependency
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(nuclear_response_t), target :: response
+      type(ov_hessian_t) :: hessian
+      type(stability_result_t) :: result
+      real(dp), allocatable :: dense(:, :)
+      real(dp) :: dense_low
+      logical :: ok
+
+      call water(mol, scf, err)
+      call check(error,.not. err%has_error() .and. scf%converged, "the reference SCF failed")
+      if (allocated(error)) return
+
+      call native_scf_stability(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, result, err, conv_tol=1.0e-9_dp)
+      call check(error,.not. err%has_error(), "the native stability analysis failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, result%stable, "water in STO-3G should be a minimum")
+      if (allocated(error)) return
+      call check(error, result%has_curvature, "the eigenvalue should come back for a "// &
+                 "stable reference")
+      if (allocated(error)) return
+
+      ! The verdict, and then the reason it is the right verdict.
+      call build_scf_ov_hessian(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, response, hessian, err)
+      call check(error,.not. err%has_error(), "the Hessian would not build")
+      if (allocated(error)) return
+      call dense_from_operator(hessian, dense, ok)
+      call check(error, ok, "applying the Hessian failed")
+      if (allocated(error)) return
+      dense_low = lowest_eigenvalue(dense, ok)
+      call check(error, ok, "the dense diagonalisation failed")
+      if (allocated(error)) return
+      call check(error, dense_low > 0.0_dp, "the verdict agreed with the eigensolver "// &
+                 "but the matrix has a negative eigenvalue "//real_to_text(dense_low))
+      if (allocated(error)) return
+      ! Printed, not only compared. The tolerance says the two agree; the
+      ! numbers say by how much, which is what anyone asking "how well does the
+      ! matrix-free solver do on a real molecule" actually wants, and it costs
+      ! one line to not have to instrument the test to find out.
+      call logger%info("  water/STO-3G lowest curvature: native "// &
+                       real_to_text(result%lowest_curvature)//", dense "// &
+                       real_to_text(dense_low)//", difference "// &
+                       real_to_text(result%lowest_curvature - dense_low))
+      call check(error, abs(result%lowest_curvature - dense_low) < 1.0e-7_dp, &
+                 "the native curvature "//real_to_text(result%lowest_curvature)// &
+                 " disagrees with the dense diagonalisation's "//real_to_text(dense_low))
+   end subroutine test_native_water
+
+   subroutine test_native_agrees_with_otr(error)
+      !! The cross-check the whole design rests on
+      !!
+      !! Two independent eigensolvers, one operator, one number. Skipped -- by
+      !! returning early, which test-drive records as a pass -- in a build
+      !! without OpenTrustRegion, because a red square for a dependency nobody
+      !! fetched says nothing about this program.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(toy_response_t), target :: operator
+      type(ov_hessian_t) :: hessian
+      type(stability_result_t) :: native, borrowed
+      type(error_t) :: err
+      real(dp) :: difference
+
+      if (.not. otr_available()) return
+
+      ! Unstable, because that is the only case the borrowed path can report an
+      ! eigenvalue for at all -- see `mqc_czt_stability`. The stable case is
+      ! covered against the dense diagonalisation above, which is the stronger
+      ! reference anyway.
+      call toy_hessian(operator, hessian, -2.0_dp)
+      call native_stability_of_hessian(hessian, native, err, conv_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error(), "the native analysis failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call toy_hessian(operator, hessian, -2.0_dp)
+      call stability_of_hessian(hessian, borrowed, err, conv_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error(), "OpenTrustRegion's analysis failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call check(error, native%stable .eqv. borrowed%stable, "the two eigensolvers "// &
+                 "disagree on the verdict")
+      if (allocated(error)) return
+      call check(error, native%has_curvature .and. borrowed%has_curvature, &
+                 "both should report a curvature for an unstable reference")
+      if (allocated(error)) return
+      difference = abs(native%lowest_curvature - borrowed%lowest_curvature)
+      call logger%info("  synthetic Hessian lowest curvature: native "// &
+                       real_to_text(native%lowest_curvature)//", opentrustregion "// &
+                       real_to_text(borrowed%lowest_curvature)//", difference "// &
+                       real_to_text(difference))
+      call check(error, difference < 1.0e-8_dp, "the native lowest curvature "// &
+                 real_to_text(native%lowest_curvature)//" and OpenTrustRegion's "// &
+                 real_to_text(borrowed%lowest_curvature)//" differ by "// &
+                 real_to_text(difference))
+   end subroutine test_native_agrees_with_otr
 
    ! ---- shared setup ------------------------------------------------------
 
@@ -509,7 +751,7 @@ contains
 
       character(len=32) :: buffer
 
-      write (buffer, "(es14.6)") value
+      write (buffer, "(es22.14)") value
       text = trim(adjustl(buffer))
    end function real_to_text
 

@@ -27,6 +27,12 @@ module mqc_czt_rhf
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
    use mqc_scf_types, only: scf_numerics_t
    use mqc_diis, only: parse_accelerator_name
+   use mqc_calculation_defaults, only: DEFAULT_SOSCF_START
+   use mqc_czt_hessian, only: nuclear_response_t
+   use mqc_czt_ov_hessian, only: ov_hessian_t, build_scf_ov_hessian
+   use mqc_czt_soscf, only: soscf_gradient, soscf_semicanonicalize, soscf_newton_step
+   use mqc_orbital_rotation, only: rotation_matrix, MAX_ROTATION, MIN_ROTATION, &
+                                   ENERGY_RESOLUTION, TRUST_GROWTH, SADDLE_CURVATURE
    implicit none
    private
 
@@ -129,6 +135,29 @@ module mqc_czt_rhf
       integer :: incremental_updates = 0
          !! Fock matrices built from the density change. Zero when
          !! `incremental_fock` is off.
+      ! The second-order phase, when `keywords.scf.second_order` asked for one.
+      ! Zero everywhere means the whole SCF was DIIS, which is the default.
+      integer :: second_order_started_at = 0
+         !! The DIIS iteration after which the Newton steps took over. Reported
+         !! because the switch is what makes the method robust and a reader has
+         !! to be able to see that it happened, and where.
+      integer :: second_order_iterations = 0
+         !! Newton steps taken. `iterations` is the total of both phases.
+      integer :: second_order_hessian_products = 0
+         !! Hessian-vector products spent inside the Newton solves, each one a
+         !! Fock build over the whole basis. **Not** counted in
+         !! `full_fock_builds`, which counts the builds that produced an energy:
+         !! these two together are what a second-order SCF actually costs.
+      real(dp) :: second_order_curvature = 0.0_dp
+         !! The smallest curvature the last Newton step saw, in hartree per
+         !! radian squared. An **upper bound** on the true smallest eigenvalue
+         !! of the orbital Hessian, because it is a Rayleigh-Ritz value from a
+         !! Krylov subspace -- negative is proof of a saddle, positive is not
+         !! proof of a minimum. `keywords.scf.stability` is what answers that.
+      logical :: has_second_order_curvature = .false.
+      logical :: second_order_stalled = .false.
+         !! No step downhill was found. The energy reported is the last one
+         !! that descended, and `converged` is false.
       logical :: converged = .false.
       real(dp) :: commutator = huge(1.0_dp)
          !! `max|FDS - SDF|` at the last iteration, in the orthogonal basis.
@@ -200,6 +229,8 @@ module mqc_czt_rhf
       integer :: accel = 0              !! One of ACCEL_*
       real(dp) :: shift = 0.0_dp        !! Level shift, hartree; zero is off
       real(dp) :: taper = 0.0_dp        !! Below this dD(rms) the shift is dropped
+      logical :: second_order = .false.  !! Hand over to Newton once close enough
+      real(dp) :: soscf_start = 0.0_dp  !! The commutator at which that happens
       type(scf_convergence_t) :: conv   !! What stopping is measured against
    end type rhf_controls_t
 
@@ -242,6 +273,7 @@ module mqc_czt_rhf
    character(len=*), parameter :: STAGE_DIIS = "DIIS"
    character(len=*), parameter :: STAGE_XC = "XC quadrature"
    character(len=*), parameter :: STAGE_PCM = "continuum operator"
+   character(len=*), parameter :: STAGE_SOSCF = "second-order step"
 
 contains
 
@@ -425,7 +457,7 @@ contains
                           verbose, result, error, aux, diis_vectors, in_core, &
                           guess, guess_density, xc, h_extra, pcm, projector, &
                           level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
-                          incremental_fock, convergence, scf)
+                          incremental_fock, convergence, scf, second_order, soscf_start)
       !! Drive a closed-shell SCF to convergence
       type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -519,6 +551,18 @@ contains
       real(dp), intent(in), optional :: linear_dependence
          !! `keywords.scf.linear_dependence_threshold`. Zero or absent leaves
          !! the orthogonaliser on its own cutoff.
+      logical, intent(in), optional :: second_order
+         !! `keywords.scf.second_order`. Hand over from DIIS to trust-region
+         !! Newton on the orbital rotations once the commutator falls below
+         !! `soscf_start`. Default false.
+         !!
+         !! **Not a way to start second order.** A Newton step from a poor
+         !! density diverges, so the DIIS phase is not optional and the switch
+         !! threshold is what makes the method robust; see `run_soscf_phase`.
+      real(dp), intent(in), optional :: soscf_start
+         !! The commutator at which that switch happens, as
+         !! `max|FDS - SDF|` in the orthogonal basis. Absent or non-positive
+         !! takes `DEFAULT_SOSCF_START`.
       type(fock_projector_t), intent(in), optional :: projector
          !! A constraint on the Fock matrix, applied after every build.
          !!
@@ -551,6 +595,7 @@ contains
       integer :: metric_kind
       logical :: metric_ok
       integer :: iter
+      integer :: soscf_switch   !! DIIS iteration the Newton phase took over after
       type(timing_report_t) :: clk
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
@@ -771,6 +816,42 @@ contains
       ! copied across rather than having been written straight into `ctrl`.
       ctrl%verbose = verbose
 
+      ! ---- second order, and what it will not do ---------------------------
+      !
+      ! Refused rather than approximated. The Newton step's Hessian is the
+      ! two-electron (and exchange-correlation) response of the *gas-phase*
+      ! reference with no constraint on it, so neither of these would be the
+      ! curvature of the energy actually being minimised, and a step taken on
+      ! the wrong curvature converges to the wrong place or not at all.
+      ctrl%second_order = .false.
+      if (present(scf)) ctrl%second_order = scf%second_order
+      if (present(second_order)) ctrl%second_order = second_order
+      ctrl%soscf_start = DEFAULT_SOSCF_START
+      if (present(scf)) then
+         if (scf%soscf_start > 0.0_dp) ctrl%soscf_start = scf%soscf_start
+      end if
+      if (present(soscf_start)) then
+         if (soscf_start > 0.0_dp) ctrl%soscf_start = soscf_start
+      end if
+      if (ctrl%second_order) then
+         if (ctrl%use_pcm) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.second_order with a "// &
+                           "continuum solvent: the orbital-rotation Hessian carries "// &
+                           "no response of the surface charges, so the Newton step "// &
+                           "would be taken on the wrong curvature. Converge this one "// &
+                           "by DIIS.")
+            return
+         end if
+         if (present(projector)) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.second_order with a Fock "// &
+                           "projector: the rotations the projector forbids are not "// &
+                           "excluded from the Newton step's parameter space, so the "// &
+                           "step would break the constraint. Converge this one by "// &
+                           "DIIS.")
+            return
+         end if
+      end if
+
       ! One call per iteration, and the three views above are what makes that
       ! readable: the alternative was a forty-one argument call.
       !
@@ -778,12 +859,27 @@ contains
       ! `result%converged` -- which is where it was recorded anyway -- and the
       ! error check is the caller's, exactly as it is after every other call
       ! in this routine.
+      soscf_switch = 0
       do iter = 1, max_iter
          call do_rhf_iteration(iter, mol, ops, ctrl, st, clk, xc, pcm, projector, &
                                result, error)
          if (error%has_error()) return
          if (result%converged) exit
+         ! The handover. Tested on the commutator the iteration just measured,
+         ! so the DIIS phase ends on a diagonalisation like any other and the
+         ! Newton phase starts from orbitals and a density that agree.
+         if (ctrl%second_order .and. iter < max_iter .and. &
+             result%commutator < ctrl%soscf_start) then
+            soscf_switch = iter
+            exit
+         end if
       end do
+
+      if (soscf_switch > 0) then
+         call run_soscf_phase(mol, ops, ctrl, st, clk, xc, soscf_switch, &
+                              max_iter - soscf_switch, result, error)
+         if (error%has_error()) return
+      end if
 
       ! The energy that goes out belongs to the density that satisfied the
       ! test, so it is recomputed from the final Fock. Deliberately without
@@ -817,6 +913,29 @@ contains
       ! `assemble_fock` itself, so there is deliberately no lap here.
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
+      ! The honest cost of a second-order run.
+      !
+      ! **The Hessian-vector products and nothing else**, because they are the
+      ! one part of the cost nothing else reports. The timing table below counts
+      ! every `assemble_fock` in its "Fock builds" row -- the DIIS iterations,
+      ! the Newton phase's entry build and one per trial step -- and that row is
+      ! directly comparable with a DIIS run's. The products are an integral pass
+      ! each and appear in no row at all, so a reader comparing the two would
+      ! otherwise miss the largest term in the second-order one.
+      !
+      ! `full_fock_builds` is deliberately not quoted here: it counts only what
+      ! the incremental bookkeeping saw, which on the in-core and fitted paths
+      ! is nothing, so it would read as a much cheaper run than the timing row
+      ! says.
+      if (result%second_order_started_at > 0 .and. verbose) then
+         write (line, "(a,i0,a,i0,a,i0,a)") &
+            "  second order: handed over after DIIS iteration ", &
+            result%second_order_started_at, ", ", result%second_order_iterations, &
+            " Newton steps, ", result%second_order_hessian_products, &
+            " Hessian-vector products (one integral pass each, counted in no"// &
+            " timing row)"
+         call logger%info(trim(line))
+      end if
       call energy_components(verbose, mol, result%density, result%electronic, &
                              result%nuclear_repulsion)
       call screening_summary(verbose, st%screening)
@@ -976,6 +1095,347 @@ contains
          result%converged = .true.
       end if
    end subroutine do_rhf_iteration
+
+   subroutine soscf_table_header(verbose)
+      !! Column headings for the second-order phase
+      logical, intent(in) :: verbose
+
+      if (.not. verbose) return
+      call logger%info("  second-order phase: trust-region Newton on the orbital rotations")
+      call logger%info("    iter                 energy          dE     |FDS-SDF|"// &
+                       "      |g|max       trust   curvature  fock")
+   end subroutine soscf_table_header
+
+   subroutine soscf_table_row(verbose, iter, energy, de, gnorm, largest, trust, &
+                              lowest, builds)
+      !! One line of the second-order phase
+      !!
+      !! `curvature` is the smallest one the Newton step saw, which is an upper
+      !! bound on the true smallest eigenvalue -- see `mqc_czt_soscf`. `fock` is
+      !! the Fock builds this iteration cost, energies and Hessian-vector
+      !! products together, because that is the number the method has to be
+      !! judged on.
+      logical, intent(in) :: verbose
+      integer, intent(in) :: iter, builds
+      real(dp), intent(in) :: energy, de, gnorm, largest, trust, lowest
+
+      character(len=LINE_LEN) :: line
+
+      if (.not. verbose) return
+      write (line, "(i8,f22.12,4es12.3,es12.2,i6)") iter, energy, de, gnorm, &
+         largest, trust, lowest, builds
+      call logger%info(trim(line))
+   end subroutine soscf_table_row
+
+   subroutine run_soscf_phase(mol, ops, ctrl, st, clk, xc, switch_iter, max_steps, &
+                              result, error)
+      !! Converge a closed-shell SCF by trust-region Newton, from where DIIS left it
+      !!
+      !! ## Why this is not where the SCF starts
+      !!
+      !! A Newton step is a step on a quadratic model of the energy, and that
+      !! model is only the energy near the point it was built at. From an
+      !! initial guess it is not, and the step it produces is long, in an
+      !! arbitrary direction, and routinely uphill -- a second-order SCF
+      !! started from a guess diverges, which is why every one in practice is
+      !! preceded by something else. Here that something else is the DIIS SCF
+      !! above, run until `max|FDS - SDF|` falls below
+      !! `keywords.scf.soscf_start`; `switch_iter` is where that happened and
+      !! is reported, because a reader has to be able to see it.
+      !!
+      !! ## What one iteration is
+      !!
+      !! 1. **Semicanonicalise.** The Hessian expression is only the Hessian
+      !!    when the Fock matrix is diagonal within the occupied block and
+      !!    within the virtual block, and a rotation destroys that. Two small
+      !!    diagonalisations restore it without moving the density, so this is
+      !!    a change of representation and not a step.
+      !! 2. **Differentiate.** The gradient is `4 F_ai` and the Hessian is
+      !!    four times `mqc_czt_ov_hessian`'s `(A+B)`, applied to a vector for
+      !!    one Fock build and never written down.
+      !! 3. **Step.** `soscf_newton_step` solves the level-shifted Newton
+      !!    equations in a Krylov subspace, with the same `level_shifted_step`
+      !!    -- the same level shift, the same saddle escape -- that the CASSCF
+      !!    optimiser applies to its dense Hessian.
+      !! 4. **Backtrack.** The step is scaled to the trust radius, the
+      !!    orbitals are rotated by the exact matrix exponential, and the
+      !!    energy is rebuilt. If it did not fall, the radius is halved and the
+      !!    step retried. Nothing is accepted that does not lower the energy.
+      !!
+      !! ## What convergence means here
+      !!
+      !! The same rule the DIIS phase used -- `scf_convergence_t` on the energy
+      !! change and the same commutator -- **and** no negative curvature. That
+      !! second half is the entire reason to have a second-order method: a
+      !! first-order SCF stops wherever the gradient vanishes, and on a
+      !! symmetric guess that can be a saddle whose symmetry-breaking rotations
+      !! have exactly zero gradient. The curvature test here is one sided,
+      !! because the Krylov value is an upper bound: it can prove a saddle and
+      !! refuse to converge, and it cannot prove a minimum. `keywords.scf.
+      !! stability` is what proves a minimum.
+      !!
+      !! ## The honest cost
+      !!
+      !! Each iteration costs one Fock build per accepted or rejected trial
+      !! step, plus one per Hessian-vector product inside the Newton solve. On
+      !! a well-behaved closed shell that is more Fock builds than DIIS would
+      !! have spent, for fewer iterations. It earns its cost where DIIS
+      !! oscillates, and where the answer has to be a minimum and not merely a
+      !! stationary point.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_operators_t), intent(in), target :: ops
+      type(rhf_controls_t), intent(in) :: ctrl
+      type(rhf_state_t), intent(inout) :: st
+      type(timing_report_t), intent(inout) :: clk
+      type(xc_context_t), intent(inout), optional, target :: xc
+      integer, intent(in) :: switch_iter
+         !! The DIIS iteration this took over after. Reported, not used.
+      integer, intent(in) :: max_steps
+         !! Newton steps allowed: whatever is left of `max_iter`.
+      type(rhf_result_t), intent(inout) :: result
+      type(error_t), intent(inout) :: error
+
+      ! `target`, and load-bearing: the Hessian points at the response
+      ! operator, so it has to outlive every product taken through it.
+      type(nuclear_response_t), target :: response
+      type(ov_hessian_t) :: hessian
+      real(dp), allocatable :: fock_mo(:, :), energies(:), gradient(:)
+      real(dp), allocatable :: kappa(:, :), rotation(:, :), step_matrix(:, :)
+      real(dp), allocatable :: fock_cur(:, :), fock_try(:, :)
+      real(dp), allocatable :: coeff_try(:, :), density_try(:, :)
+      real(dp) :: trust, scaling, lowest, predicted
+      real(dp) :: e_cur, e_try, de, drms, gnorm, largest
+      integer :: iteration, trial, products, builds, n_ao, n_mo
+      logical :: accepted, saddle
+
+      integer, parameter :: MAX_BACKTRACKS = 12
+
+      if (error%has_error()) return
+      n_ao = ops%n_ao
+      n_mo = ops%n_mo
+      result%second_order_started_at = switch_iter
+      if (max_steps < 1) return
+
+      allocate (fock_cur(n_ao, n_ao), fock_try(n_ao, n_ao))
+      allocate (coeff_try(n_ao, n_mo), density_try(n_ao, n_ao))
+      allocate (step_matrix(n_mo, n_mo))
+
+      ! The point the Newton phase starts from, built in full. The Fock matrix
+      ! left behind by the DIIS loop is extrapolated and possibly level
+      ! shifted, and the energy it carries belongs to the density before the
+      ! last diagonalisation -- neither is a state this can differentiate.
+      call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, &
+                         ops%eri, ops%bounds, xc, fock_cur, e_cur, error, clk=clk, &
+                         bmat_lr=ops%bmat_lr)
+      if (error%has_error()) return
+      st%incr%full_builds = st%incr%full_builds + 1
+
+      call soscf_table_header(ctrl%verbose)
+      trust = MAX_ROTATION
+
+      do iteration = 1, max_steps
+         builds = 0
+
+         ! ---- 1. semicanonicalise, so the orbital energies mean something --
+         if (allocated(fock_mo)) deallocate (fock_mo, energies)
+         call soscf_semicanonicalize(fock_cur, st%coeff, ops%n_occ, fock_mo, &
+                                     energies, error)
+         if (error%has_error()) return
+
+         ! ---- 2. the gradient, and the commutator the caller stops on -------
+         if (allocated(gradient)) deallocate (gradient)
+         call soscf_gradient(fock_mo, ops%n_occ, gradient)
+         largest = maxval(abs(gradient))
+         call commutator(fock_cur, st%density, ops%s, ops%x, st%err)
+         gnorm = maxval(abs(st%err))
+         ! Recorded here, not after the step: on the iteration that converges
+         ! there is no step, and the number a caller reads has to be the one
+         ! that satisfied the test.
+         result%commutator = gnorm
+         de = abs(e_cur - st%e_old)
+         drms = sqrt(sum((st%density - st%density_old)**2)/real(n_ao*n_ao, dp))
+
+         ! ---- 3. the step, which also reports the curvature ----------------
+         !
+         ! Built before the convergence test rather than after it, because the
+         ! test needs the curvature: a vanished gradient at a saddle is still a
+         ! vanished gradient.
+         if (allocated(kappa)) deallocate (kappa)
+         call build_soscf_hessian(mol, ops, ctrl, st, energies, response, hessian, &
+                                  xc, error)
+         if (error%has_error()) return
+         call soscf_newton_step(hessian, gradient, MAX_ROTATION, kappa, lowest, &
+                                predicted, products, error)
+         if (error%has_error()) return
+         call clk%lap(STAGE_SOSCF)
+         result%second_order_hessian_products = &
+            result%second_order_hessian_products + products
+         result%second_order_curvature = lowest
+         result%has_second_order_curvature = .true.
+         builds = builds + products
+
+         saddle = lowest < SADDLE_CURVATURE
+         if (ctrl%conv%is_converged(de, drms, gnorm)) then
+            if (.not. saddle) then
+               result%converged = .true.
+               call soscf_table_row(ctrl%verbose, iteration, &
+                                    e_cur + mol%nuclear_repulsion(), de, gnorm, &
+                                    largest, trust, lowest, builds)
+               exit
+            end if
+            ! Leaving a saddle is a fresh direction, so it gets a fresh trust
+            ! radius: the old one records how the previous direction behaved
+            ! and is usually small by the time a run has settled.
+            trust = MAX_ROTATION
+            call logger%warning("    the SCF has stopped at a saddle point; "// &
+                                "following the negative curvature out")
+         end if
+
+         ! ---- 4. take it, backtracking until the energy falls ---------------
+         accepted = .false.
+         do trial = 1, MAX_BACKTRACKS
+            scaling = maxval(abs(kappa))
+            if (scaling > trust) then
+               step_matrix = kappa*(trust/scaling)
+            else
+               step_matrix = kappa
+            end if
+
+            if (allocated(rotation)) deallocate (rotation)
+            call rotation_matrix(step_matrix, rotation)
+            call pic_gemm(st%coeff, rotation, coeff_try, beta=0.0_dp)
+            call build_density_closed_shell(coeff_try, ops%n_occ, density_try)
+            ! In full, never incrementally: the trial densities of a
+            ! backtracking search do not form a sequence converging on
+            ! anything, so an accumulated reference would be a correction to a
+            ! density nothing came back to.
+            call assemble_fock(mol, ops%h, density_try, coeff_try, ops%n_occ, &
+                               ops%bmat, ops%eri, ops%bounds, xc, fock_try, e_try, &
+                               error, clk=clk, screening=st%screening, &
+                               bmat_lr=ops%bmat_lr)
+            if (error%has_error()) return
+            st%incr%full_builds = st%incr%full_builds + 1
+            builds = builds + 1
+
+            ! `predicted` below its own resolution is a step too small to
+            ! measure, not a step that failed: near the solution a Newton step
+            ! is worth `g^2/H`, which drops under what an energy difference can
+            ! report while the gradient is still shrinking.
+            if (e_try < e_cur .or. predicted < ENERGY_RESOLUTION) then
+               st%density_old = st%density
+               st%density = density_try
+               st%coeff = coeff_try
+               fock_cur = fock_try
+               st%e_old = e_cur
+               e_cur = e_try
+               trust = min(MAX_ROTATION, trust*TRUST_GROWTH)
+               accepted = .true.
+               exit
+            end if
+            trust = 0.5_dp*trust
+            if (trust < MIN_ROTATION) exit
+         end do
+
+         call soscf_table_row(ctrl%verbose, iteration, &
+                              e_cur + mol%nuclear_repulsion(), de, gnorm, largest, &
+                              trust, lowest, builds)
+         result%second_order_iterations = iteration
+         result%iterations = switch_iter + iteration
+
+         if (.not. accepted) then
+            ! Not an error: the energy and the density in hand are the last
+            ! ones that descended, and `converged` is false, which is what the
+            ! caller acts on.
+            result%second_order_stalled = .true.
+            call logger%warning("    the second-order SCF found no step downhill; "// &
+                                "stopping. The reported energy is the last one that "// &
+                                "descended.")
+            exit
+         end if
+      end do
+
+      ! The orbital energies that leave belong to the last Fock matrix, and are
+      ! canonical only because the occupied-virtual block has vanished. On a run
+      ! that stopped short of convergence they are semicanonical, which is the
+      ! honest thing to report: nothing downstream can canonicalise them without
+      ! a Fock matrix of its own.
+      !
+      ! `st%density` is deliberately left alone. This last rotation mixes
+      ! occupied orbitals among themselves and virtuals among themselves, and a
+      ! closed-shell density is invariant under both, so rebuilding it would
+      ! produce the same matrix to rounding and lose the one the accepted step's
+      ! energy was computed from.
+      if (allocated(fock_mo)) deallocate (fock_mo, energies)
+      call soscf_semicanonicalize(fock_cur, st%coeff, ops%n_occ, fock_mo, energies, &
+                                  error)
+      if (error%has_error()) return
+      st%eigenvalues = energies
+      result%full_fock_builds = st%incr%full_builds
+      result%incremental_updates = st%incr%updates
+
+      deallocate (fock_cur, fock_try, coeff_try, density_try, step_matrix)
+   end subroutine run_soscf_phase
+
+   subroutine build_soscf_hessian(mol, ops, ctrl, st, energies, response, hessian, &
+                                  xc, error)
+      !! Point an `ov_hessian_t` at the orbitals the Newton step is being taken from
+      !!
+      !! The four-way branch is on two independent facts, neither of which can
+      !! be passed as an absent optional from inside a single call: whether the
+      !! reference is Kohn-Sham, and whether this SCF has Schwarz bounds
+      !! already. The bounds are only built on the direct path, and the Hessian
+      !! needs them either way -- `build_scf_ov_hessian` builds its own when
+      !! they are not handed over.
+      !!
+      !! **The Hessian is always built from exact integrals, direct**, whatever
+      !! the reference was built from: `nuclear_apply` goes through
+      !! `build_fock_direct_many`. For an in-core reference that is the same
+      !! operator. For a density-fitted one it is not -- the Hessian is then the
+      !! curvature of a slightly different energy surface than the one being
+      !! minimised. That degrades the *rate*, not the answer: the gradient and
+      !! the energy the step is accepted on are the fitted ones, so the
+      !! stationary point reached is the fitted SCF's.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_operators_t), intent(in) :: ops
+      type(rhf_controls_t), intent(in) :: ctrl
+      type(rhf_state_t), intent(in) :: st
+      real(dp), intent(in) :: energies(:)
+      type(nuclear_response_t), intent(out), target :: response
+      type(ov_hessian_t), intent(out) :: hessian
+      type(xc_context_t), intent(inout), optional, target :: xc
+      type(error_t), intent(inout) :: error
+
+      logical :: have_bounds
+
+      if (error%has_error()) return
+      have_bounds = allocated(ops%bounds)
+
+      if (ctrl%kohn_sham .and. present(xc)) then
+         if (have_bounds) then
+            call build_scf_ov_hessian(mol, st%coeff, energies, ops%n_occ, response, &
+                                      hessian, error, xc=xc, reference=st%density, &
+                                      k_scale=xc%exx_fraction, rs_k_lr=xc%rs_k_lr, &
+                                      rs_omega=xc%rs_omega, bounds=ops%bounds)
+         else
+            call build_scf_ov_hessian(mol, st%coeff, energies, ops%n_occ, response, &
+                                      hessian, error, xc=xc, reference=st%density, &
+                                      k_scale=xc%exx_fraction, rs_k_lr=xc%rs_k_lr, &
+                                      rs_omega=xc%rs_omega)
+         end if
+      else
+         if (have_bounds) then
+            call build_scf_ov_hessian(mol, st%coeff, energies, ops%n_occ, response, &
+                                      hessian, error, bounds=ops%bounds)
+         else
+            call build_scf_ov_hessian(mol, st%coeff, energies, ops%n_occ, response, &
+                                      hessian, error)
+         end if
+      end if
+      if (error%has_error()) then
+         call error%add_context("building the orbital-rotation Hessian for the "// &
+                                "second-order SCF")
+      end if
+   end subroutine build_soscf_hessian
 
    subroutine run_czt_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                           verbose, result, error, diis_vectors, in_core, diis_start, &

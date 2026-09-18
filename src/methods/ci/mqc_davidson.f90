@@ -177,7 +177,8 @@ contains
 
    subroutine davidson_flat(operator, diagonal, n_roots, values, vectors, residuals, &
                             iterations_taken, sigma_products, converged, error, &
-                            tolerance, max_iterations, max_subspace, guess, verbose, energy_offset)
+                            tolerance, max_iterations, max_subspace, guess, verbose, &
+                            energy_offset, label, value_label)
       !! The `n_roots` lowest eigenpairs of anything that can multiply a vector
       !!
       !! The method itself, over a flat vector. Everything that knows what a
@@ -206,9 +207,18 @@ contains
          !! Davidson solves the active-space problem, so its own eigenvalue is
          !! the active energy alone; the caller knows the inactive-plus-nuclear
          !! constant this adds back.
+      character(len=*), intent(in), optional :: label
+         !! What the iteration table is called. Defaults to the CI this solver
+         !! was written for; the electronic Hessian is the other operator that
+         !! reaches it, and a verbose run of that has no business claiming to
+         !! be a CI.
+      character(len=*), intent(in), optional :: value_label
+         !! What the eigenvalue column is called, `energy` by default. The same
+         !! reason: the lowest eigenvalue of an orbital-rotation Hessian is a
+         !! curvature, not an energy.
 
       real(dp), allocatable :: basis(:, :), sigma(:, :), small(:, :), small_values(:)
-      character(len=128) :: line
+      character(len=128) :: line, header, name_of_value
       integer(int64) :: tick, last, rate
       real(dp) :: shift
       logical :: loud
@@ -256,9 +266,17 @@ contains
       if (present(verbose)) loud = verbose
       shift = 0.0_dp
       if (present(energy_offset)) shift = energy_offset
-      call convergence_header(loud, "CI iterations", &
-                              "    iter                 energy    residual   subspace"// &
-                              "     sigma       time", 74)
+      name_of_value = "energy"
+      if (present(value_label)) name_of_value = value_label
+      ! Built rather than a literal, so the column heading lines up with the
+      ! `f23.12` the rows are written in whatever the caller named it.
+      write (header, "(a,a23,a)") "    iter", trim(name_of_value), &
+         "    residual   subspace     sigma       time"
+      if (present(label)) then
+         call convergence_header(loud, label, trim(header), 74)
+      else
+         call convergence_header(loud, "CI iterations", trim(header), 74)
+      end if
 
       call system_clock(last, rate)
       call initial_basis(diagonal, n_roots, ndet, basis, guess)

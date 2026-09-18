@@ -63,7 +63,7 @@ metalquicha/
 │   ├── cenzontle/               # CPU ab initio: 57k lines, `mqc_czt_*`
 │   │   ├── integrals/ scf/ dft/ correlation/ mcscf/ derivatives/
 │   │   ├── analysis/ fragments/ efp/ sapt/
-│   │   ├── stability/           #   the electronic Hessian, and OTR behind it
+│   │   ├── stability/           #   the electronic Hessian, native + OTR solvers
 │   │   └── mqc_czt_bridge.f90   #   the ONLY way in; nothing reaches past it
 │   ├── cuest/                   # GPU, via NVIDIA cuEST
 │   └── crest/ dlfind/ hdf5/     # thin adapters to foreign libraries
@@ -258,12 +258,22 @@ Initial guess is `keywords.scf.guess`: `core`, `gwh`, `sac`, `sad`, or `auto`.
 `auto` resolves per backend - `sad` on the CPU path, `gwh` on cuEST - so the two
 can differ without either knowing what the other chose.
 
-### Wavefunction stability, behind OpenTrustRegion
+### Wavefunction stability, and the second-order SCF
 
 `keywords.scf.stability` asks whether a converged SCF is a *minimum* rather than
 merely a stationary point, which is not the same question and is not answered by
 any convergence test: a saddle point converges, reports an ordinary energy, and
-says nothing. Two modules, in `backends/cenzontle/stability/`:
+says nothing. `keywords.scf.second_order` is the other half: it converges the
+closed-shell reference by trust-region Newton once DIIS has got it close, so it
+can *escape* a saddle rather than only detect one.
+
+**Both are core functionality and work in a default build.** OpenTrustRegion is
+still in the tree, reachable as `keywords.scf.stability_engine: otr`, and its
+job is now to be the independent implementation the native one is checked
+against -- not the product. If you are adding to the stability analysis, add to
+`mqc_czt_native_stability` and keep the cross-check test passing.
+
+Three modules, in `backends/cenzontle/stability/`:
 
 - `mqc_czt_ov_hessian` is `(A+B)` -- the real singlet orbital-rotation Hessian --
   as a matrix-free operator over the non-redundant occupied-virtual rotations.
@@ -273,12 +283,70 @@ says nothing. Two modules, in `backends/cenzontle/stability/`:
   header derives it. The redundant occupied-occupied rows the response operator
   carries are excluded, because an eigensolver handed them finds `n_occ^2` exact
   zeros and calls every reference marginally stable.
-- `mqc_czt_stability` diagonalises it with **OpenTrustRegion**'s
+- `mqc_czt_native_stability` diagonalises it with `mqc_davidson` -- the CI
+  solver, unmodified except for two optional labels so a verbose run does not
+  claim to be a CI. `davidson_flat` already works against an abstract
+  `sigma_operator_t` over a flat vector, its preconditioner is exactly the
+  orbital-energy diagonal this wants, and its no-guess start is the unit vector
+  on the smallest diagonal element, which over this space is the HOMO-LUMO
+  rotation. The adapter is one type with one `apply`. Because
+  `sigma_operator_t%apply` carries an `error_t`, this path needs **no module
+  state** and no seed, and it **always reports the eigenvalue**. This is the
+  default.
+- `mqc_czt_stability` diagonalises the same operator with **OpenTrustRegion**'s
   `stability_check`, fetched by `-DMQC_ENABLE_OTR=ON`. Stubbed by
   `src/methods/stubs/mqc_czt_stability_stub.f90` when it is not, so a build
-  without it refuses the keyword before the SCF rather than after.
+  without it refuses `stability_engine: otr` before the SCF rather than after.
+  `test_native_agrees_with_opentrustregion` requires the two to agree on the
+  eigenvalue and returns early -- a pass -- in a build with no library.
 
-Three things to know before touching it:
+The second-order SCF is two more modules plus a phase:
+
+- `src/methods/scf/mqc_orbital_rotation` holds `rotation_matrix` (the exact
+  matrix exponential by scaling and squaring) and `level_shifted_step` (the
+  level-shifted trust-region Newton step with the saddle escape), plus
+  `MIN_CURVATURE`, `SADDLE_CURVATURE`, `MAX_ROTATION`, `MIN_ROTATION`,
+  `ENERGY_RESOLUTION` and `TRUST_GROWTH`. **Lifted out of `mqc_czt_mcscf`, not
+  copied**: CASSCF's `newton_step` is now just the mapping between its
+  `(rows, cols)` pair list and a flat vector, and its numbers are unchanged.
+  `rotation_matrix` is still public from `mqc_czt_mcscf`, use-associated, so
+  existing callers and tests are untouched.
+- `backends/cenzontle/scf/mqc_czt_soscf` holds the three things specific to an
+  SCF: the gradient out of the Fock matrix, the semicanonicalisation, and the
+  Krylov solve of the Newton equations against the matrix-free Hessian.
+- `run_soscf_phase`, private in `mqc_czt_rhf`, is the loop. It lives there
+  because it needs `assemble_fock`, `commutator` and the `rhf_operators_t` /
+  `rhf_state_t` views, and because convergence must be the *same*
+  `scf_convergence_t` rule the DIIS phase used or the two energies are not
+  comparable.
+
+Things to know before touching any of it:
+
+- **The factor is four, and it cancels out of the step.** The gradient is
+  `4 F_ai` and the Hessian is `4 (A+B)`, so a Newton step `-H^-1 g` is right
+  even with the factor dropped -- and the *curvature* is then a quarter of the
+  truth, which silently retunes `MIN_CURVATURE` and `SADDLE_CURVATURE`.
+  `test_mqc_czt_soscf.f90` differences the energy numerically to fix both the
+  factor and the sign; do not change either on the strength of a comment.
+- **`(A+B)` is the Hessian only at semicanonical orbitals.** Its first term is
+  the orbital-energy gaps, which is `delta_ij F_ab - delta_ab F_ij` only when
+  the Fock matrix is diagonal within each block. A rotation destroys that, so
+  every Newton iteration re-diagonalises the occupied and virtual blocks first.
+  That moves no density and costs no Fock build.
+- **The curvature the SCF reports is an upper bound.** It is a Rayleigh-Ritz
+  value from a Krylov subspace, so a negative one proves a saddle and a positive
+  one proves nothing. The convergence test uses it one-sidedly, to *refuse*
+  convergence at a saddle. `keywords.scf.stability` is what proves a minimum.
+- **DIIS first, always.** A Newton step from an initial guess diverges. The
+  handover is at `keywords.scf.soscf_start` on the commutator, defaulting to
+  1e-2, and the iteration it happened at is reported.
+- **Refused, not approximated**: unrestricted (open-shell rotation space),
+  a continuum solvent (no surface-charge response in the Hessian), and a Fock
+  projector (forbidden rotations are not excluded from the parameter space).
+  Restricted Kohn-Sham *is* supported, through the same kernel the analytic
+  Hessian's coupled-perturbed solve uses.
+
+Three things to know before touching the OpenTrustRegion path:
 
 - **It is MPL-2.0 and this program is MIT.** That copyleft is *file-level* and
   explicitly permits the Larger Work, so unlike DL-FIND (LGPL-3, kept
@@ -304,7 +372,16 @@ Three things to know before touching it:
   count live on the operator object instead. The same interface returns no
   eigenvalue, so the lowest curvature is recovered as a Rayleigh quotient of the
   descent direction and is therefore only available when the reference is
-  unstable.
+  unstable. The native path does not have that gap, which is the main reason it
+  exists.
+
+**A real case where DIIS is not enough**, worth keeping in mind as the thing
+these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the
+core, GWH and SAD guesses alike, to a stationary point the stability analysis
+reports as a *saddle* -- curvature -1.29e-1 from core, -6.77e-2 from the other
+two. With `second_order: true` the same run reaches -108.5718 hartree, 0.020 to
+0.242 hartree lower, with a curvature of -1e-12: a minimum. It costs 225 Fock
+builds against DIIS's 12, and DIIS's answer is wrong.
 
 ## Solvation Models
 
@@ -331,7 +408,7 @@ Both work with Hartree-Fock and DFT, restricted and unrestricted; see
 | pic-blas | BLAS/LAPACK interface |
 | test-drive | Unit testing framework |
 | jsonfortran | I/O |
-| OpenTrustRegion | Second-order orbital optimization; the SCF stability analysis (`-DMQC_ENABLE_OTR=ON`, MPL-2.0, `INTEGER_SIZE=4`) |
+| OpenTrustRegion | The cross-check for the SCF stability analysis, which has its own native implementation (`-DMQC_ENABLE_OTR=ON`, MPL-2.0, `INTEGER_SIZE=4`) |
 
 ## Testing
 
