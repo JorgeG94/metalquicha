@@ -78,6 +78,25 @@ jobs:
         # shared object a link is a reference. It changes nothing about what is
         # compiled, which is what this job exists to check.
 
+      # Deliberately no MQC_ARCH_FLAGS here, and it is worth saying why, because
+      # the obvious improvement is a trap.
+      #
+      # nvfortran tunes for the build host by default -- `-fast` implies
+      # `-tp=<whatever this machine is>` -- so a binary built on one runner and
+      # run on another can take SIGILL on an instruction the second one lacks.
+      # The ocean project saw exactly that on its NVHPC leg: sixteen numeric
+      # kernels on SIGILL once, green on a plain rerun of the same commit.
+      #
+      # It does not apply here because this job only compiles: nothing it builds
+      # is run, and nothing leaves the runner. Setting the flag would cost more
+      # than it bought, because MQC_ARCH_FLAGS *replaces* the release flags
+      # rather than adding to them, and for NVHPC those are `-fast` -- the
+      # optimisation level that the crash this job was written to catch only
+      # happens at. A job compiling without `-fast` would go green through the
+      # exact regression it exists for.
+      #
+      # So: if a `ctest` step is ever added below, pass
+      # `-DMQC_ARCH_FLAGS="-fast -tp=haswell"` -- both, not just the -tp.
       - name: Build
         # Two jobs rather than the runner's full width: nvfortran holds a lot of
         # memory per translation unit on the generated integral kernels, and a
