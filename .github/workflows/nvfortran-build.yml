@@ -23,22 +23,28 @@ jobs:
     # The NVIDIA HPC SDK image ships nvfortran, nvc and a bundled MPI, which
     # saves installing a 10 GB toolkit on every run.
     container:
-      image: nvcr.io/nvidia/nvhpc:25.1-devel-cuda12.6-ubuntu22.04
+      image: nvcr.io/nvidia/nvhpc:25.1-devel-cuda12.6-ubuntu24.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install build tools
-        # CMake from pip, not from apt. The SDK image is Ubuntu 22.04, whose
-        # cmake is 3.22, and pic and pic-mpi both ask for 3.28 -- so an apt
-        # cmake fails at configure time before a line of Fortran is read. pip
-        # ships an official upstream binary and needs no third-party apt
+        # CMake from pip even on 24.04, whose apt cmake is 3.28.3 and would
+        # just satisfy pic and pic-mpi's `cmake_minimum_required(VERSION 3.28)`.
+        # Just is the problem: that floor was 3.22 until pic moved it, and the
+        # next move puts the job back to failing at configure before a line of
+        # Fortran is read. `>=3.28` here states the requirement where it can be
+        # bumped, instead of inheriting whatever the base image happens to ship.
+        # pip ships an official upstream binary and needs no third-party apt
         # repository; conda would do as well and is heavier for one tool.
         run: |
           apt-get update -qq
           apt-get install -y -qq git python3-pip
-          pip3 install --quiet --upgrade "cmake>=3.28" ninja
+          # --break-system-packages: 24.04 marks its Python externally managed
+          # (PEP 668) and refuses a system-wide pip install without it. This is
+          # a throwaway container, so there is no environment to protect.
+          pip3 install --quiet --upgrade --break-system-packages "cmake>=3.28" ninja
           cmake --version
 
       - name: Configure
