@@ -266,6 +266,11 @@ contains
       call optional_string(json, "keywords.scf.convergence_metric", &
                            config%scf_convergence_metric)
       call optional_logical(json, "keywords.scf.incremental_fock", config%scf_incremental_fock)
+      call optional_logical(json, "keywords.scf.stability", config%scf_stability)
+      call optional_real(json, "keywords.scf.stability_tolerance", &
+                         config%scf_stability_tolerance)
+      call optional_int(json, "keywords.scf.stability_maxiter", &
+                        config%scf_stability_maxiter)
       call optional_string(json, "keywords.guess.type", config%guess_type)
       call read_guess_steps(json, config, error)
       if (error%has_error()) return

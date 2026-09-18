@@ -895,6 +895,84 @@ SCF Options
   is that the fragments which failed are named in the output, with the monomers
   each was built from, so the run can be followed up rather than trusted. See
   :ref:`unconverged-fragments`.
+- ``stability``: After the SCF converges, ask whether the solution it found is
+  a *minimum* (default: false). See :ref:`scf-stability` below.
+- ``stability_tolerance``: Root-mean-square residual at which that analysis
+  accepts its lowest eigenpair (default: 1e-6).
+- ``stability_maxiter``: Davidson iterations it may take (default: 100).
+
+.. _scf-stability:
+
+Wavefunction Stability
+^^^^^^^^^^^^^^^^^^^^^^
+
+A converged SCF is a *stationary* point: the energy does not change to first
+order in any rotation of the orbitals. It is not necessarily a *minimum*. The
+same convergence test is passed by a saddle point, and an SCF that has landed on
+one reports a perfectly ordinary energy, a perfectly ordinary set of orbital
+energies, and nothing at all to say that a lower solution exists a short
+rotation away. Everything built on top of it -- a correlation energy, a
+gradient, a frequency -- then describes the wrong reference.
+
+``keywords.scf.stability`` asks the question directly. It builds the electronic
+Hessian, the matrix of second derivatives of the energy with respect to the
+non-redundant occupied-virtual orbital rotations, and finds its lowest
+eigenvalue. A positive lowest eigenvalue means a minimum. A negative one means a
+saddle point, and the eigenvector that goes with it is the rotation that lowers
+the energy.
+
+.. code-block:: json
+
+   "keywords": {
+     "scf": {
+       "stability": true
+     }
+   }
+
+The output carries a ``stability`` block:
+
+.. code-block:: json
+
+   "stability": {
+     "stable": true,
+     "curvature_known": false,
+     "rotations": 10,
+     "wrt": "real closed-shell orbital rotations"
+   }
+
+``rotations`` is the size of the space that was searched, :math:`n_{occ}
+n_{vir}`. ``lowest_curvature`` appears, in hartree, when the eigenvalue is known
+-- which today means when the reference is *unstable*; ``curvature_known`` says
+which case it is, so an absent number is distinguishable from an absent feature.
+
+**Read the verdict for exactly what it says.** ``wrt`` is in the output for this
+reason. The matrix examined is :math:`(A+B)`, the *real singlet*
+orbital-rotation Hessian, so a stable verdict means the reference is a minimum
+among real closed-shell determinants -- the RHF-to-RHF question. It does not
+rule out a triplet instability, which is the RHF-to-UHF question and lives in a
+different combination of the same integrals, nor a complex one, which lives in
+:math:`(A-B)`. Neither is computed here.
+
+Restricted, closed-shell references only; an unrestricted reference is refused
+rather than answered in the wrong space. A Kohn-Sham reference is supported, and
+the exchange-correlation kernel enters the Hessian the same way it enters an
+analytic Hessian's coupled-perturbed solve.
+
+**It costs one Fock build per Davidson iteration**, which is why it is off by
+default: the energy is already finished by the time this starts. A converged,
+well-behaved molecule typically needs a number of iterations comparable to the
+number of rotations, so this is cheap on a small basis and not free on a large
+one. ``stability_tolerance`` and ``stability_maxiter`` are the two levers, and
+loosening the tolerance is the cheaper one -- the answer wanted is the *sign* of
+an eigenvalue, not its last digits.
+
+**Requires the optional OpenTrustRegion backend.** The eigensolver is
+`OpenTrustRegion <https://github.com/eriksen-lab/opentrustregion>`_, a
+second-order trust-region orbital optimizer, which is fetched only when the
+build is configured with ``-DMQC_ENABLE_OTR=ON``. It is MPL-2.0 licensed, and
+this program is MIT, so linking it is a choice the person building makes rather
+than one made for them. A build without it refuses the keyword and names the
+option, before the SCF rather than after it.
 
 Guess Options
 ^^^^^^^^^^^^^

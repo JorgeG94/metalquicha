@@ -63,6 +63,7 @@ metalquicha/
 │   ├── cenzontle/               # CPU ab initio: 57k lines, `mqc_czt_*`
 │   │   ├── integrals/ scf/ dft/ correlation/ mcscf/ derivatives/
 │   │   ├── analysis/ fragments/ efp/ sapt/
+│   │   ├── stability/           #   the electronic Hessian, and OTR behind it
 │   │   └── mqc_czt_bridge.f90   #   the ONLY way in; nothing reaches past it
 │   ├── cuest/                   # GPU, via NVIDIA cuEST
 │   └── crest/ dlfind/ hdf5/     # thin adapters to foreign libraries
@@ -257,6 +258,54 @@ Initial guess is `keywords.scf.guess`: `core`, `gwh`, `sac`, `sad`, or `auto`.
 `auto` resolves per backend - `sad` on the CPU path, `gwh` on cuEST - so the two
 can differ without either knowing what the other chose.
 
+### Wavefunction stability, behind OpenTrustRegion
+
+`keywords.scf.stability` asks whether a converged SCF is a *minimum* rather than
+merely a stationary point, which is not the same question and is not answered by
+any convergence test: a saddle point converges, reports an ordinary energy, and
+says nothing. Two modules, in `backends/cenzontle/stability/`:
+
+- `mqc_czt_ov_hessian` is `(A+B)` -- the real singlet orbital-rotation Hessian --
+  as a matrix-free operator over the non-redundant occupied-virtual rotations.
+  It needs nothing optional and is always compiled. It is **recovered from the
+  coupled-perturbed operator rather than built**: `nuclear_apply` computes
+  `Delta^-1 K`, so the Hessian is `Delta * (x - apply(x))`, and that module's
+  header derives it. The redundant occupied-occupied rows the response operator
+  carries are excluded, because an eigensolver handed them finds `n_occ^2` exact
+  zeros and calls every reference marginally stable.
+- `mqc_czt_stability` diagonalises it with **OpenTrustRegion**'s
+  `stability_check`, fetched by `-DMQC_ENABLE_OTR=ON`. Stubbed by
+  `src/methods/stubs/mqc_czt_stability_stub.f90` when it is not, so a build
+  without it refuses the keyword before the SCF rather than after.
+
+Three things to know before touching it:
+
+- **It is MPL-2.0 and this program is MIT.** That copyleft is *file-level* and
+  explicitly permits the Larger Work, so unlike DL-FIND (LGPL-3, kept
+  relinkable behind a shared library and a C ABI) it is consumed as an ordinary
+  Fortran dependency: compiled in, `.mod` coupling, no indirection. The
+  reasoning is recorded beside the option in `cmake/MqcOptions.cmake`.
+- **The integer width is pinned, `INTEGER_SIZE=4`.** OpenTrustRegion's `ip` kind
+  is selected at *its* configure time and everything crossing the interface is
+  declared with it, so it has to equal pic's `default_int` -- `int32` unless pic
+  is built with `USE_INT8`. A mismatch is silent: an `int64` error code read
+  through an `int32` dummy is its low half, which is zero for every code the
+  library defines. `OpenTrustRegion_HOST_PROVIDES_BLAS` is on for the same
+  decision (one BLAS in the binary, at that width) and
+  `OpenTrustRegion_ENABLE_XHOST` is forced off because it would append
+  `-march=native` behind `MQC_ARCH_FLAGS` and break cross-compiled cluster
+  builds.
+- **There is module state, and it is the library's interface that requires it.**
+  `hess_x_type(x, hess_x, error)` carries no host context and a Fortran
+  procedure pointer carries no closure, so the callback reaches its operator
+  through one private module pointer plus a re-entrancy flag. An upstream
+  context argument would remove both; the module header says so, and nothing
+  else was allowed to join them -- the failed-Fock-build message and the product
+  count live on the operator object instead. The same interface returns no
+  eigenvalue, so the lowest curvature is recovered as a Rayleigh quotient of the
+  descent direction and is therefore only available when the reference is
+  unstable.
+
 ## Solvation Models
 
 Through tblite, for xTB only:
@@ -282,6 +331,7 @@ Both work with Hartree-Fock and DFT, restricted and unrestricted; see
 | pic-blas | BLAS/LAPACK interface |
 | test-drive | Unit testing framework |
 | jsonfortran | I/O |
+| OpenTrustRegion | Second-order orbital optimization; the SCF stability analysis (`-DMQC_ENABLE_OTR=ON`, MPL-2.0, `INTEGER_SIZE=4`) |
 
 ## Testing
 

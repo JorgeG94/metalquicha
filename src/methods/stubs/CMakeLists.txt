@@ -18,3 +18,12 @@ endif()
 if(NOT MQC_ENABLE_CREST)
   target_sources(${main_lib} PRIVATE mqc_crest_driver_stub.f90)
 endif()
+
+# The stability analysis is stubbed beside the module it stands in for, under
+# backends/cenzontle/stability, and not here. Everything in this directory
+# stands in for a backend as seen from `src/`, so it may use only what `src/`
+# itself compiles; the stability stub carries the real entry point's signature,
+# which names this backend's own types, so it cannot. It also must not live here
+# for a second reason: fpm globs `src/` and resolves module dependencies across
+# everything it finds, so a file here asking for `mqc_czt_integrals` fails the
+# fpm build, which never compiles `backends/` at all.
