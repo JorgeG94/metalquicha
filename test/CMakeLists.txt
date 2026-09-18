@@ -357,11 +357,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_neo)
   target_link_libraries(test_mqc_czt_neo PRIVATE ${MQC_INTEGRALS_LIBS})
 
-  # The wavefunction stability analysis. Needs no optional dependency: the
-  # operator is this backend's and the eigensolver is this program's own
-  # Davidson, so the case that asks whether the operator really is the
-  # electronic Hessian and the case that asks whether the eigensolver agrees
-  # with a dense diagonalisation both run on every build with CPU integrals.
+  # The wavefunction stability analysis. Registered unconditionally within this
+  # block, not behind MQC_ENABLE_OTR: the case that asks whether the operator
+  # really is the electronic Hessian needs no eigensolver and is the one worth
+  # running everywhere, and the cases that do need OpenTrustRegion return early
+  # without it -- see the module header for why that is a pass and not a skip.
   addtest(mqc_czt_stability)
   target_link_libraries(test_mqc_czt_stability PRIVATE ${MQC_INTEGRALS_LIBS})
 
