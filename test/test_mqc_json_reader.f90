@@ -23,6 +23,7 @@ module test_mqc_json_reader
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
+                                       DEFAULT_SOSCF_START, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
                                        EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
@@ -100,6 +101,7 @@ contains
                   new_unittest("optimization_target", test_opt_target), &
                   new_unittest("scf_diis_controls", test_diis_keywords), &
                   new_unittest("scf_stability_controls", test_stability_keywords), &
+                  new_unittest("scf_second_order_controls", test_second_order_keywords), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
                   new_unittest("fukui_scf_inherits_keywords_scf", test_fukui_scf_inherit), &
                   new_unittest("fukui_scf_overrides_per_key", test_fukui_scf_override), &
@@ -2225,6 +2227,43 @@ contains
       call check(error, config%scf_stability_maxiter == DEFAULT_STABILITY_MAX_ITER, &
                  "the default iteration cap is the one in mqc_calculation_defaults")
    end subroutine test_stability_keywords
+
+   subroutine test_second_order_keywords(error)
+      !! `keywords.scf.second_order` and `soscf_start`
+      !!
+      !! Two defaults worth pinning, and each for its own reason.
+      !! `second_order` is off because a Newton step costs several Fock builds
+      !! and DIIS is cheaper on a well-behaved system. And `soscf_start` is the
+      !! threshold that makes the second-order phase robust rather than
+      !! divergent, so a deck that never writes it must still get a sensible
+      !! one.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"second_order": true, "soscf_start": 5.0e-3}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_second_order, "the request should be read")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_soscf_start, 5.0e-3_dp), &
+                 "the handover threshold should be read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_second_order, "the second-order SCF defaults off")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_soscf_start, DEFAULT_SOSCF_START), &
+                 "the default handover threshold is the one in "// &
+                 "mqc_calculation_defaults")
+   end subroutine test_second_order_keywords
 
    subroutine test_diis_keywords(error)
       !! `keywords.scf.diis` and `keywords.scf.diis_size`

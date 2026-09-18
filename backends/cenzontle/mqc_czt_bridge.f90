@@ -1009,6 +1009,22 @@ contains
          end if
       end if
 
+      ! ---- can this reference take a second-order step? ---------------------
+      !
+      ! Refused before the SCF, for the reason the stability refusals above are:
+      ! a deck should not discover at the end of a converged calculation that
+      ! the thing it asked for was never possible.
+      if (settings%second_order .and. unrestricted) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.second_order "// &
+                               "parametrises the closed-shell orbital rotations, and "// &
+                               "this reference is unrestricted; the open-shell "// &
+                               "rotation space is larger and is not implemented. "// &
+                               "Converge this one by DIIS.")
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
       ! ---- Kohn-Sham or Hartree-Fock? ---------------------------------------
       !
       ! A named functional is the whole difference: the SCF takes the context as
@@ -1248,6 +1264,8 @@ contains
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
+                             second_order=settings%second_order, &
+                             soscf_start=settings%soscf_start, &
                              b_ao_out=scf_b_ao)
          else
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
@@ -1257,7 +1275,9 @@ contains
                              level_shift=settings%level_shift, accelerator=accel_kind, &
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
-                             grad_tol=settings%grad_tol, convergence=scf_conv)
+                             grad_tol=settings%grad_tol, convergence=scf_conv, &
+                             second_order=settings%second_order, &
+                             soscf_start=settings%soscf_start)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
@@ -1287,7 +1307,9 @@ contains
                           level_shift=settings%level_shift, accelerator=accel_kind, &
                           linear_dependence=settings%linear_dependence, &
                           incremental_fock=settings%incremental_fock, &
-                          grad_tol=settings%grad_tol, convergence=scf_conv)
+                          grad_tol=settings%grad_tol, convergence=scf_conv, &
+                          second_order=settings%second_order, &
+                          soscf_start=settings%soscf_start)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())

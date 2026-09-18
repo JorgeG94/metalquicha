@@ -271,6 +271,8 @@ contains
                          config%scf_stability_tolerance)
       call optional_int(json, "keywords.scf.stability_maxiter", &
                         config%scf_stability_maxiter)
+      call optional_logical(json, "keywords.scf.second_order", config%scf_second_order)
+      call optional_real(json, "keywords.scf.soscf_start", config%scf_soscf_start)
       call optional_string(json, "keywords.guess.type", config%guess_type)
       call read_guess_steps(json, config, error)
       if (error%has_error()) return

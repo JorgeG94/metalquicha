@@ -33,6 +33,19 @@ module mqc_calculation_defaults
    !! Davidson iterations the stability analysis may take before it reports
    !! non-convergence.
 
+   real(dp), parameter, public :: DEFAULT_SOSCF_START = 1.0e-2_dp
+   !! Commutator below which a second-order SCF stops extrapolating and starts
+   !! taking Newton steps, as `max|FDS - SDF|` in the orthogonal basis.
+   !!
+   !! **The switch is what makes the method robust, so the threshold is not a
+   !! formality.** A Newton step from a poor density diverges: the quadratic
+   !! model is only a model near the point it was built at, and an initial
+   !! guess is not near the solution. 1e-2 is comfortably inside the basin on
+   !! the systems this was measured on and still early enough that the
+   !! second-order phase has iterations left to be worth anything. Raising it
+   !! hands Newton a worse starting point; lowering it spends DIIS iterations
+   !! the Newton steps would have done in fewer.
+
    ! =========================================================================
    ! SCF
    ! =========================================================================

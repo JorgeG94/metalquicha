@@ -117,6 +117,12 @@ module mqc_cuest_iface
          !! Where the stability analysis' eigensolve stops and how long it may
          !! take. See `mqc_calculation_defaults` for why the tolerance is
          !! looser than the response solve's.
+      logical :: second_order = .false.
+         !! Converge the closed-shell SCF by trust-region Newton on the orbital
+         !! rotations once DIIS has got it close. Only the cenzontle backend
+         !! acts on it.
+      real(dp) :: soscf_start = 1.0e-2_dp
+         !! The commutator at which that switch happens.
       real(dp) :: hessian_response_tol = 1.0e-9_dp
       integer :: hessian_response_max_iter = 50
       integer :: hessian_response_batch = 12
@@ -237,6 +243,8 @@ contains
       settings%stability = options%stability
       settings%stability_tol = options%stability_tol
       settings%stability_max_iter = options%stability_max_iter
+      settings%second_order = options%second_order
+      settings%soscf_start = options%soscf_start
       settings%hessian_response_tol = options%hessian_response_tol
       settings%hessian_response_max_iter = options%hessian_response_max_iter
       settings%hessian_response_batch = options%hessian_response_batch
