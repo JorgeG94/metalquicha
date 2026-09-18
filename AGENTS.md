@@ -63,7 +63,7 @@ metalquicha/
 │   ├── cenzontle/               # CPU ab initio: 57k lines, `mqc_czt_*`
 │   │   ├── integrals/ scf/ dft/ correlation/ mcscf/ derivatives/
 │   │   ├── analysis/ fragments/ efp/ sapt/
-│   │   ├── stability/           #   the electronic Hessian and its eigensolver
+│   │   ├── stability/           #   the electronic Hessian, native + OTR solvers
 │   │   └── mqc_czt_bridge.f90   #   the ONLY way in; nothing reaches past it
 │   ├── cuest/                   # GPU, via NVIDIA cuEST
 │   └── crest/ dlfind/ hdf5/     # thin adapters to foreign libraries
@@ -267,11 +267,13 @@ says nothing. `keywords.scf.second_order` is the other half: it converges the
 closed-shell reference by trust-region Newton once DIIS has got it close, so it
 can *escape* a saddle rather than only detect one.
 
-**Both are core functionality and work in a default build**, with nothing
-optional fetched. If you are adding to the stability analysis, add to
-`mqc_czt_native_stability`.
+**Both are core functionality and work in a default build.** OpenTrustRegion is
+still in the tree, reachable as `keywords.scf.stability_engine: otr`, and its
+job is now to be the independent implementation the native one is checked
+against -- not the product. If you are adding to the stability analysis, add to
+`mqc_czt_native_stability` and keep the cross-check test passing.
 
-Two modules, in `backends/cenzontle/stability/`:
+Three modules, in `backends/cenzontle/stability/`:
 
 - `mqc_czt_ov_hessian` is `(A+B)` -- the real singlet orbital-rotation Hessian --
   as a matrix-free operator over the non-redundant occupied-virtual rotations.
@@ -289,12 +291,16 @@ Two modules, in `backends/cenzontle/stability/`:
   on the smallest diagonal element, which over this space is the HOMO-LUMO
   rotation. The adapter is one type with one `apply`. Because
   `sigma_operator_t%apply` carries an `error_t`, this path needs **no module
-  state** and no seed, and it **always reports the eigenvalue**. It is checked
-  against a dense diagonalisation of the same operator, built column by column
-  through it, which is a reference that depends on no eigensolver being right.
-  (A second implementation of this one solve, borrowed from a library rather
-  than written here, exists on a separate branch purely as a cross-check; it is
-  not in this one and nothing here needs it.)
+  state** and no seed, and it **always reports the eigenvalue**. This is the
+  default.
+- `mqc_czt_stability` diagonalises the same operator with **OpenTrustRegion**'s
+  `stability_check`, fetched by `-DMQC_ENABLE_OTR=ON`. Stubbed by
+  `mqc_czt_stability_stub.f90` beside it -- not in `src/methods/stubs`, because
+  its signature names this backend's types and because fpm globs `src/` and
+  never compiles `backends/` -- so a build without the library refuses
+  `stability_engine: otr` before the SCF rather than after.
+  `test_native_agrees_with_opentrustregion` requires the two to agree on the
+  eigenvalue and returns early -- a pass -- in a build with no library.
 
 The second-order SCF is two more modules plus a phase:
 
@@ -342,6 +348,35 @@ Things to know before touching any of it:
   Restricted Kohn-Sham *is* supported, through the same kernel the analytic
   Hessian's coupled-perturbed solve uses.
 
+Three things to know before touching the OpenTrustRegion path:
+
+- **It is MPL-2.0 and this program is MIT.** That copyleft is *file-level* and
+  explicitly permits the Larger Work, so unlike DL-FIND (LGPL-3, kept
+  relinkable behind a shared library and a C ABI) it is consumed as an ordinary
+  Fortran dependency: compiled in, `.mod` coupling, no indirection. The
+  reasoning is recorded beside the option in `cmake/MqcOptions.cmake`.
+- **The integer width is pinned, `INTEGER_SIZE=4`.** OpenTrustRegion's `ip` kind
+  is selected at *its* configure time and everything crossing the interface is
+  declared with it, so it has to equal pic's `default_int` -- `int32` unless pic
+  is built with `USE_INT8`. A mismatch is silent: an `int64` error code read
+  through an `int32` dummy is its low half, which is zero for every code the
+  library defines. `OpenTrustRegion_HOST_PROVIDES_BLAS` is on for the same
+  decision (one BLAS in the binary, at that width) and
+  `OpenTrustRegion_ENABLE_XHOST` is forced off because it would append
+  `-march=native` behind `MQC_ARCH_FLAGS` and break cross-compiled cluster
+  builds.
+- **There is module state, and it is the library's interface that requires it.**
+  `hess_x_type(x, hess_x, error)` carries no host context and a Fortran
+  procedure pointer carries no closure, so the callback reaches its operator
+  through one private module pointer plus a re-entrancy flag. An upstream
+  context argument would remove both; the module header says so, and nothing
+  else was allowed to join them -- the failed-Fock-build message and the product
+  count live on the operator object instead. The same interface returns no
+  eigenvalue, so the lowest curvature is recovered as a Rayleigh quotient of the
+  descent direction and is therefore only available when the reference is
+  unstable. The native path does not have that gap, which is the main reason it
+  exists.
+
 **A real case where DIIS is not enough**, worth keeping in mind as the thing
 these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the
 core, GWH and SAD guesses alike, to a stationary point the stability analysis
@@ -375,6 +410,7 @@ Both work with Hartree-Fock and DFT, restricted and unrestricted; see
 | pic-blas | BLAS/LAPACK interface |
 | test-drive | Unit testing framework |
 | jsonfortran | I/O |
+| OpenTrustRegion | The cross-check for the SCF stability analysis, which has its own native implementation (`-DMQC_ENABLE_OTR=ON`, MPL-2.0, `INTEGER_SIZE=4`) |
 
 ## Testing
 

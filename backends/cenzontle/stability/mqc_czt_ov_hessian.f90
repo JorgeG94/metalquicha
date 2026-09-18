@@ -6,10 +6,10 @@ module mqc_czt_ov_hessian
    !! question of whether the second derivative of the energy with respect to
    !! the orbital rotations is positive definite, and the matrix of those second
    !! derivatives is the electronic Hessian. Nothing here diagonalises it --
-   !! `mqc_czt_native_stability` does -- and that split is deliberate: this
-   !! module is the physics and needs nothing but this backend, so another
-   !! eigensolver over the same operator can be added beside it without
-   !! touching it.
+   !! `mqc_czt_stability` hands this operator to OpenTrustRegion, which does --
+   !! and nothing here needs OpenTrustRegion, which is why the two are separate
+   !! modules: the physics is compiled into every build with CPU integrals and
+   !! only the eigensolver is optional.
    !!
    !! ## Where the Hessian comes from
    !!
@@ -63,8 +63,8 @@ module mqc_czt_ov_hessian
    !! rotations, the same space `mqc_czt_mcscf`'s `is_redundant` picks out --
    !! and embeds into the response operator's longer vector on the way in.
    !!
-   !! Because the parameterisation carries no redundancy, an eigensolver needs
-   !! no projector to keep its iterates out of a null space: there is none.
+   !! Because the parameterisation carries no redundancy, OpenTrustRegion's
+   !! `project` hook is not needed and is left null; see `mqc_czt_stability`.
    !!
    !! ## What this does and does not decide
    !!
