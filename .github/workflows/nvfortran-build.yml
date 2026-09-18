@@ -30,9 +30,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build tools
+        # CMake from pip, not from apt. The SDK image is Ubuntu 22.04, whose
+        # cmake is 3.22, and pic and pic-mpi both ask for 3.28 -- so an apt
+        # cmake fails at configure time before a line of Fortran is read. pip
+        # ships an official upstream binary and needs no third-party apt
+        # repository; conda would do as well and is heavier for one tool.
         run: |
           apt-get update -qq
-          apt-get install -y -qq cmake ninja-build git
+          apt-get install -y -qq git python3-pip
+          pip3 install --quiet --upgrade "cmake>=3.28" ninja
+          cmake --version
 
       - name: Configure
         # CMake's FindMPI does not discover the SDK's MPI from the environment
