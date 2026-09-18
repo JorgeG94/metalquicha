@@ -895,6 +895,214 @@ SCF Options
   is that the fragments which failed are named in the output, with the monomers
   each was built from, so the run can be followed up rather than trusted. See
   :ref:`unconverged-fragments`.
+- ``stability``: After the SCF converges, ask whether the solution it found is
+  a *minimum* (default: false). See :ref:`scf-stability` below.
+- ``stability_tolerance``: Root-mean-square residual at which that analysis
+  accepts its lowest eigenpair (default: 1e-6).
+- ``stability_maxiter``: Davidson iterations it may take (default: 100).
+- ``second_order``: converge the closed-shell SCF by trust-region Newton on the
+  orbital rotations once DIIS has brought it close (default: false). See
+  :ref:`second-order-scf`.
+- ``soscf_start``: the commutator :math:`\max|FDS - SDF|` at which that
+  handover happens (default: 1e-2).
+
+.. _scf-stability:
+
+Wavefunction Stability
+^^^^^^^^^^^^^^^^^^^^^^
+
+A converged SCF is a *stationary* point: the energy does not change to first
+order in any rotation of the orbitals. It is not necessarily a *minimum*. The
+same convergence test is passed by a saddle point, and an SCF that has landed on
+one reports a perfectly ordinary energy, a perfectly ordinary set of orbital
+energies, and nothing at all to say that a lower solution exists a short
+rotation away. Everything built on top of it -- a correlation energy, a
+gradient, a frequency -- then describes the wrong reference.
+
+``keywords.scf.stability`` asks the question directly. It builds the electronic
+Hessian, the matrix of second derivatives of the energy with respect to the
+non-redundant occupied-virtual orbital rotations, and finds its lowest
+eigenvalue. A positive lowest eigenvalue means a minimum. A negative one means a
+saddle point, and the eigenvector that goes with it is the rotation that lowers
+the energy.
+
+.. code-block:: json
+
+   "keywords": {
+     "scf": {
+       "stability": true
+     }
+   }
+
+The output carries a ``stability`` block:
+
+.. code-block:: json
+
+   "stability": {
+     "stable": true,
+     "curvature_known": true,
+     "lowest_curvature": 0.5230513,
+     "rotations": 10,
+     "wrt": "real closed-shell orbital rotations"
+   }
+
+``rotations`` is the size of the space that was searched, :math:`n_{occ}
+n_{vir}`, and ``lowest_curvature`` is the eigenvalue in hartree.
+``curvature_known`` says whether that number is there at all, so a consumer
+reading the block can tell an absent number from an absent feature.
+
+**Read the verdict for exactly what it says.** ``wrt`` is in the output for this
+reason. The matrix examined is :math:`(A+B)`, the *real singlet*
+orbital-rotation Hessian, so a stable verdict means the reference is a minimum
+among real closed-shell determinants -- the RHF-to-RHF question. It does not
+rule out a triplet instability, which is the RHF-to-UHF question and lives in a
+different combination of the same integrals, nor a complex one, which lives in
+:math:`(A-B)`. Neither is computed here.
+
+Restricted, closed-shell references only; an unrestricted reference is refused
+rather than answered in the wrong space. A Kohn-Sham reference is supported, and
+the exchange-correlation kernel enters the Hessian the same way it enters an
+analytic Hessian's coupled-perturbed solve.
+
+**It costs one Fock build per Davidson iteration**, which is why it is off by
+default: the energy is already finished by the time this starts. A converged,
+well-behaved molecule typically needs a number of iterations comparable to the
+number of rotations, so this is cheap on a small basis and not free on a large
+one. ``stability_tolerance`` and ``stability_maxiter`` are the two levers, and
+loosening the tolerance is the cheaper one -- the answer wanted is the *sign* of
+an eigenvalue, not its last digits.
+
+The Eigensolver
+"""""""""""""""
+
+The lowest eigenvalue is found by this program's own Davidson -- the same solver
+that finds the lowest eigenpairs of a CI Hamiltonian -- preconditioned on the
+orbital-energy differences and started from the smallest of them, which over
+this space is the HOMO-LUMO rotation. It is deterministic, needs no random seed,
+and always reports the eigenvalue, whether the reference turned out to be a
+minimum or not.
+
+It is checked against a dense diagonalisation of the same operator, built column
+by column through it, in ``test/test_mqc_czt_stability.f90`` -- a reference that
+depends on no eigensolver being right.
+
+.. _second-order-scf:
+
+Second-Order SCF
+^^^^^^^^^^^^^^^^
+
+DIIS is a first-order method: it extrapolates a sequence of Fock matrices and
+knows nothing about the curvature of the energy. That is usually enough and is
+very cheap. Where it is not -- an SCF that oscillates, one that stalls, one that
+lands on a saddle point and reports success -- ``keywords.scf.second_order``
+converges the closed-shell reference by trust-region Newton in the
+orbital-rotation space instead.
+
+.. code-block:: json
+
+   "keywords": {
+     "scf": {
+       "second_order": true,
+       "soscf_start": 1e-2
+     }
+   }
+
+**It does not start second order, and that is deliberate.** A Newton step is a
+step on a quadratic model of the energy, and the model is the energy only near
+the point it was built at. An initial guess is not near the solution, and a
+Newton step from one is long, arbitrary in direction, and routinely uphill. So
+the DIIS SCF above runs first and hands over when :math:`\max|FDS - SDF|` falls
+below ``soscf_start``; the iteration at which that happened is logged, and the
+switch is what makes the method robust rather than a curiosity. Raising
+``soscf_start`` hands Newton a worse starting point; lowering it spends DIIS
+iterations that the Newton steps would have done in fewer.
+
+One second-order iteration:
+
+1. **Semicanonicalise.** The Fock matrix is diagonalised within the occupied
+   block and within the virtual block. A rotation leaves off-diagonal elements
+   there and the Hessian expression needs them gone. This moves no density and
+   costs no Fock build -- the energy before and after is the same number.
+2. **Differentiate.** The gradient is :math:`4 F_{ai}`; the Hessian is four
+   times the same :math:`(A+B)` the stability analysis diagonalises, applied to
+   a vector for one Fock build and never written down.
+3. **Step.** The level-shifted Newton equations are solved in a Krylov subspace
+   built from the preconditioned gradient, seeded also with the softest
+   diagonal direction. Every eigenvalue of the projected Hessian is raised by a
+   single shift until the smallest reaches a floor, and a mode with negative
+   curvature and no gradient on it -- a saddle -- is displaced instead of
+   divided. This is the same step control the CASSCF orbital optimizer uses.
+4. **Backtrack.** The step is scaled to the trust radius, the orbitals are
+   rotated by the exact matrix exponential :math:`C \to C \exp(\kappa)`, and
+   the energy is rebuilt. If it did not fall, the radius is halved and the step
+   retried. Nothing is accepted that does not lower the energy.
+
+Convergence is the same rule the DIIS phase used -- the energy change and the
+same commutator -- **and** no negative curvature. The second half is the whole
+reason to have a second-order method: a first-order SCF stops wherever the
+gradient vanishes, and on a symmetric guess that can be a saddle whose
+symmetry-breaking rotations have exactly zero gradient. The curvature test is
+one sided, because the value available from a Krylov subspace is an upper bound
+on the true smallest eigenvalue: it can prove a saddle and refuse to converge,
+and it cannot prove a minimum. ``keywords.scf.stability`` is what proves a
+minimum.
+
+**The honest cost.** Count Fock builds, not iterations. One second-order
+iteration costs one Fock build per trial step -- accepted or rejected -- plus
+one per Hessian-vector product inside the Newton solve, of which there are up to
+twenty. The run prints the product count, because it is an integral pass each
+and appears in no row of the timing table.
+
+Measured on seven closed shells -- water, methane, ethane, HCN, a water trimer
+and N2 in 3-21G through cc-pVDZ, plus water with PBE0 -- all converged on the
+same commutator threshold of 1e-9:
+
+.. list-table::
+   :header-rows: 1
+
+   * - path
+     - iterations
+     - Fock builds (energies)
+     - Hessian-vector products
+   * - DIIS
+     - 9-14
+     - 10-15
+     - 0
+   * - second order
+     - 5-6
+     - 7-8
+     - 13-18
+
+So on a well-behaved closed shell it converges in *fewer iterations and roughly
+twice the integral passes*, and is the wrong choice. The energies agree with the
+DIIS ones to between 0 and 9e-13 hartree, which is arithmetic noise at that
+threshold -- they are the same stationary point.
+
+It earns its cost in two places: where DIIS oscillates or stalls, and where the
+answer has to be a minimum rather than merely a stationary point. For the
+second, N2 at 1.6 A in 6-31G is the case to keep in mind. DIIS converges from
+the core, GWH and SAD guesses alike to a stationary point ``stability`` reports
+as a saddle -- curvature -1.29e-1 from core, -6.77e-2 from the other two. With
+``second_order: true`` the same run reaches -108.5718 hartree, between 0.020 and
+0.242 hartree lower, at a curvature of -1e-12: a minimum. It costs 225 integral
+passes against DIIS's 12, and DIIS's answer is wrong.
+
+Closed-shell restricted references only. A restricted Kohn-Sham reference is
+supported -- the exchange-correlation kernel enters the Hessian through the same
+operator the analytic Hessian's coupled-perturbed solve uses. An unrestricted
+reference is refused, before the SCF, because the open-shell rotation space is
+larger and is not implemented. A continuum solvent is refused, because the
+orbital-rotation Hessian carries no response of the surface charges and the step
+would be taken on the wrong curvature. A Fock projector -- frozen orbitals -- is
+refused, because the rotations it forbids are not excluded from the Newton
+step's parameter space. None of these is approximated silently.
+
+One asymmetry is worth knowing about rather than discovering: with a
+density-fitted reference the Hessian is still built from exact integrals, so it
+is the curvature of a slightly different surface than the one being minimised.
+That degrades the convergence *rate* and not the answer -- the gradient and the
+energy a step is accepted on are the fitted ones, so the stationary point
+reached is the fitted SCF's.
 
 Guess Options
 ^^^^^^^^^^^^^
