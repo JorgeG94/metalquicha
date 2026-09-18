@@ -60,6 +60,9 @@ module mqc_czt_mcscf
    use mqc_ormas_ci, only: ormas_density_matrices
    use pic_logger, only: logger => global_logger
    use pic_lapack_interfaces, only: pic_syev
+   use mqc_orbital_rotation, only: rotation_matrix, level_shifted_step, &
+                                   MIN_CURVATURE, SADDLE_CURVATURE, MAX_ROTATION, &
+                                   MIN_ROTATION, ENERGY_RESOLUTION, TRUST_GROWTH
    implicit none
    private
 
@@ -75,44 +78,12 @@ module mqc_czt_mcscf
    public :: casscf_result_t
    public :: natural_orbitals
 
-   real(dp), parameter :: MIN_CURVATURE = 1.0e-3_dp
-      !! Smallest curvature the Newton equations are allowed to divide by, in
-      !! hartree per radian squared.
-      !!
-      !! Every eigenvalue is raised until the smallest reaches this, so a mode
-      !! that is genuinely stiff keeps its own curvature and only the soft and
-      !! the inverted ones are regularised. It has to sit below the softest real
-      !! mode and above zero; larger damps directions that did not need it and
-      !! costs the quadratic convergence the Hessian was built for.
-   real(dp), parameter :: SADDLE_CURVATURE = -1.0e-5_dp
-      !! How negative an eigenvalue has to be before the point is called a
-      !! saddle rather than a minimum.
-      !!
-      !! Deliberately loose. A nearly redundant rotation -- an active orbital
-      !! whose occupation has gone to two, say -- has a nearly zero eigenvalue
-      !! whose sign is decided by how well the CI converged, and chasing those
-      !! buys nothing. A real symmetry-breaking mode is orders of magnitude
-      !! below this.
-   real(dp), parameter :: MAX_ROTATION = 0.2_dp
-      !! Largest rotation angle the trust radius is allowed to grow back to, in
-      !! radians. Roughly 11 degrees.
-   real(dp), parameter :: MIN_ROTATION = 1.0e-6_dp
-      !! If backtracking has shrunk the trust radius this far and the energy
-      !! still rises, the step direction is not a descent direction and halving
-      !! it again will not help. Better to stop and say so.
-   real(dp), parameter :: ENERGY_RESOLUTION = 1.0e-12_dp
-      !! An energy change this small is not a change, in hartree.
-      !!
-      !! About fifteen units in the last place of a molecular energy, so it is
-      !! the resolution of the arithmetic rather than a convergence criterion.
-      !! Near the solution a Newton step is worth `g^2/H`, which drops below
-      !! what the energy can report while the gradient is still shrinking, so a
-      !! step whose *predicted* gain is below this is taken without being
-      !! tested rather than rejected on the noise of the CI solve.
-   real(dp), parameter :: TRUST_GROWTH = 1.3_dp
-      !! How fast the trust radius recovers after a successful step. Slower than
-      !! it shrinks: an over-long step costs a wasted CI solve, an over-short
-      !! one only an iteration.
+   ! The step-control constants and the matrix exponential are
+   ! `mqc_orbital_rotation`'s, used from there rather than declared here: the
+   ! second-order SCF takes the same trust-region Newton step on the same
+   ! parametrisation, and two copies of `MIN_CURVATURE` would be two things to
+   ! keep equal. The numbers are unchanged; see that module for what each is
+   ! for.
 
    type :: casscf_result_t
       !! What an orbital optimisation leaves behind
@@ -370,53 +341,6 @@ contains
          end do
       end do
    end subroutine orbital_gradient
-
-   subroutine rotation_matrix(kappa, rotation)
-      !! `exp(kappa)` for antisymmetric `kappa`, by scaling and squaring
-      !!
-      !! Orthogonal to machine precision for any step size, so a large step is a
-      !! bad step but never an invalid one and no reorthogonalisation is needed
-      !! after it. Scaled by halving until the norm is below 1/2, because a
-      !! plain Taylor series loses accuracy once the step is not small.
-      real(dp), intent(in) :: kappa(:, :)
-      real(dp), allocatable, intent(out) :: rotation(:, :)
-
-      real(dp), allocatable :: scaled(:, :), term(:, :), next_term(:, :)
-      real(dp) :: norm
-      integer :: n, squarings, k, i
-      integer, parameter :: TAYLOR_TERMS = 18
-
-      n = size(kappa, 1)
-      allocate (scaled(n, n), term(n, n), next_term(n, n), rotation(n, n))
-
-      norm = maxval(abs(kappa))
-      squarings = 0
-      do while (norm > 0.5_dp)
-         norm = 0.5_dp*norm
-         squarings = squarings + 1
-      end do
-      scaled = kappa/real(2**squarings, dp)
-
-      rotation = 0.0_dp
-      term = 0.0_dp
-      do i = 1, n
-         rotation(i, i) = 1.0_dp
-         term(i, i) = 1.0_dp
-      end do
-      do k = 1, TAYLOR_TERMS
-         call pic_gemm(term, scaled, next_term)
-         term = next_term/real(k, dp)
-         rotation = rotation + term
-         if (maxval(abs(term)) < 1.0e-18_dp) exit
-      end do
-
-      do k = 1, squarings
-         call pic_gemm(rotation, rotation, next_term)
-         rotation = next_term
-      end do
-
-      deallocate (scaled, term, next_term)
-   end subroutine rotation_matrix
 
    subroutine rotation_parameters(n_mo, n_inactive, n_active, rows, cols, subspaces)
       !! The rotations that are real parameters, as a flat list
@@ -693,23 +617,15 @@ contains
 
    subroutine newton_step(hessian, gradient, rows, cols, escape, kappa, lowest, &
                           predicted, error)
-      !! The Newton step, level shifted, and pushed off a saddle when it is on one
+      !! The Newton step for an MCSCF, as an antisymmetric `kappa`
       !!
-      !! In the eigenbasis of the Hessian the step is one division per mode, and
-      !! two things go wrong there.
-      !!
-      !! A mode with small or negative curvature would divide by nearly nothing,
-      !! so every eigenvalue is raised by a single shift until the smallest
-      !! reaches `MIN_CURVATURE`. One shift for all modes rather than a per-mode
-      !! floor, because that is the exact solution of the trust-region
-      !! subproblem and leaves the well-conditioned modes untouched.
-      !!
-      !! **A mode with negative curvature and no gradient on it is a saddle**,
-      !! and it is where an optimiser built from the gradient alone stops and
-      !! reports success. It happens whenever the starting orbitals carry a
-      !! symmetry the solution does not. The division gives nothing to work with
-      !! there, so such a mode is displaced by `escape` instead; either sign
-      !! descends, and the caller backtracks if the step was too long.
+      !! The step itself is `mqc_orbital_rotation`'s `level_shifted_step` --
+      !! level shifting, the saddle escape and the predicted gain all live
+      !! there, shared with the second-order SCF. What is left here is the only
+      !! part that is MCSCF's: `(rows, cols)` says which orbital pair each
+      !! parameter rotates, so the gradient is gathered out of the `n_mo` by
+      !! `n_mo` matrix `orbital_gradient` produces and the step scattered back
+      !! into an antisymmetric matrix `rotation_matrix` can exponentiate.
       real(dp), intent(in) :: hessian(:, :)
       real(dp), intent(in) :: gradient(:, :)   !! (n_mo, n_mo), as `orbital_gradient`
       integer, intent(in) :: rows(:), cols(:)  !! From `rotation_parameters`
@@ -722,13 +638,11 @@ contains
          !! taken from is not a minimum, whatever the gradient says.
       real(dp), intent(out) :: predicted
          !! What the quadratic model says the step is worth, as a positive
-         !! energy decrease. The caller uses it to tell a step that is too small
-         !! to measure from one that is too long to take.
+         !! energy decrease.
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: vectors(:, :), values(:), projected(:), amplitude(:)
-      real(dp) :: shift, displacement
-      integer :: n_mo, n_param, k, l, info
+      real(dp), allocatable :: flat_gradient(:), step(:)
+      integer :: n_mo, n_param, l
 
       lowest = 0.0_dp
       predicted = 0.0_dp
@@ -739,46 +653,21 @@ contains
       kappa = 0.0_dp
       if (n_param == 0) return
 
-      allocate (vectors(n_param, n_param), values(n_param))
-      allocate (projected(n_param), amplitude(n_param))
-      vectors = hessian
-      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
-      if (info /= 0) then
-         call error%set(ERROR_VALIDATION, "the orbital Hessian could not be "// &
-                        "diagonalized (info = "//to_char(info)//")")
-         return
-      end if
-      lowest = values(1)
-
-      shift = 0.0_dp
-      if (values(1) < MIN_CURVATURE) shift = MIN_CURVATURE - values(1)
-
-      do k = 1, n_param
-         projected(k) = 0.0_dp
-         do l = 1, n_param
-            projected(k) = projected(k) + vectors(l, k)*gradient(rows(l), cols(l))
-         end do
+      allocate (flat_gradient(n_param))
+      do l = 1, n_param
+         flat_gradient(l) = gradient(rows(l), cols(l))
       end do
 
-      do k = 1, n_param
-         amplitude(k) = -projected(k)/(values(k) + shift)
-         if (values(k) < SADDLE_CURVATURE .and. abs(amplitude(k)) < escape) then
-            amplitude(k) = sign(escape, amplitude(k))
-         end if
-      end do
-
-      do k = 1, n_param
-         predicted = predicted - projected(k)*amplitude(k) &
-                     - 0.5_dp*values(k)*amplitude(k)**2
-      end do
+      call level_shifted_step(hessian, flat_gradient, escape, step, lowest, &
+                              predicted, error)
+      if (error%has_error()) return
 
       do l = 1, n_param
-         displacement = dot_product(vectors(l, :), amplitude)
-         kappa(rows(l), cols(l)) = displacement
-         kappa(cols(l), rows(l)) = -displacement
+         kappa(rows(l), cols(l)) = step(l)
+         kappa(cols(l), rows(l)) = -step(l)
       end do
 
-      deallocate (vectors, values, projected, amplitude)
+      deallocate (flat_gradient, step)
    end subroutine newton_step
 
    subroutine run_czt_casscf(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
