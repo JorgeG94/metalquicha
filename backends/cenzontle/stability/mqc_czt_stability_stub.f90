@@ -1,4 +1,8 @@
 !! Stand-in for the stability analysis when the build has no OpenTrustRegion
+!!
+!! Beside the module it replaces rather than in src/methods/stubs: its
+!! signature names this backend's own types, so it can only be compiled where
+!! they are, and fpm globs src/ without ever compiling backends/.
 module mqc_czt_stability
    !! Same name and same entry points as the real bridge, declining.
    !!
