@@ -192,7 +192,10 @@ the default, so nobody running the preset ever saw it.
 
 Worth spelling out, because every one of its four settings is a workaround for
 something that fails somewhere else with a message naming neither Perlmutter nor
-the flag that fixes it. The machine is nvfortran (for cuEST) over Cray MPICH.
+the flag that fixes it. The preset is nvfortran over Cray MPICH -- not
+because cuEST asks for it (the bindings are `iso_c_binding` against its C
+ABI, so any Fortran compiler links it), but because this is the nvfortran
+build, and the settings below are what nvfortran costs.
 
 | Setting | What breaks without it |
 |---|---|

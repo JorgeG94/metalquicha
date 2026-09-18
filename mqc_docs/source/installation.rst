@@ -108,8 +108,11 @@ Kohn-Sham, restricted or unrestricted -- resident on the device. mqc builds the
 basis and the initial density on the CPU and hands both over; nothing comes back
 until the SCF has converged.
 
-terco is built by ``nvfortran`` and reached through its C ABI, so it is linked
-as a shared library rather than compiled into this build:
+terco is built by ``nvfortran``, but this build never compiles any of it and so
+does not need that compiler either: terco is reached through its C ABI and
+linked as a shared library, the same way :ref:`cuEST <perlmutter>` is. gfortran,
+ifx and nvfortran all link the same ``libterco``, and what has to be named is
+the checkout:
 
 .. code-block:: bash
 

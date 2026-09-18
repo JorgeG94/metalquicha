@@ -53,7 +53,8 @@ Perlmutter (NERSC)
 
 Two builds are worth having and they are not the same build. The CPU one is
 GNU, and gets everything: xTB, the ``cenzontle`` ab initio path, DFT, CREST.
-The GPU one is nvfortran, gets cuEST, and gives up tblite to have it.
+The GPU one adds cuEST, and it is still GNU unless you want it otherwise --
+cuEST is reached through its C ABI, so it does not pick the compiler.
 
 CPU build (PrgEnv-gnu)
 ----------------------
@@ -82,9 +83,26 @@ To add CREST for :doc:`conformer_sampling`, which is off by default:
 GPU build (cuEST)
 -----------------
 
-There is a preset, and it exists because each of its settings works around
-something that fails elsewhere with a message naming neither the machine nor
-the flag that fixes it:
+**cuEST does not require nvfortran.** It is a binary library reached through its
+C ABI, and the bindings under ``backends/cuest/bindings/`` are plain
+``iso_c_binding`` rather than CUDA Fortran -- deliberately, because ``cudafor``
+would tie every file that touches the device to one compiler. gfortran, ifx and
+nvfortran all compile those bindings and link the same ``libcuest``. The same
+holds for terco; see :doc:`installation`.
+
+What that buys is a GPU build that is still a full CPU build, because the thing
+that costs tblite is nvfortran and not the GPU:
+
+.. code-block:: bash
+
+   module load PrgEnv-gnu cudatoolkit
+   export CUEST_ROOT=/path/to/libcuest-linux-x86_64-<version>-archive
+   cmake -B build -DMQC_ENABLE_CUEST=ON -DCUEST_ROOT=$CUEST_ROOT
+   cmake --build build -j 16
+
+The ``perlmutter`` preset is the **nvfortran** build, and every one of its
+settings works around something that fails elsewhere with a message naming
+neither the machine nor the flag that fixes it:
 
 .. code-block:: bash
 
@@ -93,10 +111,12 @@ the flag that fixes it:
    cmake --preset perlmutter
    cmake --build --preset perlmutter -j 16
 
-``MQC_ENABLE_TBLITE`` is ``OFF`` in that preset and cannot simply be turned back
-on: toml-f, which is reached through tblite, has a backslash string literal
-nvfortran rejects and no flag makes it accept. ``CMAKE_STYLE.md`` has the rest
-of what the preset is working around.
+``MQC_ENABLE_TBLITE`` is ``OFF`` there and cannot simply be turned back on
+*under nvfortran*: toml-f, which is reached through tblite, has a backslash
+string literal nvfortran rejects and no flag makes it accept. That is a
+compiler limitation rather than a GPU one, and it is the reason to prefer
+``PrgEnv-gnu`` above unless something else on the node needs nvfortran.
+``CMAKE_STYLE.md`` has the rest of what the preset is working around.
 
 Things that bite here
 ---------------------
@@ -122,8 +142,9 @@ Things that bite here
        ``module unload craype-accel-nvidia80`` if GPU-aware MPI is not needed
        -- nothing in this program passes device pointers to MPI
    * - ``mpi_f08`` generics that do not resolve under nvfortran
-     - ``PIC_USE_LEGACY_MPI=ON``, already in the preset
-   * - ``MPI_Win_allocate``'s generic does not resolve
+     - ``PIC_USE_LEGACY_MPI=ON``, already in the preset. An nvfortran build
+       only; the GNU one resolves them
+   * - ``MPI_Win_allocate``'s generic does not resolve, under nvfortran
      - ``PIC_MPICH_PERLMUTTER=ON``, already in the preset. Nothing here uses
        one-sided communication, so dropping those wrappers is free
 
