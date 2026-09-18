@@ -23,7 +23,7 @@ jobs:
     # The NVIDIA HPC SDK image ships nvfortran, nvc and a bundled MPI, which
     # saves installing a 10 GB toolkit on every run.
     container:
-      image: nvcr.io/nvidia/nvhpc:25.1-devel-cuda12.6-ubuntu24.04
+      image: nvcr.io/nvidia/nvhpc:26.5-devel-cuda13.2-ubuntu24.04
 
     steps:
       - name: Checkout code
@@ -50,8 +50,17 @@ jobs:
       - name: Configure
         # CMake's FindMPI does not discover the SDK's MPI from the environment
         # alone -- `mpif90` is on PATH, which is not enough for it -- so the
-        # three entry points are named. NVHPC_ROOT is set by the image.
+        # three entry points are named.
+        #
+        # The SDK root comes from nvfortran's own location rather than from
+        # NVHPC_ROOT, which this image does not set: `which nvfortran` is
+        # <root>/compilers/bin/nvfortran, so three dirnames reach <root> and
+        # the layout below it is the same in every release. Naming a version
+        # here would have to be changed in step with the image tag.
         run: |
+          NVROOT=$(dirname "$(dirname "$(dirname "$(command -v nvfortran)")")")
+          echo "SDK root: $NVROOT"
+          test -x "$NVROOT/comm_libs/mpi/bin/mpif90"
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_Fortran_COMPILER=nvfortran \
@@ -60,9 +69,9 @@ jobs:
             -DMQC_ENABLE_DLFIND=ON \
             -DMQC_ENABLE_CZT=ON \
             -DMQC_SHARED_LIB=ON \
-            -DMPI_Fortran_COMPILER="$NVHPC_ROOT/comm_libs/mpi/bin/mpif90" \
-            -DMPI_C_COMPILER="$NVHPC_ROOT/comm_libs/mpi/bin/mpicc" \
-            -DMPIEXEC_EXECUTABLE="$NVHPC_ROOT/comm_libs/mpi/bin/mpiexec"
+            -DMPI_Fortran_COMPILER="$NVROOT/comm_libs/mpi/bin/mpif90" \
+            -DMPI_C_COMPILER="$NVROOT/comm_libs/mpi/bin/mpicc" \
+            -DMPIEXEC_EXECUTABLE="$NVROOT/comm_libs/mpi/bin/mpiexec"
         # MQC_SHARED_LIB because this job builds the test executables too, and
         # there are over a hundred of them: against a static archive each link
         # copies what it needs out of it, which dominates the job. Against a
