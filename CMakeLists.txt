@@ -123,7 +123,26 @@ mqc_extract_basis_sets()
 
 include(MqcValidation)
 
-add_library(${main_lib} STATIC)
+# Static by default, and shared when asked.
+#
+# The reason to ask is link time, not deployment. Every one of the 130-odd test
+# executables links this archive whole, so a build that compiles in a couple of
+# minutes can spend far longer linking; against a shared object each link is a
+# reference instead of a copy. That is worth having on a CI job whose purpose is
+# to find out whether the code still compiles -- nvfortran's especially, which
+# is slow enough already -- and is not worth changing for a normal build, where
+# a static `mqc` is one file to run and to ship.
+#
+# `MQC_SHARED_LIB` rather than CMake's own `BUILD_SHARED_LIBS`, which would also
+# be seen by every fetched dependency: libfint ships fat LTO objects and pic
+# carries its own install rules, and neither wants its type decided by a flag
+# aimed at this library.
+option(MQC_SHARED_LIB "Build libmetalquicha as a shared object" OFF)
+if(MQC_SHARED_LIB)
+  add_library(${main_lib} SHARED)
+else()
+  add_library(${main_lib} STATIC)
+endif()
 set_target_properties(${main_lib} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(libraries_to_link)
 
@@ -152,7 +171,12 @@ set_target_properties(
 # takes the archive path directly via -force_load and has no closing flag.
 # Linking ${main_lib} again in both cases pulls in its transitive dependencies
 # (BLAS, MPI, tblite, ...); the force-load only covers the archive itself.
-if(APPLE)
+if(MQC_SHARED_LIB)
+  # Already a shared object, so its symbols are exported and there is no archive
+  # to force in: an ordinary link is both sufficient and correct, and the
+  # whole-archive spelling would be a error applied to a `.so`.
+  target_link_libraries(mqc_shared PRIVATE ${main_lib})
+elseif(APPLE)
   target_link_libraries(
     mqc_shared PRIVATE "-Wl,-force_load,$<TARGET_FILE:${main_lib}>" ${main_lib})
 else()

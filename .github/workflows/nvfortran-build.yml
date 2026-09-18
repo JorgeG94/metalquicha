@@ -46,9 +46,15 @@ jobs:
             -DMQC_ENABLE_TBLITE=OFF \
             -DMQC_ENABLE_DLFIND=ON \
             -DMQC_ENABLE_CZT=ON \
+            -DMQC_SHARED_LIB=ON \
             -DMPI_Fortran_COMPILER="$NVHPC_ROOT/comm_libs/mpi/bin/mpif90" \
             -DMPI_C_COMPILER="$NVHPC_ROOT/comm_libs/mpi/bin/mpicc" \
             -DMPIEXEC_EXECUTABLE="$NVHPC_ROOT/comm_libs/mpi/bin/mpiexec"
+        # MQC_SHARED_LIB because this job builds the test executables too, and
+        # there are over a hundred of them: against a static archive each link
+        # copies what it needs out of it, which dominates the job. Against a
+        # shared object a link is a reference. It changes nothing about what is
+        # compiled, which is what this job exists to check.
 
       - name: Build
         # Two jobs rather than the runner's full width: nvfortran holds a lot of
