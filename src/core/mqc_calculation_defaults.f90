@@ -32,6 +32,14 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_STABILITY_MAX_ITER = 100
    !! Davidson iterations the stability analysis may take before it reports
    !! non-convergence.
+   character(len=*), parameter, public :: DEFAULT_STABILITY_ENGINE = "native"
+   !! Which eigensolver diagonalises the electronic Hessian.
+   !!
+   !! `native` is this program's own Davidson, and is the default because a
+   !! stability analysis is core functionality and must work in a build with no
+   !! optional dependencies. `otr` is OpenTrustRegion, kept as an independent
+   !! implementation to check the native one against and refused in a build
+   !! that did not fetch it.
 
    real(dp), parameter, public :: DEFAULT_SOSCF_START = 1.0e-2_dp
    !! Commutator below which a second-order SCF stops extrapolating and starts

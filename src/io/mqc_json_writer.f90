@@ -420,12 +420,13 @@ contains
       !! Whether the reference is a minimum, for something other than a reader
       !!
       !! `stable` is the answer and the rest is provenance. `lowest_curvature`
-      !! is emitted only when it exists, rather than as a zero: a zero written
-      !! into the field unconditionally would read as a reference sitting
-      !! exactly on the edge -- the one value that would most alarm whoever is
-      !! reading this. `curvature_known` says which case it is, because a
-      !! consumer that only looks for the key cannot tell an absent number
-      !! from a missing feature.
+      !! is emitted only when it exists: the eigensolver hands the eigenvalue
+      !! back for an unstable reference and not for a stable one, so a zero
+      !! written into the field unconditionally would read as a reference
+      !! sitting exactly on the edge -- the one value that would most alarm
+      !! whoever is reading this. `curvature_known` says which case it is,
+      !! because a consumer that only looks for the key cannot tell an absent
+      !! number from a missing feature.
       !!
       !! `rotations` is the size of the space that was searched, which is what
       !! makes the verdict checkable: a stability analysis over the wrong space
@@ -446,6 +447,9 @@ contains
          call json%add(section, "lowest_curvature", data%stability_curvature)
       end if
       call json%add(section, "rotations", data%stability_rotations)
+      if (len_trim(data%stability_engine) > 0) then
+         call json%add(section, "engine", trim(data%stability_engine))
+      end if
       ! Said out loud rather than implied, because "stable" on its own reads
       ! as a stronger claim than the matrix supports.
       call json%add(section, "wrt", "real closed-shell orbital rotations")

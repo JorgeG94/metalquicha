@@ -223,6 +223,7 @@ contains
                            json_data%stability_has_curvature = &
                               result%stability_has_curvature
                            json_data%stability_rotations = result%stability_rotations
+                           json_data%stability_engine = result%stability_engine
                            json_data%has_stability = .true.
                         end if
 
@@ -362,6 +363,7 @@ contains
                json_data%stability_has_curvature = &
                   result%stability_has_curvature
                json_data%stability_rotations = result%stability_rotations
+               json_data%stability_engine = result%stability_engine
                json_data%has_stability = .true.
             end if
          end if

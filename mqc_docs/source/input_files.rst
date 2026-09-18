@@ -900,6 +900,9 @@ SCF Options
 - ``stability_tolerance``: Root-mean-square residual at which that analysis
   accepts its lowest eigenpair (default: 1e-6).
 - ``stability_maxiter``: Davidson iterations it may take (default: 100).
+- ``stability_engine``: which eigensolver diagonalises the electronic Hessian,
+  ``native`` (default) or ``otr``. One matrix, two implementations; see
+  :ref:`scf-stability`.
 - ``second_order``: converge the closed-shell SCF by trust-region Newton on the
   orbital rotations once DIIS has brought it close (default: false). See
   :ref:`second-order-scf`.
@@ -943,13 +946,16 @@ The output carries a ``stability`` block:
      "curvature_known": true,
      "lowest_curvature": 0.5230513,
      "rotations": 10,
+     "engine": "native",
      "wrt": "real closed-shell orbital rotations"
    }
 
 ``rotations`` is the size of the space that was searched, :math:`n_{occ}
-n_{vir}`, and ``lowest_curvature`` is the eigenvalue in hartree.
-``curvature_known`` says whether that number is there at all, so a consumer
-reading the block can tell an absent number from an absent feature.
+n_{vir}`. ``lowest_curvature`` is the eigenvalue in hartree, and ``engine``
+names which eigensolver produced it. ``curvature_known`` says whether the number
+is there at all: the default engine always reports it, and the optional one can
+only report it for an unstable reference, so an absent number is distinguishable
+from an absent feature.
 
 **Read the verdict for exactly what it says.** ``wrt`` is in the output for this
 reason. The matrix examined is :math:`(A+B)`, the *real singlet*
@@ -972,19 +978,34 @@ one. ``stability_tolerance`` and ``stability_maxiter`` are the two levers, and
 loosening the tolerance is the cheaper one -- the answer wanted is the *sign* of
 an eigenvalue, not its last digits.
 
-The Eigensolver
-"""""""""""""""
+Two Eigensolvers, One Matrix
+""""""""""""""""""""""""""""
 
-The lowest eigenvalue is found by this program's own Davidson -- the same solver
-that finds the lowest eigenpairs of a CI Hamiltonian -- preconditioned on the
-orbital-energy differences and started from the smallest of them, which over
-this space is the HOMO-LUMO rotation. It is deterministic, needs no random seed,
-and always reports the eigenvalue, whether the reference turned out to be a
-minimum or not.
+``stability_engine`` selects which solver finds the lowest eigenvalue. The
+operator is the same either way; only the iteration differs.
 
-It is checked against a dense diagonalisation of the same operator, built column
-by column through it, in ``test/test_mqc_czt_stability.f90`` -- a reference that
-depends on no eigensolver being right.
+``native`` is the default and needs nothing. It is this program's own Davidson
+-- the same solver that finds the lowest eigenpairs of a CI Hamiltonian --
+preconditioned on the orbital-energy differences and started from the smallest
+of them, which over this space is the HOMO-LUMO rotation. It is deterministic,
+needs no random seed, and **always reports the eigenvalue**, whether the
+reference turned out to be a minimum or not.
+
+``otr`` is `OpenTrustRegion <https://github.com/eriksen-lab/opentrustregion>`_,
+fetched only when the build is configured with ``-DMQC_ENABLE_OTR=ON``. It is
+MPL-2.0 licensed and this program is MIT, so linking it is a choice the person
+building makes rather than one made for them. A build without it refuses
+``stability_engine: otr`` and names the option, before the SCF rather than
+after it. Its interface returns a verdict and, for an unstable reference, the
+descent direction -- not the eigenvalue -- so on that path the curvature is
+recovered as a Rayleigh quotient of the direction, costs one extra Fock build,
+and is unavailable for a stable reference. That is the gap ``native`` does not
+have.
+
+It is kept because the value of a second implementation is that the two can be
+compared: ``test/test_mqc_czt_stability.f90`` hands both the same matrix and
+requires them to agree on the eigenvalue, and both are held against a dense
+diagonalisation of the same operator built column by column through it.
 
 .. _second-order-scf:
 

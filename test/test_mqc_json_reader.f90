@@ -23,6 +23,7 @@ module test_mqc_json_reader
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
+                                       DEFAULT_STABILITY_ENGINE, &
                                        DEFAULT_SOSCF_START, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
@@ -2229,21 +2230,23 @@ contains
    end subroutine test_stability_keywords
 
    subroutine test_second_order_keywords(error)
-      !! `keywords.scf.second_order` and `soscf_start`
+      !! `keywords.scf.second_order`, `soscf_start` and `stability_engine`
       !!
-      !! Two defaults worth pinning, and each for its own reason.
+      !! Three defaults worth pinning, and each for its own reason.
       !! `second_order` is off because a Newton step costs several Fock builds
-      !! and DIIS is cheaper on a well-behaved system. And `soscf_start` is the
-      !! threshold that makes the second-order phase robust rather than
-      !! divergent, so a deck that never writes it must still get a sensible
-      !! one.
+      !! and DIIS is cheaper on a well-behaved system. `stability_engine` is
+      !! 'native' because a stability analysis has to work in a build with no
+      !! optional dependency -- a default of 'otr' would make the feature
+      !! conditional on a library. And `soscf_start` is the threshold that makes
+      !! the second-order phase robust rather than divergent, so a deck that
+      !! never writes it must still get a sensible one.
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
       type(error_t) :: parse_error
 
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
-                      '"scf": {"second_order": true, "soscf_start": 5.0e-3}', &
-                      "", two_atoms())
+                      '"scf": {"second_order": true, "soscf_start": 5.0e-3, '// &
+                      '"stability_engine": "otr"}', "", two_atoms())
       call read_deck(config, parse_error)
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
@@ -2251,6 +2254,10 @@ contains
       if (allocated(error)) return
       call check(error, close_enough(config%scf_soscf_start, 5.0e-3_dp), &
                  "the handover threshold should be read")
+      if (allocated(error)) return
+      call check(error, trim(config%scf_stability_engine) == "otr", &
+                 "the engine should be read; it came back '"// &
+                 trim(config%scf_stability_engine)//"'")
       if (allocated(error)) return
 
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
@@ -2263,6 +2270,11 @@ contains
       call check(error, close_enough(config%scf_soscf_start, DEFAULT_SOSCF_START), &
                  "the default handover threshold is the one in "// &
                  "mqc_calculation_defaults")
+      if (allocated(error)) return
+      call check(error, trim(config%scf_stability_engine) == DEFAULT_STABILITY_ENGINE, &
+                 "the stability analysis defaults to the engine that needs no "// &
+                 "optional dependency; it came back '"// &
+                 trim(config%scf_stability_engine)//"'")
    end subroutine test_second_order_keywords
 
    subroutine test_diis_keywords(error)

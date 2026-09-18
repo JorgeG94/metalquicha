@@ -175,6 +175,7 @@ contains
       options%stability = config%stability
       options%stability_tol = config%stability_tol
       options%stability_max_iter = config%stability_max_iter
+      options%stability_engine = config%stability_engine
       options%second_order = config%second_order
       options%soscf_start = config%soscf_start
       options%device_rank = config%device_rank

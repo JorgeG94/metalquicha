@@ -3,14 +3,13 @@ module mqc_czt_native_stability
    !! Ask whether a converged SCF is a minimum, and say which way is down if
    !! it is not -- with nothing optional in the build.
    !!
-   !! The matrix is `mqc_czt_ov_hessian`'s. What diagonalises it is
-   !! `mqc_davidson`, which is already in the program for the CI -- so a
-   !! stability analysis and the second-order SCF that rests on the same
-   !! Hessian are core functionality and work in a build with nothing optional
-   !! in it. This is the path `keywords.scf.stability` takes and the one to add
-   !! to. `native` is in the name because a second implementation over the same
-   !! operator, borrowed from a library rather than written here, exists on a
-   !! separate branch purely as a cross-check.
+   !! The matrix is `mqc_czt_ov_hessian`'s, exactly as in `mqc_czt_stability`.
+   !! The difference is what diagonalises it: `mqc_davidson`, which is already
+   !! in the program for the CI, rather than OpenTrustRegion. A second-order
+   !! SCF and a stability analysis are core functionality and have to work in a
+   !! default build, so this is the path `keywords.scf.stability` takes; the
+   !! OpenTrustRegion bridge stays as an independent implementation to check
+   !! this one against, reached by `keywords.scf.stability_engine: otr`.
    !!
    !! ## Why `mqc_davidson` fits without being bent
    !!
@@ -25,9 +24,9 @@ module mqc_czt_native_stability
    !!   the flat entry point below it knows only `diagonal` and `apply`.
    !! * **The preconditioner is the right one.** Davidson divides the residual
    !!   by `theta - diagonal`, and the diagonal here is the orbital-energy
-   !!   differences -- the standard level-shifted diagonal preconditioner for
-   !!   this operator, and the approximation the electronic Hessian is
-   !!   diagonally dominant enough for.
+   !!   differences -- the same level-shifted diagonal preconditioner
+   !!   OpenTrustRegion applies by default, and the approximation the electronic
+   !!   Hessian is diagonally dominant enough for.
    !! * **The starting vector lands where an instability is.** With no guess,
    !!   `initial_basis` takes the unit vector on the smallest diagonal element,
    !!   which over this space is the HOMO-LUMO rotation.
@@ -159,7 +158,7 @@ contains
       !! exercised against an operator whose matrix is known, which is how the
       !! convention this program works in is checked -- in
       !! `test/test_mqc_czt_stability.f90`, against a dense diagonalisation of
-      !! the same operator.
+      !! the same operator and against OpenTrustRegion on the same matrix.
       type(ov_hessian_t), intent(inout), target :: hessian
       type(stability_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error

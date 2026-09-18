@@ -12,6 +12,7 @@ module mqc_czt_bridge
    use pic_logger, only: logger => global_logger
    use mqc_string_utils, only: int_to_text
    use pic_types, only: dp
+   use pic_ascii, only: to_lower
    use mqc_physical_constants, only: HARTREE_TO_EV
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
@@ -38,6 +39,7 @@ module mqc_czt_bridge
                                    guess_display_name
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_ov_hessian, only: stability_result_t
+   use mqc_czt_stability, only: scf_stability, otr_available
    use mqc_czt_native_stability, only: native_scf_stability
    use mqc_czt_ecp, only: ECP_AVAILABLE
    use mqc_czt_pcm, only: pcm_context_t
@@ -825,6 +827,8 @@ contains
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham
+      character(len=:), allocatable :: stability_engine
+         !! `keywords.scf.stability_engine`, lowercased and validated once
       type(timer_type) :: grad_clock
       real(dp), allocatable :: scf_b_ao(:, :)
          !! The SCF's fitted tensor, taken over rather than freed when a fitted
@@ -989,15 +993,40 @@ contains
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
 
-      ! ---- can this reference answer the stability question? ----------------
+      ! ---- can this build, and this reference, answer the stability question?
       !
       ! Refused here rather than where the analysis runs, which is after the
       ! SCF: a deck that asked for something this binary cannot do should not
-      ! find that out at the end of a converged calculation. The failure below
-      ! is the one knowable in advance; a Fock build that fails during the
-      ! analysis itself is warned about and dropped, further down, because by
-      ! then the energy is already right.
+      ! find that out at the end of a converged calculation. The two failures
+      ! below are the ones knowable in advance; a Fock build that fails during
+      ! the analysis itself is warned about and dropped, further down, because
+      ! by then the energy is already right.
       if (settings%stability) then
+         ! Which eigensolver. `native` is this program's own Davidson and needs
+         ! nothing; `otr` is the independent implementation, and asking for it
+         ! in a build that has none is refused by name rather than silently
+         ! served by the other one -- the whole value of having two is that a
+         ! deck can say which it got.
+         stability_engine = to_lower(trim(adjustl(settings%stability_engine)))
+         if (stability_engine /= "native" .and. stability_engine /= "otr") then
+            call result%error%set(ERROR_VALIDATION, "unknown "// &
+                                  "keywords.scf.stability_engine '"// &
+                                  trim(settings%stability_engine)// &
+                                  "'. Accepted: native (this program's Davidson, the "// &
+                                  "default) or otr (OpenTrustRegion).")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         if (stability_engine == "otr" .and. .not. otr_available()) then
+            call result%error%set(ERROR_VALIDATION, "keywords.scf.stability_engine "// &
+                                  "'otr' needs OpenTrustRegion; build with "// &
+                                  "-DMQC_ENABLE_OTR=ON, or leave the engine at "// &
+                                  "'native', which needs nothing")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
          if (unrestricted) then
             call result%error%set(ERROR_VALIDATION, "keywords.scf.stability examines "// &
                                   "the closed-shell orbital-rotation Hessian, and this "// &
@@ -1361,8 +1390,27 @@ contains
             type(stability_result_t) :: stab
             type(error_t) :: stab_error
 
-            call logger%info("  examining the stability of the converged reference")
-            if (kohn_sham) then
+            call logger%info("  examining the stability of the converged reference "// &
+                             "("//trim(stability_engine)//")")
+            ! One matrix, two eigensolvers. `native` is the default and needs
+            ! nothing; `otr` exists so that the two can be compared, and is a
+            ! stub that declines in a build without the library -- which is why
+            ! the refusal for that case is taken before the SCF, above.
+            if (stability_engine == "otr") then
+               if (kohn_sham) then
+                  call scf_stability(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, stab, stab_error, xc=xc, &
+                                     reference=scf%density, k_scale=xc%exx_fraction, &
+                                     rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
+                                     conv_tol=settings%stability_tol, &
+                                     max_iter=settings%stability_max_iter)
+               else
+                  call scf_stability(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, stab, stab_error, &
+                                     conv_tol=settings%stability_tol, &
+                                     max_iter=settings%stability_max_iter)
+               end if
+            else if (kohn_sham) then
                call native_scf_stability(mol, scf%orbitals, scf%orbital_energies, &
                                          scf%n_occupied, stab, stab_error, xc=xc, &
                                          reference=scf%density, &
@@ -1386,6 +1434,7 @@ contains
                result%stability_curvature = stab%lowest_curvature
                result%stability_has_curvature = stab%has_curvature
                result%stability_rotations = stab%n_parameters
+               result%stability_engine = stability_engine
                result%has_stability = .true.
             end if
          end block
