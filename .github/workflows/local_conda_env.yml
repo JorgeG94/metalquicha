@@ -443,11 +443,19 @@ jobs:
           ln -sf $CONDA_PREFIX/lib/libopenblas.so $CONDA_PREFIX/lib/libblas.so
           ln -sf $CONDA_PREFIX/lib/libopenblas.so $CONDA_PREFIX/lib/liblapack.so
 
+      # `--flag` adds to fpm's default profile flags rather than replacing
+      # them, and the one added here lifts gfortran's 132-*byte* free-form line
+      # limit. Two reasons it is needed. A dependency can carry a line past it
+      # that this project cannot fix from here -- pic's pic_knowledge.f90 has a
+      # 143-byte one today -- and one dependency's formatting should not fail
+      # this build. And a line of box-drawing characters costs three bytes per
+      # glyph, so a banner that is plainly inside any sane limit by eye is not
+      # inside this one; the CMake build passes the same flag and never saw it.
       - name: Build with fpm
         shell: bash -el {0}
         run: |
           conda activate mqc
-          fpm build --compiler mpifort
+          fpm build --compiler mpifort --flag -ffree-line-length-none
 
       #- name: Run fpm tests
       #  shell: bash -el {0}
