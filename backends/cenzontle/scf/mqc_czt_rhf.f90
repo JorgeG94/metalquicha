@@ -226,6 +226,34 @@ module mqc_czt_rhf
       type(direct_stats_t) :: screening
    end type rhf_state_t
 
+   type :: uhf_state_t
+      !! What one unrestricted iteration advances, and the scratch it uses
+      !!
+      !! `rhf_state_t`'s spin-resolved twin, and for the same two reasons: the
+      !! scratch is allocated once for the SCF rather than once per iteration,
+      !! and grouping it is what lets the iteration be a routine of its own.
+      !! The operators and controls are not duplicated -- nothing in
+      !! `rhf_operators_t` or `rhf_controls_t` depends on spin, and the
+      !! unrestricted driver keeps them as its own locals rather than assemble
+      !! a second copy.
+      real(dp), allocatable :: d_a(:, :), d_b(:, :)
+      real(dp), allocatable :: d_a_old(:, :), d_b_old(:, :)  !! Previous iteration's, for dD(rms)
+      real(dp), allocatable :: coeff_a(:, :), coeff_b(:, :)
+      real(dp), allocatable :: eig_a(:), eig_b(:)
+      real(dp), allocatable :: fock_a(:, :), fock_b(:, :)
+      real(dp), allocatable :: err_a(:, :), err_b(:, :)  !! FDS - SDF per spin
+      real(dp), allocatable :: fock_flat(:)  !! Both spins' F end to end, which is what DIIS stores
+      real(dp), allocatable :: err_flat(:)   !! Both spins' error, likewise
+      real(dp), allocatable :: dens_flat(:)  !! Both spins' D, for the energy-based schemes
+      real(dp), allocatable :: sd(:, :), sds(:, :)  !! The level shift's projector; on first use
+      real(dp), allocatable :: v_pcm(:, :)   !! Continuum operator, allocated only with PCM
+      real(dp) :: e_elec = 0.0_dp
+      real(dp) :: e_old = 0.0_dp             !! Previous iteration's, for dE
+      real(dp) :: drms_prev = huge(1.0_dp)   !! Drives the level-shift taper
+      type(diis_state_t) :: diis
+      type(incremental_state_t) :: incr
+   end type uhf_state_t
+
    integer, parameter :: INCREMENTAL_RESET = 16
       !! Iterations between full rebuilds of the accumulated G.
       !!
@@ -977,6 +1005,166 @@ contains
       end if
    end subroutine do_rhf_iteration
 
+   subroutine do_uhf_iteration(iter, mol, h, s, x, eri, bounds, n_ao, n_mo, n_alpha, n_beta, &
+                               nsq, msq, want_incremental, use_pcm, shift, taper, start_cycle, &
+                               accel, conv, verbose, kohn_sham_run, st, clk, xc, pcm, result, error)
+      !! One unrestricted SCF iteration: build, extrapolate, shift, diagonalise, test
+      !!
+      !! `do_rhf_iteration`'s twin, lifted out of `run_czt_uhf` for the same two
+      !! reasons and in the same shape. The second is not optional: nvfortran's
+      !! optimiser segfaults compiling a routine that size at -O2 and above --
+      !!
+      !!   nvfortran-Fatal-.../tools/fort2 TERMINATED by signal 11
+      !!
+      !! -- on every version from 25.11 to 26.5. Nothing in here is what upsets
+      !! it and no `-Mno<pass>` avoids it: measured on 26.5, only `-O1` and
+      !! `-O0` compiled the unsplit routine, while `-Mnoopt` and `-Mnovect`
+      !! still crashed. The unrestricted driver was simply over some internal
+      !! limit that splitting it puts it back under, exactly as the restricted
+      !! one was before it.
+      !!
+      !! **Convergence leaves on `result%converged`, not by exiting**, as on the
+      !! restricted path: a callee cannot `exit` its caller's loop.
+      integer, intent(in) :: iter
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :), s(:, :), x(:, :)
+      real(dp), intent(in), allocatable :: eri(:, :, :, :)
+      real(dp), intent(in), allocatable :: bounds(:, :)
+      integer, intent(in) :: n_ao, n_mo, n_alpha, n_beta, nsq, msq
+      logical, intent(in) :: want_incremental, use_pcm
+      real(dp), intent(in) :: shift, taper
+      integer, intent(in) :: start_cycle, accel
+      type(scf_convergence_t), intent(in) :: conv
+      logical, intent(in) :: verbose, kohn_sham_run
+      type(uhf_state_t), intent(inout) :: st
+      type(timing_report_t), intent(inout) :: clk
+      type(xc_context_t), intent(inout), optional :: xc
+      type(pcm_context_t), intent(inout), optional :: pcm
+      type(rhf_result_t), intent(inout) :: result
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: de, drms, gnorm, e_pcm, shift_now
+      real(dp) :: t_fock_iter, t_rest_iter, t_xc_iter
+      logical :: extrapolated
+
+      st%d_a_old = st%d_a
+      st%d_b_old = st%d_b
+
+      ! Read before the build, not after it: both stages are cumulative, so
+      ! a reading taken once the build has charged them differences against
+      ! itself.
+      t_fock_iter = clk%seconds_of(STAGE_FOCK)
+      t_xc_iter = clk%seconds_of(STAGE_XC)
+      ! As on the restricted path: `st%incr` present is the switch, so the deck
+      ! turns incremental building off by withholding it.
+      if (want_incremental) then
+         call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
+                                st%e_elec, error, clk=clk, incr=st%incr)
+      else
+         ! No `st%incr` to record into, and every build here is a full one.
+         st%incr%full_builds = st%incr%full_builds + 1
+         call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
+                                st%e_elec, error, clk=clk)
+      end if
+      if (error%has_error()) return
+      ! The continuum sees one density -- the total -- and both spins feel
+      ! one potential, as they would from any classical charge.
+      if (use_pcm) then
+         call pcm%operator_matrix(mol, st%d_a + st%d_b, st%v_pcm, e_pcm, error)
+         if (error%has_error()) return
+         st%fock_a = st%fock_a + st%v_pcm
+         st%fock_b = st%fock_b + st%v_pcm
+         st%e_elec = st%e_elec + e_pcm
+      end if
+      ! TODO(mqc): `assemble_fock_uhf` already laps STAGE_FOCK when it is
+      ! given a clock, so this second lap counts two Fock builds per
+      ! iteration and charges the continuum solve to the Fock bucket, where
+      ! the restricted path gives it STAGE_PCM.
+      call clk%lap(STAGE_FOCK)
+      t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
+      t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
+
+      call commutator(st%fock_a, st%d_a, s, x, st%err_a)
+      call commutator(st%fock_b, st%d_b, s, x, st%err_b)
+      st%fock_flat(1:nsq) = reshape(st%fock_a, [nsq])
+      st%fock_flat(nsq + 1:2*nsq) = reshape(st%fock_b, [nsq])
+      st%err_flat(1:msq) = reshape(st%err_a, [msq])
+      st%err_flat(msq + 1:2*msq) = reshape(st%err_b, [msq])
+      gnorm = maxval(abs(st%err_flat))
+      st%dens_flat(1:nsq) = reshape(st%d_a, [nsq])
+      st%dens_flat(nsq + 1:2*nsq) = reshape(st%d_b, [nsq])
+      call st%diis%push(st%fock_flat, st%err_flat, density=st%dens_flat, energy=st%e_elec)
+      extrapolated = .false.
+      if (iter >= start_cycle) then
+         call st%diis%extrapolate_with(scheme_now(accel, gnorm), st%fock_flat, extrapolated)
+      end if
+      if (extrapolated) then
+         st%fock_a = reshape(st%fock_flat(1:nsq), [n_ao, n_ao])
+         st%fock_b = reshape(st%fock_flat(nsq + 1:2*nsq), [n_ao, n_ao])
+      end if
+      t_rest_iter = clk%seconds_of(STAGE_DIIS)
+      call clk%lap(STAGE_DIIS)
+      t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
+
+      ! After the extrapolation and after the two commutators, for the reason
+      ! `run_czt_rhf` sets out. Each spin gets its own virtual projector:
+      ! `build_density_spin` gives an occupation of one, so the closed-shell
+      ! factor of a half is absent and the projector is `S - S D_sigma S`.
+      shift_now = 0.0_dp
+      if (shift > 0.0_dp .and. st%drms_prev > taper) shift_now = shift
+      if (shift_now > 0.0_dp) then
+         if (.not. allocated(st%sd)) allocate (st%sd(n_ao, n_ao), st%sds(n_ao, n_ao))
+         call pic_gemm(s, st%d_a, st%sd, beta=0.0_dp)
+         call pic_gemm(st%sd, s, st%sds, beta=0.0_dp)
+         st%fock_a = st%fock_a + shift_now*(s - st%sds)
+         call pic_gemm(s, st%d_b, st%sd, beta=0.0_dp)
+         call pic_gemm(st%sd, s, st%sds, beta=0.0_dp)
+         st%fock_b = st%fock_b + shift_now*(s - st%sds)
+      end if
+
+      call diagonalize(st%fock_a, x, n_ao, n_mo, st%coeff_a, st%eig_a, error)
+      if (error%has_error()) return
+      call diagonalize(st%fock_b, x, n_ao, n_mo, st%coeff_b, st%eig_b, error)
+      if (error%has_error()) return
+      call build_density_spin(st%coeff_a, n_alpha, st%d_a)
+      call build_density_spin(st%coeff_b, n_beta, st%d_b)
+      t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
+      call clk%lap(STAGE_DIAG)
+      t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
+
+      de = abs(st%e_elec - st%e_old)
+      drms = sqrt((sum((st%d_a - st%d_a_old)**2) + sum((st%d_b - st%d_b_old)**2))/real(2*nsq, dp))
+      call scf_table_row(verbose, iter, st%e_elec + mol%nuclear_repulsion(), de, gnorm, &
+                         st%diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
+
+      st%e_old = st%e_elec
+      result%iterations = iter
+      result%commutator = gnorm
+      result%full_fock_builds = st%incr%full_builds
+      result%incremental_updates = st%incr%updates
+      st%drms_prev = drms
+      ! **The energy and the commutator, and not the density.** `de` and
+      ! `drms` say the iteration stopped moving; they do not say it stopped
+      ! at a stationary point. `FDS - SDF` is what vanishes when F and D
+      ! commute, and an SCF can hold the other two small while this one is
+      ! nowhere near zero -- any scheme that interpolates rather than
+      ! extrapolates will do it. `drms` is still computed, because the
+      ! level-shift taper is driven from it.
+      !
+      ! The bound has to clear the commutator's own noise floor, which moves
+      ! with thread count because the OpenMP reduction merges are unordered.
+      ! `sqrt(energy_tol)` clears it by orders at the default `energy_tol`.
+      !
+      ! The rule lives in `scf_convergence_t`. `shift_now` stays in the
+      ! caller because it is not a convergence measure: a shifted Fock matrix
+      ! is a different operator, so an iterate that met the threshold under a
+      ! shift has not converged the problem that was asked for.
+      if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
+          shift_now == 0.0_dp) then
+         result%converged = .true.
+      end if
+   end subroutine do_uhf_iteration
+
    subroutine run_czt_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                           verbose, result, error, diis_vectors, in_core, diis_start, &
                           guess, guess_density_alpha, guess_density_beta, xc, pcm, &
@@ -1081,31 +1269,24 @@ contains
       type(direct_stats_t) :: stats
 
       real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :)
-      real(dp), allocatable :: x(:, :), fock_a(:, :), fock_b(:, :)
-      real(dp), allocatable :: d_a(:, :), d_b(:, :), d_a_old(:, :), d_b_old(:, :)
-      real(dp), allocatable :: coeff_a(:, :), coeff_b(:, :), eig_a(:), eig_b(:)
-      real(dp), allocatable :: err_a(:, :), err_b(:, :), fock_flat(:), err_flat(:)
-      real(dp), allocatable :: dens_flat(:)
-      real(dp), allocatable :: v_pcm(:, :)
+      real(dp), allocatable :: x(:, :)
+      type(uhf_state_t) :: st
       logical :: use_pcm
       real(dp) :: e_pcm
-      type(diis_state_t) :: diis
       logical :: extrapolated
       logical :: kohn_sham_run
       integer :: accel
-      real(dp) :: e_elec, e_old, de, drms
+      real(dp) :: de, drms
       real(dp) :: gnorm
       real(dp) :: gtol
       type(scf_convergence_t) :: conv
       logical :: accel_ok_grp
       integer :: metric_kind
       logical :: metric_ok
-      real(dp) :: shift, shift_now, drms_prev, taper
-      real(dp), allocatable :: sd(:, :), sds(:, :)
+      real(dp) :: shift, shift_now, taper
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
       logical :: want_incremental
-      type(incremental_state_t) :: incr
          !! Owned by the loop and handed only to the loop's own build. The guess
          !! and the final rebuild go without it, so the energy that leaves this
          !! routine is an exact build.
@@ -1196,11 +1377,11 @@ contains
 
       nsq = n_ao*n_ao
       msq = n_mo*n_mo
-      allocate (fock_a(n_ao, n_ao), fock_b(n_ao, n_ao))
-      allocate (d_a(n_ao, n_ao), d_b(n_ao, n_ao), d_a_old(n_ao, n_ao), d_b_old(n_ao, n_ao))
-      allocate (err_a(n_mo, n_mo), err_b(n_mo, n_mo))
-      allocate (fock_flat(2*nsq), err_flat(2*msq), dens_flat(2*nsq))
-      if (use_pcm) allocate (v_pcm(n_ao, n_ao))
+      allocate (st%fock_a(n_ao, n_ao), st%fock_b(n_ao, n_ao))
+      allocate (st%d_a(n_ao, n_ao), st%d_b(n_ao, n_ao), st%d_a_old(n_ao, n_ao), st%d_b_old(n_ao, n_ao))
+      allocate (st%err_a(n_mo, n_mo), st%err_b(n_mo, n_mo))
+      allocate (st%fock_flat(2*nsq), st%err_flat(2*msq), st%dens_flat(2*nsq))
+      if (use_pcm) allocate (st%v_pcm(n_ao, n_ao))
 
       ! One subspace over both spins, so an extrapolation step moves them
       ! together. The vectors are the two Fock matrices laid end to end and the
@@ -1212,8 +1393,8 @@ contains
       accel = ACCEL_DIIS
       if (present(scf)) call parse_accelerator_name(scf%accelerator, accel, accel_ok_grp)
       if (present(accelerator)) accel = accelerator
-      call diis%init(diis_size, 2*nsq, 2*msq, &
-                     energy_based=(accel /= ACCEL_DIIS))
+      call st%diis%init(diis_size, 2*nsq, 2*msq, &
+                        energy_based=(accel /= ACCEL_DIIS))
 
       ! The symmetric guesses -- core and GWH -- give alpha and beta the same
       ! orbitals, and the occupations separate them: n_alpha > n_beta puts an
@@ -1222,15 +1403,15 @@ contains
       ! SAC is the one that arrives already asymmetric.
       select case (guess_kind)
       case (SCF_GUESS_CORE)
-         fock_a = h
-         fock_b = h
+         st%fock_a = h
+         st%fock_b = h
       case (SCF_GUESS_GWH)
-         call guess_fock(s, h, fock_a)
-         fock_b = fock_a
+         call guess_fock(s, h, st%fock_a)
+         st%fock_b = st%fock_a
       case (SCF_GUESS_SAP)
-         call sap_fock(mol, h, fock_a, error)
+         call sap_fock(mol, h, st%fock_a, error)
          if (error%has_error()) return
-         fock_b = fock_a
+         st%fock_b = st%fock_a
       case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
          if (.not. (present(guess_density_alpha) .and. present(guess_density_beta))) then
             call error%set(ERROR_VALIDATION, "UHF: an atomic guess was asked for but no "// &
@@ -1242,24 +1423,24 @@ contains
                            "of this basis")
             return
          end if
-         d_a = guess_density_alpha
-         d_b = guess_density_beta
-         call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
-                                e_elec, error)
+         st%d_a = guess_density_alpha
+         st%d_b = guess_density_beta
+         call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
+                                st%e_elec, error)
          if (error%has_error()) return
       case default
          call error%set(ERROR_VALIDATION, "UHF: unknown initial guess")
          return
       end select
 
-      call diagonalize(fock_a, x, n_ao, n_mo, coeff_a, eig_a, error)
+      call diagonalize(st%fock_a, x, n_ao, n_mo, st%coeff_a, st%eig_a, error)
       if (error%has_error()) return
-      call diagonalize(fock_b, x, n_ao, n_mo, coeff_b, eig_b, error)
+      call diagonalize(st%fock_b, x, n_ao, n_mo, st%coeff_b, st%eig_b, error)
       if (error%has_error()) return
-      call build_density_spin(coeff_a, n_alpha, d_a)
-      call build_density_spin(coeff_b, n_beta, d_b)
+      call build_density_spin(st%coeff_a, n_alpha, st%d_a)
+      call build_density_spin(st%coeff_b, n_beta, st%d_b)
 
-      e_old = 0.0_dp
+      st%e_old = 0.0_dp
       result%converged = .false.
 
       call clk%lap(STAGE_SETUP)
@@ -1308,7 +1489,7 @@ contains
          return
       end if
       taper = 100.0_dp*density_tol
-      drms_prev = huge(1.0_dp)
+      st%drms_prev = huge(1.0_dp)
       shift_now = 0.0_dp
 
       ! Reported with its taper: a shift that is off by iteration three is not
@@ -1321,132 +1502,20 @@ contains
       end if
 
       do iter = 1, max_iter
-         d_a_old = d_a
-         d_b_old = d_b
-
-         ! Read before the build, not after it: both stages are cumulative, so
-         ! a reading taken once the build has charged them differences against
-         ! itself.
-         t_fock_iter = clk%seconds_of(STAGE_FOCK)
-         t_xc_iter = clk%seconds_of(STAGE_XC)
-         ! As on the restricted path: `incr` present is the switch, so the deck
-         ! turns incremental building off by withholding it.
-         if (want_incremental) then
-            call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
-                                   e_elec, error, clk=clk, incr=incr)
-         else
-            ! No `incr` to record into, and every build here is a full one.
-            incr%full_builds = incr%full_builds + 1
-            call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
-                                   e_elec, error, clk=clk)
-         end if
+         call do_uhf_iteration(iter, mol, h, s, x, eri, bounds, n_ao, n_mo, n_alpha, n_beta, &
+                               nsq, msq, want_incremental, use_pcm, shift, taper, start_cycle, &
+                               accel, conv, verbose, kohn_sham_run, st, clk, xc, pcm, result, error)
          if (error%has_error()) return
-         ! The continuum sees one density -- the total -- and both spins feel
-         ! one potential, as they would from any classical charge.
-         if (use_pcm) then
-            call pcm%operator_matrix(mol, d_a + d_b, v_pcm, e_pcm, error)
-            if (error%has_error()) return
-            fock_a = fock_a + v_pcm
-            fock_b = fock_b + v_pcm
-            e_elec = e_elec + e_pcm
-         end if
-         ! TODO(mqc): `assemble_fock_uhf` already laps STAGE_FOCK when it is
-         ! given a clock, so this second lap counts two Fock builds per
-         ! iteration and charges the continuum solve to the Fock bucket, where
-         ! the restricted path gives it STAGE_PCM.
-         call clk%lap(STAGE_FOCK)
-         t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
-         t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
-
-         call commutator(fock_a, d_a, s, x, err_a)
-         call commutator(fock_b, d_b, s, x, err_b)
-         fock_flat(1:nsq) = reshape(fock_a, [nsq])
-         fock_flat(nsq + 1:2*nsq) = reshape(fock_b, [nsq])
-         err_flat(1:msq) = reshape(err_a, [msq])
-         err_flat(msq + 1:2*msq) = reshape(err_b, [msq])
-         gnorm = maxval(abs(err_flat))
-         dens_flat(1:nsq) = reshape(d_a, [nsq])
-         dens_flat(nsq + 1:2*nsq) = reshape(d_b, [nsq])
-         call diis%push(fock_flat, err_flat, density=dens_flat, energy=e_elec)
-         extrapolated = .false.
-         if (iter >= start_cycle) then
-            call diis%extrapolate_with(scheme_now(accel, gnorm), fock_flat, extrapolated)
-         end if
-         if (extrapolated) then
-            fock_a = reshape(fock_flat(1:nsq), [n_ao, n_ao])
-            fock_b = reshape(fock_flat(nsq + 1:2*nsq), [n_ao, n_ao])
-         end if
-         t_rest_iter = clk%seconds_of(STAGE_DIIS)
-         call clk%lap(STAGE_DIIS)
-         t_rest_iter = clk%seconds_of(STAGE_DIIS) - t_rest_iter
-
-         ! After the extrapolation and after the two commutators, for the reason
-         ! `run_czt_rhf` sets out. Each spin gets its own virtual projector:
-         ! `build_density_spin` gives an occupation of one, so the closed-shell
-         ! factor of a half is absent and the projector is `S - S D_sigma S`.
-         shift_now = 0.0_dp
-         if (shift > 0.0_dp .and. drms_prev > taper) shift_now = shift
-         if (shift_now > 0.0_dp) then
-            if (.not. allocated(sd)) allocate (sd(n_ao, n_ao), sds(n_ao, n_ao))
-            call pic_gemm(s, d_a, sd, beta=0.0_dp)
-            call pic_gemm(sd, s, sds, beta=0.0_dp)
-            fock_a = fock_a + shift_now*(s - sds)
-            call pic_gemm(s, d_b, sd, beta=0.0_dp)
-            call pic_gemm(sd, s, sds, beta=0.0_dp)
-            fock_b = fock_b + shift_now*(s - sds)
-         end if
-
-         call diagonalize(fock_a, x, n_ao, n_mo, coeff_a, eig_a, error)
-         if (error%has_error()) return
-         call diagonalize(fock_b, x, n_ao, n_mo, coeff_b, eig_b, error)
-         if (error%has_error()) return
-         call build_density_spin(coeff_a, n_alpha, d_a)
-         call build_density_spin(coeff_b, n_beta, d_b)
-         t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
-         call clk%lap(STAGE_DIAG)
-         t_rest_iter = t_rest_iter + clk%seconds_of(STAGE_DIAG)
-
-         de = abs(e_elec - e_old)
-         drms = sqrt((sum((d_a - d_a_old)**2) + sum((d_b - d_b_old)**2))/real(2*nsq, dp))
-         call scf_table_row(verbose, iter, e_elec + mol%nuclear_repulsion(), de, gnorm, &
-                            diis%count(), t_fock_iter, t_xc_iter, t_rest_iter, kohn_sham_run)
-
-         e_old = e_elec
-         result%iterations = iter
-         result%commutator = gnorm
-         result%full_fock_builds = incr%full_builds
-         result%incremental_updates = incr%updates
-         drms_prev = drms
-         ! **The energy and the commutator, and not the density.** `de` and
-         ! `drms` say the iteration stopped moving; they do not say it stopped
-         ! at a stationary point. `FDS - SDF` is what vanishes when F and D
-         ! commute, and an SCF can hold the other two small while this one is
-         ! nowhere near zero -- any scheme that interpolates rather than
-         ! extrapolates will do it. `drms` is still computed, because the
-         ! level-shift taper is driven from it.
-         !
-         ! The bound has to clear the commutator's own noise floor, which moves
-         ! with thread count because the OpenMP reduction merges are unordered.
-         ! `sqrt(energy_tol)` clears it by orders at the default `energy_tol`.
-         !
-         ! The rule lives in `scf_convergence_t`. `shift_now` stays in the
-         ! caller because it is not a convergence measure: a shifted Fock matrix
-         ! is a different operator, so an iterate that met the threshold under a
-         ! shift has not converged the problem that was asked for.
-         if (iter > 1 .and. conv%is_converged(de, drms, gnorm) .and. &
-             shift_now == 0.0_dp) then
-            result%converged = .true.
-            exit
-         end if
+         if (result%converged) exit
       end do
 
       ! Rebuilt from the density that passed the test, as the restricted path
       ! does, so the reported energy belongs to the reported orbitals.
-      call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
+      call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
                              result%electronic, error)
       if (error%has_error()) return
       if (use_pcm) then
-         call pcm%operator_matrix(mol, d_a + d_b, v_pcm, e_pcm, error)
+         call pcm%operator_matrix(mol, st%d_a + st%d_b, st%v_pcm, e_pcm, error)
          if (error%has_error()) return
          result%electronic = result%electronic + e_pcm
          result%pcm_energy = e_pcm
@@ -1456,7 +1525,7 @@ contains
       result%energy = result%electronic + result%nuclear_repulsion
       result%n_occupied = n_alpha
       result%n_occupied_beta = n_beta
-      result%spin_squared = spin_contamination(coeff_a, coeff_b, s, n_alpha, n_beta)
+      result%spin_squared = spin_contamination(st%coeff_a, st%coeff_b, s, n_alpha, n_beta)
       call clk%lap(STAGE_FOCK)
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
@@ -1466,13 +1535,13 @@ contains
             "   exact = ", 0.25_dp*real(n_alpha - n_beta, dp)*real(n_alpha - n_beta + 2, dp)
          call logger%info(trim(line))
       end if
-      call move_alloc(eig_a, result%orbital_energies)
-      call move_alloc(coeff_a, result%orbitals)
-      call move_alloc(d_a, result%density)
-      call move_alloc(eig_b, result%orbital_energies_beta)
-      call move_alloc(coeff_b, result%orbitals_beta)
-      call move_alloc(d_b, result%density_beta)
-      call diis%destroy()
+      call move_alloc(st%eig_a, result%orbital_energies)
+      call move_alloc(st%coeff_a, result%orbitals)
+      call move_alloc(st%d_a, result%density)
+      call move_alloc(st%eig_b, result%orbital_energies_beta)
+      call move_alloc(st%coeff_b, result%orbitals_beta)
+      call move_alloc(st%d_b, result%density_beta)
+      call st%diis%destroy()
    end subroutine run_czt_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &

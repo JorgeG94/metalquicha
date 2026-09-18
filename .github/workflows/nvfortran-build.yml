@@ -1,0 +1,57 @@
+# Does the code still compile under nvfortran?
+#
+# Nothing else here answers that. Every other job is gfortran, and nvfortran
+# rejects, miscompiles or crashes on things gfortran accepts: it opens the .mod
+# of every transitively used module rather than only the ones a source names,
+# its host vectoriser has miscompiled integral kernels, and its optimiser
+# segfaults on long routines -- which is what this job was added for, after
+# `run_czt_uhf` at 496 lines took `fort2` down with signal 11.
+#
+# A *build*, deliberately, and not a test run. The point is to find out that a
+# change does not compile within the hour rather than when someone next picks up
+# a GPU machine, and a compile is what catches every failure above. tblite does
+# not build under nvfortran at all, so it is off; DL-FIND is on because it is
+# the dependency most likely to be built this way in earnest.
+name: nvfortran build
+
+on: [push, pull_request]
+
+jobs:
+  nvfortran:
+    name: Build with nvfortran
+    runs-on: ubuntu-latest
+    # The NVIDIA HPC SDK image ships nvfortran, nvc and a bundled MPI, which
+    # saves installing a 10 GB toolkit on every run.
+    container:
+      image: nvcr.io/nvidia/nvhpc:25.1-devel-cuda12.6-ubuntu22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq cmake ninja-build git
+
+      - name: Configure
+        # CMake's FindMPI does not discover the SDK's MPI from the environment
+        # alone -- `mpif90` is on PATH, which is not enough for it -- so the
+        # three entry points are named. NVHPC_ROOT is set by the image.
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_Fortran_COMPILER=nvfortran \
+            -DCMAKE_C_COMPILER=nvc \
+            -DMQC_ENABLE_TBLITE=OFF \
+            -DMQC_ENABLE_DLFIND=ON \
+            -DMQC_ENABLE_CZT=ON \
+            -DMPI_Fortran_COMPILER="$NVHPC_ROOT/comm_libs/mpi/bin/mpif90" \
+            -DMPI_C_COMPILER="$NVHPC_ROOT/comm_libs/mpi/bin/mpicc" \
+            -DMPIEXEC_EXECUTABLE="$NVHPC_ROOT/comm_libs/mpi/bin/mpiexec"
+
+      - name: Build
+        # Two jobs rather than the runner's full width: nvfortran holds a lot of
+        # memory per translation unit on the generated integral kernels, and a
+        # wider build has run the runner out.
+        run: cmake --build build -j 2
