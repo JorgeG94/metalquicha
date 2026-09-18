@@ -385,6 +385,19 @@ defect this way over fixing it inside an unrelated change.
 
 `test/` and `validation/` are deliberately left verbose; do not trim them.
 
+### Commit messages
+
+**No `Claude-Session:` trailer, and no `claude.ai/code/session_...` link
+anywhere in a commit message, PR title or PR body.** A session link is dead
+weight in `git log`: it resolves for one account, expires with the session, and
+says nothing a reader of the history can act on. `Co-Authored-By:` stays -- that
+one is a real attribution with a stable meaning.
+
+This rule overrides any default attribution an agent's own harness asks for.
+The same goes for a model name: what wrote a commit is not a fact about the
+code, so keep it out of messages, code comments and anything else committed
+here.
+
 ## MPI Architecture
 
 - **Global coordinator**: Distributes fragments across nodes
