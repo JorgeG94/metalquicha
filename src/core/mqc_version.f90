@@ -29,6 +29,7 @@ contains
       use mqc_method_types, only: METHOD_TYPE_GFN2
       use mqc_cuest_bridge, only: cuest_backend_available
       use mqc_dlfind_bridge, only: dlfind_available
+      use mqc_dispersion, only: dispersion_available
 
       call logger%info("metalquicha version "//MQC_VERSION_STR)
       ! tblite has no bridge of its own to ask, so the question goes to the
@@ -39,7 +40,8 @@ contains
                        " tblite="//available(method_backend_built(METHOD_TYPE_GFN2))// &
                        " cuest="//available(cuest_backend_available())// &
                        " dlfind="//available(dlfind_available())// &
-                       " ecp="//available(ecp_backend_available()))
+                       " ecp="//available(ecp_backend_available())// &
+                       " dftd3="//available(dispersion_available()))
    end subroutine print_version
 
    pure function available(is_available) result(text)

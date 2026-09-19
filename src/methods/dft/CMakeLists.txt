@@ -10,4 +10,14 @@ target_sources(
           mqc_dft_partition.f90
           mqc_dft_prune.f90
           mqc_dft_grid.f90
-          mqc_xc_spec.f90)
+          mqc_xc_spec.f90
+          mqc_dispersion_names.f90)
+
+# The dispersion correction, in exactly one of its two forms. The real wrapper
+# is backends/dftd3/mqc_dispersion.f90 and defines the same module; this stub
+# refuses, naming the option. The name mapping above is compiled either way --
+# it is a fact about two vocabularies, not about a link line, and it is what the
+# unit tests can reach without the library.
+if(NOT MQC_ENABLE_DFTD3)
+  target_sources(${main_lib} PRIVATE mqc_dispersion_stub.f90)
+endif()

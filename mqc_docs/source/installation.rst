@@ -92,11 +92,19 @@ with, run ``mqc --version``, which prints a ``features:`` line.
    * - ``MQC_ENABLE_CREST``
      - ``OFF``
      - Conformer and ensemble sampling, through CREST
+   * - ``MQC_ENABLE_DFTD3``
+     - ``OFF``
+     - Empirical dispersion on DFT, through s-dftd3
 
 ``MQC_ENABLE_DLFIND`` is off for a licensing reason rather than a technical one:
 DL-FIND is LGPL-3 and metalquicha is MIT. It is fetched and linked as a shared
 library so the two stay separable, and turning it on is a choice the person
 building makes. See :doc:`geometry_optimization`.
+
+``MQC_ENABLE_DFTD3`` is off for the same reason -- s-dftd3 is LGPL-3.0-or-later
+-- and is likewise fetched as a shared library and reached through its C API.
+Without it a deck naming ``keywords.dft.dispersion`` is refused rather than run
+without the correction. See :doc:`input_files`.
 
 ``MQC_ENABLE_CREST`` is off for the same reason -- CREST is LGPL-3.0 -- and for
 a second one: it needs ``WITH_GFN0=ON`` to be useful, and CREST's own tblite pin

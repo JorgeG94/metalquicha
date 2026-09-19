@@ -144,6 +144,22 @@ endif()
 option(MQC_ENABLE_DLFIND "Fetch libdlfind (DL-FIND) for geometry optimization"
        OFF)
 
+# Empirical dispersion -- -D3(BJ) on a Kohn-Sham energy and gradient.
+#
+# Off by default for the same reason DL-FIND is: s-dftd3 is LGPL-3-or-later and
+# this program is MIT. It is reached through its C API and built shared, so the
+# .so stays LGPL, libmetalquicha.a stays MIT, and a user keeps the right to
+# relink. See the resolution in cmake/MqcDependencies.cmake, which also records
+# why declaring it here does not collide with the copy tblite pulls in.
+option(MQC_ENABLE_DFTD3
+       "Fetch s-dftd3 (simple-dftd3) for empirical dispersion on DFT" OFF)
+set(MQC_DFTD3_REPOSITORY
+    "https://github.com/dftd3/simple-dftd3"
+    CACHE STRING "Where to fetch s-dftd3 from")
+set(MQC_DFTD3_TAG
+    "v1.4.0"
+    CACHE STRING "s-dftd3 revision to build against")
+
 # Which CODATA revision the Bohr radius in mqc_physical_constants follows. Only
 # the length conversion is selected this way; see that module for why.
 set(MQC_CODATA_YEAR

@@ -64,6 +64,55 @@ endif()
 target_compile_definitions(${main_lib} PRIVATE CODATA_YEAR=${MQC_CODATA_YEAR})
 message(STATUS "CODATA revision for the Bohr radius: ${MQC_CODATA_YEAR}")
 
+# s-dftd3, for empirical dispersion on a Kohn-Sham energy and gradient.
+#
+# There is exactly one copy of it in the build, with or without tblite, and this
+# is the block that decides so. Worth writing down because it is not obvious:
+#
+# * tblite's own top level opens with `if(NOT TARGET "s-dftd3::s-dftd3")
+#   find_package("s-dftd3" REQUIRED)`. That is a *module-mode* find, so with
+#   cmake/modules on CMAKE_MODULE_PATH it resolves to this project's
+#   Finds-dftd3.cmake -- the same way tblite's other dependencies already do
+#   here. So even with MQC_ENABLE_DFTD3=OFF, the copy tblite gets is the one
+#   this project pins. (Verified: a configure with the option off still logs
+#   "Dependency s-dftd3: ...@v1.4.0" from `mqc_fetch`, not tblite's own
+#   "Retrieving s-dftd3 from ...".)
+#
+# * With the option on, this block runs *before* tblite is resolved, and
+#   `mqc_fetch`'s NAMESPACED_TARGET defines `s-dftd3::s-dftd3`. tblite's guard
+#   above then sees the target and does not look again.
+#
+# Either way: one fetch, one library, and this project's pin. It is kept equal
+# to the one tblite carries in its config/cmake/Finds-dftd3.cmake (v1.4.0) so
+# that adopting ours is never a version tblite did not expect.
+#
+# Shared, and deliberately: s-dftd3 is LGPL-3-or-later against this program's
+# MIT. Building it into libmetalquicha.a would put a relink obligation on every
+# binary shipped from here. As a .so reached through its C API -- nothing below
+# asks for its .mod files, and backends/dftd3 declares the interface itself --
+# the two stay separable, exactly as DL-FIND does further down. mctc-lib and
+# toml-f come along shared for the same reason: they are what the .so links.
+#
+# BUILD_SHARED_LIBS is a normal variable set around the fetch and restored
+# after, so nothing resolved later changes shape because dispersion was asked
+# for.
+if(MQC_ENABLE_DFTD3)
+  set(_mqc_shared_was "${BUILD_SHARED_LIBS}")
+  set(BUILD_SHARED_LIBS ON)
+  find_package("s-dftd3" REQUIRED)
+  set(BUILD_SHARED_LIBS "${_mqc_shared_was}")
+  unset(_mqc_shared_was)
+  # No compile definition to go with it. Which of `mqc_dispersion`'s two
+  # implementations was compiled is what the source sees -- the real one in
+  # backends/dftd3, or the stub in src/methods/dft -- so nothing needs a
+  # preprocessor guard at a call site, and `dispersion_available()` answers at
+  # run time for the version banner.
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:s-dftd3-lib>)
+  add_subdirectory(backends/dftd3)
+  message(STATUS "Empirical dispersion enabled: s-dftd3 "
+                 "${MQC_DFTD3_REPOSITORY}@${MQC_DFTD3_TAG}")
+endif()
+
 if(MQC_ENABLE_TBLITE)
   if(NOT TARGET "tblite::tblite")
     find_package("tblite" REQUIRED)
