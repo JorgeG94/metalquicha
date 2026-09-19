@@ -3,14 +3,49 @@
 # Last thing the top-level does: everything here needs every target to exist.
 include_guard(GLOBAL)
 
+# The export set describes this project as a package for someone else's CMake to
+# find, and that is only coherent for the static build.
+#
+# A shared `metalquicha` links libdlfind's `dlfind`, a shared library from a
+# fetched subproject that belongs to no export set of ours and is not ours to
+# put in one. CMake refuses to describe a package whose interface names a target
+# a consumer could not resolve:
+#
+# install(EXPORT "metalquichaTargets" ...) includes target "metalquicha" which
+# requires target "dlfind" that is not in any export set.
+#
+# Static does not hit it, which is why this stood until `MQC_SHARED_LIB`
+# existed. The shared build is a developer and CI convenience -- it is there so
+# that a hundred and thirty test executables link against one object instead of
+# copying an archive each -- and nothing installs it, so the export is dropped
+# rather than papered over. `LIBRARY DESTINATION` is named all the same, so the
+# library itself still installs in either mode.
+set(_mqc_export_ok TRUE)
+if(MQC_SHARED_LIB)
+  set(_mqc_export_ok FALSE)
+  message(
+    STATUS "Shared build: installing without a CMake export set (a shared "
+           "libmetalquicha's private dependencies are not exportable)")
+endif()
+
 foreach(tgt ${all_targets})
   message(STATUS "${tgt}")
-  install(
-    TARGETS ${tgt}
-    EXPORT ${project_name}Targets
-    ARCHIVE DESTINATION lib
-    INCLUDES
-    DESTINATION include/${project_name})
+  if(_mqc_export_ok)
+    install(
+      TARGETS ${tgt}
+      EXPORT ${project_name}Targets
+      ARCHIVE DESTINATION lib
+      LIBRARY DESTINATION lib
+      INCLUDES
+      DESTINATION include/${project_name})
+  else()
+    install(
+      TARGETS ${tgt}
+      ARCHIVE DESTINATION lib
+      LIBRARY DESTINATION lib
+      INCLUDES
+      DESTINATION include/${project_name})
+  endif()
 endforeach()
 
 install(
@@ -19,11 +54,13 @@ install(
   FILES_MATCHING
   PATTERN "*.mod")
 
-install(
-  EXPORT ${project_name}Targets
-  FILE ${project_name}Targets.cmake
-  NAMESPACE ${project_name}::
-  DESTINATION lib/cmake/${project_name})
+if(_mqc_export_ok)
+  install(
+    EXPORT ${project_name}Targets
+    FILE ${project_name}Targets.cmake
+    NAMESPACE ${project_name}::
+    DESTINATION lib/cmake/${project_name})
+endif()
 
 include(CMakePackageConfigHelpers)
 

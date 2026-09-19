@@ -1,0 +1,104 @@
+# Does the code still compile under nvfortran?
+#
+# Nothing else here answers that. Every other job is gfortran, and nvfortran
+# rejects, miscompiles or crashes on things gfortran accepts: it opens the .mod
+# of every transitively used module rather than only the ones a source names,
+# its host vectoriser has miscompiled integral kernels, and its optimiser
+# segfaults on long routines -- which is what this job was added for, after
+# `run_czt_uhf` at 496 lines took `fort2` down with signal 11.
+#
+# A *build*, deliberately, and not a test run. The point is to find out that a
+# change does not compile within the hour rather than when someone next picks up
+# a GPU machine, and a compile is what catches every failure above. tblite does
+# not build under nvfortran at all, so it is off; DL-FIND is on because it is
+# the dependency most likely to be built this way in earnest.
+name: nvfortran build
+
+on: [push, pull_request]
+
+jobs:
+  nvfortran:
+    name: Build with nvfortran
+    runs-on: ubuntu-latest
+    # The NVIDIA HPC SDK image ships nvfortran, nvc and a bundled MPI, which
+    # saves installing a 10 GB toolkit on every run.
+    container:
+      image: nvcr.io/nvidia/nvhpc:26.5-devel-cuda13.2-ubuntu24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        # CMake from pip even on 24.04, whose apt cmake is 3.28.3 and would
+        # just satisfy pic and pic-mpi's `cmake_minimum_required(VERSION 3.28)`.
+        # Just is the problem: that floor was 3.22 until pic moved it, and the
+        # next move puts the job back to failing at configure before a line of
+        # Fortran is read. `>=3.28` here states the requirement where it can be
+        # bumped, instead of inheriting whatever the base image happens to ship.
+        # pip ships an official upstream binary and needs no third-party apt
+        # repository; conda would do as well and is heavier for one tool.
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq git python3-pip
+          # --break-system-packages: 24.04 marks its Python externally managed
+          # (PEP 668) and refuses a system-wide pip install without it. This is
+          # a throwaway container, so there is no environment to protect.
+          pip3 install --quiet --upgrade --break-system-packages "cmake>=3.28" ninja
+          cmake --version
+
+      - name: Configure
+        # CMake's FindMPI does not discover the SDK's MPI from the environment
+        # alone -- `mpif90` is on PATH, which is not enough for it -- so the
+        # three entry points are named.
+        #
+        # The SDK root comes from nvfortran's own location rather than from
+        # NVHPC_ROOT, which this image does not set: `which nvfortran` is
+        # <root>/compilers/bin/nvfortran, so three dirnames reach <root> and
+        # the layout below it is the same in every release. Naming a version
+        # here would have to be changed in step with the image tag.
+        run: |
+          NVROOT=$(dirname "$(dirname "$(dirname "$(command -v nvfortran)")")")
+          echo "SDK root: $NVROOT"
+          test -x "$NVROOT/comm_libs/mpi/bin/mpif90"
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_Fortran_COMPILER=nvfortran \
+            -DCMAKE_C_COMPILER=nvc \
+            -DMQC_ENABLE_TBLITE=OFF \
+            -DMQC_ENABLE_DLFIND=ON \
+            -DMQC_ENABLE_CZT=ON \
+            -DMQC_SHARED_LIB=ON \
+            -DMPI_Fortran_COMPILER="$NVROOT/comm_libs/mpi/bin/mpif90" \
+            -DMPI_C_COMPILER="$NVROOT/comm_libs/mpi/bin/mpicc" \
+            -DMPIEXEC_EXECUTABLE="$NVROOT/comm_libs/mpi/bin/mpiexec"
+        # MQC_SHARED_LIB because this job builds the test executables too, and
+        # there are over a hundred of them: against a static archive each link
+        # copies what it needs out of it, which dominates the job. Against a
+        # shared object a link is a reference. It changes nothing about what is
+        # compiled, which is what this job exists to check.
+
+      # Deliberately no MQC_ARCH_FLAGS here, and it is worth saying why, because
+      # the obvious improvement is a trap.
+      #
+      # nvfortran tunes for the build host by default -- `-fast` implies
+      # `-tp=<whatever this machine is>` -- so a binary built on one runner and
+      # run on another can take SIGILL on an instruction the second one lacks.
+      # The ocean project saw exactly that on its NVHPC leg: sixteen numeric
+      # kernels on SIGILL once, green on a plain rerun of the same commit.
+      #
+      # It does not apply here because this job only compiles: nothing it builds
+      # is run, and nothing leaves the runner. Setting the flag would cost more
+      # than it bought, because MQC_ARCH_FLAGS *replaces* the release flags
+      # rather than adding to them, and for NVHPC those are `-fast` -- the
+      # optimisation level that the crash this job was written to catch only
+      # happens at. A job compiling without `-fast` would go green through the
+      # exact regression it exists for.
+      #
+      # So: if a `ctest` step is ever added below, pass
+      # `-DMQC_ARCH_FLAGS="-fast -tp=haswell"` -- both, not just the -tp.
+      - name: Build
+        # Two jobs rather than the runner's full width: nvfortran holds a lot of
+        # memory per translation unit on the generated integral kernels, and a
+        # wider build has run the runner out.
+        run: cmake --build build -j 2

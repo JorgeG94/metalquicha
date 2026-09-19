@@ -2401,7 +2401,13 @@ contains
       ! The solve's `S` is `-2 (A+B)^-1 h` at zero frequency; `cphf_solve`'s `U`
       ! is `-(A+B)^-1 h`, so the block handed out is halved to match it.
       if (present(static_response)) then
-         allocate (static_response, source=0.5_dp*s_all(:, :, :, izero))
+         ! Shaped and then assigned, rather than `source=` on the section.
+         ! nvfortran 26.5 refuses the one-liner --
+         !   NVFORTRAN-S-0155-ALLOCATE object must have same rank as SOURCE=
+         ! -- reading `0.5_dp*s_all(:, :, :, izero)` as rank 4 where it is
+         ! rank 3. gfortran accepts it, so this compiled for a long time.
+         allocate (static_response(size(s_all, 1), size(s_all, 2), size(s_all, 3)))
+         static_response = 0.5_dp*s_all(:, :, :, izero)
       end if
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
