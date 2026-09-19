@@ -362,6 +362,13 @@ HAND_MAINTAINED = {
     "cpu/mqc/efmo/efmo_cage_rcut2.json",
     "cpu/mqc/efmo/efmo_w3_rimp2.json",
     "cpu/mqc/efmo/efmo_w3_level3.json",
+    # The two stretched-N2 decks. Hand-maintained because their references come
+    # from PySCF rather than from this generator's own driver: the sweep below
+    # emits one deck per (molecule, basis) and has no notion of a keyword that
+    # changes which stationary point an SCF lands on, which is the entire point
+    # of this pair. See PRESERVED_TESTS.
+    "cpu/mqc/soscf/n2_stretched_saddle.json",
+    "cpu/mqc/soscf/n2_stretched_second_order.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -2625,6 +2632,22 @@ def pyscf_rhf(atoms, basis, aux="", multiplicity=1, ecp=""):
 # because that is the assertion -- an EFP2 interaction must not depend on how the
 # fragments are placed.
 PRESERVED_TESTS = [
+    {
+        "name": "RHF N2 6-31G at 1.6 A, DIIS lands on a saddle (CPU)",
+        "input": "inputs/cpu/mqc/soscf/n2_stretched_saddle.json",
+        "expected_energy": -108.551570996439,
+        "tolerance": 1.0e-8,
+        "type": "unfragmented",
+        "reference_note": "reference is PySCF 2.14, not this program's own number, fed this repository's own basis_sets/6-31g.json rather than PySCF's internal Pople tables -- those differ in the eighth decimal of the exponents and fake a 1.5e-7 disagreement on fourteen electrons, which looks exactly like a bug in whichever code you are checking. Matched, PySCF gives -108.551570996475 against our -108.551570996439, 3.6e-11 apart. This deck pins the WRONG answer on purpose: DIIS converges here, reports success, and lands on a stationary point that is a saddle -- lowest orbital-rotation curvature -6.77e-2 hartree, and PySCF's own stability analysis calls its identically-converged solution internally unstable too. The core and GWH guesses land somewhere different and higher again (-108.330160363155, also unstable), so the saddle is not an artefact of one guess. Paired with n2_stretched_second_order, which is the same deck asking for a minimum; if that pair ever agrees, something has changed about which solution a first-order SCF finds.",
+    },
+    {
+        "name": "RHF N2 6-31G at 1.6 A, second order finds the minimum (CPU)",
+        "input": "inputs/cpu/mqc/soscf/n2_stretched_second_order.json",
+        "expected_energy": -108.571753302899,
+        "tolerance": 1.0e-8,
+        "type": "unfragmented",
+        "reference_note": "reference is PySCF 2.14 with this repository's own basis JSON, as for n2_stretched_saddle: following the unstable mode out of the DIIS solution and reconverging with PySCF's own second-order SCF gives -108.571753302924 against our -108.571753302899, 2.4e-11 apart, and the energy drop 0.020182306449 against our 0.020182306461. PySCF then calls that solution internally stable and so do we, at a curvature of 2e-13. Worth knowing what this case does NOT show: PySCF's newton() started from the same guesses converges to the same saddle this deck escapes -- reaching the minimum there needs its stability analysis and an explicit rotation along the unstable mode -- while keywords.scf.second_order escapes inside the SCF, because the trust-region step it shares with the CASSCF optimizer carries a saddle-escape displacement. It costs 225 integral passes against DIIS's 12 and is the wrong choice on anything well behaved; what it buys is an answer that is a minimum.",
+    },
     {
         "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
         "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1.json",

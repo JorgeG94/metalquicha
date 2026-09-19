@@ -123,6 +123,21 @@ module mqc_json_output_types
       character(len=16) :: fukui_scheme = ""
       logical :: has_fukui = .false.
 
+      logical :: stability_stable = .true.
+         !! Whether the converged SCF is a minimum with respect to real
+         !! closed-shell orbital rotations. Meaningful only with
+         !! `has_stability`; see `mqc_czt_ov_hessian` for what it does not
+         !! cover -- a triplet or complex instability is a different matrix.
+      real(dp) :: stability_curvature = 0.0_dp
+         !! The lowest eigenvalue of the electronic Hessian, in hartree.
+      logical :: stability_has_curvature = .false.
+         !! Whether that eigenvalue was recovered at all. It always is on
+         !! this path, and the flag is in the output contract anyway so that a
+         !! consumer can tell an absent number from an absent feature.
+      integer :: stability_rotations = 0
+         !! How many non-redundant orbital rotations were searched.
+      logical :: has_stability = .false.
+
       real(dp), allocatable :: sapt_terms(:)
          !! An interaction energy decomposed, ordered by `SAPT_TERM_NAMES`. The
          !! total also goes to `total_energy` like any other method's, but on
@@ -227,6 +242,11 @@ contains
       this%efmo_qm_groups = 0
       this%has_ieda = .false.
       this%has_fukui = .false.
+      this%has_stability = .false.
+      this%stability_stable = .true.
+      this%stability_has_curvature = .false.
+      this%stability_curvature = 0.0_dp
+      this%stability_rotations = 0
       this%ieda_formation = 0.0_dp
    end subroutine json_output_data_reset
 

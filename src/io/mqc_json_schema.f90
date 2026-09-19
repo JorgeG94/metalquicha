@@ -383,6 +383,18 @@ contains
       call allow(keys, "accelerator")
       call allow(keys, "eri_path")
       call allow(keys, "incremental_fock")
+      ! Whether the converged solution is a minimum, and the two knobs on the
+      ! eigensolve that decides. Here rather than under `properties` because it
+      ! is a statement about the reference itself and not a quantity derived
+      ! from it.
+      call allow(keys, "stability")
+      call allow(keys, "stability_tolerance")
+      call allow(keys, "stability_maxiter")
+      ! How the SCF itself is converged: by DIIS throughout, or by DIIS until
+      ! the commutator falls below `soscf_start` and then by trust-region
+      ! Newton on the orbital rotations.
+      call allow(keys, "second_order")
+      call allow(keys, "soscf_start")
    end function scf_keys
 
    function efp_keys() result(keys)

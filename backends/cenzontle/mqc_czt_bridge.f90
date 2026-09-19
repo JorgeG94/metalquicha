@@ -37,6 +37,8 @@ module mqc_czt_bridge
    use mqc_czt_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                    guess_display_name
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_ov_hessian, only: stability_result_t
+   use mqc_czt_native_stability, only: native_scf_stability
    use mqc_czt_ecp, only: ECP_AVAILABLE
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_czt_gradient, only: czt_scf_gradient
@@ -987,6 +989,42 @@ contains
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
 
+      ! ---- can this reference answer the stability question? ----------------
+      !
+      ! Refused here rather than where the analysis runs, which is after the
+      ! SCF: a deck that asked for something this binary cannot do should not
+      ! find that out at the end of a converged calculation. The failure below
+      ! is the one knowable in advance; a Fock build that fails during the
+      ! analysis itself is warned about and dropped, further down, because by
+      ! then the energy is already right.
+      if (settings%stability) then
+         if (unrestricted) then
+            call result%error%set(ERROR_VALIDATION, "keywords.scf.stability examines "// &
+                                  "the closed-shell orbital-rotation Hessian, and this "// &
+                                  "reference is unrestricted; the open-shell rotation "// &
+                                  "space is larger and is not implemented")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+      end if
+
+      ! ---- can this reference take a second-order step? ---------------------
+      !
+      ! Refused before the SCF, for the reason the stability refusals above are:
+      ! a deck should not discover at the end of a converged calculation that
+      ! the thing it asked for was never possible.
+      if (settings%second_order .and. unrestricted) then
+         call result%error%set(ERROR_VALIDATION, "keywords.scf.second_order "// &
+                               "parametrises the closed-shell orbital rotations, and "// &
+                               "this reference is unrestricted; the open-shell "// &
+                               "rotation space is larger and is not implemented. "// &
+                               "Converge this one by DIIS.")
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
       ! ---- Kohn-Sham or Hartree-Fock? ---------------------------------------
       !
       ! A named functional is the whole difference: the SCF takes the context as
@@ -1226,6 +1264,8 @@ contains
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
+                             second_order=settings%second_order, &
+                             soscf_start=settings%soscf_start, &
                              b_ao_out=scf_b_ao)
          else
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
@@ -1235,7 +1275,9 @@ contains
                              level_shift=settings%level_shift, accelerator=accel_kind, &
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
-                             grad_tol=settings%grad_tol, convergence=scf_conv)
+                             grad_tol=settings%grad_tol, convergence=scf_conv, &
+                             second_order=settings%second_order, &
+                             soscf_start=settings%soscf_start)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
@@ -1265,7 +1307,9 @@ contains
                           level_shift=settings%level_shift, accelerator=accel_kind, &
                           linear_dependence=settings%linear_dependence, &
                           incremental_fock=settings%incremental_fock, &
-                          grad_tol=settings%grad_tol, convergence=scf_conv)
+                          grad_tol=settings%grad_tol, convergence=scf_conv, &
+                          second_order=settings%second_order, &
+                          soscf_start=settings%soscf_start)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -1307,6 +1351,46 @@ contains
       ! dropped rather than propagated: the energy above is correct and already
       ! stored.
       !
+      ! Is the converged solution a minimum? One Fock build per Davidson
+      ! iteration on the electronic Hessian, so it is opt-in. Reported and
+      ! dropped on failure like every other analysis here -- what a stability
+      ! analysis cannot do does not make the energy above wrong -- with the two
+      ! refusals knowable before the SCF handled further up.
+      if (settings%stability) then
+         block
+            type(stability_result_t) :: stab
+            type(error_t) :: stab_error
+
+            call logger%info("  examining the stability of the converged reference")
+            if (kohn_sham) then
+               call native_scf_stability(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, stab, stab_error, xc=xc, &
+                                         reference=scf%density, &
+                                         k_scale=xc%exx_fraction, &
+                                         rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
+                                         conv_tol=settings%stability_tol, &
+                                         max_iter=settings%stability_max_iter, &
+                                         verbose=settings%verbose)
+            else
+               call native_scf_stability(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, stab, stab_error, &
+                                         conv_tol=settings%stability_tol, &
+                                         max_iter=settings%stability_max_iter, &
+                                         verbose=settings%verbose)
+            end if
+            if (stab_error%has_error()) then
+               call logger%warning("  the stability analysis could not run: "// &
+                                   stab_error%get_message())
+            else if (stab%ran) then
+               result%stability_stable = stab%stable
+               result%stability_curvature = stab%lowest_curvature
+               result%stability_has_curvature = stab%has_curvature
+               result%stability_rotations = stab%n_parameters
+               result%has_stability = .true.
+            end if
+         end block
+      end if
+
       ! The Fukui analysis below is two further SCFs on the same `mol`, so the
       ! ions see the same geometry and basis functions by construction.
       if (allocated(settings%fukui_population)) then

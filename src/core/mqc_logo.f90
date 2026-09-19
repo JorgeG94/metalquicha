@@ -25,14 +25,14 @@ contains
       write (*, "(A)") " "
       write (*, "(A)") "                      (Art by jgs)"
       write (*, "(A)") " "
-      write (*, "(A)") "    ╔═══════════════════════════════════════════════╗"
+      write (*, "(A)") "    ╔"//repeat("═", 47)//"╗"
       write (*, "(A)") '    ║              Met"al q"uicha                   ║'
       write (*, "(A)") "    ║                (Sunflower)                    ║"
       write (*, "(A)") "    ║   A hastily put together Fortran code for     ║"
       write (*, "(A)") "    ║     Fragmented Based Quantum Chemistry        ║"
       write (*, "(A)") "    ║                                               ║"
       write (*, "(A)") "    ║        Coded up by Jorge as a hobby           ║"
-      write (*, "(A)") "    ╚═══════════════════════════════════════════════╝"
+      write (*, "(A)") "    ╚"//repeat("═", 47)//"╝"
       write (*, "(A)") " "
 
    end subroutine print_logo

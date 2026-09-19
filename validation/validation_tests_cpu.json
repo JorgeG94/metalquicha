@@ -4703,6 +4703,20 @@
             "type": "fragmented"
         },
         {
+            "name": "RHF N2 6-31G at 1.6 A, DIIS lands on a saddle (CPU)",
+            "input": "inputs/cpu/mqc/soscf/n2_stretched_saddle.json",
+            "expected_energy": -108.551570996439,
+            "tolerance": 1e-08,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF N2 6-31G at 1.6 A, second order finds the minimum (CPU)",
+            "input": "inputs/cpu/mqc/soscf/n2_stretched_second_order.json",
+            "expected_energy": -108.571753302899,
+            "tolerance": 1e-08,
+            "type": "unfragmented"
+        },
+        {
             "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
             "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1.json",
             "expected_energy": -456.004182668797,

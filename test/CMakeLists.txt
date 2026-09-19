@@ -357,6 +357,21 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_neo)
   target_link_libraries(test_mqc_czt_neo PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The wavefunction stability analysis. Needs no optional dependency: the
+  # operator is this backend's and the eigensolver is this program's own
+  # Davidson, so the case that asks whether the operator really is the
+  # electronic Hessian and the case that asks whether the eigensolver agrees
+  # with a dense diagonalisation both run on every build with CPU integrals.
+  addtest(mqc_czt_stability)
+  target_link_libraries(test_mqc_czt_stability PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The second-order SCF. Needs no optional dependency: the gradient, the
+  # Hessian and the step are all this program's own, and the two cases that
+  # matter most are finite differences of the energy, which settle the sign and
+  # the factor of four that no amount of reading can.
+  addtest(mqc_czt_soscf)
+  target_link_libraries(test_mqc_czt_soscf PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The linear algebra threaded from outside the sequential BLAS -- the split
   # products and the blocked LU -- against the single BLAS call each replaces.
   addtest(mqc_czt_gemm_threads)

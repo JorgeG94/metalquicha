@@ -172,6 +172,11 @@ contains
       options%hessian_response_tol = config%hessian_response_tol
       options%hessian_response_max_iter = config%hessian_response_max_iter
       options%hessian_response_batch = config%hessian_response_batch
+      options%stability = config%stability
+      options%stability_tol = config%stability_tol
+      options%stability_max_iter = config%stability_max_iter
+      options%second_order = config%second_order
+      options%soscf_start = config%soscf_start
       options%device_rank = config%device_rank
       options%backend = config%backend
       options%freeze_core = config%corr%freeze_core
