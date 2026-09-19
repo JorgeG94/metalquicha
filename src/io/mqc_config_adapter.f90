@@ -360,6 +360,11 @@ contains
       driver_config%method_config%dft%screening_tolerance = &
          mqc_config%dft_screening_tolerance
       driver_config%method_config%dft%block_size = mqc_config%dft_block_size
+      ! `keywords.dft.dispersion`. Both halves travel, because "off" and "off
+      ! but it would have been d3bj" are the same calculation and the method
+      ! layer should not have to reconstruct which was meant.
+      driver_config%method_config%dft%use_dispersion = mqc_config%dft_dispersion
+      driver_config%method_config%dft%dispersion_type = mqc_config%dft_dispersion_type
       driver_config%method_config%backend = mqc_config%backend
       if (allocated(mqc_config%charges_scheme)) then
          driver_config%method_config%properties%charges_scheme = &

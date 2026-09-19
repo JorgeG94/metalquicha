@@ -285,6 +285,13 @@ module mqc_config_types
          !! expensive here. Negative means the backend's own default.
       integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge
       integer :: dft_angular_points = -1
+      logical :: dft_dispersion = .false.
+         !! Whether `keywords.dft.dispersion` asked for an empirical dispersion
+         !! correction. Absent, or `false`, leaves it off.
+      character(len=16) :: dft_dispersion_type = "d3bj"
+         !! Which correction, when `dft_dispersion` is true. Only meaningful
+         !! then: a deck that switched dispersion off leaves this at its default
+         !! and nothing downstream reads it.
 
       ! keywords.pcm -- the polarizable continuum on the ab initio backends.
       !

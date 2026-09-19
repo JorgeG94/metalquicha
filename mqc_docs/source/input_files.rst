@@ -652,6 +652,25 @@ The integration grid, and how the quadrature walks it:
   the threads with nothing to do at all. Too small and the per-block bookkeeping
   starts to show instead. The useful value depends on the grid and the machine
   together, which is why it is a keyword rather than a constant.
+- ``dispersion``: an empirical dispersion correction on top of the Kohn-Sham
+  energy and gradient. ``"d3bj"`` is D3 with Becke-Johnson rational damping and
+  no three-body term, which is what ``-D3(BJ)`` names in the literature.
+  ``false``, or leaving the key out, is no correction; a bare ``true`` is
+  refused, because D3(BJ) and D3(0) are different numbers for the same
+  functional and nothing downstream could say which was meant.
+
+  The correction comes from `simple-dftd3 <https://github.com/dftd3/simple-dftd3>`_,
+  which is LGPL against this program's MIT, so it is **off at build time unless
+  asked for**: configure with ``-DMQC_ENABLE_DFTD3=ON``. A build without it
+  refuses a deck that names the key rather than quietly returning an undispersed
+  energy. The correction is reported on its own line and kept in its own slot,
+  not folded into the SCF energy.
+
+  A functional with no published D3 damping parameters is refused with the list
+  of those that have them, and so is a ``-V`` functional -- wB97X-V, wB97M-V,
+  B97M-V -- whose own non-local correlation already accounts for dispersion.
+  Asking for a Hessian with dispersion on takes the finite-difference path,
+  since the library supplies no second derivatives.
 
 .. note::
 

@@ -147,6 +147,11 @@ contains
       end if
 
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
+      ! Inside the total above, and written again on its own: see
+      ! `dispersion_energy` in `json_output_data_t`.
+      if (data%has_dispersion) then
+         call json%add(main_obj, "dispersion_energy", data%dispersion_energy)
+      end if
 
       call write_sapt_section(json, main_obj, data)
       call write_efmo_section(json, main_obj, data)
@@ -708,6 +713,11 @@ contains
 
       ! Total energy
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
+      ! Inside the total above, and written again on its own: see
+      ! `dispersion_energy` in `json_output_data_t`.
+      if (data%has_dispersion) then
+         call json%add(main_obj, "dispersion_energy", data%dispersion_energy)
+      end if
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
