@@ -141,7 +141,7 @@ contains
 
       character(len=:), allocatable :: text
       integer :: n_mol, imol
-      logical :: found, settings, found_fukui, found_charges
+      logical :: found, settings, found_fukui, found_charges, found_bond_orders
       logical :: backend_named
 
       ! The two defaults that are not declared on the type itself.
@@ -208,6 +208,15 @@ contains
          config%charges_scheme = "mulliken"
          call optional_string(json, "properties.charges.scheme", &
                               config%charges_scheme)
+      end if
+      ! And again: the object is the request, `scheme` only says which
+      ! definition, defaulted here so the scheme the run used is a value in the
+      ! config and travels into the report and the JSON beside the numbers.
+      call json%info("properties.bond_orders", found=found_bond_orders)
+      if (found_bond_orders) then
+         config%bond_order_scheme = "mayer"
+         call optional_string(json, "properties.bond_orders.scheme", &
+                              config%bond_order_scheme)
       end if
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)

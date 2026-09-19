@@ -512,7 +512,7 @@ Properties
 
 Asked for under ``properties``, beside ``keywords`` rather than inside it: these
 change nothing about the energy, so ``driver`` stays ``"energy"``. There are
-three.
+four.
 
 - **Bonding analysis** -- bond orders and valences over **QUAO**, the
   quasi-atomic orbitals, a basis in which every orbital belongs to one atom. Its
@@ -535,11 +535,18 @@ three.
   spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
   because that scheme fits the electrostatic potential and the total density
   alone determines it. ``properties.charges``.
+- **Mayer bond orders**, over the converged density and the AO overlap:
+  ``B_AB = sum_{mu in A, nu in B} (DS)_mu,nu (DS)_nu,mu`` for a closed shell,
+  and a spin-resolved sum -- not that expression with the total density -- for
+  an open one. Reported per atom pair with the per-atom valence beside it, at
+  no cost beyond the SCF. Shaped like ``charges``: the object is the request
+  and ``scheme`` only says which definition. ``properties.bond_orders``.
 
-Charges have a second surface as well: the Python interface reaches them
-directly, from a closed-shell Hartree-Fock density only, for the trial-partition
-loop that :doc:`charges_and_bond_orders` describes -- along with the
-Wiberg-Mayer bond orders beside them, which have no deck surface at all. The
+Charges and bond orders have a second surface as well: the Python interface
+reaches both directly, from a closed-shell Hartree-Fock density, for the
+trial-partition loop that :doc:`charges_and_bond_orders` describes -- along
+with the semi-empirical Wiberg-Mayer bond orders from xTB, which have no deck
+surface at all and are a different quantity from the Mayer orders above. The
 restriction there is the entry point rather than the schemes, which take a
 density matrix and do not care what produced it.
 

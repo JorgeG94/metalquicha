@@ -4605,6 +4605,20 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF with Mayer bond orders H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/bond_orders/cpu_water_6-31g_mayer.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "the checked energy is the ordinary RHF one, and pinning it is the point: asking for properties.bond_orders must not move the number the deck was already computing. The bond orders themselves have no place in this manifest and are pinned in test/test_mqc_mayer_bond_orders.f90 against PySCF and numpy over the same density; this deck reports O-H 0.7986 and an oxygen valence of 1.5972."
+        },
+        {
+            "name": "UHF with Mayer bond orders O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/bond_orders/cpu_o2_cc-pvdz_mayer.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented",
+            "reference_note": "the open-shell case, and the energy is the same UHF number cpu_o2_cc-pvdz_m3.json pins -- the property changes nothing about the SCF. What the run exercises is the spin-resolved formula: Mayer's open-shell bond order is a sum over spins and NOT the closed-shell expression applied to the total density. PySCF over the same converged density gives 1.854271 the right way and 1.406158 the wrong way, so a table printing 1.8543 has taken the right branch."
+        },
+        {
             "name": "RHF with Fukui indices (chelpg) H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
             "expected_energy": -75.984779843967,

@@ -127,6 +127,12 @@ module mqc_config_types
          !! From `properties.charges.scheme`. Allocated means the deck asked for
          !! atomic partial charges; "mulliken" (the default) or "chelpg" chooses
          !! how the converged density is partitioned.
+      character(len=:), allocatable :: bond_order_scheme
+         !! From `properties.bond_orders.scheme`. Allocated means the deck
+         !! asked for bond orders over the converged density; "mayer" is the
+         !! only scheme, and it is stored rather than assumed because the
+         !! number is not interpretable without it -- the xTB and quasi-atomic
+         !! bond orders elsewhere in this code are different quantities.
       logical :: bonding_energy = .false.
          !! From `properties.bonding_analysis.energy_decomposition`. Off by
          !! default: the two-electron term needs the dense `n_ao^4` integral

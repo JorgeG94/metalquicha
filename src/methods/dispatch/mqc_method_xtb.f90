@@ -825,6 +825,10 @@ contains
       if (allocated(mat2)) then
          if (size(mat2, 1) == n_atoms .and. size(mat2, 2) == n_atoms) then
             result%bond_orders = real(mat2, dp)
+            ! Named, because these are not the Mayer orders the ab initio path
+            ! reports: same family, different Hamiltonian and basis, and they
+            ! agree only as a ranking.
+            result%bond_order_scheme = "xtb"
             result%has_bond_orders = .true.
             return
          end if
@@ -838,6 +842,7 @@ contains
             do ispin = 1, size(mat3, 3)
                result%bond_orders = result%bond_orders + real(mat3(:, :, ispin), dp)
             end do
+            result%bond_order_scheme = "xtb"
             result%has_bond_orders = .true.
             return
          end if

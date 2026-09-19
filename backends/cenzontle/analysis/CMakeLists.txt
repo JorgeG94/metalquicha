@@ -1,6 +1,7 @@
 target_sources(
   ${main_lib}
   PRIVATE mqc_czt_charges.f90
+          mqc_czt_bond_orders.f90
           mqc_czt_dma.f90
           mqc_czt_localize.f90
           mqc_czt_quao.f90

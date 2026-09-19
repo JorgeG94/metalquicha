@@ -351,6 +351,10 @@ module mqc_method_config
          !! "mulliken" or "chelpg". Unallocated means no charges, which is why
          !! this is allocatable rather than a "none" sentinel like
          !! `bonding_analysis` -- there is no scheme that means "do not".
+      character(len=:), allocatable :: bond_order_scheme
+         !! Allocated when `properties.bond_orders` asked for bond orders over
+         !! the converged density; "mayer". Unallocated means none, for the
+         !! same reason `charges_scheme` is allocatable.
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
       logical :: bonding_restrict_localization = .false.
