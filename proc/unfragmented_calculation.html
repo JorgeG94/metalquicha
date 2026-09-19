@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">229 statements</a>
+                 title=" 1.0% of total for procedures.">243 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,10 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error~58">error</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-full_system~3">full_system</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~46">i</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result~14">result</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error~27">error</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-full_system">full_system</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~23">i</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result">result</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms">total_atoms</a>
         </div>
       </div>
@@ -185,10 +185,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
               </ul>
             </li>
@@ -573,7 +573,7 @@ If json_data is present, populates it for centralized JSON output</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~14"></span>
+              <span class="anchor" id="variable-sys_geom~3"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -588,7 +588,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~4"></span>
+              <span class="anchor" id="variable-config~2"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -618,7 +618,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~6"></span>
+              <span class="anchor" id="variable-json_data"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2223,7 +2223,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~58"></span>
+              <span class="anchor" id="variable-error~27"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2240,7 +2240,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_system~3"></span>
+              <span class="anchor" id="variable-full_system"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2257,7 +2257,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~46"></span>
+              <span class="anchor" id="variable-i~23"></span>
               integer,
             </td>
               <td>private</td>
@@ -2274,7 +2274,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~14"></span>
+              <span class="anchor" id="variable-result"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -2536,6 +2536,17 @@ large graphs.</div>
 <span class="w">                        </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_energy</span>
 <span class="w">                        </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_vibrational</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
+<span class="w">                        </span><span class="c">! Whether the reference the whole calculation rests on</span>
+<span class="w">                        </span><span class="c">! is a minimum, when `keywords.scf.stability` asked.</span>
+<span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_stability</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_stable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">stability_stable</span>
+<span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_curvature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">stability_curvature</span>
+<span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_has_curvature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="k">result</span><span class="p">%</span><span class="n">stability_has_curvature</span>
+<span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_rotations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">stability_rotations</span>
+<span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_stability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">                        </span><span class="k">end if</span>
+
 <span class="w">                        </span><span class="c">! Copy vibrational data</span>
 <span class="w">                        </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">frequencies</span><span class="p">(</span><span class="n">n_modes</span><span class="p">))</span>
 <span class="w">                        </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">reduced_masses</span><span class="p">(</span><span class="n">n_modes</span><span class="p">))</span>
@@ -2663,6 +2674,17 @@ large graphs.</div>
 <span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">fukui_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">fukui_scheme</span>
 <span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_fukui</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">end if</span>
+
+<span class="w">            </span><span class="c">! Whether the reference the whole calculation rests on</span>
+<span class="w">            </span><span class="c">! is a minimum, when `keywords.scf.stability` asked.</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_stability</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_stable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">stability_stable</span>
+<span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_curvature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">stability_curvature</span>
+<span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_has_curvature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="k">result</span><span class="p">%</span><span class="n">stability_has_curvature</span>
+<span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">stability_rotations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">stability_rotations</span>
+<span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_stability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">            </span><span class="k">end if</span>
 <span class="k">         end if</span>
 <span class="k">      end block</span>
 <span class="k">      call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
@@ -2691,7 +2713,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-19 02:13 +0000             </p>
+ on 2026-09-19 15:38 +0000             </p>
           </div>
         </div>
         <br>

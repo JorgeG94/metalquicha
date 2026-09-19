@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.6% of total for modules and submodules.">166 statements</a>
+                 title=" 0.7% of total for modules and submodules.">176 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -211,8 +211,8 @@ the cuEST backend.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
               </ul>
             </li>
@@ -1391,7 +1391,7 @@ quietly substituted.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator~3"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1411,7 +1411,7 @@ not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -1429,7 +1429,7 @@ meaning and same default as the xTB path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~4"></span>
+              <span class="anchor" id="variable-angular_points~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1482,7 +1482,7 @@ always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~6"></span>
+              <span class="anchor" id="variable-backend~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1516,7 +1516,7 @@ always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-block_size~3"></span>
+              <span class="anchor" id="variable-block_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1758,7 +1758,7 @@ none were asked for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric~3"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1809,7 +1809,7 @@ none were asked for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~4"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1843,7 +1843,7 @@ none were asked for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~4"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1880,7 +1880,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~4"></span>
+              <span class="anchor" id="variable-energy_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1966,7 +1966,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~6"></span>
+              <span class="anchor" id="variable-functional~5"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1983,7 +1983,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol~3"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2000,7 +2000,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~4"></span>
+              <span class="anchor" id="variable-grid_level~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2017,7 +2017,7 @@ term is zero.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~10"></span>
+              <span class="anchor" id="variable-guess~5"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2036,7 +2036,7 @@ to &lsquo;sad&rsquo; and cuEST to &lsquo;gwh&rsquo;; an explicit spelling wins o
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~3"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -2050,7 +2050,7 @@ to &lsquo;sad&rsquo; and cuEST to &lsquo;gwh&rsquo;; an explicit spelling wins o
             <td>
 <p>The basis ladder for &lsquo;basis_set_projection&rsquo;, one entry per
 preliminary SCF in order. The target basis is <code>basis_set</code> and is not
-repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cuest_scf_settings_t.html#variable-guess_steps~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+repeated, so STO-3G then 6-31G then cc-pVTZ is two steps.</p><a href="../type/cuest_scf_settings_t.html#variable-guess_steps~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2107,7 +2107,7 @@ options, whose defaults are the ones that count.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock~3"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2125,7 +2125,7 @@ options, whose defaults are the ones that count.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift~3"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2143,7 +2143,7 @@ tapered to zero before the SCF exits. See <code>scf_config_t</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence~3"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2162,7 +2162,7 @@ dependent. Zero means the orthogonaliser&rsquo;s own cutoff. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~7"></span>
+              <span class="anchor" id="variable-max_iter~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -2214,7 +2214,7 @@ Read by the CPU backend only; cuEST has no CI.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlc_grid_level~3"></span>
+              <span class="anchor" id="variable-nlc_grid_level~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2249,7 +2249,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~3"></span>
+              <span class="anchor" id="variable-radial_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2300,7 +2300,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-screening_tolerance~3"></span>
+              <span class="anchor" id="variable-screening_tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2351,6 +2351,42 @@ backend only.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-second_order~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>second_order</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+<p>Converge the closed-shell SCF by trust-region Newton on the orbital
+rotations once DIIS has got it close. Only the cenzontle backend
+acts on it.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-soscf_start~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>soscf_start</strong></td>
+<td> =</td>
+                <td>1.0e-2_dp</td>
+            <td>
+<p>The commutator at which that switch happens.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-spherical~2"></span>
               logical,
             </td>
@@ -2364,6 +2400,60 @@ backend only.</p>
                 <td>.true.</td>
             <td>
 <p>Pure (spherical) vs Cartesian angular functions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stability~3"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stability</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+<p>Run the wavefunction stability analysis once the SCF converges.
+Only the cenzontle backend acts on it; the others leave it alone.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stability_max_iter~3"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stability_max_iter</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+<p>Where the stability analysis&rsquo; eigensolve stops and how long it may
+take. See <code>mqc_calculation_defaults</code> for why the tolerance is
+looser than the response solve&rsquo;s.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stability_tol~3"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stability_tol</strong></td>
+<td> =</td>
+                <td>1.0e-6_dp</td>
+            <td>
+
             </td>
         </tr>
         <tr>
@@ -2385,7 +2475,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2402,7 +2492,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~14"></span>
+              <span class="anchor" id="variable-verbose~10"></span>
               logical,
             </td>
               <td>public</td>
@@ -2451,7 +2541,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~10"></span>
+              <span class="anchor" id="variable-method_type~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2501,7 +2591,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~13"></span>
+              <span class="anchor" id="variable-settings~12"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2556,7 +2646,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~14"></span>
+              <span class="anchor" id="variable-settings~13"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2571,7 +2661,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~5"></span>
+              <span class="anchor" id="variable-options~3"></span>
               class(<a href='../type/scf_options_t.html'>scf_options_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2611,7 +2701,7 @@ backend only.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~43"></span>
+              <span class="anchor" id="variable-name~30"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2626,7 +2716,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~7"></span>
+              <span class="anchor" id="variable-kind~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2641,7 +2731,7 @@ backend only.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~194"></span>
+              <span class="anchor" id="variable-error~139"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2684,7 +2774,7 @@ backend only.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-19 02:13 +0000             </p>
+ on 2026-09-19 15:38 +0000             </p>
           </div>
         </div>
         <br>

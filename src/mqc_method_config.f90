@@ -11,7 +11,10 @@ module mqc_method_config
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
                                        DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL, &
-                                       DEFAULT_RESPONSE_MAX_ITER
+                                       DEFAULT_RESPONSE_MAX_ITER, &
+                                       DEFAULT_STABILITY_TOL, &
+                                       DEFAULT_STABILITY_MAX_ITER, &
+                                       DEFAULT_SOSCF_START
    implicit none
    private
 
@@ -414,6 +417,18 @@ module mqc_method_config
       integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
          !! The analytic Hessian's coupled-perturbed solve: where it stops, how
          !! long it may take, and how many perturbations share a pass.
+      logical :: stability = .false.
+         !! Diagonalise the electronic Hessian after the SCF converges and
+         !! report whether the solution is a minimum. See
+         !! `mqc_czt_ov_hessian` for what "a minimum" covers.
+      real(dp) :: stability_tol = DEFAULT_STABILITY_TOL
+      integer :: stability_max_iter = DEFAULT_STABILITY_MAX_ITER
+         !! Where that diagonalisation stops and how long it may take.
+         !!
+         !! `second_order` and `soscf_start` are **not** here: they say how the
+         !! SCF is driven rather than what is analysed afterwards, so they live
+         !! in `scf_numerics_t`, which this type extends and every SCF in the
+         !! program is configured by.
       type(pcm_config_t) :: pcm
          !! Continuum solvation. A property of the reference rather than of the
          !! functional, so every extending type inherits it.
@@ -585,6 +600,18 @@ module mqc_method_config
       integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
       integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
          !! The analytic Hessian's coupled-perturbed solve
+      logical :: stability = .false.
+         !! Diagonalise the electronic Hessian after the SCF converges and
+         !! report whether the solution is a minimum. See
+         !! `mqc_czt_ov_hessian` for what "a minimum" covers.
+      real(dp) :: stability_tol = DEFAULT_STABILITY_TOL
+      integer :: stability_max_iter = DEFAULT_STABILITY_MAX_ITER
+         !! Where that diagonalisation stops and how long it may take.
+      logical :: second_order = .false.
+         !! Converge the SCF by trust-region Newton on the orbital rotations
+         !! once DIIS has brought the commutator below `soscf_start`.
+      real(dp) :: soscf_start = DEFAULT_SOSCF_START
+         !! Where that switch happens, as a commutator.
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name (HF, DFT, MCSCF)
       character(len=32) :: ecp_set = ""
@@ -719,6 +746,11 @@ contains
       this%hessian_response_tol = DEFAULT_RESPONSE_TOL
       this%hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
       this%hessian_response_batch = DEFAULT_RESPONSE_BATCH
+      this%stability = .false.
+      this%stability_tol = DEFAULT_STABILITY_TOL
+      this%stability_max_iter = DEFAULT_STABILITY_MAX_ITER
+      this%second_order = .false.
+      this%soscf_start = DEFAULT_SOSCF_START
       this%basis_set = "sto-3g"
       this%use_spherical = .true.
 

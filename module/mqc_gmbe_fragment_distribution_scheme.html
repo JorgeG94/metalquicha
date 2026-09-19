@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.9% of total for modules and submodules.">1037 statements</a>
+                 title=" 3.8% of total for modules and submodules.">1037 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -196,25 +196,25 @@ PIE-based MPI coordinator</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
                   <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
-                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2846,7 +2846,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~4"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2861,7 +2861,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~68"></span>
+              <span class="anchor" id="variable-sys_geom~88"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2891,7 +2891,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~12"></span>
+              <span class="anchor" id="variable-calc_type~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2906,7 +2906,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~32"></span>
+              <span class="anchor" id="variable-json_data~29"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2991,7 +2991,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~64"></span>
+              <span class="anchor" id="variable-sys_geom~84"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3021,7 +3021,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~11"></span>
+              <span class="anchor" id="variable-calc_type~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3036,7 +3036,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~31"></span>
+              <span class="anchor" id="variable-json_data~28"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3076,7 +3076,7 @@ atom list, displacement code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-t~3"></span>
+              <span class="anchor" id="variable-t~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3106,7 +3106,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~66"></span>
+              <span class="anchor" id="variable-sys_geom~86"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3181,7 +3181,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~17"></span>
+              <span class="anchor" id="variable-world_comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3251,7 +3251,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~65"></span>
+              <span class="anchor" id="variable-sys_geom~85"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3341,7 +3341,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~16"></span>
+              <span class="anchor" id="variable-world_comm~19"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3411,7 +3411,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~67"></span>
+              <span class="anchor" id="variable-sys_geom~87"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3516,7 +3516,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~18"></span>
+              <span class="anchor" id="variable-world_comm~21"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3801,7 +3801,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3831,7 +3831,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~7"></span>
+              <span class="anchor" id="variable-coord_timer~6"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3901,7 +3901,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~8"></span>
+              <span class="anchor" id="variable-results~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3931,7 +3931,7 @@ atom list, displacement code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~8"></span>
+              <span class="anchor" id="variable-coord_timer~7"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -4089,7 +4089,7 @@ atom list, displacement code.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-19 02:13 +0000             </p>
+ on 2026-09-19 15:38 +0000             </p>
           </div>
         </div>
         <br>

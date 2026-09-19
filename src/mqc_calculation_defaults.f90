@@ -23,6 +23,29 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_RESPONSE_MAX_ITER = 50
    !! Krylov cycles the solve may take before it reports non-convergence.
 
+   real(dp), parameter, public :: DEFAULT_STABILITY_TOL = 1.0e-6_dp
+   !! Root-mean-square residual at which a wavefunction stability analysis
+   !! accepts its lowest orbital-rotation eigenpair. Looser than the response
+   !! solve above on purpose: that one's answer is a Hessian and the error
+   !! propagates into it, while this one's answer is the *sign* of an
+   !! eigenvalue, and every iteration spent tightening it is a Fock build.
+   integer, parameter, public :: DEFAULT_STABILITY_MAX_ITER = 100
+   !! Davidson iterations the stability analysis may take before it reports
+   !! non-convergence.
+
+   real(dp), parameter, public :: DEFAULT_SOSCF_START = 1.0e-2_dp
+   !! Commutator below which a second-order SCF stops extrapolating and starts
+   !! taking Newton steps, as `max|FDS - SDF|` in the orthogonal basis.
+   !!
+   !! **The switch is what makes the method robust, so the threshold is not a
+   !! formality.** A Newton step from a poor density diverges: the quadratic
+   !! model is only a model near the point it was built at, and an initial
+   !! guess is not near the solution. 1e-2 is comfortably inside the basin on
+   !! the systems this was measured on and still early enough that the
+   !! second-order phase has iterations left to be worth anything. Raising it
+   !! hands Newton a worse starting point; lowering it spends DIIS iterations
+   !! the Newton steps would have done in fewer.
+
    ! =========================================================================
    ! SCF
    ! =========================================================================

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">236 statements</a>
+                 title=" 1.0% of total for procedures.">241 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -194,7 +194,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config"></span>
+              <span class="anchor" id="variable-mqc_config~2"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -209,7 +209,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -254,7 +254,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments"></span>
+              <span class="anchor" id="variable-n_fragments~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -273,7 +273,7 @@ looks right. Pass the count from wherever the geometry came from.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~20"></span>
+              <span class="anchor" id="variable-error~61"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -1255,6 +1255,11 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">hessian_response_max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">         </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_response_max_iter</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">hessian_response_batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_response_batch</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">stability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_stability</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">stability_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_stability_tolerance</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">stability_max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_stability_maxiter</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">second_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_second_order</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">soscf_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_soscf_start</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_temperature</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">pressure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_pressure</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">aimd</span><span class="p">%</span><span class="n">dt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">aimd_dt</span>
@@ -1488,7 +1493,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-19 02:13 +0000             </p>
+ on 2026-09-19 15:38 +0000             </p>
           </div>
         </div>
         <br>

@@ -258,6 +258,11 @@ contains
       driver_config%method_config%hessian_response_max_iter = &
          mqc_config%hessian_response_max_iter
       driver_config%method_config%hessian_response_batch = mqc_config%hessian_response_batch
+      driver_config%method_config%stability = mqc_config%scf_stability
+      driver_config%method_config%stability_tol = mqc_config%scf_stability_tolerance
+      driver_config%method_config%stability_max_iter = mqc_config%scf_stability_maxiter
+      driver_config%method_config%second_order = mqc_config%scf_second_order
+      driver_config%method_config%soscf_start = mqc_config%scf_soscf_start
       driver_config%hessian%temperature = mqc_config%hessian_temperature
       driver_config%hessian%pressure = mqc_config%hessian_pressure
       driver_config%aimd%dt = mqc_config%aimd_dt

@@ -69,6 +69,21 @@ module mqc_scf_types
          !! Which measure decides this SCF has stopped. See
          !! `mqc_scf_convergence`; the default is the energy-and-commutator
          !! pair.
+      logical :: second_order = .false.
+         !! `keywords.scf.second_order`. Converge the closed-shell reference by
+         !! trust-region Newton on the orbital rotations, once DIIS has brought
+         !! it close.
+         !!
+         !! **Not a way to replace DIIS, only to finish after it.** A Newton
+         !! step from a poor density diverges, so the first phase is not
+         !! optional; `soscf_start` is where the handover happens. Off by
+         !! default because each Newton step costs several Fock builds, so on a
+         !! well-behaved system it converges in fewer iterations and more Fock
+         !! builds -- which is the number that matters.
+      real(dp) :: soscf_start = 0.0_dp
+         !! The commutator at which that handover happens. Zero means the
+         !! backend's own default, as `grad_tol` and `linear_dependence` do
+         !! above.
       logical :: allow_crap_scf = .false.
          !! Keep a non-converged SCF instead of failing
       character(len=32) :: guess = "auto"
@@ -151,6 +166,19 @@ contains
          "    guess ", trim(scf%guess), "   incremental_fock ", scf%incremental_fock, &
          "   allow_crap_scf ", scf%allow_crap_scf
       call logger%info(trim(line))
+      ! Only when it is on. An SCF converged entirely by DIIS is the normal
+      ! case, and a line saying "second_order F" on every run would be noise.
+      if (scf%second_order) then
+         if (scf%soscf_start > 0.0_dp) then
+            write (line, "(a,es9.2,a)") &
+               "    second_order on, handing over from DIIS below |FDS-SDF| ", &
+               scf%soscf_start, "  (stated)"
+         else
+            write (line, "(a)") &
+               "    second_order on, handing over from DIIS at the backend default"
+         end if
+         call logger%info(trim(line))
+      end if
    end subroutine print_scf_config
 
 end module mqc_scf_types

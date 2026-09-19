@@ -1,0 +1,759 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_orbital_rotation &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_orbital_rotation
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.4% of total for modules and submodules.">107 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_orbital_rotation.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_orbital_rotation.f90.html'>mqc_orbital_rotation.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_orbital_rotation</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#variable-energy_resolution">ENERGY_RESOLUTION</a>
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#variable-max_rotation">MAX_ROTATION</a>
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#variable-min_curvature">MIN_CURVATURE</a>
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#variable-min_rotation">MIN_ROTATION</a>
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#variable-saddle_curvature">SADDLE_CURVATURE</a>
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#variable-trust_growth">TRUST_GROWTH</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#proc-level_shifted_step">level_shifted_step</a>
+            <a class="list-group-item" href="../module/mqc_orbital_rotation.html#proc-rotation_matrix">rotation_matrix</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p><code>C -&gt; C exp(kappa)</code>, and the level-shifted trust-region Newton step that
+chooses <code>kappa</code>.</p>
+<p>Lifted out of <code>mqc_czt_mcscf</code>, which had both to itself. Nothing here
+knows what the energy is a function of &ndash; not a CI vector, not a density
+&ndash; so the same step control serves CASSCF&rsquo;s orbital optimisation and the
+second-order SCF, and the constants below are decided once rather than
+twice. The CASSCF numbers are pinned by validated tests, so this module
+is a <em>move</em> and not a rewrite: <code>rotation_matrix</code> and <code>level_shifted_step</code>
+are the bodies that were there, with the flat-parameter mapping left
+behind in the caller that owns the pair list.</p>
+<h2 id="why-the-parametrisation-is-an-exponential">Why the parametrisation is an exponential</h2>
+<p><code>exp(kappa)</code> with <code>kappa</code> antisymmetric is orthogonal for any <code>kappa</code>, so
+a step can be as long as it likes without the orbitals drifting out of
+orthonormality. A bad step is then only a bad step, never an invalid
+state, which is what lets the trust region be enforced by backtracking on
+the energy rather than by projecting the step.</p>
+<h2 id="the-sign-convention-which-is-not-a-matter-of-taste">The sign convention, which is not a matter of taste</h2>
+<p><code>kappa(p, q)</code> for <code>p &gt; q</code> is the parameter, <code>kappa(q, p) = -kappa(p, q)</code>,
+and the new orbitals are <code>C exp(kappa)</code>. Under that convention the
+gradient whose components this expects is</p>
+<div class="codehilite"><pre><span></span><code>g_pq = dE / d kappa_pq
+</code></pre></div>
+
+<p>and a descent step is <code>-H^-1 g</code>, which is what <code>level_shifted_step</code>
+returns. Both <code>C exp(kappa)</code> and <code>C exp(-kappa)</code> appear in the
+literature, and taking the wrong one gives an optimiser that climbs;
+<code>test_mqc_mcscf.f90</code> fixes it by finite differences rather than by
+assertion, and <code>test_mqc_czt_soscf.f90</code> fixes it again for the SCF.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_orbital_rotation~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_orbital_rotationUsesGraph" width="293pt" height="200pt"
+ viewBox="0.00 0.00 293.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_orbital_rotation~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+<title>module~~mqc_orbital_rotation~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 289,-196 289,4 -4,4"/>
+<!-- module~mqc_orbital_rotation -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_node1" class="node">
+<title>module~mqc_orbital_rotation</title>
+<polygon fill="none" stroke="black" points="285,-108 163,-108 163,-84 285,-84 285,-108"/>
+<text text-anchor="middle" x="224" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_orbital_rotation</text>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_node2" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_orbital_rotation~~UsesGraph_node2"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="97,-192 30,-192 30,-168 97,-168 97,-192"/>
+<text text-anchor="middle" x="63.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_orbital_rotation&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_edge1" class="edge">
+<title>module~mqc_orbital_rotation&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M207.45,-108.02C189.05,-121.8 157.12,-144.36 127,-159 120.71,-162.06 113.85,-164.86 107.07,-167.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="105.55,-164.16 97.25,-170.75 107.84,-170.78 105.55,-164.16"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_node3" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="120.5,-150 6.5,-150 6.5,-126 120.5,-126 120.5,-150"/>
+<text text-anchor="middle" x="63.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_orbital_rotation&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_edge2" class="edge">
+<title>module~mqc_orbital_rotation&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M177.58,-108.04C159.51,-112.82 138.55,-118.38 119.61,-123.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="118.7,-120.02 109.93,-125.96 120.49,-126.78 118.7,-120.02"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_node4" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="90.5,-108 36.5,-108 36.5,-84 90.5,-84 90.5,-108"/>
+<text text-anchor="middle" x="63.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_orbital_rotation&#45;&gt;pic_io -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_edge3" class="edge">
+<title>module~mqc_orbital_rotation&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M162.63,-96C141.86,-96 119.25,-96 100.98,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="100.76,-92.5 90.76,-96 100.76,-99.5 100.76,-92.5"/>
+</g>
+<!-- pic_lapack_interfaces -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_node5" class="node">
+<title>pic_lapack_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="127,-66 0,-66 0,-42 127,-42 127,-66"/>
+<text text-anchor="middle" x="63.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+</g>
+<!-- module~mqc_orbital_rotation&#45;&gt;pic_lapack_interfaces -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_edge4" class="edge">
+<title>module~mqc_orbital_rotation&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M177.58,-83.96C159.51,-79.18 138.55,-73.62 119.61,-68.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="120.49,-65.22 109.93,-66.04 118.7,-71.98 120.49,-65.22"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_node6" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="94.5,-24 32.5,-24 32.5,0 94.5,0 94.5,-24"/>
+<text text-anchor="middle" x="63.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_orbital_rotation&#45;&gt;pic_types -->
+<g id="module~~mqc_orbital_rotation~~UsesGraph_edge5" class="edge">
+<title>module~mqc_orbital_rotation&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M207.45,-83.98C189.05,-70.2 157.12,-47.64 127,-33 119.83,-29.52 111.94,-26.37 104.25,-23.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="105.28,-20.3 94.69,-20.42 103.04,-26.93 105.28,-20.3"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_resolution"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ENERGY_RESOLUTION</strong></td>
+<td> =</td>
+                <td>1.0e-12_dp</td>
+            <td>
+                <p>An energy change this small is not a change, in hartree.</p>
+<p>About fifteen units in the last place of a molecular energy, so it is
+the resolution of the arithmetic rather than a convergence criterion.
+Near the solution a Newton step is worth <code>g^2/H</code>, which drops below
+what the energy can report while the gradient is still shrinking, so a
+step whose <em>predicted</em> gain is below this is taken without being
+tested rather than rejected on the noise of the objective.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_rotation"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MAX_ROTATION</strong></td>
+<td> =</td>
+                <td>0.2_dp</td>
+            <td>
+                <p>Largest rotation angle the trust radius is allowed to grow back to, in
+radians. Roughly 11 degrees.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min_curvature"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MIN_CURVATURE</strong></td>
+<td> =</td>
+                <td>1.0e-3_dp</td>
+            <td>
+                <p>Smallest curvature the Newton equations are allowed to divide by, in
+hartree per radian squared.</p>
+<p>Every eigenvalue is raised until the smallest reaches this, so a mode
+that is genuinely stiff keeps its own curvature and only the soft and
+the inverted ones are regularised. It has to sit below the softest real
+mode and above zero; larger damps directions that did not need it and
+costs the quadratic convergence the Hessian was built for.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min_rotation"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MIN_ROTATION</strong></td>
+<td> =</td>
+                <td>1.0e-6_dp</td>
+            <td>
+                <p>If backtracking has shrunk the trust radius this far and the energy
+still rises, the step direction is not a descent direction and halving
+it again will not help. Better to stop and say so.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-saddle_curvature"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>SADDLE_CURVATURE</strong></td>
+<td> =</td>
+                <td>-1.0e-5_dp</td>
+            <td>
+                <p>How negative an eigenvalue has to be before the point is called a
+saddle rather than a minimum.</p>
+<p>Deliberately loose. A nearly redundant rotation &ndash; an active orbital
+whose occupation has gone to two, say &ndash; has a nearly zero eigenvalue
+whose sign is decided by how well the CI converged, and chasing those
+buys nothing. A real symmetry-breaking mode is orders of magnitude
+below this.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-trust_growth"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>TRUST_GROWTH</strong></td>
+<td> =</td>
+                <td>1.3_dp</td>
+            <td>
+                <p>How fast the trust radius recovers after a successful step. Slower than
+it shrinks: an over-long step costs a wasted objective evaluation, an
+over-short one only an iteration.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-level_shifted_step"></span> <h3>public  subroutine <a href='../proc/level_shifted_step.html'>level_shifted_step</a>(hessian, gradient, escape, step, lowest, predicted, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The Newton step, level shifted, and pushed off a saddle when it is on one</p><a href="../proc/level_shifted_step.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hessian~17"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hessian</strong>(:,:)</td>
+            <td>
+<p>(n_param, n_param), symmetric, in the same units as <code>gradient</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gradient~13"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gradient</strong>(:)</td>
+            <td>
+<p>(n_param), <code>dE/d kappa</code> on each parameter</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-escape"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>escape</strong></td>
+            <td>
+<p>How far to displace a mode that has negative curvature and no
+gradient, in radians</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-step~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>step</strong>(:)</td>
+            <td>
+<p>(n_param), the displacement to take</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lowest~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lowest</strong></td>
+            <td>
+<p>Smallest Hessian eigenvalue. Negative means the point the step was
+taken from is not a minimum, whatever the gradient says.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-predicted"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>predicted</strong></td>
+            <td>
+<p>What the quadratic model says the step is worth, as a positive
+energy decrease. The caller uses it to tell a step that is too small
+to measure from one that is too long to take.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~172"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-rotation_matrix"></span> <h3>public  subroutine <a href='../proc/rotation_matrix.html'>rotation_matrix</a>(kappa, rotation)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>exp(kappa)</code> for antisymmetric <code>kappa</code>, by scaling and squaring</p><a href="../proc/rotation_matrix.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kappa"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kappa</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rotation~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>rotation</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-19 15:38 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
