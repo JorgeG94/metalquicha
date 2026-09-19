@@ -223,15 +223,15 @@ reaching a determinant goes through <code>mqc_ormas_space</code>.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
-                  <li class="list-inline-item"><a href='mqc_davidson.html'>mqc_davidson</a></li>
-                  <li class="list-inline-item"><a href='mqc_ormas_space.html'>mqc_ormas_space</a></li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_ormas_space.html'>mqc_ormas_space</a></li>
+                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_davidson.html'>mqc_davidson</a></li>
+                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -791,7 +791,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~4"></span>
+              <span class="anchor" id="variable-folded~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -834,7 +834,7 @@ larger space means more runs, not a larger array.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/ormas_operator_t.html#boundprocedure-apply~2'>apply</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_apply.html'>ormas_apply</a></td>
+  <strong><a href='../type/ormas_operator_t.html#boundprocedure-apply~3'>apply</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/ormas_apply.html'>ormas_apply</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1157,7 +1157,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strings~4"></span>
+              <span class="anchor" id="variable-strings~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1187,7 +1187,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-table~2"></span>
+              <span class="anchor" id="variable-table~4"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1202,7 +1202,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~144"></span>
+              <span class="anchor" id="variable-error~160"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1257,7 +1257,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~9"></span>
+              <span class="anchor" id="variable-alpha~11"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1272,7 +1272,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~9"></span>
+              <span class="anchor" id="variable-beta~11"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1432,7 +1432,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~145"></span>
+              <span class="anchor" id="variable-error~161"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1502,7 +1502,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~8"></span>
+              <span class="anchor" id="variable-alpha~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1517,7 +1517,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~8"></span>
+              <span class="anchor" id="variable-beta~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1562,7 +1562,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~2"></span>
+              <span class="anchor" id="variable-diagonal~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1577,7 +1577,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~140"></span>
+              <span class="anchor" id="variable-error~156"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1777,7 +1777,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~6"></span>
+              <span class="anchor" id="variable-folded~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1852,7 +1852,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~2"></span>
+              <span class="anchor" id="variable-n_roots~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1882,7 +1882,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~142"></span>
+              <span class="anchor" id="variable-error~158"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1937,7 +1937,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~5"></span>
+              <span class="anchor" id="variable-folded~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2027,7 +2027,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~7"></span>
+              <span class="anchor" id="variable-sigma~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2042,7 +2042,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~141"></span>
+              <span class="anchor" id="variable-error~157"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2112,7 +2112,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~7"></span>
+              <span class="anchor" id="variable-folded~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2172,7 +2172,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~8"></span>
+              <span class="anchor" id="variable-sigma~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2187,7 +2187,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~143"></span>
+              <span class="anchor" id="variable-error~159"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2287,7 +2287,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~3"></span>
+              <span class="anchor" id="variable-n_roots~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2317,7 +2317,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-vectors"></span>
+              <span class="anchor" id="variable-vectors~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2332,7 +2332,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~147"></span>
+              <span class="anchor" id="variable-error~163"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2347,7 +2347,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~10"></span>
+              <span class="anchor" id="variable-tolerance~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2362,7 +2362,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations~2"></span>
+              <span class="anchor" id="variable-max_iterations~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2377,7 +2377,7 @@ larger space means more runs, not a larger array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~6"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2408,7 +2408,7 @@ has from the previous macro-iteration</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_offset"></span>
+              <span class="anchor" id="variable-energy_offset~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2449,7 +2449,7 @@ total rather than the active-space energy alone</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-string~5"></span>
+              <span class="anchor" id="variable-string~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2464,7 +2464,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_orbitals~4"></span>
+              <span class="anchor" id="variable-n_orbitals~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2479,7 +2479,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-orbitals"></span>
+              <span class="anchor" id="variable-orbitals~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2534,7 +2534,7 @@ total rather than the active-space energy alone</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~121"></span>
+              <span class="anchor" id="variable-this~124"></span>
               class(<a href='../type/ormas_operator_t.html'>ormas_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2549,7 +2549,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-vector"></span>
+              <span class="anchor" id="variable-vector~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2564,7 +2564,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-image"></span>
+              <span class="anchor" id="variable-image~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2579,7 +2579,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~146"></span>
+              <span class="anchor" id="variable-error~162"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2619,7 +2619,7 @@ total rather than the active-space energy alone</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-strings~3"></span>
+              <span class="anchor" id="variable-strings~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2634,7 +2634,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_orbitals~5"></span>
+              <span class="anchor" id="variable-n_orbitals~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2649,7 +2649,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_electrons~5"></span>
+              <span class="anchor" id="variable-n_electrons~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2754,7 +2754,7 @@ total rather than the active-space energy alone</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-occupied~3"></span>
+              <span class="anchor" id="variable-occupied~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2797,7 +2797,7 @@ total rather than the active-space energy alone</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-18 17:02 +0000             </p>
+ on 2026-09-19 02:13 +0000             </p>
           </div>
         </div>
         <br>
