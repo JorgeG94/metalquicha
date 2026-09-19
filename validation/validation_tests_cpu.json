@@ -4473,6 +4473,26 @@
             "requires": "libxc"
         },
         {
+            "name": "KS B3LYP-D3(BJ) (H2O)2 cc-pvdz grid 3 (CPU)",
+            "input": "inputs/cpu/mqc/dft/cpu_w2dimer_cc-pvdz_b3lyp_d3bj.json",
+            "expected_energy": -152.85448836642,
+            "type": "unfragmented",
+            "requires": [
+                "dftd3",
+                "libxc"
+            ]
+        },
+        {
+            "name": "KS PBE-D3(BJ) (H2O)2 cc-pvdz grid 3 (CPU)",
+            "input": "inputs/cpu/mqc/dft/cpu_w2dimer_cc-pvdz_pbe_d3bj.json",
+            "expected_energy": -152.682153842687,
+            "type": "unfragmented",
+            "requires": [
+                "dftd3",
+                "libxc"
+            ]
+        },
+        {
             "name": "NEO-HF H2 cc-pvdz PB4-D, 2 quantum protons (CPU)",
             "input": "inputs/cpu/mqc/neo/cpu_h2_cc-pvdz_neo.json",
             "expected_energy": -1.050784743607,

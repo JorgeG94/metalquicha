@@ -556,6 +556,32 @@ DFT_CASES = [
     ("water", "cc-pvdz", "cam-b3lyp", 3),
 ]
 
+#: Kohn-Sham plus -D3(BJ), as (molecule, basis, functional, level, e_disp).
+#:
+#: The water dimer rather than a monomer: D3 is a pairwise correction and the
+#: intermolecular pairs are where nearly all of it lives, so an intramolecular
+#: case would hide a wiring mistake under a number too small to notice.
+#:
+#: **The reference is a sum, and deliberately not one code's total.** PySCF has
+#: no D3 of its own, so `expected_energy` is `pyscf_rks(...)` -- computed here,
+#: like every other Kohn-Sham reference -- plus the dispersion energy written
+#: below, which comes from s-dftd3's own Python bindings on the same geometry
+#: in Bohr with the same functional and `atm=False`. Written down rather than
+#: computed here for the same reason the NEO energies are: it would make this
+#: generator refuse to run without a library that is off by default, and it
+#: would let a broken pin quietly move a reference. Reproduce with:
+#:
+#:     from dftd3.interface import DispersionModel, RationalDampingParam
+#:     DispersionModel(numbers, coords_bohr).get_dispersion(
+#:         RationalDampingParam(method="b3lyp"), grad=False)["energy"]
+#:
+#: Both entries are gated on `dftd3`, so a build without the library skips them
+#: rather than failing them -- which is every default build.
+DFTD3_CASES = [
+    ("w2dimer", "cc-pvdz", "b3lyp", 3, -0.002331057328572),
+    ("w2dimer", "cc-pvdz", "pbe", 3, -0.001475011597663),
+]
+
 # Unrestricted Kohn-Sham, as (molecule, basis, functional, level, multiplicity).
 # One per rung plus a range-separated hybrid, because each adds something the
 # previous does not: LDA the interleaved rho, GGA the three sigma components and
@@ -3637,6 +3663,28 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {functional:8s} grid={level}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, level, e_disp in DFTD3_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rks(mol.atoms, basis, functional, level)
+        energy += e_disp
+        tag = functional.replace("-", "") + "_d3bj"
+        deck = deck_for(f"{CPU_MQC}/dft", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft")
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": level, "dispersion": "d3bj"}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"KS {functional.upper()}-D3(BJ) {mol.label} {basis} grid {level} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+            "requires": "dftd3",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:8s} D3(BJ) grid={level}  "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, quantum, functional, epc, level, energy in NEO_CASES:
         mol = MOLECULES[name]
