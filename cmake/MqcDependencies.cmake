@@ -196,6 +196,12 @@ if(MQC_ENABLE_SERIAL)
   # sources still `use`, so nothing under src/ or backends/ changes; see
   # compat/omp_lib_serial.f90.
   add_subdirectory(compat)
+  # What a serial build cannot assume about its compiler, where a shim cannot
+  # answer for it. `ieee_exceptions` is the case: it is an intrinsic module, so
+  # only the compiler can provide it, and LFortran does not. The one use of it
+  # here clears flags that MPI start-up raises above one rank, which a serial
+  # build does not have. See src/interface/mqc_session.F90.
+  target_compile_definitions(${main_lib} PRIVATE MQC_SERIAL)
 else()
   find_package(
     OpenMP

@@ -6,7 +6,7 @@ target_sources(
           mqc_capi_system.f90
           mqc_capi_bond_orders.F90
           mqc_validate.f90
-          mqc_session.f90
+          mqc_session.F90
           mqc_capi_session.f90
           mqc_capi_run.f90
           mqc_calculation_interface.f90)
