@@ -1,8 +1,8 @@
 Atomic charges and bond orders
 ==============================
 
-Two properties exposed through the **Python interface**, and charges also
-through a deck. The Python surface is deliberate for both: neither is the output
+Two properties exposed through the **Python interface**, and both also through a
+deck. The Python surface is deliberate for both: neither is the output
 of a calculation somebody asked for, they are inputs to deciding what
 calculation to run. Working out where to cut a molecule means asking about the
 same system many times over many trial partitions, which is a loop, not a JSON
@@ -11,16 +11,148 @@ key.
 Both follow the same shape there -- compute once onto a system handle, read many
 times.
 
-Charges have a second surface because they answer a second question. Once the
-calculation you wanted has run, its charges are a property *of that
-calculation*, and partitioning the density it already converged costs no second
-SCF. That is ``properties.charges``, below, and it is the one to reach for
-unless you are in the trial-partition loop.
+Both have a second surface because they answer a second question. Once the
+calculation you wanted has run, its charges and its bond orders are properties
+*of that calculation*, and reading them off the density it already converged
+costs no second SCF. Those are ``properties.charges`` and
+``properties.bond_orders``, below, and they are the ones to reach for unless you
+are in the trial-partition loop.
 
-Bond orders
------------
+Three things called bond orders
+-------------------------------
 
-Wiberg--Mayer bond orders from xTB, over the whole system.
+Before any of the numbers: this code computes three different quantities under
+that name, they do not agree beyond a trend, and none of them is an
+approximation to either of the others.
+
+======================  ================================  ================================
+Quantity                Where                             What it is
+======================  ================================  ================================
+**Wiberg--Mayer, xTB**  ``compute_bond_orders("gfn2")``   Mayer's definition inside a
+                                                          semi-empirical Hamiltonian, in
+                                                          its own minimal basis
+**Mayer**               ``properties.bond_orders``, or    The same definition over the
+                        ``compute_bond_orders("mayer")``  converged ab initio density and
+                                                          the AO overlap
+**QUAO kinetic**        ``properties.bonding_analysis``   Ruedenberg's definition in the
+                                                          orthonormal quasi-atomic basis,
+                                                          plus an energy-like partner
+======================  ================================  ================================
+
+Which to use. The xTB orders are for **deciding where to cut a molecule**: they
+cost one semi-empirical single point, so a loop over trial partitions can afford
+them. The Mayer orders are for **checking that decision**, and for reporting the
+bonding of a calculation you were running anyway. The QUAO analysis is for
+**taking a bonding picture apart** -- it comes with orbitals, an energy
+decomposition and a table of which quasi-atomic orbitals are involved.
+
+Wiberg's bond order, in the strict sense, is this same sum of squares in an
+*orthonormal* basis, where ``S`` is the identity and the ``D S`` product
+collapses. Over non-orthogonal atomic orbitals it is not Wiberg's quantity and
+not anyone else's, so ``properties.bond_orders`` refuses ``"wiberg"`` by name
+rather than quietly computing Mayer's. Over the quasi-atomic basis, which *is*
+orthonormal, the QUAO analysis's population bond order already is it.
+
+Mayer bond orders
+-----------------
+
+.. math::
+
+   B_{AB} = \sum_{\mu \in A} \sum_{\nu \in B} (DS)_{\mu\nu} (DS)_{\nu\mu}
+
+for a closed shell, with :math:`D` the total density. For an open shell it is
+**not** that expression with the total density; it is
+
+.. math::
+
+   B_{AB} = 2 \sum_{\mu \in A} \sum_{\nu \in B}
+            \left[ (D_\alpha S)_{\mu\nu} (D_\alpha S)_{\nu\mu}
+                  + (D_\beta S)_{\mu\nu} (D_\beta S)_{\nu\mu} \right]
+
+which reduces to the first when :math:`D_\alpha = D_\beta = D/2`. The
+difference is silent on every closed shell and large on an open one -- triplet
+O\ :sub:`2` in STO-3G is 2.00 by the right formula and 1.50 by the wrong one --
+so the unrestricted case has its own test rather than an assumption.
+
+From a deck
+~~~~~~~~~~~
+
+.. code-block:: json
+
+   {
+     "model": {"method": "hf", "basis": "6-31g"},
+     "driver": "Energy",
+     "molecules": [{"xyz": "ethane.xyz",
+                    "molecular_charge": 0, "molecular_multiplicity": 1}],
+     "properties": {"bond_orders": {"scheme": "mayer"}}
+   }
+
+The **object** is the request and ``scheme`` only says which definition, so
+``"bond_orders": {}`` is a valid ask and takes Mayer -- the same shape
+``properties.charges`` has. Whatever reference converged is what gets
+partitioned: Hartree--Fock or Kohn--Sham, restricted or unrestricted, at no cost
+beyond the SCF that was going to run anyway.
+
+Unlike the charges, the table **is** printed, and the JSON carries the whole
+matrix plus the per-atom valence :math:`V_A = \sum_{B \neq A} B_{AB}`:
+
+.. code-block:: json
+
+   "bond_orders": {
+     "scheme": "mayer",
+     "matrix": [[0.0, 0.9237, ...], ...],
+     "atoms": [{"atom": 1, "valence": 3.7619}, ...]
+   }
+
+The matrix is written whole rather than as a list of bonded pairs, because where
+the line between a weak bond and none falls is the reader's question and a
+threshold applied here would answer it silently. The diagonal is zero: an atom
+is not bonded to itself, and what the block sum would put there is a different
+quantity.
+
+**Numbers to expect**, restricted Hartree--Fock:
+
+===============  =======  ========  ========  ========
+Molecule         Basis    Bond      Order     Valence
+===============  =======  ========  ========  ========
+Ethane           STO-3G   C--C      1.011     C 3.968
+Ethane           STO-3G   C--H      0.984     H 0.997
+Ethane           6-31G    C--C      0.924     C 3.762
+Ethane           6-31G    C--H      0.961     H 0.931
+Benzene          6-31G    C--C      1.444     C 3.857
+Benzene          6-31G    C--H      0.943     H 0.943
+Water            STO-3G   O--H      0.954     O 1.908
+Water            6-31G    O--H      0.803     O 1.607
+Triplet O2       STO-3G   O--O      2.000     O 2.000
+===============  =======  ========  ========  ========
+
+Benzene's 1.44 is the delocalised bond-and-a-half, and its para pair -- carbons
+across the ring, bonded to nothing -- comes out at 0.10, which is the honest
+answer for a conjugated system rather than a zero. None of that comes from a
+distance criterion; there is no distance anywhere in the definition.
+
+Small entries can be **negative**, and that is a property of the definition and
+not a bug: ethane's carbon to a hydrogen on the other carbon is +0.002 in
+STO-3G and -0.015 in 6-31G. :math:`B_{AB}` is a sum of products over a
+non-orthogonal basis with no positivity to it, so anything near zero is near
+zero from either side. Read the sign of a hundredth as noise; a bond order is a
+count of shared pairs only where there is something to share.
+
+The basis dependence is real but mild next to a Mulliken charge's: ethane's
+C--C moves 9% between STO-3G and 6-31G, where the Mulliken charge on water's
+oxygen moves by a factor of two over a comparable change.
+
+A **multiconfigurational** wave function is refused rather than skipped, for the
+same reason the charges are: the 1-RDM there is in the MO basis over fractional
+occupations and the AO density this needs is not formed. On the **GPU backend**
+the request is refused too -- the arithmetic is backend-independent but the spin
+convention is not, and an unverified factor of two in the open-shell case is
+worse than a message saying to run it on the CPU.
+
+Wiberg--Mayer bond orders from xTB
+----------------------------------
+
+Over the whole system, from one semi-empirical single point.
 
 .. code-block:: python
 
@@ -35,6 +167,20 @@ Wiberg--Mayer bond orders from xTB, over the whole system.
 
 ``compute_bond_orders(variant="gfn2", accuracy=0.0)`` takes ``"gfn2"`` or
 ``"gfn1"``; an accuracy of zero or less uses tblite's default.
+``variant="mayer"`` runs a real RHF in ``basis`` instead and takes Mayer's
+orders off its density -- closed shell only, and it costs what an SCF costs:
+
+.. code-block:: python
+
+   s.compute_bond_orders(variant="mayer", basis="6-31g")
+   s.bond_order_scheme            # "mayer" -- ask before comparing two runs
+   s.bond_order_valences()        # sum_B B_AB, per atom; the Mayer variant only
+
+Both variants land on the same handle and are read through the same
+``bond_orders()``, which is what makes the comparison a two-line script. They
+are still different quantities: ``bond_order_scheme`` says which one is
+currently there, and a valence is offered only for the Mayer variant because
+summing the rows of the other would be a number nobody computed.
 
 The whole system, not the monomers: the point of these is to decide where the
 monomers should be, so a partition cannot be an input. A caller wanting
@@ -49,6 +195,39 @@ all -- it sees only the distance and calls both bonds or neither.
 **What they are not good for.** They do not rank cuts within a molecule. Decane's
 nine C--C bonds span 1.3%, so bond order says nothing about which to break.
 Treat them as a veto on unsafe cuts rather than a ranking of good ones.
+
+Do the cheap orders rank the same?
+----------------------------------
+
+The reason both are exposed through one call. Formic acid, xTB (GFN2) against
+Mayer over an RHF/6-31G density, same geometry, both read off the same handle:
+
+=========  ==========  ==========
+Pair       xTB         Mayer
+=========  ==========  ==========
+C--O (=O)  1.777       1.825
+C--O (-O)  1.205       0.924
+C--H       0.941       0.887
+O--H       0.871       0.769
+O...O      0.181       0.012
+O...H      0.032       0.010
+=========  ==========  ==========
+
+**The four real bonds rank identically**, and in the order chemistry expects:
+the carbonyl above the hydroxyl C--O, then C--H, then O--H. The magnitudes
+disagree -- xTB puts the single C--O at 1.21 where Mayer puts it at 0.92 -- so
+the two are not interchangeable as numbers. Over all ten pairs Spearman is
+0.82; the disagreement is entirely among the non-bonded pairs, which both codes
+place near zero in an order neither of them means anything by.
+
+Ethane is the same story: the seven bonds are the top seven for both, but xTB
+ranks C--C above C--H (1.031 against 0.989) where Mayer in 6-31G ranks it below
+(0.924 against 0.961). Spearman over its 28 pairs is 0.93.
+
+The conclusion to draw for fragmentation: the cheap orders are sound for
+**separating bonds from non-bonds**, which is what a cut decision needs, and
+they should not be trusted to order two bonds that are close together -- a
+caution the xTB section already gives for a different reason.
 
 Atomic charges
 --------------
@@ -215,9 +394,11 @@ fit residual as a fraction of a tiny potential that looks poor.
 Requirements
 ------------
 
-Charges need an integrals backend, since they need a density. In a build with
-none the Python methods raise with a message naming the CMake option rather than
-failing at import. Bond orders need tblite.
+Charges and Mayer bond orders need an integrals backend, since they need a
+density. In a build with none the Python methods raise with a message naming the
+CMake option rather than failing at import. The xTB bond orders need tblite
+instead, and nothing else -- the two refusals are worded differently on purpose,
+because they are asking for different things to be installed.
 
 Both backends compute Mulliken charges, from the same code: the partition is a
 trace of ``D S`` against an AO-to-atom map, and only the map is arrived at

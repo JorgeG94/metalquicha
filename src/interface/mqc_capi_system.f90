@@ -66,9 +66,19 @@ module mqc_capi_system
       type(system_geometry_t) :: geom
       logical :: bonds_declared = .false.
       real(dp), allocatable :: bond_orders(:, :)
-         !! Wiberg-Mayer orders from `mqc_system_compute_bond_orders`, if it has
-         !! run. Cached on the handle because a caller deciding where to cut
-         !! reads the same matrix once per partition it tries.
+         !! Bond orders from `mqc_system_compute_bond_orders`, if it has run.
+         !! Cached on the handle because a caller deciding where to cut reads
+         !! the same matrix once per partition it tries.
+      real(dp), allocatable :: bond_order_valences(:)
+         !! `sum_B B_AB` per atom, filled by the Mayer variant. The xTB path
+         !! leaves it unallocated rather than summing its own matrix: the two
+         !! are different quantities and a valence is only worth reporting
+         !! beside the definition that produced it.
+      character(len=16) :: bond_order_scheme = ""
+         !! Which definition produced `bond_orders`: "xtb" or "mayer". Empty
+         !! until one has. Worth asking for the same reason `charge_scheme` is:
+         !! the two disagree by construction and are only comparable as a
+         !! ranking.
       real(dp), allocatable :: charges(:)
          !! Atomic partial charges from `mqc_system_compute_charges`, if it has
          !! run. Cached for the same reason, and more so: these cost an SCF

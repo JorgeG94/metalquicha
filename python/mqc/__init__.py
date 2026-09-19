@@ -319,16 +319,43 @@ class System:
 
     # -- state --------------------------------------------------------------
 
-    def compute_bond_orders(self, variant="gfn2", accuracy=0.0):
-        """Run one xTB single point and keep its Wiberg-Mayer bond orders.
+    def compute_bond_orders(self, variant="gfn2", accuracy=0.0, basis="6-31g"):
+        """Compute bond orders over the whole system and keep them.
+
+        Two different calculations behind one call, and the difference is not
+        a detail:
+
+        * `variant="gfn2"` or `"gfn1"` runs one xTB single point and takes its
+          Wiberg-Mayer orders. Cheap enough to ask again for every trial
+          fragmentation, which is what these are for. `accuracy` <= 0 takes
+          tblite's default; `basis` is ignored, xTB brings its own.
+        * `variant="mayer"` converges a real RHF in `basis` and takes Mayer's
+          orders off its density. Closed shell only, and it costs what an SCF
+          costs -- on a large system pick the basis deliberately.
+
+        The two are different quantities and agree only as a ranking. Checking
+        that the ranking survives is the reason both are here: it says whether
+        the cheap orders can be trusted to decide where a molecule is cut.
+        Ask `bond_order_scheme` to see which is on the handle.
 
         Over the whole system, not the monomers: the point of these is to
         decide where the monomers should be, so a partition cannot be an
-        input. Computed once and read many times -- a caller trying twenty
-        trial fragmentations does not want twenty xTB calculations.
-
-        `variant` is "gfn2" or "gfn1"; `accuracy` <= 0 takes tblite's default.
+        input. Computed once and read many times.
         """
+        if variant.lower() == "mayer":
+            if _ffi.system_compute_mayer_bond_orders is None:
+                raise MQCError(
+                    "Mayer bond orders need the integrals backend, and this "
+                    "build does not have it. Reconfigure with "
+                    "-DMQC_ENABLE_CZT=ON, or use variant='gfn2', which is a "
+                    "different quantity from a semi-empirical Hamiltonian."
+                )
+            name = basis.encode("utf-8")
+            _check(
+                _ffi.system_compute_mayer_bond_orders(self._handle, len(name), name),
+                _ffi.system_last_error,
+            )
+            return self
         name = variant.encode("utf-8")
         _check(
             _ffi.system_compute_bond_orders(
@@ -337,6 +364,33 @@ class System:
             _ffi.system_last_error,
         )
         return self
+
+    @property
+    def bond_order_scheme(self):
+        """Which calculation produced the current orders, or "" if none have.
+
+        "xtb" or "mayer". Worth checking before comparing two systems or two
+        runs: the numbers are only comparable if they came from the same
+        question.
+        """
+        buf = ctypes.create_string_buffer(32)
+        _ffi.system_bond_order_scheme(self._handle, 32, buf)
+        return buf.value.decode("utf-8", "replace")
+
+    def bond_order_valences(self):
+        """The Mayer valence of each atom, `sum_B B_AB`, in input order.
+
+        Only after `compute_bond_orders(variant="mayer")`: the xTB path
+        reports no valence of its own, and summing its rows would be a number
+        nobody computed. Raises otherwise.
+        """
+        n = self.n_atoms
+        buf = (_ffi._c_double * max(n, 1))()
+        _check(
+            _ffi.system_get_bond_order_valences(self._handle, n, buf),
+            _ffi.system_last_error,
+        )
+        return [buf[i] for i in range(n)]
 
     @property
     def has_bond_orders(self):
@@ -348,7 +402,8 @@ class System:
 
         Symmetric, zero on the diagonal. A real single bond comes back near
         one and a hydrogen bond near a few hundredths, which is the separation
-        a distance criterion cannot make.
+        a distance criterion cannot make. Which definition produced it is
+        `bond_order_scheme`.
         """
         n = self.n_atoms
         buf = (_ffi._c_double * max(n * n, 1))()

@@ -107,6 +107,20 @@ system_get_bond_orders = _declare(
 system_bond_order = _declare(
     "mqc_system_bond_order", _c_double, [_c_ptr, _c_int, _c_int]
 )
+system_bond_order_scheme = _declare(
+    "mqc_system_bond_order_scheme", None, [_c_ptr, _c_int, _c_str]
+)
+system_get_bond_order_valences = _declare(
+    "mqc_system_get_bond_order_valences",
+    _c_int,
+    [_c_ptr, _c_int, ctypes.POINTER(_c_double)],
+)
+# Absent from a build without libcint, like the charges below: Mayer orders
+# come off an SCF density and there is no density without an integrals backend.
+# The xTB variant above is always there.
+system_compute_mayer_bond_orders = _declare_optional(
+    "mqc_system_compute_mayer_bond_orders", _c_int, [_c_ptr, _c_int, _c_str]
+)
 # Absent from a build without libcint: charges need a real density, and there
 # is no density without an integrals backend.
 system_compute_charges = _declare_optional(
