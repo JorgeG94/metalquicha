@@ -1,0 +1,91 @@
+# Does the code still compile under LFortran?
+#
+# LFortran is alpha and says so on every `--version`. It is here anyway because
+# it is the strictest reader this project is put in front of: it rejects things
+# gfortran accepts silently, and each of the three source changes this job was
+# added with is a latent defect rather than a concession -- a component whose
+# default initializer named a `parameter` of its own name, an
+# `omp_set_max_active_levels` reached outside an `!$` sentinel in a build with
+# no OpenMP, and an `ieee_exceptions` used where a serial build has no flags to
+# clear.
+#
+# `MQC_ENABLE_SERIAL`, because that is the configuration LFortran can build:
+# its OpenMP support rejects a continued `!$omp` directive, which is how nearly
+# every directive here is written. See cmake/MqcOptions.cmake.
+#
+# The library target only, and not `mqc`. Every source file in this project
+# compiles and `libmetalquicha.a` links; the executable does not, and the two
+# things stopping it are LFortran codegen bugs rather than anything in this
+# tree -- `visit_StructConstructor() not implemented` on pic-mpi's serial
+# handle types, and an `Internal error: x is nullptr` reached from
+# `run_calculation`. Building the library is therefore the whole of what this
+# job can assert today; widen it to `mqc` when those are fixed upstream.
+#
+# The version is pinned. LFortran moves fast enough that a floating one would
+# turn this job red for reasons that have nothing to do with the commit under
+# test, and bumping it should be a deliberate act with the source changes it
+# needs beside it.
+name: lfortran build
+
+on: [push, pull_request]
+
+concurrency:
+  group: lfortran-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lfortran:
+    name: Build with LFortran
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install BLAS
+        # A system OpenBLAS rather than a conda one: the BLAS is named
+        # explicitly below, so nothing has to resolve it, and apt's is the
+        # smaller download.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libopenblas-dev
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          channels: conda-forge
+          activate-environment: lf
+
+      - name: Install LFortran
+        # cmake and ninja from conda too, so the job does not depend on what
+        # the runner image happens to ship: pic and pic-mpi require 3.28.
+        run: |
+          conda install -y lfortran=0.66.0 cmake ninja
+          lfortran --version
+          cmake --version
+
+      - name: Configure
+        # BLAS_LIBRARIES and LAPACK_LIBRARIES are given rather than searched
+        # for. FindBLAS decides a BLAS works by compiling `external sgemm` and
+        # a bare `call sgemm()`, which LFortran rejects as a semantic error
+        # even with --implicit-interface in the project's own flags -- those
+        # are not in scope during the search. Naming the library skips it.
+        run: |
+          BLAS=/usr/lib/x86_64-linux-gnu/libopenblas.so
+          test -e "$BLAS"
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_Fortran_COMPILER=lfortran \
+            -DMQC_ENABLE_SERIAL=ON \
+            -DBLAS_LIBRARIES="$BLAS" \
+            -DLAPACK_LIBRARIES="$BLAS"
+
+      - name: Build the library
+        # Every .f90 and .F90 this project owns, plus libfint, libxc's Fortran
+        # bindings and json-fortran. Two jobs: LFortran is not fast, and the
+        # runner has two cores.
+        run: |
+          cmake --build build -j 2 --target metalquicha
