@@ -726,7 +726,8 @@ contains
       !! `alpha_kl(i nu) = -2 sum_ai h^k_ai S^l_ai`, which at `nu = 0` reduces to
       !! the static `-4 sum h U` because `S = 2U` there, and so must reproduce
       !! `static_polarizability` exactly.
-      use omp_lib, only: omp_get_max_threads, omp_set_max_active_levels
+      use omp_lib, only: omp_get_max_threads
+!$    use omp_lib, only: omp_set_max_active_levels
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: orbital_energies(:)
@@ -1018,7 +1019,7 @@ contains
       ! called from a column split: LAPACK's own factorization runs instead.
       inner = 1
 #endif
-      call omp_set_max_active_levels(2)
+!$    call omp_set_max_active_levels(2)
       allocate (infos(n_freq))
       infos = 0
       if (talk) then
