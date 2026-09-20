@@ -45,7 +45,9 @@ contains
                   new_unittest("scf_gradient_threshold_moves_it", test_gradient_threshold), &
                   new_unittest("driver_moves_it", test_driver), &
                   new_unittest("verbosity_does_not", test_verbosity), &
-                  new_unittest("angular_form_moves_it", test_cartesian) &
+                  new_unittest("angular_form_moves_it", test_cartesian), &
+                  new_unittest("root_count_moves_it", test_excited_roots), &
+                  new_unittest("an_absent_excited_block_does_not", test_excited_absent) &
                   ]
    end subroutine collect_mqc_fingerprint
 
@@ -271,6 +273,63 @@ contains
    end subroutine test_driver
 
    ! -- helpers ---------------------------------------------------------------
+
+   subroutine test_excited_roots(error)
+      !! Three roots and ten roots are different calculations
+      !!
+      !! They share a reference, a basis, a functional and a total energy, so
+      !! every other field in the hash agrees. Without the excited block a
+      !! restart would splice a three-root checkpoint into a ten-root deck,
+      !! finish early, and report seven states it never computed.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a); call dft(b)
+      a%excited%enabled = .true.; a%excited%n_states = 3
+      b%excited%enabled = .true.; b%excited%n_states = 10
+      call differ(error, sys, sys, a, b, "asking for more roots")
+      if (allocated(error)) return
+
+      ! And the approximation, which changes every energy in the list while
+      ! leaving their count alone.
+      call dft(a); call dft(b)
+      a%excited%enabled = .true.; a%excited%n_states = 5; a%excited%method = "tda"
+      b%excited%enabled = .true.; b%excited%n_states = 5; b%excited%method = "rpa"
+      call differ(error, sys, sys, a, b, "switching TDA for RPA")
+      if (allocated(error)) return
+
+      call dft(a); call dft(b)
+      a%excited%enabled = .true.; a%excited%n_states = 5; a%excited%spin = "singlet"
+      b%excited%enabled = .true.; b%excited%n_states = 5; b%excited%spin = "triplet"
+      call differ(error, sys, sys, a, b, "asking for triplets instead of singlets")
+   end subroutine test_excited_roots
+
+   subroutine test_excited_absent(error)
+      !! No excited states asked for hashes as it always did
+      !!
+      !! The other half of the Layer 1 contract: a deck with no
+      !! `keywords.excited_states` must produce the same fingerprint it
+      !! produced before the block existed, or every checkpoint ever written
+      !! is invalidated by a feature nobody used. The block's own defaults are
+      !! deliberately not hashed when it is off, which is what this pins.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a); call dft(b)
+      ! `b` carries settings a deck could have left lying around with the
+      ! block switched off. None of them may reach the hash.
+      b%excited%n_states = 0
+      b%excited%method = "tda"
+      b%excited%spin = "triplet"
+      b%excited%tolerance = 1.0e-7_dp
+      call check(error, calculation_fingerprint(sys, a, CALC_TYPE_ENERGY) == &
+                 calculation_fingerprint(sys, b, CALC_TYPE_ENERGY), &
+                 "an excited block that asks for no roots must not move the hash")
+   end subroutine test_excited_absent
 
    subroutine differ(error, a, b, ca, cb, what)
       !! Demand that a change moves the fingerprint

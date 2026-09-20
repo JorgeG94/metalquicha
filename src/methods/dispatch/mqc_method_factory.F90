@@ -202,6 +202,7 @@ contains
       options%convergence_metric = config%scf%convergence_metric
       options%pcm = config%pcm
       options%properties = config%properties
+      options%excited = config%excited
    end subroutine configure_scf
 
    subroutine configure_hf(m, config, with_mp2, with_cc)

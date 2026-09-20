@@ -44,7 +44,8 @@ contains
                   new_unittest("ecp_refused_for_mcscf", test_ecp_mcscf), &
                   new_unittest("empty_ecp_is_not_a_request", test_ecp_empty), &
                   new_unittest("retired_fragmentation_keys_are_refused", test_retired_frag_keys), &
-                  new_unittest("unrestricted moved to model", test_unrestricted_moved) &
+                  new_unittest("unrestricted moved to model", test_unrestricted_moved), &
+                  new_unittest("unknown_excited_states_key", test_unknown_excited_key) &
                   ]
    end subroutine collect_mqc_json_schema_tests
 
@@ -115,6 +116,24 @@ contains
       call write_minimal('"extras": {},')
       call expect_rejected(error, "extras", "an unknown top-level key")
    end subroutine test_unknown_root_key
+
+   subroutine test_unknown_excited_key(error)
+      !! `keywords.excited_states` is allow-listed, and so are its seven keys
+      !!
+      !! Both halves matter. A block missing from `keywords_keys` refuses every
+      !! deck that names it; a block present but with no key set of its own
+      !! would accept any spelling inside it, and a misspelled `n_states` would
+      !! then run a ground state while the deck believed it had asked for ten
+      !! roots.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_minimal('"keywords": {"excited_states": {"n_states": 5}},')
+      call expect_accepted(error, "a well-formed excited_states block")
+      if (allocated(error)) return
+
+      call write_minimal('"keywords": {"excited_states": {"nstates": 5}},')
+      call expect_rejected(error, "nstates", "a misspelled excited_states key")
+   end subroutine test_unknown_excited_key
 
    subroutine test_misspelled_nested_key(error)
       !! The case that motivated the validator
