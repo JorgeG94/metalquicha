@@ -4822,6 +4822,248 @@
             "expected_energy": -109.019592219941,
             "type": "unfragmented",
             "tolerance": 1e-08
+        },
+        {
+            "name": "RHF TDA singlet H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_tda_singlet.json",
+            "expected_energy": -76.026435906898,
+            "expected_excitation_energies": [
+                0.337836204323,
+                0.403227739929,
+                0.428716820076,
+                0.494109967359,
+                0.559331118164
+            ],
+            "expected_oscillator_strengths": [
+                0.02799522627,
+                0.0,
+                0.103905816338,
+                0.094071923909,
+                0.325560350493
+            ],
+            "expected_state_spins": [
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF RPA singlet H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_rpa_singlet.json",
+            "expected_energy": -76.026435906898,
+            "expected_excitation_energies": [
+                0.335664164488,
+                0.400699529669,
+                0.426214663872,
+                0.490755473746,
+                0.557651671929
+            ],
+            "expected_oscillator_strengths": [
+                0.028796361204,
+                0.0,
+                0.097720922773,
+                0.083883913735,
+                0.308119298837
+            ],
+            "expected_state_spins": [
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF RPA both H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_rpa_both.json",
+            "expected_energy": -76.026435906898,
+            "expected_excitation_energies": [
+                0.29844694533,
+                0.335664164488,
+                0.36762542979,
+                0.376515125402,
+                0.400699529669,
+                0.426214663872
+            ],
+            "expected_oscillator_strengths": [
+                0.0,
+                0.028796361204,
+                0.0,
+                0.0,
+                0.0,
+                0.097720922773
+            ],
+            "expected_state_spins": [
+                "triplet",
+                "singlet",
+                "triplet",
+                "triplet",
+                "singlet",
+                "singlet"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented"
+        },
+        {
+            "name": "PBE RPA both H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_pbe_rpa_both.json",
+            "expected_energy": -76.333065668663,
+            "expected_excitation_energies": [
+                0.243731544242,
+                0.26906595657,
+                0.313537761962,
+                0.320448986773,
+                0.338099563685,
+                0.348083246294
+            ],
+            "expected_oscillator_strengths": [
+                0.0,
+                0.022750113107,
+                0.0,
+                0.0,
+                0.0,
+                0.076511356496
+            ],
+            "expected_state_spins": [
+                "triplet",
+                "singlet",
+                "triplet",
+                "triplet",
+                "singlet",
+                "singlet"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "B3LYP TDA singlet H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_b3lyp_tda_singlet.json",
+            "expected_energy": -76.42003530086,
+            "expected_excitation_energies": [
+                0.28007582405,
+                0.347269151605,
+                0.36171813044,
+                0.43294868617,
+                0.522163627713
+            ],
+            "expected_oscillator_strengths": [
+                0.022870729441,
+                0.0,
+                0.084379738146,
+                0.064883366105,
+                0.318299698194
+            ],
+            "expected_state_spins": [
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "CAMB3LYP RPA singlet H2O cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_camb3lyp_rpa_singlet.json",
+            "expected_energy": -76.391503839421,
+            "expected_excitation_energies": [
+                0.281723519236,
+                0.351931905,
+                0.36263580872,
+                0.436734703707,
+                0.521590293104
+            ],
+            "expected_oscillator_strengths": [
+                0.022854324813,
+                0.0,
+                0.076330901444,
+                0.056204783581,
+                0.287105145986
+            ],
+            "expected_state_spins": [
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet",
+                "singlet"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UHF RPA unrestricted OH cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_oh_cc-pvdz_rpa_unrestricted.json",
+            "expected_energy": -75.393846033475,
+            "expected_excitation_energies": [
+                0.169746047603,
+                0.321231703394,
+                0.37011404223,
+                0.415769391795,
+                0.453280298002
+            ],
+            "expected_oscillator_strengths": [
+                0.002813257377,
+                0.002835697688,
+                0.018691764559,
+                0.004312164586,
+                0.019019968758
+            ],
+            "expected_state_spins": [
+                "unrestricted",
+                "unrestricted",
+                "unrestricted",
+                "unrestricted",
+                "unrestricted"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UB3LYP TDA unrestricted H2O+ cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_b3lyp_cation_tda_unrestricted.json",
+            "expected_energy": -75.968170565215,
+            "expected_excitation_energies": [
+                0.086369165244,
+                0.24365685581,
+                0.47861506223,
+                0.516978530351,
+                0.522784618589
+            ],
+            "expected_oscillator_strengths": [
+                0.001286315357,
+                0.0,
+                0.003952455685,
+                0.019117875485,
+                0.07702179376
+            ],
+            "expected_state_spins": [
+                "unrestricted",
+                "unrestricted",
+                "unrestricted",
+                "unrestricted",
+                "unrestricted"
+            ],
+            "excitation_tolerance": 1e-07,
+            "oscillator_tolerance": 1e-05,
+            "type": "unfragmented",
+            "requires": "libxc"
         }
     ]
 }
