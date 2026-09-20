@@ -114,11 +114,13 @@ module mqc_czt_tddft
    use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_EXCITED_TOL
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_direct, only: schwarz_bounds
-   use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill
-   use mqc_czt_response_product, only: response_product
+   use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill, &
+                         xc_kernel_cache_uks_t, xc_kernel_cache_uks_fill
+   use mqc_czt_response_product, only: response_product, response_product_uhf
    use mqc_davidson, only: davidson_flat, sigma_operator_t
    use mqc_czt_rpa_solver, only: paired_operator_t, rpa_solve
-   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                               STATE_SPIN_UNRESTRICTED
    implicit none
    private
 
@@ -130,6 +132,14 @@ module mqc_czt_tddft
    public :: tda_dense_matrix
    public :: rpa_dense_matrices
    public :: response_excitations
+   public :: response_core_uhf_t
+   public :: tda_operator_uhf_t
+   public :: rpa_operator_uhf_t
+   public :: build_tda_operator_uhf
+   public :: build_rpa_operator_uhf
+   public :: tda_dense_matrix_uhf
+   public :: rpa_dense_matrices_uhf
+   public :: response_excitations_uhf
 
    real(dp), parameter :: EXCITATION_FLOOR = 1.0e-3_dp
       !! Roots below this are not reported.
@@ -268,6 +278,70 @@ module mqc_czt_tddft
       procedure :: apply => casida_apply
       procedure :: apply_many => casida_apply_many
    end type casida_operator_t
+
+   type :: response_core_uhf_t
+      !! Everything an unrestricted response product needs
+      !!
+      !! `response_core_t` with two of almost everything: two sets of
+      !! orbitals, two gap rectangles, two reference densities and a kernel
+      !! whose second derivative is spin resolved. A trial vector is the alpha
+      !! rectangle flattened followed by the beta one, each virtual fastest.
+      !!
+      !! The molecule and the exchange-correlation context are pointers
+      !! because both outlive the solve and neither is cheap to copy; their
+      !! targets have to outlive this object.
+      type(czt_molecule_t), pointer :: mol => null()
+      type(xc_context_t), pointer :: xc => null()
+         !! Null for Hartree-Fock. Associated, it is **spin-polarised** and
+         !! both reference densities are allocated too.
+      real(dp), allocatable :: c_occ_a(:, :), c_vir_a(:, :)   !! (n_ao, n_occ_a), (n_ao, n_vir_a)
+      real(dp), allocatable :: c_occ_b(:, :), c_vir_b(:, :)
+      real(dp), allocatable :: gaps_a(:, :), gaps_b(:, :)     !! (n_vir_s, n_occ_s), `e_a - e_i`
+      real(dp), allocatable :: zero_h(:, :)                   !! (n_ao, n_ao) of zeros
+      real(dp), allocatable :: bounds(:, :)                   !! Schwarz bounds
+      real(dp), allocatable :: ref_a(:, :), ref_b(:, :)
+         !! The converged spin densities, `C_sigma C_sigma^T` and not doubled
+      type(xc_kernel_cache_uks_t) :: cache
+         !! The polarised kernel's coefficients over the whole grid, filled
+         !! once by `build_response_core_uhf`. Unfilled for Hartree-Fock.
+      real(dp) :: k_scale = 1.0_dp
+         !! Exact exchange the reference kept: one for Hartree-Fock, the
+         !! mixing fraction for a hybrid, zero for a pure functional.
+      real(dp) :: rs_k_lr = 0.0_dp
+      real(dp) :: rs_omega = 0.0_dp
+         !! A range-separated functional's attenuated second exchange pass.
+      integer :: n_occ_a = 0
+      integer :: n_vir_a = 0
+      integer :: n_occ_b = 0
+      integer :: n_vir_b = 0
+      integer :: batch = DEFAULT_RESPONSE_BATCH
+         !! Trial vectors sharing one pass over the integrals.
+      integer :: n_products = 0
+         !! Applications of one half of the operator to one trial vector.
+   contains
+      procedure :: length => core_uhf_length
+      procedure :: diagonal => core_uhf_diagonal
+      procedure :: has_exchange => core_uhf_has_exchange
+      procedure :: half_block => core_uhf_half_block
+   end type response_core_uhf_t
+
+   type, extends(sigma_operator_t) :: tda_operator_uhf_t
+      !! The unrestricted `A` as something `mqc_davidson` will multiply by
+      type(response_core_uhf_t) :: core
+   contains
+      procedure :: apply => tda_uhf_apply
+      procedure :: apply_many => tda_uhf_apply_many
+      procedure :: length => tda_uhf_length
+      procedure :: diagonal => tda_uhf_diagonal
+   end type tda_operator_uhf_t
+
+   type, extends(paired_operator_t) :: rpa_operator_uhf_t
+      !! The unrestricted `(A+B)` and `(A-B)` for the paired solver
+      type(response_core_uhf_t) :: core
+   contains
+      procedure :: apply_plus => rpa_uhf_apply_plus
+      procedure :: apply_minus => rpa_uhf_apply_minus
+   end type rpa_operator_uhf_t
 
 contains
 
@@ -1398,5 +1472,708 @@ contains
          word = "unknown"
       end select
    end function spin_word
+
+   ! ---------------------------------------------------------------------------
+   ! The unrestricted response operator
+   !
+   ! Everything below is the same three routes -- Tamm-Dancoff, paired, and the
+   ! dense matrices the tests compare -- over a reference that has two sets of
+   ! orbitals instead of one. It is a second core rather than a flag on the
+   ! first because almost every array doubles: two occupied blocks, two virtual
+   ! blocks, two gap matrices, two reference densities and a kernel with three
+   ! spin channels rather than one. A restricted solve would then carry the
+   ! beta halves of all of it as empty arrays it never reads.
+   !
+   ! What is shared is what does not double: the solvers, `roots_to_solve`,
+   ! `davidson_subspace`, `unit_matrix` and the reporting.
+   !
+   ! **No singlet or triplet.** An unrestricted reference is not a spin
+   ! eigenfunction, so neither are the roots of its response operator, and the
+   ! spin-resolved kernel has no combination that would separate them. The
+   ! restricted manifolds are the two combinations `z_beta = +/- z_alpha` of
+   ! this operator, which is what the cross-check test asserts, and there is no
+   ! `spin` argument here to ask for one of them.
+   ! ---------------------------------------------------------------------------
+
+   pure function core_uhf_length(this) result(n)
+      !! How long a trial vector is: both spin blocks end to end
+      class(response_core_uhf_t), intent(in) :: this
+      integer :: n
+
+      n = this%n_occ_a*this%n_vir_a + this%n_occ_b*this%n_vir_b
+   end function core_uhf_length
+
+   function core_uhf_diagonal(this) result(diag)
+      !! `e_a - e_i` of both spins, flat: what the solvers precondition on
+      class(response_core_uhf_t), intent(in) :: this
+      real(dp), allocatable :: diag(:)
+
+      integer :: na
+
+      na = this%n_occ_a*this%n_vir_a
+      allocate (diag(this%length()))
+      diag(1:na) = reshape(this%gaps_a, [na])
+      diag(na + 1:) = reshape(this%gaps_b, [this%n_occ_b*this%n_vir_b])
+   end function core_uhf_diagonal
+
+   pure function core_uhf_has_exchange(this) result(yes)
+      !! Whether `(A-B)` is anything but the orbital-energy diagonal
+      class(response_core_uhf_t), intent(in) :: this
+      logical :: yes
+
+      yes = this%k_scale /= 0.0_dp .or. this%rs_k_lr /= 0.0_dp
+   end function core_uhf_has_exchange
+
+   subroutine core_uhf_half_block(this, vectors, images, minus, error)
+      !! `(A+B)v` or `(A-B)v` for a block of flat spin-concatenated vectors
+      !!
+      !! The unpacking is the whole of it: a trial vector is the alpha
+      !! rectangle followed by the beta one, each virtual fastest, and
+      !! `response_product_uhf` wants them as two three-dimensional arrays.
+      class(response_core_uhf_t), intent(inout) :: this
+      real(dp), intent(in) :: vectors(:, :)   !! (n_ov, n_vectors)
+      real(dp), intent(out) :: images(:, :)   !! (n_ov, n_vectors)
+      logical, intent(in) :: minus            !! `(A-B)` rather than `(A+B)`
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ua(:, :, :), ub(:, :, :), aua(:, :, :), aub(:, :, :)
+      real(dp), allocatable :: gaps(:)
+      integer :: n_ov, n_vec, width, first, last, w, m, na, nb
+
+      if (error%has_error()) return
+
+      n_ov = this%length()
+      na = this%n_occ_a*this%n_vir_a
+      nb = this%n_occ_b*this%n_vir_b
+      n_vec = size(vectors, 2)
+      if (n_ov < 1 .or. .not. associated(this%mol)) then
+         call error%set(ERROR_VALIDATION, "the unrestricted response operator was "// &
+                        "applied before it was given a reference to apply itself over")
+         images = 0.0_dp
+         return
+      end if
+      if (size(vectors, 1) /= n_ov .or. size(images, 1) /= n_ov) then
+         call error%set(ERROR_VALIDATION, "a trial vector handed to the unrestricted "// &
+                        "response operator is not the length of the two "// &
+                        "occupied-virtual blocks together")
+         images = 0.0_dp
+         return
+      end if
+
+      ! No integrals at all when the difference is the diagonal: `(A-B)` is
+      ! exchange only and exchange is same-spin, so with none of it the two
+      ! blocks are their own gaps and nothing couples them.
+      if (minus .and. .not. this%has_exchange()) then
+         gaps = this%diagonal()
+         do m = 1, n_vec
+            images(:, m) = gaps*vectors(:, m)
+         end do
+         this%n_products = this%n_products + n_vec
+         return
+      end if
+
+      width = min(max(this%batch, 1), n_vec)
+      allocate (ua(this%n_vir_a, this%n_occ_a, width), aua(this%n_vir_a, this%n_occ_a, width))
+      allocate (ub(this%n_vir_b, this%n_occ_b, width), aub(this%n_vir_b, this%n_occ_b, width))
+
+      do first = 1, n_vec, width
+         last = min(first + width - 1, n_vec)
+         w = last - first + 1
+         do m = 1, w
+            ua(:, :, m) = reshape(vectors(1:na, first + m - 1), [this%n_vir_a, this%n_occ_a])
+            ub(:, :, m) = reshape(vectors(na + 1:, first + m - 1), [this%n_vir_b, this%n_occ_b])
+         end do
+
+         aua = 0.0_dp
+         aub = 0.0_dp
+         if (associated(this%xc)) then
+            call response_product_uhf(this%mol, this%c_occ_a, this%c_vir_a, &
+                                      this%c_occ_b, this%c_vir_b, this%gaps_a, &
+                                      this%gaps_b, this%zero_h, ua(:, :, 1:w), &
+                                      ub(:, :, 1:w), minus, aua(:, :, 1:w), &
+                                      aub(:, :, 1:w), error, bounds=this%bounds, &
+                                      k_scale=this%k_scale, xc=this%xc, &
+                                      ref_a=this%ref_a, ref_b=this%ref_b, &
+                                      rs_k_lr=this%rs_k_lr, rs_omega=this%rs_omega, &
+                                      cache=this%cache)
+         else
+            call response_product_uhf(this%mol, this%c_occ_a, this%c_vir_a, &
+                                      this%c_occ_b, this%c_vir_b, this%gaps_a, &
+                                      this%gaps_b, this%zero_h, ua(:, :, 1:w), &
+                                      ub(:, :, 1:w), minus, aua(:, :, 1:w), &
+                                      aub(:, :, 1:w), error, bounds=this%bounds, &
+                                      k_scale=this%k_scale)
+         end if
+         if (error%has_error()) exit
+
+         do m = 1, w
+            images(1:na, first + m - 1) = reshape(aua(:, :, m), [na])
+            images(na + 1:, first + m - 1) = reshape(aub(:, :, m), [nb])
+         end do
+         this%n_products = this%n_products + w
+      end do
+
+      if (error%has_error()) images = 0.0_dp
+      deallocate (ua, ub, aua, aub)
+   end subroutine core_uhf_half_block
+
+   pure function tda_uhf_length(this) result(n)
+      !! How long a trial vector is
+      class(tda_operator_uhf_t), intent(in) :: this
+      integer :: n
+
+      n = this%core%length()
+   end function tda_uhf_length
+
+   function tda_uhf_diagonal(this) result(diag)
+      !! What the solver preconditions on and starts from
+      class(tda_operator_uhf_t), intent(in) :: this
+      real(dp), allocatable :: diag(:)
+
+      diag = this%core%diagonal()
+   end function tda_uhf_diagonal
+
+   subroutine tda_uhf_apply_many(this, vectors, images, error)
+      !! `A x = (1/2)[(A+B)x + (A-B)x]` for a block of trial vectors
+      class(tda_operator_uhf_t), intent(inout) :: this
+      real(dp), intent(in) :: vectors(:, :)
+      real(dp), intent(out) :: images(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: minus_image(:, :)
+
+      if (error%has_error()) return
+
+      call this%core%half_block(vectors, images, .false., error)
+      if (error%has_error()) return
+
+      allocate (minus_image(size(images, 1), size(images, 2)))
+      call this%core%half_block(vectors, minus_image, .true., error)
+      if (error%has_error()) then
+         images = 0.0_dp
+      else
+         images = 0.5_dp*(images + minus_image)
+      end if
+      deallocate (minus_image)
+   end subroutine tda_uhf_apply_many
+
+   subroutine tda_uhf_apply(this, vector, image, error)
+      !! `A x` for one vector, as a block of one
+      class(tda_operator_uhf_t), intent(inout) :: this
+      real(dp), intent(in) :: vector(:)
+      real(dp), intent(out) :: image(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: block_in(:, :), block_out(:, :)
+
+      allocate (block_in(size(vector), 1), block_out(size(image), 1))
+      block_in(:, 1) = vector
+      call this%apply_many(block_in, block_out, error)
+      image = block_out(:, 1)
+      deallocate (block_in, block_out)
+   end subroutine tda_uhf_apply
+
+   subroutine rpa_uhf_apply_plus(this, vectors, images, error)
+      !! `(A+B)v` for a block of trial vectors
+      class(rpa_operator_uhf_t), intent(inout) :: this
+      real(dp), intent(in) :: vectors(:, :)
+      real(dp), intent(out) :: images(:, :)
+      type(error_t), intent(inout) :: error
+
+      call this%core%half_block(vectors, images, .false., error)
+   end subroutine rpa_uhf_apply_plus
+
+   subroutine rpa_uhf_apply_minus(this, vectors, images, error)
+      !! `(A-B)v` for a block of trial vectors
+      class(rpa_operator_uhf_t), intent(inout) :: this
+      real(dp), intent(in) :: vectors(:, :)
+      real(dp), intent(out) :: images(:, :)
+      type(error_t), intent(inout) :: error
+
+      call this%core%half_block(vectors, images, .true., error)
+   end subroutine rpa_uhf_apply_minus
+
+   subroutine build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, core, error, &
+                                      xc, ref_a, ref_b, bounds, batch)
+      !! Point a `response_core_uhf_t` at a converged unrestricted reference
+      !!
+      !! `mol` and `xc` are `target` and the core keeps pointers to them, so
+      !! both have to outlive every product taken through it. `xc` and the two
+      !! reference densities are one argument in three halves and are refused
+      !! separately: a kernel is evaluated at a density, and a context arriving
+      !! without one has nothing to evaluate.
+      !!
+      !! The kernel cache is filled here rather than on first use, for the
+      !! reason the restricted core fills its own: it is a property of the
+      !! converged densities, and a response solve applies the kernel hundreds
+      !! of times on a quadrature that is most of a Kohn-Sham run.
+      type(czt_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals_a(:, :)   !! (n_ao, n_mo)
+      real(dp), intent(in) :: energies_a(:)      !! (n_mo), ascending
+      integer, intent(in) :: n_occ_a
+      real(dp), intent(in) :: orbitals_b(:, :), energies_b(:)
+      integer, intent(in) :: n_occ_b
+      type(response_core_uhf_t), intent(out) :: core
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+         !! Spin-polarised, which the kernel checks.
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+         !! The converged spin densities, `C_sigma C_sigma^T` and not doubled.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! Schwarz bounds, computed here when the caller has none.
+      integer, intent(in), optional :: batch
+         !! Trial vectors per integral pass; `DEFAULT_RESPONSE_BATCH` absent.
+
+      integer :: n_ao, n_mo
+
+      if (error%has_error()) return
+
+      n_ao = size(orbitals_a, 1)
+      n_mo = size(orbitals_a, 2)
+
+      if (n_occ_a < 1 .or. n_mo - n_occ_a < 1 .or. n_occ_b < 1 &
+          .or. n_mo - n_occ_b < 1) then
+         call error%set(ERROR_VALIDATION, "an unrestricted excitation needs at least "// &
+                        "one occupied and one virtual orbital in each spin; this "// &
+                        "reference has a spin with nothing to excite between")
+         return
+      end if
+      if (size(orbitals_b, 2) /= n_mo .or. size(orbitals_b, 1) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "the two spins of this reference span "// &
+                        "different orbital spaces, so there is no common basis to "// &
+                        "build a response operator over")
+         return
+      end if
+      if (size(energies_a) < n_mo .or. size(energies_b) < n_mo) then
+         call error%set(ERROR_VALIDATION, "there are fewer orbital energies than "// &
+                        "orbitals, so the response diagonal cannot be formed")
+         return
+      end if
+      if (present(xc) .neqv. (present(ref_a) .and. present(ref_b))) then
+         call error%set(ERROR_VALIDATION, "the unrestricted response operator was "// &
+                        "given an exchange-correlation context without both spin "// &
+                        "densities its kernel is evaluated at, or the reverse; it "// &
+                        "needs all three or none")
+         return
+      end if
+
+      core%mol => mol
+      core%n_occ_a = n_occ_a
+      core%n_vir_a = n_mo - n_occ_a
+      core%n_occ_b = n_occ_b
+      core%n_vir_b = n_mo - n_occ_b
+      core%c_occ_a = orbitals_a(:, 1:n_occ_a)
+      core%c_vir_a = orbitals_a(:, n_occ_a + 1:n_mo)
+      core%c_occ_b = orbitals_b(:, 1:n_occ_b)
+      core%c_vir_b = orbitals_b(:, n_occ_b + 1:n_mo)
+      allocate (core%zero_h(n_ao, n_ao))
+      core%zero_h = 0.0_dp
+      call fill_gaps(energies_a, n_occ_a, n_mo, core%gaps_a)
+      call fill_gaps(energies_b, n_occ_b, n_mo, core%gaps_b)
+      if (present(batch)) then
+         if (batch > 0) core%batch = batch
+      end if
+
+      if (present(bounds)) then
+         core%bounds = bounds
+      else
+         call schwarz_bounds(mol, core%bounds, error)
+         if (error%has_error()) return
+      end if
+
+      if (present(xc)) then
+         core%xc => xc
+         core%ref_a = ref_a
+         core%ref_b = ref_b
+         core%k_scale = xc%exx_fraction
+         if (xc%range_separated) then
+            core%rs_k_lr = xc%rs_k_lr
+            core%rs_omega = xc%rs_omega
+         end if
+         call xc_kernel_cache_uks_fill(xc, mol, ref_a, ref_b, core%cache, error)
+         if (error%has_error()) return
+      else
+         core%k_scale = 1.0_dp
+      end if
+
+      if (any(core%gaps_a <= 0.0_dp) .or. any(core%gaps_b <= 0.0_dp)) then
+         call error%set(ERROR_VALIDATION, "an occupied orbital of one spin lies "// &
+                        "above a virtual one of the same spin, so these are not "// &
+                        "the aufbau orbitals and the gaps the excitation solver "// &
+                        "preconditions on are not positive")
+         return
+      end if
+   end subroutine build_response_core_uhf
+
+   subroutine fill_gaps(energies, n_occ, n_mo, gaps)
+      !! `e_a - e_i` as an `(n_vir, n_occ)` rectangle
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ, n_mo
+      real(dp), allocatable, intent(out) :: gaps(:, :)
+
+      integer :: i, a
+
+      allocate (gaps(n_mo - n_occ, n_occ))
+      do i = 1, n_occ
+         do a = 1, n_mo - n_occ
+            gaps(a, i) = energies(n_occ + a) - energies(i)
+         end do
+      end do
+   end subroutine fill_gaps
+
+   subroutine build_tda_operator_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                     orbitals_b, energies_b, n_occ_b, operator, &
+                                     error, xc, ref_a, ref_b, bounds, batch)
+      !! Point a `tda_operator_uhf_t` at a converged unrestricted reference
+      type(czt_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals_a(:, :), energies_a(:)
+      integer, intent(in) :: n_occ_a
+      real(dp), intent(in) :: orbitals_b(:, :), energies_b(:)
+      integer, intent(in) :: n_occ_b
+      type(tda_operator_uhf_t), intent(out) :: operator
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+      real(dp), intent(in), optional :: bounds(:, :)
+      integer, intent(in), optional :: batch
+
+      if (present(xc)) then
+         call build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, operator%core, &
+                                      error, xc=xc, ref_a=ref_a, ref_b=ref_b, &
+                                      bounds=bounds, batch=batch)
+      else
+         call build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, operator%core, &
+                                      error, bounds=bounds, batch=batch)
+      end if
+   end subroutine build_tda_operator_uhf
+
+   subroutine build_rpa_operator_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                     orbitals_b, energies_b, n_occ_b, operator, &
+                                     error, xc, ref_a, ref_b, bounds, batch)
+      !! Point an `rpa_operator_uhf_t` at a converged unrestricted reference
+      type(czt_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals_a(:, :), energies_a(:)
+      integer, intent(in) :: n_occ_a
+      real(dp), intent(in) :: orbitals_b(:, :), energies_b(:)
+      integer, intent(in) :: n_occ_b
+      type(rpa_operator_uhf_t), intent(out) :: operator
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+      real(dp), intent(in), optional :: bounds(:, :)
+      integer, intent(in), optional :: batch
+
+      if (present(xc)) then
+         call build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, operator%core, &
+                                      error, xc=xc, ref_a=ref_a, ref_b=ref_b, &
+                                      bounds=bounds, batch=batch)
+      else
+         call build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, operator%core, &
+                                      error, bounds=bounds, batch=batch)
+      end if
+   end subroutine build_rpa_operator_uhf
+
+   subroutine tda_dense_matrix_uhf(operator, a, error)
+      !! The explicit unrestricted `A`, from the operator applied to unit vectors
+      !!
+      !! Both spin blocks at once, so what comes back is the whole
+      !! `(n_ov_a + n_ov_b)` square with the two diagonal blocks and the two
+      !! coupling ones in it. For a small case and for checking the solver
+      !! against a dense diagonalisation; nothing on the production path calls
+      !! it.
+      type(tda_operator_uhf_t), intent(inout) :: operator
+      real(dp), allocatable, intent(out) :: a(:, :)
+         !! (n_ov, n_ov), column `j` being `A e_j`
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: unit_vectors(:, :)
+      integer :: n_ov
+
+      if (error%has_error()) return
+
+      n_ov = operator%core%length()
+      call unit_matrix(n_ov, unit_vectors)
+      allocate (a(n_ov, n_ov))
+      call operator%apply_many(unit_vectors, a, error)
+      deallocate (unit_vectors)
+      if (error%has_error()) deallocate (a)
+   end subroutine tda_dense_matrix_uhf
+
+   subroutine rpa_dense_matrices_uhf(operator, aplus, aminus, error)
+      !! The explicit unrestricted `(A+B)` and `(A-B)`, from the shipped operator
+      type(rpa_operator_uhf_t), intent(inout) :: operator
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: unit_vectors(:, :)
+      integer :: n_ov
+
+      if (error%has_error()) return
+
+      n_ov = operator%core%length()
+      call unit_matrix(n_ov, unit_vectors)
+      allocate (aplus(n_ov, n_ov), aminus(n_ov, n_ov))
+      call operator%apply_plus(unit_vectors, aplus, error)
+      if (.not. error%has_error()) then
+         call operator%apply_minus(unit_vectors, aminus, error)
+      end if
+      deallocate (unit_vectors)
+      if (error%has_error()) deallocate (aplus, aminus)
+   end subroutine rpa_dense_matrices_uhf
+
+   subroutine response_excitations_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                       orbitals_b, energies_b, n_occ_b, n_states, &
+                                       method, excitations, state_spin, x_amplitudes, &
+                                       y_amplitudes, error, xc, ref_a, ref_b, bounds, &
+                                       tolerance, max_iter, max_subspace, batch, &
+                                       verbose)
+      !! The lowest excitation energies of an unrestricted reference
+      !!
+      !! What comes back is ascending, in Hartree above the reference, with
+      !! every root below `EXCITATION_FLOOR` already dropped -- so `size` of it
+      !! can be smaller than `n_states`, and a caller has to read the size.
+      !!
+      !! **One normalisation, both routes.** `sum_sigma (|X|^2 - |Y|^2) = 1`,
+      !! which is what the paired solver returns and what a unit Tamm-Dancoff
+      !! vector already satisfies. The restricted routes disagree with each
+      !! other on this; here there is no closed-shell factor of two to put
+      !! anywhere, so there is nothing for the two to disagree about.
+      !!
+      !! **Every root is labelled `STATE_SPIN_UNRESTRICTED`.** The reference is
+      !! not a spin eigenfunction, so its excitations are not singlets or
+      !! triplets, and there is no `spin` argument asking for one.
+      !!
+      !! **A root near zero is not always an artefact here.** A doublet's
+      !! response operator has a rotation of the half-filled shell in it whose
+      !! Tamm-Dancoff root is small but not zero -- 6.7e-3 hartree on the OH
+      !! radical -- and the paired problem drops it as an `omega^2` at the
+      !! numerical zero. Neither is a fault in the solver: Tamm-Dancoff keeps
+      !! it because `A` alone is not the operator whose null space the rotation
+      !! lives in. The floor below removes what is genuinely at zero and no
+      !! more.
+      type(czt_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals_a(:, :), energies_a(:)
+      integer, intent(in) :: n_occ_a
+      real(dp), intent(in) :: orbitals_b(:, :), energies_b(:)
+      integer, intent(in) :: n_occ_b
+      integer, intent(in) :: n_states
+      character(len=*), intent(in) :: method   !! `tda` or `rpa`
+      real(dp), allocatable, intent(out) :: excitations(:)
+      integer, allocatable, intent(out) :: state_spin(:)
+      real(dp), allocatable, intent(out) :: x_amplitudes(:, :)
+         !! (n_ov_a + n_ov_b, n_found), alpha block then beta, virtual fastest
+      real(dp), allocatable, intent(out) :: y_amplitudes(:, :)
+         !! The same shape; zero for `tda`, which has no `Y`
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+      real(dp), intent(in), optional :: bounds(:, :)
+      real(dp), intent(in), optional :: tolerance
+      integer, intent(in), optional :: max_iter
+      integer, intent(in), optional :: max_subspace
+      integer, intent(in), optional :: batch
+      logical, intent(in), optional :: verbose
+
+      type(response_core_uhf_t) :: core
+      type(tda_operator_uhf_t) :: tda
+      type(rpa_operator_uhf_t) :: rpa
+      real(dp), allocatable :: diagonal(:), raw(:), vectors(:, :), residuals(:)
+      real(dp), allocatable :: xpy(:, :), xmy(:, :), all_x(:, :), all_y(:, :)
+      character(len=MAX_LINE_LENGTH) :: line
+      character(len=16) :: route
+      real(dp) :: tol
+      integer :: n_ov, n_solve, subspace, iterations, products, n_found, k, keep
+      logical :: converged
+
+      if (error%has_error()) return
+      ! Allocated empty rather than left unallocated: a caller reads the size,
+      ! and one doing that on an unallocated array has no way to notice.
+      if (n_states < 1) then
+         allocate (excitations(0), state_spin(0), x_amplitudes(0, 0))
+         allocate (y_amplitudes(0, 0))
+         return
+      end if
+
+      route = trim(adjustl(method))
+      if (route /= "tda" .and. route /= "rpa") then
+         call error%set(ERROR_VALIDATION, "'"//trim(route)//"' is not an unrestricted "// &
+                        "linear-response method this backend knows; it has 'tda' and "// &
+                        "'rpa'. The 'casida' reduction is restricted-only, since it "// &
+                        "assumes (A-B) is the orbital-energy diagonal")
+         return
+      end if
+
+      if (present(xc)) then
+         call build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, core, error, &
+                                      xc=xc, ref_a=ref_a, ref_b=ref_b, bounds=bounds, &
+                                      batch=batch)
+      else
+         call build_response_core_uhf(mol, orbitals_a, energies_a, n_occ_a, &
+                                      orbitals_b, energies_b, n_occ_b, core, error, &
+                                      bounds=bounds, batch=batch)
+      end if
+      if (error%has_error()) return
+
+      diagonal = core%diagonal()
+      n_ov = size(diagonal)
+      if (n_states > n_ov) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states asked for "// &
+                        to_char(n_states)//" roots, but this reference has only "// &
+                        to_char(n_ov)//" single excitations to build them from")
+         return
+      end if
+
+      tol = DEFAULT_EXCITED_TOL
+      if (present(tolerance)) tol = tolerance
+      subspace = 0
+      if (present(max_subspace)) then
+         if (max_subspace > 0) subspace = max_subspace
+      end if
+
+      n_solve = roots_to_solve(diagonal, n_states)
+      allocate (all_x(n_ov, n_solve), all_y(n_ov, n_solve))
+
+      if (trim(route) == "rpa") then
+         rpa%core = core
+         call rpa_solve(rpa, diagonal, n_solve, raw, xpy, xmy, residuals, iterations, &
+                        products, converged, error, tolerance=tol, &
+                        max_iterations=max_iter, max_subspace=subspace, &
+                        verbose=verbose, label="unrestricted RPA iterations")
+         core%n_products = rpa%core%n_products
+         if (error%has_error()) return
+         ! `xpy . xmy = 1` out of the solver, which **is** the convention here:
+         ! an unrestricted amplitude carries one spin orbital, not two, so
+         ! there is no closed-shell half to apply.
+         do k = 1, n_solve
+            all_x(:, k) = 0.5_dp*(xpy(:, k) + xmy(:, k))
+            all_y(:, k) = 0.5_dp*(xpy(:, k) - xmy(:, k))
+         end do
+      else
+         tda%core = core
+         call davidson_flat(tda, diagonal, n_solve, raw, vectors, residuals, &
+                            iterations, products, converged, error, tolerance=tol, &
+                            max_iterations=max_iter, &
+                            max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
+                            verbose=verbose, label="unrestricted TDA iterations", &
+                            value_label="excitation")
+         core%n_products = tda%core%n_products
+         if (error%has_error()) return
+         all_x = vectors
+         all_y = 0.0_dp
+      end if
+
+      if (.not. converged) then
+         call error%set(ERROR_GENERIC, "the unrestricted "//trim(route)//" solve did "// &
+                        "not converge its roots in the iterations allowed; raise "// &
+                        "keywords.excited_states.max_iter or loosen "// &
+                        "keywords.excited_states.tolerance")
+         return
+      end if
+
+      ! Drop the artefacts, then the degeneracy padding, keeping the order.
+      keep = 0
+      do k = 1, n_solve
+         if (raw(k) > EXCITATION_FLOOR) keep = keep + 1
+      end do
+      n_found = min(keep, n_states)
+      allocate (excitations(n_found), state_spin(n_found))
+      allocate (x_amplitudes(n_ov, n_found), y_amplitudes(n_ov, n_found))
+      state_spin = STATE_SPIN_UNRESTRICTED
+      keep = 0
+      do k = 1, n_solve
+         if (raw(k) <= EXCITATION_FLOOR) cycle
+         keep = keep + 1
+         if (keep > n_found) exit
+         excitations(keep) = raw(k)
+         x_amplitudes(:, keep) = all_x(:, k)
+         y_amplitudes(:, keep) = all_y(:, k)
+      end do
+
+      if (n_found < n_states) then
+         call logger%warning("  only "//to_char(n_found)//" of the "// &
+                             to_char(n_states)//" roots asked for are excitations; "// &
+                             "the rest converged below "//to_char(EXCITATION_FLOOR)// &
+                             " hartree and are rotations of the reference, not "// &
+                             "excited states")
+      end if
+
+      write (line, "(a,a,a,i0,a,i0,a)") "  ", route_name(route), ": ", &
+         size(excitations), " root(s) from ", core%n_products, &
+         " matrix-vector products"
+      call logger%info(trim(line))
+      call log_state_table_uhf(route, excitations, x_amplitudes, y_amplitudes, &
+                               core%n_occ_a, core%n_vir_a, core%n_occ_b, core%n_vir_b)
+   end subroutine response_excitations_uhf
+
+   subroutine log_state_table_uhf(route, excitations, x, y, n_occ_a, n_vir_a, &
+                                  n_occ_b, n_vir_b)
+      !! The unrestricted spectrum, with the spin orbitals each root is made of
+      !!
+      !! As the restricted table, with the dominant amplitudes tagged `a` or
+      !! `b`: the two spin blocks have different orbital numbering, and a bare
+      !! `4 -> 6` would name two different excitations depending on which half
+      !! of the vector it came from.
+      character(len=*), intent(in) :: route
+      real(dp), intent(in) :: excitations(:)
+      real(dp), intent(in) :: x(:, :), y(:, :)
+      integer, intent(in) :: n_occ_a, n_vir_a, n_occ_b, n_vir_b
+
+      real(dp), parameter :: AMPLITUDE_FLOOR = 0.1_dp
+      character(len=MAX_LINE_LENGTH) :: line, piece
+      real(dp) :: weight
+      integer :: k, i, a, idx, na
+      logical :: paired
+
+      if (size(excitations) < 1) return
+      paired = trim(route) /= "tda"
+      na = n_occ_a*n_vir_a
+
+      call logger%info("  unrestricted amplitudes are normalised to "// &
+                       "sum_spin (|X|^2 - |Y|^2) = 1")
+      if (paired) then
+         call logger%info("   state       hartree           eV    "// &
+                          "|X|^2-|Y|^2   dominant amplitudes")
+      else
+         call logger%info("   state       hartree           eV   dominant amplitudes")
+      end if
+
+      do k = 1, size(excitations)
+         if (paired) then
+            weight = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+            write (line, "(a,i4,f16.9,f13.4,f15.9,a)") "   ", k, excitations(k), &
+               excitations(k)*HARTREE_TO_EV, weight, "   "
+         else
+            write (line, "(a,i4,f16.9,f13.4,a)") "   ", k, excitations(k), &
+               excitations(k)*HARTREE_TO_EV, "   "
+         end if
+         do i = 1, n_occ_a
+            do a = 1, n_vir_a
+               idx = (i - 1)*n_vir_a + a
+               if (abs(x(idx, k)) < AMPLITUDE_FLOOR) cycle
+               write (piece, "(i0,a,i0,a,f7.3,a)") i, "a -> ", n_occ_a + a, "a (", &
+                  x(idx, k), ")  "
+               if (len_trim(line) + len_trim(piece) + 1 > len(line)) cycle
+               line = trim(line)//" "//trim(piece)
+            end do
+         end do
+         do i = 1, n_occ_b
+            do a = 1, n_vir_b
+               idx = na + (i - 1)*n_vir_b + a
+               if (abs(x(idx, k)) < AMPLITUDE_FLOOR) cycle
+               write (piece, "(i0,a,i0,a,f7.3,a)") i, "b -> ", n_occ_b + a, "b (", &
+                  x(idx, k), ")  "
+               if (len_trim(line) + len_trim(piece) + 1 > len(line)) cycle
+               line = trim(line)//" "//trim(piece)
+            end do
+         end do
+         call logger%info(trim(line))
+      end do
+   end subroutine log_state_table_uhf
 
 end module mqc_czt_tddft

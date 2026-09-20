@@ -41,14 +41,18 @@ module mqc_czt_response_product
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, vv10_kernel_apply, &
-                         xc_kernel_cache_t
-   use mqc_czt_direct, only: build_fock, build_fock_direct_many, direct_stats_t
+                         xc_kernel_cache_t, xc_kernel_apply_uks_many, &
+                         xc_kernel_cache_uks_t
+   use mqc_czt_direct, only: build_fock, build_fock_direct_many, &
+                             build_fock_direct_uhf_many, direct_stats_t
    implicit none
    private
 
    public :: response_mean_field
    public :: response_product
    public :: response_mean_field_df
+   public :: response_mean_field_uhf
+   public :: response_product_uhf
 
 contains
 
@@ -553,5 +557,235 @@ contains
       g = coul - 0.5_dp*kf*exch
       deallocate (coul, exch)
    end subroutine response_mean_field_df
+
+   subroutine response_mean_field_uhf(mol, dens_a, dens_b, zero_h, g_a, g_b, error, &
+                                      minus, bounds, k_scale, xc, ref_a, ref_b, &
+                                      rs_k_lr, rs_omega, cache, stats)
+      !! `G_sigma(D')` for a batch of response density pairs, over one integral pass
+      !!
+      !! The unrestricted counterpart of `response_mean_field`:
+      !!
+      !!     G_a = J[D'_a + D'_b] - c_x K[D'_a] + sum_t f_xc^(a,t) . drho_t
+      !!
+      !! and the same with the spins exchanged. **Full** same-spin exchange,
+      !! not the half a closed-shell build carries, and the Coulomb term
+      !! reading the sum of the two -- which is what makes the two spin blocks
+      !! couple through `J` and through the kernel and through nothing else.
+      !!
+      !! **Integral-direct only.** There is no stored-tensor branch and no
+      !! fitted one: a fitted reference is refused before the SCF runs, and
+      !! the in-core path has no unrestricted batched build to read. A caller
+      !! that wants either has to add it rather than have this silently route
+      !! around the missing term.
+      !!
+      !! **What `minus` changes** is what it changes on the restricted side:
+      !! `A - B` acts on the antisymmetrised pair, where the Coulomb term
+      !! vanishes identically and so does the kernel, whose response is to a
+      !! density change an antisymmetric matrix does not make. So `minus` is
+      !! exchange only, both ranges of it, and the grid is never touched --
+      !! and, cross-spin exchange being nothing, `(A - B)` is block diagonal
+      !! in the spin.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: dens_a(:, :, :), dens_b(:, :, :)
+         !! `(n_ao, n_ao, n_set)` each, already symmetrised or antisymmetrised
+      real(dp), intent(in) :: zero_h(:, :)
+         !! Added to every set, so a zero matrix returns `G` alone
+      real(dp), allocatable, intent(out) :: g_a(:, :, :), g_b(:, :, :)
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: minus
+         !! The densities are antisymmetric and this is the `A - B` half.
+         !! Off by default.
+      real(dp), intent(in), optional :: bounds(:, :)   !! From `schwarz_bounds`
+      real(dp), intent(in), optional :: k_scale
+         !! The exact-exchange fraction the reference kept. Absent, it is
+         !! `xc%exx_fraction` when an `xc` context was given and one otherwise.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Present, the spin-resolved kernel is added. Needs `ref_a` and
+         !! `ref_b`, and a **polarised** context. Ignored when `minus`.
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+         !! The converged reference spin densities the kernel is evaluated at
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
+         !! A range-separated functional's attenuated second exchange pass.
+         !! Absent, both come from `xc` where it says it is range separated.
+      type(xc_kernel_cache_uks_t), intent(in), optional :: cache
+         !! The reference's polarised kernel coefficients, from
+         !! `xc_kernel_cache_uks_fill`. A cache that was never filled is
+         !! ignored, so a caller holding one as a plain component may pass it
+         !! unconditionally.
+      type(direct_stats_t), intent(out), optional :: stats
+         !! Quartets computed and skipped, summed over every integral pass made.
+
+      real(dp), allocatable :: ga_lr(:, :, :), gb_lr(:, :, :)
+      type(direct_stats_t) :: pass
+      real(dp) :: kf, k_lr, omega
+      logical :: anti, use_cache
+
+      if (error%has_error()) return
+
+      anti = .false.
+      if (present(minus)) anti = minus
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
+
+      kf = 1.0_dp
+      k_lr = 0.0_dp
+      omega = 0.0_dp
+      if (present(xc)) then
+         kf = xc%exx_fraction
+         if (xc%range_separated) then
+            k_lr = xc%rs_k_lr
+            omega = xc%rs_omega
+         end if
+      end if
+      if (present(k_scale)) kf = k_scale
+      if (present(rs_k_lr)) k_lr = rs_k_lr
+      if (present(rs_omega)) omega = rs_omega
+
+      if (present(xc) .and. .not. (present(ref_a) .and. present(ref_b))) then
+         call error%set(ERROR_VALIDATION, "the unrestricted response operator was "// &
+                        "given an exchange-correlation context but not both spin "// &
+                        "densities to evaluate its kernel at")
+         return
+      end if
+      if (.not. present(bounds)) then
+         call error%set(ERROR_VALIDATION, "the unrestricted response mean field is "// &
+                        "integral-direct and was called without the Schwarz bounds "// &
+                        "it screens on")
+         return
+      end if
+
+      if (present(stats)) then
+         stats%quartets_total = 0_int64
+         stats%quartets_computed = 0_int64
+         stats%quartets_screened = 0_int64
+      end if
+
+      ! Announced antisymmetric, the folded accumulation is exact: it drops
+      ! the Coulomb term, which vanishes, and antisymmetrises the result.
+      call build_fock_direct_uhf_many(mol, zero_h, dens_a, dens_b, bounds, g_a, g_b, &
+                                      pass, error, k_scale=kf, antisymmetric=anti)
+      if (error%has_error()) return
+      call add_stats(stats, pass)
+      if (omega > 0.0_dp) then
+         call build_fock_direct_uhf_many(mol, zero_h, dens_a, dens_b, bounds, ga_lr, &
+                                         gb_lr, pass, error, k_scale=k_lr, &
+                                         j_scale=0.0_dp, omega=omega, antisymmetric=anti)
+         if (error%has_error()) return
+         g_a = g_a + ga_lr
+         g_b = g_b + gb_lr
+         call add_stats(stats, pass)
+         deallocate (ga_lr, gb_lr)
+      end if
+
+      ! The kernel, for a Kohn-Sham reference, on top of whatever built `G`.
+      ! One grid pass serves the whole batch and both spins.
+      !
+      ! No VV10: a non-local reference is refused before the SCF, because its
+      ! kernel here would be a term silently left out rather than one this
+      ! routine could supply.
+      if (present(xc) .and. .not. anti) then
+         if (use_cache) then
+            call xc_kernel_apply_uks_many(xc, mol, ref_a, ref_b, dens_a, dens_b, &
+                                          g_a, g_b, error, cache=cache)
+         else
+            call xc_kernel_apply_uks_many(xc, mol, ref_a, ref_b, dens_a, dens_b, &
+                                          g_a, g_b, error)
+         end if
+         if (error%has_error()) return
+      end if
+   end subroutine response_mean_field_uhf
+
+   subroutine response_product_uhf(mol, c_occ_a, c_vir_a, c_occ_b, c_vir_b, gaps_a, &
+                                   gaps_b, zero_h, u_a, u_b, minus, au_a, au_b, error, &
+                                   bounds, k_scale, xc, ref_a, ref_b, rs_k_lr, &
+                                   rs_omega, cache)
+      !! `(A+B)u` or `(A-B)u` for many spin-blocked trial rotations, one pass
+      !!
+      !! The unrestricted counterpart of `response_product`. Writing each
+      !! spin's trial rotation as a density,
+      !!
+      !!     D'_s = C_vir,s u_s C_occ,s^T  +/-  transpose
+      !!
+      !! the image is
+      !!
+      !!     (A +/- B) u|_s = (eps_a - eps_i)_s u_s + C_vir,s^T G_s(D') C_occ,s
+      !!
+      !! -- **no factor of two** in front of the mean field, where the
+      !! restricted product carries one. That two is the two electrons a
+      !! closed-shell spatial orbital holds; here each spin is its own, and
+      !! the same two appears instead inside `G` as full rather than half
+      !! same-spin exchange. Feed this `u_a = u_b` on a closed shell and the
+      !! restricted `(A+B)` comes back exactly, which is what the cross-check
+      !! test asserts.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: c_occ_a(:, :), c_vir_a(:, :)   !! (n_ao, n_occ_a), (n_ao, n_vir_a)
+      real(dp), intent(in) :: c_occ_b(:, :), c_vir_b(:, :)
+      real(dp), intent(in) :: gaps_a(:, :), gaps_b(:, :)
+         !! `eps_a - eps_i` per spin, `(n_vir_s, n_occ_s)`
+      real(dp), intent(in) :: zero_h(:, :)
+         !! Zero, so the two-electron build returns `G` alone
+      real(dp), intent(in) :: u_a(:, :, :), u_b(:, :, :)
+         !! (n_vir_s, n_occ_s, n_set) the trial rotations
+      logical, intent(in) :: minus          !! `A - B` rather than `A + B`
+      real(dp), intent(out) :: au_a(:, :, :), au_b(:, :, :)
+         !! (n_vir_s, n_occ_s, n_set) the images
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: bounds(:, :)
+      real(dp), intent(in), optional :: k_scale
+      type(xc_context_t), intent(inout), optional :: xc
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      type(xc_kernel_cache_uks_t), intent(in), optional :: cache
+
+      real(dp), allocatable :: da(:, :, :), db(:, :, :), ga(:, :, :), gb(:, :, :)
+      real(dp), allocatable :: half_a(:, :), half_b(:, :), work_a(:, :), work_b(:, :)
+      integer :: n_ao, n_occ_a, n_occ_b, n_set, m
+
+      if (error%has_error()) return
+
+      n_ao = size(c_occ_a, 1)
+      n_occ_a = size(c_occ_a, 2)
+      n_occ_b = size(c_occ_b, 2)
+      n_set = size(u_a, 3)
+      if (n_set <= 0) return
+
+      allocate (da(n_ao, n_ao, n_set), db(n_ao, n_ao, n_set))
+      allocate (half_a(n_ao, n_occ_a), half_b(n_ao, n_occ_b))
+      allocate (work_a(n_ao, n_occ_a), work_b(n_ao, n_occ_b))
+
+      do m = 1, n_set
+         call pic_gemm(c_vir_a, u_a(:, :, m), half_a)
+         call pic_gemm(half_a, c_occ_a, da(:, :, m), transb="T")
+         call pic_gemm(c_vir_b, u_b(:, :, m), half_b)
+         call pic_gemm(half_b, c_occ_b, db(:, :, m), transb="T")
+         if (minus) then
+            da(:, :, m) = da(:, :, m) - transpose(da(:, :, m))
+            db(:, :, m) = db(:, :, m) - transpose(db(:, :, m))
+         else
+            da(:, :, m) = da(:, :, m) + transpose(da(:, :, m))
+            db(:, :, m) = db(:, :, m) + transpose(db(:, :, m))
+         end if
+      end do
+
+      call response_mean_field_uhf(mol, da, db, zero_h, ga, gb, error, minus=minus, &
+                                   bounds=bounds, k_scale=k_scale, xc=xc, &
+                                   ref_a=ref_a, ref_b=ref_b, rs_k_lr=rs_k_lr, &
+                                   rs_omega=rs_omega, cache=cache)
+      if (error%has_error()) then
+         deallocate (da, db, half_a, half_b, work_a, work_b)
+         return
+      end if
+
+      do m = 1, n_set
+         call pic_gemm(ga(:, :, m), c_occ_a, work_a)
+         call pic_gemm(c_vir_a, work_a, au_a(:, :, m), transa="T")
+         au_a(:, :, m) = gaps_a*u_a(:, :, m) + au_a(:, :, m)
+         call pic_gemm(gb(:, :, m), c_occ_b, work_b)
+         call pic_gemm(c_vir_b, work_b, au_b(:, :, m), transa="T")
+         au_b(:, :, m) = gaps_b*u_b(:, :, m) + au_b(:, :, m)
+      end do
+
+      deallocate (da, db, ga, gb, half_a, half_b, work_a, work_b)
+   end subroutine response_product_uhf
 
 end module mqc_czt_response_product

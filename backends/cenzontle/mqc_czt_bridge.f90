@@ -45,7 +45,7 @@ module mqc_czt_bridge
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                               nuclear_repulsion_hessian, response_hessian
-   use mqc_czt_tddft, only: response_excitations
+   use mqc_czt_tddft, only: response_excitations, response_excitations_uhf
    use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
                                        log_property_table
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
@@ -1509,9 +1509,10 @@ contains
       ! exchange-correlation context is still alive -- the kernel is evaluated
       ! at this density on this grid, so there is nowhere later this could
       ! run. What this backend cannot do was refused before the SCF; what is
-      ! left is a singlet solve, Tamm-Dancoff or paired, and a failure in it
-      ! is reported and propagated rather than dropped: a deck that asked for
-      ! a spectrum and got an energy has not been answered.
+      ! left is a closed-shell manifold or an unrestricted spectrum,
+      ! Tamm-Dancoff or paired, and a failure in it is reported and propagated
+      ! rather than dropped: a deck that asked for a spectrum and got an
+      ! energy has not been answered.
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
@@ -1521,7 +1522,42 @@ contains
             type(excited_properties_t) :: props
             integer :: state
 
-            if (kohn_sham) then
+            ! Four call sites rather than two arguments: the unrestricted
+            ! solver takes the beta orbitals as well and has no `spin`, and
+            ! neither it nor the restricted one may be handed an absent
+            ! optional in place of the exchange-correlation context.
+            if (unrestricted .and. kohn_sham) then
+               call response_excitations_uhf(mol, scf%orbitals, &
+                                             scf%orbital_energies, scf%n_occupied, &
+                                             scf%orbitals_beta, &
+                                             scf%orbital_energies_beta, &
+                                             scf%n_occupied_beta, &
+                                             settings%excited%n_states, &
+                                             trim(settings%excited%method), omega, &
+                                             omega_spin, x_amplitudes, y_amplitudes, &
+                                             td_error, xc=xc, ref_a=scf%density, &
+                                             ref_b=scf%density_beta, &
+                                             tolerance=settings%excited%tolerance, &
+                                             max_iter=settings%excited%max_iter, &
+                                             max_subspace=settings%excited%max_subspace, &
+                                             batch=settings%excited%batch, &
+                                             verbose=settings%verbose)
+            else if (unrestricted) then
+               call response_excitations_uhf(mol, scf%orbitals, &
+                                             scf%orbital_energies, scf%n_occupied, &
+                                             scf%orbitals_beta, &
+                                             scf%orbital_energies_beta, &
+                                             scf%n_occupied_beta, &
+                                             settings%excited%n_states, &
+                                             trim(settings%excited%method), omega, &
+                                             omega_spin, x_amplitudes, y_amplitudes, &
+                                             td_error, &
+                                             tolerance=settings%excited%tolerance, &
+                                             max_iter=settings%excited%max_iter, &
+                                             max_subspace=settings%excited%max_subspace, &
+                                             batch=settings%excited%batch, &
+                                             verbose=settings%verbose)
+            else if (kohn_sham) then
                call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
                                          scf%n_occupied, settings%excited%n_states, &
                                          trim(settings%excited%method), &
@@ -2803,10 +2839,7 @@ contains
       character(len=:), allocatable :: reason
 
       reason = ""
-      if (unrestricted) then
-         reason = "the reference is unrestricted, and the spin-blocked response "// &
-                  "operator is not written"
-      else if (settings%run_mp2 .or. settings%run_cc) then
+      if (settings%run_mp2 .or. settings%run_cc) then
          reason = "the reference is followed by a correlated method, whose excited "// &
                   "states would be an EOM treatment rather than a linear response of "// &
                   "the SCF"
@@ -2825,6 +2858,15 @@ contains
       else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
+      else if (unrestricted .and. trim(settings%excited%spin) /= "singlet") then
+         ! `singlet` is the field's default, so this refuses only a deck that
+         ! asked for one of the restricted manifolds by name. An unrestricted
+         ! reference is not a spin eigenfunction and neither are its roots, so
+         ! answering "triplet" with the one spectrum it has would be labelling
+         ! a mixture.
+         reason = "keywords.excited_states.spin = '"//trim(settings%excited%spin)// &
+                  "' over an unrestricted reference, whose roots are not spin "// &
+                  "eigenstates and so are neither singlets nor triplets"
       end if
    end function excited_decline_reason
 
