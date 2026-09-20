@@ -41,16 +41,19 @@ module test_mqc_czt_tddft
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
    use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix, &
                             rpa_operator_t, build_rpa_operator, rpa_dense_matrices, &
-                            response_excitations
+                            response_excitations, tda_operator_uhf_t, &
+                            build_tda_operator_uhf, tda_dense_matrix_uhf, &
+                            rpa_operator_uhf_t, build_rpa_operator_uhf, &
+                            rpa_dense_matrices_uhf, response_excitations_uhf
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_bridge, only: run_czt_hf
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, STATE_SPIN_SINGLET, &
-                               STATE_SPIN_TRIPLET
+                               STATE_SPIN_TRIPLET, STATE_SPIN_UNRESTRICTED
    implicit none
    private
 
@@ -502,6 +505,100 @@ module test_mqc_czt_tddft
    !! 9.0e-14 on the worst of five, and 3.3e-14 in the triplet manifold.
    real(dp), parameter :: TOL_CASIDA = 1.0e-9_dp
 
+   ! --- Layer 6: the unrestricted gates -------------------------------------
+
+   integer, parameter :: OH_N_OV = 130
+      !! Spin-blocked rotations of the OH radical in cc-pVDZ: nineteen
+      !! functions, five alpha and four beta electrons, so `5*14 + 4*15`.
+
+   !! The OH radical, **in Bohr**: O at the origin, H at 0.9697 Angstrom on z.
+   !!
+   !! The plan's Angstrom distance times 1.8897261254578281, written out and
+   !! handed to PySCF as Bohr, for the reason `WATER_BOHR` above is: the two
+   !! codes carry different CODATA Bohr radii and converting on each side
+   !! moves every orbital energy by 5e-10.
+   real(dp), parameter :: OH_BOHR(3, 2) = reshape([ &
+                                                  0.0_dp, 0.0_dp, 0.0_dp, &
+                                                  0.0_dp, 0.0_dp, 1.832467423856456_dp], &
+                                                  [3, 2])
+
+   real(dp), parameter :: OH_UHF_ENERGY = -75.393846033464_dp
+
+   !! `trace(A)` and `||A||_F` of the 130 by 130 unrestricted Tamm-Dancoff
+   !! matrix.
+   !!
+   !! The matrix itself is too large to pin element by element, and its
+   !! individual elements are not code-independent anyway -- OH is a 2-Pi
+   !! radical, so its degenerate pi pair can be mixed arbitrarily between two
+   !! codes. These two summaries are invariant under both the phase and that
+   !! mixing, and between them every element contributes to one or the other.
+   !! Their own run-to-run scatter from the threaded accumulation is 1e-11.
+   real(dp), parameter :: OH_UHF_TRACE = 852.525539816128_dp
+   real(dp), parameter :: OH_UHF_FROBENIUS = 119.939597984151_dp
+
+   !! The five lowest unrestricted Tamm-Dancoff roots of OH / cc-pVDZ.
+   !!
+   !! **The first is not an excitation and is reported anyway.** 6.7e-3
+   !! hartree is the rotation of the singly-occupied pi shell, which `A`
+   !! alone is not singular along and the Tamm-Dancoff spectrum therefore
+   !! keeps; the paired problem puts the same rotation at `w^2 = 0` and drops
+   !! it, which is why the RPA list below starts one root higher. Neither is
+   !! a fault in the solver, and `TDDFT_PLAN.md` says so.
+   real(dp), parameter :: OH_UHF_TDA(5) = [ &
+                          0.006697638062_dp, 0.173272241494_dp, 0.326244801914_dp, &
+                          0.372883427182_dp, 0.431442526350_dp]
+
+   !! The five lowest unrestricted RPA roots, the zero already dropped.
+   real(dp), parameter :: OH_UHF_RPA(5) = [ &
+                          0.169746047579_dp, 0.321231703197_dp, 0.370114042055_dp, &
+                          0.415769391408_dp, 0.453280297821_dp]
+
+   ! --- the Kohn-Sham gates, on a different doublet --------------------------
+   !
+   !! **Why the unrestricted Kohn-Sham cases are not the OH radical.**
+   !!
+   !! `TDDFT_PLAN.md` puts them there too, and they cannot go there. OH is a
+   !! 2-Pi radical: the singly-occupied pi orbital is one of a degenerate
+   !! pair, and a quadrature is not cylindrically symmetric, so the two
+   !! orientations of that hole are **two distinct stationary points** of the
+   !! Kohn-Sham energy, 6e-7 hartree apart. Both codes land on one or the
+   !! other depending on the initial guess and, because the valley between
+   !! them is nearly flat, on the order the threads finished the grid in:
+   !! PySCF's `minao` and `atom` guesses reach one and its `1e` guess the
+   !! other, and this program's own SCF was measured on both across two runs
+   !! of the same test. The first root moves by 4.4e-5 between them, which is
+   !! the rotation itself, and the next two by 3e-6.
+   !!
+   !! That is a property of the molecule, not of either code, and no
+   !! tolerance makes it a gate. The water **cation** is the same
+   !! unrestricted physics with a non-degenerate singly-occupied orbital, at
+   !! the geometry this file already carries: PySCF converges it to
+   !! |g| = 3e-10 from either guess, onto the same solution to twelve
+   !! decimals. The Hartree-Fock gates stay on OH, where there is no
+   !! quadrature to break the degeneracy and the two orientations are exactly
+   !! degenerate.
+
+   !! The water cation's five lowest roots, 175 spin-blocked rotations
+   !! (`5*19 + 4*20`), from a dense diagonalisation of PySCF's own operator.
+   !! `E(UKS PBE) = -75.881628961747`, `E(UKS B3LYP) = -75.967356416634`,
+   !! both converged to `|g| < 5e-10` from either initial guess.
+   real(dp), parameter :: CATION_PBE_TDA(5) = [ &
+                          0.097595783031_dp, 0.240744153231_dp, 0.473433123899_dp, &
+                          0.508215741547_dp, 0.515707923119_dp]
+
+   real(dp), parameter :: CATION_B3LYP_TDA(5) = [ &
+                          0.091902458748_dp, 0.237603694194_dp, 0.484648424585_dp, &
+                          0.518092069836_dp, 0.529036148197_dp]
+
+   real(dp), parameter :: CATION_B3LYP_RPA(5) = [ &
+                          0.089312820588_dp, 0.236158714407_dp, 0.482329524466_dp, &
+                          0.517089540365_dp, 0.527087149050_dp]
+
+   real(dp), parameter :: EXCITED_FLOOR = 1.0e-3_dp
+      !! What the solver calls a rotation rather than an excitation, repeated
+      !! here so the paired test can assert that the near-zero root fell below
+      !! it rather than assume so.
+
 contains
 
    subroutine collect_mqc_czt_tddft_tests(testsuite)
@@ -556,7 +653,23 @@ contains
                   new_unittest("both_manifolds_interleave_by_energy", test_both_spins), &
                   new_unittest("a_triplet_unstable_reference_is_named", test_instability), &
                   new_unittest("an_unreachable_tolerance_stops_and_says_so", &
-                               test_unreachable_tolerance) &
+                               test_unreachable_tolerance), &
+                  new_unittest("the_oh_uhf_tda_matrix_matches_pyscf", &
+                               test_oh_uhf_matrix), &
+                  new_unittest("the_oh_uhf_rpa_spectrum_matches_pyscf", &
+                               test_oh_uhf_rpa_matrix), &
+                  new_unittest("oh_uhf_tda_roots_match_pyscf", &
+                               test_oh_uhf_tda_solver), &
+                  new_unittest("oh_uhf_rpa_roots_match_pyscf", &
+                               test_oh_uhf_rpa_solver), &
+                  new_unittest("cation_uks_pbe_tda_roots_match_pyscf", &
+                               test_cation_uks_pbe), &
+                  new_unittest("cation_uks_b3lyp_tda_roots_match_pyscf", &
+                               test_cation_uks_b3lyp), &
+                  new_unittest("cation_uks_b3lyp_rpa_roots_match_pyscf", &
+                               test_cation_uks_b3lyp_rpa), &
+                  new_unittest("unrestricted_amplitudes_carry_unit_norm", &
+                               test_uhf_amplitude_norm) &
                   ]
    end subroutine collect_mqc_czt_tddft_tests
 
@@ -1842,6 +1955,469 @@ contains
                  "a stalled solve did not report the residual it reached: "// &
                  result%error%get_message())
    end subroutine test_unreachable_tolerance
+
+   subroutine oh_reference(mol, scf, ctx, err, functional)
+      !! Converge the OH radical in cc-pVDZ, unrestricted, at the plan geometry
+      !!
+      !! A doublet with a small beta gap -- 0.8 eV between the beta HOMO and
+      !! LUMO -- so the SCF is driven hard: what is compared is an operator
+      !! built from the orbitals, and the orbital error goes as the commutator
+      !! rather than its square.
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(xc_context_t), intent(out) :: ctx
+      type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: functional
+         !! Absent is Hartree-Fock, and leaves `ctx` untouched.
+
+      call build_czt_molecule([8, 1], ["O ", "H "], OH_BOHR, "cc-pvdz", mol, err)
+      if (err%has_error()) return
+
+      if (present(functional)) then
+         call xc_context_create(mol, functional, ctx, err, level=5, polarized=.true.)
+         if (err%has_error()) return
+         call run_czt_uhf(mol, 9, 2, 400, 1.0e-13_dp, 1.0e-10_dp, .false., scf, err, &
+                          xc=ctx, grad_tol=1.0e-9_dp)
+      else
+         ! 1e-11 on the commutator was reachable on most runs and not on all:
+         ! the doublet's beta gap is small and the last decade of the DIIS
+         ! wanders with the thread schedule. 1e-10 is reached every time and
+         ! is two decades below what the 1e-10 eigenvalue gate needs.
+         call run_czt_uhf(mol, 9, 2, 500, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                          grad_tol=1.0e-10_dp)
+      end if
+   end subroutine oh_reference
+
+   subroutine dense_tda_uhf(mol, scf, ctx, kohn_sham, a, err)
+      !! The explicit unrestricted TDA matrix, through the shipped operator
+      !!
+      !! Both spin blocks at once, so `a` is the `(n_ov_a + n_ov_b)` square
+      !! with the coupling blocks in it. Probed with unit vectors, which is
+      !! the construction PySCF's `gen_vind` side of the reference used too.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      real(dp), allocatable, intent(out) :: a(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(tda_operator_uhf_t) :: operator
+
+      if (err%has_error()) return
+      if (kohn_sham) then
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err, xc=ctx, ref_a=scf%density, &
+                                     ref_b=scf%density_beta)
+      else
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err)
+      end if
+      if (err%has_error()) return
+
+      call tda_dense_matrix_uhf(operator, a, err)
+   end subroutine dense_tda_uhf
+
+   subroutine dense_rpa_uhf(mol, scf, ctx, kohn_sham, aplus, aminus, err)
+      !! The explicit unrestricted `(A+B)` and `(A-B)`, through the same operator
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(rpa_operator_uhf_t) :: operator
+
+      if (err%has_error()) return
+      if (kohn_sham) then
+         call build_rpa_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err, xc=ctx, ref_a=scf%density, &
+                                     ref_b=scf%density_beta)
+      else
+         call build_rpa_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err)
+      end if
+      if (err%has_error()) return
+
+      call rpa_dense_matrices_uhf(operator, aplus, aminus, err)
+   end subroutine dense_rpa_uhf
+
+   subroutine oh_fragment(fragment)
+      !! The OH radical as the bridge wants it: element numbers, Bohr, doublet
+      type(physical_fragment_t), intent(out) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 2
+      fragment%nelec = 9
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [8, 1]
+      fragment%coordinates = OH_BOHR
+   end subroutine oh_fragment
+
+   subroutine cation_excited_run(functional, n_states, method, result)
+      !! The water cation through the bridge, unrestricted, with a spectrum
+      !!
+      !! The same geometry as every restricted case in this file, one electron
+      !! short: a doublet whose singly-occupied orbital is not degenerate, so
+      !! the Kohn-Sham solution is unique and a 1e-7 comparison means
+      !! something. See the note above `CATION_PBE_TDA`.
+      character(len=*), intent(in) :: functional, method
+      integer, intent(in) :: n_states
+      type(calculation_result_t), intent(out) :: result
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      call water_fragment(fragment)
+      fragment%charge = 1
+      fragment%multiplicity = 2
+      fragment%nelec = 9
+      settings%basis_set = "cc-pvdz"
+      settings%functional = functional
+      settings%grid_level = 5
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-9_dp
+      settings%density_tol = 1.0e-9_dp
+      settings%max_iter = 300
+      settings%excited%enabled = n_states > 0
+      settings%excited%n_states = n_states
+      settings%excited%method = method
+      settings%excited%spin = "singlet"
+      settings%excited%tolerance = 1.0e-9_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+   end subroutine cation_excited_run
+
+   subroutine oh_excited_run(functional, n_states, method, result)
+      !! One whole unrestricted calculation through the bridge
+      character(len=*), intent(in) :: functional, method
+      integer, intent(in) :: n_states
+      type(calculation_result_t), intent(out) :: result
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      call oh_fragment(fragment)
+      settings%basis_set = "cc-pvdz"
+      settings%functional = functional
+      settings%grid_level = 5
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-9_dp
+      settings%density_tol = 1.0e-9_dp
+      settings%max_iter = 400
+      settings%excited%enabled = n_states > 0
+      settings%excited%n_states = n_states
+      settings%excited%method = method
+      settings%excited%spin = "singlet"
+      settings%excited%tolerance = 1.0e-9_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+   end subroutine oh_excited_run
+
+   function invariants_of(a) result(pair)
+      !! `trace(A)` and `||A||_F`, the two summaries a phase cannot move
+      !!
+      !! Two codes converging the same open shell agree on the orbitals only
+      !! up to a sign per orbital, and on a degenerate block only up to an
+      !! orthogonal mixing inside it. `A` is covariant under both -- it
+      !! carries one occupied and one virtual index on each side -- so its
+      !! trace and its Frobenius norm are the same numbers in either code
+      !! while almost no individual element is. A 130 by 130 matrix is too
+      !! large to pin element by element in a test file; these two are what
+      !! can be pinned, and between them they see every element.
+      real(dp), intent(in) :: a(:, :)
+      real(dp) :: pair(2)
+
+      integer :: i
+
+      pair = 0.0_dp
+      do i = 1, size(a, 1)
+         pair(1) = pair(1) + a(i, i)
+      end do
+      pair(2) = sqrt(sum(a*a))
+   end function invariants_of
+
+   subroutine test_oh_uhf_matrix(error)
+      !! The unrestricted TDA operator of the OH radical, against PySCF
+      !!
+      !! The whole 130 by 130 matrix is built by probing the shipped operator
+      !! with every unit vector, which is what PySCF's `gen_vind` side of the
+      !! reference did as well. What is compared is its symmetry, its two
+      !! phase-independent invariants and its five lowest eigenvalues.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: a(:, :), values(:)
+      real(dp) :: pair(2)
+      logical :: ok
+
+      call oh_reference(mol, scf, ctx, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the unrestricted Hartree-Fock reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, abs(scf%energy - OH_UHF_ENERGY) < TOL_EXACT, &
+                 "the OH unrestricted Hartree-Fock energy is not PySCF's")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda_uhf(mol, scf, ctx, .false., a, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the dense unrestricted TDA matrix "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, size(a, 1) == OH_N_OV, "the unrestricted operator is not the "// &
+                 "length of the two occupied-virtual blocks together")
+      if (allocated(error)) return
+      ! `A` is symmetric for a real reference, and nothing in the build
+      ! enforces it: the two spin blocks come from separate transforms and the
+      ! coupling blocks from the Coulomb term of one against the other.
+      call check(error, maxval(abs(a - transpose(a))) < TOL_EXACT, &
+                 "the unrestricted TDA matrix is not symmetric")
+      if (allocated(error)) return
+
+      pair = invariants_of(a)
+      call check(error, abs(pair(1) - OH_UHF_TRACE) < 1.0e-8_dp, &
+                 "the trace of the unrestricted TDA matrix is not PySCF's")
+      if (allocated(error)) return
+      call check(error, abs(pair(2) - OH_UHF_FROBENIUS) < 1.0e-8_dp, &
+                 "the Frobenius norm of the unrestricted TDA matrix is not PySCF's")
+      if (allocated(error)) return
+
+      values = eigenvalues_of(a, ok)
+      call check(error, ok, "the dense diagonalisation failed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values(1:5) - OH_UHF_TDA)) < TOL_EXACT, &
+                 "an OH unrestricted TDA root disagrees with PySCF")
+   end subroutine test_oh_uhf_matrix
+
+   subroutine test_oh_uhf_rpa_matrix(error)
+      !! The paired unrestricted problem of OH, from the two explicit halves
+      !!
+      !! The lowest `w` here is the numerical zero the Tamm-Dancoff spectrum
+      !! keeps as 6.7e-3: the half-filled shell's own rotation, which the
+      !! paired problem puts at `w^2 = 0` because `(A+B)` is singular along
+      !! it. It is skipped rather than compared, and skipping it is the
+      !! statement that it is not an excitation.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), values(:)
+      logical :: ok
+
+      call oh_reference(mol, scf, ctx, err)
+      if (.not. err%has_error()) call dense_rpa_uhf(mol, scf, ctx, .false., aplus, &
+                                                    aminus, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the dense unrestricted paired halves "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      values = paired_spectrum(aplus, aminus, ok)
+      call check(error, ok, "the dense paired reduction failed; (A-B) should be "// &
+                 "positive definite on this doublet")
+      if (allocated(error)) return
+      ! `paired_spectrum` takes the square root of every `w^2`, and this one
+      ! is a numerical zero that lands on either side of it -- PySCF's own
+      ! comes out at +4e-15 on one run and -1e-15 on the next -- so what comes
+      ! back here is either a number far below the floor or a NaN. Both say
+      ! the same thing, and a comparison a NaN fails is how that is written.
+      call check(error,.not. (values(1) >= EXCITED_FLOOR), "the rotation of the "// &
+                 "half-filled shell did not come back at the numerical zero")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values(2:6) - OH_UHF_RPA)) < TOL_RPA_DENSE, &
+                 "an OH unrestricted RPA root disagrees with PySCF")
+   end subroutine test_oh_uhf_rpa_matrix
+
+   subroutine compare_uhf_roots(error, result, reference, tol, what)
+      !! Every root of the reference, against what an unrestricted run reported
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t), intent(in) :: result
+      real(dp), intent(in) :: reference(:), tol
+      character(len=*), intent(in) :: what
+
+      integer :: i
+
+      call check(error,.not. result%has_error, "the "//what//" run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, result%has_excited_states, "the "//what//" run reported no "// &
+                 "excited states")
+      if (allocated(error)) return
+      call check(error, size(result%excitation_energies) == size(reference), &
+                 "the "//what//" run converged a different number of roots than "// &
+                 "were asked for")
+      if (allocated(error)) return
+      do i = 1, size(reference)
+         call check(error, abs(result%excitation_energies(i) - reference(i)) < tol, &
+                    "a "//what//" excitation energy disagrees with PySCF")
+         if (allocated(error)) return
+      end do
+      call check(error, allocated(result%state_spin), "the "//what//" run labelled "// &
+                 "no spins")
+      if (allocated(error)) return
+      call check(error, all(result%state_spin == STATE_SPIN_UNRESTRICTED), &
+                 "an unrestricted root was labelled with a multiplicity it does "// &
+                 "not have")
+   end subroutine compare_uhf_roots
+
+   subroutine test_oh_uhf_tda_solver(error)
+      !! The five lowest unrestricted TDA roots of OH, through the bridge
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "tda", result)
+      call compare_uhf_roots(error, result, OH_UHF_TDA, TOL_CCPVDZ_HF, "OH UHF TDA")
+   end subroutine test_oh_uhf_tda_solver
+
+   subroutine test_oh_uhf_rpa_solver(error)
+      !! The five lowest unrestricted RPA roots of OH, through the bridge
+      !!
+      !! The near-zero root the Tamm-Dancoff spectrum carries is not here:
+      !! the paired solver puts it at `w^2` below its floor and skips it, so
+      !! the five roots asked for are the five physical ones. That is the
+      !! difference the plan records between the two columns, and it is
+      !! gated here rather than worked around.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "rpa", result)
+      call compare_uhf_roots(error, result, OH_UHF_RPA, TOL_CCPVDZ_HF, "OH UHF RPA")
+   end subroutine test_oh_uhf_rpa_solver
+
+   subroutine test_cation_uks_pbe(error)
+      !! The five lowest UKS PBE Tamm-Dancoff roots of the water cation
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("pbe", 5, "tda", result)
+      call compare_uhf_roots(error, result, CATION_PBE_TDA, TOL_GRID, "H2O+ UKS PBE TDA")
+   end subroutine test_cation_uks_pbe
+
+   subroutine test_cation_uks_b3lyp(error)
+      !! The five lowest UKS B3LYP Tamm-Dancoff roots of the water cation
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("b3lyp", 5, "tda", result)
+      call compare_uhf_roots(error, result, CATION_B3LYP_TDA, TOL_GRID, &
+                             "H2O+ UKS B3LYP TDA")
+   end subroutine test_cation_uks_b3lyp
+
+   subroutine test_cation_uks_b3lyp_rpa(error)
+      !! The five lowest UKS B3LYP RPA roots of the water cation
+      !!
+      !! The hybrid's paired route, which is the only case here where the
+      !! attenuated-free exchange pass, the spin-resolved kernel and the
+      !! antisymmetric unrestricted Fock build all run in one product.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("b3lyp", 5, "rpa", result)
+      call compare_uhf_roots(error, result, CATION_B3LYP_RPA, TOL_GRID, &
+                             "H2O+ UKS B3LYP RPA")
+   end subroutine test_cation_uks_b3lyp_rpa
+
+   subroutine test_uhf_amplitude_norm(error)
+      !! `sum_spin(|X|^2 - |Y|^2) = 1` for every unrestricted root
+      !!
+      !! The unrestricted convention, and the one thing about the amplitudes a
+      !! consumer cannot derive for itself. Checked on the paired route, where
+      !! it is an identity the solver imposes rather than a property of a unit
+      !! vector, and on the Tamm-Dancoff one, where it says the two routes
+      !! agree -- which the restricted pair, at 1 and 1/2, do not.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+      real(dp) :: worst, norm
+      integer :: k
+
+      call oh_reference(mol, scf, ctx, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the unrestricted reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      worst = 0.0_dp
+      call response_excitations_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                    scf%n_occupied, scf%orbitals_beta, &
+                                    scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                    3, "rpa", omega, spins, x, y, err, &
+                                    tolerance=1.0e-9_dp)
+      if (.not. err%has_error()) then
+         do k = 1, size(omega)
+            norm = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+            worst = max(worst, abs(norm - 1.0_dp))
+         end do
+      end if
+      if (.not. err%has_error()) then
+         deallocate (omega, spins, x, y)
+         call response_excitations_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                       scf%n_occupied, scf%orbitals_beta, &
+                                       scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                       3, "tda", omega, spins, x, y, err, &
+                                       tolerance=1.0e-9_dp)
+         if (.not. err%has_error()) then
+            do k = 1, size(omega)
+               norm = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+               worst = max(worst, abs(norm - 1.0_dp))
+            end do
+         end if
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "an unrestricted solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, worst < TOL_PAIRED_NORM, "an unrestricted amplitude is not "// &
+                 "normalised to sum_spin(|X|^2 - |Y|^2) = 1")
+   end subroutine test_uhf_amplitude_norm
 
 end module test_mqc_czt_tddft
 
