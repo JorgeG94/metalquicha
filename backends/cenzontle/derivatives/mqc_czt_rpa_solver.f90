@@ -227,9 +227,9 @@ contains
       real(dp), allocatable :: kept(:)
       integer(int64) :: tick, last, rate
       character(len=128) :: line
-      real(dp) :: tol, best_worst, worst, denominator, norm
+      real(dp) :: tol, best_worst, worst, norm, unstable_tol
       integer :: n, nmax, iterations, iteration, nsub, n_new, first_new
-      integer :: k, i, added, stall, n_positive
+      integer :: k, i, added, stall, n_positive, n_flat
       logical :: loud
       logical, allocatable :: root_converged(:)
 
@@ -329,9 +329,43 @@ contains
             return
          end if
 
+         ! A negative `w^2` is not a small root to be stepped over. By
+         ! Sylvester's law of inertia it is a negative eigenvalue of the
+         ! projected `(A+B)`, which `square_root` cannot see because that only
+         ! tests `(A-B)`: the two halves of one instability, and only one of
+         ! them was being caught. Answering from the positive roots above it
+         ! returns a converged, plausible spectrum with the lowest state
+         ! missing and every index below it shifted up -- no error, no
+         ! warning. It is refused here instead.
+         !
+         ! A root merely *at* zero is different and is stepped over, not
+         ! refused: those are the rotations the reference is flat along, and
+         ! an unrestricted reference carries one by construction. The
+         ! threshold separates the two, scaled by the spectrum so it means the
+         ! same thing for a valence problem and a core one.
+         unstable_tol = -max(OMEGA2_FLOOR, epsilon(1.0_dp)*maxval(abs(w2)))
+         if (any(w2 < unstable_tol)) then
+            call error%set(ERROR_GENERIC, "the reference is unstable ((A+B) is not "// &
+                           "positive definite): the projected matrix has a squared "// &
+                           "frequency of "//to_char(minval(w2))//", so the excitation "// &
+                           "energy there is imaginary. There is no excitation "// &
+                           "spectrum of an unstable reference; reconverge it -- "// &
+                           "keywords.scf.stability will say which rotation, and "// &
+                           "keywords.scf.second_order can escape it -- before asking "// &
+                           "for one")
+            deallocate (h1, h2, root, work, hss, w2)
+            return
+         end if
+
          ! Ascending, so everything at or below the floor is at the front and
          ! the roots wanted are the next `n_roots`.
          n_positive = count(w2 > OMEGA2_FLOOR)
+         n_flat = nsub - n_positive
+         if (n_flat > 0 .and. loud) then
+            write (line, '(a,i0,a)') "   skipped ", n_flat, &
+               " rotation(s) of the reference at zero frequency"
+            call logger%debug(trim(line))
+         end if
          if (n_positive < n_roots) then
             call error%set(ERROR_GENERIC, "the paired response subspace holds only "// &
                            to_char(n_positive)//" positive squared frequencies, and "// &
@@ -461,6 +495,20 @@ contains
       end do
 
       call convergence_footer(loud, converged, iterations_taken, "iterations", 74)
+
+      ! The other two ways out of the loop -- stagnation and an exhausted
+      ! subspace -- both raise. Falling out on `max_iterations` used to return
+      ! normally with `converged` false, so a caller that forgot to test it
+      ! got partly-converged roots that look like an answer. The shipped
+      ! caller does test it; a reusable solver should not depend on that.
+      if (.not. converged .and. .not. error%has_error()) then
+         call error%set(ERROR_GENERIC, "the paired response solver used all "// &
+                        to_char(iterations)//" iterations without converging; the "// &
+                        "worst residual was "//to_char(best_worst)//" against a "// &
+                        "tolerance of "//to_char(tol)//". Raise "// &
+                        "keywords.excited_states.max_iter, or loosen "// &
+                        "keywords.excited_states.tolerance")
+      end if
 
       deallocate (basis, sp, sm, correction, root_converged)
    end subroutine rpa_solve
@@ -597,7 +645,12 @@ contains
          return
       end if
 
-      if (any(values <= 0.0_dp)) then
+      ! Relative to the spectrum, not against zero: an eigenvalue of 1e-18
+      ! passes an absolute test, `sqrt` returns 1e-9, and the root is then
+      ! numerically the square root of nothing -- `S H1 S` comes back as noise
+      ! with no error raised. A near-instability is exactly what this is here
+      ! to catch, so the threshold has to be able to see one.
+      if (any(values <= max(1.0e-12_dp, epsilon(1.0_dp)*maxval(abs(values))))) then
          call error%set(ERROR_GENERIC, "the reference is unstable ((A-B) is not "// &
                         "positive definite): the projected matrix has an eigenvalue "// &
                         "of "//to_char(minval(values))//", so the energy falls along "// &
