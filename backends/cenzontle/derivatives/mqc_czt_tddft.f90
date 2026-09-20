@@ -91,7 +91,7 @@ module mqc_czt_tddft
    !! share.
    !!
    !! **Amplitudes come back at different normalisations for the two
-   !! approximations, and `singlet_excitations` says which.** Tamm-Dancoff has
+   !! approximations, and `response_excitations` says which.** Tamm-Dancoff has
    !! no `Y`, so its `X` is a unit vector; the paired problem conserves
    !! `|X|^2 - |Y|^2` and nothing else, and its amplitudes carry the
    !! restricted closed-shell convention `|X|^2 - |Y|^2 = 1/2` that PySCF,
@@ -275,7 +275,7 @@ module mqc_czt_tddft
       !! `dEps^{1/2}(A+B)dEps^{1/2}` for a pure functional, as a Davidson operator
       !!
       !! Not public: this is the cross-check route, reached through
-      !! `singlet_excitations` with `method = "casida"` and refused for
+      !! `response_excitations` with `method = "casida"` and refused for
       !! anything carrying exact exchange, where `(A-B)` is not the diagonal
       !! it assumes.
       type(response_core_t), allocatable :: core

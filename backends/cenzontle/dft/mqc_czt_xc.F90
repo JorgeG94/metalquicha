@@ -1900,6 +1900,11 @@ contains
          return
       end if
 #ifdef MQC_WITH_LIBXC
+      ! Every number is checked before any handle is created. `polarized_twin`
+      ! is the only record that `func_pol` holds anything, and
+      ! `xc_context_destroy` ends the twins all-or-nothing on the strength of
+      ! it -- so a run that created some and then refused would leak exactly
+      ! the ones it had made.
       do i = 1, ctx%n_func
          if (ctx%func_id(i) <= 0) then
             call error%set(ERROR_VALIDATION, "this exchange-correlation context does "// &
@@ -1907,6 +1912,8 @@ contains
                            "polarised twin of them can be built for the triplet kernel")
             return
          end if
+      end do
+      do i = 1, ctx%n_func
          call xc_f03_func_init(ctx%func_pol(i), ctx%func_id(i), XC_POLARIZED)
       end do
       ctx%polarized_twin = .true.
@@ -1919,7 +1926,7 @@ contains
 #ifdef MQC_WITH_LIBXC
    subroutine kernel_block_reference(ctx, ao, ao_grad, d_sig, gga, mgga, &
                                      rho, rho_grad, frr, frs, fss, vsig, &
-                                     frt, fst, ftt, vtau, triplet)
+                                     frt, fst, ftt, vtau, error, triplet)
       !! The reference density and the kernel's coefficients on one grid block
       !!
       !! Everything the kernel contraction needs that does not depend on the
@@ -1952,11 +1959,15 @@ contains
       real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:), vsig(:)
       real(dp), allocatable, intent(out) :: frt(:), fst(:), ftt(:), vtau(:)
          !! The tau channels, zero unless the context is a meta-GGA
+      type(error_t), intent(inout) :: error
+         !! Set only by the triplet precondition below. Every caller is inside
+         !! a parallel region, so this is a thread's own `error_t` that the
+         !! region's usual critical section promotes.
       logical, intent(in), optional :: triplet
          !! Return the triplet kernel's coefficients rather than the singlet's.
          !! Needs `ensure_polarized_twins` to have run on `ctx`, which is the
          !! caller's job because this is called from inside a parallel region.
-         !! Off by default.
+         !! Refused rather than trusted, in `triplet_component`. Off by default.
 
       real(dp), allocatable :: sigma(:), tau(:), lapl(:), lapl_scratch(:)
          !! libxc's meta-GGA entry points take the Laplacian and return its
@@ -2021,7 +2032,8 @@ contains
          if (want_triplet) then
             ! A different functional derivative in the same four slots. The
             ! callers refuse a meta-GGA triplet, so no tau channel reaches here.
-            call triplet_component(ctx, i, nb, rho, sigma, frr, frs, fss, vsig)
+            call triplet_component(ctx, i, nb, rho, sigma, frr, frs, fss, vsig, error)
+            if (error%has_error()) return
             cycle
          end if
          select case (ctx%family(i))
@@ -2078,7 +2090,7 @@ contains
       end do
    end subroutine kernel_block_reference
 
-   subroutine triplet_component(ctx, i, nb, rho, sigma, frr, frs, fss, vsig)
+   subroutine triplet_component(ctx, i, nb, rho, sigma, frr, frs, fss, vsig, error)
       !! One component's contribution to the triplet kernel, accumulated
       !!
       !! The polarised twin of component `i` evaluated at the closed-shell
@@ -2086,8 +2098,11 @@ contains
       !! sigma/4` -- and its derivatives combined into the four coefficients
       !! the restricted contraction already consumes, times `ctx%weight(i)`.
       !!
-      !! `ctx%polarized_twin` has to be set; the caller runs
-      !! `ensure_polarized_twins` outside its parallel region.
+      !! `ctx%polarized_twin` has to be set, and the caller runs
+      !! `ensure_polarized_twins` outside its parallel region to do it. That
+      !! is checked here rather than assumed: libxc leaves `func_pol` as
+      !! uninitialised storage until then, and handing one of those to
+      !! `xc_f03_gga_fxc` is a segmentation fault, not an error return.
       type(xc_context_t), intent(in) :: ctx
       integer, intent(in) :: i     !! Which component
       integer, intent(in) :: nb    !! Points in the block
@@ -2095,6 +2110,7 @@ contains
       real(dp), intent(in) :: sigma(:)    !! (nb) `|grad rho|^2`, zero for an LDA
       real(dp), intent(inout) :: frr(:), frs(:), fss(:), vsig(:)
          !! (nb) accumulated into, in the singlet coefficients' own slots
+      type(error_t), intent(inout) :: error
 
       ! ## Where the four combinations come from
       !
@@ -2132,9 +2148,9 @@ contains
       !     F_ss  = (f_saa,saa - f_saa,sbb) / 8
       !     V_sig = e_saa / 2 - e_sab / 4
       !
-      ! which is the list Psi4 builds in `superfunctional.cc`, derived here in
-      ! this code's own `(rho, sigma)` representation rather than ported from
-      ! PySCF's transformed one. For an LDA only the first survives, and there
+      ! which is the list Psi4 builds in `libfock/v.cc`, in `RV::compute_Vx`,
+      ! derived here in this code's own `(rho, sigma)` representation rather
+      ! than ported from PySCF's transformed one. For an LDA only the first survives, and there
       ! it equals the singlet coefficient whenever the functional carries no
       ! opposite-spin correlation -- pure exchange has `f_ra,rb = 0`.
       !
@@ -2148,6 +2164,14 @@ contains
       real(dp), allocatable :: exc_p(:), vrho_p(:), vsigma_p(:)
       real(dp) :: w
       integer :: ig
+
+      if (.not. ctx%polarized_twin) then
+         call error%set(ERROR_VALIDATION, "the triplet exchange-correlation kernel "// &
+                        "was asked for against a context whose polarised libxc "// &
+                        "handles were never built; ensure_polarized_twins has to "// &
+                        "run on it first, outside any parallel region")
+         return
+      end if
 
       w = ctx%weight(i)
       allocate (rho_pol(2*nb), sigma_pol(3*nb), frr_p(3*nb))
@@ -2512,7 +2536,16 @@ contains
             call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
                                         gga, mgga, rho, rho_grad, &
                                         frr, frs, fss, vsig, frt, fst, ftt, vtau, &
-                                        triplet=want_triplet)
+                                        local_error, triplet=want_triplet)
+            if (local_error%has_error()) then
+               !$omp critical (xc_kernel_many_failure)
+               if (.not. failed) then
+                  failed = .true.
+                  error = local_error
+               end if
+               !$omp end critical (xc_kernel_many_failure)
+               cycle
+            end if
          end if
 
          ! The response side's own scratch, which no cache can hold: it is the
@@ -2984,7 +3017,17 @@ contains
 
          call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
                                      gga, mgga, rho, rho_grad, &
-                                     frr, frs, fss, vsig, frt, fst, ftt, vtau)
+                                     frr, frs, fss, vsig, frt, fst, ftt, vtau, &
+                                     local_error)
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_cache_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_cache_failure)
+            cycle
+         end if
 
          cache%rho(g0:g1) = rho
          do id = 1, 3
@@ -3008,7 +3051,16 @@ contains
             call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
                                         gga, mgga, rho, rho_grad, &
                                         frr, frs, fss, vsig, frt, fst, ftt, vtau, &
-                                        triplet=.true.)
+                                        local_error, triplet=.true.)
+            if (local_error%has_error()) then
+               !$omp critical (xc_kernel_cache_failure)
+               if (.not. failed) then
+                  failed = .true.
+                  error = local_error
+               end if
+               !$omp end critical (xc_kernel_cache_failure)
+               cycle
+            end if
             cache%frr_t(g0:g1) = frr
             cache%frs_t(g0:g1) = frs
             cache%fss_t(g0:g1) = fss
