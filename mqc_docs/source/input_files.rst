@@ -1478,8 +1478,12 @@ reference:
   a deck is never told it converged to a threshold it did not ask for.
 - ``max_iter`` (default: 100): cycles that solve may take.
 - ``max_subspace`` (default: 0): trial vectors the Davidson subspace may hold
-  before it collapses. Zero leaves the rule to the solver, which derives it
-  from the number of roots; set it only to bound memory.
+  before it collapses. Zero derives it from the starting space, which is
+  several vectors per root; set it only to bound memory, and not below that
+  starting space -- a smaller cap truncates the guess, and a guess too narrow
+  to reach a root converges the ones it can reach instead. Those are true
+  excitation energies of the right operator; they are simply not the lowest
+  ones, and nothing in the output can say so.
 - ``batch`` (default: 12): trial vectors contracted against one pass over the
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.

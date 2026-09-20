@@ -191,6 +191,46 @@ module test_mqc_czt_tddft
                           0.283543256194_dp, 0.353278202364_dp, 0.371105546022_dp, &
                           0.445649836132_dp, 0.517104469420_dp]
 
+   integer, parameter :: N_F2_STATES = 3
+      !! Roots asked for in the F2 case, which is the request that used to
+      !! come back with the wrong third one.
+
+   !! F2 at its equilibrium bond length, **in Bohr**, along z.
+   !!
+   !! 1.4119 Angstrom is the experimental `r_e`; 2.668 Bohr is that to the
+   !! four figures the reference was taken at, and PySCF was given the same
+   !! number as Bohr, so no conversion constant enters the comparison.
+   real(dp), parameter :: F2_BOHR(3, 2) = reshape([ &
+                                                  0.0_dp, 0.0_dp, 0.0_dp, &
+                                                  0.0_dp, 0.0_dp, 2.668_dp], [3, 2])
+
+   !! F2/cc-pVDZ, restricted Hartree-Fock, the three lowest singlet TDA roots.
+   !!
+   !! The spectrum this molecule is here for:
+   !!
+   !!     0.183610964  0.183610964  0.332986263  0.332986263  0.556013580
+   !!
+   !! two degenerate pairs and then a single root. What makes it the case to
+   !! pin is where those roots sit in the *gaps* the Davidson guess is picked
+   !! on: the three lowest are 0.759, 0.759 and 0.841 hartree, and the 0.841
+   !! one carries the fifth root, while the pair carrying the third and
+   !! fourth is at 0.903 -- outside a three-vector guess, and 0.06 hartree
+   !! past anything a degeneracy window closes. A guess of one unit vector
+   !! per root therefore converges roots one, two and *five* and reports the
+   !! fifth as the third: every one of them a true eigenpair, none of them
+   !! flagged. Asked for five roots the same solver finds all five, which is
+   !! what says the starting space was too narrow rather than the solver
+   !! broken.
+   !!
+   !! Taken the same way as the water tables: PySCF 2.14 fed this
+   !! repository's own cc-pVDZ JSON through `bse_to_pyscf`, `conv_tol =
+   !! 1e-15`, the whole 171 by 171 `A` probed out of `TDA.gen_vind` on the
+   !! unit vectors and diagonalised densely, so no iterative tolerance is in
+   !! the reference.
+   real(dp), parameter :: F2_CCPVDZ_ENERGY = -198.685678500661_dp
+   real(dp), parameter :: F2_CCPVDZ_TDA(N_F2_STATES) = [ &
+                          0.183610964095_dp, 0.183610964095_dp, 0.332986263273_dp]
+
    !! Hartree-Fock carries no quadrature, so nothing but the integrals and the
    !! two SCF thresholds sits between the codes, and both are converged far
    !! below this. Measured on the STO-3G matrix: 7.7e-13 on the worst diagonal
@@ -248,6 +288,7 @@ contains
                   new_unittest("cc_pvdz_pbe_singlets_match_the_table", test_ccpvdz_pbe), &
                   new_unittest("cc_pvdz_b3lyp_singlets_match_the_table", test_ccpvdz_b3lyp), &
                   new_unittest("cc_pvdz_cam_b3lyp_singlets_match_the_table", test_ccpvdz_cam), &
+                  new_unittest("three_roots_of_f2_are_the_lowest_three", test_f2_lowest_three), &
                   new_unittest("no_states_asked_for_means_no_spectrum", test_no_states), &
                   new_unittest("rpa_and_triplets_are_refused_by_name", test_later_layers) &
                   ]
@@ -501,7 +542,21 @@ contains
       fragment%coordinates = WATER_BOHR
    end subroutine water_fragment
 
-   subroutine excited_run(basis, functional, n_states, method, spin, result)
+   subroutine difluorine_fragment(fragment)
+      !! F2 at `F2_BOHR`, closed shell, eighteen electrons
+      type(physical_fragment_t), intent(out) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      fragment%nelec = 18
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [9, 9]
+      fragment%coordinates = F2_BOHR
+   end subroutine difluorine_fragment
+
+   subroutine excited_run(basis, functional, n_states, method, spin, result, molecule)
       !! One whole calculation through the bridge, with an excited-state block
       !!
       !! Through `run_czt_hf` rather than the solver directly, because what
@@ -510,11 +565,17 @@ contains
       character(len=*), intent(in) :: basis, functional, method, spin
       integer, intent(in) :: n_states
       type(calculation_result_t), intent(out) :: result
+      type(physical_fragment_t), intent(in), optional :: molecule
+         !! What to run it on. Absent is the water every other case here uses.
 
       type(cuest_scf_settings_t) :: settings
       type(physical_fragment_t) :: fragment
 
-      call water_fragment(fragment)
+      if (present(molecule)) then
+         fragment = molecule
+      else
+         call water_fragment(fragment)
+      end if
       settings%basis_set = basis
       settings%functional = functional
       settings%grid_level = 5
@@ -677,6 +738,42 @@ contains
       if (allocated(error)) return
       call compare_roots(error, result, CAM_CCPVDZ_TDA, TOL_GRID, "cc-pVDZ CAM-B3LYP")
    end subroutine test_ccpvdz_cam
+
+   subroutine test_f2_lowest_three(error)
+      !! Three roots means the lowest three, not three true roots of any rank
+      !!
+      !! The failure this pins is not a wrong number: every root the old
+      !! guess returned was an eigenvalue of the right matrix, converged to
+      !! the tolerance asked for, and the third one was the fifth of the
+      !! spectrum. Nothing in the run said so, which is why it is gated here
+      !! and not left to a user to notice.
+      !!
+      !! Both halves are checked: that the third root is 0.3330 and not
+      !! 0.5560, and that the first two are still the degenerate pair -- a
+      !! guess that lost the *pair* would move those instead and is a
+      !! different fault with the same cause.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+      type(physical_fragment_t) :: fragment
+
+      call difluorine_fragment(fragment)
+      call excited_run("cc-pvdz", "", N_F2_STATES, "tda", "singlet", result, fragment)
+      call check(error, abs(result%energy%scf - F2_CCPVDZ_ENERGY) < 1.0e-8_dp, &
+                 "the F2/cc-pVDZ Hartree-Fock energy is not the one the reference "// &
+                 "spectrum was taken at")
+      if (allocated(error)) return
+      call compare_roots(error, result, F2_CCPVDZ_TDA, TOL_CCPVDZ_HF, "F2/cc-pVDZ")
+      if (allocated(error)) return
+
+      ! Said separately, because the bound above would also be cleared by a
+      ! run that reported two roots and stopped.
+      call check(error, size(result%excitation_energies) == N_F2_STATES, &
+                 "the F2 run did not report three roots")
+      if (allocated(error)) return
+      call check(error, result%excitation_energies(3) < 0.4_dp, &
+                 "the third F2 root is the fifth of the spectrum: the Davidson "// &
+                 "guess does not span the degenerate pair above the first two")
+   end subroutine test_f2_lowest_three
 
    subroutine test_no_states(error)
       !! `n_states = 0` leaves the calculation exactly as it was
