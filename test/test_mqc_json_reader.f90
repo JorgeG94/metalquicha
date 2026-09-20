@@ -1506,6 +1506,9 @@ contains
       call check(error, trim(config%excited_spin) == "both", &
                  "excited_states.spin must be stored lowercased")
       if (allocated(error)) return
+      call check(error, config%excited_spin_set, "a deck that wrote the spin key "// &
+                 "must be recorded as having written it")
+      if (allocated(error)) return
       call check(error, close_enough(config%excited_tolerance, 1.0e-7_dp))
       if (allocated(error)) return
       call check(error, config%excited_max_iter, 40)
@@ -1529,6 +1532,13 @@ contains
       if (allocated(error)) return
       call check(error, trim(config%excited_spin) == "singlet", &
                  "singlets are the default")
+      if (allocated(error)) return
+      ! The default and an explicit `"spin": "singlet"` are the same word and
+      ! not the same request: an unrestricted reference refuses the second and
+      ! answers the first, and this flag is the only thing that tells them
+      ! apart once the reader has run.
+      call check(error,.not. config%excited_spin_set, "a deck that named no spin "// &
+                 "must not be recorded as having named one")
       if (allocated(error)) return
       call check(error, close_enough(config%excited_tolerance, DEFAULT_EXCITED_TOL))
       if (allocated(error)) return

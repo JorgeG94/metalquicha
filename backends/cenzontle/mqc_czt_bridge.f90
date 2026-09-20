@@ -2836,15 +2836,18 @@ contains
       else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
-      else if (unrestricted .and. trim(settings%excited%spin) /= "singlet") then
-         ! `singlet` is the field's default, so this refuses only a deck that
-         ! asked for one of the restricted manifolds by name. An unrestricted
+      else if (unrestricted .and. settings%excited%spin_set) then
+         ! `spin_set` and not the value: `singlet` is the field's default, so
+         ! comparing the value cannot tell a deck that asked for a restricted
+         ! manifold by name from one that asked for nothing. An unrestricted
          ! reference is not a spin eigenfunction and neither are its roots, so
-         ! answering "triplet" with the one spectrum it has would be labelling
-         ! a mixture.
+         ! answering any of the three words with the one spectrum it has would
+         ! be labelling a mixture. A deck that named none of them is answered
+         ! with that spectrum, labelled `unrestricted`.
          reason = "keywords.excited_states.spin = '"//trim(settings%excited%spin)// &
                   "' over an unrestricted reference, whose roots are not spin "// &
-                  "eigenstates and so are neither singlets nor triplets"
+                  "eigenstates and so are neither singlets nor triplets. Remove "// &
+                  "the key to get the unrestricted spectrum"
       end if
    end function excited_decline_reason
 

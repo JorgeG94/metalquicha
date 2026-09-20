@@ -387,6 +387,10 @@ module mqc_method_config
          !! "tda" or "rpa"; see `mqc_config_types` for what each one is.
       character(len=16) :: spin = "singlet"
          !! "singlet", "triplet" or "both".
+      logical :: spin_set = .false.
+         !! Whether `spin` came from the deck rather than from the default
+         !! above. A backend whose reference has no spin-adapted manifolds
+         !! refuses an explicit request and answers a silent one.
       real(dp) :: tolerance = DEFAULT_EXCITED_TOL
          !! Residual at which a root is accepted.
       integer :: max_iter = DEFAULT_EXCITED_MAX_ITER
@@ -874,6 +878,7 @@ contains
       this%excited%n_states = 0
       this%excited%method = "rpa"
       this%excited%spin = "singlet"
+      this%excited%spin_set = .false.
       this%excited%tolerance = DEFAULT_EXCITED_TOL
       this%excited%max_iter = DEFAULT_EXCITED_MAX_ITER
       this%excited%max_subspace = 0
