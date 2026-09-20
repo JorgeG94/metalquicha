@@ -599,6 +599,16 @@ module test_mqc_czt_tddft
       !! here so the paired test can assert that the near-zero root fell below
       !! it rather than assume so.
 
+   !! The unrestricted operator's spin sum and difference against the two
+   !! restricted manifolds, for a Kohn-Sham reference.
+   !!
+   !! Looser than `TOL_EXACT` by an order because the two sides ask libxc for
+   !! the same analytic quantity two ways: the restricted kernel out of the
+   !! unpolarised functional, this one out of the polarised functional at
+   !! `rho_a = rho_b`. Hartree-Fock has no such split and is held at
+   !! `TOL_EXACT`.
+   real(dp), parameter :: TOL_UKS_MANIFOLD = 1.0e-9_dp
+
 contains
 
    subroutine collect_mqc_czt_tddft_tests(testsuite)
@@ -669,7 +679,11 @@ contains
                   new_unittest("cation_uks_b3lyp_rpa_roots_match_pyscf", &
                                test_cation_uks_b3lyp_rpa), &
                   new_unittest("unrestricted_amplitudes_carry_unit_norm", &
-                               test_uhf_amplitude_norm) &
+                               test_uhf_amplitude_norm), &
+                  new_unittest("the_unrestricted_hf_operator_holds_both_manifolds", &
+                               test_restricted_from_unrestricted_hf), &
+                  new_unittest("the_unrestricted_pbe_operator_holds_both_manifolds", &
+                               test_restricted_from_unrestricted_pbe) &
                   ]
    end subroutine collect_mqc_czt_tddft_tests
 
@@ -2418,6 +2432,145 @@ contains
       call check(error, worst < TOL_PAIRED_NORM, "an unrestricted amplitude is not "// &
                  "normalised to sum_spin(|X|^2 - |Y|^2) = 1")
    end subroutine test_uhf_amplitude_norm
+
+   subroutine restricted_manifolds_case(functional, worst_singlet, worst_triplet, &
+                                        error, ok)
+      !! The unrestricted operator on a closed shell, against the two restricted ones
+      !!
+      !! `A_aa + A_ab` is the singlet `A` and `A_aa - A_ab` the triplet one --
+      !! Psi4's `test_RU_TDA_C1`, which is the strongest statement available
+      !! about an unrestricted response operator without a second code, because
+      !! it pins the cross-spin block that no closed-shell test can see.
+      !!
+      !! **One set of orbitals, not two SCFs.** The restricted and the
+      !! unrestricted operator are built from the same converged orbitals, the
+      !! second reading them as both spins and half the density as each. So
+      !! the molecular-orbital phases are identical by construction and the
+      !! two matrices are compared **element by element** rather than through
+      !! their eigenvalues -- which is what makes this see the coupling block
+      !! at all.
+      character(len=*), intent(in) :: functional
+         !! Empty is Hartree-Fock.
+      real(dp), intent(out) :: worst_singlet, worst_triplet
+      type(error_type), allocatable, intent(out) :: error
+      logical, intent(out) :: ok
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx, ctx_pol
+      type(tda_operator_uhf_t) :: operator
+      type(error_t) :: err
+      real(dp), allocatable :: singlet(:, :), triplet(:, :), both(:, :)
+      real(dp), allocatable :: half(:, :)
+      integer :: n_ov
+      logical :: kohn_sham
+
+      ok = .false.
+      worst_singlet = 0.0_dp
+      worst_triplet = 0.0_dp
+      kohn_sham = len_trim(functional) > 0
+
+      if (kohn_sham) then
+         call water_sto3g(mol, scf, ctx, err, functional=functional)
+      else
+         call water_sto3g(mol, scf, ctx, err)
+      end if
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the closed-shell reference failed: "// &
+                    err%get_message())
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda(mol, scf, ctx, kohn_sham, singlet, err, spin="singlet")
+      if (.not. err%has_error()) then
+         call dense_tda(mol, scf, ctx, kohn_sham, triplet, err, spin="triplet")
+      end if
+      if (err%has_error()) then
+         call check(error, .false., "a restricted manifold failed: "//err%get_message())
+         call mol%destroy()
+         return
+      end if
+
+      ! The same orbitals as both spins, and half the density as each. A
+      ! second, spin-polarised context because libxc fixes the spin channel
+      ! when a functional is initialised; same functional, same grid level, so
+      ! the quadrature is the same points.
+      half = 0.5_dp*scf%density
+      if (kohn_sham) then
+         call xc_context_create(mol, functional, ctx_pol, err, level=5, &
+                                polarized=.true.)
+         if (err%has_error()) then
+            call check(error, .false., "the polarised context failed: "// &
+                       err%get_message())
+            call mol%destroy()
+            return
+         end if
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals, &
+                                     scf%orbital_energies, scf%n_occupied, operator, &
+                                     err, xc=ctx_pol, ref_a=half, ref_b=half)
+      else
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals, &
+                                     scf%orbital_energies, scf%n_occupied, operator, err)
+      end if
+      if (.not. err%has_error()) call tda_dense_matrix_uhf(operator, both, err)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the unrestricted operator failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      n_ov = size(singlet, 1)
+      worst_singlet = maxval(abs(both(1:n_ov, 1:n_ov) &
+                                 + both(1:n_ov, n_ov + 1:2*n_ov) - singlet))
+      worst_triplet = maxval(abs(both(1:n_ov, 1:n_ov) &
+                                 - both(1:n_ov, n_ov + 1:2*n_ov) - triplet))
+      ok = .true.
+   end subroutine restricted_manifolds_case
+
+   subroutine test_restricted_from_unrestricted_hf(error)
+      !! Hartree-Fock: `A_aa +/- A_ab` is the singlet and triplet `A`
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst_singlet, worst_triplet
+      logical :: ok
+
+      call restricted_manifolds_case("", worst_singlet, worst_triplet, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, worst_singlet < TOL_EXACT, "the unrestricted operator's "// &
+                 "spin sum is not the restricted singlet A")
+      if (allocated(error)) return
+      call check(error, worst_triplet < TOL_EXACT, "the unrestricted operator's "// &
+                 "spin difference is not the restricted triplet A")
+   end subroutine test_restricted_from_unrestricted_hf
+
+   subroutine test_restricted_from_unrestricted_pbe(error)
+      !! PBE: the same, and the statement that the polarised kernel is right
+      !!
+      !! Looser than the Hartree-Fock case by an order, and the reason is
+      !! libxc: the restricted side evaluates the unpolarised functional's
+      !! second derivative and this side evaluates the polarised one at
+      !! `rho_a = rho_b`, which are the same number computed two ways.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst_singlet, worst_triplet
+      logical :: ok
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call restricted_manifolds_case("pbe", worst_singlet, worst_triplet, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, worst_singlet < TOL_UKS_MANIFOLD, "the unrestricted PBE "// &
+                 "operator's spin sum is not the restricted singlet A")
+      if (allocated(error)) return
+      call check(error, worst_triplet < TOL_UKS_MANIFOLD, "the unrestricted PBE "// &
+                 "operator's spin difference is not the restricted triplet A")
+   end subroutine test_restricted_from_unrestricted_pbe
 
 end module test_mqc_czt_tddft
 
