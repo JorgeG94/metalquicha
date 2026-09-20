@@ -48,6 +48,9 @@ module mqc_davidson
       !! threshold scales with the residual, so near convergence every
       !! correction looks tiny, the subspace stops growing, and the solve stalls
       !! short of its tolerance. Normalising first makes the test scale-free.
+      !! `initial_basis` reaches the same property from the other side, by
+      !! measuring what survives against the column's own length, so that a
+      !! guess it means to keep is handed on with its arithmetic untouched.
 
    type, abstract :: sigma_operator_t
       !! Whatever can multiply a vector by the Hamiltonian
@@ -308,7 +311,8 @@ contains
       end if
 
       call system_clock(last, rate)
-      call initial_basis(diagonal, n_roots, ndet, basis, guess)
+      call initial_basis(diagonal, n_roots, ndet, basis, error, guess)
+      if (error%has_error()) return
       nsub = n_roots
 
       ! Sigma for the starting vectors, as one block.
@@ -437,15 +441,29 @@ contains
       deallocate (root_converged)
    end subroutine davidson_flat
 
-   subroutine initial_basis(diagonal, n_roots, ndet, basis, guess)
+   subroutine initial_basis(diagonal, n_roots, ndet, basis, error, guess)
       !! Starting vectors: the supplied ones, or the lowest determinants
+      !!
+      !! The linear-dependence test here is on the *fraction* of a guess
+      !! column that survives projection, for the reason `LINEAR_DEPENDENCE`
+      !! gives: a test against an absolute length is a test of how long the
+      !! caller happened to make its vectors. Comparing the surviving length
+      !! against the column's own length is scale-free without rescaling the
+      !! column, which would round every well-conditioned guess for the sake
+      !! of the degenerate ones.
+      !!
+      !! Without a guess, `lowest_free` cannot come back empty: this branch
+      !! takes `n_roots` determinants out of `ndet`, and `davidson_flat`
+      !! refuses `n_roots > ndet` before calling here.
       real(dp), intent(in) :: diagonal(:)
       integer, intent(in) :: n_roots, ndet
       real(dp), intent(inout) :: basis(:, :)
+      type(error_t), intent(inout) :: error
+         !! Set when a guess column cannot be replaced by any determinant
       real(dp), intent(in), optional :: guess(:, :)
 
       logical, allocatable :: taken(:)
-      real(dp) :: norm
+      real(dp) :: norm, length
       integer :: iroot, pick
 
       allocate (taken(ndet))
@@ -454,21 +472,34 @@ contains
       if (present(guess)) then
          do iroot = 1, n_roots
             basis(:, iroot) = guess(:, iroot)
+            length = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
             norm = project_out_earlier(basis, iroot)
             ! A supplied vector the earlier ones already span leaves nothing
             ! behind to normalise, and a near-null column makes every Ritz
             ! vector built on it meaningless. Fall back to the lowest
             ! determinant still free, which is where an absent guess would
             ! have started, and keep falling back until something survives.
-            do while (norm <= LINEAR_DEPENDENCE)
+            do while (norm <= LINEAR_DEPENDENCE*length)
                pick = lowest_free(diagonal, taken)
-               if (pick == 0) exit
+               if (pick == 0) then
+                  ! Every determinant has been spent and the column is still
+                  ! null. Keeping it would seed the subspace with noise and
+                  ! report the resulting Ritz values as eigenvalues, so the
+                  ! solve stops instead.
+                  call error%set(ERROR_VALIDATION, "starting vector "//to_char(iroot)// &
+                                 " is spanned by the ones before it, and all "// &
+                                 to_char(ndet)//" determinants have already been "// &
+                                 "used to replace one.")
+                  deallocate (taken)
+                  return
+               end if
                taken(pick) = .true.
                basis(:, iroot) = 0.0_dp
                basis(pick, iroot) = 1.0_dp
+               length = 1.0_dp
                norm = project_out_earlier(basis, iroot)
             end do
-            if (norm > LINEAR_DEPENDENCE) basis(:, iroot) = basis(:, iroot)/norm
+            basis(:, iroot) = basis(:, iroot)/norm
          end do
          deallocate (taken)
          return
@@ -476,6 +507,7 @@ contains
 
       basis(:, 1:n_roots) = 0.0_dp
       do iroot = 1, n_roots
+         ! Never zero here; see the note on the routine.
          pick = lowest_free(diagonal, taken)
          taken(pick) = .true.
          basis(pick, iroot) = 1.0_dp
@@ -506,17 +538,26 @@ contains
 
    function project_out_earlier(basis, iroot) result(norm)
       !! Project columns 1 to `iroot - 1` out of column `iroot`, in place
+      !!
+      !! Twice, for the same reason the expansion loop does it twice: one
+      !! pass of Gram-Schmidt loses orthogonality when the column is nearly
+      !! in the subspace already, and a column nearly in the subspace is the
+      !! entire input domain of the fallback this feeds. A single pass leaves
+      !! a residue of the earlier columns behind, which is then divided by a
+      !! small norm and blown up into the basis.
       real(dp), intent(inout) :: basis(:, :)
       integer, intent(in) :: iroot
       real(dp) :: norm
          !! What is left of the column's length, before it is normalised
 
       real(dp) :: overlap
-      integer :: j
+      integer :: j, pass
 
-      do j = 1, iroot - 1
-         overlap = dot_product(basis(:, j), basis(:, iroot))
-         basis(:, iroot) = basis(:, iroot) - overlap*basis(:, j)
+      do pass = 1, 2
+         do j = 1, iroot - 1
+            overlap = dot_product(basis(:, j), basis(:, iroot))
+            basis(:, iroot) = basis(:, iroot) - overlap*basis(:, j)
+         end do
       end do
       norm = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
    end function project_out_earlier
