@@ -79,6 +79,14 @@ contains
       options%device_rank = 2
       options%pcm%enabled = .true.
       options%pcm%dielectric = 32.7_dp
+      options%excited%enabled = .true.
+      options%excited%n_states = 9
+      options%excited%method = "tda"
+      options%excited%spin = "triplet"
+      options%excited%tolerance = 4.5e-7_dp
+      options%excited%max_iter = 37
+      options%excited%max_subspace = 64
+      options%excited%batch = 6
       allocate (options%guess_steps(2))
       options%guess_steps(1)%basis = "sto-3g"
       options%guess_steps(1)%maxiter = 7
@@ -150,6 +158,32 @@ contains
       call check(error, settings%pcm%enabled .eqv. options%pcm%enabled, "pcm%enabled")
       if (allocated(error)) return
       call check(error, settings%pcm%dielectric == options%pcm%dielectric, "pcm%dielectric")
+      if (allocated(error)) return
+      ! Carried as one component, so this is one assignment rather than seven
+      ! -- but the whole point of the sub-object is that the assignment
+      ! happens at all, and a missing line here looks exactly like a backend
+      ! that ignores the block.
+      call check(error, settings%excited%enabled .eqv. options%excited%enabled, &
+                 "excited%enabled")
+      if (allocated(error)) return
+      call check(error, settings%excited%n_states == options%excited%n_states, &
+                 "excited%n_states")
+      if (allocated(error)) return
+      call check(error, settings%excited%method == options%excited%method, &
+                 "excited%method")
+      if (allocated(error)) return
+      call check(error, settings%excited%spin == options%excited%spin, "excited%spin")
+      if (allocated(error)) return
+      call check(error, settings%excited%tolerance == options%excited%tolerance, &
+                 "excited%tolerance")
+      if (allocated(error)) return
+      call check(error, settings%excited%max_iter == options%excited%max_iter, &
+                 "excited%max_iter")
+      if (allocated(error)) return
+      call check(error, settings%excited%max_subspace == options%excited%max_subspace, &
+                 "excited%max_subspace")
+      if (allocated(error)) return
+      call check(error, settings%excited%batch == options%excited%batch, "excited%batch")
       if (allocated(error)) return
 
       call check(error, allocated(settings%guess_steps), "guess_steps not allocated")

@@ -93,9 +93,29 @@ Method-Specific Configuration Types
        logical :: perturbative_triples = .true.
        logical :: use_diis = .true.
        integer :: diis_size = 8
-       integer :: n_roots = 0            ! EOM-CC roots (0 = ground only)
-       character(len=8) :: eom_type      ! "ee", "ip", "ea"
+       logical :: spin_adapted = .true.  ! spatial rather than spin orbitals
     end type
+
+**excited_config_t** - Linear-response excited states, from
+``keywords.excited_states``. Separate from ``cc_config_t`` because these are
+the TDHF/TDDFT roots of the reference itself, not an EOM treatment on top of a
+coupled-cluster wave function::
+
+    type :: excited_config_t
+       logical :: enabled = .false.      ! derived from n_states > 0
+       integer :: n_states = 0
+       character(len=16) :: method = 'rpa'      ! "tda" or "rpa"
+       character(len=16) :: spin = 'singlet'    ! "singlet", "triplet", "both"
+       real(dp) :: tolerance = 1.0e-6_dp
+       integer :: max_iter = 100
+       integer :: max_subspace = 0       ! 0 = the solver's own rule
+       integer :: batch = 12
+    end type
+
+It is carried as one component on ``scf_options_t`` and on
+``cuest_scf_settings_t``, the way ``pcm`` is, so the whole block copies in a
+single assignment at each layer and a field added to it cannot be dropped on
+the way to the backend.
 
 **f12_config_t** - Explicitly correlated F12 settings::
 
@@ -336,12 +356,14 @@ Here's how different calculation types use the configuration:
     config%f12%geminal_exponent = 1.0_dp
     config%f12%cabs_basis = 'cc-pvtz-f12-cabs'
 
-**EOM-CCSD for excited states**::
+**Linear-response excited states**::
 
-    config%method_type = METHOD_TYPE_CCSD
+    config%method_type = METHOD_TYPE_DFT
     config%basis_set = 'aug-cc-pvdz'
-    config%cc%n_roots = 5
-    config%cc%eom_type = 'ee'
+    config%dft%functional = 'b3lyp'
+    config%excited%enabled = .true.
+    config%excited%n_states = 5
+    config%excited%method = 'tda'
 
 Design Rationale
 ================

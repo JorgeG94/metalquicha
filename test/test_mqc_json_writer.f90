@@ -21,6 +21,7 @@ module test_mqc_json_writer
    use mqc_json_writer, only: write_json_output
    use mqc_io_helpers, only: set_output_json_filename, get_output_json_filename
    use json_module, only: json_file
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    implicit none
    private
 
@@ -38,7 +39,8 @@ contains
                   new_unittest("mbe_document_carries_its_levels", test_mbe), &
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
-                  new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint) &
+                  new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
+                  new_unittest("excited_states_round_trip", test_excited_states) &
                   ]
    end subroutine collect_mqc_json_writer_tests
 
@@ -347,6 +349,120 @@ contains
       call json%destroy()
       call data%destroy()
    end subroutine test_fingerprint
+
+   subroutine test_excited_states(error)
+      !! The spectrum, written and read back state by state
+      !!
+      !! The per-state object is the contract: a consumer looking for the
+      !! brightest root reads one object, not four parallel arrays it has to
+      !! index consistently. Both the eV conversion and the spin word are
+      !! produced by the writer and exist nowhere in the data, so both are
+      !! checked here rather than assumed.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      real(dp) :: value
+      character(len=:), allocatable :: text
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = -76.026767997_dp
+      data%has_energy = .true.
+      data%excitation_energies = [0.3386923781_dp, 0.3047529969_dp]
+      data%oscillator_strengths = [0.02847955_dp, 0.0_dp]
+      data%transition_dipoles = reshape([0.5022552059_dp, 0.0_dp, 0.0_dp, &
+                                         0.0_dp, 0.0_dp, 0.0_dp], [3, 2])
+      data%state_spin = [STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET]
+      data%excited_method = "tda"
+      data%excited_spin = "both"
+      data%has_excited_states = .true.
+
+      call written_document(data, json, "jw_excited.json")
+
+      call json%get("jw_excited.excited_states.n_states", value, found)
+      call check(error, found, "excited_states.n_states is missing")
+      if (allocated(error)) return
+      call check(error, nint(value) == 2, "n_states is not the number of roots written")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.method", text, found)
+      call check(error, found, "excited_states.method is missing")
+      if (allocated(error)) return
+      call check(error, text == "tda", "the response problem came back changed")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.spin", text, found)
+      call check(error, found, "excited_states.spin is missing")
+      if (allocated(error)) return
+      call check(error, text == "both", "the requested spin came back changed")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).state", value, found)
+      call check(error, found, "the first state object is missing")
+      if (allocated(error)) return
+      call check(error, nint(value) == 1, "states are numbered from one")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).excitation_energy_hartree", &
+                    value, found)
+      call check(error, found, "excitation_energy_hartree is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.3386923781_dp) < 1.0e-12_dp, &
+                 "the excitation energy came back changed")
+      if (allocated(error)) return
+
+      ! Written in eV as well as Hartree, and the conversion is the writer's
+      ! own -- a consumer reading the eV column as Hartree is off by 27.
+      call json%get("jw_excited.excited_states.states(1).excitation_energy_ev", value, found)
+      call check(error, found, "excitation_energy_ev is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.3386923781_dp*27.211386245988_dp) < 1.0e-6_dp, &
+                 "the eV column is not the Hartree one converted")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).spin", text, found)
+      call check(error, found, "the state spin label is missing")
+      if (allocated(error)) return
+      call check(error, text == "singlet", "the first state should be labelled singlet")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).oscillator_strength", value, found)
+      call check(error, found, "oscillator_strength is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.02847955_dp) < 1.0e-12_dp, &
+                 "the oscillator strength came back changed")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).transition_dipole(1)", value, found)
+      call check(error, found, "the transition dipole is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.5022552059_dp) < 1.0e-12_dp, &
+                 "the transition dipole x component came back changed")
+      if (allocated(error)) return
+
+      ! The second root is a triplet, whose zero oscillator strength is a real
+      ! value rather than a missing one.
+      call json%get("jw_excited.excited_states.states(2).spin", text, found)
+      call check(error, found, "the second state spin label is missing")
+      if (allocated(error)) return
+      call check(error, text == "triplet", "the second state should be labelled triplet")
+      if (allocated(error)) return
+
+      call json%destroy()
+      call data%destroy()
+
+      ! And nothing at all when no states were computed: the section is the
+      ! signal that a spectrum exists.
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = -1.0_dp
+      data%has_energy = .true.
+      call written_document(data, json, "jw_no_excited.json")
+      call json%get("jw_no_excited.excited_states.n_states", value, found)
+      call check(error,.not. found, "an excited_states section appeared with no states")
+      call json%destroy()
+      call data%destroy()
+   end subroutine test_excited_states
 
 end module test_mqc_json_writer
 

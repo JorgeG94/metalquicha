@@ -33,7 +33,8 @@ contains
                   new_unittest("driver_cartesian_default", test_driver_cartesian_default), &
                   new_unittest("driver_carries_maxiter_named_flag", test_driver_maxiter_named), &
                   new_unittest("fragmentation_method_selects_the_expansion", test_frag_method), &
-                  new_unittest("fragmentation_method_refuses_nonsense", test_frag_method_bad) &
+                  new_unittest("fragmentation_method_refuses_nonsense", test_frag_method_bad), &
+                  new_unittest("excited_states_reach_the_method", test_excited_states) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -398,6 +399,63 @@ contains
                  abs(driver_config%method_config%hessian_displacement - 0.0125_dp) < 1.0e-12_dp, &
                  "the displacement should reach the method, which is what displaces")
    end subroutine test_hessian_displacement
+
+   subroutine test_excited_states(error)
+      !! `keywords.excited_states` reaches the method config, `enabled` included
+      !!
+      !! `enabled` is the field worth pinning: it exists nowhere in a deck and
+      !! is derived here from the root count, so it is the one that can be
+      !! silently wrong. Everything above the adapter branches on it, and an
+      !! adapter that set the seven values but left the switch off would give
+      !! a deck that asked for ten roots a ground state and no complaint.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+      type(error_t) :: parse_error
+
+      call optimize_config(config)
+      config%excited_n_states = 7
+      config%excited_method = "tda"
+      config%excited_spin = "triplet"
+      config%excited_tolerance = 2.5e-7_dp
+      config%excited_max_iter = 33
+      config%excited_max_subspace = 90
+      config%excited_batch = 4
+
+      call config_to_driver(config, driver_config, error=parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, driver_config%method_config%excited%enabled, &
+                 "a positive root count must turn the block on")
+      if (allocated(error)) return
+      call check(error, driver_config%method_config%excited%n_states, 7)
+      if (allocated(error)) return
+      call check(error, trim(driver_config%method_config%excited%method) == "tda", &
+                 "the response problem should reach the method")
+      if (allocated(error)) return
+      call check(error, trim(driver_config%method_config%excited%spin) == "triplet", &
+                 "the spin should reach the method")
+      if (allocated(error)) return
+      call check(error, &
+                 abs(driver_config%method_config%excited%tolerance - 2.5e-7_dp) < 1.0e-14_dp, &
+                 "the residual threshold should reach the method")
+      if (allocated(error)) return
+      call check(error, driver_config%method_config%excited%max_iter, 33)
+      if (allocated(error)) return
+      call check(error, driver_config%method_config%excited%max_subspace, 90)
+      if (allocated(error)) return
+      call check(error, driver_config%method_config%excited%batch, 4)
+      if (allocated(error)) return
+
+      ! And the other way: no roots is off, whatever else the block holds.
+      call optimize_config(config)
+      call config_to_driver(config, driver_config, error=parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. driver_config%method_config%excited%enabled, &
+                 "no roots asked for must leave the block off")
+   end subroutine test_excited_states
 
    subroutine test_saddle_target(error)
       !! A saddle target with an algorithm that can look for one

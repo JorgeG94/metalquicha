@@ -12,6 +12,7 @@ module mqc_result_types
    public :: energy_t              !! Energy components type
    public :: calculation_result_t  !! Main result container type
    public :: SCF_UNKNOWN, SCF_CONVERGED, SCF_NOT_CONVERGED
+   public :: STATE_SPIN_UNKNOWN, STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    public :: frontier_orbitals
    public :: scf_not_converged_message
    public :: scf_status_label
@@ -27,6 +28,16 @@ module mqc_result_types
    public :: mbe_result_t          !! MBE aggregated result container type
    public :: result_send, result_isend  !! Send result over MPI
    public :: result_recv, result_irecv  !! Receive result over MPI
+
+   integer, parameter :: STATE_SPIN_UNKNOWN = 0
+      !! The spin of an excited state was not assigned. What an unrestricted
+      !! reference gives: its roots are not spin eigenstates, so there is no
+      !! singlet or triplet label to attach and claiming one would be wrong.
+   integer, parameter :: STATE_SPIN_SINGLET = 1
+      !! Spin-conserving excitation out of a closed shell.
+   integer, parameter :: STATE_SPIN_TRIPLET = 3
+      !! Spin-flipped excitation out of a closed shell. Numbered as the spin
+      !! multiplicity 2S+1, so the code reads as the thing it names.
 
    ! SCS-MP2 scaling parameters
    real(dp), parameter :: SCS_SS_SCALE = 1.0_dp/3.0_dp  !! SCS same-spin scaling factor
@@ -155,6 +166,25 @@ module mqc_result_types
          !! orbital the basis invented and nothing about the numbers says so.
       character(len=16) :: fukui_scheme = ""
       logical :: has_fukui = .false.
+
+      ! Linear-response excited states, when `keywords.excited_states` asked
+      ! for any. All four arrays run over the same states in the same order,
+      ! lowest excitation first, and are allocated together or not at all.
+      real(dp), allocatable :: excitation_energies(:)
+         !! (n_states) vertical excitation energies in Hartree, above the
+         !! reference total energy rather than absolute.
+      real(dp), allocatable :: oscillator_strengths(:)
+         !! (n_states) dimensionless length-gauge oscillator strengths. Exactly
+         !! zero for a triplet, which is a real value and not a missing one.
+      real(dp), allocatable :: transition_dipoles(:, :)
+         !! (3, n_states) transition dipole moments in atomic units, with the
+         !! origin at the nuclear charge centroid.
+      integer, allocatable :: state_spin(:)
+         !! (n_states) which spin each root carries, as `STATE_SPIN_*`. Carried
+         !! per state rather than once for the run because a `spin: "both"`
+         !! deck interleaves singlets and triplets in one ordered list, and
+         !! nothing in an excitation energy says which kind it is.
+      logical :: has_excited_states = .false.
 
       logical :: stability_stable = .true.
          !! Whether the converged SCF is a minimum with respect to real
@@ -351,6 +381,10 @@ contains
       if (allocated(this%fukui_plus)) deallocate (this%fukui_plus)
       if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
       if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
+      if (allocated(this%excitation_energies)) deallocate (this%excitation_energies)
+      if (allocated(this%oscillator_strengths)) deallocate (this%oscillator_strengths)
+      if (allocated(this%transition_dipoles)) deallocate (this%transition_dipoles)
+      if (allocated(this%state_spin)) deallocate (this%state_spin)
       call this%reset()
    end subroutine result_destroy
 
@@ -376,6 +410,7 @@ contains
       this%has_orbitals = .false.
       this%has_ieda = .false.
       this%has_fukui = .false.
+      this%has_excited_states = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.
@@ -548,6 +583,17 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
+      ! Excited states, all four arrays under one flag: the solver fills them
+      ! together, so a receiver that got the energies without the spins could
+      ! not label a single root.
+      call send(comm, result%has_excited_states, dest, tag)
+      if (result%has_excited_states) then
+         call send(comm, result%excitation_energies, dest, tag)
+         call send(comm, result%oscillator_strengths, dest, tag)
+         call send(comm, result%transition_dipoles, dest, tag)
+         call send(comm, result%state_spin, dest, tag)
+      end if
+
       ! Failure state last, so the receiver has the whole payload drained
       ! before it decides whether to trust any of it.
       call send_error_state(result, comm, dest, tag)
@@ -603,6 +649,17 @@ contains
       call send(comm, result%has_dipole_derivatives, dest, tag)
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
+      end if
+
+      ! Excited states, all four arrays under one flag: the solver fills them
+      ! together, so a receiver that got the energies without the spins could
+      ! not label a single root.
+      call send(comm, result%has_excited_states, dest, tag)
+      if (result%has_excited_states) then
+         call send(comm, result%excitation_energies, dest, tag)
+         call send(comm, result%oscillator_strengths, dest, tag)
+         call send(comm, result%transition_dipoles, dest, tag)
+         call send(comm, result%state_spin, dest, tag)
       end if
 
       ! Failure state last, so the receiver has the whole payload drained
@@ -664,6 +721,15 @@ contains
       if (result%has_dipole_derivatives) then
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
+      end if
+
+      ! Receive excited states, all four arrays under one flag
+      call recv(comm, result%has_excited_states, source, tag, status)
+      if (result%has_excited_states) then
+         call recv(comm, result%excitation_energies, source, tag, status)
+         call recv(comm, result%oscillator_strengths, source, tag, status)
+         call recv(comm, result%transition_dipoles, source, tag, status)
+         call recv(comm, result%state_spin, source, tag, status)
       end if
 
       call recv_error_state(result, comm, source, tag)
@@ -731,6 +797,15 @@ contains
       if (result%has_dipole_derivatives) then
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
+      end if
+
+      ! Receive excited states, all four arrays under one flag
+      call recv(comm, result%has_excited_states, source, tag, status)
+      if (result%has_excited_states) then
+         call recv(comm, result%excitation_energies, source, tag, status)
+         call recv(comm, result%oscillator_strengths, source, tag, status)
+         call recv(comm, result%transition_dipoles, source, tag, status)
+         call recv(comm, result%state_spin, source, tag, status)
       end if
 
       call recv_error_state(result, comm, source, tag)
