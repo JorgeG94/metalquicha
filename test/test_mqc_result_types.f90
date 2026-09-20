@@ -221,8 +221,26 @@ contains
       result%has_gradient = .true.
       result%energy%scf = -50.0_dp
 
+      allocate (result%sigma(3, 3), result%hessian(15, 15))
+      result%sigma = 0.01_dp
+      result%hessian = 0.02_dp
+      allocate (result%dipole(3), result%dipole_derivatives(3, 15))
+      result%dipole = 0.03_dp
+      result%dipole_derivatives = 0.04_dp
+
       allocate (result%bond_orders(5, 5))
       result%bond_orders = 0.5_dp
+      allocate (result%bond_order_valences(5))
+      result%bond_order_valences = 2.0_dp
+      allocate (result%atomic_charges(5), result%spin_populations(5))
+      result%atomic_charges = 0.05_dp
+      result%spin_populations = 0.06_dp
+      allocate (result%ieda_atom(5), result%ieda_free_atom(5))
+      result%ieda_atom = -1.0_dp
+      result%ieda_free_atom = -0.9_dp
+      allocate (result%ieda_pair(5, 5), result%ieda_classical(5, 5))
+      result%ieda_pair = -0.1_dp
+      result%ieda_classical = -0.05_dp
       allocate (result%fukui_plus(5))
       result%fukui_plus = 0.1_dp
       allocate (result%fukui_minus(5))
@@ -236,44 +254,38 @@ contains
       ! fragment with ten would be received into the smaller allocation.
       allocate (result%excitation_energies(3))
       result%excitation_energies = 0.3_dp
+      allocate (result%excited_total_energies(3))
+      result%excited_total_energies = -49.7_dp
       allocate (result%oscillator_strengths(3))
       result%oscillator_strengths = 0.02_dp
+      allocate (result%oscillator_strengths_velocity(3))
+      result%oscillator_strengths_velocity = 0.03_dp
       allocate (result%transition_dipoles(3, 3))
       result%transition_dipoles = 0.5_dp
+      allocate (result%transition_velocities(3, 3))
+      result%transition_velocities = 0.4_dp
+      allocate (result%transition_dipole_origin(3))
+      result%transition_dipole_origin = 0.7_dp
+      allocate (result%nto_leading_weight(3))
+      result%nto_leading_weight = 0.95_dp
       allocate (result%state_spin(3))
       result%state_spin = STATE_SPIN_SINGLET
       result%has_excited_states = .true.
 
+      ! Everything the type owns is now allocated. Checked rather than
+      ! assumed: a field added to the type and to `mismatch` but not to the
+      ! block above would leave this case passing over a field it never
+      ! allocated, which is the same blind spot in a different place.
+      call check(error, len_trim(mismatch(result, .true.)) == 0, "the destroy case "// &
+                 "never allocated "//trim(mismatch(result, .true.)))
+      if (allocated(error)) return
+
       ! Destroy
       call result%destroy()
 
-      ! Check deallocation
-      call check(error,.not. allocated(result%gradient), &
-                 "gradient should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%bond_orders), &
-                 "bond_orders should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%fukui_plus), &
-                 "fukui_plus should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%fukui_minus), &
-                 "fukui_minus should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%fukui_dual), &
-                 "fukui_dual should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%excitation_energies), &
-                 "excitation_energies should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%oscillator_strengths), &
-                 "oscillator_strengths should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%transition_dipoles), &
-                 "transition_dipoles should be deallocated after destroy")
-      if (allocated(error)) return
-      call check(error,.not. allocated(result%state_spin), &
-                 "state_spin should be deallocated after destroy")
+      ! Check deallocation, field by field and by name.
+      call check(error, len_trim(mismatch(result, .false.)) == 0, "result_destroy "// &
+                 "left "//trim(mismatch(result, .false.))//" allocated")
       if (allocated(error)) return
       call check(error,.not. result%has_excited_states, &
                  "has_excited_states should be false after destroy")
@@ -283,6 +295,59 @@ contains
       call check(error,.not. result%has_gradient, &
                  "has_gradient should be false after destroy")
    end subroutine test_result_destroy
+
+   function mismatch(result, want) result(name)
+      !! The first component whose allocation is not `want`, by name, or empty
+      !!
+      !! Every allocatable component `calculation_result_t` declares is
+      !! listed, in declaration order, and the list is walked twice: once
+      !! with `want = .true.`, which says the case populated everything the
+      !! type owns, and once after `destroy` with `want = .false.`, which
+      !! says nothing survived. A field added to the type and to
+      !! `result_destroy` but not here is the one way past this case, so the
+      !! list is the inventory the test is really checking.
+      type(calculation_result_t), intent(in) :: result
+      logical, intent(in) :: want
+      character(len=32) :: name
+
+      name = ""
+      call note(allocated(result%gradient), "gradient", want, name)
+      call note(allocated(result%sigma), "sigma", want, name)
+      call note(allocated(result%hessian), "hessian", want, name)
+      call note(allocated(result%dipole), "dipole", want, name)
+      call note(allocated(result%dipole_derivatives), "dipole_derivatives", want, name)
+      call note(allocated(result%bond_orders), "bond_orders", want, name)
+      call note(allocated(result%bond_order_valences), "bond_order_valences", want, name)
+      call note(allocated(result%atomic_charges), "atomic_charges", want, name)
+      call note(allocated(result%spin_populations), "spin_populations", want, name)
+      call note(allocated(result%ieda_atom), "ieda_atom", want, name)
+      call note(allocated(result%ieda_free_atom), "ieda_free_atom", want, name)
+      call note(allocated(result%ieda_pair), "ieda_pair", want, name)
+      call note(allocated(result%ieda_classical), "ieda_classical", want, name)
+      call note(allocated(result%fukui_plus), "fukui_plus", want, name)
+      call note(allocated(result%fukui_minus), "fukui_minus", want, name)
+      call note(allocated(result%fukui_dual), "fukui_dual", want, name)
+      call note(allocated(result%excitation_energies), "excitation_energies", want, name)
+      call note(allocated(result%excited_total_energies), "excited_total_energies", want, name)
+      call note(allocated(result%oscillator_strengths), "oscillator_strengths", want, name)
+      call note(allocated(result%oscillator_strengths_velocity), "oscillator_strengths_velocity", want, name)
+      call note(allocated(result%transition_dipoles), "transition_dipoles", want, name)
+      call note(allocated(result%transition_velocities), "transition_velocities", want, name)
+      call note(allocated(result%transition_dipole_origin), "transition_dipole_origin", want, name)
+      call note(allocated(result%nto_leading_weight), "nto_leading_weight", want, name)
+      call note(allocated(result%state_spin), "state_spin", want, name)
+   end function mismatch
+
+   subroutine note(state, field, want, name)
+      !! Record `field` as the first mismatch, if it is one and none is yet
+      logical, intent(in) :: state, want
+      character(len=*), intent(in) :: field
+      character(len=*), intent(inout) :: name
+
+      if (len_trim(name) > 0) return
+      if (state .eqv. want) return
+      name = field
+   end subroutine note
 
    subroutine test_result_reset(error)
       type(error_type), allocatable, intent(out) :: error

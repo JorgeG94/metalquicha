@@ -165,18 +165,28 @@ what produced them, and one flag for all of it:
 .. code-block:: fortran
 
    real(dp), allocatable :: excitation_energies(:)   ! (n_states) Hartree
-   real(dp), allocatable :: oscillator_strengths(:)  ! (n_states)
+   real(dp), allocatable :: excited_total_energies(:)  ! (n_states) Hartree
+   real(dp), allocatable :: oscillator_strengths(:)  ! (n_states) length gauge
+   real(dp), allocatable :: oscillator_strengths_velocity(:)  ! (n_states)
    real(dp), allocatable :: transition_dipoles(:, :) ! (3, n_states) a.u.
+   real(dp), allocatable :: transition_velocities(:, :)  ! (3, n_states) a.u.
+   real(dp), allocatable :: transition_dipole_origin(:)  ! (3) Bohr
+   real(dp), allocatable :: nto_leading_weight(:)    ! (n_states) 0 to 1
    integer, allocatable :: state_spin(:)             ! (n_states) STATE_SPIN_*
    character(len=16) :: excited_method = ""
    character(len=16) :: excited_spin = ""
    logical :: has_excited_states = .false.
 
 One flag rather than one per array, because the solver fills them together and
-a consumer holding energies without spins cannot label a single root.
+a consumer holding energies without spins cannot label a single root. The
+moment arrays are the exception the flag has to tolerate: they are computed
+after the spectrum and can fail on their own, so each one is written out only
+if ``allocated``.
 
-**2. Cleanup** -- all four arrays in ``json_output_data_destroy``, the flag and
-both strings in ``json_output_data_reset``.
+**2. Cleanup** -- every array in ``json_output_data_destroy``, the flag and
+both strings in ``json_output_data_reset``. A field added to the type and not
+to the destroy is what ``test_mqc_result_types``'s destroy case exists to
+catch, and its twin here is the round trip in ``test_mqc_json_writer``.
 
 **3. In mqc_unfragmented_workflow.f90**, at *both* copy points -- the
 vibrational block and the non-Hessian one. They are separate blocks and a field
@@ -186,7 +196,7 @@ added to one is silently missing from the other:
 
    if (result%has_excited_states) then
       json_data%excitation_energies = result%excitation_energies
-      ! ... the other three arrays, each guarded by allocated() ...
+      ! ... every other array, each guarded by allocated() ...
       json_data%excited_method = config%method_config%excited%method
       json_data%has_excited_states = .true.
    end if
@@ -210,7 +220,7 @@ added to one is silently missing from the other:
       ! ...
    end do
 
-One object per state rather than four parallel arrays: a consumer picking the
+One object per state rather than parallel arrays: a consumer picking the
 brightest root, or the lowest triplet, needs one root's numbers together, and
 parallel arrays make that a join the reader has to get right. The routine
 returns immediately when the flag is false, so the section's presence is itself

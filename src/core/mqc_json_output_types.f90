@@ -51,12 +51,16 @@ module mqc_json_output_types
 
       !----- Linear-response excited states (optional) -----
       ! Copied unchanged from `calculation_result_t`, which documents the
-      ! units, the ordering and the spin codes. All four run over the same
-      ! states in the same order and are allocated together.
+      ! units, the ordering and the spin codes. Every per-state array runs
+      ! over the same states in the same order; the moment arrays are absent
+      ! together when the properties could not be computed.
       real(dp), allocatable :: excitation_energies(:)   !! (n_states) Hartree
+      real(dp), allocatable :: excited_total_energies(:)  !! (n_states) Hartree
       real(dp), allocatable :: oscillator_strengths(:)  !! (n_states) length gauge
       real(dp), allocatable :: oscillator_strengths_velocity(:)  !! (n_states)
       real(dp), allocatable :: transition_dipoles(:, :)  !! (3, n_states) a.u.
+      real(dp), allocatable :: transition_velocities(:, :)  !! (3, n_states) a.u.
+      real(dp), allocatable :: transition_dipole_origin(:)  !! (3) Bohr
       real(dp), allocatable :: nto_leading_weight(:)    !! (n_states) 0 to 1
       integer, allocatable :: state_spin(:)             !! (n_states) STATE_SPIN_*
       character(len=16) :: excited_method = ""
@@ -252,11 +256,20 @@ contains
       if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)
       if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
       if (allocated(this%excitation_energies)) deallocate (this%excitation_energies)
+      if (allocated(this%excited_total_energies)) then
+         deallocate (this%excited_total_energies)
+      end if
       if (allocated(this%oscillator_strengths)) deallocate (this%oscillator_strengths)
       if (allocated(this%oscillator_strengths_velocity)) then
          deallocate (this%oscillator_strengths_velocity)
       end if
       if (allocated(this%transition_dipoles)) deallocate (this%transition_dipoles)
+      if (allocated(this%transition_velocities)) then
+         deallocate (this%transition_velocities)
+      end if
+      if (allocated(this%transition_dipole_origin)) then
+         deallocate (this%transition_dipole_origin)
+      end if
       if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
 
