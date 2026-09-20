@@ -2192,6 +2192,12 @@ contains
       !! on the single-density path this is a copy of. That is what caps the
       !! batch: `DEFAULT_RESPONSE_BATCH` vectors of a few hundred functions is
       !! tens of megabytes a thread, and a few thousand functions would not be.
+      ! TODO(mqc): the accumulator is a copy per thread reduced under one
+      ! `critical`, which is what `build_fock_direct_many` abandoned for the
+      ! tile-lock scheme above it: the copies cost `2 n_set n^2` doubles a
+      ! thread and the reduction over them grows with the batch width, so a
+      ! wide unrestricted batch is capped by memory long before the integrals
+      ! run out. Port the tile locks here once this path is worth measuring.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)             !! Core Hamiltonian, added to every set
       real(dp), intent(in) :: d_alpha(:, :, :)    !! (n_ao, n_ao, n_set)
@@ -2237,7 +2243,9 @@ contains
 
       n = mol%nao
       n_set = size(d_alpha, 3)
-      if (size(h, 1) /= n .or. size(d_alpha, 1) /= n .or. size(d_beta, 1) /= n &
+      if (size(h, 1) /= n .or. size(h, 2) /= n &
+          .or. size(d_alpha, 1) /= n .or. size(d_alpha, 2) /= n &
+          .or. size(d_beta, 1) /= n .or. size(d_beta, 2) /= n &
           .or. size(d_beta, 3) /= n_set) then
          call error%set(ERROR_VALIDATION, "direct UHF Fock batch: matrix dimensions "// &
                         "do not match the basis, or the two spins are different batches")
