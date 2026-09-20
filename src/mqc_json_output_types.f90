@@ -25,6 +25,13 @@ module mqc_json_output_types
 
       !----- Common data -----
       real(dp) :: total_energy = 0.0_dp
+      real(dp) :: dispersion_energy = 0.0_dp
+         !! The empirical dispersion correction, when `keywords.dft.dispersion`
+         !! asked for one. Already inside `total_energy`; written separately
+         !! because a correction that exists only inside a total cannot be
+         !! compared with a published DFT-D number, and a later reader cannot
+         !! tell whether a run had one at all.
+      logical :: has_dispersion = .false.
       real(dp), allocatable :: gradient(:, :)     !! (3, natoms)
       real(dp), allocatable :: hessian(:, :)      !! (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)          !! (3)
@@ -236,6 +243,8 @@ contains
 
       this%output_mode = OUTPUT_MODE_NONE
       this%total_energy = 0.0_dp
+      this%dispersion_energy = 0.0_dp
+      this%has_dispersion = .false.
       this%has_energy = .false.
       this%has_gradient = .false.
       this%has_hessian = .false.

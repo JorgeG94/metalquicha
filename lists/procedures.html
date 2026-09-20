@@ -162,6 +162,12 @@
                  <td><p>Ask tblite to compute Wiberg-Mayer bond orders during the single point</p><a href="../proc/add_bond_order_post_processing.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_dispersion.html'>add_dispersion</a></td>
+                 <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold the dispersion correction into a result the backend has filled in</p><a href="../proc/add_dispersion.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_gradient.html'>add_gradient</a></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
@@ -1482,6 +1488,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>No-op stand-in: with no CPU integral backend there is no path to choose</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/d3_functional_alias.html'>d3_functional_alias</a></td>
+                 <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
+                 <td>Subroutine</td>
+                 <td><p>s-dftd3&rsquo;s spelling of <code>functional</code>, or a refusal saying why there is none</p><a href="../proc/d3_functional_alias.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/davidson_flat.html'>davidson_flat</a></td>
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td>Subroutine</td>
@@ -1618,6 +1630,24 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Function</td>
                  <td><p>The directory part of a path, or &ldquo;.&rdquo; when there is none</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_available.html'>dispersion_available</a></td>
+                 <td><a href='../module/mqc_dispersion.html'>mqc_dispersion</a></td>
+                 <td>Function</td>
+                 <td><p>.false. &ndash; this build has no s-dftd3</p><a href="../proc/dispersion_available.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_correction.html'>dispersion_correction</a></td>
+                 <td><a href='../module/mqc_dispersion.html'>mqc_dispersion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: report the missing library, compute nothing</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_kind_is_known.html'>dispersion_kind_is_known</a></td>
+                 <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
+                 <td>Function</td>
+                 <td><p>Whether <code>keywords.dft.dispersion</code> named a correction this build can run</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
@@ -4026,6 +4056,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><p>Per-level distance cutoffs from keywords.fragmentation.cutoffs</p><a href="../proc/read_cutoffs.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_dft_dispersion.html'>read_dft_dispersion</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.dft.dispersion</code>: the name of a correction, or <code>false</code></p><a href="../proc/read_dft_dispersion.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_efmo.html'>read_efmo</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -4905,15 +4941,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
                  <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
                  <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -5340,7 +5376,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 02:22 +0000             </p>
+ on 2026-09-20 03:41 +0000             </p>
           </div>
         </div>
         <br>

@@ -25,6 +25,8 @@ module mqc_method_dft
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_terco_bridge, only: run_terco_scf
    use mqc_czt_bridge, only: run_czt_hf
+   use mqc_dispersion, only: dispersion_correction
+   use pic_logger, only: logger => global_logger
    implicit none
    private
 
@@ -50,8 +52,9 @@ module mqc_method_dft
          !! Grid points per block; -1 keeps the backend default.
       logical :: use_dispersion = .false.
          !! Add empirical dispersion correction
-      character(len=8) :: dispersion_type = "d3bj"
-         !! Dispersion type: "d3", "d3bj", "d4"
+      character(len=16) :: dispersion_type = "d3bj"
+         !! Which correction, in the spelling `keywords.dft.dispersion` uses.
+         !! Only "d3bj" today; see `DISPERSION_KINDS` in `mqc_dispersion_names`.
    end type dft_options_t
 
    type, extends(qc_method_t) :: dft_method_t
@@ -86,15 +89,40 @@ contains
 
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
+      type(error_t) :: dispersion_error
+      real(dp) :: e_dispersion
+      real(dp), allocatable :: g_dispersion(:, :)
 
+      ! The empirical dispersion correction, computed before the SCF rather
+      ! than after it.
+      !
+      ! It costs microseconds and depends on nothing but the nuclei, so running
+      ! it first buys the refusals for free: an unknown correction, a functional
+      ! with no published damping parameters, or a build with no dispersion
+      ! library is reported before an SCF is started rather than after one has
+      ! converged. The numbers are held until the backend has returned something
+      ! to add them to.
+      !
+      ! Here rather than in a backend, because the correction is a function of
+      ! the nuclei alone: cenzontle, cuEST and terco would each need the same
+      ! code and could each get it subtly differently.
+      e_dispersion = 0.0_dp
       if (this%options%use_dispersion) then
-         ! Refused rather than dropped: a missing dispersion correction biases
-         ! every fragment energy the same way.
-         call result%error%set(ERROR_VALIDATION, &
-                               "Empirical dispersion ("//trim(this%options%dispersion_type)// &
-                               ") is not implemented")
-         result%has_error = .true.
-         return
+         if (want_gradient) then
+            allocate (g_dispersion(3, fragment%n_atoms), source=0.0_dp)
+            call dispersion_correction(this%options%dispersion_type, this%options%functional, &
+                                       fragment%element_numbers, fragment%coordinates, &
+                                       e_dispersion, g_dispersion, dispersion_error)
+         else
+            call dispersion_correction(this%options%dispersion_type, this%options%functional, &
+                                       fragment%element_numbers, fragment%coordinates, &
+                                       e_dispersion, error=dispersion_error)
+         end if
+         if (dispersion_error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, dispersion_error%get_message())
+            result%has_error = .true.
+            return
+         end if
       end if
 
       call apply_scf_settings(settings, this%options)
@@ -181,7 +209,45 @@ contains
          call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
 #endif
       end select
+
+      call add_dispersion(this%options%use_dispersion, e_dispersion, g_dispersion, result)
    end subroutine dft_run
+
+   subroutine add_dispersion(requested, energy, gradient, result)
+      !! Fold the dispersion correction into a result the backend has filled in
+      !!
+      !! Kept beside the total rather than added into `energy%scf`: the
+      !! correction is not a functional of the density and converged nothing,
+      !! and a total that hides it cannot be compared with a published DFT-D
+      !! number or with the same geometry run without it. `energy%total()` adds
+      !! it, so every consumer of the total already has it.
+      !!
+      !! The gradient sign is the library's, unchanged: s-dftd3 returns dE/dR in
+      !! Hartree per Bohr, which is what `result%gradient` holds, so the two
+      !! simply add. Over the fragment's own atoms, H-caps included -- the same
+      !! atoms the SCF gradient covers, so the cap redistribution downstream
+      !! sees one consistent gradient rather than two conventions.
+      logical, intent(in) :: requested
+      real(dp), intent(in) :: energy
+      real(dp), allocatable, intent(in) :: gradient(:, :)
+      type(calculation_result_t), intent(inout) :: result
+
+      character(len=80) :: line
+
+      if (.not. requested) return
+      if (result%has_error) return
+
+      result%energy%dispersion = energy
+      if (result%has_gradient .and. allocated(gradient) .and. allocated(result%gradient)) then
+         result%gradient = result%gradient + gradient
+      end if
+
+      ! On its own line, and unconditionally. A correction of a few millihartree
+      ! that appears only inside a total is the kind of thing a run is later
+      ! unable to say whether it had.
+      write (line, "(a,f20.12)") "  empirical dispersion ", result%energy%dispersion
+      call logger%info(trim(line))
+   end subroutine add_dispersion
 
    subroutine dft_calc_gradient(this, fragment, result)
       !! Energy and nuclear gradient of a fragment
@@ -204,9 +270,17 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      call dft_run(this, fragment, result, want_gradient=.true., want_hessian=.true.)
-      if (result%has_error) return
-      if (result%has_hessian) return
+      ! Dispersion goes straight to finite differences, without asking the
+      ! backend whether it has an analytic Hessian. s-dftd3's C API returns an
+      ! energy, a gradient and a virial and no second derivative, so an analytic
+      ! Kohn-Sham Hessian plus this correction would be a Hessian missing one of
+      ! its terms with nothing to say so. Differencing `calc_gradient`, which
+      ! does carry the correction, gives the whole thing.
+      if (.not. this%options%use_dispersion) then
+         call dft_run(this, fragment, result, want_gradient=.true., want_hessian=.true.)
+         if (result%has_error) return
+         if (result%has_hessian) return
+      end if
 
       ! Declined. The finite-difference path runs its own reference point, so
       ! nothing computed above is reusable.

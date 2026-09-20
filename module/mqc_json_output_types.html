@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.6% of total for modules and submodules.">157 statements</a>
+                 title=" 0.6% of total for modules and submodules.">161 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -198,8 +198,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1601,7 +1601,7 @@ first, paired with <code>culprit_counts</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~4"></span>
+              <span class="anchor" id="variable-delta_energies~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1631,6 +1631,27 @@ first, paired with <code>culprit_counts</code>.</p>
                 <td></td>
             <td>
 <p>(3)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dispersion_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dispersion_energy</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+<p>The empirical dispersion correction, when <code>keywords.dft.dispersion</code>
+asked for one. Already inside <code>total_energy</code>; written separately
+because a correction that exists only inside a total cannot be
+compared with a published DFT-D number, and a later reader cannot
+tell whether a run had one at all.</p>
             </td>
         </tr>
         <tr>
@@ -1711,7 +1732,7 @@ GAMESS term by term.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint~4"></span>
+              <span class="anchor" id="variable-fingerprint~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1730,7 +1751,7 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~5"></span>
+              <span class="anchor" id="variable-force_constants~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1764,7 +1785,7 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges"></span>
+              <span class="anchor" id="variable-fragment_charges~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1781,7 +1802,7 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~7"></span>
+              <span class="anchor" id="variable-fragment_count~8"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -1885,7 +1906,7 @@ leaves behind, and printing it as a gap of zero is a claim.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_multiplicities"></span>
+              <span class="anchor" id="variable-fragment_multiplicities~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1921,7 +1942,7 @@ magnitude, so nothing downstream can tell without this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~10"></span>
+              <span class="anchor" id="variable-frequencies~12"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2091,7 +2112,7 @@ magnitude, so nothing downstream can tell without this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~11"></span>
+              <span class="anchor" id="variable-gradient~16"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2151,6 +2172,23 @@ magnitude, so nothing downstream can tell without this.</p>
             </td>
             <td>::</td>
             <td><strong>has_dipole</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_dispersion"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_dispersion</strong></td>
 <td> =</td>
                 <td>.false.</td>
             <td>
@@ -2347,7 +2385,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~16"></span>
+              <span class="anchor" id="variable-hessian~18"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2466,7 +2504,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~5"></span>
+              <span class="anchor" id="variable-ir_intensities~8"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2500,7 +2538,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~29"></span>
+              <span class="anchor" id="variable-max_level~30"></span>
               integer,
             </td>
               <td>public</td>
@@ -2517,7 +2555,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~10"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2551,7 +2589,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~9"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2568,7 +2606,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~6"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2585,7 +2623,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_energies"></span>
+              <span class="anchor" id="variable-pie_energies~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2602,7 +2640,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~21"></span>
+              <span class="anchor" id="variable-polymers~22"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2619,7 +2657,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~6"></span>
+              <span class="anchor" id="variable-reduced_masses~7"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2780,7 +2818,7 @@ cover &ndash; a triplet or complex instability is a different matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2864,7 +2902,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/json_output_data_t.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
+  <strong><a href='../type/json_output_data_t.html#boundprocedure-destroy~28'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2903,7 +2941,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~118"></span>
+              <span class="anchor" id="variable-this~149"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2943,7 +2981,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~119"></span>
+              <span class="anchor" id="variable-this~150"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2986,7 +3024,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 02:22 +0000             </p>
+ on 2026-09-20 03:41 +0000             </p>
           </div>
         </div>
         <br>

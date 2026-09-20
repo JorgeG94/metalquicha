@@ -46,6 +46,8 @@ module mqc_json_config_reader
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
+   use mqc_dispersion_names, only: dispersion_kind_is_known, DISPERSION_KINDS
+   use mqc_dispersion, only: dispersion_available
    ! `json_integer` and `json_string` are imported here and not inside
    ! `read_neo`, where they are used: a routine-level `use json_module` in a
    ! module that already imports it makes ifx (2026.0, and 2025.3 before it)
@@ -366,6 +368,8 @@ contains
       call optional_real(json, "keywords.dft.screening_tolerance", &
                          config%dft_screening_tolerance)
       call optional_int(json, "keywords.dft.block_size", config%dft_block_size)
+      call read_dft_dispersion(json, config, error)
+      if (error%has_error()) return
       block
          ! Read into a deferred-length local, since the config field is fixed
          ! width and `optional_string` takes an allocatable.
@@ -771,6 +775,76 @@ contains
                         "'. Accepted: all, dipole")
       end select
    end subroutine read_efp_dispersion
+
+   subroutine read_dft_dispersion(json, config, error)
+      !! `keywords.dft.dispersion`: the name of a correction, or `false`
+      !!
+      !! Two JSON types are accepted because two readings of the key are both
+      !! natural: `"d3bj"` says which correction, and `false` says none. A bare
+      !! `true` is refused rather than defaulted -- which correction was meant
+      !! is exactly the thing a total energy will not reveal afterwards, and
+      !! D3(BJ) and D3(0) are different numbers for the same functional.
+      !!
+      !! The spelling and the build are both checked here, so a deck that
+      !! cannot run is refused before a basis or a geometry is built. Whether
+      !! the *functional* has published damping parameters is not -- that needs
+      !! `model.functional`, and is answered where the correction is evaluated.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      character(len=:), allocatable :: lowered
+      logical :: as_logical, found
+      integer :: i
+
+      call optional_string(json, "keywords.dft.dispersion", text)
+      if (.not. allocated(text)) then
+         ! Not a string. Either absent, or the boolean form. `json%get` with
+         ! `found` present swallows the type mismatch rather than raising, so
+         ! asking twice is safe.
+         call json%get("keywords.dft.dispersion", as_logical, found)
+         if (.not. found) return
+         if (as_logical) then
+            call error%set(ERROR_VALIDATION, "keywords.dft.dispersion is `true`, which "// &
+                           "does not say which correction. Name it: "//DISPERSION_KINDS//". "// &
+                           "Use `false`, or leave the key out, for none.")
+            return
+         end if
+         config%dft_dispersion = .false.
+         return
+      end if
+
+      lowered = trim(adjustl(text))
+      do i = 1, len(lowered)
+         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
+            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
+         end if
+      end do
+
+      select case (lowered)
+      case ("none", "off", "false")
+         config%dft_dispersion = .false.
+      case default
+         if (.not. dispersion_kind_is_known(lowered)) then
+            call error%set(ERROR_VALIDATION, "unknown keywords.dft.dispersion '"//trim(text)// &
+                           "'. Accepted: "//DISPERSION_KINDS//", none")
+            return
+         end if
+         if (.not. dispersion_available()) then
+            ! Refused here rather than after a basis and a geometry have been
+            ! built, and naming the flag that fixes it. Running without the
+            ! correction is not an option: it biases every energy the same way
+            ! and nothing in the output would say it was missing.
+            call error%set(ERROR_VALIDATION, "keywords.dft.dispersion asked for '"// &
+                           trim(lowered)//"', and this build has no dispersion library. "// &
+                           "Configure with -DMQC_ENABLE_DFTD3=ON.")
+            return
+         end if
+         config%dft_dispersion = .true.
+         config%dft_dispersion_type = lowered
+      end select
+   end subroutine read_dft_dispersion
 
    subroutine read_scf_eri_path(json, config, error)
       !! `keywords.scf.eri_path`, checked for spelling, or a refusal

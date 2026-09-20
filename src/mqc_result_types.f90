@@ -62,8 +62,14 @@ module mqc_result_types
    type :: energy_t
       !! Container for quantum chemistry energy components
       !!
-      !! The total is `scf + dh_pt2 + mp2%total() + cc%total()`.
+      !! The total is `scf + dispersion + dh_pt2 + mp2%total() + cc%total()`.
       real(dp) :: scf = 0.0_dp           !! SCF/HF/KS reference energy (Hartree)
+      real(dp) :: dispersion = 0.0_dp
+         !! Empirical dispersion, from `keywords.dft.dispersion`. Kept out of
+         !! `scf` rather than folded into it: it is not a functional of the
+         !! density, it converges nothing, and a total that hides it cannot be
+         !! compared with a published DFT-D number or with the same geometry run
+         !! without it.
       real(dp) :: dh_pt2 = 0.0_dp
          !! The perturbative part of a double hybrid's *functional*.
       type(mp2_energy_t) :: mp2          !! MP2 correlation components
@@ -306,13 +312,14 @@ contains
       real(dp) :: total
 
       ! this line needs to me modified if more components are added
-      total = this%scf + this%dh_pt2 + this%mp2%total() + this%cc%total()
+      total = this%scf + this%dispersion + this%dh_pt2 + this%mp2%total() + this%cc%total()
    end function energy_total
 
    subroutine energy_reset(this)
       !! Reset all energy components to zero
       class(energy_t), intent(inout) :: this
       this%scf = 0.0_dp
+      this%dispersion = 0.0_dp
       this%dh_pt2 = 0.0_dp
       call this%mp2%reset()
       call this%cc%reset()
@@ -501,6 +508,7 @@ contains
 
       ! Send energy components
       call send(comm, result%energy%scf, dest, tag)
+      call send(comm, result%energy%dispersion, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
       call send(comm, result%energy%mp2%os, dest, tag)
       call send(comm, result%energy%cc%singles, dest, tag)
@@ -557,6 +565,7 @@ contains
       call isend(comm, result%energy%scf, dest, tag, req)
 
       ! Send other energy components (blocking to avoid needing multiple request handles)
+      call send(comm, result%energy%dispersion, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
       call send(comm, result%energy%mp2%os, dest, tag)
       call send(comm, result%energy%cc%singles, dest, tag)
@@ -613,6 +622,7 @@ contains
 
       ! Receive energy components
       call recv(comm, result%energy%scf, source, tag, status)
+      call recv(comm, result%energy%dispersion, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
       call recv(comm, result%energy%mp2%os, source, tag, status)
       call recv(comm, result%energy%cc%singles, source, tag, status)
@@ -679,6 +689,7 @@ contains
       call irecv(comm, result%energy%scf, source, tag, req)
 
       ! Receive other energy components (blocking to avoid needing multiple request handles)
+      call recv(comm, result%energy%dispersion, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
       call recv(comm, result%energy%mp2%os, source, tag, status)
       call recv(comm, result%energy%cc%singles, source, tag, status)

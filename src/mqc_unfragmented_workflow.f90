@@ -215,6 +215,13 @@ contains
                         json_data%has_energy = result%has_energy
                         json_data%has_vibrational = .true.
 
+                        ! The dispersion correction, beside the total it is
+                        ! already inside.
+                        if (result%energy%dispersion /= 0.0_dp) then
+                           json_data%dispersion_energy = result%energy%dispersion
+                           json_data%has_dispersion = .true.
+                        end if
+
                         ! Whether the reference the whole calculation rests on
                         ! is a minimum, when `keywords.scf.stability` asked.
                         if (result%has_stability) then
@@ -365,6 +372,13 @@ contains
                json_data%fukui_anion_bound = result%fukui_anion_bound
                json_data%fukui_scheme = result%fukui_scheme
                json_data%has_fukui = .true.
+            end if
+
+            ! The dispersion correction, beside the total it is already
+            ! inside.
+            if (result%energy%dispersion /= 0.0_dp) then
+               json_data%dispersion_energy = result%energy%dispersion
+               json_data%has_dispersion = .true.
             end if
 
             ! Whether the reference the whole calculation rests on

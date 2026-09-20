@@ -296,8 +296,9 @@ module mqc_method_config
       ! Dispersion correction
       logical :: use_dispersion = .false.
          !! Add empirical dispersion
-      character(len=8) :: dispersion_type = "d3bj"
-         !! Dispersion type: "d3", "d3bj", "d4"
+      character(len=16) :: dispersion_type = "d3bj"
+         !! Which correction, in the spelling `keywords.dft.dispersion` uses.
+         !! Only "d3bj" today; see `DISPERSION_KINDS` in `mqc_dispersion_names`.
    end type dft_config_t
 
    !============================================================================

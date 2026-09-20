@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">38 statements</a>
+                 title=" 0.2% of total for procedures.">39 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/result_irecv.html#variable-status~12">status</a>
+            <a class="list-group-item" href="../proc/result_irecv.html#variable-status~25">status</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~17"></span>
+              <span class="anchor" id="variable-result~38"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -208,7 +208,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~8"></span>
+              <span class="anchor" id="variable-comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -223,7 +223,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~3"></span>
+              <span class="anchor" id="variable-source~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -253,7 +253,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~11"></span>
+              <span class="anchor" id="variable-req~17"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -976,7 +976,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~12"></span>
+              <span class="anchor" id="variable-status~25"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1027,6 +1027,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">irecv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">scf</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Receive other energy components (blocking to avoid needing multiple request handles)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">dispersion</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">mp2</span><span class="p">%</span><span class="n">ss</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">mp2</span><span class="p">%</span><span class="n">os</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">singles</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
@@ -1095,7 +1096,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 02:22 +0000             </p>
+ on 2026-09-20 03:41 +0000             </p>
           </div>
         </div>
         <br>
