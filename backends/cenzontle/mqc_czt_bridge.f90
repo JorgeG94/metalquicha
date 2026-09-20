@@ -1521,6 +1521,14 @@ contains
       ! left is a Tamm-Dancoff singlet solve, and a failure in it is reported
       ! and propagated rather than dropped: a deck that asked for a spectrum
       ! and got an energy has not been answered.
+      !
+      ! This runs once per SCF and this routine is the SCF every driver takes,
+      ! so nothing here can tell a single point from the two hundredth
+      ! displacement of a finite-difference Hessian. That is why the driver
+      ! and the partition are gated in the reader instead
+      ! (`check_excited_states_run`): by the time a fragment or a displacement
+      ! reaches this line, the deck that would have paid for it has already
+      ! been refused by name.
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
