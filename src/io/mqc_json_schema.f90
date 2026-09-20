@@ -482,6 +482,11 @@ contains
       call allow(keys, "angular_points")
       call allow(keys, "screening_tolerance")
       call allow(keys, "block_size")
+      ! Not quadrature, and the exception to the comment above: the empirical
+      ! dispersion correction is a term added to the energy, but it is chosen
+      ! per calculation rather than named by the method, so it is a keyword and
+      ! not part of `model.functional`.
+      call allow(keys, "dispersion")
    end function dft_keys
 
    function pcm_keys() result(keys)

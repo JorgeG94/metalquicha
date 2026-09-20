@@ -32,6 +32,7 @@ module test_mqc_json_reader
    use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
                               BACKEND_CZT, method_runs_on_cuest
    use mqc_cuest_bridge, only: cuest_backend_available
+   use mqc_dispersion, only: dispersion_available
    use pic_types, only: dp
    implicit none
    private
@@ -89,6 +90,7 @@ contains
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("dft_keywords", test_dft_keywords), &
+                  new_unittest("dft_dispersion", test_dft_dispersion), &
                   new_unittest("fragment_potentials", test_fragment_potentials), &
                   new_unittest("uniform_system_broadcast", test_uniform_system), &
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
@@ -1317,6 +1319,74 @@ contains
       if (allocated(error)) return
       call check(error, config%dft_angular_points, 590)
    end subroutine test_dft_keywords
+
+   subroutine test_dft_dispersion(error)
+      !! `keywords.dft.dispersion`: the name, the boolean off, and the refusals
+      !!
+      !! The key was unreachable from a deck until this: `dft_config_t` carried
+      !! the two fields and the schema's allow-list did not carry the key, so
+      !! every deck naming it was rejected by the validator before the reader
+      !! saw it. The first case here is what makes that not true again.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"dispersion": "d3bj"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      if (dispersion_available()) then
+         call check(error,.not. parse_error%has_error(), parse_error%get_message())
+         if (allocated(error)) return
+         call check(error, config%dft_dispersion, "naming a correction must switch it on")
+         if (allocated(error)) return
+         call check(error, trim(config%dft_dispersion_type), "d3bj")
+         if (allocated(error)) return
+      else
+         ! A build with no dispersion library refuses the deck here, before a
+         ! basis or a geometry is built, and names the flag that would fix it.
+         call check(error, parse_error%has_error(), &
+                    "a build without s-dftd3 must refuse the keyword, not ignore it")
+         if (allocated(error)) return
+         call check(error, index(parse_error%get_message(), "MQC_ENABLE_DFTD3") > 0, &
+                    "the refusal must name the option that would fix it")
+         if (allocated(error)) return
+      end if
+
+      ! Absent is off, which is what every existing DFT deck relies on.
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"grid_level": 3}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%dft_dispersion, &
+                 "a deck that does not name dispersion must not get any")
+      if (allocated(error)) return
+
+      ! The boolean form, which is the natural way to write "none".
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"dispersion": false}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%dft_dispersion, "`false` must switch it off")
+      if (allocated(error)) return
+
+      ! `true` is refused rather than defaulted: D3(BJ) and D3(0) are different
+      ! numbers for the same functional, and nothing downstream could tell which
+      ! was meant.
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"dispersion": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "`true` does not name a correction and must be refused")
+      if (allocated(error)) return
+
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"dispersion": "d3"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unwired correction must be refused, not silently accepted")
+   end subroutine test_dft_dispersion
 
    subroutine test_cc_spin_adapted(error)
       !! `keywords.cc.spin_adapted`, and that its default is on

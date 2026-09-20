@@ -549,6 +549,12 @@ addtest(mqc_shared_helpers)
 # double-hybrid coefficients are ours, and libxc is not needed to check them.
 addtest(mqc_xc_spec)
 
+# Empirical dispersion. Unconditional, and half of it runs either way: the
+# functional-name mapping and the refusals are compiled whether or not s-dftd3
+# was linked, and on a build without it the remaining cases assert that the
+# refusal names MQC_ENABLE_DFTD3 rather than returning a zero correction.
+addtest(mqc_dispersion)
+
 addtest(mqc_basis_utils)
 addtest(mqc_elements)
 addtest(mqc_cgto)

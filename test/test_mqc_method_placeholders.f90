@@ -177,12 +177,15 @@ contains
          if (allocated(error)) return
       end if
 
-      ! Dispersion is not implemented for the cuEST backend, so asking for it
-      ! must fail loudly rather than quietly return an undispersed energy.
+      ! Dispersion is wired now, so the pin moves from "any dispersion is
+      ! refused" to "a correction nobody has published is". That refusal is
+      ! independent of the build: the name is checked before the link line
+      ! matters, so this holds with or without s-dftd3.
       method%options%use_dispersion = .true.
+      method%options%dispersion_type = "d9vibes"
       call method%calc_energy(fragment, result)
       call check(error, result%has_error, &
-                 "Requesting unimplemented dispersion must report an error")
+                 "Requesting an unknown dispersion correction must report an error")
 
       call fragment%destroy()
    end subroutine test_dft_energy
