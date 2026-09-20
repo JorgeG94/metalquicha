@@ -122,6 +122,7 @@ module mqc_czt_tddft
    implicit none
    private
 
+   public :: excitation_spectrum_t
    public :: response_core_t
    public :: tda_operator_t
    public :: rpa_operator_t
@@ -182,6 +183,28 @@ module mqc_czt_tddft
       !!
       !! Tamm-Dancoff has no `Y`, so the Davidson's unit eigenvector is scaled
       !! by the square root of this and the convention holds there too.
+
+   type :: excitation_spectrum_t
+      !! One converged spectrum, as `response_excitations` hands it back
+      !!
+      !! The four arrays are one object: they run over the same roots in the
+      !! same order, they are allocated together, and three of them say
+      !! nothing without the fourth. A consumer of the whole spectrum takes
+      !! this rather than four separate arguments, and so cannot be handed a
+      !! set of amplitudes belonging to a different solve than the energies.
+      !!
+      !! `response_excitations` still returns the four separately, because
+      !! eleven call sites read them that way; packing is one assignment per
+      !! array at the boundary.
+      real(dp), allocatable :: excitations(:)
+         !! (n_states) excitation energies, ascending, in Hartree
+      integer, allocatable :: state_spin(:)
+         !! (n_states) `STATE_SPIN_SINGLET` or `STATE_SPIN_TRIPLET` per root
+      real(dp), allocatable :: x_amplitudes(:, :)
+         !! (n_occ*n_vir, n_states) excitation amplitudes, virtual fastest
+      real(dp), allocatable :: y_amplitudes(:, :)
+         !! (n_occ*n_vir, n_states) de-excitation amplitudes; zero for `tda`
+   end type excitation_spectrum_t
 
    type :: response_core_t
       !! Everything a response product needs, and nothing about which one

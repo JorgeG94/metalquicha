@@ -45,9 +45,9 @@ module mqc_czt_bridge
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                               nuclear_repulsion_hessian, response_hessian
-   use mqc_czt_tddft, only: response_excitations
+   use mqc_czt_tddft, only: response_excitations, excitation_spectrum_t
    use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
-                                       log_property_table
+                                       log_property_table, leading_weight
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
@@ -1518,6 +1518,7 @@ contains
             real(dp), allocatable :: omega(:), x_amplitudes(:, :), y_amplitudes(:, :)
             integer, allocatable :: omega_spin(:)
             type(error_t) :: td_error
+            type(excitation_spectrum_t) :: spectrum
             type(excited_properties_t) :: props
             integer :: state
 
@@ -1564,21 +1565,29 @@ contains
             ! report it because a one-electron integral set could not be
             ! formed would throw away the expensive half of the answer.
             if (result%has_excited_states) then
-               call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, &
-                                       omega_spin, x_amplitudes, y_amplitudes, &
+               ! The solve's four outputs travel on as one spectrum. The
+               ! amplitudes are moved rather than copied: this is their last
+               ! reader, and they are the largest thing in this block.
+               spectrum%excitations = omega
+               spectrum%state_spin = omega_spin
+               call move_alloc(x_amplitudes, spectrum%x_amplitudes)
+               call move_alloc(y_amplitudes, spectrum%y_amplitudes)
+               call excited_properties(mol, scf%orbitals, scf%n_occupied, spectrum, &
                                        scf%energy, props, td_error)
                if (td_error%has_error()) then
                   call logger%warning("  the transition properties could not be "// &
                                       "computed: "//td_error%get_message())
                else
                   call log_property_table(props, omega, omega_spin)
+                  result%excited_total_energies = props%total_energy
                   result%oscillator_strengths = props%f_length
                   result%oscillator_strengths_velocity = props%f_velocity
                   result%transition_dipoles = props%transition_dipole
+                  result%transition_velocities = props%velocity_moment
+                  result%transition_dipole_origin = props%origin
                   allocate (result%nto_leading_weight(size(omega)))
                   do state = 1, size(omega)
-                     result%nto_leading_weight(state) = &
-                        maxval(props%nto_weights(:, state))
+                     result%nto_leading_weight(state) = leading_weight(props, state)
                   end do
                end if
                call props%destroy()

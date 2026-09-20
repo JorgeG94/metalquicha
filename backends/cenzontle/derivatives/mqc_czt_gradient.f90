@@ -1585,6 +1585,11 @@ contains
       !! The same shell-pair loop as `one_electron` next door, with three
       !! components per block instead of one. libcint returns them with the
       !! component slowest, so a block is `buf(di, dj, 1:3)`.
+      !!
+      !! There is no error to report and so no `error` argument. A zero return
+      !! from the integral call is the library saying the block vanished, not
+      !! that it declined to evaluate it: both libcint and libfint zero their
+      !! own output in that case, so the skipped block is already the answer.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), allocatable, intent(out) :: matrix(:, :, :)
       integer, intent(in) :: which
@@ -1642,7 +1647,7 @@ contains
                end select
             end if
 
-            if (ret == 0) cycle
+            if (ret == 0) cycle   ! screened away, leave the block zero
             do comp = 1, 3
                do j = 1, dj
                   do i = 1, di
