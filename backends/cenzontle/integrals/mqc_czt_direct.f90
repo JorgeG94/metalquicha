@@ -1537,8 +1537,8 @@ contains
    end subroutine grow_window
 
    subroutine build_fock_direct_nosym(mol, h, densities, bounds, focks, stats, error, &
-                                      screen_tol)
-      !! J - K/2 for densities of **any** symmetry, over one pass of the integrals
+                                      screen_tol, k_scale, j_scale, omega)
+      !! j J - k K/2 for densities of **any** symmetry, over one pass of the integrals
       !!
       !! `build_fock_direct_many` is faster and cannot be used here: it folds
       !! three of the eightfold permutations into a `deg` factor, which is only
@@ -1550,13 +1550,20 @@ contains
       !! does not already cover -- exactly the ones `deg` was standing in for --
       !! and applies to each
       !!
-      !!     g(p,q) += V D(r,s)          the Coulomb contribution
-      !!     g(p,r) -= V D(q,s) / 2      the exchange contribution
+      !!     g(p,q) += j V D(r,s)          the Coulomb contribution
+      !!     g(p,r) -= k V D(q,s) / 2      the exchange contribution
       !!
       !! with the real density elements rather than a multiplicity. **There is no
       !! final symmetrisation**, and there must not be: for an antisymmetric density
       !! `J` vanishes and `G = -K/2` is itself antisymmetric, so
       !! `0.5*(g + transpose(g))` would annihilate the entire result.
+      !!
+      !! `k_scale`, `j_scale` and `omega` mean what they mean in
+      !! `build_fock_direct_many`, so a hybrid's response and the attenuated
+      !! second pass of a range-separated one are available on this build too.
+      !! With `j_scale` zero the Coulomb update is not merely scaled away, it is
+      !! not made at all, which is most of what the long-range pass would have
+      !! cost.
       !!
       !! For a symmetric density this reduces term by term to what
       !! `build_fock_direct_many` computes, which is asserted in the tests rather
@@ -1580,9 +1587,16 @@ contains
       type(direct_stats_t), intent(out) :: stats
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange, one by default.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of Coulomb, one by default. A long-range exchange pass
+         !! passes zero: the full-range pass has already supplied it.
+      real(dp), intent(in), optional :: omega
+         !! Range separation, through `env(PTR_RANGE_OMEGA)`.
 
       real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :), dens_t(:, :, :)
-      real(dp), allocatable :: bq(:, :)
+      real(dp), allocatable :: bq(:, :), env_nosym(:)
       type(eri_shell_table_t) :: tab
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
@@ -1596,8 +1610,8 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
       integer :: itask
       integer(int64) :: n_total, n_computed, n_screened
-      real(dp) :: tol, value
-      logical :: swap_bra, swap_ket, swap_pairs
+      real(dp) :: tol, value, kx, jxm, jv, kv
+      logical :: swap_bra, swap_ket, swap_pairs, with_coulomb
 
       n = mol%nao
       n_set = size(densities, 3)
@@ -1613,6 +1627,11 @@ contains
 
       tol = DEFAULT_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
+      kx = 1.0_dp
+      if (present(k_scale)) kx = k_scale
+      jxm = 1.0_dp
+      if (present(j_scale)) jxm = j_scale
+      with_coulomb = jxm /= 0.0_dp
 
       ! The shells the quartet loop runs over: the fused-sp view when the
       ! molecule carries one, its split shells otherwise. libfint's `int2e` is
@@ -1652,8 +1671,14 @@ contains
       end do
 
       opt = c_null_ptr
+      ! As `build_fock_direct_many`: a local environment so the attenuated pass
+      ! is the same quartets with the range-separation slot set. Handing the
+      ! shared one to either the optimizer or the block driver is silent --
+      ! full-range integrals come back scaled by the long-range coefficient.
+      env_nosym = tab%env
+      if (present(omega)) env_nosym(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
-                                  tab%nbas, tab%env)
+                                  tab%nbas, env_nosym)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -1661,9 +1686,9 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(mol, tab, bq, dens_t, g, dims, offs, pair_i, pair_j, order, npair, tol, &
-      !$omp           opt, n, block_max, n_set) &
+      !$omp           opt, n, block_max, n_set, kx, jxm, with_coulomb, env_nosym) &
       !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
-      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, value, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, value, jv, kv, &
       !$omp            buf, g_local, iset, i1, i2, i3, pp, qq, rr, ss, &
       !$omp            nperm, iperm, slot, bb, swap_bra, swap_ket, swap_pairs) &
       !$omp    reduction(+:n_total, n_computed, n_screened)
@@ -1698,7 +1723,7 @@ contains
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     tab%bas, tab%nbas, tab%env, opt)
+                                     tab%bas, tab%nbas, env_nosym, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -1739,15 +1764,18 @@ contains
                         b1 = o1 + f1
                         idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
                         value = buf(idx)
+                        jv = jxm*value
+                        kv = 0.5_dp*kx*value
                         bb = [b1, b2, b3, b4]
                         do iperm = 1, nperm
                            pp = bb(slot(1, iperm))
                            qq = bb(slot(2, iperm))
                            rr = bb(slot(3, iperm))
                            ss = bb(slot(4, iperm))
-                           g_local(:, pp, qq) = g_local(:, pp, qq) + dens_t(:, rr, ss)*value
-                           g_local(:, pp, rr) = g_local(:, pp, rr) &
-                                                - 0.5_dp*dens_t(:, qq, ss)*value
+                           if (with_coulomb) then
+                              g_local(:, pp, qq) = g_local(:, pp, qq) + dens_t(:, rr, ss)*jv
+                           end if
+                           g_local(:, pp, rr) = g_local(:, pp, rr) - dens_t(:, qq, ss)*kv
                         end do
                      end do
                   end do
@@ -1776,7 +1804,7 @@ contains
          focks(:, :, iset) = h + g(iset, :, :)
       end do
 
-      deallocate (g, dens_t, dims, offs, pair_i, pair_j)
+      deallocate (g, dens_t, dims, offs, pair_i, pair_j, env_nosym)
    end subroutine build_fock_direct_nosym
 
    subroutine build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, stats, error, &

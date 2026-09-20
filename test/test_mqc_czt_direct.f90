@@ -59,6 +59,16 @@ module test_mqc_czt_direct
    real(dp), parameter :: OMEGA_OFF = 1.0e-6_dp
    real(dp), parameter :: OMEGA_FULL = 5.0e2_dp
 
+   !! CAM-B3LYP's own numbers, because they are the ones a response operator
+   !! will actually pass: `alpha + beta = 0.19` on the full-range exchange and
+   !! `-beta = 0.46` on the attenuated pass at `omega = 0.33`. Nothing here
+   !! depends on the functional; they are a triple of coefficients no two of
+   !! which are equal, so a routine that confused `k_scale` with `j_scale` or
+   !! dropped one of them cannot pass by coincidence.
+   real(dp), parameter :: CAM_K_FULL = 0.19_dp
+   real(dp), parameter :: CAM_K_LR = 0.46_dp
+   real(dp), parameter :: CAM_OMEGA = 0.33_dp
+
 contains
 
    subroutine collect_mqc_czt_direct_tests(testsuite)
@@ -88,7 +98,11 @@ contains
                   new_unittest("the_fast_build_is_wrong_on_an_antisymmetric_density", &
                                test_fast_build_is_unsafe), &
                   new_unittest("an_omega_pass_is_actually_attenuated", &
-                               test_attenuation_is_real) &
+                               test_attenuation_is_real), &
+                  new_unittest("nosym_takes_the_same_scales_as_the_fast_build", &
+                               test_nosym_scales), &
+                  new_unittest("nosym_scales_exchange_on_an_antisymmetric_density", &
+                               test_nosym_antisymmetric_scaled) &
                   ]
    end subroutine collect_mqc_czt_direct_tests
 
@@ -849,6 +863,137 @@ contains
                     "build_fock_direct_many at large omega does not recover full-range exchange")
       call mol%destroy()
    end subroutine test_attenuation_is_real
+
+   subroutine test_nosym_scales(error)
+      !! `k_scale`, `j_scale` and `omega` mean on the general build what they
+      !! mean on the fast one
+      !!
+      !! A symmetric density is the only place the two builds can be compared,
+      !! and it is enough: the coefficients multiply the same six contributions
+      !! either way, so agreeing here pins them for any density. Both the
+      !! full-range hybrid pass and the attenuated exchange-only one, since
+      !! those are the two a range-separated response operator makes.
+      !!
+      !! The attenuated result is also required to *differ* from the
+      !! unattenuated one. `omega` reaches libcint through a slot in `env`, so a
+      !! build that forgot to copy the environment returns full-range integrals
+      !! scaled by the long-range coefficient, silently, and would match the
+      !! fast build's coefficients while answering the wrong operator.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :)
+      real(dp), allocatable :: dens(:, :, :)
+      real(dp), allocatable :: fast(:, :, :), general(:, :, :)
+      real(dp), allocatable :: fast_lr(:, :, :), general_lr(:, :, :)
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      allocate (dens(mol%nao, mol%nao, 1))
+      dens(:, :, 1) = sym
+
+      call build_fock_direct_many(mol, zero_h, dens, bounds, fast, stats, err, &
+                                  screen_tol=NO_SCREENING, k_scale=CAM_K_FULL)
+      if (.not. err%has_error()) &
+         call build_fock_direct_nosym(mol, zero_h, dens, bounds, general, stats, err, &
+                                      screen_tol=NO_SCREENING, k_scale=CAM_K_FULL)
+      if (.not. err%has_error()) &
+         call build_fock_direct_many(mol, zero_h, dens, bounds, fast_lr, stats, err, &
+                                     screen_tol=NO_SCREENING, k_scale=CAM_K_LR, &
+                                     j_scale=0.0_dp, omega=CAM_OMEGA)
+      if (.not. err%has_error()) &
+         call build_fock_direct_nosym(mol, zero_h, dens, bounds, general_lr, stats, err, &
+                                      screen_tol=NO_SCREENING, k_scale=CAM_K_LR, &
+                                      j_scale=0.0_dp, omega=CAM_OMEGA)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "a build failed: "//err%get_message())
+         return
+      end if
+
+      call check(error, maxval(abs(general(:, :, 1) - fast(:, :, 1))) < 1.0e-11_dp, &
+                 "the general build does not scale exact exchange the way the fast "// &
+                 "build does")
+      if (allocated(error)) return
+      call check(error, maxval(abs(general_lr(:, :, 1) - fast_lr(:, :, 1))) < 1.0e-11_dp, &
+                 "the general build disagrees with the fast one on an attenuated "// &
+                 "exchange-only pass")
+      if (allocated(error)) return
+      ! The long-range pass is a fraction of the full-range one at this omega,
+      ! so the two are nowhere near each other even after the coefficients.
+      call check(error, maxval(abs(general_lr(:, :, 1) - (CAM_K_LR/CAM_K_FULL) &
+                                   *general(:, :, 1))) > 1.0e-3_dp, &
+                 "an omega pass through build_fock_direct_nosym is not attenuated")
+   end subroutine test_nosym_scales
+
+   subroutine test_nosym_antisymmetric_scaled(error)
+      !! A scaled `A - B` pass: no Coulomb, and exchange at the coefficient asked
+      !!
+      !! The reference is written out here rather than taken from `build_fock`,
+      !! because what is under test is the *coefficients* and `build_fock`
+      !! applies its own. `J` is formed too, and required to vanish, which is
+      !! what says the Coulomb term dropped out of its own accord rather than
+      !! because `j_scale` was zero -- it is left at its default of one here on
+      !! purpose.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: K_SCALE = 0.37_dp
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :)
+      real(dp), allocatable :: dens(:, :, :), general(:, :, :)
+      real(dp), allocatable :: j_ref(:, :), k_ref(:, :)
+      integer :: n, a, b, c, d
+
+      ! STO-3G, so the explicit n^4 reference below is seven functions rather
+      ! than thirteen and the loop is a test and not a benchmark.
+      call setup(mol, eri, bounds, zero_h, sym, anti, err, basis="sto-3g")
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      n = mol%nao
+      allocate (dens(n, n, 1), j_ref(n, n), k_ref(n, n))
+      dens(:, :, 1) = anti
+      j_ref = 0.0_dp
+      k_ref = 0.0_dp
+      do d = 1, n
+         do c = 1, n
+            do b = 1, n
+               do a = 1, n
+                  j_ref(a, b) = j_ref(a, b) + eri(a, b, c, d)*anti(c, d)
+                  k_ref(a, c) = k_ref(a, c) + eri(a, b, c, d)*anti(b, d)
+               end do
+            end do
+         end do
+      end do
+
+      call build_fock_direct_nosym(mol, zero_h, dens, bounds, general, stats, err, &
+                                   screen_tol=NO_SCREENING, k_scale=K_SCALE)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the general build failed: "//err%get_message())
+         return
+      end if
+
+      call check(error, maxval(abs(j_ref)) < 1.0e-12_dp, &
+                 "the Coulomb contraction of an antisymmetric density is not zero, "// &
+                 "so this test cannot say what the general build left out")
+      if (allocated(error)) return
+      call check(error, maxval(abs(general(:, :, 1) + 0.5_dp*K_SCALE*k_ref)) < 1.0e-11_dp, &
+                 "the general build does not reproduce a scaled exchange contraction "// &
+                 "on an antisymmetric density")
+   end subroutine test_nosym_antisymmetric_scaled
 
 end module test_mqc_czt_direct
 
