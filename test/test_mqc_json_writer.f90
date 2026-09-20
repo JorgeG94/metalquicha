@@ -373,10 +373,14 @@ contains
       data%total_energy = -76.026767997_dp
       data%has_energy = .true.
       data%excitation_energies = [0.3386923781_dp, 0.3047529969_dp]
+      data%excited_total_energies = [-75.6880756189_dp, -75.7220150001_dp]
       data%oscillator_strengths = [0.02847955_dp, 0.0_dp]
       data%oscillator_strengths_velocity = [0.12950160_dp, 0.0_dp]
       data%transition_dipoles = reshape([0.3551480624_dp, 0.0_dp, 0.0_dp, &
                                          0.0_dp, 0.0_dp, 0.0_dp], [3, 2])
+      data%transition_velocities = reshape([0.2159163096_dp, 0.0_dp, 0.0_dp, &
+                                            0.0_dp, 0.0_dp, 0.0_dp], [3, 2])
+      data%transition_dipole_origin = [0.0_dp, 0.0_dp, 0.1257326_dp]
       data%nto_leading_weight = [0.9997741843_dp, 0.9812_dp]
       data%state_spin = [STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET]
       data%excited_method = "tda"
@@ -426,6 +430,17 @@ contains
                  "the eV column is not the Hartree one converted")
       if (allocated(error)) return
 
+      ! The state's own total energy, which is what a spectrum is plotted
+      ! against the ground state with. It is carried rather than derived:
+      ! the reference it sits on is not always the one printed beside it.
+      call json%get("jw_excited.excited_states.states(1).total_energy_hartree", &
+                    value, found)
+      call check(error, found, "total_energy_hartree is missing")
+      if (allocated(error)) return
+      call check(error, abs(value + 75.6880756189_dp) < 1.0e-12_dp, &
+                 "the excited-state total energy came back changed")
+      if (allocated(error)) return
+
       call json%get("jw_excited.excited_states.states(1).spin", text, found)
       call check(error, found, "the state spin label is missing")
       if (allocated(error)) return
@@ -454,6 +469,26 @@ contains
       if (allocated(error)) return
       call check(error, abs(value - 0.3551480624_dp) < 1.0e-12_dp, &
                  "the transition dipole x component came back changed")
+      if (allocated(error)) return
+
+      ! The velocity-gauge moment, beside its length-gauge partner. The two
+      ! gauges are the diagnostic the module reports both for, and a document
+      ! carrying only one of them cannot show the gap.
+      call json%get("jw_excited.excited_states.states(1).transition_velocity(1)", &
+                    value, found)
+      call check(error, found, "the velocity-gauge transition moment is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.2159163096_dp) < 1.0e-12_dp, &
+                 "the velocity-gauge moment x component came back changed")
+      if (allocated(error)) return
+
+      ! One origin for the whole spectrum, on the section rather than per
+      ! state: it says which convention the dipoles were measured in.
+      call json%get("jw_excited.excited_states.dipole_origin_bohr(3)", value, found)
+      call check(error, found, "the transition dipole origin is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.1257326_dp) < 1.0e-12_dp, &
+                 "the transition dipole origin came back changed")
       if (allocated(error)) return
 
       call json%get("jw_excited.excited_states.states(1).nto_leading_weight", &

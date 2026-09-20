@@ -167,11 +167,19 @@ module mqc_result_types
       logical :: has_fukui = .false.
 
       ! Linear-response excited states, when `keywords.excited_states` asked
-      ! for any. All four arrays run over the same states in the same order,
-      ! lowest excitation first, and are allocated together or not at all.
+      ! for any. Every per-state array below runs over the same states in the
+      ! same order, lowest excitation first. The energies and spins arrive
+      ! with the spectrum; the moments arrive with the properties, which are
+      ! computed after it and can fail on their own, so a spectrum without
+      ! them is a state this type has to be able to hold.
       real(dp), allocatable :: excitation_energies(:)
          !! (n_states) vertical excitation energies in Hartree, above the
          !! reference total energy rather than absolute.
+      real(dp), allocatable :: excited_total_energies(:)
+         !! (n_states) each excited state's own total energy, `E_SCF + w`, in
+         !! Hartree. Carried rather than left to the consumer because the
+         !! reference energy a fragment's spectrum sits on is that fragment's,
+         !! not the one printed beside it.
       real(dp), allocatable :: oscillator_strengths(:)
          !! (n_states) dimensionless length-gauge oscillator strengths. Exactly
          !! zero for a triplet, which is a real value and not a missing one.
@@ -182,6 +190,16 @@ module mqc_result_types
       real(dp), allocatable :: transition_dipoles(:, :)
          !! (3, n_states) transition dipole moments in atomic units, with the
          !! origin at the nuclear charge centroid.
+      real(dp), allocatable :: transition_velocities(:, :)
+         !! (3, n_states) the same transitions in the velocity gauge, atomic
+         !! units: the imaginary part of `<0|p|n>`. The length-gauge partner
+         !! of a row is the one directly above it, and comparing the two is
+         !! what the second gauge is reported for.
+      real(dp), allocatable :: transition_dipole_origin(:)
+         !! (3) where the length-gauge dipoles were measured from, in Bohr.
+         !! One origin for the whole spectrum. A transition dipole is origin
+         !! independent for a neutral transition density, so this says which
+         !! convention was used rather than changing the numbers.
       real(dp), allocatable :: nto_leading_weight(:)
          !! (n_states) the largest natural transition orbital weight, between
          !! zero and one. One says the root is exactly one orbital pair.
@@ -388,11 +406,20 @@ contains
       if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
       if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
       if (allocated(this%excitation_energies)) deallocate (this%excitation_energies)
+      if (allocated(this%excited_total_energies)) then
+         deallocate (this%excited_total_energies)
+      end if
       if (allocated(this%oscillator_strengths)) deallocate (this%oscillator_strengths)
       if (allocated(this%oscillator_strengths_velocity)) then
          deallocate (this%oscillator_strengths_velocity)
       end if
       if (allocated(this%transition_dipoles)) deallocate (this%transition_dipoles)
+      if (allocated(this%transition_velocities)) then
+         deallocate (this%transition_velocities)
+      end if
+      if (allocated(this%transition_dipole_origin)) then
+         deallocate (this%transition_dipole_origin)
+      end if
       if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
       call this%reset()
@@ -593,15 +620,18 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
-      ! Excited states, all four arrays under one flag: the solver fills them
-      ! together, so a receiver that got the energies without the spins could
-      ! not label a single root.
+      ! Excited states, every array under one flag: the solver and the
+      ! properties fill them together, so a receiver that got the energies
+      ! without the spins could not label a single root.
       call send(comm, result%has_excited_states, dest, tag)
       if (result%has_excited_states) then
          call send(comm, result%excitation_energies, dest, tag)
+         call send(comm, result%excited_total_energies, dest, tag)
          call send(comm, result%oscillator_strengths, dest, tag)
          call send(comm, result%oscillator_strengths_velocity, dest, tag)
          call send(comm, result%transition_dipoles, dest, tag)
+         call send(comm, result%transition_velocities, dest, tag)
+         call send(comm, result%transition_dipole_origin, dest, tag)
          call send(comm, result%nto_leading_weight, dest, tag)
          call send(comm, result%state_spin, dest, tag)
       end if
@@ -663,15 +693,18 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
-      ! Excited states, all four arrays under one flag: the solver fills them
-      ! together, so a receiver that got the energies without the spins could
-      ! not label a single root.
+      ! Excited states, every array under one flag: the solver and the
+      ! properties fill them together, so a receiver that got the energies
+      ! without the spins could not label a single root.
       call send(comm, result%has_excited_states, dest, tag)
       if (result%has_excited_states) then
          call send(comm, result%excitation_energies, dest, tag)
+         call send(comm, result%excited_total_energies, dest, tag)
          call send(comm, result%oscillator_strengths, dest, tag)
          call send(comm, result%oscillator_strengths_velocity, dest, tag)
          call send(comm, result%transition_dipoles, dest, tag)
+         call send(comm, result%transition_velocities, dest, tag)
+         call send(comm, result%transition_dipole_origin, dest, tag)
          call send(comm, result%nto_leading_weight, dest, tag)
          call send(comm, result%state_spin, dest, tag)
       end if
@@ -737,13 +770,16 @@ contains
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
 
-      ! Receive excited states, all four arrays under one flag
+      ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
       if (result%has_excited_states) then
          call recv(comm, result%excitation_energies, source, tag, status)
+         call recv(comm, result%excited_total_energies, source, tag, status)
          call recv(comm, result%oscillator_strengths, source, tag, status)
          call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
          call recv(comm, result%transition_dipoles, source, tag, status)
+         call recv(comm, result%transition_velocities, source, tag, status)
+         call recv(comm, result%transition_dipole_origin, source, tag, status)
          call recv(comm, result%nto_leading_weight, source, tag, status)
          call recv(comm, result%state_spin, source, tag, status)
       end if
@@ -815,13 +851,16 @@ contains
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
 
-      ! Receive excited states, all four arrays under one flag
+      ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
       if (result%has_excited_states) then
          call recv(comm, result%excitation_energies, source, tag, status)
+         call recv(comm, result%excited_total_energies, source, tag, status)
          call recv(comm, result%oscillator_strengths, source, tag, status)
          call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
          call recv(comm, result%transition_dipoles, source, tag, status)
+         call recv(comm, result%transition_velocities, source, tag, status)
+         call recv(comm, result%transition_dipole_origin, source, tag, status)
          call recv(comm, result%nto_leading_weight, source, tag, status)
          call recv(comm, result%state_spin, source, tag, status)
       end if

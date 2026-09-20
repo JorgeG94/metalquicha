@@ -230,6 +230,10 @@ contains
                         ! an RPA one has no way to notice.
                         if (result%has_excited_states) then
                            json_data%excitation_energies = result%excitation_energies
+                           if (allocated(result%excited_total_energies)) then
+                              json_data%excited_total_energies = &
+                                 result%excited_total_energies
+                           end if
                            if (allocated(result%oscillator_strengths)) then
                               json_data%oscillator_strengths = result%oscillator_strengths
                            end if
@@ -239,6 +243,14 @@ contains
                            end if
                            if (allocated(result%transition_dipoles)) then
                               json_data%transition_dipoles = result%transition_dipoles
+                           end if
+                           if (allocated(result%transition_velocities)) then
+                              json_data%transition_velocities = &
+                                 result%transition_velocities
+                           end if
+                           if (allocated(result%transition_dipole_origin)) then
+                              json_data%transition_dipole_origin = &
+                                 result%transition_dipole_origin
                            end if
                            if (allocated(result%nto_leading_weight)) then
                               json_data%nto_leading_weight = result%nto_leading_weight
@@ -417,6 +429,9 @@ contains
             ! has no way to notice.
             if (result%has_excited_states) then
                json_data%excitation_energies = result%excitation_energies
+               if (allocated(result%excited_total_energies)) then
+                  json_data%excited_total_energies = result%excited_total_energies
+               end if
                if (allocated(result%oscillator_strengths)) then
                   json_data%oscillator_strengths = result%oscillator_strengths
                end if
@@ -426,6 +441,12 @@ contains
                end if
                if (allocated(result%transition_dipoles)) then
                   json_data%transition_dipoles = result%transition_dipoles
+               end if
+               if (allocated(result%transition_velocities)) then
+                  json_data%transition_velocities = result%transition_velocities
+               end if
+               if (allocated(result%transition_dipole_origin)) then
+                  json_data%transition_dipole_origin = result%transition_dipole_origin
                end if
                if (allocated(result%nto_leading_weight)) then
                   json_data%nto_leading_weight = result%nto_leading_weight

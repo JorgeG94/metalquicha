@@ -105,6 +105,7 @@ module mqc_czt_tddft_properties
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_multipole, only: multipole_matrices, DIPOLE_COMPONENTS
    use mqc_czt_gradient, only: one_electron_deriv, DERIV_OVLP
+   use mqc_czt_tddft, only: excitation_spectrum_t
    use mqc_result_types, only: STATE_SPIN_TRIPLET
    implicit none
    private
@@ -114,6 +115,7 @@ module mqc_czt_tddft_properties
    public :: natural_transition_orbitals
    public :: nuclear_charge_centroid
    public :: log_property_table
+   public :: leading_weight
 
    real(dp), parameter :: SPIN_SUM = 2.0_dp
       !! The closed-shell spin sum in every transition moment.
@@ -289,10 +291,14 @@ contains
       real(dp), intent(in) :: c_vir(:, :)      !! (n_ao, n_vir)
       real(dp), allocatable, intent(out) :: weights(:)
          !! (min(n_occ, n_vir)) squared singular values, descending, sum one
-      real(dp), allocatable, intent(out) :: nto_occ(:, :)
-         !! (n_ao, n_pairs) the occupied natural transition orbitals
-      real(dp), allocatable, intent(out) :: nto_vir(:, :)
-         !! (n_ao, n_pairs) their virtual partners, pair by pair
+      real(dp), allocatable, intent(out), optional :: nto_occ(:, :)
+         !! (n_ao, n_pairs) the occupied natural transition orbitals. Absent
+         !! skips the transformation out of the MO basis, which is two
+         !! `n_ao x n_pairs` GEMMs a caller that wants only the weights would
+         !! pay per state and then discard.
+      real(dp), allocatable, intent(out), optional :: nto_vir(:, :)
+         !! (n_ao, n_pairs) their virtual partners, pair by pair. Present or
+         !! absent with `nto_occ`: half a pair is not an answer.
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: total_norm
          !! What to divide the amplitude by, instead of its own norm.
@@ -312,6 +318,12 @@ contains
       n_occ = size(c_occ, 2)
       n_vir = size(c_vir, 2)
       n_pairs = min(n_occ, n_vir)
+
+      if (present(nto_occ) .neqv. present(nto_vir)) then
+         call error%set(ERROR_VALIDATION, "the natural transition orbitals come "// &
+                        "in pairs, so both halves are asked for or neither is")
+         return
+      end if
 
       if (size(amplitude) /= n_occ*n_vir) then
          call error%set(ERROR_VALIDATION, "the amplitude handed to the natural "// &
@@ -355,10 +367,13 @@ contains
       call fix_column_phases(u)
       call fix_column_phases(v)
 
-      allocate (weights(n_pairs), nto_occ(n_ao, n_pairs), nto_vir(n_ao, n_pairs))
+      allocate (weights(n_pairs))
       weights = sigma*sigma
-      call pic_gemm(c_occ, u, nto_occ)
-      call pic_gemm(c_vir, v, nto_vir)
+      if (present(nto_occ)) then
+         allocate (nto_occ(n_ao, n_pairs), nto_vir(n_ao, n_pairs))
+         call pic_gemm(c_occ, u, nto_occ)
+         call pic_gemm(c_vir, v, nto_vir)
+      end if
       deallocate (u, v, sigma)
    end subroutine natural_transition_orbitals
 
@@ -374,9 +389,8 @@ contains
       end do
    end subroutine fix_column_phases
 
-   subroutine excited_properties(mol, orbitals, n_occ, excitations, state_spin, &
-                                 x_amplitudes, y_amplitudes, scf_energy, props, error, &
-                                 orbitals_beta, n_occ_beta)
+   subroutine excited_properties(mol, orbitals, n_occ, spectrum, scf_energy, &
+                                 props, error, orbitals_beta, n_occ_beta)
       !! Every transition property of a converged spectrum
       !!
       !! One pass over the dipole integrals and one over `int1e_ipovlp`,
@@ -388,6 +402,10 @@ contains
       !! no contraction is performed for it. Its natural transition orbitals
       !! are computed like any other root's.
       !!
+      !! The spectrum arrives as one object rather than as its four arrays,
+      !! so that energies and amplitudes cannot come from different solves;
+      !! what is left beside it is the reference they were computed over.
+      !!
       !! **Restricted or unrestricted is decided by `orbitals_beta`.** With it
       !! the amplitudes are read as the alpha block followed by the beta one,
       !! each set of integrals is transformed into its own orbitals, the two
@@ -398,13 +416,11 @@ contains
       type(czt_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo) alpha, or the closed shell
       integer, intent(in) :: n_occ
-      real(dp), intent(in) :: excitations(:)      !! (n_states) Hartree
-      integer, intent(in) :: state_spin(:)        !! (n_states) `STATE_SPIN_*`
-      real(dp), intent(in) :: x_amplitudes(:, :)
-         !! (n_ov, n_states), virtual fastest. Restricted `n_ov` is
-         !! `n_occ*n_vir`; unrestricted it is the alpha block's plus the beta
-         !! block's, in that order.
-      real(dp), intent(in) :: y_amplitudes(:, :)  !! The same shape
+      type(excitation_spectrum_t), intent(in) :: spectrum
+         !! Energies, spins and both amplitude sets of the converged roots.
+         !! The amplitudes are `(n_ov, n_states)`, virtual fastest. Restricted
+         !! `n_ov` is `n_occ*n_vir`; unrestricted it is the alpha block's plus
+         !! the beta block's, in that order.
       real(dp), intent(in) :: scf_energy
          !! The reference total energy the excitations sit above, Hartree.
       type(excited_properties_t), intent(out) :: props
@@ -425,7 +441,7 @@ contains
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
       real(dp), allocatable :: c_occ_b(:, :), c_vir_b(:, :)
       real(dp), allocatable :: sum_amplitude(:), diff_amplitude(:)
-      real(dp), allocatable :: weights(:), nto_occ(:, :), nto_vir(:, :)
+      real(dp), allocatable :: weights(:)
       real(dp) :: spin_factor, norm
       integer :: n_mo, n_vir, n_ov, n_states, n_pairs, k
       integer :: n_mo_b, n_vir_b, n_ov_b, n_pairs_b, n_rows, n_occ_b_local
@@ -434,10 +450,20 @@ contains
       if (error%has_error()) return
 
       unrestricted = present(orbitals_beta)
+      if (.not. allocated(spectrum%excitations) .or. &
+          .not. allocated(spectrum%state_spin) .or. &
+          .not. allocated(spectrum%x_amplitudes) .or. &
+          .not. allocated(spectrum%y_amplitudes)) then
+         call error%set(ERROR_VALIDATION, "the spectrum handed to the transition "// &
+                        "properties is not filled: a solve that returned without "// &
+                        "an error allocates all four of its arrays")
+         return
+      end if
+
       n_mo = size(orbitals, 2)
       n_vir = n_mo - n_occ
       n_ov = n_occ*n_vir
-      n_states = size(excitations)
+      n_states = size(spectrum%excitations)
       n_pairs = min(n_occ, n_vir)
       n_ov_b = 0
       n_pairs_b = 0
@@ -482,13 +508,15 @@ contains
       end if
       n_rows = n_ov + n_ov_b
 
-      if (size(x_amplitudes, 1) /= n_rows .or. size(y_amplitudes, 1) /= n_rows) then
+      if (size(spectrum%x_amplitudes, 1) /= n_rows .or. &
+          size(spectrum%y_amplitudes, 1) /= n_rows) then
          call error%set(ERROR_VALIDATION, "the amplitudes handed to the transition "// &
                         "properties are not the length of the occupied-virtual space")
          return
       end if
-      if (size(x_amplitudes, 2) < n_states .or. size(y_amplitudes, 2) < n_states &
-          .or. size(state_spin) < n_states) then
+      if (size(spectrum%x_amplitudes, 2) < n_states .or. &
+          size(spectrum%y_amplitudes, 2) < n_states .or. &
+          size(spectrum%state_spin) < n_states) then
          call error%set(ERROR_VALIDATION, "there are fewer amplitude columns or spin "// &
                         "labels than there are excitation energies")
          return
@@ -503,7 +531,7 @@ contains
       props%f_length = 0.0_dp
       props%f_velocity = 0.0_dp
       props%nto_weights = 0.0_dp
-      props%total_energy = scf_energy + excitations
+      props%total_energy = scf_energy + spectrum%excitations
       if (n_states < 1) return
 
       c_occ = orbitals(:, 1:n_occ)
@@ -531,9 +559,9 @@ contains
 
       allocate (sum_amplitude(n_rows), diff_amplitude(n_rows))
       do k = 1, n_states
-         if (state_spin(k) /= STATE_SPIN_TRIPLET) then
-            sum_amplitude = x_amplitudes(:, k) + y_amplitudes(:, k)
-            diff_amplitude = x_amplitudes(:, k) - y_amplitudes(:, k)
+         if (spectrum%state_spin(k) /= STATE_SPIN_TRIPLET) then
+            sum_amplitude = spectrum%x_amplitudes(:, k) + spectrum%y_amplitudes(:, k)
+            diff_amplitude = spectrum%x_amplitudes(:, k) - spectrum%y_amplitudes(:, k)
             props%transition_dipole(:, k) = &
                moment_of(dipole_mo, sum_amplitude(1:n_ov), n_occ, n_vir, spin_factor)
             ! The negation is libcint's gradient sitting on the bra; see the
@@ -548,37 +576,42 @@ contains
                                              moment_of(nabla_mo_b, diff_amplitude(n_ov + 1:n_rows), &
                                                        n_occ_b_local, n_vir_b, spin_factor)
             end if
-            props%f_length(k) = OSCILLATOR_PREFACTOR*excitations(k)* &
+            props%f_length(k) = OSCILLATOR_PREFACTOR*spectrum%excitations(k)* &
                                 sum(props%transition_dipole(:, k)**2)
-            if (excitations(k) > 0.0_dp) then
+            if (spectrum%excitations(k) > 0.0_dp) then
                props%f_velocity(k) = OSCILLATOR_PREFACTOR* &
-                                     sum(props%velocity_moment(:, k)**2)/excitations(k)
+                                     sum(props%velocity_moment(:, k)**2)/ &
+                                     spectrum%excitations(k)
             end if
          end if
 
+         ! The orbitals themselves are not asked for, on either spin:
+         ! nothing downstream reads them, and forming them is two GEMMs per
+         ! state that would be thrown away at the bottom of this loop.
          if (unrestricted) then
             ! One norm for both blocks, so the two weight lists sum to one
             ! between them rather than to one each.
-            norm = sqrt(dot_product(x_amplitudes(:, k), x_amplitudes(:, k)))
-            call natural_transition_orbitals(x_amplitudes(1:n_ov, k), c_occ, c_vir, &
-                                             weights, nto_occ, nto_vir, error, &
+            norm = sqrt(dot_product(spectrum%x_amplitudes(:, k), &
+                                    spectrum%x_amplitudes(:, k)))
+            call natural_transition_orbitals(spectrum%x_amplitudes(1:n_ov, k), &
+                                             c_occ, c_vir, weights, error=error, &
                                              total_norm=norm)
             if (error%has_error()) return
             props%nto_weights(1:n_pairs, k) = weights
-            deallocate (weights, nto_occ, nto_vir)
-            call natural_transition_orbitals(x_amplitudes(n_ov + 1:n_rows, k), &
-                                             c_occ_b, c_vir_b, weights, nto_occ, &
-                                             nto_vir, error, total_norm=norm)
+            deallocate (weights)
+            call natural_transition_orbitals(spectrum%x_amplitudes(n_ov + 1:n_rows, k), &
+                                             c_occ_b, c_vir_b, weights, error=error, &
+                                             total_norm=norm)
             if (error%has_error()) return
             props%nto_weights(n_pairs + 1:n_pairs + n_pairs_b, k) = weights
-            deallocate (weights, nto_occ, nto_vir)
+            deallocate (weights)
             call merge_descending(props%nto_weights(:, k), n_pairs)
          else
-            call natural_transition_orbitals(x_amplitudes(:, k), c_occ, c_vir, &
-                                             weights, nto_occ, nto_vir, error)
+            call natural_transition_orbitals(spectrum%x_amplitudes(:, k), c_occ, c_vir, &
+                                             weights, error=error)
             if (error%has_error()) return
             props%nto_weights(:, k) = weights
-            deallocate (weights, nto_occ, nto_vir)
+            deallocate (weights)
          end if
       end do
       deallocate (sum_amplitude, diff_amplitude, dipole_mo, nabla_mo, c_occ, c_vir)
@@ -632,6 +665,10 @@ contains
       !! weight is the last column because it is what says whether the
       !! dominant-amplitude list printed beside the energies is the whole
       !! story.
+      !!
+      !! The origin is printed rather than named, because a transition dipole
+      !! is origin independent only for a transition density of zero charge:
+      !! the number that would show a broken one is the one this line carries.
       type(excited_properties_t), intent(in) :: props
       real(dp), intent(in) :: excitations(:)
       integer, intent(in) :: state_spin(:)
@@ -641,13 +678,17 @@ contains
 
       if (size(excitations) < 1) return
       if (.not. allocated(props%f_length)) return
+      if (.not. allocated(props%total_energy)) return
 
-      call logger%info("  transition moments are in atomic units, about the "// &
-                       "nuclear charge centroid; a triplet's are exactly zero")
-      call logger%info("   state     f(length)  f(velocity)        mu_x        "// &
-                       "mu_y        mu_z    lead NTO")
+      write (line, "(a,3f12.6,a)") "  transition moments are in atomic units, "// &
+         "about the nuclear charge centroid at", props%origin, &
+         " bohr; a triplet's are exactly zero"
+      call logger%info(trim(line))
+      call logger%info("   state        E(total)     f(length)  f(velocity)        "// &
+                       "mu_x        mu_y        mu_z    lead NTO")
       do k = 1, size(excitations)
-         write (line, "(a,i4,2f13.6,3f12.6,f12.6)") "   ", k, props%f_length(k), &
+         write (line, "(a,i4,f16.8,2f13.6,3f12.6,f12.6)") "   ", k, &
+            props%total_energy(k), props%f_length(k), &
             props%f_velocity(k), props%transition_dipole(1, k), &
             props%transition_dipole(2, k), props%transition_dipole(3, k), &
             leading_weight(props, k)

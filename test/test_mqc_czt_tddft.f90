@@ -44,10 +44,11 @@ module test_mqc_czt_tddft
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
    use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix, &
                             rpa_operator_t, build_rpa_operator, rpa_dense_matrices, &
-                            response_excitations, tda_operator_uhf_t, &
-                            build_tda_operator_uhf, tda_dense_matrix_uhf, &
-                            rpa_operator_uhf_t, build_rpa_operator_uhf, &
-                            rpa_dense_matrices_uhf, response_excitations_uhf
+                            response_excitations, excitation_spectrum_t, &
+                            tda_operator_uhf_t, build_tda_operator_uhf, &
+                            tda_dense_matrix_uhf, rpa_operator_uhf_t, &
+                            build_rpa_operator_uhf, rpa_dense_matrices_uhf, &
+                            response_excitations_uhf
    use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
                                        natural_transition_orbitals, &
                                        nuclear_charge_centroid
@@ -2390,6 +2391,7 @@ contains
          !! than a second converged copy of it.
 
       real(dp), allocatable :: x(:, :), y(:, :)
+      type(excitation_spectrum_t) :: spectrum
 
       if (err%has_error()) return
 
@@ -2406,8 +2408,12 @@ contains
       end if
       if (err%has_error()) return
 
-      call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
-                              x, y, scf%energy, props, err)
+      spectrum%excitations = omega
+      spectrum%state_spin = spins
+      spectrum%x_amplitudes = x
+      spectrum%y_amplitudes = y
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, spectrum, &
+                              scf%energy, props, err)
       if (present(amplitudes)) amplitudes = x
    end subroutine solve_with_properties
 
@@ -2429,7 +2435,7 @@ contains
       type(error_t) :: err
       real(dp), allocatable :: omega(:)
       integer, allocatable :: spins(:)
-      real(dp) :: centroid(3), product
+      real(dp) :: centroid(3), mu_dot_v
       integer :: k, comp
 
       call water_reference("cc-pvdz", "", mol, scf, ctx, err)
@@ -2469,9 +2475,9 @@ contains
             if (allocated(error)) return
          end do
 
-         product = dot_product(props%transition_dipole(:, k), &
-                               props%velocity_moment(:, k))
-         call check(error, abs(product - RHF_TDA_MU_DOT_V(k)) < TOL_DIPOLE, &
+         mu_dot_v = dot_product(props%transition_dipole(:, k), &
+                                props%velocity_moment(:, k))
+         call check(error, abs(mu_dot_v - RHF_TDA_MU_DOT_V(k)) < TOL_DIPOLE, &
                     "mu . v disagrees with PySCF in sign or magnitude, which is "// &
                     "the velocity gauge carrying the wrong sign")
          if (allocated(error)) return
@@ -2845,6 +2851,7 @@ contains
       type(rhf_result_t) :: scf
       type(xc_context_t), target :: ctx
       type(excited_properties_t) :: iterative, dense
+      type(excitation_spectrum_t) :: dense_spectrum
       type(error_t) :: err
       real(dp), allocatable :: aplus(:, :), aminus(:, :), values(:)
       real(dp), allocatable :: x(:, :), y(:, :), omega(:)
@@ -2869,8 +2876,12 @@ contains
 
       allocate (all_singlet(size(values)))
       all_singlet = STATE_SPIN_SINGLET
-      call excited_properties(mol, scf%orbitals, scf%n_occupied, values, all_singlet, &
-                              x, y, scf%energy, dense, err)
+      dense_spectrum%excitations = values
+      dense_spectrum%state_spin = all_singlet
+      dense_spectrum%x_amplitudes = x
+      dense_spectrum%y_amplitudes = y
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, dense_spectrum, &
+                              scf%energy, dense, err)
 
       ! Every root of the space, iteratively. Ten of ten, so nothing is left
       ! out of the sum on this side either.
@@ -2928,8 +2939,25 @@ contains
       call check(error, allocated(result%oscillator_strengths) .and. &
                  allocated(result%oscillator_strengths_velocity) .and. &
                  allocated(result%transition_dipoles) .and. &
+                 allocated(result%transition_velocities) .and. &
+                 allocated(result%excited_total_energies) .and. &
+                 allocated(result%transition_dipole_origin) .and. &
                  allocated(result%nto_leading_weight), "a run with excited states "// &
                  "did not report their transition properties")
+      if (allocated(error)) return
+
+      ! The origin the dipoles were measured from, which is the one thing here
+      ! that is not per state. Against the charge centroid of this geometry
+      ! worked out here rather than against a pinned vector: what the check
+      ! is for is that the bridge carried the origin it actually used, and a
+      ! zero vector would otherwise pass on a molecule sitting near one.
+      call check(error, size(result%transition_dipole_origin) == 3, "the transition "// &
+                 "dipole origin off the bridge is not a three-vector")
+      if (allocated(error)) return
+      call check(error, maxval(abs(result%transition_dipole_origin - &
+                                   matmul(WATER_BOHR, [8.0_dp, 1.0_dp, 1.0_dp])/ &
+                                   10.0_dp)) < 1.0e-14_dp, "the transition dipole "// &
+                 "origin off the bridge is not this geometry's nuclear charge centroid")
       if (allocated(error)) return
 
       do k = 1, N_CCPVDZ_STATES
@@ -2944,6 +2972,19 @@ contains
          call check(error, maxval(abs(abs(result%transition_dipoles(:, k)) - &
                                       abs(RHF_TDA_DIPOLE(:, k)))) < TOL_DIPOLE, &
                     "a transition dipole off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         ! The velocity gauge as well as the length one: the two are the
+         ! diagnostic this module reports both for, and the length half
+         ! reaching the container while the velocity half did not is exactly
+         ! the asymmetry this case exists to refuse.
+         call check(error, maxval(abs(abs(result%transition_velocities(:, k)) - &
+                                      abs(RHF_TDA_VELOCITY(:, k)))) < TOL_DIPOLE, &
+                    "a velocity-gauge moment off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         call check(error, abs(result%excited_total_energies(k) - &
+                               (result%energy%scf + result%excitation_energies(k))) < &
+                    1.0e-12_dp, "an excited-state total energy off the bridge is "// &
+                    "not the reference plus the excitation")
          if (allocated(error)) return
       end do
 
@@ -3750,6 +3791,7 @@ contains
       type(xc_context_t) :: ctx
       type(error_t) :: err
       type(excited_properties_t) :: props_r, props_u, props_half
+      type(excitation_spectrum_t) :: one_spin, two_spin
       type(error_t) :: half_err
       real(dp), allocatable :: omega(:), x(:, :), y(:, :)
       real(dp), allocatable :: x_two(:, :), y_two(:, :)
@@ -3774,15 +3816,19 @@ contains
          return
       end if
 
-      call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
-                              x, y, scf%energy, props_r, err)
+      one_spin%excitations = omega
+      one_spin%state_spin = spins
+      one_spin%x_amplitudes = x
+      one_spin%y_amplitudes = y
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, one_spin, &
+                              scf%energy, props_r, err)
 
       ! The optional pair is refused half at a time in both directions. The
       ! direction checked here is the silent one: a beta occupation count with
       ! no beta orbitals looks restricted, and would be given the closed-shell
       ! factor of two over an unrestricted spectrum.
-      call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
-                              x, y, scf%energy, props_half, half_err, &
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, one_spin, &
+                              scf%energy, props_half, half_err, &
                               n_occ_beta=scf%n_occupied)
       call check(error, half_err%has_error(), &
                  "a beta occupation count with no beta orbitals was accepted, and "// &
@@ -3807,10 +3853,14 @@ contains
       ! unrestricted one has no name for -- and a row still marked a triplet
       ! would be short-circuited to zero on both sides and assert nothing.
       spins = STATE_SPIN_UNRESTRICTED
+      two_spin%excitations = omega
+      two_spin%state_spin = spins
+      two_spin%x_amplitudes = x_two
+      two_spin%y_amplitudes = y_two
 
       if (.not. err%has_error()) &
-         call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
-                                 x_two, y_two, scf%energy, props_u, err, &
+         call excited_properties(mol, scf%orbitals, scf%n_occupied, two_spin, &
+                                 scf%energy, props_u, err, &
                                  orbitals_beta=scf%orbitals, &
                                  n_occ_beta=scf%n_occupied)
       call mol%destroy()

@@ -481,7 +481,7 @@ contains
    subroutine write_excited_states_section(json, parent, data)
       !! The linear-response spectrum, one object per root
       !!
-      !! Per state rather than as four parallel arrays: a consumer picking the
+      !! Per state rather than as parallel arrays: a consumer picking the
       !! brightest state, or the lowest triplet, needs the energy, the spin and
       !! the strength of one root together, and parallel arrays make that a
       !! join the reader has to get right.
@@ -489,7 +489,14 @@ contains
       !! `oscillator_strength` is the length gauge and
       !! `oscillator_strength_velocity` the velocity one; the two agree only
       !! in a complete basis, and both are written because the gap between
-      !! them is a statement about the basis.
+      !! them is a statement about the basis. `transition_dipole` and
+      !! `transition_velocity` are the moments those came from, in atomic
+      !! units, the first measured from `dipole_origin_bohr` on the section.
+      !!
+      !! `total_energy_hartree` is the state's own total energy rather than
+      !! its excitation: a consumer plotting a state against the ground state
+      !! would otherwise have to find the reference energy elsewhere in the
+      !! document and add it, and for a fragment there is more than one.
       !!
       !! The excitation energy appears twice, in Hartree and in eV. Hartree is
       !! the internal unit and what a cross-code comparison uses; eV is what a
@@ -506,7 +513,7 @@ contains
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
 
-      type(json_value), pointer :: section, arr, entry, dip_arr
+      type(json_value), pointer :: section, arr, entry, dip_arr, origin_arr
       integer :: i, n_states, comp
 
       if (.not. data%has_excited_states) return
@@ -518,6 +525,13 @@ contains
       call json%add(section, "n_states", n_states)
       call json%add(section, "method", trim(data%excited_method))
       call json%add(section, "spin", trim(data%excited_spin))
+      if (allocated(data%transition_dipole_origin)) then
+         call json%create_array(origin_arr, "dipole_origin_bohr")
+         call json%add(section, origin_arr)
+         do comp = 1, size(data%transition_dipole_origin)
+            call json%add(origin_arr, "", data%transition_dipole_origin(comp))
+         end do
+      end if
 
       call json%create_array(arr, "states")
       call json%add(section, arr)
@@ -535,6 +549,11 @@ contains
          ! These arrays are filled together by the solver, but they reach this
          ! writer through the MPI reducers, and a short one would be read past
          ! its end rather than left out.
+         if (allocated(data%excited_total_energies) .and. &
+             size(data%excited_total_energies) >= n_states) then
+            call json%add(entry, "total_energy_hartree", &
+                          data%excited_total_energies(i))
+         end if
          if (allocated(data%oscillator_strengths) .and. &
              size(data%oscillator_strengths) >= n_states) then
             call json%add(entry, "oscillator_strength", data%oscillator_strengths(i))
@@ -550,6 +569,14 @@ contains
             call json%add(entry, dip_arr)
             do comp = 1, 3
                call json%add(dip_arr, "", data%transition_dipoles(comp, i))
+            end do
+         end if
+         if (allocated(data%transition_velocities) .and. &
+             size(data%transition_velocities, 2) >= n_states) then
+            call json%create_array(dip_arr, "transition_velocity")
+            call json%add(entry, dip_arr)
+            do comp = 1, 3
+               call json%add(dip_arr, "", data%transition_velocities(comp, i))
             end do
          end if
          if (allocated(data%nto_leading_weight) .and. &
