@@ -45,7 +45,7 @@ module mqc_czt_bridge
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                               nuclear_repulsion_hessian, response_hessian
-   use mqc_czt_tddft, only: tda_excitations
+   use mqc_czt_tddft, only: response_excitations
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
@@ -1178,15 +1178,13 @@ contains
                                      "this calculation: "//decline//". Refused rather "// &
                                      "than approximated -- a spectrum from the wrong "// &
                                      "operator converges and looks like a spectrum.")
-            else if (trim(settings%excited%method) /= "tda") then
+            else if (trim(settings%excited%method) /= "tda" .and. &
+                     trim(settings%excited%method) /= "rpa") then
                call result%error%set(ERROR_VALIDATION, "keywords.excited_states.method "// &
                                      "is '"//trim(settings%excited%method)//"', and "// &
-                                     "only 'tda' is implemented. The full RPA is "// &
-                                     "Layer 4 of the TDDFT plan: its paired "// &
-                                     "eigenproblem is a different solver, not a "// &
-                                     "different tolerance, and answering it with a "// &
-                                     "Tamm-Dancoff number would be a converged "// &
-                                     "spectrum of the wrong problem.")
+                                     "this backend has 'tda' and 'rpa'. Refused rather "// &
+                                     "than resolved to whichever is nearer: the two are "// &
+                                     "different eigenproblems and both converge.")
             end if
             if (result%error%has_error()) then
                result%has_error = .true.
@@ -1509,41 +1507,44 @@ contains
       ! exchange-correlation context is still alive -- the kernel is evaluated
       ! at this density on this grid, so there is nowhere later this could
       ! run. What this backend cannot do was refused before the SCF; what is
-      ! left is a Tamm-Dancoff solve, and a failure in it is reported
-      ! and propagated rather than dropped: a deck that asked for a spectrum
-      ! and got an energy has not been answered.
+      ! left is a singlet solve, Tamm-Dancoff or paired, and a failure in it
+      ! is reported and propagated rather than dropped: a deck that asked for
+      ! a spectrum and got an energy has not been answered.
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
-            real(dp), allocatable :: omega(:), x_amplitudes(:, :)
+            real(dp), allocatable :: omega(:), x_amplitudes(:, :), y_amplitudes(:, :)
             integer, allocatable :: omega_spin(:)
             type(error_t) :: td_error
-            ! `x_amplitudes` is taken and dropped. It is what Layer 5's
+            ! The amplitudes are taken and dropped. They are what Layer 5's
             ! transition dipoles and natural transition orbitals are built
-            ! from, and the solve produces it whether or not anything reads
-            ! it, so the argument is here rather than added later.
+            ! from, and the solve produces them whether or not anything reads
+            ! them, so the arguments are here rather than added later.
 
             if (kohn_sham) then
-               call tda_excitations(mol, scf%orbitals, scf%orbital_energies, &
-                                    scf%n_occupied, settings%excited%n_states, &
-                                    trim(settings%excited%spin), omega, omega_spin, &
-                                    x_amplitudes, td_error, xc=xc, &
-                                    reference=scf%density, &
-                                    tolerance=settings%excited%tolerance, &
-                                    max_iter=settings%excited%max_iter, &
-                                    max_subspace=settings%excited%max_subspace, &
-                                    batch=settings%excited%batch, &
-                                    verbose=settings%verbose)
+               call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, settings%excited%n_states, &
+                                         trim(settings%excited%method), &
+                                         trim(settings%excited%spin), omega, &
+                                         omega_spin, x_amplitudes, y_amplitudes, &
+                                         td_error, xc=xc, reference=scf%density, &
+                                         tolerance=settings%excited%tolerance, &
+                                         max_iter=settings%excited%max_iter, &
+                                         max_subspace=settings%excited%max_subspace, &
+                                         batch=settings%excited%batch, &
+                                         verbose=settings%verbose)
             else
-               call tda_excitations(mol, scf%orbitals, scf%orbital_energies, &
-                                    scf%n_occupied, settings%excited%n_states, &
-                                    trim(settings%excited%spin), omega, omega_spin, &
-                                    x_amplitudes, td_error, &
-                                    tolerance=settings%excited%tolerance, &
-                                    max_iter=settings%excited%max_iter, &
-                                    max_subspace=settings%excited%max_subspace, &
-                                    batch=settings%excited%batch, &
-                                    verbose=settings%verbose)
+               call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, settings%excited%n_states, &
+                                         trim(settings%excited%method), &
+                                         trim(settings%excited%spin), omega, &
+                                         omega_spin, x_amplitudes, y_amplitudes, &
+                                         td_error, &
+                                         tolerance=settings%excited%tolerance, &
+                                         max_iter=settings%excited%max_iter, &
+                                         max_subspace=settings%excited%max_subspace, &
+                                         batch=settings%excited%batch, &
+                                         verbose=settings%verbose)
             end if
             if (td_error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "the excited-state solve "// &
