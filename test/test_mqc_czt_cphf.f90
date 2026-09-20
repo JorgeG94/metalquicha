@@ -108,6 +108,8 @@ contains
                                test_static_dense), &
                   new_unittest("the_fitted_matrix_free_solve_equals_the_fitted_dense_one", &
                                test_dynamic_matrix_free_fitted), &
+                  new_unittest("the_fitted_route_refuses_a_kernel_it_cannot_apply", &
+                               test_fitted_kernel_refusal), &
                   new_unittest("the_dense_dynamic_solve_equals_the_matrix_free_one", &
                                test_dynamic_matrix_free), &
                   new_unittest("the_static_response_rides_with_the_dynamic_solve", &
@@ -988,6 +990,83 @@ contains
       call mol%destroy()
       call aux%destroy()
    end subroutine test_dynamic_matrix_free_fitted
+
+   subroutine test_fitted_kernel_refusal(error)
+      !! The fitted frequency-dependent route refuses a functional's kernel
+      !!
+      !! `apply_fitted_batch` contracts the three fitted molecular-orbital
+      !! blocks and nothing else; there is nowhere in it for a kernel to go.
+      !! Given both, the chunking used to forward `xc` and then call the fitted
+      !! application anyway, which answers the Hartree-Fock response of
+      !! Kohn-Sham orbitals and says nothing about it -- the silence this whole
+      !! route was rewritten to remove. `dynamic_polarizability` never asks for
+      !! the pair, but `dynamic_response_iterative` is public and can.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      type(fitted_response_t) :: fit
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
+      real(dp), allocatable :: eri(:, :, :, :), zero_h(:, :), bounds(:, :)
+      real(dp), allocatable :: alpha(:, :, :)
+      real(dp) :: c(3, 3)
+      integer :: n_ao, n_mo, n_occ, n_vir, a, i
+
+      if (.not. xc_available()) return
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz-rifit", aux, err)
+      if (.not. err%has_error()) call xc_context_create(mol, "b3lyp", ctx, err, level=1)
+      call check(error,.not. err%has_error(), "the auxiliary basis or the "// &
+                 "exchange-correlation context failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      allocate (zero_h(n_ao, n_ao), h(n_vir, n_occ, 1))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      zero_h = 0.0_dp
+      h = 1.0_dp
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+      ! Never read: the refusal comes before the first application.
+      allocate (eri(0, 0, 0, 0), bounds(0, 0))
+
+      call build_fitted_response(mol, aux, c_occ, c_vir, fit, err)
+      call check(error,.not. err%has_error(), "the fitted blocks failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         call aux%destroy()
+         return
+      end if
+
+      call dynamic_response_iterative(mol, .true., eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, h, [0.1_dp], alpha, err, tol=1.0e-8_dp, &
+                                      fit=fit, xc=ctx, reference=scf%density)
+      call mol%destroy()
+      call aux%destroy()
+      call check(error, err%has_error(), "the fitted route accepted an "// &
+                 "exchange-correlation kernel it cannot apply")
+   end subroutine test_fitted_kernel_refusal
 
    subroutine test_dynamic_matrix_free(error)
       !! The frequency-dependent response, built two ways that share no code
