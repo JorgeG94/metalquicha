@@ -558,8 +558,8 @@ contains
       deallocate (coul, exch)
    end subroutine response_mean_field_df
 
-   subroutine response_mean_field_uhf(mol, dens_a, dens_b, zero_h, g_a, g_b, error, &
-                                      minus, bounds, k_scale, xc, ref_a, ref_b, &
+   subroutine response_mean_field_uhf(mol, dens_a, dens_b, zero_h, bounds, g_a, g_b, &
+                                      error, minus, k_scale, xc, ref_a, ref_b, &
                                       rs_k_lr, rs_omega, cache, stats)
       !! `G_sigma(D')` for a batch of response density pairs, over one integral pass
       !!
@@ -590,12 +590,14 @@ contains
          !! `(n_ao, n_ao, n_set)` each, already symmetrised or antisymmetrised
       real(dp), intent(in) :: zero_h(:, :)
          !! Added to every set, so a zero matrix returns `G` alone
+      real(dp), intent(in) :: bounds(:, :)
+         !! From `schwarz_bounds`. Required, unlike the restricted twin's:
+         !! there is no stored-tensor branch here for an absent one to mean.
       real(dp), allocatable, intent(out) :: g_a(:, :, :), g_b(:, :, :)
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: minus
          !! The densities are antisymmetric and this is the `A - B` half.
          !! Off by default.
-      real(dp), intent(in), optional :: bounds(:, :)   !! From `schwarz_bounds`
       real(dp), intent(in), optional :: k_scale
          !! The exact-exchange fraction the reference kept. Absent, it is
          !! `xc%exx_fraction` when an `xc` context was given and one otherwise.
@@ -647,12 +649,6 @@ contains
                         "densities to evaluate its kernel at")
          return
       end if
-      if (.not. present(bounds)) then
-         call error%set(ERROR_VALIDATION, "the unrestricted response mean field is "// &
-                        "integral-direct and was called without the Schwarz bounds "// &
-                        "it screens on")
-         return
-      end if
 
       if (present(stats)) then
          stats%quartets_total = 0_int64
@@ -696,8 +692,8 @@ contains
    end subroutine response_mean_field_uhf
 
    subroutine response_product_uhf(mol, c_occ_a, c_vir_a, c_occ_b, c_vir_b, gaps_a, &
-                                   gaps_b, zero_h, u_a, u_b, minus, au_a, au_b, error, &
-                                   bounds, k_scale, xc, ref_a, ref_b, rs_k_lr, &
+                                   gaps_b, zero_h, bounds, u_a, u_b, minus, au_a, &
+                                   au_b, error, k_scale, xc, ref_a, ref_b, rs_k_lr, &
                                    rs_omega, cache)
       !! `(A+B)u` or `(A-B)u` for many spin-blocked trial rotations, one pass
       !!
@@ -717,6 +713,13 @@ contains
       !! same-spin exchange. Feed this `u_a = u_b` on a closed shell and the
       !! restricted `(A+B)` comes back exactly, which is what the cross-check
       !! test asserts.
+      !!
+      !! **A spin with no rotations is allowed**, which is what a reference
+      !! with no beta electrons has: that spin's trial and image rectangles
+      !! are then empty, its response density is zero, and the other spin
+      !! still sees it through `J`. The transforms are skipped rather than
+      !! run at zero extent, so no BLAS call is made with a vanishing inner
+      !! dimension.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: c_occ_a(:, :), c_vir_a(:, :)   !! (n_ao, n_occ_a), (n_ao, n_vir_a)
       real(dp), intent(in) :: c_occ_b(:, :), c_vir_b(:, :)
@@ -724,13 +727,13 @@ contains
          !! `eps_a - eps_i` per spin, `(n_vir_s, n_occ_s)`
       real(dp), intent(in) :: zero_h(:, :)
          !! Zero, so the two-electron build returns `G` alone
+      real(dp), intent(in) :: bounds(:, :)   !! From `schwarz_bounds`
       real(dp), intent(in) :: u_a(:, :, :), u_b(:, :, :)
          !! (n_vir_s, n_occ_s, n_set) the trial rotations
       logical, intent(in) :: minus          !! `A - B` rather than `A + B`
       real(dp), intent(out) :: au_a(:, :, :), au_b(:, :, :)
          !! (n_vir_s, n_occ_s, n_set) the images
       type(error_t), intent(inout) :: error
-      real(dp), intent(in), optional :: bounds(:, :)
       real(dp), intent(in), optional :: k_scale
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
@@ -740,6 +743,7 @@ contains
       real(dp), allocatable :: da(:, :, :), db(:, :, :), ga(:, :, :), gb(:, :, :)
       real(dp), allocatable :: half_a(:, :), half_b(:, :), work_a(:, :), work_b(:, :)
       integer :: n_ao, n_occ_a, n_occ_b, n_set, m
+      logical :: has_alpha, has_beta
 
       if (error%has_error()) return
 
@@ -748,16 +752,26 @@ contains
       n_occ_b = size(c_occ_b, 2)
       n_set = size(u_a, 3)
       if (n_set <= 0) return
+      has_alpha = n_occ_a > 0 .and. size(c_vir_a, 2) > 0
+      has_beta = n_occ_b > 0 .and. size(c_vir_b, 2) > 0
 
       allocate (da(n_ao, n_ao, n_set), db(n_ao, n_ao, n_set))
       allocate (half_a(n_ao, n_occ_a), half_b(n_ao, n_occ_b))
       allocate (work_a(n_ao, n_occ_a), work_b(n_ao, n_occ_b))
 
       do m = 1, n_set
-         call pic_gemm(c_vir_a, u_a(:, :, m), half_a)
-         call pic_gemm(half_a, c_occ_a, da(:, :, m), transb="T")
-         call pic_gemm(c_vir_b, u_b(:, :, m), half_b)
-         call pic_gemm(half_b, c_occ_b, db(:, :, m), transb="T")
+         if (has_alpha) then
+            call pic_gemm(c_vir_a, u_a(:, :, m), half_a)
+            call pic_gemm(half_a, c_occ_a, da(:, :, m), transb="T")
+         else
+            da(:, :, m) = 0.0_dp
+         end if
+         if (has_beta) then
+            call pic_gemm(c_vir_b, u_b(:, :, m), half_b)
+            call pic_gemm(half_b, c_occ_b, db(:, :, m), transb="T")
+         else
+            db(:, :, m) = 0.0_dp
+         end if
          if (minus) then
             da(:, :, m) = da(:, :, m) - transpose(da(:, :, m))
             db(:, :, m) = db(:, :, m) - transpose(db(:, :, m))
@@ -767,8 +781,8 @@ contains
          end if
       end do
 
-      call response_mean_field_uhf(mol, da, db, zero_h, ga, gb, error, minus=minus, &
-                                   bounds=bounds, k_scale=k_scale, xc=xc, &
+      call response_mean_field_uhf(mol, da, db, zero_h, bounds, ga, gb, error, &
+                                   minus=minus, k_scale=k_scale, xc=xc, &
                                    ref_a=ref_a, ref_b=ref_b, rs_k_lr=rs_k_lr, &
                                    rs_omega=rs_omega, cache=cache)
       if (error%has_error()) then
@@ -777,12 +791,16 @@ contains
       end if
 
       do m = 1, n_set
-         call pic_gemm(ga(:, :, m), c_occ_a, work_a)
-         call pic_gemm(c_vir_a, work_a, au_a(:, :, m), transa="T")
-         au_a(:, :, m) = gaps_a*u_a(:, :, m) + au_a(:, :, m)
-         call pic_gemm(gb(:, :, m), c_occ_b, work_b)
-         call pic_gemm(c_vir_b, work_b, au_b(:, :, m), transa="T")
-         au_b(:, :, m) = gaps_b*u_b(:, :, m) + au_b(:, :, m)
+         if (has_alpha) then
+            call pic_gemm(ga(:, :, m), c_occ_a, work_a)
+            call pic_gemm(c_vir_a, work_a, au_a(:, :, m), transa="T")
+            au_a(:, :, m) = gaps_a*u_a(:, :, m) + au_a(:, :, m)
+         end if
+         if (has_beta) then
+            call pic_gemm(gb(:, :, m), c_occ_b, work_b)
+            call pic_gemm(c_vir_b, work_b, au_b(:, :, m), transa="T")
+            au_b(:, :, m) = gaps_b*u_b(:, :, m) + au_b(:, :, m)
+         end if
       end do
 
       deallocate (da, db, ga, gb, half_a, half_b, work_a, work_b)

@@ -159,6 +159,21 @@ module mqc_czt_tddft
       !! stronger and is treated as an error rather than a filter: a root down
       !! here is the reference's own triplet instability.
 
+   real(dp), parameter :: ROTATION_HINT = 5.0e-2_dp
+      !! A reported root below this is flagged in the unrestricted state table.
+      !!
+      !! **A hint in the output, not a classification.** An open-shell
+      !! reference carries rotations of its own singly-occupied orbitals, and
+      !! the two routes disagree about them: the paired problem puts such a
+      !! rotation at `omega^2` on the numerical zero and drops it below
+      !! `EXCITATION_FLOOR`, while Tamm-Dancoff keeps it as a small positive
+      !! root -- 6.7e-3 hartree on the OH radical -- because `A` alone is not
+      !! the operator whose null space it lives in. So the same molecule can
+      !! have a first Tamm-Dancoff state the paired spectrum does not have,
+      !! and this marks the roots where that is worth checking. Nothing is
+      !! dropped or relabelled on account of it; a genuine excitation this
+      !! low, which a small-gap radical can have, is marked and reported.
+
    real(dp), parameter :: DEGENERACY_WINDOW = 1.0e-3_dp
       !! How close two orbital-energy gaps have to be for the guess to have to
       !! carry both.
@@ -324,6 +339,7 @@ module mqc_czt_tddft
       procedure :: diagonal => core_uhf_diagonal
       procedure :: has_exchange => core_uhf_has_exchange
       procedure :: half_block => core_uhf_half_block
+      procedure :: destroy => core_uhf_destroy
    end type response_core_uhf_t
 
    type, extends(sigma_operator_t) :: tda_operator_uhf_t
@@ -619,7 +635,7 @@ contains
          !! are already in hand and is what makes `both` one quadrature rather
          !! than two.
 
-      integer :: n_ao, n_mo, n_vir, i, a
+      integer :: n_ao, n_mo, n_vir
       logical :: kernel_triplet
       character(len=16) :: manifold
 
@@ -684,12 +700,7 @@ contains
       core%c_vir = orbitals(:, n_occ + 1:n_mo)
       allocate (core%zero_h(n_ao, n_ao))
       core%zero_h = 0.0_dp
-      allocate (core%gaps(n_vir, n_occ))
-      do i = 1, n_occ
-         do a = 1, n_vir
-            core%gaps(a, i) = energies(n_occ + a) - energies(i)
-         end do
-      end do
+      call fill_gaps(energies, n_occ, n_mo, core%gaps)
       if (present(batch)) then
          if (batch > 0) core%batch = batch
       end if
@@ -1503,6 +1514,44 @@ contains
    ! `spin` argument here to ask for one of them.
    ! ---------------------------------------------------------------------------
 
+   subroutine core_uhf_destroy(this)
+      !! Release everything the core holds and leave it as newly declared
+      !!
+      !! **The kernel cache is why this exists.** It is a dozen grid-sized
+      !! arrays -- hundreds of megabytes on a large molecule -- and an
+      !! operator takes a whole copy of the core, so between the copy and the
+      !! solve there are two of them alive. Destroying the builder's copy as
+      !! soon as the operator has taken it leaves one.
+      !!
+      !! The two pointers are nulled rather than deallocated: their targets
+      !! are the caller's molecule and exchange-correlation context, which
+      !! outlive this object by construction.
+      class(response_core_uhf_t), intent(inout) :: this
+
+      nullify (this%mol)
+      nullify (this%xc)
+      if (allocated(this%c_occ_a)) deallocate (this%c_occ_a)
+      if (allocated(this%c_vir_a)) deallocate (this%c_vir_a)
+      if (allocated(this%c_occ_b)) deallocate (this%c_occ_b)
+      if (allocated(this%c_vir_b)) deallocate (this%c_vir_b)
+      if (allocated(this%gaps_a)) deallocate (this%gaps_a)
+      if (allocated(this%gaps_b)) deallocate (this%gaps_b)
+      if (allocated(this%zero_h)) deallocate (this%zero_h)
+      if (allocated(this%bounds)) deallocate (this%bounds)
+      if (allocated(this%ref_a)) deallocate (this%ref_a)
+      if (allocated(this%ref_b)) deallocate (this%ref_b)
+      call this%cache%destroy()
+      this%k_scale = 1.0_dp
+      this%rs_k_lr = 0.0_dp
+      this%rs_omega = 0.0_dp
+      this%n_occ_a = 0
+      this%n_vir_a = 0
+      this%n_occ_b = 0
+      this%n_vir_b = 0
+      this%batch = DEFAULT_RESPONSE_BATCH
+      this%n_products = 0
+   end subroutine core_uhf_destroy
+
    pure function core_uhf_length(this) result(n)
       !! How long a trial vector is: both spin blocks end to end
       class(response_core_uhf_t), intent(in) :: this
@@ -1597,9 +1646,9 @@ contains
          if (associated(this%xc)) then
             call response_product_uhf(this%mol, this%c_occ_a, this%c_vir_a, &
                                       this%c_occ_b, this%c_vir_b, this%gaps_a, &
-                                      this%gaps_b, this%zero_h, ua(:, :, 1:w), &
-                                      ub(:, :, 1:w), minus, aua(:, :, 1:w), &
-                                      aub(:, :, 1:w), error, bounds=this%bounds, &
+                                      this%gaps_b, this%zero_h, this%bounds, &
+                                      ua(:, :, 1:w), ub(:, :, 1:w), minus, &
+                                      aua(:, :, 1:w), aub(:, :, 1:w), error, &
                                       k_scale=this%k_scale, xc=this%xc, &
                                       ref_a=this%ref_a, ref_b=this%ref_b, &
                                       rs_k_lr=this%rs_k_lr, rs_omega=this%rs_omega, &
@@ -1607,9 +1656,9 @@ contains
          else
             call response_product_uhf(this%mol, this%c_occ_a, this%c_vir_a, &
                                       this%c_occ_b, this%c_vir_b, this%gaps_a, &
-                                      this%gaps_b, this%zero_h, ua(:, :, 1:w), &
-                                      ub(:, :, 1:w), minus, aua(:, :, 1:w), &
-                                      aub(:, :, 1:w), error, bounds=this%bounds, &
+                                      this%gaps_b, this%zero_h, this%bounds, &
+                                      ua(:, :, 1:w), ub(:, :, 1:w), minus, &
+                                      aua(:, :, 1:w), aub(:, :, 1:w), error, &
                                       k_scale=this%k_scale)
          end if
          if (error%has_error()) exit
@@ -1716,6 +1765,14 @@ contains
       !! reason the restricted core fills its own: it is a property of the
       !! converged densities, and a response solve applies the kernel hundreds
       !! of times on a quadrature that is most of a Kohn-Sham run.
+      !!
+      !! **A spin with nothing in it is allowed.** A high-spin reference can
+      !! have no beta electrons at all -- triplet H2, quartet lithium -- and
+      !! its alpha excitations are as well defined as any other doublet's.
+      !! That spin simply contributes no rotations, so the trial vector is the
+      !! alpha block alone and the beta half of every product is empty. What
+      !! is refused is a reference with no single excitation in *either* spin,
+      !! which is the case there is nothing to solve for.
       type(czt_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals_a(:, :)   !! (n_ao, n_mo)
       real(dp), intent(in) :: energies_a(:)      !! (n_mo), ascending
@@ -1740,11 +1797,16 @@ contains
       n_ao = size(orbitals_a, 1)
       n_mo = size(orbitals_a, 2)
 
-      if (n_occ_a < 1 .or. n_mo - n_occ_a < 1 .or. n_occ_b < 1 &
-          .or. n_mo - n_occ_b < 1) then
-         call error%set(ERROR_VALIDATION, "an unrestricted excitation needs at least "// &
-                        "one occupied and one virtual orbital in each spin; this "// &
-                        "reference has a spin with nothing to excite between")
+      if (n_occ_a < 0 .or. n_occ_b < 0 .or. n_occ_a > n_mo .or. n_occ_b > n_mo) then
+         call error%set(ERROR_VALIDATION, "an unrestricted reference was handed to "// &
+                        "the response operator with an occupation outside the "// &
+                        "orbital space it spans")
+         return
+      end if
+      if (n_occ_a*(n_mo - n_occ_a) + n_occ_b*(n_mo - n_occ_b) < 1) then
+         call error%set(ERROR_VALIDATION, "an unrestricted excitation needs one "// &
+                        "occupied and one virtual orbital in at least one spin; "// &
+                        "this reference has nothing to excite between in either")
          return
       end if
       if (size(orbitals_b, 2) /= n_mo .or. size(orbitals_b, 1) /= n_ao) then
@@ -1996,6 +2058,7 @@ contains
       character(len=16) :: route
       real(dp) :: tol
       integer :: n_ov, n_solve, subspace, iterations, products, n_found, k, keep
+      integer :: dropped, n_products, occ_a, vir_a, occ_b, vir_b
       logical :: converged
 
       if (error%has_error()) return
@@ -2030,6 +2093,12 @@ contains
 
       diagonal = core%diagonal()
       n_ov = size(diagonal)
+      ! Read off before the core is released below; the state table needs them
+      ! and nothing else does.
+      occ_a = core%n_occ_a
+      vir_a = core%n_vir_a
+      occ_b = core%n_occ_b
+      vir_b = core%n_vir_b
       if (n_states > n_ov) then
          call error%set(ERROR_VALIDATION, "keywords.excited_states asked for "// &
                         to_char(n_states)//" roots, but this reference has only "// &
@@ -2047,13 +2116,18 @@ contains
       n_solve = roots_to_solve(diagonal, n_states)
       allocate (all_x(n_ov, n_solve), all_y(n_ov, n_solve))
 
+      ! The operator takes a whole copy of the core, kernel cache included, so
+      ! the builder's copy is released here rather than at the end of the
+      ! routine: one grid-sized cache is alive across the solve, not two.
       if (trim(route) == "rpa") then
          rpa%core = core
+         call core%destroy()
          call rpa_solve(rpa, diagonal, n_solve, raw, xpy, xmy, residuals, iterations, &
                         products, converged, error, tolerance=tol, &
                         max_iterations=max_iter, max_subspace=subspace, &
                         verbose=verbose, label="unrestricted RPA iterations")
-         core%n_products = rpa%core%n_products
+         n_products = rpa%core%n_products
+         call rpa%core%destroy()
          if (error%has_error()) return
          ! `xpy . xmy = 1` out of the solver, which **is** the convention here:
          ! an unrestricted amplitude carries one spin orbital, not two, so
@@ -2064,13 +2138,15 @@ contains
          end do
       else
          tda%core = core
+         call core%destroy()
          call davidson_flat(tda, diagonal, n_solve, raw, vectors, residuals, &
                             iterations, products, converged, error, tolerance=tol, &
                             max_iterations=max_iter, &
                             max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
                             verbose=verbose, label="unrestricted TDA iterations", &
                             value_label="excitation")
-         core%n_products = tda%core%n_products
+         n_products = tda%core%n_products
+         call tda%core%destroy()
          if (error%has_error()) return
          all_x = vectors
          all_y = 0.0_dp
@@ -2095,7 +2171,11 @@ contains
       state_spin = STATE_SPIN_UNRESTRICTED
       keep = 0
       do k = 1, n_solve
-         if (raw(k) <= EXCITATION_FLOOR) cycle
+         ! The negated `>`, not `<=`, so the two passes ask the same question
+         ! of a root that is neither: the rotation of an open shell is an
+         ! `omega^2` at the numerical zero of either sign, and a square root
+         ! of it can come back as a NaN, which fails both comparisons.
+         if (.not. (raw(k) > EXCITATION_FLOOR)) cycle
          keep = keep + 1
          if (keep > n_found) exit
          excitations(keep) = raw(k)
@@ -2111,12 +2191,32 @@ contains
                              "excited states")
       end if
 
+      ! Say when a route dropped something, because the two routes drop
+      ! different things and the spectrum alone does not show it. A doublet's
+      ! rotation of its own open shell is an `omega^2` on the numerical zero,
+      ! which the paired route loses here; Tamm-Dancoff keeps the same
+      ! rotation as a small positive root and reports it as state 1. Without
+      ! this line the two spectra look like a disagreement.
+      dropped = 0
+      do k = 1, n_solve
+         if (.not. (raw(k) > EXCITATION_FLOOR)) dropped = dropped + 1
+      end do
+      if (dropped > 0) then
+         call logger%info("  "//to_char(dropped)//" of the "//to_char(n_solve)// &
+                          " converged root(s) are not above "// &
+                          to_char(EXCITATION_FLOOR)//" hartree and are not "// &
+                          "reported: on an open shell these are rotations of the "// &
+                          "reference rather than excitations. Tamm-Dancoff keeps "// &
+                          "such a rotation as a small root instead of dropping it, "// &
+                          "so the two routes need not report the same first state.")
+      end if
+
       write (line, "(a,a,a,i0,a,i0,a)") "  ", route_name(route), ": ", &
-         size(excitations), " root(s) from ", core%n_products, &
+         size(excitations), " root(s) from ", n_products, &
          " matrix-vector products"
       call logger%info(trim(line))
       call log_state_table_uhf(route, excitations, x_amplitudes, y_amplitudes, &
-                               core%n_occ_a, core%n_vir_a, core%n_occ_b, core%n_vir_b)
+                               occ_a, vir_a, occ_b, vir_b)
    end subroutine response_excitations_uhf
 
    subroutine log_state_table_uhf(route, excitations, x, y, n_occ_a, n_vir_a, &
@@ -2127,6 +2227,12 @@ contains
       !! `b`: the two spin blocks have different orbital numbering, and a bare
       !! `4 -> 6` would name two different excitations depending on which half
       !! of the vector it came from.
+      !!
+      !! A root below `ROTATION_HINT` is marked with a star and the reason
+      !! printed under the table: on an open shell that is where a rotation
+      !! of the singly-occupied orbitals turns up, and it is the one place
+      !! the Tamm-Dancoff and paired spectra of the same reference disagree
+      !! about which state is first.
       character(len=*), intent(in) :: route
       real(dp), intent(in) :: excitations(:)
       real(dp), intent(in) :: x(:, :), y(:, :)
@@ -2136,9 +2242,10 @@ contains
       character(len=MAX_LINE_LENGTH) :: line, piece
       real(dp) :: weight
       integer :: k, i, a, idx, na
-      logical :: paired
+      logical :: paired, flagged
 
       if (size(excitations) < 1) return
+      flagged = .false.
       paired = trim(route) /= "tda"
       na = n_occ_a*n_vir_a
 
@@ -2180,8 +2287,20 @@ contains
                line = trim(line)//" "//trim(piece)
             end do
          end do
+         if (excitations(k) < ROTATION_HINT) then
+            flagged = .true.
+            if (len_trim(line) + 2 <= len(line)) line = trim(line)//" *"
+         end if
          call logger%info(trim(line))
       end do
+
+      if (flagged) then
+         call logger%info("  * below "//to_char(ROTATION_HINT)//" hartree: on an "// &
+                          "open shell a root this low is commonly a rotation of the "// &
+                          "singly-occupied orbitals rather than an excitation. The "// &
+                          "paired route puts such a rotation at the numerical zero "// &
+                          "and drops it; Tamm-Dancoff reports it.")
+      end if
    end subroutine log_state_table_uhf
 
 end module mqc_czt_tddft
