@@ -16,6 +16,7 @@ module mqc_method_config
                                        DEFAULT_STABILITY_MAX_ITER, &
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
+                                       DEFAULT_EXCITED_BATCH, &
                                        DEFAULT_SOSCF_START
    implicit none
    private
@@ -397,7 +398,7 @@ module mqc_method_config
          !! Cycles the solver may take.
       integer :: max_subspace = 0
          !! Trial vectors the subspace may hold; zero is the solver's own rule.
-      integer :: batch = DEFAULT_RESPONSE_BATCH
+      integer :: batch = DEFAULT_EXCITED_BATCH
          !! Trial vectors sharing one pass over the integrals.
    end type excited_config_t
 
@@ -882,7 +883,7 @@ contains
       this%excited%tolerance = DEFAULT_EXCITED_TOL
       this%excited%max_iter = DEFAULT_EXCITED_MAX_ITER
       this%excited%max_subspace = 0
-      this%excited%batch = DEFAULT_RESPONSE_BATCH
+      this%excited%batch = DEFAULT_EXCITED_BATCH
 
       ! F12 defaults
       this%f12%geminal_exponent = 1.0_dp

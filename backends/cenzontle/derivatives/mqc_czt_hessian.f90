@@ -520,24 +520,26 @@ contains
       ! the largest trial-density element a quartet touches, and with the
       ! screen floor that keeps a shrinking conjugate-gradient direction from
       ! being screened into noise. `dens` is consumed: the floor rescales it.
+      !
+      ! One call for both references: a disassociated pointer and an
+      ! unallocated allocatable both count as an absent optional argument, so a
+      ! Hartree-Fock operator -- whose `xc` is null and whose `reference` was
+      ! never allocated -- reaches the same call without the kernel. The same
+      ! rule carries `bmat=bref_arg` through the MP2 gradient. Writing the two
+      ! cases out instead is how the kernel came to be applied on one route and
+      ! not another in the first place.
+      !
       ! The kernel cache goes with the context: filled by `solve_mo1_batch`
       ! before the solve, it spares every one of these hundreds of calls the
-      ! libxc pass over the grid. Unfilled, it is ignored.
-      if (associated(this%xc)) then
-         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
-                                  direct=.true., bounds=this%bounds, &
-                                  k_scale=this%k_scale, xc=this%xc, &
-                                  reference=this%reference, rs_k_lr=this%rs_k_lr, &
-                                  rs_omega=this%rs_omega, cache=this%kernel_cache, &
-                                  density_screen=.true., &
-                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
-      else
-         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
-                                  direct=.true., bounds=this%bounds, &
-                                  k_scale=this%k_scale, rs_k_lr=this%rs_k_lr, &
-                                  rs_omega=this%rs_omega, density_screen=.true., &
-                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
-      end if
+      ! libxc pass over the grid. Unfilled -- which is what a Hartree-Fock
+      ! operator carries -- it is ignored, so it passes unconditionally too.
+      call response_mean_field(this%mol, dens, this%zero_h, g, error, &
+                               direct=.true., bounds=this%bounds, &
+                               k_scale=this%k_scale, xc=this%xc, &
+                               reference=this%reference, rs_k_lr=this%rs_k_lr, &
+                               rs_omega=this%rs_omega, cache=this%kernel_cache, &
+                               density_screen=.true., &
+                               screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
       if (error%has_error()) return
       this%last_computed = stats%quartets_computed
       this%last_screened = stats%quartets_screened
@@ -1456,7 +1458,10 @@ contains
       ! does not move here, and `nuclear_apply` would otherwise re-evaluate
       ! them -- the reference density on every block and libxc's second
       ! derivatives over it -- on each of the solver's dozens of applications.
-      ! The cost is ten arrays over the grid, held until this returns.
+      ! The cost is up to eleven arrays over the grid, held until this
+      ! returns; the fill weighs that against the machine and declines rather
+      ! than allocating over it, which leaves the cache unfilled and the
+      ! applications below on their uncached path.
       if (present(xc)) then
          call xc_kernel_cache_fill(xc, mol, operator%reference, operator%kernel_cache, error)
          if (error%has_error()) return
@@ -1541,6 +1546,11 @@ contains
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands it
       !! to the many-density build in the same chunks, and for the same reason,
       !! as `solve_mo1_batch`.
+      !!
+      !! The exchange-correlation kernel is cached here too, over the whole
+      !! call rather than per chunk. The solve above filled one against this
+      !! same reference density, but it belonged to the operator and went with
+      !! it, so this fills its own.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: d1(:, :, :, :)
       real(dp), intent(in) :: bounds(:, :)
@@ -1562,6 +1572,7 @@ contains
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
       integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
       integer :: n_chunks, per_chunk
+      type(xc_kernel_cache_t) :: kernel_cache
 
       if (error%has_error()) return
 
@@ -1585,6 +1596,17 @@ contains
       n_chunks = (n_pert + max_batch - 1)/max_batch
       per_chunk = (n_pert + n_chunks - 1)/n_chunks
 
+      ! The kernel's coefficients over the grid, once rather than once per
+      ! chunk. Same object and same reason as `solve_mo1_batch`, which filled
+      ! one for the solve that produced these very densities -- that one went
+      ! out of scope with its operator, so this fills its own. Declined over
+      ! budget, it comes back unfilled and the build below re-evaluates the
+      ! kernel per chunk, as it did before.
+      if (present(xc)) then
+         call xc_kernel_cache_fill(xc, mol, reference, kernel_cache, error)
+         if (error%has_error()) return
+      end if
+
       first = 1
       do while (first <= n_pert)
          last = min(first + per_chunk - 1, n_pert)
@@ -1602,12 +1624,15 @@ contains
          call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
                                   bounds=bounds, k_scale=k_scale, &
                                   xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
-                                  rs_omega=rs_omega, density_screen=.true.)
+                                  rs_omega=rs_omega, cache=kernel_cache, &
+                                  density_screen=.true.)
          if (error%has_error()) return
          g1(:, :, first:last) = out
          deallocate (chunk, out)
          first = last + 1
       end do
+
+      call kernel_cache%destroy()
    end subroutine mean_field_batch
 
    subroutine assemble_dipole_derivatives(mol, density, d1, ddip_dr, error)

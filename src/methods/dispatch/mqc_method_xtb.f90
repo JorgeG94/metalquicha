@@ -59,6 +59,12 @@ module mqc_method_xtb
       real(wp) :: dielectric = -1.0_wp          !! Direct dielectric constant (-1 = use solvent lookup)
       integer :: cpcm_nang = 110                !! Number of angular points for CPCM cavity
       real(wp) :: cpcm_rscale = 1.0_wp          !! Radii scaling for CPCM cavity
+      integer :: excited_n_states = 0
+         !! Roots `keywords.excited_states` asked for. tblite has no
+         !! linear-response solver, so anything above zero is refused by
+         !! `excited_states_refused` rather than dropped: a deck asking for
+         !! five states and getting a ground-state energy back has no way to
+         !! tell it did not get what it asked for.
    contains
       procedure :: calc_energy => xtb_calc_energy      !! Energy-only calculation
       procedure :: calc_gradient => xtb_calc_gradient  !! Energy + gradient calculation
@@ -66,6 +72,30 @@ module mqc_method_xtb
    end type xtb_method_t
 
 contains
+
+   function excited_states_refused(this, result) result(refused)
+      !! Fail the calculation when a deck asked xTB for excited states
+      !!
+      !! `.true.` when the caller must return at once, with the error already
+      !! set on `result`. Refused rather than ignored, and refused on every
+      !! driver rather than only on the energy: tblite exposes no
+      !! linear-response solver at all, so there is no state of the code in
+      !! which a root could come back, and a silent ground-state answer would
+      !! be indistinguishable from a computed one. The ab initio backend
+      !! refuses the same way in `excited_decline_reason`.
+      class(xtb_method_t), intent(in) :: this
+      type(calculation_result_t), intent(inout) :: result
+      logical :: refused
+
+      refused = this%excited_n_states > 0
+      if (.not. refused) return
+      call result%error%set(ERROR_VALIDATION, "keywords.excited_states asked for "// &
+                            to_char(this%excited_n_states)//" root(s), which xTB "// &
+                            "cannot compute: tblite carries no linear-response "// &
+                            "solver. Drop the block, or set n_states to 0, to run "// &
+                            "the ground state.")
+      result%has_error = .true.
+   end function excited_states_refused
 
    subroutine xtb_calc_energy(this, fragment, result)
       !! Electronic energy of a fragment
@@ -86,6 +116,8 @@ contains
       real(wp) :: dipole_wp(3)
       type(post_processing_list) :: pproc
       type(results_type) :: xtb_results
+
+      if (excited_states_refused(this, result)) return
 
       if (this%verbose) then
          call logger%large_info("XTB: Calculating energy using "//to_char(this%variant))
@@ -231,6 +263,8 @@ contains
       real(wp), allocatable :: gradient(:, :)
       real(wp), allocatable :: sigma(:, :)
       real(wp) :: dipole_wp(3)
+
+      if (excited_states_refused(this, result)) return
 
       if (this%verbose) then
          call logger%large_info("XTB: Calculating gradient using "//to_char(this%variant))
@@ -396,6 +430,8 @@ contains
       real(dp) :: displacement
       integer :: n_atoms, n_displacements, i
       logical :: compute_dipole_derivs
+
+      if (excited_states_refused(this, result)) return
 
       n_atoms = fragment%n_atoms
       n_displacements = 3*n_atoms

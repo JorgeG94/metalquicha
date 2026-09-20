@@ -48,6 +48,9 @@ module mqc_davidson
       !! threshold scales with the residual, so near convergence every
       !! correction looks tiny, the subspace stops growing, and the solve stalls
       !! short of its tolerance. Normalising first makes the test scale-free.
+      !! `initial_basis` reaches the same property from the other side, by
+      !! measuring what survives against the column's own length, so that a
+      !! guess it means to keep is handed on with its arithmetic untouched.
 
    type, abstract :: sigma_operator_t
       !! Whatever can multiply a vector by the Hamiltonian
@@ -94,7 +97,15 @@ module mqc_davidson
          !! (n_alpha, n_beta, n_roots), each normalised
       real(dp), allocatable :: residuals(:)    !! (n_roots), final norms
       integer :: iterations = 0
-      integer :: sigma_products = 0            !! What the cost is actually made of
+      integer :: sigma_products = 0
+         !! Columns handed to the operator, summed over the block calls
+         !!
+         !! That is the cost only for an operator that inherits the default
+         !! `apply_many`, which is a loop over single-vector products. An
+         !! operator that overrides it pays once per call for whatever the
+         !! block shares, so `iterations` is the count to read there: the
+         !! solver makes one block call before the loop and one more per
+         !! iteration that expands the subspace.
       logical :: converged = .false.
    end type davidson_result_t
 
@@ -216,7 +227,11 @@ contains
       real(dp), intent(in) :: diagonal(:)       !! `<D|H|D>` for every determinant
       integer, intent(in) :: n_roots
       real(dp), allocatable, intent(out) :: values(:), vectors(:, :), residuals(:)
-      integer, intent(out) :: iterations_taken, sigma_products
+      integer, intent(out) :: iterations_taken
+      integer, intent(out) :: sigma_products
+         !! Columns handed to the operator, not calls made to it. The two
+         !! differ for an operator that overrides `apply_many`; see
+         !! `davidson_result_t`.
       logical, intent(out) :: converged
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: tolerance
@@ -226,9 +241,18 @@ contains
          !! vectors. Defaults to `max(2*n_roots + 8, 16)`, bounded by the size of
          !! the determinant space.
       real(dp), intent(in), optional :: guess(:, :)
-         !! (n_determinants, n_roots) starting vectors. Absent takes unit
-         !! vectors on the lowest diagonal elements, which for a CI is the
-         !! reference determinant and its nearest neighbours in energy.
+         !! (n_determinants, n_start) starting vectors, `n_start >= n_roots`.
+         !! Absent takes `n_roots` unit vectors on the lowest diagonal
+         !! elements, which for a CI is the reference determinant and its
+         !! nearest neighbours in energy.
+         !!
+         !! More columns than roots widens the **starting subspace** and does
+         !! not ask for more roots: `n_roots` eigenpairs still come back. A
+         !! root the `n_roots` lowest diagonal elements cannot reach -- one
+         !! the off-diagonal pushes below others whose diagonal sits lower --
+         !! is otherwise missed silently, the solver converging cleanly onto
+         !! whatever its subspace does span. Columns past `max_subspace` are
+         !! dropped.
       logical, intent(in), optional :: verbose
          !! Print a line per iteration, off by default
       real(dp), intent(in), optional :: energy_offset
@@ -253,7 +277,7 @@ contains
       logical :: loud
       real(dp), allocatable :: ritz(:, :), hritz(:, :), residual(:), correction(:)
       real(dp) :: tol, norm, denominator, overlap
-      integer :: ndet, nsub, nmax, iterations, iroot, i, j, info, added
+      integer :: ndet, nsub, nmax, nstart, iterations, iroot, i, j, info, added
       integer :: iteration, pass
       logical, allocatable :: root_converged(:)
 
@@ -284,6 +308,11 @@ contains
          return
       end if
 
+      ! A guess wider than the roots asked for is a wider starting subspace,
+      ! bounded by what the subspace can hold.
+      nstart = n_roots
+      if (present(guess)) nstart = min(max(size(guess, 2), n_roots), nmax)
+
       allocate (basis(ndet, nmax), sigma(ndet, nmax))
       allocate (ritz(ndet, n_roots), hritz(ndet, n_roots))
       allocate (residual(ndet), correction(ndet))
@@ -308,8 +337,9 @@ contains
       end if
 
       call system_clock(last, rate)
-      call initial_basis(diagonal, n_roots, ndet, basis, guess)
-      nsub = n_roots
+      call initial_basis(diagonal, nstart, ndet, basis, error, guess)
+      if (error%has_error()) return
+      nsub = nstart
 
       ! Sigma for the starting vectors, as one block.
       call operator%apply_many(basis(:, 1:nsub), sigma(:, 1:nsub), error)
@@ -437,45 +467,85 @@ contains
       deallocate (root_converged)
    end subroutine davidson_flat
 
-   subroutine initial_basis(diagonal, n_roots, ndet, basis, guess)
+   subroutine initial_basis(diagonal, n_start, ndet, basis, error, guess)
       !! Starting vectors: the supplied ones, or the lowest determinants
+      !!
+      !! The linear-dependence test here is on the *fraction* of a guess
+      !! column that survives projection, for the reason `LINEAR_DEPENDENCE`
+      !! gives: a test against an absolute length is a test of how long the
+      !! caller happened to make its vectors. Comparing the surviving length
+      !! against the column's own length is scale-free without rescaling the
+      !! column, which would round every well-conditioned guess for the sake
+      !! of the degenerate ones.
+      !!
+      !! Without a guess, `lowest_free` cannot come back empty: this branch
+      !! takes `n_start` determinants out of `ndet`, `davidson_flat` refuses
+      !! `n_roots > ndet` before calling here, and the widening it does after
+      !! that is bounded by a subspace already capped at `ndet`.
       real(dp), intent(in) :: diagonal(:)
-      integer, intent(in) :: n_roots, ndet
+      integer, intent(in) :: n_start
+         !! Columns of `basis` to fill. More than the roots asked for is a
+         !! wider starting subspace; a guess narrower than this is topped up
+         !! from the lowest free diagonal elements, as an absent one is.
+      integer, intent(in) :: ndet
       real(dp), intent(inout) :: basis(:, :)
+      type(error_t), intent(inout) :: error
+         !! Set when a guess column cannot be replaced by any determinant
       real(dp), intent(in), optional :: guess(:, :)
 
       logical, allocatable :: taken(:)
-      real(dp) :: norm
+      real(dp) :: norm, length
       integer :: iroot, pick
 
       allocate (taken(ndet))
       taken = .false.
 
       if (present(guess)) then
-         do iroot = 1, n_roots
-            basis(:, iroot) = guess(:, iroot)
+         do iroot = 1, n_start
+            if (iroot <= size(guess, 2)) then
+               basis(:, iroot) = guess(:, iroot)
+            else
+               ! Past the end of the guess. A zero column has zero length, so
+               ! the fallback below takes it as dependent and fills it from the
+               ! determinants, which is what an absent guess would have done.
+               basis(:, iroot) = 0.0_dp
+            end if
+            length = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
             norm = project_out_earlier(basis, iroot)
             ! A supplied vector the earlier ones already span leaves nothing
             ! behind to normalise, and a near-null column makes every Ritz
             ! vector built on it meaningless. Fall back to the lowest
             ! determinant still free, which is where an absent guess would
             ! have started, and keep falling back until something survives.
-            do while (norm <= LINEAR_DEPENDENCE)
+            do while (norm <= LINEAR_DEPENDENCE*length)
                pick = lowest_free(diagonal, taken)
-               if (pick == 0) exit
+               if (pick == 0) then
+                  ! Every determinant has been spent and the column is still
+                  ! null. Keeping it would seed the subspace with noise and
+                  ! report the resulting Ritz values as eigenvalues, so the
+                  ! solve stops instead.
+                  call error%set(ERROR_VALIDATION, "starting vector "//to_char(iroot)// &
+                                 " is spanned by the ones before it, and all "// &
+                                 to_char(ndet)//" determinants have already been "// &
+                                 "used to replace one.")
+                  deallocate (taken)
+                  return
+               end if
                taken(pick) = .true.
                basis(:, iroot) = 0.0_dp
                basis(pick, iroot) = 1.0_dp
+               length = 1.0_dp
                norm = project_out_earlier(basis, iroot)
             end do
-            if (norm > LINEAR_DEPENDENCE) basis(:, iroot) = basis(:, iroot)/norm
+            basis(:, iroot) = basis(:, iroot)/norm
          end do
          deallocate (taken)
          return
       end if
 
-      basis(:, 1:n_roots) = 0.0_dp
-      do iroot = 1, n_roots
+      basis(:, 1:n_start) = 0.0_dp
+      do iroot = 1, n_start
+         ! Never zero here; see the note on the routine.
          pick = lowest_free(diagonal, taken)
          taken(pick) = .true.
          basis(pick, iroot) = 1.0_dp
@@ -506,17 +576,26 @@ contains
 
    function project_out_earlier(basis, iroot) result(norm)
       !! Project columns 1 to `iroot - 1` out of column `iroot`, in place
+      !!
+      !! Twice, for the same reason the expansion loop does it twice: one
+      !! pass of Gram-Schmidt loses orthogonality when the column is nearly
+      !! in the subspace already, and a column nearly in the subspace is the
+      !! entire input domain of the fallback this feeds. A single pass leaves
+      !! a residue of the earlier columns behind, which is then divided by a
+      !! small norm and blown up into the basis.
       real(dp), intent(inout) :: basis(:, :)
       integer, intent(in) :: iroot
       real(dp) :: norm
          !! What is left of the column's length, before it is normalised
 
       real(dp) :: overlap
-      integer :: j
+      integer :: j, pass
 
-      do j = 1, iroot - 1
-         overlap = dot_product(basis(:, j), basis(:, iroot))
-         basis(:, iroot) = basis(:, iroot) - overlap*basis(:, j)
+      do pass = 1, 2
+         do j = 1, iroot - 1
+            overlap = dot_product(basis(:, j), basis(:, iroot))
+            basis(:, iroot) = basis(:, iroot) - overlap*basis(:, j)
+         end do
       end do
       norm = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
    end function project_out_earlier

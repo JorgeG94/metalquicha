@@ -102,6 +102,8 @@ contains
                                test_attenuation_is_real), &
                   new_unittest("nosym_takes_the_same_scales_as_the_fast_build", &
                                test_nosym_scales), &
+                  new_unittest("the_stored_build_takes_the_same_scales_as_the_direct_one", &
+                               test_stored_scales), &
                   new_unittest("nosym_scales_exchange_on_an_antisymmetric_density", &
                                test_nosym_antisymmetric_scaled), &
                   new_unittest("the_uhf_batch_is_the_closed_shell_build_on_equal_spins", &
@@ -939,6 +941,86 @@ contains
                                    *general(:, :, 1))) > 1.0e-3_dp, &
                  "an omega pass through build_fock_direct_nosym is not attenuated")
    end subroutine test_nosym_scales
+
+   subroutine test_stored_scales(error)
+      !! `k_scale` and `j_scale` mean the same on the stored tensor as direct
+      !!
+      !! `build_fock` gained `j_scale` so the in-core route is not quietly
+      !! Coulomb-carrying where its direct twin is not, and nothing on the
+      !! response path reaches it: the core always asks for `direct = .true.`.
+      !! An argument no caller exercises is an argument nobody finds out is
+      !! wrong, so it is exercised here instead -- against
+      !! `build_fock_direct`, which is the same six contributions computed a
+      !! completely different way.
+      !!
+      !! Both coefficients at once and neither equal to the other or to one,
+      !! and then the `j_scale = 0` case on its own: that is the shape the
+      !! triplet response and a long-range exchange pass both use, and it is
+      !! the branch where the Coulomb accumulation is now skipped rather than
+      !! computed and multiplied by zero.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: J_SCALE = 0.63_dp
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :)
+      real(dp), allocatable :: stored(:, :), direct(:, :)
+      real(dp) :: scale
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+
+      allocate (stored(mol%nao, mol%nao), direct(mol%nao, mol%nao))
+
+      call build_fock(zero_h, eri, sym, stored, k_scale=CAM_K_FULL, j_scale=J_SCALE)
+      call build_fock_direct(mol, zero_h, sym, bounds, direct, stats, err, &
+                             screen_tol=NO_SCREENING, k_scale=CAM_K_FULL, &
+                             j_scale=J_SCALE)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the direct build failed: "//err%get_message())
+         return
+      end if
+      scale = maxval(abs(direct))
+      call check(error, scale > 1.0e-2_dp, "the scaled build is empty, so the "// &
+                 "comparison below would hold for any pair of coefficients")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, maxval(abs(stored - direct)) < 1.0e-11_dp, &
+                 "the stored-tensor build does not scale the two-electron terms "// &
+                 "the way the direct build does")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! Exchange alone. Checked against the direct build rather than against
+      ! the scaled result above, so a Coulomb term that survived the skip has
+      ! nowhere to hide.
+      call build_fock(zero_h, eri, sym, stored, k_scale=CAM_K_FULL, j_scale=0.0_dp)
+      call build_fock_direct(mol, zero_h, sym, bounds, direct, stats, err, &
+                             screen_tol=NO_SCREENING, k_scale=CAM_K_FULL, &
+                             j_scale=0.0_dp)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the exchange-only direct build failed: "// &
+                    err%get_message())
+         return
+      end if
+      call check(error, maxval(abs(stored - direct)) < 1.0e-11_dp, &
+                 "the stored-tensor build with j_scale = 0 does not match the "// &
+                 "direct build's exchange-only pass")
+      if (allocated(error)) return
+      call check(error, maxval(abs(stored)) > 1.0e-2_dp, &
+                 "the exchange-only build is empty, so matching it says nothing")
+   end subroutine test_stored_scales
 
    subroutine test_nosym_antisymmetric_scaled(error)
       !! A scaled `A - B` pass: no Coulomb, and exchange at the coefficient asked
