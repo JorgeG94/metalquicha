@@ -871,17 +871,31 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
             if "expected_excitation_energies" in test:
                 expected_omegas = test["expected_excitation_energies"]
                 calculated_omegas = extract_excitation_energies(output_data)
-                # Explicit defaults rather than the manifest's `tolerance`,
-                # which is 1e-9 and is for total energies. An excitation
-                # energy carries the exchange-correlation *kernel* on a grid
+                # Required rather than defaulted, and that is the one place
+                # in this file where a bound is. The manifest's own
+                # `tolerance` is 1e-9 and is for total energies; an excitation
+                # energy carries the exchange-correlation kernel on a grid
                 # that is not the reference code's, and an oscillator strength
                 # is linear in the amplitude where an eigenvalue is quadratic
-                # in it, so the two need separate and looser bounds. Both
-                # match what the generator writes.
-                omega_tol = test.get("excitation_tolerance", 1.0e-7)
-                f_tol = test.get("oscillator_tolerance", 1.0e-5)
+                # in it. Both bounds are therefore per case -- a grid-free
+                # Hartree-Fock deck is held two orders tighter than a
+                # Kohn-Sham one -- so a default here would be a second, looser
+                # copy of a number that lives in
+                # `tools/cpu_validation/gen_cpu_validation.py`, and an entry
+                # that lost the key would silently be checked against it.
+                omega_tol = test.get("excitation_tolerance")
+                f_tol = test.get("oscillator_tolerance")
 
-                if calculated_omegas is None:
+                if omega_tol is None or f_tol is None:
+                    missing = [k for k in ("excitation_tolerance",
+                                           "oscillator_tolerance")
+                               if test.get(k) is None]
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - manifest entry "
+                          f"carries excitation energies but no {', '.join(missing)}")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"manifest entry is missing {', '.join(missing)}")
+                elif calculated_omegas is None:
                     print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract excitation energies from JSON")
                     test_passed = False
                     failure_reasons.append("Missing excitation energies")

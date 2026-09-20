@@ -2199,25 +2199,57 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
 #: 90058, worth 3.4e-10 in a matrix element and nothing at the bound below.
 EXCITED_GRID_LEVEL = 5
 
-#: An excitation energy against PySCF's, in Hartree.
+#: A Kohn-Sham excitation energy against PySCF's, in Hartree.
 #:
-#: The plan's number, and it is set by the quadrature rather than by either
-#: solver. Both codes iterate to a residual of 1e-9 or tighter and the
-#: Hartree-Fock cases -- which have no grid at all -- agree to 1e-10 in
-#: `test_mqc_czt_tddft.f90`; what is left is the two codes' grids not being the
-#: same points, which no tightening removes.
+#: Set by the quadrature rather than by either solver -- see `excited_block`
+#: for why neither solver's stopping residual is what limits this -- and what
+#: is left is the two codes' grids not being the same points, which no
+#: tightening removes. Measured worst on the four density-functional cases
+#: below, all at `EXCITED_GRID_LEVEL`: 1.1e-10 PBE, 6.5e-10 CAM-B3LYP,
+#: 1.6e-09 B3LYP and 6.5e-09 UB3LYP. The bound keeps an order and a half over
+#: the loosest of those, which is the margin a grid mismatch wants: it is a
+#: systematic difference between two quadratures, and another compiler's
+#: summation order moves it.
+#:
+#: The grid-free cases do **not** use this; see `EXCITATION_TOLERANCE_HF`.
 EXCITATION_TOLERANCE = 1.0e-7
+
+#: A Hartree-Fock excitation energy against PySCF's, in Hartree.
+#:
+#: Two orders tighter than the Kohn-Sham bound and for one reason: there is no
+#: grid, so the two codes are solving the same operator and the difference is
+#: the reference SCF's own. Measured on the four cases with no functional:
+#: 2.3e-11, 2.4e-11 and 2.0e-11 on the closed-shell water decks, 1.7e-10 on
+#: the OH doublet, whose half-filled shell is the harder reference to pin.
+#: Run-to-run and one-thread-against-two, these move by less than 2e-14.
+#:
+#: 1e-7 here would let a 5e-8 regression on a Hartree-Fock root through
+#: untouched, three orders above anything this path has ever produced.
+EXCITATION_TOLERANCE_HF = 5.0e-9
 
 #: An oscillator strength against PySCF's, dimensionless.
 #:
-#: Looser than the energies by two orders and deliberately so. A strength is
-#: `(2/3) w |mu|^2` and the moment is *linear* in the amplitude where an
-#: eigenvalue is quadratic in it, so an amplitude error shows up here first;
+#: Not split by reference the way the energies are: the worst grid-free case
+#: (1.3e-09, the fifth root of the Hartree-Fock TDA deck) and the worst
+#: Kohn-Sham one (4.2e-09, the fifth root of B3LYP TDA) are the same order, so
+#: the quadrature is not what sets this. What sets it is that a strength is
+#: `(2/3) w |mu|^2` with the moment *linear* in the amplitude where an
+#: eigenvalue is quadratic in it, so an amplitude error shows up here first,
 #: and a near-degenerate pair of roots can exchange intensity between them
-#: while both energies stay put. Measured at 1e-9 or better on every case
-#: below, so the bound carries four orders of margin on the assembly errors it
-#: is for.
-OSCILLATOR_TOLERANCE = 1.0e-5
+#: while both energies stay put. Both of the worst cases are the highest root
+#: asked for, which is the one nearest the roots that were not converged.
+#:
+#: Tighter than `TOL_UHF_OSCILLATOR` in `test/test_mqc_czt_tddft.f90`, which
+#: is 1e-6 on the same quantity, and 24x above the worst measured here.
+OSCILLATOR_TOLERANCE = 1.0e-7
+
+#: Roots below this are not part of the reference spectrum, in Hartree.
+#:
+#: The same number `EXCITATION_FLOOR` in `mqc_czt_tddft.f90` uses, and it has
+#: to be: the deck reports the spectrum with those roots already removed, so a
+#: reference that kept one would be one root out of step all the way down.
+#: Below this a root is a rotation of the reference rather than an excitation.
+EXCITATION_FLOOR = 1.0e-3
 
 #: The SCF the spectrum is built on, tightened past what an energy needs.
 #:
@@ -2226,13 +2258,6 @@ OSCILLATOR_TOLERANCE = 1.0e-5
 #: inherits their error linearly. The gradient threshold is what actually binds
 #: here -- the energy criterion is already met long before the orbitals stop
 #: moving -- and 1e-9 is what the unit-test references were converged to.
-#: Below this a root is a rotation of the reference rather than an excitation.
-#:
-#: The same number `EXCITATION_FLOOR` in `mqc_czt_tddft.f90` uses, and it has
-#: to be: the deck reports the spectrum with those roots already removed, so a
-#: reference that kept one would be one root out of step all the way down.
-EXCITATION_FLOOR = 1.0e-3
-
 EXCITED_SCF = {"tolerance": 1e-13, "gradient_tolerance": 1e-9, "maxiter": 300}
 
 # Linear-response cases, as (molecule, basis, functional, method, spin,
@@ -2392,9 +2417,12 @@ def excited_block(method, spin, n_states):
     """
     # 1e-8 is the reader's floor, `MIN_EXCITED_TOL`, and it is refused below
     # rather than clamped: a residual tighter than that would be iterating on
-    # quadrature noise. The references were taken at 1e-10 on the PySCF side,
-    # so the two solvers' own stopping points are two orders inside the
-    # `EXCITATION_TOLERANCE` they are compared at.
+    # quadrature noise. It is not the eigenvalue's error -- a Hermitian
+    # eigenvalue converges as the square of the residual over the gap, so a
+    # 1e-8 residual on a gap of tenths of a Hartree leaves a root good to far
+    # more figures than either comparison bound below asks for. The measured
+    # errors say so: 2e-11 on the grid-free cases, where nothing but the
+    # reference SCF separates the two codes.
     block = {"n_states": n_states, "method": method,
              "tolerance": 1e-8, "max_iter": 200}
     if spin != "unrestricted":
@@ -2451,7 +2479,8 @@ def excited_entries(written, dry_run):
             "expected_excitation_energies": [round(w, 12) for w in omegas],
             "expected_oscillator_strengths": [round(f, 12) for f in strengths],
             "expected_state_spins": spins,
-            "excitation_tolerance": EXCITATION_TOLERANCE,
+            "excitation_tolerance": (EXCITATION_TOLERANCE if functional
+                                     else EXCITATION_TOLERANCE_HF),
             "oscillator_tolerance": OSCILLATOR_TOLERANCE,
             "type": "unfragmented",
         }
@@ -3589,8 +3618,6 @@ def main():
         print(f"{mol.label:6s} {basis:12s} {functional.upper():8s} "
               f"hess |H|={norm:.10f} nao={nao:4d} E={energy:.12f}", flush=True)
 
-    tests.extend(excited_entries(written, args.dry_run))
-
     for name, basis, frozen in GRADIENT_MP2_CASES:
         mol = MOLECULES[name]
         energy, gradient, nao = pyscf_mp2_gradient(mol.atoms, basis, frozen)
@@ -4180,6 +4207,15 @@ def main():
             tests.append(dict(entry))
             print(f"{entry['name']}: transcribed reference "
                   f"E={entry['expected_energy']:.10f}", flush=True)
+
+    # Last, and that is load-bearing rather than arbitrary. These eight were
+    # spliced onto the end of an existing manifest rather than produced by a
+    # full regeneration -- regenerating the other three hundred moves their
+    # references by ~1e-12 for no reason -- so this is where they sit in the
+    # committed file. Called anywhere earlier and a regeneration that changes
+    # nothing still rewrites several hundred lines, which is a diff nobody can
+    # read and a manifest nobody can check.
+    tests.extend(excited_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

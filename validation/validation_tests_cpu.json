@@ -4848,8 +4848,8 @@
                 "singlet",
                 "singlet"
             ],
-            "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "excitation_tolerance": 5e-09,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented"
         },
         {
@@ -4877,8 +4877,8 @@
                 "singlet",
                 "singlet"
             ],
-            "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "excitation_tolerance": 5e-09,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented"
         },
         {
@@ -4909,8 +4909,8 @@
                 "singlet",
                 "singlet"
             ],
-            "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "excitation_tolerance": 5e-09,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented"
         },
         {
@@ -4942,7 +4942,7 @@
                 "singlet"
             ],
             "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
         },
@@ -4972,7 +4972,7 @@
                 "singlet"
             ],
             "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
         },
@@ -5002,7 +5002,7 @@
                 "singlet"
             ],
             "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
         },
@@ -5031,8 +5031,8 @@
                 "unrestricted",
                 "unrestricted"
             ],
-            "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "excitation_tolerance": 5e-09,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented"
         },
         {
@@ -5061,7 +5061,7 @@
                 "unrestricted"
             ],
             "excitation_tolerance": 1e-07,
-            "oscillator_tolerance": 1e-05,
+            "oscillator_tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
         }
