@@ -1470,7 +1470,14 @@ reference:
   different energies; anything else is refused by name.
 - ``spin`` (default: ``"singlet"``): ``"singlet"``, ``"triplet"`` or
   ``"both"``. Out of a closed shell the two spins are separate eigenproblems,
-  so ``"both"`` is two solves rather than one.
+  so ``"both"`` is two solves rather than one. **Over an unrestricted
+  reference this key is refused whichever of the three words it names**, and
+  naming none of them is how an unrestricted spectrum is asked for: such a
+  reference is not a spin eigenfunction, so neither are its roots, and
+  labelling them singlet or triplet would be labelling a mixture. Those roots
+  are reported with ``"spin": "unrestricted"`` in the output document -- a
+  fourth word that no deck may write, because it is a statement about what
+  came back rather than a request.
 - ``tolerance`` (default: 1e-6): residual at which a root is accepted.
   **Refused below 1e-8**: the exchange-correlation quadrature underneath
   carries more error than that on any grid a production run uses, so a tighter
@@ -1488,11 +1495,12 @@ reference:
 parses, validates and reaches the CPU backend, which then stops with a message
 saying so; the linear-response solver arrives in a later change. Until then, a
 deck naming ``n_states`` greater than zero will not produce a number. A
-calculation that cannot have these states at all -- an unrestricted reference,
-a correlated method, a density-fitted reference, continuum solvation, a
-hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or the cuEST
-backend -- is refused by name instead, rather than answered from an operator
-missing a term.
+calculation that cannot have these states at all -- a correlated method, a
+density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
+meta-GGA functional, a VV10 term, or the cuEST backend -- is refused by name
+instead, rather than answered from an operator missing a term. An
+**unrestricted** reference is not among them: it has its own spin-blocked
+response operator, subject to the ``spin`` rule above.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
