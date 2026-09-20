@@ -40,7 +40,9 @@ module mqc_czt_response_product
 
    public :: response_mean_field
    public :: response_product
-   public :: response_mean_field_df
+   ! `response_mean_field_df` stays private, as `response_operator_df` was
+   ! before it: the fitted build is reached through `response_product`, which
+   ! is where the factored form it needs is assembled.
 
 contains
 
@@ -174,6 +176,12 @@ contains
          ! The stored tensor is full-range and there is no attenuated twin of
          ! it, so the long-range term could only be dropped -- which is the bug
          ! this module exists to remove, not one to keep quietly.
+         ! TODO(mqc): unreachable today, because the only route that reaches
+         ! here with a stored tensor is a double-hybrid Z-vector solve and all
+         ! three supported double hybrids are global hybrids. Add a
+         ! range-separated one and this turns a working gradient into an abort:
+         ! give the stored route an attenuated companion tensor, or send a
+         ! range-separated reference down the direct path, before that lands.
          call error%set(ERROR_VALIDATION, "a range-separated functional's response "// &
                         "needs the integral-direct build: the stored two-electron "// &
                         "tensor is full-range and carries no attenuated companion")
@@ -393,6 +401,13 @@ contains
 
       if (present(bmat)) then
          if (present(xc)) then
+            ! TODO(mqc): unreachable today for the same reason the stored-tensor
+            ! refusal in `response_mean_field` is -- a fitted reference reaches
+            ! here only from a double-hybrid Z-vector solve, and all three
+            ! supported double hybrids are global hybrids. A range-separated
+            ! one would turn a working gradient into an abort rather than
+            ! quietly dropping a term, which is the right order, but it still
+            ! needs an attenuated fitting before it can be offered.
             if (xc%range_separated) then
                call error%set(ERROR_VALIDATION, "a range-separated functional's "// &
                               "response cannot be applied through the fitted tensor: "// &

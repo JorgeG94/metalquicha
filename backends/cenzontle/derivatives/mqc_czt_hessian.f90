@@ -520,21 +520,21 @@ contains
       ! the largest trial-density element a quartet touches, and with the
       ! screen floor that keeps a shrinking conjugate-gradient direction from
       ! being screened into noise. `dens` is consumed: the floor rescales it.
-      if (associated(this%xc)) then
-         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
-                                  direct=.true., bounds=this%bounds, &
-                                  k_scale=this%k_scale, xc=this%xc, &
-                                  reference=this%reference, rs_k_lr=this%rs_k_lr, &
-                                  rs_omega=this%rs_omega, cache=this%kernel_cache, &
-                                  density_screen=.true., &
-                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
-      else
-         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
-                                  direct=.true., bounds=this%bounds, &
-                                  k_scale=this%k_scale, rs_k_lr=this%rs_k_lr, &
-                                  rs_omega=this%rs_omega, density_screen=.true., &
-                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
-      end if
+      !
+      ! One call for both references: a disassociated pointer and an
+      ! unallocated allocatable both count as an absent optional argument, so a
+      ! Hartree-Fock operator -- whose `xc` is null and whose `reference` was
+      ! never allocated -- reaches the same call without the kernel. The same
+      ! rule carries `bmat=bref_arg` through the MP2 gradient. Writing the two
+      ! cases out instead is how the kernel came to be applied on one route and
+      ! not another in the first place.
+      call response_mean_field(this%mol, dens, this%zero_h, g, error, &
+                               direct=.true., bounds=this%bounds, &
+                               k_scale=this%k_scale, xc=this%xc, &
+                               reference=this%reference, rs_k_lr=this%rs_k_lr, &
+                               rs_omega=this%rs_omega, cache=this%kernel_cache, &
+                               density_screen=.true., &
+                               screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
       if (error%has_error()) return
       this%last_computed = stats%quartets_computed
       this%last_screened = stats%quartets_screened
