@@ -1556,6 +1556,7 @@ contains
                                      "failed: "//td_error%get_message())
                result%has_error = .true.
                if (kohn_sham) call xc%destroy()
+               call aux%destroy()
                call mol%destroy()
                return
             end if
