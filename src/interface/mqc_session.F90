@@ -16,7 +16,9 @@ module mqc_session
    !!
    !! The command channel is one broadcast integer, which a worker blocks in
    !! for free.
+#ifndef MQC_SERIAL
    use, intrinsic :: ieee_exceptions, only: ieee_set_flag, ieee_all
+#endif
    use pic_types, only: int32, int64
    use pic_mpi_lib, only: comm_world, bcast, pic_mpi_init, pic_mpi_finalize
    use mqc_resources, only: resources_t
@@ -84,7 +86,14 @@ contains
       ! return from `pic_mpi_init` and are untouched at -np 1, so they are the
       ! MPI implementation's arithmetic and not ours. Cleared here rather than
       ! before the workers exit, so that a flag set later belongs to us.
+      !
+      ! Out of a serial build entirely, rather than left to run and do nothing.
+      ! There is one rank there by construction, so there is nothing to clear --
+      ! and LFortran, which is what MQC_ENABLE_SERIAL is for, has no
+      ! `ieee_exceptions` to reach for.
+#ifndef MQC_SERIAL
       call ieee_set_flag(ieee_all, .false.)
+#endif
 
       this%resources%mpi_comms%world_comm = comm_world()
       this%resources%mpi_comms%node_comm = this%resources%mpi_comms%world_comm%split()

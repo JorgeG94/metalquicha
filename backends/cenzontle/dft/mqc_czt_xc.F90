@@ -55,7 +55,7 @@ module mqc_czt_xc
       !! total energy at the microhartree level over ~10^6 points, and the extra
       !! digit costs a couple of bohr of radius on the most diffuse shells.
 
-   integer, parameter, public :: NLC_GRID_LEVEL = 1
+   integer, parameter, public :: NLC_GRID_LEVEL_DEFAULT = 1
       !! Default level for the non-local inner grid.
       !!
       !! Not the exchange grid's level: PySCF defaults its `nlcgrids` to the
@@ -124,7 +124,7 @@ module mqc_czt_xc
          !! The non-local term is a double integral, so its cost goes as the
          !! product of the two grids' sizes while everything else here is linear
          !! in one.
-      integer :: nlc_grid_level = NLC_GRID_LEVEL
+      integer :: nlc_grid_level = NLC_GRID_LEVEL_DEFAULT
       real(dp) :: nlc_b = 0.0_dp
       real(dp) :: nlc_c = 0.0_dp
          !! VV10's two parameters, as libxc reports them. Both zero means the
@@ -205,7 +205,7 @@ contains
          !! initialisation, so it cannot be decided later by whoever evaluates.
       integer, intent(in), optional :: nlc_level
          !! Level for VV10's own quadrature. Absent or negative keeps
-         !! `NLC_GRID_LEVEL`; a deck reaches this through
+         !! `NLC_GRID_LEVEL_DEFAULT`; a deck reaches this through
          !! `keywords.dft.nlc_grid_level`.
       real(dp), intent(in), optional :: screen_tol
          !! AO screening threshold; zero or negative disables the screen and
@@ -238,7 +238,7 @@ contains
       grid_level = DEFAULT_GRID_LEVEL
       if (present(level)) grid_level = level
 
-      ctx%nlc_grid_level = NLC_GRID_LEVEL
+      ctx%nlc_grid_level = NLC_GRID_LEVEL_DEFAULT
       if (present(nlc_level)) then
          if (nlc_level >= 0) ctx%nlc_grid_level = nlc_level
       end if

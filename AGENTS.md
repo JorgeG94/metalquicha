@@ -425,14 +425,28 @@ reports the machine's core count in a build with no parallel region to use it.
 The whole CPU validation suite -- 307 cases -- passes on a serial gfortran
 build.
 
-**LFortran** is why this exists, and it does not build the project yet. As of
-0.64.0 the serial configure is clean and 271 objects compile; what stops it is
-four compiler bugs, each of which has a minimal reproducer kept outside this
-repository. The one with the widest reach is that a continued `!$omp` directive is
-rejected -- 359 of them across 23 files -- which is what makes serial the only
-shape worth trying. LFortran also needs `--implicit-interface`,
+**LFortran** is why this exists. As of 0.66.0 every source file in this project
+compiles and `libmetalquicha.a` links; the `mqc` executable does not, and
+`.github/workflows/lfortran-build.yml` therefore builds the library target and
+stops there. It is a pinned 0.66.0, deliberately -- LFortran moves fast enough
+that a floating version turns the job red for reasons unrelated to the commit.
+
+What stops the executable is two LFortran codegen bugs, both reached only when a
+*program* forces a module's procedures to be instantiated, which is why the
+library goes through and the binary does not:
+`visit_StructConstructor() not implemented`, on a component default initialised
+by a structure constructor -- pic-mpi's serial `comm_t`, `request_t` and `win_t`
+-- and `Internal error: x is nullptr`, reached from `run_calculation`. Neither
+is anything in this tree. Reproducers are kept outside this repository.
+
+The widest-reaching gap is still that a continued `!$omp` directive is rejected
+-- 359 of them across 23 files -- which is what makes serial the only shape
+worth trying. LFortran also needs `--implicit-interface`,
 `--mangle-underscore-external` and `--legacy-array-sections`, set in
-`cmake/CMakeLists.txt`; each is load-bearing and each is commented there.
+`cmake/CMakeLists.txt`; each is load-bearing and each is commented there. The
+second of those mangles `bind(c)` binding labels as well as Fortran externals,
+which is what stops libxc's own Fortran examples from linking; the library
+target does not build them.
 
 ## Coding Conventions
 
@@ -645,7 +659,7 @@ A benchmark suite that checks them lives on `perf/benchmark-suite`.
 | Intel ifx | Full support |
 | nvfortran | Partial (no tblite) |
 | LLVM Flang | Partial (no tblite) |
-| LFortran | Does not build yet; see "Building serially" |
+| LFortran 0.66 | Library only, serial build; see "Building serially" |
 
 ## Useful Commands
 

@@ -173,7 +173,7 @@ contains
          !! "independent" gives each ion the ordinary guess instead.
       integer, intent(in), optional :: nlc_grid_level
          !! VV10's own quadrature level, forwarded from
-         !! `keywords.dft.nlc_grid_level`. Absent leaves `NLC_GRID_LEVEL`, which
+         !! `keywords.dft.nlc_grid_level`. Absent leaves `NLC_GRID_LEVEL_DEFAULT`, which
          !! would integrate the ions' non-local term on a different grid from
          !! the neutral's.
       real(dp), intent(in), optional :: screening_tolerance

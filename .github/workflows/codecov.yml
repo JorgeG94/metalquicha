@@ -26,14 +26,21 @@ concurrency:
 jobs:
   codecov:
     runs-on: ubuntu-latest
-    # Sixty rather than thirty, because the CPU backend is now compiled into
-    # the coverage build and measured. The run that first did so took 30.1
-    # minutes -- 4.0 building and 23.9 in `make coverage` -- which passed by
-    # nine seconds and is not a margin. The cost is the gcov instrumentation
-    # rather than the work: `mqc_quao` is 12 s in a release build and 704 s
-    # under coverage, and -O1 only brings it to 498 s, so this cannot be
-    # optimised away. The alternative is dropping tests from the coverage run,
-    # which is how half the program stopped being measured in the first place.
+    # Sixty came from the first run with the CPU backend compiled in and
+    # measured: 30.1 minutes, 4.0 building and 23.9 in `make coverage`, which
+    # passed by nine seconds and was not a margin. It then started firing --
+    # run 1174 spent 3.7 minutes building and was killed 54.5 minutes into
+    # `make coverage`, still going, so the upload step was skipped and the run
+    # reported no coverage at all.
+    #
+    # Kept at sixty rather than raised, because the ctest phase now runs
+    # `-j 2` with `OMP_NUM_THREADS=1` -- see cmake/MqcInstall.cmake -- which
+    # is meant to buy back more than the overrun. If a run is killed here
+    # again, the next lever is `MQC_COVERAGE_OPT=-O1` (worth about 29% on the
+    # compute-bound cases) and after that splitting the suites across jobs.
+    # Not a third raise: the cost is gcov instrumentation rather than work the
+    # suite could shed -- `mqc_quao` is 12 s in a release build and 704 s under
+    # coverage -- so the ceiling stops being the thing to move.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
