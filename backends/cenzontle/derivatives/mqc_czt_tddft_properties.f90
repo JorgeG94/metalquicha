@@ -152,8 +152,11 @@ module mqc_czt_tddft_properties
       real(dp), allocatable :: f_velocity(:)       !! (n_states) dimensionless
       real(dp), allocatable :: nto_weights(:, :)
          !! (n_pairs, n_states) descending, summing to one down each column.
-         !! `n_pairs` is `min(n_occ, n_vir)`, which is `n_occ` for any basis
-         !! worth running.
+         !! On a restricted spectrum `n_pairs` is `min(n_occ, n_vir)`, which
+         !! is `n_occ` for any basis worth running. On an unrestricted one it
+         !! is that plus `min(n_occ_beta, n_vir_beta)`: each spin's pairs are
+         !! built separately against one norm and then merged, so the column
+         !! is still descending and still sums to one over both spins.
       real(dp), allocatable :: total_energy(:)
          !! (n_states) `E_SCF + w`, the excited state's own total energy
       real(dp) :: origin(3) = 0.0_dp
@@ -389,7 +392,9 @@ contains
       !! the amplitudes are read as the alpha block followed by the beta one,
       !! each set of integrals is transformed into its own orbitals, the two
       !! contributions are summed, and the closed-shell factor of two is gone.
-      !! Without it nothing about this routine has changed.
+      !! Without it nothing about this routine has changed. `n_occ_beta` goes
+      !! with it in both directions: neither half of the pair is accepted
+      !! alone.
       type(czt_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo) alpha, or the closed shell
       integer, intent(in) :: n_occ
@@ -409,8 +414,10 @@ contains
          !! `n_occ_beta` is then required; the amplitude rows are the alpha
          !! occupied-virtual block followed by the beta one.
       integer, intent(in), optional :: n_occ_beta
-         !! Occupied beta orbitals. Required when `orbitals_beta` is present,
-         !! and refused as a validation error when it is not supplied.
+         !! Occupied beta orbitals. The pair is all or nothing and either half
+         !! alone is a validation error: without this the beta amplitude block
+         !! has no shape, and without `orbitals_beta` this would be taken for
+         !! a restricted spectrum and given the closed-shell factor of two.
 
       real(dp), allocatable :: dipole_ao(:, :, :), nabla_ao(:, :, :)
       real(dp), allocatable :: dipole_mo(:, :, :), nabla_mo(:, :, :)
@@ -442,6 +449,15 @@ contains
       if (n_occ < 1 .or. n_vir < 1) then
          call error%set(ERROR_VALIDATION, "transition properties need at least one "// &
                         "occupied and one virtual orbital")
+         return
+      end if
+
+      if (.not. unrestricted .and. present(n_occ_beta)) then
+         call error%set(ERROR_VALIDATION, "a beta occupation count was handed to the "// &
+                        "transition properties without the beta orbitals it counts. "// &
+                        "Refused rather than ignored: taking this for a restricted "// &
+                        "spectrum would put the closed-shell factor of two on an "// &
+                        "unrestricted one")
          return
       end if
 

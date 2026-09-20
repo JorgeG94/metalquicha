@@ -3530,7 +3530,8 @@ contains
       type(rhf_result_t) :: scf
       type(xc_context_t) :: ctx
       type(error_t) :: err
-      type(excited_properties_t) :: props_r, props_u
+      type(excited_properties_t) :: props_r, props_u, props_half
+      type(error_t) :: half_err
       real(dp), allocatable :: omega(:), x(:, :), y(:, :)
       real(dp), allocatable :: x_two(:, :), y_two(:, :)
       integer, allocatable :: spins(:)
@@ -3556,6 +3557,24 @@ contains
 
       call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
                               x, y, scf%energy, props_r, err)
+
+      ! The optional pair is refused half at a time in both directions. The
+      ! direction checked here is the silent one: a beta occupation count with
+      ! no beta orbitals looks restricted, and would be given the closed-shell
+      ! factor of two over an unrestricted spectrum.
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
+                              x, y, scf%energy, props_half, half_err, &
+                              n_occ_beta=scf%n_occupied)
+      call check(error, half_err%has_error(), &
+                 "a beta occupation count with no beta orbitals was accepted, and "// &
+                 "the restricted spin sum used on it")
+      call half_err%clear()
+      call props_half%destroy()
+      if (allocated(error)) then
+         call mol%destroy()
+         call props_r%destroy()
+         return
+      end if
 
       ! The same states in the unrestricted layout: the alpha block, then an
       ! identical beta block over identical orbitals.
