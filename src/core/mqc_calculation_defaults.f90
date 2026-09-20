@@ -23,6 +23,27 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_RESPONSE_MAX_ITER = 50
    !! Krylov cycles the solve may take before it reports non-convergence.
 
+   ! =========================================================================
+   ! Excited states
+   ! =========================================================================
+   real(dp), parameter, public :: DEFAULT_EXCITED_TOL = 1.0e-6_dp
+   !! Residual at which the linear-response eigensolver accepts an excitation.
+   !!
+   !! Looser than the Hessian's response solve because the answer is an
+   !! eigenvalue rather than a quantity the response propagates linearly into,
+   !! and because the exchange-correlation quadrature underneath it carries its
+   !! own error well above this for any grid a production run uses.
+   real(dp), parameter, public :: MIN_EXCITED_TOL = 1.0e-8_dp
+   !! The tightest residual a deck may ask of that solver.
+   !!
+   !! Below roughly 1e-7 the reference implementations stop converging at all
+   !! on a real grid, so a tighter request does not buy accuracy -- it buys
+   !! iterations that never terminate. Refused in the reader by name rather
+   !! than silently clamped, so a deck that asked for 1e-12 is told the number
+   !! it asked for does not exist.
+   integer, parameter, public :: DEFAULT_EXCITED_MAX_ITER = 100
+   !! Davidson cycles the excitation solver may take before it gives up.
+
    real(dp), parameter, public :: DEFAULT_STABILITY_TOL = 1.0e-6_dp
    !! Root-mean-square residual at which a wavefunction stability analysis
    !! accepts its lowest orbital-rotation eigenpair. Looser than the response

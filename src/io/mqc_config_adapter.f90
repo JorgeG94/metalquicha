@@ -265,6 +265,18 @@ contains
       driver_config%method_config%soscf_start = mqc_config%scf_soscf_start
       driver_config%hessian%temperature = mqc_config%hessian_temperature
       driver_config%hessian%pressure = mqc_config%hessian_pressure
+
+      ! Linear-response excited states. `enabled` is derived here and nowhere
+      ! else: a root count and a switch that could disagree would be two ways
+      ! to ask the same question, and the deck has only one.
+      driver_config%method_config%excited%n_states = mqc_config%excited_n_states
+      driver_config%method_config%excited%enabled = mqc_config%excited_n_states > 0
+      driver_config%method_config%excited%method = mqc_config%excited_method
+      driver_config%method_config%excited%spin = mqc_config%excited_spin
+      driver_config%method_config%excited%tolerance = mqc_config%excited_tolerance
+      driver_config%method_config%excited%max_iter = mqc_config%excited_max_iter
+      driver_config%method_config%excited%max_subspace = mqc_config%excited_max_subspace
+      driver_config%method_config%excited%batch = mqc_config%excited_batch
       driver_config%aimd%dt = mqc_config%aimd_dt
       driver_config%aimd%nsteps = mqc_config%aimd_nsteps
       driver_config%aimd%initial_temperature = mqc_config%aimd_initial_temperature

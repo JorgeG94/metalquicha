@@ -22,6 +22,8 @@ module mqc_config_types
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
                                        DEFAULT_RESPONSE_BATCH, &
+                                       DEFAULT_EXCITED_TOL, &
+                                       DEFAULT_EXCITED_MAX_ITER, &
                                        EFP_RESPONSE_AUTO, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
@@ -464,6 +466,37 @@ module mqc_config_types
          !! Cycles that solve may take
       integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
          !! Perturbations solved together, sharing each integral pass
+
+      ! Excited states, read from `keywords.excited_states`. Absent, or
+      ! `n_states` left at zero, means no linear-response step runs and
+      ! nothing below is looked at.
+      integer :: excited_n_states = 0
+         !! `keywords.excited_states.n_states`. Zero is off, and is the only
+         !! value that is: a deck naming this block at all but asking for no
+         !! roots has asked for nothing, which is the same calculation.
+      character(len=16) :: excited_method = "rpa"
+         !! `keywords.excited_states.method`: "tda" (Tamm-Dancoff, the
+         !! Hermitian A-only problem) or "rpa" (the full Casida problem). Two
+         !! different approximations with different energies, so the choice is
+         !! named rather than defaulted per backend. Validated in the reader
+         !! and stored lowercased.
+      character(len=16) :: excited_spin = "singlet"
+         !! `keywords.excited_states.spin`: "singlet", "triplet" or "both".
+         !! A closed-shell reference has no spin-adapted solution that carries
+         !! both in one eigenproblem, so "both" is two solves, not one.
+      real(dp) :: excited_tolerance = DEFAULT_EXCITED_TOL
+         !! Residual at which the eigensolver accepts a root. Refused below
+         !! `MIN_EXCITED_TOL`; see that constant for why.
+      integer :: excited_max_iter = DEFAULT_EXCITED_MAX_ITER
+         !! Cycles that solve may take.
+      integer :: excited_max_subspace = 0
+         !! Trial vectors the Davidson subspace may hold before it collapses.
+         !! Zero means the solver's own rule, which is derived from the number
+         !! of roots; a deck sets this only to bound memory.
+      integer :: excited_batch = DEFAULT_RESPONSE_BATCH
+         !! Trial vectors contracted against one pass over the integrals. The
+         !! same machine trade-off `keywords.hessian.response_batch` makes, on
+         !! a different solve.
 
       ! AIMD settings
       real(dp) :: aimd_dt = DEFAULT_AIMD_DT                          !! Timestep (femtoseconds)

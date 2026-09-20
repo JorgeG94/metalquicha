@@ -191,6 +191,19 @@ contains
             call h%real(config%pcm%radii_scale)
             call h%real(config%pcm%zeta)
          end if
+         ! The excitations, when any were asked for. Without these a
+         ! checkpoint holding three roots would satisfy a deck asking for ten,
+         ! and a TDA run would satisfy an RPA one -- same reference, same
+         ! total energy, different answer to the question the deck asked.
+         ! `max_iter`, `max_subspace` and `batch` are deliberately absent:
+         ! they say how the same roots are reached, not which roots they are.
+         if (config%excited%enabled) then
+            call h%text("excited")
+            call h%int(config%excited%n_states)
+            call h%text(trim(config%excited%method))
+            call h%text(trim(config%excited%spin))
+            call h%real(config%excited%tolerance)
+         end if
       end select
    end subroutine add_method
 

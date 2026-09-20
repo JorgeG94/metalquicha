@@ -27,7 +27,9 @@ module test_mqc_json_reader
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
                                        DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
                                        EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
-                                       EFP_RESPONSE_MATRIX_FREE
+                                       EFP_RESPONSE_MATRIX_FREE, &
+                                       DEFAULT_EXCITED_TOL, DEFAULT_EXCITED_MAX_ITER, &
+                                       DEFAULT_RESPONSE_BATCH
    use mqc_error, only: error_t
    use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
                               BACKEND_CZT, method_runs_on_cuest
@@ -82,6 +84,7 @@ contains
                   new_unittest("error_missing_schema", test_missing_schema), &
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
+                  new_unittest("excited_states_keywords", test_excited_states), &
                   new_unittest("cc_spin_adapted_keyword", test_cc_spin_adapted), &
                   new_unittest("mcscf_keywords", test_mcscf_keywords), &
                   new_unittest("casci_spelling_fixes_the_orbitals", test_casci_spelling), &
@@ -1496,6 +1499,125 @@ contains
       if (allocated(error)) return
       call check(error, config%cc_maxiter, 100, "cc.maxiter keeps its default")
    end subroutine test_cc_keywords
+
+   subroutine test_excited_states(error)
+      !! `keywords.excited_states`: every key, the defaults, and the two refusals
+      !!
+      !! The absent-block case is the one that matters most. Layer 1 is
+      !! plumbing with no physics behind it, and its whole contract is that a
+      !! deck saying nothing runs exactly the calculation it ran before -- which
+      !! here means `n_states` staying at zero, because that is the flag every
+      !! layer above tests.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Every key named at once, none of them at its default.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 6, "method": "TDA", '// &
+                      '"spin": "Both", "tolerance": 1.0e-7, "max_iter": 40, '// &
+                      '"max_subspace": 120, "batch": 5}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%excited_n_states, 6)
+      if (allocated(error)) return
+      ! Stored lowercased, so a downstream `select case` needs no second table.
+      call check(error, trim(config%excited_method) == "tda", &
+                 "excited_states.method must be stored lowercased")
+      if (allocated(error)) return
+      call check(error, trim(config%excited_spin) == "both", &
+                 "excited_states.spin must be stored lowercased")
+      if (allocated(error)) return
+      call check(error, close_enough(config%excited_tolerance, 1.0e-7_dp))
+      if (allocated(error)) return
+      call check(error, config%excited_max_iter, 40)
+      if (allocated(error)) return
+      call check(error, config%excited_max_subspace, 120)
+      if (allocated(error)) return
+      call check(error, config%excited_batch, 5)
+      if (allocated(error)) return
+
+      ! A key not named keeps its default rather than whatever the previous
+      ! deck left behind: `optional_*` writes only where the key exists.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%excited_n_states, 3)
+      if (allocated(error)) return
+      call check(error, trim(config%excited_method) == "rpa", &
+                 "the full response problem is the default")
+      if (allocated(error)) return
+      call check(error, trim(config%excited_spin) == "singlet", &
+                 "singlets are the default")
+      if (allocated(error)) return
+      call check(error, close_enough(config%excited_tolerance, DEFAULT_EXCITED_TOL))
+      if (allocated(error)) return
+      call check(error, config%excited_max_iter, DEFAULT_EXCITED_MAX_ITER)
+      if (allocated(error)) return
+      call check(error, config%excited_max_subspace, 0, &
+                 "zero is how the deck leaves the subspace to the solver")
+      if (allocated(error)) return
+      call check(error, config%excited_batch, DEFAULT_RESPONSE_BATCH)
+      if (allocated(error)) return
+
+      ! The block absent entirely: off, which is what leaves every existing
+      ! calculation unchanged.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%excited_n_states, 0, &
+                 "a deck with no excited_states block must ask for no roots")
+      if (allocated(error)) return
+
+      ! A misspelled method is refused rather than resolved, for the reason
+      ! `read_efp_response` gives: TDA and RPA are different numbers.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "method": "casida"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown excited_states.method was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "spin": "quintet"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown excited_states.spin was accepted")
+      if (allocated(error)) return
+
+      ! And the tolerance floor. Refused rather than clamped: a run reporting
+      ! convergence at a threshold the deck never asked for is worse than one
+      ! that stops.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "tolerance": 1.0e-12}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a tolerance below the floor was accepted")
+      if (allocated(error)) return
+
+      ! The floor itself is allowed; the refusal is strictly below it.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "tolerance": 1.0e-8}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+
+      ! A negative root count is not "off"; zero is. Refused so the two cannot
+      ! be confused by a deck generator that subtracts.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": -1}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a negative root count was accepted")
+   end subroutine test_excited_states
 
    subroutine test_mcscf_keywords(error)
       !! keywords.mcscf, every key of it
