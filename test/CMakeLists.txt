@@ -149,6 +149,10 @@ if(MQC_ENABLE_CZT)
   # beside its neighbours rather than behind another condition.
   addlongtest(mqc_xc_hessian)
   target_link_libraries(test_mqc_xc_hessian PRIVATE cint_fortran cint)
+  # The kernel cache against the per-block evaluation it replaces: exactly, at
+  # one thread, on a GGA, a meta-GGA and a hybrid. Skips itself without libxc.
+  addtest(mqc_xc_kernel_cache)
+  target_link_libraries(test_mqc_xc_kernel_cache PRIVATE ${MQC_INTEGRALS_LIBS})
   # The second exchange derivative a range-separated functional needs, against a
   # difference of its own energy. Skips itself without libxc.
   addlongtest(mqc_rsh_gradient)
