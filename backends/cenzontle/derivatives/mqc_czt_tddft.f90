@@ -239,7 +239,15 @@ module mqc_czt_tddft
 
    type, extends(sigma_operator_t) :: tda_operator_t
       !! `A` as something `mqc_davidson` will multiply a vector by
-      type(response_core_t) :: core
+      type(response_core_t), allocatable :: core
+         !! Allocated by the builder below, or moved in by `solve_manifold`.
+         !!
+         !! Allocatable and not a plain component so that lending a core to a
+         !! route is a `move_alloc` and not an intrinsic assignment. The core
+         !! carries `xc_kernel_cache_t` by value, whose thirteen grid-sized
+         !! arrays an assignment deep-copies: on a solve over both manifolds
+         !! that is a second copy of the whole quadrature alive for the length
+         !! of the solve, three times over.
    contains
       procedure :: apply => tda_apply
       procedure :: apply_many => tda_apply_many
@@ -249,7 +257,15 @@ module mqc_czt_tddft
 
    type, extends(paired_operator_t) :: rpa_operator_t
       !! `(A+B)` and `(A-B)` as something `mqc_czt_rpa_solver` will pair up
-      type(response_core_t) :: core
+      type(response_core_t), allocatable :: core
+         !! Allocated by the builder below, or moved in by `solve_manifold`.
+         !!
+         !! Allocatable and not a plain component so that lending a core to a
+         !! route is a `move_alloc` and not an intrinsic assignment. The core
+         !! carries `xc_kernel_cache_t` by value, whose thirteen grid-sized
+         !! arrays an assignment deep-copies: on a solve over both manifolds
+         !! that is a second copy of the whole quadrature alive for the length
+         !! of the solve, three times over.
    contains
       procedure :: apply_plus => rpa_apply_plus
       procedure :: apply_minus => rpa_apply_minus
@@ -262,7 +278,15 @@ module mqc_czt_tddft
       !! `singlet_excitations` with `method = "casida"` and refused for
       !! anything carrying exact exchange, where `(A-B)` is not the diagonal
       !! it assumes.
-      type(response_core_t) :: core
+      type(response_core_t), allocatable :: core
+         !! Allocated by the builder below, or moved in by `solve_manifold`.
+         !!
+         !! Allocatable and not a plain component so that lending a core to a
+         !! route is a `move_alloc` and not an intrinsic assignment. The core
+         !! carries `xc_kernel_cache_t` by value, whose thirteen grid-sized
+         !! arrays an assignment deep-copies: on a solve over both manifolds
+         !! that is a second copy of the whole quadrature alive for the length
+         !! of the solve, three times over.
       real(dp), allocatable :: root_gaps(:)
          !! (n_ov) `sqrt(e_a - e_i)`, flat
    contains
@@ -669,6 +693,7 @@ contains
       character(len=*), intent(in), optional :: spin
          !! `singlet`, `triplet` or `both`; see `build_response_core`.
 
+      allocate (operator%core)
       if (present(xc)) then
          call build_response_core(mol, orbitals, energies, n_occ, operator%core, &
                                   error, xc=xc, reference=reference, bounds=bounds, &
@@ -695,6 +720,7 @@ contains
       character(len=*), intent(in), optional :: spin
          !! `singlet`, `triplet` or `both`; see `build_response_core`.
 
+      allocate (operator%core)
       if (present(xc)) then
          call build_response_core(mol, orbitals, energies, n_occ, operator%core, &
                                   error, xc=xc, reference=reference, bounds=bounds, &
@@ -844,7 +870,9 @@ contains
       !! frequency itself, which is a statement about `(A+B)` on the subspace
       !! and true whether or not the solve had converged, and
       !! `name_the_instability` relabels only that one reason.
-      type(response_core_t), intent(inout) :: core
+      type(response_core_t), allocatable, intent(inout) :: core
+         !! Lent to the route's operator for the length of the solve and
+         !! given back, rather than copied into it: see `tda_operator_t`.
       character(len=*), intent(in) :: route     !! `tda`, `rpa` or `casida`
       logical, intent(in) :: is_triplet
       integer, intent(in) :: n_states
@@ -878,65 +906,73 @@ contains
       n_solve = roots_to_solve(diagonal, n_states)
       allocate (all_x(n_ov, n_solve), all_y(n_ov, n_solve))
 
+      ! Each route takes the core, works, and hands it back. `move_alloc`
+      ! rather than assignment, and every branch below therefore runs to the
+      ! end of its `case` instead of returning out of it -- a `return` from
+      ! the middle would leave the caller's core unallocated for the second
+      ! manifold.
       select case (trim(route))
       case ("rpa")
-         rpa%core = core
+         call move_alloc(core, rpa%core)
          call rpa_solve(rpa, diagonal, n_solve, raw, xpy, xmy, residuals, &
                         iterations, products, converged, error, tolerance=tol, &
                         max_iterations=max_iter, max_subspace=subspace, &
                         verbose=verbose, label=manifold//" RPA iterations", &
                         reason=why)
-         core%n_products = rpa%core%n_products
          if (error%has_error()) then
             call name_the_instability(is_triplet, why, error)
-            return
+         else
+            ! `xpy . xmy = 1` out of the solver; the closed-shell convention
+            ! is a half of that, and both vectors take the same factor so
+            ! their half sum and half difference are `X` and `Y`.
+            do k = 1, n_solve
+               all_x(:, k) = sqrt(RHF_PAIRED_NORM)*0.5_dp*(xpy(:, k) + xmy(:, k))
+               all_y(:, k) = sqrt(RHF_PAIRED_NORM)*0.5_dp*(xpy(:, k) - xmy(:, k))
+            end do
          end if
-         ! `xpy . xmy = 1` out of the solver; the closed-shell convention is a
-         ! half of that, and both vectors take the same factor so their half
-         ! sum and half difference are `X` and `Y`.
-         do k = 1, n_solve
-            all_x(:, k) = sqrt(RHF_PAIRED_NORM)*0.5_dp*(xpy(:, k) + xmy(:, k))
-            all_y(:, k) = sqrt(RHF_PAIRED_NORM)*0.5_dp*(xpy(:, k) - xmy(:, k))
-         end do
+         call move_alloc(rpa%core, core)
       case ("casida")
-         casida%core = core
+         call move_alloc(core, casida%core)
          if (casida%core%has_exchange()) then
             call error%set(ERROR_VALIDATION, "the Casida reduction assumes (A-B) is "// &
                            "the orbital-energy diagonal, which holds only for a "// &
                            "functional carrying no exact exchange; this reference "// &
                            "keeps a fraction of it, so ask for 'rpa'")
-            return
+         else
+            casida%root_gaps = sqrt(diagonal)
+            ! The eigenvalue is `w^2` and so is the preconditioner: `dEps^2`
+            ! is the diagonal of the reduced operator up to its two-electron
+            ! part, the way `dEps` is the diagonal of `A`.
+            call davidson_flat(casida, diagonal*diagonal, n_solve, raw, vectors, &
+                               residuals, iterations, products, converged, error, &
+                               tolerance=tol, max_iterations=max_iter, &
+                               max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
+                               verbose=verbose, label=manifold//" Casida iterations", &
+                               value_label="omega^2")
+            if (.not. error%has_error()) then
+               call casida_amplitudes(raw, vectors, diagonal, all_x, all_y)
+               ! A negative `w^2` is the instability arriving as an imaginary
+               ! frequency rather than as a failed factorisation, so it is
+               ! clamped to zero here and caught by the floor below.
+               raw = sqrt(max(raw, 0.0_dp))
+            end if
          end if
-         casida%root_gaps = sqrt(diagonal)
-         ! The eigenvalue is `w^2` and so is the preconditioner: `dEps^2` is
-         ! the diagonal of the reduced operator up to its two-electron part,
-         ! the way `dEps` is the diagonal of `A`.
-         call davidson_flat(casida, diagonal*diagonal, n_solve, raw, vectors, &
-                            residuals, iterations, products, converged, error, &
-                            tolerance=tol, max_iterations=max_iter, &
-                            max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
-                            verbose=verbose, label=manifold//" Casida iterations", &
-                            value_label="omega^2")
-         core%n_products = casida%core%n_products
-         if (error%has_error()) return
-         call casida_amplitudes(raw, vectors, diagonal, all_x, all_y)
-         ! A negative `w^2` is the instability arriving as an imaginary
-         ! frequency rather than as a failed factorisation, so it is clamped
-         ! to zero here and caught by the floor below.
-         raw = sqrt(max(raw, 0.0_dp))
+         call move_alloc(casida%core, core)
       case default
-         tda%core = core
+         call move_alloc(core, tda%core)
          call davidson_flat(tda, diagonal, n_solve, raw, vectors, residuals, &
                             iterations, products, converged, error, tolerance=tol, &
                             max_iterations=max_iter, &
                             max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
                             verbose=verbose, label=manifold//" TDA iterations", &
                             value_label="excitation")
-         core%n_products = tda%core%n_products
-         if (error%has_error()) return
-         all_x = vectors
-         all_y = 0.0_dp
+         if (.not. error%has_error()) then
+            all_x = vectors
+            all_y = 0.0_dp
+         end if
+         call move_alloc(tda%core, core)
       end select
+      if (error%has_error()) return
 
       if (.not. converged) then
          call error%set(ERROR_GENERIC, "the "//manifold//" "//trim(route)//" solve "// &
@@ -1103,7 +1139,7 @@ contains
       logical, intent(in), optional :: verbose
          !! A line per iteration. Each one is an integral pass.
 
-      type(response_core_t) :: core
+      type(response_core_t), allocatable :: core
       real(dp), allocatable :: e_singlet(:), xs(:, :), ys(:, :)
       real(dp), allocatable :: e_triplet(:), xt(:, :), yt(:, :)
       real(dp) :: tol
@@ -1145,6 +1181,7 @@ contains
          return
       end select
 
+      allocate (core)
       if (present(xc)) then
          call build_response_core(mol, orbitals, energies, n_occ, core, error, &
                                   xc=xc, reference=reference, bounds=bounds, &
