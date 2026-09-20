@@ -33,6 +33,7 @@ module test_mqc_json_reader
                               BACKEND_CZT, method_runs_on_cuest
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_dispersion, only: dispersion_available
+   use mqc_dispersion_d4, only: dispersion_d4_available
    use pic_types, only: dp
    implicit none
    private
@@ -1386,6 +1387,28 @@ contains
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
                  "an unwired correction must be refused, not silently accepted")
+      if (allocated(error)) return
+
+      ! "d4" is a second correction from a second library behind a second
+      ! option, so the same deck is accepted or refused by a different fact
+      ! about the build than "d3bj" is -- and the refusal has to name the D4
+      ! option, not the D3 one.
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"dispersion": "d4"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      if (dispersion_d4_available()) then
+         call check(error,.not. parse_error%has_error(), parse_error%get_message())
+         if (allocated(error)) return
+         call check(error, config%dft_dispersion, "naming a correction must switch it on")
+         if (allocated(error)) return
+         call check(error, trim(config%dft_dispersion_type), "d4")
+      else
+         call check(error, parse_error%has_error(), &
+                    "a build without dftd4 must refuse the keyword, not ignore it")
+         if (allocated(error)) return
+         call check(error, index(parse_error%get_message(), "MQC_ENABLE_DFTD4") > 0, &
+                    "a refused D4 deck must name MQC_ENABLE_DFTD4 and not MQC_ENABLE_DFTD3")
+      end if
    end subroutine test_dft_dispersion
 
    subroutine test_cc_spin_adapted(error)

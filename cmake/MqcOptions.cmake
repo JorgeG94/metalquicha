@@ -160,6 +160,27 @@ set(MQC_DFTD3_TAG
     "v1.4.0"
     CACHE STRING "s-dftd3 revision to build against")
 
+# Empirical dispersion -- -D4 on a Kohn-Sham energy and gradient.
+#
+# Off by default for the same licensing reason: dftd4 is LGPL-3.0-or-later. Same
+# treatment as s-dftd3 above -- C API, shared, separable -- and the resolution
+# against tblite's own copy is recorded beside it in
+# cmake/MqcDependencies.cmake.
+#
+# Independent of MQC_ENABLE_DFTD3, and deliberately not implied by it. They are
+# two libraries, each with its own pin and its own fetch, and a build that wants
+# only `"d4"` should not have to carry the other. `keywords.dft.dispersion`
+# refuses per correction and names the option that would have supplied it, so
+# neither half of the pair can be missing silently.
+option(MQC_ENABLE_DFTD4
+       "Fetch dftd4 for charge-dependent empirical dispersion on DFT" OFF)
+set(MQC_DFTD4_REPOSITORY
+    "https://github.com/dftd4/dftd4"
+    CACHE STRING "Where to fetch dftd4 from")
+set(MQC_DFTD4_TAG
+    "v4.2.0"
+    CACHE STRING "dftd4 revision to build against")
+
 # Which CODATA revision the Bohr radius in mqc_physical_constants follows. Only
 # the length conversion is selected this way; see that module for why.
 set(MQC_CODATA_YEAR
