@@ -161,6 +161,14 @@ contains
       real(dp) :: worst, manifold_gap
       logical :: ok
 
+      ! As every other case here does, and for a reason this one makes sharp:
+      ! `triplet_case` reports a libxc-less build as `ok = .true.` -- nothing
+      ! went wrong -- while leaving `manifold_gap` at zero. Read as "the
+      ! outputs are meaningful" that is a failure of the second assertion
+      ! below, which is what turned three of the eleven CI jobs red: the three
+      ! built with MQC_ENABLE_LIBXC=OFF.
+      if (.not. xc_available()) return
+
       call triplet_case("pbe", worst, manifold_gap, error, ok)
       if (allocated(error) .or. .not. ok) return
       call check(error, worst == 0.0_dp, "the cached triplet kernel differs from "// &
@@ -217,6 +225,10 @@ contains
          !! the singlet one, which says the polarised evaluation ran
       type(error_type), allocatable, intent(out) :: error
       logical, intent(out) :: ok
+         !! `.true.` means nothing failed, **not** that the outputs are
+         !! meaningful: a build without libxc returns `.true.` with both
+         !! differences left at zero. Guard on `xc_available()` before
+         !! asserting anything about them.
 
       type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx
