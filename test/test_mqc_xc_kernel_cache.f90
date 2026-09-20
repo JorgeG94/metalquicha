@@ -56,7 +56,9 @@ contains
                   new_unittest("cached_gga_kernel_is_bit_identical", test_gga), &
                   new_unittest("cached_mgga_kernel_is_bit_identical", test_mgga), &
                   new_unittest("cached_hybrid_kernel_matches", test_hybrid), &
-                  new_unittest("an_unfilled_cache_is_refused", test_unfilled) &
+                  new_unittest("an_unfilled_cache_is_refused", test_unfilled), &
+                  new_unittest("cached_triplet_kernel_is_bit_identical", test_triplet), &
+                  new_unittest("a_singlet_only_cache_refuses_a_triplet", test_triplet_refused) &
                   ]
    end subroutine collect_mqc_xc_kernel_cache
 
@@ -139,6 +141,146 @@ contains
       call ctx%destroy()
       call mol%destroy()
    end subroutine test_unfilled
+
+   subroutine test_triplet(error)
+      !! The triplet kernel through the cache is the triplet kernel without it
+      !!
+      !! Two paths reach the polarised evaluation: `xc_kernel_cache_fill` makes
+      !! it once over the whole grid, and `kernel_apply_batch` makes it per
+      !! block when there is no cache. A response solve only ever takes the
+      !! first, so without this the second is code nothing runs -- and it is
+      !! the one the first is supposed to be a cache *of*.
+      !!
+      !! The second check is not about caching at all. A triplet kernel that
+      !! was quietly the singlet one would agree with itself through both
+      !! paths and pass everything above; what says the polarised evaluation
+      !! happened is that the two differ, which for PBE they do by three
+      !! orders more than this floor.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst, manifold_gap
+      logical :: ok
+
+      call triplet_case("pbe", worst, manifold_gap, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, worst == 0.0_dp, "the cached triplet kernel differs from "// &
+                 "the evaluated one")
+      if (allocated(error)) return
+      call check(error, manifold_gap > 1.0e-6_dp, "the triplet kernel is indistinguishable "// &
+                 "from the singlet one, so the polarised evaluation did not happen")
+   end subroutine test_triplet
+
+   subroutine test_triplet_refused(error)
+      !! A cache filled for singlets only cannot serve a triplet contraction
+      !!
+      !! It is the right shape and the right grid, and read as though it were
+      !! a triplet cache it would contract the singlet coefficients and return
+      !! a converged spectrum of the wrong manifold.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(xc_kernel_cache_t) :: cache
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), trials(:, :, :), out(:, :, :)
+      integer :: nao
+      logical :: ok
+
+      if (.not. xc_available()) return
+      call reference_state("pbe", mol, ctx, dens, err, ok)
+      if (.not. ok) then
+         call check(error, .false., "the reference Kohn-Sham state failed")
+         return
+      end if
+
+      nao = size(dens, 1)
+      allocate (trials(nao, nao, 1), out(nao, nao, 1))
+      trials(:, :, 1) = dens
+      out = 0.0_dp
+      call xc_kernel_cache_fill(ctx, mol, dens, cache, err)
+      call xc_kernel_apply_many(ctx, mol, dens, trials, out, err, cache=cache, &
+                                triplet=.true.)
+      call check(error, err%has_error(), "a singlet-only cache was read as a triplet one")
+      call cache%destroy()
+      call ctx%destroy()
+      call mol%destroy()
+   end subroutine test_triplet_refused
+
+   subroutine triplet_case(functional, worst, manifold_gap, error, ok)
+      !! The triplet kernel both ways, and how far it is from the singlet one
+      character(len=*), intent(in) :: functional
+      real(dp), intent(out) :: worst
+         !! Largest absolute difference between the cached and the uncached
+         !! triplet contraction. Zero is what is expected, not small.
+      real(dp), intent(out) :: manifold_gap
+         !! Largest absolute difference between the triplet contraction and
+         !! the singlet one, which says the polarised evaluation ran
+      type(error_type), allocatable, intent(out) :: error
+      logical, intent(out) :: ok
+
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(xc_kernel_cache_t) :: cache
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), trials(:, :, :)
+      real(dp), allocatable :: plain(:, :, :), cached(:, :, :), singlet(:, :, :)
+      integer :: nao, iset, threads
+
+      ok = .false.
+      worst = 0.0_dp
+      manifold_gap = 0.0_dp
+      if (.not. xc_available()) then
+         ok = .true.
+         return
+      end if
+
+      threads = 1
+!$    threads = omp_get_max_threads()
+!$    call omp_set_num_threads(1)
+
+      call reference_state(functional, mol, ctx, dens, err, ok)
+      if (.not. ok) then
+         call check(error, .false., "the reference Kohn-Sham state failed")
+!$       call omp_set_num_threads(threads)
+         return
+      end if
+      ok = .false.
+
+      nao = size(dens, 1)
+      call kernel_trials(dens, trials)
+      allocate (plain(nao, nao, N_TRIAL), cached(nao, nao, N_TRIAL), &
+                singlet(nao, nao, N_TRIAL))
+      plain = 0.0_dp
+      cached = 0.0_dp
+      singlet = 0.0_dp
+
+      call xc_kernel_apply_many(ctx, mol, dens, trials, plain, err, triplet=.true.)
+      call xc_kernel_cache_fill(ctx, mol, dens, cache, err, triplet=.true.)
+      call xc_kernel_apply_many(ctx, mol, dens, trials, cached, err, cache=cache, &
+                                triplet=.true.)
+      call xc_kernel_apply_many(ctx, mol, dens, trials, singlet, err, cache=cache)
+
+!$    call omp_set_num_threads(threads)
+
+      call check(error,.not. err%has_error(), "the triplet kernel apply or its cache "// &
+                 "fill failed: "//err%get_message())
+      if (allocated(error)) then
+         call ctx%destroy()
+         call mol%destroy()
+         return
+      end if
+
+      do iset = 1, N_TRIAL
+         worst = max(worst, maxval(abs(cached(:, :, iset) - plain(:, :, iset))))
+         manifold_gap = max(manifold_gap, &
+                            maxval(abs(cached(:, :, iset) - singlet(:, :, iset))))
+      end do
+
+      call cache%destroy()
+      call ctx%destroy()
+      call mol%destroy()
+      ok = .not. allocated(error)
+   end subroutine triplet_case
 
    subroutine cache_case(functional, worst, worst_one, error, ok)
       !! One functional both ways: the largest element-wise disagreement
