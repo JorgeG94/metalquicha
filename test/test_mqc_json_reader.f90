@@ -1581,6 +1581,43 @@ contains
                  "a tolerance below the floor was accepted")
       if (allocated(error)) return
 
+      ! The three integer keys are refused outside their range too. They were
+      ! read straight through, so a batch of zero or a negative iteration
+      ! count validated here and went to the backend to be discovered there,
+      ! or not at all.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "max_iter": 0}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an excited_states.max_iter of zero was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "max_subspace": -1}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a negative excited_states.max_subspace was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "batch": 0}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an excited_states.batch of zero was accepted")
+      if (allocated(error)) return
+
+      ! Zero max_subspace is the documented "take the solver's rule", so it
+      ! stays allowed -- the refusal above is strictly negative.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "max_subspace": 0}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+
       ! The floor itself is allowed; the refusal is strictly below it.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
                       '"excited_states": {"n_states": 3, "tolerance": 1.0e-8}', "", &
