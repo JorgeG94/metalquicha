@@ -1,7 +1,8 @@
-!! Tamm-Dancoff singlet excitation energies, against PySCF
+!! Tamm-Dancoff excitation energies, singlet and triplet, against PySCF
 module test_mqc_czt_tddft
-   !! The Layer 2 gates of `TDDFT_PLAN.md`: the TDA operator `A` itself, and
-   !! the excitation energies a Davidson finds in it.
+   !! The Layer 2 and Layer 3 gates of `TDDFT_PLAN.md`: the TDA operator `A`
+   !! itself, singlet and triplet, and the excitation energies a Davidson
+   !! finds in each.
    !!
    !! ## Why the matrix is checked before the spectrum
    !!
@@ -45,7 +46,8 @@ module test_mqc_czt_tddft
    use mqc_czt_bridge, only: run_czt_hf
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_physical_fragment, only: physical_fragment_t
-   use mqc_result_types, only: calculation_result_t, STATE_SPIN_SINGLET
+   use mqc_result_types, only: calculation_result_t, STATE_SPIN_SINGLET, &
+                               STATE_SPIN_TRIPLET
    implicit none
    private
 
@@ -155,6 +157,85 @@ module test_mqc_czt_tddft
                           1.336370051014_dp, 1.382776200364_dp, 18.798006687739_dp, &
                           18.886782913103_dp]
 
+   !! The **triplet** TDA matrix of H2O/STO-3G, and the same for PBE.
+   !!
+   !! Regenerated from PySCF 2.14 through `bse_to_pyscf` exactly as the singlet
+   !! matrices above were -- `td = tdscf.TDA(mf); td.singlet = False`, then
+   !! `td.gen_vind` on the ten unit vectors. `TDDFT_PLAN.md`'s own triplet
+   !! eigenvalues are 2.3e-8 away from these, which is the size of the
+   !! internal-basis-table error Layer 2 found and not a disagreement about
+   !! the physics; the plan's numbers are not usable at this bound. PySCF's
+   !! own SCF is driven to `conv_tol = 1e-15` for these, not the 1e-12 the
+   !! plan records: the two core-excited elements near 20 hartree move by
+   !! 7e-11 between 1e-13 and 1e-15, which is most of `TOL_EXACT`.
+   !!
+   !! What separates these from the singlet matrices is the whole of Layer 3:
+   !! no Coulomb term at all, and `(f_aa - f_ab)/2` in place of the singlet
+   !! kernel. Either one left as it was moves the diagonal by tenths of a
+   !! Hartree, so this comparison has no way to pass on half the change.
+   real(dp), parameter :: RHF_TRIPLET_A(N_OV, N_OV) = reshape([ &
+                                           20.044631057292_dp, 0.000000000000_dp, 0.006981609406_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, -0.009192048725_dp, 0.021190548711_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 20.114461669827_dp, &
+                                          -0.000000000000_dp, 0.009377471331_dp, -0.009192048725_dp, -0.000000000000_dp, &
+                                           0.000000000000_dp, 0.004183310061_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                            0.006981609406_dp, -0.000000000000_dp, 1.259675258537_dp, 0.000000000000_dp, &
+                                            0.000000000000_dp, -0.098427312376_dp, 0.058471503998_dp, 0.000000000000_dp, &
+                                           -0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, 0.009377471331_dp, &
+                                           0.000000000000_dp, 1.384804093184_dp, -0.098427312376_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, -0.013700945330_dp, 0.000000000000_dp, 0.000000000000_dp, &
+                                           0.000000000000_dp, -0.009192048725_dp, 0.000000000000_dp, -0.098427312376_dp, &
+                                            0.650988069850_dp, 0.000000000000_dp, -0.000000000000_dp, 0.047690906689_dp, &
+                                         -0.000000000000_dp, -0.000000000000_dp, -0.009192048725_dp, -0.000000000000_dp, &
+                                           -0.098427312376_dp, -0.000000000000_dp, 0.000000000000_dp, 0.746582265512_dp, &
+                                           0.047690906689_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                             0.021190548711_dp, 0.000000000000_dp, 0.058471503998_dp, 0.000000000000_dp, &
+                                            -0.000000000000_dp, 0.047690906689_dp, 0.510245234739_dp, 0.000000000000_dp, &
+                                           -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 0.004183310061_dp, &
+                                            0.000000000000_dp, -0.013700945330_dp, 0.047690906689_dp, 0.000000000000_dp, &
+                                           0.000000000000_dp, 0.586343429340_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                         -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                           0.407929748035_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                           0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                              -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 0.507159756493_dp], [N_OV, N_OV])
+   real(dp), parameter :: RHF_TRIPLET_A_EIG(N_OV) = [ &
+                          0.407929748035_dp, 0.493107875364_dp, 0.507159756493_dp, &
+                          0.559509762430_dp, 0.664359533721_dp, 0.742346594321_dp, &
+                          1.281018295514_dp, 1.398256329686_dp, 20.044661050881_dp, &
+                          20.114471636364_dp]
+   real(dp), parameter :: PBE_TRIPLET_A(N_OV, N_OV) = reshape([ &
+                                           18.735778954125_dp, 0.000000000000_dp, -0.005198341883_dp, 0.000000000000_dp, &
+                                            0.000000000000_dp, -0.002468429366_dp, 0.002911017825_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 18.843978547526_dp, &
+                                          0.000000000000_dp, -0.005849745439_dp, -0.002523027196_dp, -0.000000000000_dp, &
+                                           0.000000000000_dp, -0.003704306619_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                           -0.005198341883_dp, 0.000000000000_dp, 1.099749195038_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, -0.031716282447_dp, 0.027507647096_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, -0.005849745439_dp, &
+                                          -0.000000000000_dp, 1.220043699155_dp, -0.034630603385_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, 0.000256133849_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                           0.000000000000_dp, -0.002523027196_dp, 0.000000000000_dp, -0.034630603385_dp, &
+                                            0.646403184515_dp, 0.000000000000_dp, -0.000000000000_dp, 0.027066308972_dp, &
+                                           0.000000000000_dp, 0.000000000000_dp, -0.002468429366_dp, -0.000000000000_dp, &
+                                           -0.031716282447_dp, -0.000000000000_dp, 0.000000000000_dp, 0.732062077467_dp, &
+                                            0.022740831929_dp, 0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, &
+                                             0.002911017825_dp, 0.000000000000_dp, 0.027507647096_dp, 0.000000000000_dp, &
+                                            -0.000000000000_dp, 0.022740831929_dp, 0.438243244281_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, -0.003704306619_dp, &
+                                             0.000000000000_dp, 0.000256133849_dp, 0.027066308972_dp, 0.000000000000_dp, &
+                                            0.000000000000_dp, 0.537318019557_dp, 0.000000000000_dp, -0.000000000000_dp, &
+                                         -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                           0.346438094487_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                           -0.000000000000_dp, 0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, &
+                              -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 0.455508915464_dp], [N_OV, N_OV])
+   real(dp), parameter :: PBE_TRIPLET_A_EIG(N_OV) = [ &
+                          0.346438094487_dp, 0.435145512444_dp, 0.455508915464_dp, &
+                          0.530873240438_dp, 0.650760930701_dp, 0.731465596452_dp, &
+                          1.103441080196_dp, 1.222127692703_dp, 18.735781281819_dp, &
+                          18.843981586911_dp]
+
    integer, parameter :: N_CCPVDZ_STATES = 5
       !! Roots asked for in the cc-pVDZ cases, which is how many the plan's
       !! tables carry.
@@ -191,6 +272,58 @@ module test_mqc_czt_tddft
                           0.283543256194_dp, 0.353278202364_dp, 0.371105546022_dp, &
                           0.445649836132_dp, 0.517104469420_dp]
 
+   integer, parameter :: N_CCPVDZ_TRIPLETS = 3
+      !! Triplets asked for in the cc-pVDZ cases, which is how many the plan's
+      !! tables carry.
+
+   !! H2O/cc-pVDZ, the triplet TDA roots, in Hartree, to twelve decimals.
+   !!
+   !! Regenerated rather than transcribed, as the singlets above were; the
+   !! plan's ten-digit triplet table agrees with these to 1.3e-9, which is
+   !! where it stops saying anything. Same references, same geometry, same
+   !! `grids.level = 5`.
+   real(dp), parameter :: RHF_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.304752995712_dp, 0.382448306917_dp, 0.383738345685_dp]
+   real(dp), parameter :: PBE_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.245640585460_dp, 0.321365211218_dp, 0.322245501451_dp]
+   real(dp), parameter :: B3LYP_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.254376470706_dp, 0.331305647032_dp, 0.331912037086_dp]
+   real(dp), parameter :: CAM_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.256574750592_dp, 0.335035697057_dp, 0.336081588546_dp]
+
+   integer, parameter :: N_BOTH_STATES = 3
+      !! Roots **per manifold** asked for by the `spin = "both"` case, so six
+      !! come back.
+
+   !! The union of the two H2O/STO-3G manifolds, as `spin = "both"` reports
+   !! it: the three lowest of each, sorted together by energy.
+   !!
+   !! The interleaving is the point. Concatenating the manifolds, or sorting
+   !! within them and not across, gives a list in a different order that is
+   !! made of the same numbers -- so the spins have to be checked alongside
+   !! the energies, and both against a hand-merged reference rather than
+   !! against whatever the code produced.
+   real(dp), parameter :: BOTH_STO3G(2*N_BOTH_STATES) = [ &
+                          0.407929748035_dp, 0.485080278078_dp, 0.493107875364_dp, &
+                          0.507159756493_dp, 0.555807696384_dp, 0.617580730515_dp]
+   integer, parameter :: BOTH_STO3G_SPIN(2*N_BOTH_STATES) = [ &
+                         STATE_SPIN_TRIPLET, STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                         STATE_SPIN_TRIPLET, STATE_SPIN_SINGLET, STATE_SPIN_SINGLET]
+
+   !! H2 stretched to 3.0 Angstrom, in Bohr, whose restricted Hartree-Fock
+   !! solution is a saddle point against spin polarisation.
+   !!
+   !! At this separation the closed shell is the textbook wrong answer: the
+   !! lowest triplet TDA root of PySCF's own operator is -0.172235168077
+   !! hartree, and every root above it is an expansion about that saddle
+   !! point. 6-31G rather than STO-3G so the occupied-virtual space is three
+   !! dimensional and the Davidson has somewhere to iterate; the minimal basis
+   !! gives a one-by-one problem, which tests the message and not the solver.
+   real(dp), parameter :: H2_STRETCHED_BOHR(3, 2) = reshape([ &
+                                                            0.0_dp, 0.0_dp, 0.0_dp, &
+                                                            0.0_dp, 0.0_dp, 5.6691783763734843_dp], [3, 2])
+   real(dp), parameter :: H2_STRETCHED_ENERGY = -0.815591795493_dp
+
    !! Hartree-Fock carries no quadrature, so nothing but the integrals and the
    !! two SCF thresholds sits between the codes, and both are converged far
    !! below this. Measured on the STO-3G matrix: 7.7e-13 on the worst diagonal
@@ -199,7 +332,11 @@ module test_mqc_czt_tddft
    !! the compiler-to-compiler spread and still sits eight orders under the
    !! smallest fault it has to catch: halving the kernel, dropping one
    !! exchange term or symmetrising the wrong way each move elements by 1e-2
-   !! and up.
+   !! and up. The triplet matrix lands in the same place, 6.1e-13 on the
+   !! diagonal and 3.8e-13 off it, but only once the reference's own SCF is
+   !! driven to `conv_tol = 1e-15`: at PySCF's ordinary 1e-13 the core-excited
+   !! diagonal elements near 20 hartree still carry 7e-11, which is most of
+   !! this bound spent on the reference rather than on the operator.
    real(dp), parameter :: TOL_EXACT = 1.0e-10_dp
 
    !! A Kohn-Sham comparison is limited by the grid, not by either solver.
@@ -218,6 +355,12 @@ module test_mqc_czt_tddft
    !! double-hybrid Hessian shows can reach 2e-9 on a quadrature of this kind.
    !! Tightening it to the measured numbers would be re-recording a pin to
    !! make it pass on one compiler.
+   !!
+   !! The triplet cases land in the same band: 3.5e-10 on the STO-3G PBE
+   !! matrix and its spectrum, and on cc-pVDZ 1.8e-10 for PBE, 5.6e-10 for
+   !! B3LYP and 1.9e-10 for CAM-B3LYP. The polarised kernel is evaluated on
+   !! the same points as the unpolarised one, so it adds no quadrature error
+   !! of its own.
    real(dp), parameter :: TOL_GRID = 1.0e-7_dp
 
    !! The Davidson's own floor, against a dense diagonalisation of the same
@@ -225,13 +368,15 @@ module test_mqc_czt_tddft
    !! eigenvalue error near an eigenvector is second order in the vector
    !! error, so this is a bound the solver clears by construction rather than
    !! one fitted to it -- measured 1.5e-11 on the worst of the five STO-3G
-   !! roots, against both the dense spectrum and PySCF's.
+   !! roots, against both the dense spectrum and PySCF's, and 1.7e-11 on the
+   !! worst of the six a `spin = "both"` solve merges.
    real(dp), parameter :: TOL_DAVIDSON = 1.0e-9_dp
 
    !! The cc-pVDZ Hartree-Fock roots. Looser than `TOL_EXACT` because these
    !! come out of the Davidson rather than off a dense diagonalisation, so the
    !! solver's own floor is in them as well as the integrals'. Measured
-   !! 3.1e-12 on the worst of the five, so the margin is four orders.
+   !! 3.1e-12 on the worst of the five singlets and 2.2e-12 on the worst of
+   !! the three triplets, so the margin is four orders.
    real(dp), parameter :: TOL_CCPVDZ_HF = 1.0e-8_dp
 
 contains
@@ -248,8 +393,18 @@ contains
                   new_unittest("cc_pvdz_pbe_singlets_match_the_table", test_ccpvdz_pbe), &
                   new_unittest("cc_pvdz_b3lyp_singlets_match_the_table", test_ccpvdz_b3lyp), &
                   new_unittest("cc_pvdz_cam_b3lyp_singlets_match_the_table", test_ccpvdz_cam), &
+                  new_unittest("the_rhf_triplet_tda_matrix_matches_pyscf", &
+                               test_rhf_triplet_matrix), &
+                  new_unittest("the_pbe_triplet_tda_matrix_matches_pyscf", &
+                               test_pbe_triplet_matrix), &
+                  new_unittest("cc_pvdz_rhf_triplets_match_pyscf", test_ccpvdz_rhf_t), &
+                  new_unittest("cc_pvdz_pbe_triplets_match_pyscf", test_ccpvdz_pbe_t), &
+                  new_unittest("cc_pvdz_b3lyp_triplets_match_pyscf", test_ccpvdz_b3lyp_t), &
+                  new_unittest("cc_pvdz_cam_b3lyp_triplets_match_pyscf", test_ccpvdz_cam_t), &
+                  new_unittest("both_manifolds_interleave_by_energy", test_both_spins), &
+                  new_unittest("a_triplet_unstable_reference_is_named", test_instability), &
                   new_unittest("no_states_asked_for_means_no_spectrum", test_no_states), &
-                  new_unittest("rpa_and_triplets_are_refused_by_name", test_later_layers) &
+                  new_unittest("rpa_is_refused_by_name", test_later_layers) &
                   ]
    end subroutine collect_mqc_czt_tddft_tests
 
@@ -283,7 +438,7 @@ contains
       end if
    end subroutine water_sto3g
 
-   subroutine dense_tda(mol, scf, ctx, kohn_sham, a, err)
+   subroutine dense_tda(mol, scf, ctx, kohn_sham, a, err, spin)
       !! The explicit TDA matrix, through the operator the solver uses
       !!
       !! `tda_dense_matrix` applies the shipped operator to the ten unit
@@ -303,18 +458,24 @@ contains
       logical, intent(in) :: kohn_sham
       real(dp), allocatable, intent(out) :: a(:, :)
       type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: spin
+         !! Which manifold, `singlet` when absent -- so every Layer 2 case
+         !! below reaches exactly the operator it always did.
 
       type(tda_operator_t) :: operator
+      character(len=16) :: manifold
 
       if (err%has_error()) return
+      manifold = "singlet"
+      if (present(spin)) manifold = spin
 
       if (kohn_sham) then
          call build_tda_operator(mol, scf%orbitals, scf%orbital_energies, &
                                  scf%n_occupied, operator, err, xc=ctx, &
-                                 reference=scf%density)
+                                 reference=scf%density, spin=trim(manifold))
       else
          call build_tda_operator(mol, scf%orbitals, scf%orbital_energies, &
-                                 scf%n_occupied, operator, err)
+                                 scf%n_occupied, operator, err, spin=trim(manifold))
       end if
       if (err%has_error()) return
 
@@ -535,14 +696,19 @@ contains
       call run_czt_hf(settings, fragment, result)
    end subroutine excited_run
 
-   subroutine compare_roots(error, result, reference, tol, what)
+   subroutine compare_roots(error, result, reference, tol, what, spin_code)
       !! Every root of the table, against what the run reported
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), intent(in) :: result
       real(dp), intent(in) :: reference(:), tol
       character(len=*), intent(in) :: what
+      integer, intent(in), optional :: spin_code
+         !! What every root should be labelled; `STATE_SPIN_SINGLET` absent.
 
-      integer :: i
+      integer :: i, want_spin
+
+      want_spin = STATE_SPIN_SINGLET
+      if (present(spin_code)) want_spin = spin_code
 
       call check(error,.not. result%has_error, "the "//what//" run failed: "// &
                  result%error%get_message())
@@ -567,8 +733,8 @@ contains
       call check(error, allocated(result%state_spin), "the "//what//" run labelled "// &
                  "no spins")
       if (allocated(error)) return
-      call check(error, all(result%state_spin == STATE_SPIN_SINGLET), &
-                 "a singlet solve reported a root that is not labelled a singlet")
+      call check(error, all(result%state_spin == want_spin), &
+                 "a single-manifold solve reported a root labelled with the other spin")
    end subroutine compare_roots
 
    subroutine test_davidson(error)
@@ -678,6 +844,257 @@ contains
       call compare_roots(error, result, CAM_CCPVDZ_TDA, TOL_GRID, "cc-pVDZ CAM-B3LYP")
    end subroutine test_ccpvdz_cam
 
+   subroutine test_rhf_triplet_matrix(error)
+      !! The ten-by-ten triplet TDA matrix of H2O/STO-3G, element by element
+      !!
+      !! Two independent changes separate this matrix from the singlet one
+      !! above, and each on its own is worth a tenth of a Hartree on the
+      !! diagonal: the Coulomb term is gone, and the kernel -- absent here,
+      !! since this is Hartree-Fock -- would be the spin difference. So for
+      !! Hartree-Fock this case is exactly the `j_scale = 0` half of Layer 3,
+      !! isolated from the kernel, and the PBE case below is the other half.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: a(:, :), values(:)
+      logical :: ok
+
+      call water_sto3g(mol, scf, ctx, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the Hartree-Fock reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda(mol, scf, ctx, .false., a, err, spin="triplet")
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the triplet TDA operator failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call compare_matrix(error, a, RHF_TRIPLET_A, TOL_EXACT, "Hartree-Fock triplet")
+      if (allocated(error)) return
+
+      values = eigenvalues_of(a, ok)
+      call check(error, ok, "the dense diagonalisation of the triplet matrix failed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values - RHF_TRIPLET_A_EIG)) < TOL_EXACT, &
+                 "the Hartree-Fock triplet TDA spectrum disagrees with PySCF")
+   end subroutine test_rhf_triplet_matrix
+
+   subroutine test_pbe_triplet_matrix(error)
+      !! The same, for a pure functional, where the triplet kernel is the
+      !! whole of the coupling
+      !!
+      !! PBE has no exact exchange and a triplet has no Coulomb term, so every
+      !! element off the orbital-energy diagonal here comes from
+      !! `(f_aa - f_ab)/2` and nothing else. A triplet kernel evaluated
+      !! unpolarised -- that is, the singlet one left in place -- moves the
+      !! first root by 0.07 hartree, and the four GGA combinations mis-weighted
+      !! against each other move it by less but never by less than this bound.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: a(:, :), values(:)
+      logical :: ok
+
+      if (.not. xc_available()) return
+
+      call water_sto3g(mol, scf, ctx, err, functional="pbe")
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the PBE reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda(mol, scf, ctx, .true., a, err, spin="triplet")
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the PBE triplet TDA operator failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call compare_matrix(error, a, PBE_TRIPLET_A, TOL_GRID, "PBE triplet")
+      if (allocated(error)) return
+
+      values = eigenvalues_of(a, ok)
+      call check(error, ok, "the dense diagonalisation of the PBE triplet matrix failed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values - PBE_TRIPLET_A_EIG)) < TOL_GRID, &
+                 "the PBE triplet TDA spectrum disagrees with PySCF")
+   end subroutine test_pbe_triplet_matrix
+
+   subroutine test_ccpvdz_rhf_t(error)
+      !! The three Hartree-Fock triplets of H2O/cc-pVDZ
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      call excited_run("cc-pvdz", "", N_CCPVDZ_TRIPLETS, "tda", "triplet", result)
+      call compare_roots(error, result, RHF_CCPVDZ_TRIPLET, TOL_CCPVDZ_HF, &
+                         "cc-pVDZ RHF triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_rhf_t
+
+   subroutine test_ccpvdz_pbe_t(error)
+      !! The three PBE triplets
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "pbe", N_CCPVDZ_TRIPLETS, "tda", "triplet", result)
+      call compare_roots(error, result, PBE_CCPVDZ_TRIPLET, TOL_GRID, &
+                         "cc-pVDZ PBE triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_pbe_t
+
+   subroutine test_ccpvdz_b3lyp_t(error)
+      !! The three B3LYP triplets, libxc 402 on both sides
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "b3lyp", N_CCPVDZ_TRIPLETS, "tda", "triplet", result)
+      call compare_roots(error, result, B3LYP_CCPVDZ_TRIPLET, TOL_GRID, &
+                         "cc-pVDZ B3LYP triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_b3lyp_t
+
+   subroutine test_ccpvdz_cam_t(error)
+      !! The three CAM-B3LYP triplets, where both exchange passes and the
+      !! triplet kernel have to be right at once
+      !!
+      !! The only case here that exercises the attenuated exchange build and
+      !! the polarised kernel together. Each of them is separately visible in
+      !! an earlier case, so a failure that appears only here is the
+      !! combination -- most likely the long-range pass being dropped when the
+      !! Coulomb term is.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "cam-b3lyp", N_CCPVDZ_TRIPLETS, "tda", "triplet", &
+                       result)
+      call compare_roots(error, result, CAM_CCPVDZ_TRIPLET, TOL_GRID, &
+                         "cc-pVDZ CAM-B3LYP triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_cam_t
+
+   subroutine test_both_spins(error)
+      !! `spin = "both"` returns one spectrum, sorted across the manifolds
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+      integer :: i
+
+      call excited_run("sto-3g", "", N_BOTH_STATES, "tda", "both", result)
+      call check(error,.not. result%has_error, "the both-manifolds run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, result%has_excited_states, "the both-manifolds run reported "// &
+                 "no excited states")
+      if (allocated(error)) return
+      call check(error, size(result%excitation_energies) == 2*N_BOTH_STATES, &
+                 "asking for both manifolds did not return both manifolds' roots")
+      if (allocated(error)) return
+      call check(error, allocated(result%state_spin), "the both-manifolds run "// &
+                 "labelled no spins")
+      if (allocated(error)) return
+      call check(error, size(result%state_spin) == 2*N_BOTH_STATES, &
+                 "the spin labels are not one per root")
+      if (allocated(error)) return
+
+      do i = 1, 2*N_BOTH_STATES
+         call check(error, abs(result%excitation_energies(i) - BOTH_STO3G(i)) < &
+                    TOL_DAVIDSON, "a root of the merged spectrum is not the one "// &
+                    "that belongs at its position")
+         if (allocated(error)) return
+         call check(error, result%state_spin(i) == BOTH_STO3G_SPIN(i), &
+                    "a root of the merged spectrum carries the wrong spin label")
+         if (allocated(error)) return
+      end do
+   end subroutine test_both_spins
+
+   subroutine h2_stretched_run(n_states, spin, result)
+      !! H2 at 3.0 Angstrom through the bridge, restricted Hartree-Fock
+      integer, intent(in) :: n_states
+      character(len=*), intent(in) :: spin
+      type(calculation_result_t), intent(out) :: result
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      fragment%nelec = 2
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [1, 1]
+      fragment%coordinates = H2_STRETCHED_BOHR
+
+      settings%basis_set = "6-31g"
+      settings%functional = ""
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-9_dp
+      settings%density_tol = 1.0e-9_dp
+      settings%max_iter = 200
+      settings%excited%enabled = n_states > 0
+      settings%excited%n_states = n_states
+      settings%excited%method = "tda"
+      settings%excited%spin = spin
+      settings%excited%tolerance = 1.0e-8_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+   end subroutine h2_stretched_run
+
+   subroutine test_instability(error)
+      !! A triplet-unstable reference is named, not reported as a number
+      !!
+      !! Stretched H2 is where the restricted solution stops being a minimum:
+      !! its lowest triplet TDA root is -0.17 hartree. Two wrong answers are
+      !! possible and both look plausible from outside -- reporting the
+      !! negative root as an excitation, or silently dropping it under the
+      !! floor and handing back the two above it as though a state were merely
+      !! missing. The singlet manifold of the same reference is well behaved,
+      !! which is what the second half of this checks: the diagnosis has to be
+      !! about the triplet operator and not about the molecule being awkward.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+      character(len=:), allocatable :: message
+
+      call h2_stretched_run(1, "triplet", result)
+      call check(error, result%has_error, "a triplet-unstable reference produced a "// &
+                 "spectrum rather than a diagnosis")
+      if (allocated(error)) return
+      message = result%error%get_message()
+      call check(error, index(message, "triplet-unstable") > 0, &
+                 "the failure of a triplet-unstable reference was reported as "// &
+                 "something else: "//message)
+      if (allocated(error)) return
+      call check(error,.not. result%has_excited_states, "a refused triplet-unstable "// &
+                 "run still reported excited states")
+      if (allocated(error)) return
+
+      ! The same molecule, same reference, singlet manifold: an ordinary
+      ! answer. Without this the case would pass just as well for a build
+      ! that refused every excited-state run on stretched H2.
+      call h2_stretched_run(1, "singlet", result)
+      call check(error,.not. result%has_error, "the singlet manifold of the same "// &
+                 "reference failed too: "//result%error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(result%energy%scf - H2_STRETCHED_ENERGY) < TOL_CCPVDZ_HF, &
+                 "the stretched-H2 Hartree-Fock energy is not PySCF's")
+      if (allocated(error)) return
+      call check(error, result%has_excited_states, "the singlet manifold of a "// &
+                 "triplet-unstable reference reported no excited states")
+   end subroutine test_instability
+
    subroutine test_no_states(error)
       !! `n_states = 0` leaves the calculation exactly as it was
       type(error_type), allocatable, intent(out) :: error
@@ -700,11 +1117,16 @@ contains
    end subroutine test_no_states
 
    subroutine test_later_layers(error)
-      !! What Layer 2 does not do is refused by name, not approximated
+      !! What is still unimplemented is refused by name, not approximated
       !!
       !! A TDA number handed back for an RPA deck is the failure worth
       !! guarding against: it converges, it is of the right magnitude, and
       !! nothing in the output says which problem was solved.
+      !!
+      !! This case checked the triplet refusal too until Layer 3 removed it.
+      !! What replaces that half is not a weaker assertion but a stronger one
+      !! -- the four cc-pVDZ triplet cases and the two triplet matrices above
+      !! -- so nothing is lost by the refusal going away.
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t) :: result
 
@@ -714,14 +1136,6 @@ contains
       if (allocated(error)) return
       call check(error,.not. result%has_excited_states, "a refused RPA deck still "// &
                  "reported excited states")
-      if (allocated(error)) return
-
-      call excited_run("sto-3g", "", 2, "tda", "triplet", result)
-      call check(error, result%has_error, "a triplet deck was answered rather than "// &
-                 "refused")
-      if (allocated(error)) return
-      call check(error,.not. result%has_excited_states, "a refused triplet deck "// &
-                 "still reported excited states")
    end subroutine test_later_layers
 
 end module test_mqc_czt_tddft
