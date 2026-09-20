@@ -46,6 +46,8 @@ module mqc_czt_bridge
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                               nuclear_repulsion_hessian, response_hessian
    use mqc_czt_tddft, only: response_excitations
+   use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
+                                       log_property_table
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
@@ -1516,10 +1518,8 @@ contains
             real(dp), allocatable :: omega(:), x_amplitudes(:, :), y_amplitudes(:, :)
             integer, allocatable :: omega_spin(:)
             type(error_t) :: td_error
-            ! The amplitudes are taken and dropped. They are what Layer 5's
-            ! transition dipoles and natural transition orbitals are built
-            ! from, and the solve produces them whether or not anything reads
-            ! them, so the arguments are here rather than added later.
+            type(excited_properties_t) :: props
+            integer :: state
 
             if (kohn_sham) then
                call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
@@ -1554,13 +1554,35 @@ contains
                call mol%destroy()
                return
             end if
-            ! Oscillator strengths and transition dipoles are Layer 5 and are
-            ! deliberately left unallocated: the writer omits what is absent,
-            ! and a column of zeros would read as a dark spectrum rather than
-            ! as a property that was not computed.
             result%excitation_energies = omega
             result%state_spin = omega_spin
             result%has_excited_states = size(omega) > 0
+
+            ! The transition moments, over the same amplitudes and the same
+            ! molecule. A failure here is reported rather than propagated:
+            ! the spectrum is already computed and correct, and refusing to
+            ! report it because a one-electron integral set could not be
+            ! formed would throw away the expensive half of the answer.
+            if (result%has_excited_states) then
+               call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, &
+                                       omega_spin, x_amplitudes, y_amplitudes, &
+                                       scf%energy, props, td_error)
+               if (td_error%has_error()) then
+                  call logger%warning("  the transition properties could not be "// &
+                                      "computed: "//td_error%get_message())
+               else
+                  call log_property_table(props, omega, omega_spin)
+                  result%oscillator_strengths = props%f_length
+                  result%oscillator_strengths_velocity = props%f_velocity
+                  result%transition_dipoles = props%transition_dipole
+                  allocate (result%nto_leading_weight(size(omega)))
+                  do state = 1, size(omega)
+                     result%nto_leading_weight(state) = &
+                        maxval(props%nto_weights(:, state))
+                  end do
+               end if
+               call props%destroy()
+            end if
          end block
       end if
 

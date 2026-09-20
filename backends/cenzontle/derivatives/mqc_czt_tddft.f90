@@ -93,16 +93,18 @@ module mqc_czt_tddft
    !! **Every route returns `|X|^2 - |Y|^2 = 1/2`,** which in Tamm-Dancoff --
    !! where `Y` is zero -- reads `|X|^2 = 1/2`. It is the restricted
    !! closed-shell convention PySCF and Psi4 report, and the one the
-   !! transition moments of Layer 5 are written in. One convention rather than
+   !! transition moments next door are written in. One convention rather than
    !! two, so nothing downstream has to ask which route produced what it was
    !! handed.
    !!
    !! ## What is not here
    !!
-   !! Oscillator strengths, a meta-GGA triplet kernel and an unrestricted
-   !! reference. `excited_decline_reason` in `mqc_czt_bridge` refuses what
-   !! cannot be computed; the bridge refuses the rest by name rather than
-   !! answering a different question.
+   !! A meta-GGA triplet kernel and an unrestricted reference. Transition
+   !! moments, oscillator strengths and natural transition orbitals are in
+   !! `mqc_czt_tddft_properties`, over the amplitudes this returns.
+   !! `excited_decline_reason` in `mqc_czt_bridge` refuses what cannot be
+   !! computed; the bridge refuses the rest by name rather than answering a
+   !! different question.
    use pic_types, only: dp
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger

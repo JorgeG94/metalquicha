@@ -176,9 +176,16 @@ module mqc_result_types
       real(dp), allocatable :: oscillator_strengths(:)
          !! (n_states) dimensionless length-gauge oscillator strengths. Exactly
          !! zero for a triplet, which is a real value and not a missing one.
+      real(dp), allocatable :: oscillator_strengths_velocity(:)
+         !! (n_states) the same strengths in the velocity gauge. The two
+         !! agree only in a complete basis, so both are reported: the gap
+         !! between them measures the basis rather than the solve.
       real(dp), allocatable :: transition_dipoles(:, :)
          !! (3, n_states) transition dipole moments in atomic units, with the
          !! origin at the nuclear charge centroid.
+      real(dp), allocatable :: nto_leading_weight(:)
+         !! (n_states) the largest natural transition orbital weight, between
+         !! zero and one. One says the root is exactly one orbital pair.
       integer, allocatable :: state_spin(:)
          !! (n_states) which spin each root carries, as `STATE_SPIN_*`. Carried
          !! per state rather than once for the run because a `spin: "both"`
@@ -383,7 +390,11 @@ contains
       if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
       if (allocated(this%excitation_energies)) deallocate (this%excitation_energies)
       if (allocated(this%oscillator_strengths)) deallocate (this%oscillator_strengths)
+      if (allocated(this%oscillator_strengths_velocity)) then
+         deallocate (this%oscillator_strengths_velocity)
+      end if
       if (allocated(this%transition_dipoles)) deallocate (this%transition_dipoles)
+      if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
       call this%reset()
    end subroutine result_destroy
@@ -590,7 +601,9 @@ contains
       if (result%has_excited_states) then
          call send(comm, result%excitation_energies, dest, tag)
          call send(comm, result%oscillator_strengths, dest, tag)
+         call send(comm, result%oscillator_strengths_velocity, dest, tag)
          call send(comm, result%transition_dipoles, dest, tag)
+         call send(comm, result%nto_leading_weight, dest, tag)
          call send(comm, result%state_spin, dest, tag)
       end if
 
@@ -658,7 +671,9 @@ contains
       if (result%has_excited_states) then
          call send(comm, result%excitation_energies, dest, tag)
          call send(comm, result%oscillator_strengths, dest, tag)
+         call send(comm, result%oscillator_strengths_velocity, dest, tag)
          call send(comm, result%transition_dipoles, dest, tag)
+         call send(comm, result%nto_leading_weight, dest, tag)
          call send(comm, result%state_spin, dest, tag)
       end if
 
@@ -728,7 +743,9 @@ contains
       if (result%has_excited_states) then
          call recv(comm, result%excitation_energies, source, tag, status)
          call recv(comm, result%oscillator_strengths, source, tag, status)
+         call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
          call recv(comm, result%transition_dipoles, source, tag, status)
+         call recv(comm, result%nto_leading_weight, source, tag, status)
          call recv(comm, result%state_spin, source, tag, status)
       end if
 
@@ -804,7 +821,9 @@ contains
       if (result%has_excited_states) then
          call recv(comm, result%excitation_energies, source, tag, status)
          call recv(comm, result%oscillator_strengths, source, tag, status)
+         call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
          call recv(comm, result%transition_dipoles, source, tag, status)
+         call recv(comm, result%nto_leading_weight, source, tag, status)
          call recv(comm, result%state_spin, source, tag, status)
       end if
 

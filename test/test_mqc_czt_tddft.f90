@@ -45,6 +45,9 @@ module test_mqc_czt_tddft
    use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix, &
                             rpa_operator_t, build_rpa_operator, rpa_dense_matrices, &
                             response_excitations
+   use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
+                                       natural_transition_orbitals, &
+                                       nuclear_charge_centroid
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_bridge, only: run_czt_hf
    use mqc_cuest_iface, only: cuest_scf_settings_t
@@ -443,6 +446,77 @@ module test_mqc_czt_tddft
                           0.282337416507_dp, 0.353035871122_dp, 0.368974575576_dp, &
                           0.443809832697_dp, 0.515659298412_dp]
 
+   !! ---- Layer 5: transition properties, PySCF 2.14 ------------------------
+   !!
+   !! Regenerated through `bse_to_pyscf` with the geometry in Bohr, Hartree-Fock
+   !! at `conv_tol = 1e-15` and Kohn-Sham at 1e-13 on a level-5 grid, the same
+   !! way every reference above was taken. The transition dipoles are about the
+   !! nuclear charge centroid and the amplitudes behind them are at
+   !! `|X|^2 - |Y|^2 = 1/2` on both sides.
+   !!
+   !! **Two entries of the plan's own table are wrong and these replace them.**
+   !! `TDDFT_PLAN.md` gives the S1 Hartree-Fock TDA dipole as 0.5022552059 and
+   !! its velocity partner as 0.3627445611; both are larger than what PySCF
+   !! returns by exactly the square root of two, which is the unit-normalised
+   !! amplitude convention leaking into one row. S3, S4 and S5 in the plan
+   !! agree with what is written here to ten decimals.
+   real(dp), parameter :: RHF_TDA_DIPOLE(3, N_CCPVDZ_STATES) = reshape([ &
+                                                                       0.355148062389_dp, 0.0_dp, 0.0_dp, &
+                                                                       0.0_dp, 0.0_dp, 0.0_dp, &
+                                                                       0.0_dp, 0.0_dp, -0.610780180021_dp, &
+                                                                       0.0_dp, -0.532604359555_dp, 0.0_dp, &
+                                                                 0.0_dp, 0.921447176688_dp, 0.0_dp], [3, N_CCPVDZ_STATES])
+   real(dp), parameter :: RHF_TDA_VELOCITY(3, N_CCPVDZ_STATES) = reshape([ &
+                                                                         0.256499138474_dp, 0.0_dp, 0.0_dp, &
+                                                                         0.0_dp, 0.0_dp, 0.0_dp, &
+                                                                         0.0_dp, 0.0_dp, -0.315446153131_dp, &
+                                                                         0.0_dp, -0.197135741212_dp, 0.0_dp, &
+                                                                 0.0_dp, 0.480419606174_dp, 0.0_dp], [3, N_CCPVDZ_STATES])
+
+   !! `mu . v`, the one scalar here that survives the phase.
+   !!
+   !! Each state's amplitudes are defined up to an overall sign, so neither
+   !! `mu` nor `v` has a code-independent sign and the comparisons above are
+   !! in absolute value per component. Their dot product is not: flipping the
+   !! amplitude flips both factors. So this is what pins the **relative** sign
+   !! of the two gauges, which is the whole content of the velocity-gauge sign
+   !! convention -- `int1e_ipovlp` carries the gradient on the bra, and a code
+   !! that failed to negate it would reproduce every `f` in this file and get
+   !! all five of these numbers backwards.
+   real(dp), parameter :: RHF_TDA_MU_DOT_V(N_CCPVDZ_STATES) = [ &
+                          0.091095172034_dp, 0.0_dp, 0.192668258197_dp, &
+                          0.104995355194_dp, 0.442681289735_dp]
+
+   real(dp), parameter :: RHF_TDA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.028479546015_dp, 0.0_dp, 0.108302713416_dp, &
+                          0.094795565262_dp, 0.312952516616_dp]
+   real(dp), parameter :: RHF_TDA_F_VELOCITY(N_CCPVDZ_STATES) = [ &
+                          0.129501601893_dp, 0.0_dp, 0.152334575503_dp, &
+                          0.051685608718_dp, 0.278305229319_dp]
+
+   !! The plan's `f(RPA)` column, and Psi4's velocity-gauge row beside it:
+   !! 0.100832, 0, 0.176908, 0.087266, 0.307805, which these reproduce to the
+   !! six decimals Psi4 was quoted at.
+   real(dp), parameter :: RHF_RPA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.029232003675_dp, 0.0_dp, 0.101773949809_dp, &
+                          0.083885168197_dp, 0.297522971467_dp]
+   real(dp), parameter :: RHF_RPA_F_VELOCITY(N_CCPVDZ_STATES) = [ &
+                          0.100832151883_dp, 0.0_dp, 0.176907810509_dp, &
+                          0.087266119111_dp, 0.307804610642_dp]
+   real(dp), parameter :: PBE_RPA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.023155131277_dp, 0.0_dp, 0.080097317902_dp, &
+                          0.055632508818_dp, 0.270187360757_dp]
+   real(dp), parameter :: CAM_RPA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.023234175403_dp, 0.0_dp, 0.079772938174_dp, &
+                          0.055101644044_dp, 0.279185406544_dp]
+
+   !! The four leading natural transition orbital weights of the first
+   !! Hartree-Fock TDA root, from PySCF's `get_nto`. The fifth is 1.2e-7 and
+   !! the whole column sums to one by construction.
+   real(dp), parameter :: RHF_TDA_NTO_S1(4) = [ &
+                          0.999774184326_dp, 0.000116293097_dp, &
+                          0.000090607184_dp, 0.000018795566_dp]
+
    !! Hydrogen at 3.0 Angstrom in 6-31G, written out in Bohr for the reason
    !! the water geometry is.
    !!
@@ -496,6 +570,32 @@ module test_mqc_czt_tddft
    !! converged quantity, so it holds to round-off however far the roots got:
    !! measured 2.2e-16.
    real(dp), parameter :: TOL_PAIRED_NORM = 1.0e-10_dp
+
+   !! A transition moment component against PySCF's, in absolute value, and
+   !! `mu . v` with its sign. Hartree-Fock, so no quadrature enters either
+   !! side and what is left is the amplitudes: measured 2.3e-10 on the worst
+   !! of fifteen length-gauge components, 1.5e-10 on the worst velocity-gauge
+   !! one and 2.3e-11 on the worst dot product. A moment is linear in the
+   !! amplitude where an eigenvalue is quadratic in it, so these sit two or
+   !! three decimals above the excitation energies above and the bound is the
+   !! plan's 1e-7 rather than their 1e-9.
+   real(dp), parameter :: TOL_DIPOLE = 1.0e-7_dp
+
+   !! An oscillator strength against PySCF's. Measured, over both gauges and
+   !! all five roots: 6.0e-11 for Hartree-Fock TDA, 5.3e-11 for its RPA,
+   !! 1.9e-10 for PBE RPA and 1.3e-09 for CAM-B3LYP RPA, the last two
+   !! carrying the grid. The bound is the plan's 1e-6 for the length gauge
+   !! and 1e-5 for the velocity one, whose reference is Psi4 quoted to six
+   !! decimals rather than PySCF quoted to twelve.
+   real(dp), parameter :: TOL_OSCILLATOR = 1.0e-6_dp
+   real(dp), parameter :: TOL_OSCILLATOR_VELOCITY = 1.0e-5_dp
+
+   !! A natural transition orbital weight against PySCF's, and the sum of a
+   !! column against one. The first is a squared singular value of a matrix
+   !! the two codes agree on to 1e-11, measured 3.4e-13; the second is an
+   !! identity of the decomposition and came out exactly zero.
+   real(dp), parameter :: TOL_NTO = 1.0e-8_dp
+   real(dp), parameter :: TOL_NTO_SUM = 1.0e-12_dp
 
    !! The Casida reduction against the paired solver, on the same PBE
    !! reference. Two solvers, two operators and one spectrum; measured
@@ -557,6 +657,20 @@ contains
                   new_unittest("a_triplet_unstable_reference_is_named", test_instability), &
                   new_unittest("every_route_returns_the_same_amplitude_norm", &
                                test_amplitude_norm), &
+                  new_unittest("cc_pvdz_rhf_tda_transition_moments_match_pyscf", &
+                               test_tda_moments), &
+                  new_unittest("cc_pvdz_rhf_rpa_strengths_match_pyscf", &
+                               test_rpa_strengths), &
+                  new_unittest("cc_pvdz_pbe_rpa_strengths_match_pyscf", &
+                               test_pbe_rpa_strengths), &
+                  new_unittest("cc_pvdz_cam_b3lyp_rpa_strengths_match_pyscf", &
+                               test_cam_rpa_strengths), &
+                  new_unittest("the_nto_weights_of_the_first_root_match_pyscf", &
+                               test_nto_weights), &
+                  new_unittest("a_triplet_carries_no_transition_moment_at_all", &
+                               test_triplet_moments), &
+                  new_unittest("a_run_through_the_bridge_reports_its_strengths", &
+                               test_bridge_properties), &
                   new_unittest("an_unreachable_tolerance_stops_and_says_so", &
                                test_unreachable_tolerance) &
                   ]
@@ -1891,6 +2005,468 @@ contains
       call check(error, all(y == 0.0_dp), "a Tamm-Dancoff solve returned "// &
                  "de-excitation amplitudes, which its approximation does not have")
    end subroutine test_amplitude_norm
+
+   ! ---- Layer 5: transition properties ------------------------------------
+
+   subroutine water_reference(basis, functional, mol, scf, ctx, err)
+      !! Converge the plan's water in one basis, Hartree-Fock or Kohn-Sham
+      !!
+      !! `water_sto3g` next door with the basis lifted out. The thresholds are
+      !! its, and for the same reason: what is compared here is built from the
+      !! orbitals rather than from the energy, so the SCF has to be converged
+      !! well past where the energy stopped moving.
+      character(len=*), intent(in) :: basis
+      character(len=*), intent(in) :: functional
+         !! Empty is Hartree-Fock, and leaves `ctx` untouched.
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(xc_context_t), intent(out) :: ctx
+      type(error_t), intent(inout) :: err
+
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], WATER_BOHR, basis, &
+                              mol, err)
+      if (err%has_error()) return
+
+      if (len_trim(functional) > 0) then
+         call xc_context_create(mol, functional, ctx, err, level=5)
+         if (err%has_error()) return
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-10_dp, .false., scf, err, &
+                          xc=ctx, grad_tol=1.0e-9_dp)
+      else
+         call run_czt_rhf(mol, 10, 200, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err, &
+                          grad_tol=1.0e-12_dp)
+      end if
+   end subroutine water_reference
+
+   subroutine solve_with_properties(mol, scf, ctx, kohn_sham, method, spin, &
+                                    n_states, omega, spins, props, err, amplitudes)
+      !! A spectrum and its transition moments, over one converged reference
+      !!
+      !! The two calls the bridge makes, in the order it makes them, so what
+      !! the properties are built from is exactly what a run would hand them.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      character(len=*), intent(in) :: method, spin
+      integer, intent(in) :: n_states
+      real(dp), allocatable, intent(out) :: omega(:)
+      integer, allocatable, intent(out) :: spins(:)
+      type(excited_properties_t), intent(out) :: props
+      type(error_t), intent(inout) :: err
+      real(dp), allocatable, intent(out), optional :: amplitudes(:, :)
+         !! The `X` the properties were built from, for a test that wants to
+         !! decompose the same vector the stored weights came from rather
+         !! than a second converged copy of it.
+
+      real(dp), allocatable :: x(:, :), y(:, :)
+
+      if (err%has_error()) return
+
+      if (kohn_sham) then
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, n_states, method, spin, omega, &
+                                   spins, x, y, err, xc=ctx, reference=scf%density, &
+                                   tolerance=1.0e-10_dp, max_iter=200)
+      else
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, n_states, method, spin, omega, &
+                                   spins, x, y, err, tolerance=1.0e-10_dp, &
+                                   max_iter=200)
+      end if
+      if (err%has_error()) return
+
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
+                              x, y, scf%energy, props, err)
+      if (present(amplitudes)) amplitudes = x
+   end subroutine solve_with_properties
+
+   subroutine test_tda_moments(error)
+      !! The Hartree-Fock TDA transition moments of H2O/cc-pVDZ, both gauges
+      !!
+      !! Componentwise in absolute value, because a state's amplitudes are
+      !! defined only up to an overall sign and two codes need not choose the
+      !! same one. What is not sign-free is `mu . v`, which is checked with
+      !! its sign: it is the only thing in this file that can tell a correct
+      !! velocity gauge from one negated, and negating it moves nothing else
+      !! here by so much as a bit.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:)
+      integer, allocatable :: spins(:)
+      real(dp) :: centroid(3), product
+      integer :: k, comp
+
+      call water_reference("cc-pvdz", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "tda", "singlet", &
+                                    N_CCPVDZ_STATES, omega, spins, props, err)
+      end if
+      centroid = nuclear_charge_centroid(mol%charges, mol%coords)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the Hartree-Fock TDA properties "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      ! The origin, before anything measured from it. A transition dipole is
+      ! origin independent, so a centroid off by a Bohr would pass every
+      ! comparison below and quietly be wrong for a charged system later.
+      call check(error, abs(centroid(1)) < 1.0e-12_dp .and. &
+                 abs(centroid(2)) < 1.0e-12_dp, "the nuclear charge centroid of a "// &
+                 "C2v water is not on its symmetry axis")
+      if (allocated(error)) return
+
+      call check(error, size(omega) == N_CCPVDZ_STATES, "the Hartree-Fock TDA solve "// &
+                 "returned a different number of roots than were asked for")
+      if (allocated(error)) return
+
+      do k = 1, N_CCPVDZ_STATES
+         do comp = 1, 3
+            call check(error, abs(abs(props%transition_dipole(comp, k)) - &
+                                  abs(RHF_TDA_DIPOLE(comp, k))) < TOL_DIPOLE, &
+                       "a length-gauge transition dipole component disagrees "// &
+                       "with PySCF")
+            if (allocated(error)) return
+            call check(error, abs(abs(props%velocity_moment(comp, k)) - &
+                                  abs(RHF_TDA_VELOCITY(comp, k))) < TOL_DIPOLE, &
+                       "a velocity-gauge transition moment component disagrees "// &
+                       "with PySCF")
+            if (allocated(error)) return
+         end do
+
+         product = dot_product(props%transition_dipole(:, k), &
+                               props%velocity_moment(:, k))
+         call check(error, abs(product - RHF_TDA_MU_DOT_V(k)) < TOL_DIPOLE, &
+                    "mu . v disagrees with PySCF in sign or magnitude, which is "// &
+                    "the velocity gauge carrying the wrong sign")
+         if (allocated(error)) return
+
+         call check(error, abs(props%f_length(k) - RHF_TDA_F_LENGTH(k)) < &
+                    TOL_OSCILLATOR, "a length-gauge oscillator strength disagrees "// &
+                    "with PySCF")
+         if (allocated(error)) return
+         call check(error, abs(props%f_velocity(k) - RHF_TDA_F_VELOCITY(k)) < &
+                    TOL_OSCILLATOR, "a velocity-gauge oscillator strength "// &
+                    "disagrees with PySCF")
+         if (allocated(error)) return
+
+         ! The excited state's own total energy, which is the one number here
+         ! that is not a moment.
+         call check(error, abs(props%total_energy(k) - (scf%energy + omega(k))) < &
+                    1.0e-12_dp, "an excited-state total energy is not the "// &
+                    "reference plus the excitation")
+         if (allocated(error)) return
+      end do
+      call props%destroy()
+   end subroutine test_tda_moments
+
+   subroutine strengths_match(error, functional, method, f_length, f_velocity, &
+                              tol_length, what)
+      !! Both gauges' oscillator strengths of one water run, against a table
+      type(error_type), allocatable, intent(out) :: error
+      character(len=*), intent(in) :: functional, method
+      real(dp), intent(in) :: f_length(:)
+      real(dp), intent(in) :: f_velocity(:)
+         !! Empty to compare the length gauge alone: the plan carries a
+         !! velocity-gauge row for Hartree-Fock and none for a functional.
+      real(dp), intent(in) :: tol_length
+      character(len=*), intent(in) :: what
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:)
+      integer, allocatable :: spins(:)
+      integer :: k
+
+      call water_reference("cc-pvdz", functional, mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, len_trim(functional) > 0, method, &
+                                    "singlet", N_CCPVDZ_STATES, omega, spins, &
+                                    props, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the "//what//" properties failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(f_length)
+         call check(error, abs(props%f_length(k) - f_length(k)) < tol_length, &
+                    "a "//what//" length-gauge oscillator strength disagrees "// &
+                    "with PySCF")
+         if (allocated(error)) return
+         if (size(f_velocity) >= k) then
+            call check(error, abs(props%f_velocity(k) - f_velocity(k)) < &
+                       TOL_OSCILLATOR_VELOCITY, "a "//what//" velocity-gauge "// &
+                       "oscillator strength disagrees with PySCF")
+            if (allocated(error)) return
+         end if
+      end do
+      call props%destroy()
+   end subroutine strengths_match
+
+   subroutine test_rpa_strengths(error)
+      !! The Hartree-Fock RPA strengths, length gauge against PySCF and
+      !! velocity gauge against the plan's Psi4 row
+      type(error_type), allocatable, intent(out) :: error
+
+      call strengths_match(error, "", "rpa", RHF_RPA_F_LENGTH, RHF_RPA_F_VELOCITY, &
+                           TOL_OSCILLATOR, "cc-pVDZ RHF RPA")
+   end subroutine test_rpa_strengths
+
+   subroutine test_pbe_rpa_strengths(error)
+      !! The PBE RPA length-gauge strengths
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: no_velocity(0)
+
+      if (.not. xc_available()) return
+      call strengths_match(error, "pbe", "rpa", PBE_RPA_F_LENGTH, no_velocity, &
+                           TOL_OSCILLATOR, "cc-pVDZ PBE RPA")
+   end subroutine test_pbe_rpa_strengths
+
+   subroutine test_cam_rpa_strengths(error)
+      !! The CAM-B3LYP RPA length-gauge strengths, attenuated pass and all
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: no_velocity(0)
+
+      if (.not. xc_available()) return
+      call strengths_match(error, "cam-b3lyp", "rpa", CAM_RPA_F_LENGTH, no_velocity, &
+                           TOL_OSCILLATOR, "cc-pVDZ CAM-B3LYP RPA")
+   end subroutine test_cam_rpa_strengths
+
+   subroutine test_nto_weights(error)
+      !! The natural transition orbital weights of the first Hartree-Fock root
+      !!
+      !! Four weights against PySCF and the whole column against one. The
+      !! second is the check that matters for the renormalisation: the stored
+      !! amplitude is at `|X|^2 = 1/2`, and a decomposition that forgot to
+      !! rescale would hand back weights summing to a half and still look
+      !! plausible one at a time.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), weights(:), nto_occ(:, :), nto_vir(:, :)
+      real(dp), allocatable :: x(:, :), overlap(:, :), metric(:, :), half(:, :)
+      real(dp), allocatable :: flipped_occ(:, :), flipped_vir(:, :)
+      integer, allocatable :: spins(:)
+      integer :: k
+
+      call water_reference("cc-pvdz", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "tda", "singlet", &
+                                    N_CCPVDZ_STATES, omega, spins, props, err, &
+                                    amplitudes=x)
+      end if
+      call check(error,.not. err%has_error(), "the Hartree-Fock TDA properties "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      do k = 1, size(RHF_TDA_NTO_S1)
+         call check(error, abs(props%nto_weights(k, 1) - RHF_TDA_NTO_S1(k)) < TOL_NTO, &
+                    "a natural transition orbital weight of the first root "// &
+                    "disagrees with PySCF")
+         if (allocated(error)) then
+            call mol%destroy()
+            return
+         end if
+      end do
+      call check(error, abs(sum(props%nto_weights(:, 1)) - 1.0_dp) < TOL_NTO_SUM, &
+                 "the natural transition orbital weights of a root do not sum to one")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, all(props%nto_weights(1:size(props%nto_weights, 1) - 1, 1) >= &
+                            props%nto_weights(2:, 1)), "the natural transition "// &
+                 "orbital weights are not in descending order")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! The orbitals themselves, through the routine the properties use. Each
+      ! set is orthonormal **in the AO overlap metric** by construction -- a
+      ! unitary rotation of orbitals that already were -- so `U^T S U = 1` is
+      ! what says the decomposition was assembled with its factors the right
+      ! way round. `U^T U` is not the identity and never was: the AO basis is
+      ! not orthogonal, which is the whole reason `S` exists.
+      call natural_transition_orbitals(x(:, 1), &
+                                       scf%orbitals(:, 1:scf%n_occupied), &
+                                       scf%orbitals(:, scf%n_occupied + 1:), &
+                                       weights, nto_occ, nto_vir, err)
+      call mol%overlap(metric)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the natural transition orbitals "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(weights - props%nto_weights(:, 1))) < 1.0e-12_dp, &
+                 "the per-state decomposition and the one the properties stored "// &
+                 "disagree")
+      if (allocated(error)) return
+
+      allocate (overlap(size(nto_occ, 2), size(nto_occ, 2)))
+      allocate (half(size(metric, 1), size(nto_occ, 2)))
+      call pic_gemm(metric, nto_occ, half)
+      call pic_gemm(nto_occ, half, overlap, transa="T")
+      call check(error, orthonormal(overlap), "the occupied natural transition "// &
+                 "orbitals are not orthonormal in the overlap metric")
+      if (allocated(error)) return
+      call pic_gemm(metric, nto_vir, half)
+      call pic_gemm(nto_vir, half, overlap, transa="T")
+      call check(error, orthonormal(overlap), "the virtual natural transition "// &
+                 "orbitals are not orthonormal in the overlap metric")
+      if (allocated(error)) return
+
+      ! The phase convention, which is what makes two runs comparable. It is
+      ! fixed on the rotation matrices rather than on the orbitals they
+      ! produce -- the largest component of `C_occ U` is not the largest
+      ! component of `U` -- so what it promises is that the *same* excitation
+      ! gives the *same* orbitals however the solver signed its amplitude.
+      ! Negating `X` is exactly that: `-T = (-U) S V^T`, and canonicalising
+      ! the columns has to undo the minus.
+      call natural_transition_orbitals(-x(:, 1), &
+                                       scf%orbitals(:, 1:scf%n_occupied), &
+                                       scf%orbitals(:, scf%n_occupied + 1:), &
+                                       weights, flipped_occ, flipped_vir, err)
+      call check(error,.not. err%has_error(), "the natural transition orbitals of "// &
+                 "a negated amplitude failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, maxval(abs(flipped_occ - nto_occ)) == 0.0_dp .and. &
+                 maxval(abs(flipped_vir - nto_vir)) == 0.0_dp, "negating a root's "// &
+                 "amplitude changed its natural transition orbitals, so the phase "// &
+                 "convention does not hold")
+      call props%destroy()
+   end subroutine test_nto_weights
+
+   pure function orthonormal(overlap) result(yes)
+      !! Whether a small Gram matrix is the identity to 1e-10
+      real(dp), intent(in) :: overlap(:, :)
+      logical :: yes
+
+      real(dp) :: worst
+      integer :: i, j
+
+      worst = 0.0_dp
+      do j = 1, size(overlap, 2)
+         do i = 1, size(overlap, 1)
+            if (i == j) then
+               worst = max(worst, abs(overlap(i, j) - 1.0_dp))
+            else
+               worst = max(worst, abs(overlap(i, j)))
+            end if
+         end do
+      end do
+      yes = worst < 1.0e-10_dp
+   end function orthonormal
+
+   subroutine test_triplet_moments(error)
+      !! A triplet root's moments are exact zeros, not small numbers
+      !!
+      !! Exact, and the test says exact: a spin-forbidden transition has no
+      !! dipole because an overlap of orthogonal spin functions multiplies
+      !! the spatial integral, and an implementation that contracted the
+      !! spatial part anyway would leave 1e-16 dust that a loose bound would
+      !! accept and a reader would mistake for a very dark state.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:)
+      integer, allocatable :: spins(:)
+
+      call water_reference("sto-3g", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "tda", "triplet", 3, &
+                                    omega, spins, props, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the triplet properties failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call check(error, all(spins == STATE_SPIN_TRIPLET), "a triplet solve did not "// &
+                 "label its roots as triplets")
+      if (allocated(error)) return
+      call check(error, all(props%transition_dipole == 0.0_dp), "a triplet root "// &
+                 "carries a nonzero length-gauge transition dipole")
+      if (allocated(error)) return
+      call check(error, all(props%velocity_moment == 0.0_dp), "a triplet root "// &
+                 "carries a nonzero velocity-gauge transition moment")
+      if (allocated(error)) return
+      call check(error, all(props%f_length == 0.0_dp) .and. &
+                 all(props%f_velocity == 0.0_dp), "a triplet root carries a "// &
+                 "nonzero oscillator strength")
+      if (allocated(error)) return
+
+      ! The orbital content of a spin-forbidden excitation is perfectly well
+      ! defined, so this is the one thing that must *not* be zeroed.
+      call check(error, abs(sum(props%nto_weights(:, 1)) - 1.0_dp) < TOL_NTO_SUM, &
+                 "a triplet root was left without natural transition orbital "// &
+                 "weights")
+      call props%destroy()
+   end subroutine test_triplet_moments
+
+   subroutine test_bridge_properties(error)
+      !! A whole run reports its strengths, dipoles and leading NTO weight
+      !!
+      !! The solver path above is checked against PySCF; this is the wiring.
+      !! A spectrum whose properties never reach `calculation_result_t` is
+      !! not a feature, and the writer only writes what it is handed.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      integer :: k
+
+      call excited_run("cc-pvdz", "", N_CCPVDZ_STATES, "tda", "singlet", result)
+      call check(error,.not. result%has_error, "the cc-pVDZ run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(result%oscillator_strengths) .and. &
+                 allocated(result%oscillator_strengths_velocity) .and. &
+                 allocated(result%transition_dipoles) .and. &
+                 allocated(result%nto_leading_weight), "a run with excited states "// &
+                 "did not report their transition properties")
+      if (allocated(error)) return
+
+      do k = 1, N_CCPVDZ_STATES
+         call check(error, abs(result%oscillator_strengths(k) - &
+                               RHF_TDA_F_LENGTH(k)) < TOL_OSCILLATOR, &
+                    "an oscillator strength off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         call check(error, abs(result%oscillator_strengths_velocity(k) - &
+                               RHF_TDA_F_VELOCITY(k)) < TOL_OSCILLATOR, &
+                    "a velocity-gauge strength off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         call check(error, maxval(abs(abs(result%transition_dipoles(:, k)) - &
+                                      abs(RHF_TDA_DIPOLE(:, k)))) < TOL_DIPOLE, &
+                    "a transition dipole off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+      end do
+
+      call check(error, abs(result%nto_leading_weight(1) - RHF_TDA_NTO_S1(1)) < &
+                 TOL_NTO, "the leading natural transition orbital weight off the "// &
+                 "bridge disagrees with PySCF")
+   end subroutine test_bridge_properties
 
 end module test_mqc_czt_tddft
 

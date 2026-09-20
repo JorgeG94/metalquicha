@@ -485,6 +485,11 @@ contains
       !! the strength of one root together, and parallel arrays make that a
       !! join the reader has to get right.
       !!
+      !! `oscillator_strength` is the length gauge and
+      !! `oscillator_strength_velocity` the velocity one; the two agree only
+      !! in a complete basis, and both are written because the gap between
+      !! them is a statement about the basis.
+      !!
       !! The excitation energy appears twice, in Hartree and in eV. Hartree is
       !! the internal unit and what a cross-code comparison uses; eV is what a
       !! spectrum is read in, and a consumer converting it itself is a place
@@ -521,12 +526,19 @@ contains
          if (allocated(data%oscillator_strengths)) then
             call json%add(entry, "oscillator_strength", data%oscillator_strengths(i))
          end if
+         if (allocated(data%oscillator_strengths_velocity)) then
+            call json%add(entry, "oscillator_strength_velocity", &
+                          data%oscillator_strengths_velocity(i))
+         end if
          if (allocated(data%transition_dipoles)) then
             call json%create_array(dip_arr, "transition_dipole")
             call json%add(entry, dip_arr)
             do comp = 1, 3
                call json%add(dip_arr, "", data%transition_dipoles(comp, i))
             end do
+         end if
+         if (allocated(data%nto_leading_weight)) then
+            call json%add(entry, "nto_leading_weight", data%nto_leading_weight(i))
          end if
       end do
    end subroutine write_excited_states_section

@@ -54,8 +54,10 @@ module mqc_json_output_types
       ! units, the ordering and the spin codes. All four run over the same
       ! states in the same order and are allocated together.
       real(dp), allocatable :: excitation_energies(:)   !! (n_states) Hartree
-      real(dp), allocatable :: oscillator_strengths(:)  !! (n_states)
+      real(dp), allocatable :: oscillator_strengths(:)  !! (n_states) length gauge
+      real(dp), allocatable :: oscillator_strengths_velocity(:)  !! (n_states)
       real(dp), allocatable :: transition_dipoles(:, :)  !! (3, n_states) a.u.
+      real(dp), allocatable :: nto_leading_weight(:)    !! (n_states) 0 to 1
       integer, allocatable :: state_spin(:)             !! (n_states) STATE_SPIN_*
       character(len=16) :: excited_method = ""
          !! Which response problem produced them: "tda" or "rpa". Written
@@ -251,7 +253,11 @@ contains
       if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
       if (allocated(this%excitation_energies)) deallocate (this%excitation_energies)
       if (allocated(this%oscillator_strengths)) deallocate (this%oscillator_strengths)
+      if (allocated(this%oscillator_strengths_velocity)) then
+         deallocate (this%oscillator_strengths_velocity)
+      end if
       if (allocated(this%transition_dipoles)) deallocate (this%transition_dipoles)
+      if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
 
       call this%reset()

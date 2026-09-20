@@ -233,8 +233,15 @@ contains
                            if (allocated(result%oscillator_strengths)) then
                               json_data%oscillator_strengths = result%oscillator_strengths
                            end if
+                           if (allocated(result%oscillator_strengths_velocity)) then
+                              json_data%oscillator_strengths_velocity = &
+                                 result%oscillator_strengths_velocity
+                           end if
                            if (allocated(result%transition_dipoles)) then
                               json_data%transition_dipoles = result%transition_dipoles
+                           end if
+                           if (allocated(result%nto_leading_weight)) then
+                              json_data%nto_leading_weight = result%nto_leading_weight
                            end if
                            if (allocated(result%state_spin)) then
                               json_data%state_spin = result%state_spin
@@ -413,8 +420,15 @@ contains
                if (allocated(result%oscillator_strengths)) then
                   json_data%oscillator_strengths = result%oscillator_strengths
                end if
+               if (allocated(result%oscillator_strengths_velocity)) then
+                  json_data%oscillator_strengths_velocity = &
+                     result%oscillator_strengths_velocity
+               end if
                if (allocated(result%transition_dipoles)) then
                   json_data%transition_dipoles = result%transition_dipoles
+               end if
+               if (allocated(result%nto_leading_weight)) then
+                  json_data%nto_leading_weight = result%nto_leading_weight
                end if
                if (allocated(result%state_spin)) then
                   json_data%state_spin = result%state_spin

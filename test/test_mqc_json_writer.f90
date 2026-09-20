@@ -371,8 +371,10 @@ contains
       data%has_energy = .true.
       data%excitation_energies = [0.3386923781_dp, 0.3047529969_dp]
       data%oscillator_strengths = [0.02847955_dp, 0.0_dp]
-      data%transition_dipoles = reshape([0.5022552059_dp, 0.0_dp, 0.0_dp, &
+      data%oscillator_strengths_velocity = [0.12950160_dp, 0.0_dp]
+      data%transition_dipoles = reshape([0.3551480624_dp, 0.0_dp, 0.0_dp, &
                                          0.0_dp, 0.0_dp, 0.0_dp], [3, 2])
+      data%nto_leading_weight = [0.9997741843_dp, 0.9812_dp]
       data%state_spin = [STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET]
       data%excited_method = "tda"
       data%excited_spin = "both"
@@ -434,11 +436,29 @@ contains
                  "the oscillator strength came back changed")
       if (allocated(error)) return
 
+      ! Both gauges, because they are different numbers and a consumer that
+      ! read one for the other would be wrong by a factor of four here.
+      call json%get("jw_excited.excited_states.states(1).oscillator_strength_velocity", &
+                    value, found)
+      call check(error, found, "oscillator_strength_velocity is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.12950160_dp) < 1.0e-12_dp, &
+                 "the velocity-gauge oscillator strength came back changed")
+      if (allocated(error)) return
+
       call json%get("jw_excited.excited_states.states(1).transition_dipole(1)", value, found)
       call check(error, found, "the transition dipole is missing")
       if (allocated(error)) return
-      call check(error, abs(value - 0.5022552059_dp) < 1.0e-12_dp, &
+      call check(error, abs(value - 0.3551480624_dp) < 1.0e-12_dp, &
                  "the transition dipole x component came back changed")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).nto_leading_weight", &
+                    value, found)
+      call check(error, found, "nto_leading_weight is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.9997741843_dp) < 1.0e-12_dp, &
+                 "the leading natural transition orbital weight came back changed")
       if (allocated(error)) return
 
       ! The second root is a triplet, whose zero oscillator strength is a real
