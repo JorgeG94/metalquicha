@@ -326,7 +326,7 @@ contains
       if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
    end function pair_degeneracy
 
-   subroutine build_fock(h, eri, density, fock, k_scale)
+   subroutine build_fock(h, eri, density, fock, k_scale, j_scale)
       !! `F = H + J - K/2` from a stored two-electron tensor
       !!
       !! The one build here that is not integral-direct, and it lives beside
@@ -349,14 +349,20 @@ contains
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
       real(dp), intent(out) :: fock(:, :)
       real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
+      real(dp), intent(in), optional :: j_scale
+         !! Coulomb fraction, default one. Zero is the triplet response, whose
+         !! two-electron part is exchange alone -- the Coulomb term couples to
+         !! the total density change, and a triplet excitation makes none.
 
       integer :: a, b, c, d, n
-      real(dp) :: kf, dcd
+      real(dp) :: kf, jf, dcd
       real(dp), allocatable :: j_mat(:, :), k_mat(:, :), j_local(:, :)
 
       n = size(h, 1)
       kf = 0.5_dp
       if (present(k_scale)) kf = 0.5_dp*k_scale
+      jf = 1.0_dp
+      if (present(j_scale)) jf = j_scale
 
       allocate (j_mat(n, n), k_mat(n, n))
       j_mat = 0.0_dp
@@ -394,7 +400,7 @@ contains
       deallocate (j_local)
       !$omp end parallel
 
-      fock = h + j_mat - kf*k_mat
+      fock = h + jf*j_mat - kf*k_mat
       deallocate (j_mat, k_mat)
    end subroutine build_fock
 

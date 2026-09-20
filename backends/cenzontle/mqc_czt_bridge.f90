@@ -16,7 +16,6 @@ module mqc_czt_bridge
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
-                               STATE_SPIN_SINGLET, &
                                scf_not_converged_message
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol, core_orbital_count
@@ -1187,14 +1186,6 @@ contains
                                      "different tolerance, and answering it with a "// &
                                      "Tamm-Dancoff number would be a converged "// &
                                      "spectrum of the wrong problem.")
-            else if (trim(settings%excited%spin) /= "singlet") then
-               call result%error%set(ERROR_VALIDATION, "keywords.excited_states.spin "// &
-                                     "is '"//trim(settings%excited%spin)//"', and only "// &
-                                     "'singlet' is implemented. Triplets are Layer 3: "// &
-                                     "they need the exchange-only two-electron part "// &
-                                     "and the spin-polarised kernel, neither of which "// &
-                                     "is a rescaling of what the singlet operator "// &
-                                     "already builds.")
             end if
             if (result%error%has_error()) then
                result%has_error = .true.
@@ -1517,14 +1508,15 @@ contains
       ! exchange-correlation context is still alive -- the kernel is evaluated
       ! at this density on this grid, so there is nowhere later this could
       ! run. What this backend cannot do was refused before the SCF; what is
-      ! left is a Tamm-Dancoff singlet solve, and a failure in it is reported
+      ! left is a Tamm-Dancoff solve, and a failure in it is reported
       ! and propagated rather than dropped: a deck that asked for a spectrum
       ! and got an energy has not been answered.
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
-            use mqc_czt_tddft, only: tda_singlet_excitations
+            use mqc_czt_tddft, only: tda_excitations
             real(dp), allocatable :: omega(:), x_amplitudes(:, :)
+            integer, allocatable :: omega_spin(:)
             type(error_t) :: td_error
             ! `x_amplitudes` is taken and dropped. It is what Layer 5's
             ! transition dipoles and natural transition orbitals are built
@@ -1532,24 +1524,26 @@ contains
             ! it, so the argument is here rather than added later.
 
             if (kohn_sham) then
-               call tda_singlet_excitations(mol, scf%orbitals, scf%orbital_energies, &
-                                            scf%n_occupied, settings%excited%n_states, &
-                                            omega, x_amplitudes, td_error, xc=xc, &
-                                            reference=scf%density, &
-                                            tolerance=settings%excited%tolerance, &
-                                            max_iter=settings%excited%max_iter, &
-                                            max_subspace=settings%excited%max_subspace, &
-                                            batch=settings%excited%batch, &
-                                            verbose=settings%verbose)
+               call tda_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                    scf%n_occupied, settings%excited%n_states, &
+                                    trim(settings%excited%spin), omega, omega_spin, &
+                                    x_amplitudes, td_error, xc=xc, &
+                                    reference=scf%density, &
+                                    tolerance=settings%excited%tolerance, &
+                                    max_iter=settings%excited%max_iter, &
+                                    max_subspace=settings%excited%max_subspace, &
+                                    batch=settings%excited%batch, &
+                                    verbose=settings%verbose)
             else
-               call tda_singlet_excitations(mol, scf%orbitals, scf%orbital_energies, &
-                                            scf%n_occupied, settings%excited%n_states, &
-                                            omega, x_amplitudes, td_error, &
-                                            tolerance=settings%excited%tolerance, &
-                                            max_iter=settings%excited%max_iter, &
-                                            max_subspace=settings%excited%max_subspace, &
-                                            batch=settings%excited%batch, &
-                                            verbose=settings%verbose)
+               call tda_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                    scf%n_occupied, settings%excited%n_states, &
+                                    trim(settings%excited%spin), omega, omega_spin, &
+                                    x_amplitudes, td_error, &
+                                    tolerance=settings%excited%tolerance, &
+                                    max_iter=settings%excited%max_iter, &
+                                    max_subspace=settings%excited%max_subspace, &
+                                    batch=settings%excited%batch, &
+                                    verbose=settings%verbose)
             end if
             if (td_error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "the excited-state solve "// &
@@ -1564,8 +1558,7 @@ contains
             ! and a column of zeros would read as a dark spectrum rather than
             ! as a property that was not computed.
             result%excitation_energies = omega
-            allocate (result%state_spin(size(omega)))
-            result%state_spin = STATE_SPIN_SINGLET
+            result%state_spin = omega_spin
             result%has_excited_states = size(omega) > 0
          end block
       end if

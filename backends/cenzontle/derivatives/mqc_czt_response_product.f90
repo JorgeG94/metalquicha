@@ -27,6 +27,15 @@ module mqc_czt_response_product
    !! exchange-correlation kernel, whose response is to a density change that
    !! an antisymmetric matrix does not make. So `minus` is exchange only, both
    !! passes of it, and the grid is never touched.
+   !!
+   !! **What `triplet` changes.** The Coulomb term goes, and the semilocal
+   !! kernel becomes the spin difference `(f_aa - f_ab)/2`. Exchange does not
+   !! move -- the same integrals at the same coefficients, both ranges of them
+   !! -- because a triplet transition density is alpha minus beta and exchange
+   !! is same-spin, while Coulomb sees only the sum, which a triplet leaves
+   !! unchanged. VV10 goes for that reason too, and is dropped rather than
+   !! computed. `triplet` with `minus` is `(A - B)`, one operator for both
+   !! spins.
    use pic_types, only: dp, int64
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -45,7 +54,7 @@ contains
 
    subroutine response_mean_field(mol, dens, zero_h, g, error, minus, direct, eri, &
                                   bounds, k_scale, xc, reference, rs_k_lr, rs_omega, &
-                                  cache, density_screen, screen_floor, stats)
+                                  cache, triplet, density_screen, screen_floor, stats)
       !! `G(D')` for a batch of response densities, over one pass of the integrals
       !!
       !! The Coulomb and exchange terms come from whichever source the caller
@@ -100,6 +109,14 @@ contains
          !! and a response solve makes hundreds. A cache that was never filled
          !! is ignored, so a caller holding one as a plain component may pass
          !! it unconditionally.
+      logical, intent(in), optional :: triplet
+         !! The **triplet** mean field: no Coulomb term at all, and the
+         !! exchange-correlation kernel taken as `(f_aa - f_ab)/2`. Exchange,
+         !! of both ranges, is untouched -- the two-electron part of `A_T` is
+         !! `-c_x (ab|ij)`, the same integral at the same coefficient as the
+         !! singlet's, with only `J` gone. Off by default, and immaterial when
+         !! `minus`, whose product is exchange only and the same for the two
+         !! spins.
       logical, intent(in), optional :: density_screen
          !! Weight the Schwarz bound by the largest trial-density element a
          !! quartet touches. Off by default, which keeps a batch bit-for-bit
@@ -122,7 +139,7 @@ contains
       type(direct_stats_t) :: pass
       real(dp) :: kf, k_lr, omega, dmax
       integer :: n_ao, n_set, p
-      logical :: anti, is_direct, screen, use_cache
+      logical :: anti, is_direct, screen, use_cache, spin_flip
 
       if (error%has_error()) return
 
@@ -136,6 +153,8 @@ contains
       if (present(density_screen)) screen = density_screen
       use_cache = .false.
       if (present(cache)) use_cache = cache%filled
+      spin_flip = .false.
+      if (present(triplet)) spin_flip = triplet
       ! The context first, an explicit coefficient over it. The analytic
       ! Hessian carries these as scalars on its operator and passes them; the
       ! coupled-perturbed routes pass only the context.
@@ -202,8 +221,14 @@ contains
          ! exact: it drops the Coulomb term, which vanishes, and antisymmetrises
          ! instead of symmetrising. `build_fock_direct_nosym` writes the same
          ! permutations out at several times the cost and is not needed here.
+         !
+         ! `j_scale` is the whole two-electron difference a triplet makes: the
+         ! Coulomb term is the response to a change in the *total* density, and
+         ! the alpha and beta halves of a triplet transition density cancel
+         ! there exactly.
          call build_fock_direct_many(mol, zero_h, dens, bounds, g, pass, error, &
-                                     k_scale=kf, antisymmetric=anti, &
+                                     k_scale=kf, j_scale=j_fraction(spin_flip), &
+                                     antisymmetric=anti, &
                                      density_screen=screen)
          if (error%has_error()) return
          call add_stats(stats, pass)
@@ -222,7 +247,8 @@ contains
          ! accord on an antisymmetric density.
          allocate (g(n_ao, n_ao, n_set))
          do p = 1, n_set
-            call build_fock(zero_h, eri, dens(:, :, p), g(:, :, p), k_scale=kf)
+            call build_fock(zero_h, eri, dens(:, :, p), g(:, :, p), k_scale=kf, &
+                            j_scale=j_fraction(spin_flip))
          end do
       end if
 
@@ -231,15 +257,22 @@ contains
       ! response. One grid pass serves the whole batch.
       if (present(xc) .and. .not. anti) then
          if (use_cache) then
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache)
+            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache, &
+                                      triplet=spin_flip)
          else
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, &
+                                      triplet=spin_flip)
          end if
          if (error%has_error()) return
          ! The non-local kernel, once for the batch rather than per set:
          ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
          ! trial density or a dozen. It accumulates, hence the zeroed buffer.
-         if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
+         !
+         ! Not for a triplet. VV10 is a functional of the total density alone,
+         ! and a triplet transition density changes that by nothing, so its
+         ! response is identically zero rather than merely small; applying it
+         ! would contract a spin density against a kernel with no spin channel.
+         if ((xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) .and. .not. spin_flip) then
             allocate (vnl(n_ao, n_ao, n_set))
             vnl = 0.0_dp
             call vv10_kernel_apply(xc, mol, reference, dens, vnl, error)
@@ -256,6 +289,19 @@ contains
       deallocate (scale)
    end subroutine response_mean_field
 
+   pure function j_fraction(triplet) result(jf)
+      !! One for the ordinary response, zero for a triplet
+      !!
+      !! Written out because it is the single arithmetic difference between the
+      !! two two-electron builds, and a bare `0.0` at the call site would say
+      !! nothing about which spin it belonged to.
+      logical, intent(in) :: triplet
+      real(dp) :: jf
+
+      jf = 1.0_dp
+      if (triplet) jf = 0.0_dp
+   end function j_fraction
+
    subroutine add_stats(total, pass)
       !! Sum one integral pass's quartet counts into the running total
       type(direct_stats_t), intent(inout), optional :: total
@@ -269,7 +315,7 @@ contains
 
    subroutine response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, nact, minus, &
                                au, error, direct, eri, bounds, k_scale, xc, reference, &
-                               rs_k_lr, rs_omega, cache, bmat, density_screen, &
+                               rs_k_lr, rs_omega, cache, triplet, bmat, density_screen, &
                                t_dens, t_fock, t_back)
       !! `(A+B)u` or `(A-B)u` for many trial rotations in one integral pass
       !!
@@ -311,6 +357,10 @@ contains
          !! The reference's kernel coefficients, filled once and reused. See
          !! `response_mean_field`, which is where it ends up on the exact
          !! route; the fitted one below reads it too.
+      logical, intent(in), optional :: triplet
+         !! The triplet operator: no Coulomb term and the spin-difference
+         !! kernel. Refused on the fitted route, which has no Coulomb-free
+         !! build. See `response_mean_field`.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`, in place of any four-index
          !! integrals. Not a storage choice: it makes the operator the fitted
@@ -324,13 +374,15 @@ contains
       real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :, :), work(:, :)
       real(dp) :: t0, t1, kf
       integer :: n_ao, n_occ, m, j
-      logical :: use_cache
+      logical :: use_cache, spin_flip
 
       if (error%has_error()) return
       if (nact <= 0) return
 
       use_cache = .false.
       if (present(cache)) use_cache = cache%filled
+      spin_flip = .false.
+      if (present(triplet)) spin_flip = triplet
 
       ! Only the fitted branch needs this here; the others let
       ! `response_mean_field` resolve it the same way.
@@ -359,6 +411,12 @@ contains
       t0 = t1
 
       if (present(bmat)) then
+         if (spin_flip) then
+            call error%set(ERROR_VALIDATION, "a triplet response cannot be applied "// &
+                           "through the fitted tensor: that build assembles its "// &
+                           "Coulomb term unconditionally, and a triplet has none")
+            return
+         end if
          if (present(xc)) then
             if (xc%range_separated) then
                call error%set(ERROR_VALIDATION, "a range-separated functional's "// &
@@ -398,7 +456,7 @@ contains
                                   direct=direct, eri=eri, bounds=bounds, &
                                   k_scale=k_scale, xc=xc, reference=reference, &
                                   rs_k_lr=rs_k_lr, rs_omega=rs_omega, cache=cache, &
-                                  density_screen=density_screen)
+                                  triplet=spin_flip, density_screen=density_screen)
          if (error%has_error()) return
       end if
 

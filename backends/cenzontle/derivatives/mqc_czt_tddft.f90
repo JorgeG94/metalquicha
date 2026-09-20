@@ -1,7 +1,7 @@
 !! Tamm-Dancoff excitation energies for a closed-shell reference
 module mqc_czt_tddft
-   !! The singlet TDA eigenproblem, over the response operator this backend
-   !! already applies.
+   !! The singlet and triplet TDA eigenproblems, over the response operator
+   !! this backend already applies.
    !!
    !! Linear response asks for the lowest eigenvalues of
    !!
@@ -20,6 +20,25 @@ module mqc_czt_tddft
    !!
    !! whose half sum is `A` exactly, with no term surviving that should not.
    !! So `A u` is **two** calls, averaged.
+   !!
+   !! ## Triplets
+   !!
+   !! Two changes, both inside `response_product`, and neither a rescaling of
+   !! the other operator:
+   !!
+   !!     A_T = dEps - c_x (ab|ij) + 2 f_xc^T,   f_xc^T = (f_aa - f_ab)/2
+   !!
+   !! -- **no Coulomb term at all**, and the spin-difference kernel in place of
+   !! the spin-sum one. `(A - B)` is unchanged, since it is exchange only and
+   !! exchange is same-spin, so the half sum still works with
+   !!
+   !!     (A+B)_T u = dEps u - c_x[(ab|ij)+(aj|ib)] u + 4 f_xc^T u
+   !!
+   !! which is the singlet `(A+B)` with `j_scale = 0` and the triplet kernel.
+   !! A range-separated hybrid makes both of its exchange passes either way.
+   !! A root at or below zero here is not an excitation: it says the closed
+   !! shell is a saddle point with respect to spin polarisation, and it is
+   !! reported as an instability rather than as a small number.
    !!
    !! The alternative is one call on the *unsymmetrised* transition density
    !! `C_vir u C_occ^T` -- PySCF's `_gen_tda_operation` -- which gives `A`
@@ -47,10 +66,10 @@ module mqc_czt_tddft
    !!
    !! ## What is not here
    !!
-   !! Triplets, the full RPA, oscillator strengths and an unrestricted
-   !! reference. `excited_decline_reason` in `mqc_czt_bridge` refuses what
-   !! cannot be computed; the bridge refuses the rest by name rather than
-   !! answering a different question.
+   !! The full RPA, oscillator strengths, a meta-GGA triplet kernel and an
+   !! unrestricted reference. `excited_decline_reason` in `mqc_czt_bridge`
+   !! refuses what cannot be computed; the bridge refuses the rest by name
+   !! rather than answering a different question.
    use pic_types, only: dp
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
@@ -64,13 +83,14 @@ module mqc_czt_tddft
    use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_response_product, only: response_product
    use mqc_davidson, only: davidson_flat, sigma_operator_t
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    implicit none
    private
 
    public :: tda_operator_t
    public :: build_tda_operator
    public :: tda_dense_matrix
-   public :: tda_singlet_excitations
+   public :: tda_excitations
 
    real(dp), parameter :: EXCITATION_FLOOR = 1.0e-3_dp
       !! Roots below this are not reported.
@@ -81,6 +101,10 @@ module mqc_czt_tddft
       !! unstable along, or a root the solver has not separated from zero --
       !! and neither is an excitation. The same threshold separates the
       !! degenerate block the guess is extended over.
+      !!
+      !! In the **triplet** manifold the same threshold means something
+      !! stronger and is treated as an error rather than a filter: a root down
+      !! here is the reference's own triplet instability.
 
    real(dp), parameter :: DEGENERACY_WINDOW = 1.0e-3_dp
       !! How close two orbital-energy gaps have to be for the guess to have to
@@ -133,6 +157,12 @@ module mqc_czt_tddft
       real(dp) :: rs_k_lr = 0.0_dp
       real(dp) :: rs_omega = 0.0_dp
          !! A range-separated functional's attenuated second exchange pass.
+      logical :: triplet = .false.
+         !! Which manifold the next product belongs to. Everything else about
+         !! the operator -- the orbitals, the gaps, the exchange coefficients,
+         !! the filled cache -- is the same for both, so a `spin = "both"`
+         !! solve flips this between the two Davidsons rather than building a
+         !! second operator and walking the quadrature again.
       integer :: n_occ = 0
       integer :: n_vir = 0
       integer :: batch = DEFAULT_RESPONSE_BATCH
@@ -192,12 +222,13 @@ contains
                                direct=.true., bounds=this%bounds, &
                                k_scale=this%k_scale, xc=this%xc, &
                                reference=this%reference, rs_k_lr=this%rs_k_lr, &
-                               rs_omega=this%rs_omega, cache=this%cache)
+                               rs_omega=this%rs_omega, cache=this%cache, &
+                               triplet=this%triplet)
       else
          call response_product(this%mol, this%c_occ, this%c_vir, this%gaps, &
                                this%zero_h, u, idx, nact, minus, au, error, &
                                direct=.true., bounds=this%bounds, &
-                               k_scale=this%k_scale)
+                               k_scale=this%k_scale, triplet=this%triplet)
       end if
    end subroutine tda_half
 
@@ -297,7 +328,7 @@ contains
    end subroutine tda_apply
 
    subroutine build_tda_operator(mol, orbitals, energies, n_occ, operator, error, &
-                                 xc, reference, bounds, batch)
+                                 xc, reference, bounds, batch, spin)
       !! Point a `tda_operator_t` at a converged closed-shell reference
       !!
       !! `mol` and `xc` are `target` and the operator keeps pointers to them,
@@ -321,8 +352,16 @@ contains
          !! Schwarz bounds, computed here when the caller has none.
       integer, intent(in), optional :: batch
          !! Trial vectors per integral pass; `DEFAULT_RESPONSE_BATCH` absent.
+      character(len=*), intent(in), optional :: spin
+         !! Which manifold the operator is for: `singlet` (the default),
+         !! `triplet`, or `both`. It decides two things -- what the operator
+         !! applies now, and whether the kernel cache is filled with the
+         !! triplet coefficients as well, which costs one more libxc pass over
+         !! the grid and is what makes `both` one quadrature rather than two.
 
       integer :: n_ao, n_mo, n_vir, i, a
+      logical :: kernel_triplet
+      character(len=16) :: manifold
 
       if (error%has_error()) return
 
@@ -346,6 +385,37 @@ contains
                         "its kernel is evaluated at, or the reverse; it needs both "// &
                         "or neither")
          return
+      end if
+
+      manifold = "singlet"
+      if (present(spin)) manifold = spin
+      select case (trim(manifold))
+      case ("singlet")
+         operator%triplet = .false.
+         kernel_triplet = .false.
+      case ("triplet")
+         operator%triplet = .true.
+         kernel_triplet = .true.
+      case ("both")
+         ! Starts on the singlets; `tda_excitations` flips it for the second
+         ! manifold, over the one cache that already holds both.
+         operator%triplet = .false.
+         kernel_triplet = .true.
+      case default
+         call error%set(ERROR_VALIDATION, "the TDA operator was asked for the '"// &
+                        trim(manifold)//"' manifold; it knows singlet, triplet "// &
+                        "and both")
+         return
+      end select
+      if (kernel_triplet .and. present(xc)) then
+         if (xc%any_mgga) then
+            call error%set(ERROR_VALIDATION, "a triplet Tamm-Dancoff solve over a "// &
+                           "meta-GGA reference is not implemented: the triplet "// &
+                           "kernel has no tau channels here, and the three it does "// &
+                           "have would be a functional missing a term rather than "// &
+                           "this one")
+            return
+         end if
       end if
 
       operator%mol => mol
@@ -380,7 +450,8 @@ contains
             operator%rs_k_lr = xc%rs_k_lr
             operator%rs_omega = xc%rs_omega
          end if
-         call xc_kernel_cache_fill(xc, mol, reference, operator%cache, error)
+         call xc_kernel_cache_fill(xc, mol, reference, operator%cache, error, &
+                                   triplet=kernel_triplet)
          if (error%has_error()) return
       else
          operator%k_scale = 1.0_dp
@@ -465,24 +536,145 @@ contains
       deallocate (taken, sorted)
    end function roots_to_solve
 
-   subroutine tda_singlet_excitations(mol, orbitals, energies, n_occ, n_states, &
-                                      excitations, amplitudes, error, xc, reference, &
-                                      bounds, tolerance, max_iter, max_subspace, &
-                                      batch, verbose)
-      !! The lowest singlet Tamm-Dancoff excitation energies of a closed shell
+   subroutine solve_manifold(operator, is_triplet, n_states, tol, subspace, values, &
+                             vectors, error, max_iter, verbose)
+      !! One manifold's excitation energies, with the artefacts already dropped
+      !!
+      !! The Davidson, the degeneracy-aware root count and the floor, for
+      !! whichever of the two spins `is_triplet` selects. What comes back is at
+      !! most `n_states` long and can be shorter.
+      !!
+      !! **A triplet root at the floor is an error, not a filter.** A singlet
+      !! root that converges near zero is a rotation of the reference and is
+      !! dropped with a warning, which is the right answer for a spectrum that
+      !! simply has fewer states than were asked for. A triplet one says the
+      !! closed shell is unstable against spin polarisation -- there is a
+      !! lower-energy unrestricted solution, and every root of this operator is
+      !! an expansion about a saddle point. Reporting the remaining roots would
+      !! be a spectrum of a reference nobody should be using.
+      type(tda_operator_t), intent(inout) :: operator
+      logical, intent(in) :: is_triplet
+      integer, intent(in) :: n_states
+      real(dp), intent(in) :: tol
+      integer, intent(in) :: subspace
+         !! Trial vectors kept before a collapse; non-positive takes the
+         !! solver's own rule.
+      real(dp), allocatable, intent(out) :: values(:)
+         !! (n_found) excitation energies, ascending, in Hartree
+      real(dp), allocatable, intent(out) :: vectors(:, :)
+         !! (n_ov, n_found) the normalised `X` of each
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_iter
+      logical, intent(in), optional :: verbose
+
+      real(dp), allocatable :: diagonal(:), raw(:), raw_vec(:, :), residuals(:)
+      integer :: n_ov, n_solve, iterations, products, n_found, k, keep, sub
+      logical :: converged
+
+      if (error%has_error()) return
+
+      operator%triplet = is_triplet
+      n_ov = operator%length()
+      diagonal = operator%diagonal()
+      n_solve = roots_to_solve(diagonal, n_states)
+      sub = max(2*n_solve + 8, 16)
+      if (subspace > 0) sub = subspace
+      sub = max(min(sub, n_ov), n_solve)
+
+      ! No `guess`: the solver with none starts on unit vectors at the lowest
+      ! diagonal elements, and the diagonal here is the orbital-energy gaps,
+      ! which is exactly the guess this wants. `n_solve` is what carries the
+      ! degeneracy awareness.
+      call davidson_flat(operator, diagonal, n_solve, raw, raw_vec, residuals, &
+                         iterations, products, converged, error, tolerance=tol, &
+                         max_iterations=max_iter, max_subspace=sub, &
+                         verbose=verbose, label=trim(manifold_word(is_triplet))// &
+                         " TDA iterations", value_label="excitation")
+      if (error%has_error()) return
+      if (.not. converged) then
+         call error%set(ERROR_GENERIC, "the "//trim(manifold_word(is_triplet))// &
+                        " Tamm-Dancoff solve did not converge its roots in the "// &
+                        "iterations allowed; raise keywords.excited_states.max_iter "// &
+                        "or loosen keywords.excited_states.tolerance")
+         return
+      end if
+
+      ! Concatenated rather than written into `line`: the message is longer
+      ! than an output record, and a format-directed write that overflows one
+      ! is a run-time failure rather than a truncation.
+      if (is_triplet .and. raw(1) <= EXCITATION_FLOOR) then
+         call error%set(ERROR_GENERIC, "the reference is triplet-unstable: its "// &
+                        "lowest Tamm-Dancoff triplet root is "//to_char(raw(1))// &
+                        " hartree, at or below zero, so this closed shell is a "// &
+                        "saddle point against spin polarisation and a lower "// &
+                        "unrestricted solution exists. The roots above it are an "// &
+                        "expansion about that saddle point rather than an "// &
+                        "excitation spectrum; converge an unrestricted reference.")
+         return
+      end if
+
+      ! Drop the artefacts, then the degeneracy padding, keeping the order.
+      keep = 0
+      do k = 1, n_solve
+         if (raw(k) > EXCITATION_FLOOR) keep = keep + 1
+      end do
+      n_found = min(keep, n_states)
+      allocate (values(n_found), vectors(n_ov, n_found))
+      keep = 0
+      do k = 1, n_solve
+         if (raw(k) <= EXCITATION_FLOOR) cycle
+         keep = keep + 1
+         if (keep > n_found) exit
+         values(keep) = raw(k)
+         vectors(:, keep) = raw_vec(:, k)
+      end do
+
+      if (n_found < n_states) then
+         call logger%warning("  only "//to_char(n_found)//" of the "// &
+                             to_char(n_states)//" "//trim(manifold_word(is_triplet))// &
+                             " roots asked for are excitations; the rest converged "// &
+                             "below "//to_char(EXCITATION_FLOOR)//" hartree and are "// &
+                             "rotations of the reference, not excited states")
+      end if
+   end subroutine solve_manifold
+
+   pure function manifold_word(is_triplet) result(word)
+      !! `singlet` or `triplet`, for a message
+      logical, intent(in) :: is_triplet
+      character(len=7) :: word
+
+      word = "singlet"
+      if (is_triplet) word = "triplet"
+   end function manifold_word
+
+   subroutine tda_excitations(mol, orbitals, energies, n_occ, n_states, spin, &
+                              excitations, state_spin, amplitudes, error, xc, &
+                              reference, bounds, tolerance, max_iter, max_subspace, &
+                              batch, verbose)
+      !! The lowest Tamm-Dancoff excitation energies of a closed shell
       !!
       !! What comes back is ascending, in Hartree above the reference, with
       !! every root below `EXCITATION_FLOOR` already dropped -- so `size` of
       !! it can be smaller than `n_states`, and a caller has to read the size
       !! rather than assume it. Always allocated when this returns without an
       !! error, empty included.
+      !!
+      !! With `spin = "both"` the two manifolds are solved over one operator
+      !! and one filled kernel cache, and the results are **interleaved by
+      !! energy** rather than concatenated: `state_spin` is what says which
+      !! root is which, and there are then up to `2 * n_states` of them.
       type(czt_molecule_t), intent(in), target :: mol
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
       integer, intent(in) :: n_occ
       integer, intent(in) :: n_states
+         !! Roots per manifold, not in total.
+      character(len=*), intent(in) :: spin
+         !! `singlet`, `triplet` or `both`.
       real(dp), allocatable, intent(out) :: excitations(:)
          !! (n_found) excitation energies, ascending, in Hartree
+      integer, allocatable, intent(out) :: state_spin(:)
+         !! (n_found) `STATE_SPIN_SINGLET` or `STATE_SPIN_TRIPLET` per root
       real(dp), allocatable, intent(out) :: amplitudes(:, :)
          !! (n_occ*n_vir, n_found) normalised `X`, virtual fastest. `Y` does
          !! not exist in this approximation.
@@ -503,27 +695,45 @@ contains
          !! A line per Davidson iteration. Each one is an integral pass.
 
       type(tda_operator_t) :: operator
-      real(dp), allocatable :: diagonal(:), values(:), vectors(:, :), residuals(:)
+      real(dp), allocatable :: e_singlet(:), x_singlet(:, :)
+      real(dp), allocatable :: e_triplet(:), x_triplet(:, :)
       real(dp) :: tol
       character(len=MAX_LINE_LENGTH) :: line
-      integer :: n_ov, n_solve, iterations, products, n_found, k, keep, subspace
-      logical :: converged
+      integer :: n_ov, subspace
+      logical :: want_singlet, want_triplet
 
       if (error%has_error()) return
+      select case (trim(spin))
+      case ("singlet")
+         want_singlet = .true.
+         want_triplet = .false.
+      case ("triplet")
+         want_singlet = .false.
+         want_triplet = .true.
+      case ("both")
+         want_singlet = .true.
+         want_triplet = .true.
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.spin is '"// &
+                        trim(spin)//"'; this solver knows singlet, triplet and both")
+         return
+      end select
+
       ! Allocated empty rather than left unallocated: the contract above is
       ! that a caller reads the size, and a caller doing that on an
       ! unallocated array has no way to notice.
       if (n_states < 1) then
-         allocate (excitations(0), amplitudes(0, 0))
+         allocate (excitations(0), state_spin(0), amplitudes(0, 0))
          return
       end if
 
       if (present(xc)) then
          call build_tda_operator(mol, orbitals, energies, n_occ, operator, error, &
-                                 xc=xc, reference=reference, bounds=bounds, batch=batch)
+                                 xc=xc, reference=reference, bounds=bounds, &
+                                 batch=batch, spin=trim(spin))
       else
          call build_tda_operator(mol, orbitals, energies, n_occ, operator, error, &
-                                 bounds=bounds, batch=batch)
+                                 bounds=bounds, batch=batch, spin=trim(spin))
       end if
       if (error%has_error()) return
 
@@ -535,66 +745,85 @@ contains
          return
       end if
 
-      diagonal = operator%diagonal()
-      n_solve = roots_to_solve(diagonal, n_states)
       tol = DEFAULT_EXCITED_TOL
       if (present(tolerance)) tol = tolerance
-      subspace = max(2*n_solve + 8, 16)
-      if (present(max_subspace)) then
-         if (max_subspace > 0) subspace = max_subspace
-      end if
-      subspace = max(min(subspace, n_ov), n_solve)
+      subspace = 0
+      if (present(max_subspace)) subspace = max_subspace
 
-      ! No `guess`: the solver with none starts on unit vectors at the lowest
-      ! diagonal elements, and the diagonal here is the orbital-energy gaps,
-      ! which is exactly the guess this wants. `n_solve` is what carries the
-      ! degeneracy awareness.
-      call davidson_flat(operator, diagonal, n_solve, values, vectors, residuals, &
-                         iterations, products, converged, error, tolerance=tol, &
-                         max_iterations=max_iter, max_subspace=subspace, &
-                         verbose=verbose, label="TDA iterations", &
-                         value_label="excitation")
-      if (error%has_error()) return
-      if (.not. converged) then
-         call error%set(ERROR_GENERIC, "the Tamm-Dancoff solve did not converge its "// &
-                        "roots in the iterations allowed; raise "// &
-                        "keywords.excited_states.max_iter or loosen "// &
-                        "keywords.excited_states.tolerance")
-         return
+      if (want_singlet) then
+         call solve_manifold(operator, .false., n_states, tol, subspace, e_singlet, &
+                             x_singlet, error, max_iter=max_iter, verbose=verbose)
+         if (error%has_error()) return
+      else
+         allocate (e_singlet(0), x_singlet(n_ov, 0))
+      end if
+      if (want_triplet) then
+         call solve_manifold(operator, .true., n_states, tol, subspace, e_triplet, &
+                             x_triplet, error, max_iter=max_iter, verbose=verbose)
+         if (error%has_error()) return
+      else
+         allocate (e_triplet(0), x_triplet(n_ov, 0))
       end if
 
-      ! Drop the artefacts, then the degeneracy padding, keeping the order.
-      keep = 0
-      do k = 1, n_solve
-         if (values(k) > EXCITATION_FLOOR) keep = keep + 1
-      end do
-      n_found = min(keep, n_states)
-      allocate (excitations(n_found), amplitudes(n_ov, n_found))
-      keep = 0
-      do k = 1, n_solve
-         if (values(k) <= EXCITATION_FLOOR) cycle
-         keep = keep + 1
-         if (keep > n_found) exit
-         excitations(keep) = values(k)
-         amplitudes(:, keep) = vectors(:, k)
-      end do
+      call merge_manifolds(e_singlet, x_singlet, e_triplet, x_triplet, excitations, &
+                           state_spin, amplitudes)
 
-      if (n_found < n_states) then
-         call logger%warning("  only "//to_char(n_found)//" of the "// &
-                             to_char(n_states)//" roots asked for are excitations; "// &
-                             "the rest converged below "//to_char(EXCITATION_FLOOR)// &
-                             " hartree and are rotations of the reference, not "// &
-                             "excited states")
-      end if
-
-      write (line, "(a,i0,a,i0,a)") "  Tamm-Dancoff: ", n_found, &
-         " singlet root(s) from ", operator%n_products, &
-         " matrix-vector products"
+      write (line, "(a,i0,a,i0,a)") "  Tamm-Dancoff: ", size(excitations), &
+         " root(s) from ", operator%n_products, " matrix-vector products"
       call logger%info(trim(line))
-      call log_state_table(excitations, amplitudes, operator%n_occ, operator%n_vir)
-   end subroutine tda_singlet_excitations
+      call log_state_table(excitations, state_spin, amplitudes, operator%n_occ, &
+                           operator%n_vir)
+   end subroutine tda_excitations
 
-   subroutine log_state_table(excitations, amplitudes, n_occ, n_vir)
+   subroutine merge_manifolds(e_singlet, x_singlet, e_triplet, x_triplet, &
+                              excitations, state_spin, amplitudes)
+      !! The two manifolds as one spectrum, ascending
+      !!
+      !! Both lists arrive sorted, so this is the merge step of a merge sort
+      !! and nothing here is quadratic. A tie goes to the singlet, which only
+      !! decides a print order: two roots that close cannot be told apart by
+      !! their energies anyway, and `state_spin` says which is which.
+      real(dp), intent(in) :: e_singlet(:), e_triplet(:)
+      real(dp), intent(in) :: x_singlet(:, :), x_triplet(:, :)
+      real(dp), allocatable, intent(out) :: excitations(:)
+      integer, allocatable, intent(out) :: state_spin(:)
+      real(dp), allocatable, intent(out) :: amplitudes(:, :)
+
+      integer :: ns, nt, n_ov, is, it, k
+
+      ns = size(e_singlet)
+      nt = size(e_triplet)
+      n_ov = max(size(x_singlet, 1), size(x_triplet, 1))
+      allocate (excitations(ns + nt), state_spin(ns + nt), amplitudes(n_ov, ns + nt))
+
+      is = 1
+      it = 1
+      do k = 1, ns + nt
+         if (it > nt) then
+            excitations(k) = e_singlet(is)
+            state_spin(k) = STATE_SPIN_SINGLET
+            amplitudes(:, k) = x_singlet(:, is)
+            is = is + 1
+         else if (is > ns) then
+            excitations(k) = e_triplet(it)
+            state_spin(k) = STATE_SPIN_TRIPLET
+            amplitudes(:, k) = x_triplet(:, it)
+            it = it + 1
+         else if (e_singlet(is) <= e_triplet(it)) then
+            excitations(k) = e_singlet(is)
+            state_spin(k) = STATE_SPIN_SINGLET
+            amplitudes(:, k) = x_singlet(:, is)
+            is = is + 1
+         else
+            excitations(k) = e_triplet(it)
+            state_spin(k) = STATE_SPIN_TRIPLET
+            amplitudes(:, k) = x_triplet(:, it)
+            it = it + 1
+         end if
+      end do
+   end subroutine merge_manifolds
+
+   subroutine log_state_table(excitations, state_spin, amplitudes, n_occ, n_vir)
       !! The spectrum, as a table with the orbitals each root is made of
       !!
       !! Amplitudes below `AMPLITUDE_FLOOR` are left out: a converged root of
@@ -604,6 +833,10 @@ contains
       !! all of them, occupied and virtual together, so the indices match what
       !! every other table in this program prints.
       real(dp), intent(in) :: excitations(:)
+      integer, intent(in) :: state_spin(:)
+         !! `STATE_SPIN_*` per root, printed as a column: with `spin = "both"`
+         !! the two manifolds interleave, and a table of energies alone would
+         !! not say which row is which.
       real(dp), intent(in) :: amplitudes(:, :)
       integer, intent(in) :: n_occ, n_vir
 
@@ -621,10 +854,12 @@ contains
             ", which differs in the eighth decimal"
          call logger%info(trim(line))
       end if
-      call logger%info("   state       hartree           eV   dominant amplitudes")
+      call logger%info("   state     spin       hartree           eV   "// &
+                       "dominant amplitudes")
 
       do k = 1, size(excitations)
-         write (line, "(a,i4,f16.9,f13.4,a)") "   ", k, excitations(k), &
+         write (line, "(a,i4,a9,f16.9,f13.4,a)") "   ", k, &
+            trim(spin_word(state_spin(k))), excitations(k), &
             excitations(k)*HARTREE_TO_EV, "   "
          do i = 1, n_occ
             do a = 1, n_vir
@@ -639,5 +874,20 @@ contains
          call logger%info(trim(line))
       end do
    end subroutine log_state_table
+
+   pure function spin_word(code) result(word)
+      !! The `STATE_SPIN_*` code as the word the table prints
+      integer, intent(in) :: code
+      character(len=8) :: word
+
+      select case (code)
+      case (STATE_SPIN_SINGLET)
+         word = "singlet"
+      case (STATE_SPIN_TRIPLET)
+         word = "triplet"
+      case default
+         word = "unknown"
+      end select
+   end function spin_word
 
 end module mqc_czt_tddft
