@@ -25,7 +25,7 @@ module mqc_czt_hessian
                                 HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                 HESS_NUC_II, HESS_NUC_IJ
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, xc_add_potential, &
-                         vv10_kernel_apply
+                         vv10_kernel_apply, xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
                              schwarz_bounds, direct_stats_t
@@ -96,6 +96,14 @@ module mqc_czt_hessian
       real(dp), allocatable :: reference(:, :)
          !! The converged density the kernel is evaluated at, which is not the
          !! trial density being contracted.
+      type(xc_kernel_cache_t) :: kernel_cache
+         !! That kernel's coefficients on the grid, when a caller filled them.
+         !!
+         !! They depend on the reference density and the grid and on nothing
+         !! the solver moves, so evaluating them inside every application is
+         !! the same libxc pass repeated once per conjugate-gradient step.
+         !! Unfilled is the ordinary case and costs nothing; `solve_mo1_batch`
+         !! fills it before the solve, and `solve_mo1_atom` does not.
       real(dp) :: k_scale = 1.0_dp
          !! Exact exchange in the response operator. One for Hartree-Fock, zero
          !! for a pure functional, the mixing fraction for a hybrid.
@@ -559,7 +567,12 @@ contains
          ! One grid pass for the whole batch: the basis functions and the
          ! reference kernel are evaluated once per block and every trial
          ! density is contracted against them. Accumulates into `g`.
-         call xc_kernel_apply_many(this%xc, this%mol, this%reference, dens, g, error)
+         if (this%kernel_cache%filled) then
+            call xc_kernel_apply_many(this%xc, this%mol, this%reference, dens, g, error, &
+                                      cache=this%kernel_cache)
+         else
+            call xc_kernel_apply_many(this%xc, this%mol, this%reference, dens, g, error)
+         end if
          if (error%has_error()) return
          ! The non-local kernel, once for the whole batch rather than inside
          ! the loop above: `vv10_kernel_apply`'s pair sweep is O(npts^2)
@@ -1481,6 +1494,17 @@ contains
          operator%bounds = bounds
       else
          call schwarz_bounds(mol, operator%bounds, error)
+         if (error%has_error()) return
+      end if
+
+      ! The exchange-correlation kernel's coefficients over the grid, once for
+      ! the whole solve. They are a property of the reference density, which
+      ! does not move here, and `nuclear_apply` would otherwise re-evaluate
+      ! them -- the reference density on every block and libxc's second
+      ! derivatives over it -- on each of the solver's dozens of applications.
+      ! The cost is ten arrays over the grid, held until this returns.
+      if (present(xc)) then
+         call xc_kernel_cache_fill(xc, mol, operator%reference, operator%kernel_cache, error)
          if (error%has_error()) return
       end if
 

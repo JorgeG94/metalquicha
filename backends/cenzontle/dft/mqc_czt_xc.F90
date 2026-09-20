@@ -71,6 +71,8 @@ module mqc_czt_xc
    public :: xc_grid_gga_quantities
    public :: xc_kernel_apply
    public :: xc_kernel_apply_many
+   public :: xc_kernel_cache_t
+   public :: xc_kernel_cache_fill
    public :: xc_kernel2_apply
    public :: xc_grid_kernel_quantities
    public :: KERNEL_RHO_FLOOR   !! Where the kernel's divergence is cut off
@@ -168,6 +170,72 @@ module mqc_czt_xc
    contains
       procedure :: destroy => xc_context_destroy
    end type xc_context_t
+
+   type :: xc_kernel_cache_t
+      !! The kernel's coefficients on the whole grid, evaluated once
+      !!
+      !! `xc_kernel_apply_many` evaluates the reference density and libxc's
+      !! second derivatives per grid block on **every** call, and every one of
+      !! those is a property of the converged density alone: a response solve
+      !! applying the same kernel a hundred times pays for the same numbers a
+      !! hundred times. These are O(n_points) scalars, so holding them costs
+      !! ten arrays over the grid and saves a libxc pass per call.
+      !!
+      !! **Not the basis functions**, which stay per block for the reason the
+      !! module header gives: those are `n_points` by `n_ao` and a cache of them
+      !! is the one thing here that does not fit.
+      !!
+      !! Filled by `xc_kernel_cache_fill` from the reference density, and handed
+      !! back to `xc_kernel_apply` or `xc_kernel_apply_many` as an optional
+      !! argument. Absent, those routines evaluate as they always did -- the
+      !! same code, since the fill and the uncached path share
+      !! `kernel_block_reference` rather than each having their own copy of it.
+      !!
+      !! A cache belongs to one context, one geometry and one reference
+      !! density; nothing here can check the last two, so a consumer that moves
+      !! the nuclei or re-converges the density has to fill again.
+      logical :: filled = .false.
+         !! Whether the arrays below hold anything. A cache that was never
+         !! filled is refused rather than read as zeros, which would be a
+         !! silently missing kernel term.
+      integer :: n_points = 0
+         !! Points the cache was filled over, checked against the context's grid.
+      logical :: gga = .false.
+      logical :: mgga = .false.
+         !! What the context was when the fill ran. Checked on use, because a
+         !! GGA cache read by a meta-GGA contraction is short three channels.
+      real(dp), allocatable :: rho(:)
+         !! (n_points) the reference density. Not read by the contraction --
+         !! the floor it decides was already applied below -- and kept because
+         !! it is what a second, polarised evaluation would be built from.
+      real(dp), allocatable :: rho_grad(:, :)
+         !! (n_points, 3) its gradient, which the contraction does read: it
+         !! makes `dsigma` and multiplies the response's gradient coefficient.
+         !! Zero throughout for an LDA.
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+         !! (n_points) `v2rho2`, `v2rhosigma` and `v2sigma2`, summed over the
+         !! functional's components with their weights and floored at
+         !! `KERNEL_RHO_FLOOR`.
+      real(dp), allocatable :: vsig(:)
+         !! (n_points) `vsigma`, a *first* derivative, here because the
+         !! response density's gradient multiplies it.
+      real(dp), allocatable :: frt(:), fst(:), ftt(:)
+         !! (n_points) the kinetic-energy-density channels `v2rhotau`,
+         !! `v2sigmatau` and `v2tau2`. Zero unless the context is a meta-GGA.
+      real(dp), allocatable :: vtau(:)
+         !! (n_points) `vtau`. Floored with the rest and carried for symmetry
+         !! with `vsig`; the contraction does not read it, because tau is
+         !! linear in the density and so has no analogue of the `vsigma` term.
+      ! TODO(mqc): a triplet slot. Layer 3 of the TDDFT plan needs the same
+      ! coefficients from a *polarised* evaluation at `rho_alpha = rho_beta =
+      ! rho/2` and `sigma_aa = sigma/4`, whose `(f_aa - f_ab)/2` is the triplet
+      ! kernel, beside the singlet ones here. It is one more libxc call per
+      ! block inside `xc_kernel_cache_fill` and one more set of arrays; doing it
+      ! there rather than per block is the whole point of the cache, since Psi4
+      ! rebuilds the polarised functional on every block and pays for it.
+   contains
+      procedure :: destroy => xc_kernel_cache_destroy
+   end type xc_kernel_cache_t
 
 contains
 
@@ -424,6 +492,26 @@ contains
       this%rs_omega = 0.0_dp
       this%rs_k_lr = 0.0_dp
    end subroutine xc_context_destroy
+
+   subroutine xc_kernel_cache_destroy(this)
+      !! Release the grid-sized arrays and mark the cache unfilled
+      class(xc_kernel_cache_t), intent(inout) :: this
+
+      if (allocated(this%rho)) deallocate (this%rho)
+      if (allocated(this%rho_grad)) deallocate (this%rho_grad)
+      if (allocated(this%frr)) deallocate (this%frr)
+      if (allocated(this%frs)) deallocate (this%frs)
+      if (allocated(this%fss)) deallocate (this%fss)
+      if (allocated(this%vsig)) deallocate (this%vsig)
+      if (allocated(this%frt)) deallocate (this%frt)
+      if (allocated(this%fst)) deallocate (this%fst)
+      if (allocated(this%ftt)) deallocate (this%ftt)
+      if (allocated(this%vtau)) deallocate (this%vtau)
+      this%filled = .false.
+      this%n_points = 0
+      this%gga = .false.
+      this%mgga = .false.
+   end subroutine xc_kernel_cache_destroy
 
    subroutine xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
                                      density_beta, rho_beta, vrho_beta)
@@ -1760,7 +1848,149 @@ contains
 #endif
    end subroutine xc_add_potential_uks
 
-   subroutine xc_kernel_apply(ctx, mol, density, dtilde, v_kernel, error)
+#ifdef MQC_WITH_LIBXC
+   subroutine kernel_block_reference(ctx, ao, ao_grad, d_sig, gga, mgga, &
+                                     rho, rho_grad, frr, frs, fss, vsig, &
+                                     frt, fst, ftt, vtau)
+      !! The reference density and the kernel's coefficients on one grid block
+      !!
+      !! Everything the kernel contraction needs that does not depend on the
+      !! response density: the reference `rho` and its gradient, libxc's second
+      !! derivatives summed over the functional's components with their
+      !! weights, and the two first derivatives a response *gradient*
+      !! multiplies.
+      !!
+      !! **One routine rather than two copies.** `kernel_apply_batch` calls it
+      !! per block and `xc_kernel_cache_fill` calls it over the whole grid, and
+      !! a cache that rounded differently from the path it replaces would be a
+      !! second implementation of the kernel rather than a cache of the first.
+      !! `KERNEL_RHO_FLOOR` is applied here for the same reason.
+      type(xc_context_t), intent(inout) :: ctx
+      real(dp), intent(in) :: ao(:, :)   !! (n_block, n_sig), the kept functions
+      real(dp), allocatable, intent(in) :: ao_grad(:, :, :)
+         !! (n_block, n_sig, 3), and unallocated where the context is an LDA
+      real(dp), intent(in) :: d_sig(:, :)
+         !! (n_sig, n_sig), the reference density over the kept functions
+      logical, intent(in) :: gga, mgga
+      real(dp), allocatable, intent(out) :: rho(:)          !! (n_block)
+      real(dp), allocatable, intent(out) :: rho_grad(:, :)  !! (n_block, 3), zero for an LDA
+      real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:), vsig(:)
+      real(dp), allocatable, intent(out) :: frt(:), fst(:), ftt(:), vtau(:)
+         !! The tau channels, zero unless the context is a meta-GGA
+
+      real(dp), allocatable :: sigma(:), tau(:), lapl(:), lapl_scratch(:)
+         !! libxc's meta-GGA entry points take the Laplacian and return its
+         !! derivatives whether or not the functional uses them. Laplacian
+         !! dependent functionals are refused at construction, so these are
+         !! zeros in and discarded out.
+      real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
+      real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
+      real(dp), allocatable :: frt_i(:), fst_i(:), ftt_i(:), vtau_i(:)
+      integer :: nb, i, ig
+
+      nb = size(ao, 1)
+
+      ! The reference density, once for the block: what `f_xc` is evaluated
+      ! at. Its tau only where a meta-GGA asks.
+      if (mgga) then
+         call eval_rho(ao, d_sig, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
+      else if (gga) then
+         call eval_rho(ao, d_sig, rho, ao_grad=ao_grad, rho_grad=rho_grad)
+      else
+         call eval_rho(ao, d_sig, rho)
+      end if
+      ! Allocated and zero rather than absent on the rungs that do not define
+      ! them: the coefficients multiplying them are zero there, and zero times
+      ! uninitialised is a NaN rather than nothing.
+      if (.not. allocated(rho_grad)) then
+         allocate (rho_grad(nb, 3))
+         rho_grad = 0.0_dp
+      end if
+      if (.not. allocated(tau)) then
+         allocate (tau(nb))
+         tau = 0.0_dp
+      end if
+
+      allocate (frr(nb), frs(nb), fss(nb), vsig(nb), frt(nb), fst(nb), ftt(nb), vtau(nb))
+      frr = 0.0_dp
+      frs = 0.0_dp
+      fss = 0.0_dp
+      vsig = 0.0_dp
+      frt = 0.0_dp
+      fst = 0.0_dp
+      ftt = 0.0_dp
+      vtau = 0.0_dp
+      allocate (sigma(nb), lapl(nb), lapl_scratch(nb), exc_i(nb), vrho_i(nb), &
+                vsigma_i(nb), frr_i(nb), frs_i(nb), fss_i(nb), frt_i(nb), fst_i(nb), &
+                ftt_i(nb), vtau_i(nb))
+      lapl = 0.0_dp
+      sigma = 0.0_dp
+      if (gga) then
+         do ig = 1, nb
+            sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
+         end do
+      end if
+
+      ! Per component, as everywhere else here: a composition may put an LDA
+      ! correlation beside a GGA exchange, and `any_gga` only says that at
+      ! least one of them needs sigma.
+      do i = 1, ctx%n_func
+         select case (ctx%family(i))
+         case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+            call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                frr_i, frs_i, fss_i)
+            ! `v_sigma` is a first derivative and comes from the ordinary
+            ! evaluator. It belongs here because the *response* density's
+            ! gradient multiplies it -- the one kernel term that is not a
+            ! second derivative.
+            call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                    exc_i, vrho_i, vsigma_i)
+            frr = frr + ctx%weight(i)*frr_i
+            frs = frs + ctx%weight(i)*frs_i
+            fss = fss + ctx%weight(i)*fss_i
+            vsig = vsig + ctx%weight(i)*vsigma_i
+         case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+            ! Six of the ten second derivatives are wanted; the four
+            ! Laplacian ones are written into scratch and dropped.
+            call xc_f03_mgga_fxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
+                                 frr_i, frs_i, lapl_scratch, frt_i, &
+                                 fss_i, lapl_scratch, fst_i, &
+                                 lapl_scratch, lapl_scratch, ftt_i)
+            ! `v_sigma` and `v_tau` are *first* derivatives and belong here
+            ! for the same reason on this rung as on the last: the response
+            ! density's gradient multiplies one and its tau the other.
+            call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
+                                     exc_i, vrho_i, vsigma_i, lapl_scratch, vtau_i)
+            frr = frr + ctx%weight(i)*frr_i
+            frs = frs + ctx%weight(i)*frs_i
+            fss = fss + ctx%weight(i)*fss_i
+            frt = frt + ctx%weight(i)*frt_i
+            fst = fst + ctx%weight(i)*fst_i
+            ftt = ftt + ctx%weight(i)*ftt_i
+            vsig = vsig + ctx%weight(i)*vsigma_i
+            vtau = vtau + ctx%weight(i)*vtau_i
+         case default
+            call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, frr_i)
+            frr = frr + ctx%weight(i)*frr_i
+         end select
+      end do
+
+      do ig = 1, nb
+         if (rho(ig) < KERNEL_RHO_FLOOR) then
+            frr(ig) = 0.0_dp
+            frs(ig) = 0.0_dp
+            fss(ig) = 0.0_dp
+            vsig(ig) = 0.0_dp
+            frt(ig) = 0.0_dp
+            fst(ig) = 0.0_dp
+            ftt(ig) = 0.0_dp
+            vtau(ig) = 0.0_dp
+         end if
+      end do
+   end subroutine kernel_block_reference
+#endif
+
+   subroutine xc_kernel_apply(ctx, mol, density, dtilde, v_kernel, error, cache)
       !! The exchange-correlation kernel applied to a response density
       !!
       !! `f_xc` is the second functional derivative, and this returns
@@ -1777,8 +2007,8 @@ contains
       !! response operator comes three ways -- stored, integral-direct and
       !! density-fitted -- and the kernel is orthogonal to that choice.
       !!
-      !! **LDA and GGA; meta-GGA is refused.** For a GGA the response density
-      !! has a gradient too, and both of the potential's pieces respond:
+      !! **LDA, GGA and meta-GGA.** For a GGA the response density has a
+      !! gradient too, and both of the potential's pieces respond:
       !!
       !!     dv_rho  = f_rr drho + f_rs dsigma
       !!     dv_grad = 2 (f_rs drho + f_ss dsigma) grad rho + 2 v_sigma grad drho
@@ -1790,15 +2020,21 @@ contains
       !! analogue in the LDA case: `v_sigma` is a *first* derivative, and it
       !! enters because the response density's gradient multiplies it.
       !!
-      !! A meta-GGA would add `v2tau2`, `v2rhotau` and `v2sigmatau` and a tau
-      !! component of the response density; returning a GGA kernel for one would
-      !! be a converged, plausible, wrong response.
+      !! A meta-GGA adds `v2rhotau`, `v2sigmatau` and `v2tau2` and a tau
+      !! component of the response density. This routine forwards to
+      !! `xc_kernel_apply_many`, which carries all three, so the rung is
+      !! whatever the context is rather than a choice made here. The header
+      !! said otherwise until the tau channels landed in `_many` and it was
+      !! left behind.
       type(xc_context_t), intent(inout) :: ctx
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)   !! The converged SCF density
       real(dp), intent(in) :: dtilde(:, :)    !! The response density
       real(dp), intent(inout) :: v_kernel(:, :)  !! Accumulated into
       type(error_t), intent(inout) :: error
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients, from `xc_kernel_cache_fill`.
+         !! Absent, they are evaluated here as they always were.
 
       real(dp), allocatable :: many_in(:, :, :), many_out(:, :, :)
 
@@ -1808,13 +2044,49 @@ contains
                 many_out(size(v_kernel, 1), size(v_kernel, 2), 1))
       many_in(:, :, 1) = dtilde
       many_out = 0.0_dp
-      call xc_kernel_apply_many(ctx, mol, density, many_in, many_out, error)
+      if (present(cache)) then
+         call xc_kernel_apply_many(ctx, mol, density, many_in, many_out, error, cache=cache)
+      else
+         call xc_kernel_apply_many(ctx, mol, density, many_in, many_out, error)
+      end if
       if (error%has_error()) return
       v_kernel = v_kernel + many_out(:, :, 1)
    end subroutine xc_kernel_apply
 
-   subroutine xc_kernel_apply_many(ctx, mol, density, dtildes, v_kernels, error)
+   subroutine xc_kernel_apply_many(ctx, mol, density, dtildes, v_kernels, error, cache)
       !! The exchange-correlation kernel applied to a batch of response densities
+      !!
+      !! The whole of it is `kernel_apply_batch`; this exists to turn one
+      !! optional argument into two ordinary ones. An absent optional dummy
+      !! cannot portably be named in an OpenMP data-sharing clause, and the
+      !! contraction's parallel region is `default(none)`, which is worth
+      !! keeping over a shorter call chain.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)       !! The converged SCF density
+      real(dp), intent(in) :: dtildes(:, :, :)    !! (n_ao, n_ao, n_set), the response densities
+      real(dp), intent(inout) :: v_kernels(:, :, :)  !! (n_ao, n_ao, n_set), accumulated into
+      type(error_t), intent(inout) :: error
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients over the whole grid, from
+         !! `xc_kernel_cache_fill`. Present, the per-block evaluation of the
+         !! reference density and of libxc's derivatives is skipped and these
+         !! are read instead; absent, nothing changes.
+
+      type(xc_kernel_cache_t) :: unfilled
+         !! Stands in for an absent `cache`, so the worker's argument is never
+         !! optional. Holds no arrays, and `have_cache` keeps it unread.
+
+      if (present(cache)) then
+         call kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, cache, .true.)
+      else
+         call kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, unfilled, .false.)
+      end if
+   end subroutine xc_kernel_apply_many
+
+   subroutine kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, &
+                                 cache, have_cache)
+      !! The batched kernel contraction, with the cache made unconditional
       !!
       !! `xc_kernel_apply` for `n_set` densities in one pass over the grid. The
       !! basis functions, the reference density and its kernel are evaluated
@@ -1844,6 +2116,12 @@ contains
       !! set-by-set path, since its tau needs three more gemms per set.
       !!
       !! Accumulates into `v_kernels`, as `xc_kernel_apply` does into its one.
+      !!
+      !! **With `have_cache` the reference is not evaluated at all here.** The
+      !! basis functions still are, per block, and so is every response
+      !! density; what the cache removes is `eval_rho` on the reference and the
+      !! libxc calls, which is what a Davidson or a coupled-perturbed solve
+      !! repeats identically on every application.
 !$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(xc_context_t), intent(inout) :: ctx
       type(czt_molecule_t), intent(in) :: mol
@@ -1851,23 +2129,18 @@ contains
       real(dp), intent(in) :: dtildes(:, :, :)    !! (n_ao, n_ao, n_set), the response densities
       real(dp), intent(inout) :: v_kernels(:, :, :)  !! (n_ao, n_ao, n_set), accumulated into
       type(error_t), intent(inout) :: error
+      type(xc_kernel_cache_t), intent(in) :: cache
+         !! Read only where `have_cache`, and unfilled otherwise.
+      logical, intent(in) :: have_cache
 
 #ifdef MQC_WITH_LIBXC
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: rho(:), rho_grad(:, :), drho(:), drho_grad(:, :)
-      real(dp), allocatable :: sigma(:), dsigma(:)
+      real(dp), allocatable :: dsigma(:)
       real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
-      real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
-      real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
       real(dp), allocatable :: c_rho(:), c_grad(:, :), c_tau(:), no_tau(:)
-      real(dp), allocatable :: tau(:), dtau(:), lapl(:)
+      real(dp), allocatable :: dtau(:)
       real(dp), allocatable :: frt(:), fst(:), ftt(:), vtau(:)
-      real(dp), allocatable :: frt_i(:), fst_i(:), ftt_i(:), vtau_i(:)
-      real(dp), allocatable :: lapl_scratch(:)
-         !! libxc's meta-GGA entry points take the Laplacian and return its
-         !! derivatives whether or not the functional uses them. Laplacian
-         !! dependent functionals are refused at construction, so these are zeros
-         !! in and discarded out.
       real(dp), allocatable :: v_sig(:, :), d_sig(:, :), dt_sig(:, :)
       real(dp), allocatable :: extents(:), dmax(:)
       real(dp), allocatable :: dt_all(:, :), x_all(:, :), s_all(:, :), m_all(:, :), wg(:)
@@ -1903,6 +2176,26 @@ contains
       npts = ctx%grid%n_points
       failed = .false.
 
+      ! A cache belonging to another context is the failure worth catching
+      ! here: its arrays are the right shape often enough, and a GGA's
+      ! coefficients read by a meta-GGA contraction are three channels short
+      ! of the answer with nothing to show for it.
+      if (have_cache) then
+         if (.not. cache%filled) then
+            call error%set(ERROR_VALIDATION, "the exchange-correlation kernel was "// &
+                           "given a cache that was never filled: call "// &
+                           "xc_kernel_cache_fill on the reference density first")
+            return
+         end if
+         if (cache%n_points /= npts .or. (cache%gga .neqv. gga) &
+             .or. (cache%mgga .neqv. mgga)) then
+            call error%set(ERROR_VALIDATION, "the exchange-correlation kernel cache "// &
+                           "was filled for a different grid or a different "// &
+                           "functional rung than the context it was handed with")
+            return
+         end if
+      end if
+
       call shell_extents(mol, ctx%screen_tol, extents)
 
       ! The largest element of each set, which its screen is relative to.
@@ -1918,12 +2211,11 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, dtildes, v_kernels, error, failed, &
-      !$omp           gga, mgga, npts, extents, n_set, dmax, locks) &
+      !$omp           gga, mgga, npts, extents, n_set, dmax, locks, &
+      !$omp           cache, have_cache) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho, rho_grad, drho, &
-      !$omp            drho_grad, sigma, dsigma, frr, frs, fss, vsig, frr_i, &
-      !$omp            frs_i, fss_i, exc_i, vrho_i, vsigma_i, c_rho, c_grad, &
-      !$omp            c_tau, no_tau, tau, dtau, lapl, frt, fst, ftt, vtau, &
-      !$omp            frt_i, fst_i, ftt_i, vtau_i, lapl_scratch) &
+      !$omp            drho_grad, dsigma, frr, frs, fss, vsig, c_rho, c_grad, &
+      !$omp            c_tau, no_tau, dtau, frt, fst, ftt, vtau) &
       !$omp    private(v_sig, d_sig, dt_sig, shell_mask, ao_list, ao_offset, &
       !$omp            n_sig, ia, ja, iset, amax, agmax, dmax_blk, s, &
       !$omp            dt_all, x_all, s_all, m_all, wg, keep, nk, ik, nc, c, col0, mu) &
@@ -1948,11 +2240,16 @@ contains
                                     shell_mask, ao_list, ao_offset, n_sig)
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
-         do ja = 1, n_sig
-            do ia = 1, n_sig
-               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+         ! The reference's own density over the kept functions, which is what
+         ! the kernel is evaluated at. Not gathered when the cache already
+         ! holds the answer -- it is read for nothing else.
+         if (.not. have_cache) then
+            do ja = 1, n_sig
+               do ia = 1, n_sig
+                  d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+               end do
             end do
-         end do
+         end if
 
          if (gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
@@ -1973,108 +2270,27 @@ contains
             cycle
          end if
 
-         ! The reference density, once for the block: what `f_xc` is evaluated
-         ! at. Its tau only where a meta-GGA asks.
-         if (mgga) then
-            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
-                          rho_grad=rho_grad, tau=tau)
-         else if (gga) then
-            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
-                          rho_grad=rho_grad)
+         ! The reference density's gradient and the kernel's coefficients on
+         ! this block: read from the cache where there is one, evaluated where
+         ! there is not. The evaluation is one routine shared with the fill,
+         ! so the two paths cannot drift -- including where the floor falls.
+         if (have_cache) then
+            call kernel_block_from_cache(cache, g0, g1, rho_grad, frr, frs, fss, vsig, &
+                                         frt, fst, ftt, vtau)
          else
-            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
+            call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
+                                        gga, mgga, rho, rho_grad, &
+                                        frr, frs, fss, vsig, frt, fst, ftt, vtau)
          end if
 
-         if (allocated(frr)) deallocate (frr, frs, fss, vsig, frr_i, frs_i, fss_i, &
-                                         exc_i, vrho_i, vsigma_i, sigma, dsigma, c_rho)
-         allocate (frr(nb), frs(nb), fss(nb), vsig(nb), frr_i(nb), frs_i(nb), fss_i(nb), &
-                   exc_i(nb), vrho_i(nb), vsigma_i(nb), sigma(nb), dsigma(nb), c_rho(nb))
-         frr = 0.0_dp
-         frs = 0.0_dp
-         fss = 0.0_dp
-         vsig = 0.0_dp
-         if (allocated(frt)) deallocate (frt, fst, ftt, vtau, frt_i, fst_i, ftt_i, &
-                                         vtau_i, lapl, lapl_scratch, c_tau)
-         allocate (frt(nb), fst(nb), ftt(nb), vtau(nb), frt_i(nb), fst_i(nb), ftt_i(nb), &
-                   vtau_i(nb), lapl(nb), lapl_scratch(nb), c_tau(nb))
-         frt = 0.0_dp
-         fst = 0.0_dp
-         ftt = 0.0_dp
-         vtau = 0.0_dp
-         lapl = 0.0_dp
+         ! The response side's own scratch, which no cache can hold: it is the
+         ! trial density's, not the reference's.
+         if (allocated(c_rho)) deallocate (c_rho, dsigma, c_tau, dtau)
+         allocate (c_rho(nb), dsigma(nb), c_tau(nb), dtau(nb))
          c_tau = 0.0_dp
-         if (.not. mgga) then
-            ! The coefficients that multiply these are zero on the LDA and GGA
-            ! paths, and zero times uninitialised is a NaN rather than nothing.
-            if (allocated(tau)) deallocate (tau)
-            if (allocated(dtau)) deallocate (dtau)
-            allocate (tau(nb), dtau(nb))
-            tau = 0.0_dp
-            dtau = 0.0_dp
-         end if
-         sigma = 0.0_dp
-         if (gga) then
-            do ig = 1, nb
-               sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
-            end do
-         end if
-
-         ! Per component, as everywhere else here: a composition may put an LDA
-         ! correlation beside a GGA exchange, and `any_gga` only says that at
-         ! least one of them needs sigma.
-         do i = 1, ctx%n_func
-            select case (ctx%family(i))
-            case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
-               call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
-                                   frr_i, frs_i, fss_i)
-               ! `v_sigma` is a first derivative and comes from the ordinary
-               ! evaluator. It belongs here because the *response* density's
-               ! gradient multiplies it -- the one kernel term that is not a
-               ! second derivative.
-               call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
-                                       exc_i, vrho_i, vsigma_i)
-               frr = frr + ctx%weight(i)*frr_i
-               frs = frs + ctx%weight(i)*frs_i
-               fss = fss + ctx%weight(i)*fss_i
-               vsig = vsig + ctx%weight(i)*vsigma_i
-            case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
-               ! Six of the ten second derivatives are wanted; the four
-               ! Laplacian ones are written into scratch and dropped.
-               call xc_f03_mgga_fxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
-                                    frr_i, frs_i, lapl_scratch, frt_i, &
-                                    fss_i, lapl_scratch, fst_i, &
-                                    lapl_scratch, lapl_scratch, ftt_i)
-               ! `v_sigma` and `v_tau` are *first* derivatives and belong here
-               ! for the same reason on this rung as on the last: the response
-               ! density's gradient multiplies one and its tau the other.
-               call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
-                                        exc_i, vrho_i, vsigma_i, lapl_scratch, vtau_i)
-               frr = frr + ctx%weight(i)*frr_i
-               frs = frs + ctx%weight(i)*frs_i
-               fss = fss + ctx%weight(i)*fss_i
-               frt = frt + ctx%weight(i)*frt_i
-               fst = fst + ctx%weight(i)*fst_i
-               ftt = ftt + ctx%weight(i)*ftt_i
-               vsig = vsig + ctx%weight(i)*vsigma_i
-               vtau = vtau + ctx%weight(i)*vtau_i
-            case default
-               call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, frr_i)
-               frr = frr + ctx%weight(i)*frr_i
-            end select
-         end do
-
-         do ig = 1, nb
-            if (rho(ig) < KERNEL_RHO_FLOOR) then
-               frr(ig) = 0.0_dp
-               frs(ig) = 0.0_dp
-               fss(ig) = 0.0_dp
-               vsig(ig) = 0.0_dp
-               frt(ig) = 0.0_dp
-               fst(ig) = 0.0_dp
-               ftt(ig) = 0.0_dp
-               vtau(ig) = 0.0_dp
-            end if
-         end do
+         ! Zero on the LDA and GGA paths, where the coefficient multiplying it
+         ! is zero too and zero times uninitialised is a NaN rather than nothing.
+         dtau = 0.0_dp
 
          ! How large the basis is on this block, for the per-set screen: the
          ! largest over the points of `sum_u |chi_u|`, and of the same sum over
@@ -2337,8 +2553,191 @@ contains
       if (size(density) < 0 .or. size(dtildes) < 0 .or. size(v_kernels) < 0) return
       if (mol%nao < 0) return
       if (ctx%n_func < 0) return
+      if (have_cache .and. cache%n_points < 0) return
 #endif
-   end subroutine xc_kernel_apply_many
+   end subroutine kernel_apply_batch
+
+   subroutine kernel_block_from_cache(cache, g0, g1, rho_grad, frr, frs, fss, vsig, &
+                                      frt, fst, ftt, vtau)
+      !! One block's worth of cached coefficients, in the shapes the block wants
+      !!
+      !! A copy rather than a slice, because the contraction below indexes
+      !! everything from one and a pointer into the middle of a cache array
+      !! would have to be rebased anyway. It is ten `n_block` copies against a
+      !! libxc pass.
+      type(xc_kernel_cache_t), intent(in) :: cache
+      integer, intent(in) :: g0, g1   !! First and last grid point of the block
+      real(dp), allocatable, intent(out) :: rho_grad(:, :)   !! (n_block, 3)
+      real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:), vsig(:)
+      real(dp), allocatable, intent(out) :: frt(:), fst(:), ftt(:), vtau(:)
+
+      integer :: nb, id
+
+      nb = g1 - g0 + 1
+      allocate (rho_grad(nb, 3))
+      do id = 1, 3
+         rho_grad(:, id) = cache%rho_grad(g0:g1, id)
+      end do
+      allocate (frr(nb), frs(nb), fss(nb), vsig(nb), frt(nb), fst(nb), ftt(nb), vtau(nb))
+      frr = cache%frr(g0:g1)
+      frs = cache%frs(g0:g1)
+      fss = cache%fss(g0:g1)
+      vsig = cache%vsig(g0:g1)
+      frt = cache%frt(g0:g1)
+      fst = cache%fst(g0:g1)
+      ftt = cache%ftt(g0:g1)
+      vtau = cache%vtau(g0:g1)
+   end subroutine kernel_block_from_cache
+
+   subroutine xc_kernel_cache_fill(ctx, mol, density, cache, error)
+      !! Evaluate the kernel's coefficients over the whole grid, once
+      !!
+      !! The grid pass `xc_kernel_apply_many` makes on every call, made here
+      !! instead and kept. What comes back is a `xc_kernel_cache_t` that any
+      !! number of later applications can be handed; each of them then
+      !! evaluates the basis functions and the response densities per block
+      !! and nothing else.
+      !!
+      !! **The same blocks, the same screen, the same routine.** The loop below
+      !! is the contraction's own prologue -- `ctx%point_block` points at a
+      !! time, `block_significant_aos` deciding which functions reach them,
+      !! `kernel_block_reference` doing the evaluation -- so a cached
+      !! application reproduces an uncached one bit for bit rather than to
+      !! within a tolerance.
+      !!
+      !! Restricted only, as the kernel itself is.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! The converged SCF density
+      type(xc_kernel_cache_t), intent(out) :: cache
+      type(error_t), intent(inout) :: error
+
+#ifdef MQC_WITH_LIBXC
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho(:), rho_grad(:, :)
+      real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
+      real(dp), allocatable :: frt(:), fst(:), ftt(:), vtau(:)
+      real(dp), allocatable :: d_sig(:, :), extents(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: g0, g1, ia, ja, id, n_sig, npts
+      logical :: gga, mgga, failed
+      type(error_t) :: local_error
+#endif
+
+      if (.not. ctx%active) return
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is "// &
+                        "implemented for a restricted reference only")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      gga = ctx%any_gga .or. ctx%any_mgga
+      mgga = ctx%any_mgga
+      npts = ctx%grid%n_points
+
+      allocate (cache%rho(npts), cache%rho_grad(npts, 3), cache%frr(npts), &
+                cache%frs(npts), cache%fss(npts), cache%vsig(npts), &
+                cache%frt(npts), cache%fst(npts), cache%ftt(npts), cache%vtau(npts))
+      ! Zero where no basis function reaches, which is where the contraction
+      ! skips the block outright and never reads these.
+      cache%rho = 0.0_dp
+      cache%rho_grad = 0.0_dp
+      cache%frr = 0.0_dp
+      cache%frs = 0.0_dp
+      cache%fss = 0.0_dp
+      cache%vsig = 0.0_dp
+      cache%frt = 0.0_dp
+      cache%fst = 0.0_dp
+      cache%ftt = 0.0_dp
+      cache%vtau = 0.0_dp
+      cache%n_points = npts
+      cache%gga = gga
+      cache%mgga = mgga
+
+      call shell_extents(mol, ctx%screen_tol, extents)
+      failed = .false.
+
+      ! Threaded over blocks and nothing reduced: every point belongs to one
+      ! block, so the threads write disjoint slices of each array.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, cache, error, failed, gga, mgga, npts, extents) &
+      !$omp    private(g0, g1, ia, ja, id, n_sig, ao, ao_grad, rho, rho_grad, &
+      !$omp            frr, frs, fss, vsig, frt, fst, ftt, vtau, d_sig, &
+      !$omp            shell_mask, ao_list, ao_offset) &
+      !$omp    firstprivate(local_error)
+      allocate (d_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+
+      !$omp do schedule(dynamic)
+      do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
+         g1 = min(g0 + ctx%point_block - 1, npts)
+
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+            end do
+         end do
+
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+         end if
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_cache_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_cache_failure)
+            cycle
+         end if
+
+         call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
+                                     gga, mgga, rho, rho_grad, &
+                                     frr, frs, fss, vsig, frt, fst, ftt, vtau)
+
+         cache%rho(g0:g1) = rho
+         do id = 1, 3
+            cache%rho_grad(g0:g1, id) = rho_grad(:, id)
+         end do
+         cache%frr(g0:g1) = frr
+         cache%frs(g0:g1) = frs
+         cache%fss(g0:g1) = fss
+         cache%vsig(g0:g1) = vsig
+         cache%frt(g0:g1) = frt
+         cache%fst(g0:g1) = fst
+         cache%ftt(g0:g1) = ftt
+         cache%vtau(g0:g1) = vtau
+      end do
+      !$omp end do
+      deallocate (d_sig, shell_mask, ao_offset, ao_list)
+      !$omp end parallel
+
+      if (failed) then
+         call cache%destroy()
+         return
+      end if
+      cache%filled = .true.
+#else
+      if (size(density) < 0 .or. mol%nao < 0) return
+#endif
+   end subroutine xc_kernel_cache_fill
 
    subroutine xc_kernel2_apply(ctx, mol, density, dtilde_a, dtilde_b, v_kernel, error)
       !! The third functional derivative contracted against two response densities
