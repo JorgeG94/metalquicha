@@ -1401,9 +1401,12 @@ contains
       !! Two wrong answers are possible and both look plausible from outside.
       !! The Tamm-Dancoff route can report the negative root as an excitation
       !! or drop it under the floor and hand back the ones above it as though
-      !! a state were merely missing. The paired route is worse: it *skips*
-      !! an imaginary frequency and only complains when it runs out of real
-      !! ones, so asking for one root succeeds and says nothing.
+      !! a state were merely missing. The paired route used to skip an
+      !! imaginary frequency and complain only when it ran out of real ones,
+      !! so asking for one root succeeded and said nothing; `rpa_solve`
+      !! refuses a negative squared frequency now, and what this case adds is
+      !! that the refusal reaching the user names the *triplet* manifold
+      !! rather than passing the solver's spin-agnostic wording through.
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t) :: result
       character(len=:), allocatable :: message
@@ -1421,8 +1424,8 @@ contains
                  "run still reported excited states")
       if (allocated(error)) return
 
-      ! One root, which the paired solver would otherwise answer happily out
-      ! of the two real frequencies above the imaginary one.
+      ! One root, which the paired solver would once have answered happily
+      ! out of the two real frequencies above the imaginary one.
       call h2_stretched_run(1, "rpa", "triplet", result)
       call check(error, result%has_error, "a triplet-unstable reference produced an "// &
                  "RPA spectrum rather than a diagnosis")

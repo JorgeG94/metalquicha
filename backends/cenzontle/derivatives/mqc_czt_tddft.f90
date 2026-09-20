@@ -856,7 +856,7 @@ contains
       real(dp), allocatable :: diagonal(:), raw(:), vectors(:, :), residuals(:)
       real(dp), allocatable :: xpy(:, :), xmy(:, :), all_x(:, :), all_y(:, :)
       character(len=:), allocatable :: manifold
-      integer :: n_ov, n_solve, iterations, products, n_found, k, keep, imaginary
+      integer :: n_ov, n_solve, iterations, products, n_found, k, keep
       logical :: converged
 
       if (error%has_error()) return
@@ -871,24 +871,13 @@ contains
       select case (trim(route))
       case ("rpa")
          rpa%core = core
-         imaginary = 0
          call rpa_solve(rpa, diagonal, n_solve, raw, xpy, xmy, residuals, &
                         iterations, products, converged, error, tolerance=tol, &
                         max_iterations=max_iter, max_subspace=subspace, &
-                        verbose=verbose, label=manifold//" RPA iterations", &
-                        imaginary_roots=imaginary)
+                        verbose=verbose, label=manifold//" RPA iterations")
          core%n_products = rpa%core%n_products
          if (error%has_error()) then
             call name_the_instability(is_triplet, error)
-            return
-         end if
-         ! The paired solver skips an imaginary root rather than returning
-         ! it, and only complains when it runs out of real ones. Asking for
-         ! fewer roots than there are imaginary ones therefore succeeds and
-         ! says nothing -- which for a triplet manifold would be the
-         ! instability going unreported under a clean spectrum.
-         if (is_triplet .and. imaginary > 0) then
-            call unstable_reference(0.0_dp, error, imaginary)
             return
          end if
          ! `xpy . xmy = 1` out of the solver; the closed-shell convention is a
@@ -986,7 +975,7 @@ contains
       if (is_triplet) word = "triplet"
    end function manifold_word
 
-   subroutine unstable_reference(lowest, error, imaginary)
+   subroutine unstable_reference(lowest, error)
       !! Report a non-positive triplet root as what it is
       !!
       !! Concatenated rather than written into a buffer: the message is longer
@@ -994,18 +983,11 @@ contains
       !! is a run-time failure rather than a truncation.
       real(dp), intent(in) :: lowest   !! The offending root, in Hartree
       type(error_t), intent(inout) :: error
-      integer, intent(in), optional :: imaginary
-         !! Squared frequencies that came out negative, when that is how the
-         !! instability showed itself rather than as a root at the floor.
 
       character(len=:), allocatable :: what
 
-      if (present(imaginary)) then
-         what = to_char(imaginary)//" of its squared triplet frequencies are negative"
-      else
-         what = "its lowest triplet root is "//to_char(lowest)//" hartree, at or "// &
-                "below zero"
-      end if
+      what = "its lowest triplet root is "//to_char(lowest)//" hartree, at or "// &
+             "below zero"
       call error%set(ERROR_GENERIC, "the reference is triplet-unstable: "//what// &
                      ", so this closed shell is a saddle point against spin "// &
                      "polarisation and a lower unrestricted solution exists. What "// &

@@ -65,6 +65,8 @@ contains
                                test_collapse), &
                   new_unittest("an_indefinite_difference_is_named_an_instability", &
                                test_instability), &
+                  new_unittest("an_indefinite_sum_is_named_an_instability", &
+                               test_plus_instability), &
                   new_unittest("an_unreachable_tolerance_stops_and_says_so", &
                                test_stagnation) &
                   ]
@@ -122,7 +124,7 @@ contains
       s = 0.5_dp*(s + transpose(s))
    end function noise
 
-   subroutine make_problem(operator, unstable)
+   subroutine make_problem(operator, unstable, plus_unstable)
       !! A paired problem whose difference is positive definite, or is not
       !!
       !! `A` is a rising diagonal with a little symmetric noise on it and `B`
@@ -133,9 +135,17 @@ contains
       !! below zero -- which is exactly what an unstable reference does.
       type(dense_paired_t), intent(out) :: operator
       logical, intent(in) :: unstable
+      logical, intent(in), optional :: plus_unstable
+         !! Break `A+B` instead, leaving `A-B` positive definite. That is the
+         !! ordinary real-singlet instability, and it is the half `square_root`
+         !! cannot see -- it only ever tests `A-B`. Absent is `.false.`.
 
       real(dp), allocatable :: a(:, :), b(:, :)
       integer :: i
+      logical :: break_plus
+
+      break_plus = .false.
+      if (present(plus_unstable)) break_plus = plus_unstable
 
       a = noise(N_DIM, 20260919, 0.02_dp)
       b = noise(N_DIM, 771131, 0.01_dp)
@@ -143,6 +153,9 @@ contains
          a(i, i) = a(i, i) + 1.0_dp + 0.1_dp*real(i, dp)
       end do
       if (unstable) a(1, 1) = a(1, 1) - 1.6_dp
+      ! Pulling `b(1,1)` down pushes `A+B` negative there and `A-B` further
+      ! positive, so the two halves of the instability are separated.
+      if (break_plus) b(1, 1) = b(1, 1) - 2.6_dp
 
       operator%aplus = a + b
       operator%aminus = a - b
@@ -288,6 +301,64 @@ contains
       if (allocated(error)) return
       call check(error,.not. converged, "an indefinite problem reported convergence")
    end subroutine test_instability
+
+   subroutine test_plus_instability(error)
+      !! An indefinite `(A+B)` is refused, not stepped over
+      !!
+      !! This is the half `square_root` cannot see. `(A-B)` stays positive
+      !! definite, so the reduction runs and produces a negative `w^2`; the
+      !! solver used to take the lowest `n_roots` of the *positive* squared
+      !! frequencies and return them, which is a converged, plausible spectrum
+      !! with the lowest state missing and every index below it shifted up.
+      !! No error, no warning, on the default method.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(dense_paired_t) :: operator
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), xpy(:, :), xmy(:, :), residuals(:)
+      real(dp), allocatable :: values(:)
+      integer :: iterations, products, info
+      logical :: converged, ok
+
+      call make_problem(operator, .false., plus_unstable=.true.)
+
+      ! The fixture has to actually have the shape the test is about: `A-B`
+      ! positive definite, `A+B` not. Asserted rather than assumed, because a
+      ! fixture that breaks both would pass through `square_root` instead and
+      ! the test would prove nothing.
+      allocate (values(N_DIM))
+      call spectrum_of(operator%aminus, values, info)
+      call check(error, info == 0 .and. minval(values) > 0.0_dp, &
+                 "the fixture was meant to leave (A-B) positive definite")
+      if (allocated(error)) return
+      call spectrum_of(operator%aplus, values, info)
+      call check(error, info == 0 .and. minval(values) < 0.0_dp, &
+                 "the fixture was meant to make (A+B) indefinite")
+      if (allocated(error)) return
+
+      call rpa_solve(operator, diagonal_of(operator), N_ROOTS, omega, xpy, xmy, &
+                     residuals, iterations, products, converged, err, &
+                     tolerance=1.0e-8_dp, max_iterations=50)
+      call check(error, err%has_error(), "a paired problem whose sum is indefinite "// &
+                 "was answered from the roots above the imaginary ones rather than "// &
+                 "refused")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "unstable") > 0, &
+                 "an indefinite (A+B) was reported without naming the instability: "// &
+                 err%get_message())
+   end subroutine test_plus_instability
+
+   subroutine spectrum_of(matrix, values, info)
+      !! Eigenvalues of a symmetric matrix, for a fixture assertion
+      real(dp), intent(in) :: matrix(:, :)
+      real(dp), intent(out) :: values(:)
+      integer, intent(out) :: info
+
+      real(dp), allocatable :: vectors(:, :)
+
+      vectors = matrix
+      call pic_syev(vectors, values, jobz="N", uplo="U", info=info)
+   end subroutine spectrum_of
 
    subroutine test_stagnation(error)
       !! A tolerance nothing can reach returns, with the residual it got to
