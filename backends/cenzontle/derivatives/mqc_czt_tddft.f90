@@ -57,8 +57,7 @@ module mqc_czt_tddft
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_physical_constants, only: HARTREE_TO_EV
-   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_EXCITED_TOL, &
-                                       DEFAULT_EXCITED_MAX_ITER
+   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_EXCITED_TOL
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill
@@ -219,7 +218,13 @@ contains
       integer :: n_ov, n_vec, width, first, last, w, m
       logical :: needs_minus
 
-      if (error%has_error()) return
+      ! `images` is intent(out) and every exit below zeroes it; this one has
+      ! to as well, or a caller that ignored an error it was already carrying
+      ! reads whatever the array held.
+      if (error%has_error()) then
+         images = 0.0_dp
+         return
+      end if
 
       n_ov = this%length()
       n_vec = size(vectors, 2)
@@ -361,6 +366,17 @@ contains
             operator%gaps(a, i) = energies(n_occ + a) - energies(i)
          end do
       end do
+
+      ! Here, and not after the Schwarz bounds and the kernel fill: it reads
+      ! nothing but the gaps just formed, and the two it used to sit behind
+      ! are the expensive part of building the operator.
+      if (any(operator%gaps <= 0.0_dp)) then
+         call error%set(ERROR_VALIDATION, "an occupied orbital lies above a virtual "// &
+                        "one, so these are not the aufbau orbitals and the gaps the "// &
+                        "excitation solver preconditions on are not positive")
+         return
+      end if
+
       if (present(batch)) then
          if (batch > 0) operator%batch = batch
       end if
@@ -384,13 +400,6 @@ contains
          if (error%has_error()) return
       else
          operator%k_scale = 1.0_dp
-      end if
-
-      if (any(operator%gaps <= 0.0_dp)) then
-         call error%set(ERROR_VALIDATION, "an occupied orbital lies above a virtual "// &
-                        "one, so these are not the aufbau orbitals and the gaps the "// &
-                        "excitation solver preconditions on are not positive")
-         return
       end if
    end subroutine build_tda_operator
 
@@ -626,16 +635,24 @@ contains
       do k = 1, size(excitations)
          write (line, "(a,i4,f16.9,f13.4,a)") "   ", k, excitations(k), &
             excitations(k)*HARTREE_TO_EV, "   "
-         do i = 1, n_occ
+         contributions: do i = 1, n_occ
             do a = 1, n_vir
                idx = (i - 1)*n_vir + a
                if (abs(amplitudes(idx, k)) < AMPLITUDE_FLOOR) cycle
                write (piece, "(i0,a,i0,a,f7.3,a)") i, " -> ", n_occ + a, " (", &
                   amplitudes(idx, k), ")  "
-               if (len_trim(line) + len_trim(piece) + 1 > len(line)) cycle
+               ! Out of line: stop, rather than skip this one and keep going.
+               ! A later, shorter contribution would fit and be printed where
+               ! the omitted ones should have been, and the row would read as
+               ! a complete list in orbital order when it is not one. The
+               ! ellipsis says the row was cut, where there is room to say it.
+               if (len_trim(line) + len_trim(piece) + 1 > len(line)) then
+                  if (len_trim(line) + 4 <= len(line)) line = trim(line)//" ..."
+                  exit contributions
+               end if
                line = trim(line)//" "//trim(piece)
             end do
-         end do
+         end do contributions
          call logger%info(trim(line))
       end do
    end subroutine log_state_table
