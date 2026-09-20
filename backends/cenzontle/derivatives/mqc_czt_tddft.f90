@@ -121,7 +121,7 @@ module mqc_czt_tddft
    use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_response_product, only: response_product
    use mqc_davidson, only: davidson_flat, sigma_operator_t
-   use mqc_czt_rpa_solver, only: paired_operator_t, rpa_solve
+   use mqc_czt_rpa_solver, only: paired_operator_t, rpa_solve, RPA_REASON_UNSTABLE_PLUS
    use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    implicit none
    private
@@ -834,6 +834,16 @@ contains
       !! lower-energy unrestricted solution, and every root of this operator
       !! is an expansion about a saddle point. Reporting the rest would be a
       !! spectrum of a reference nobody should be using.
+      !!
+      !! **The three routes reach that verdict in the same order.** Each
+      !! returns its solver's own error first, then the shared convergence
+      !! check, and only then the triplet floor -- so a solve that merely ran
+      !! out of iterations is reported as that and not as an instability. The
+      !! paired route's third mechanism, an imaginary frequency, is not an
+      !! exception to the ordering: `rpa_solve` refuses a negative squared
+      !! frequency itself, which is a statement about `(A+B)` on the subspace
+      !! and true whether or not the solve had converged, and
+      !! `name_the_instability` relabels only that one reason.
       type(response_core_t), intent(inout) :: core
       character(len=*), intent(in) :: route     !! `tda`, `rpa` or `casida`
       logical, intent(in) :: is_triplet
@@ -856,7 +866,7 @@ contains
       real(dp), allocatable :: diagonal(:), raw(:), vectors(:, :), residuals(:)
       real(dp), allocatable :: xpy(:, :), xmy(:, :), all_x(:, :), all_y(:, :)
       character(len=:), allocatable :: manifold
-      integer :: n_ov, n_solve, iterations, products, n_found, k, keep
+      integer :: n_ov, n_solve, iterations, products, n_found, k, keep, why
       logical :: converged
 
       if (error%has_error()) return
@@ -874,10 +884,11 @@ contains
          call rpa_solve(rpa, diagonal, n_solve, raw, xpy, xmy, residuals, &
                         iterations, products, converged, error, tolerance=tol, &
                         max_iterations=max_iter, max_subspace=subspace, &
-                        verbose=verbose, label=manifold//" RPA iterations")
+                        verbose=verbose, label=manifold//" RPA iterations", &
+                        reason=why)
          core%n_products = rpa%core%n_products
          if (error%has_error()) then
-            call name_the_instability(is_triplet, error)
+            call name_the_instability(is_triplet, why, error)
             return
          end if
          ! `xpy . xmy = 1` out of the solver; the closed-shell convention is a
@@ -996,34 +1007,41 @@ contains
                      "unrestricted reference.")
    end subroutine unstable_reference
 
-   subroutine name_the_instability(is_triplet, error)
+   subroutine name_the_instability(is_triplet, reason, error)
       !! Say what a failed paired solve means when the manifold is a triplet
       !!
-      !! The Stratmann-Scuseria-Frisch reduction factorises the projected
-      !! `(A-B)`, and an instability reaches it as a factorisation that will
-      !! not go through. That is the right diagnosis in the solver's own
-      !! terms and the wrong one for a reader, who has asked for a spectrum
-      !! and wants to know that the *reference* is what is wrong. The solver's
-      !! message is kept and prefixed rather than replaced.
+      !! An instability of `(A+B)` reaches the solver as a negative squared
+      !! frequency, and the solver says so in its own terms. That is the right
+      !! diagnosis of the arithmetic and the wrong one for a reader, who has
+      !! asked for a spectrum and wants to know that the *reference* is what
+      !! is wrong, and in which manifold. The solver's message is kept and
+      !! prefixed rather than replaced.
       !!
-      !! Only a failure the solver itself called an instability is relabelled.
-      !! The paired solve fails for other reasons -- a LAPACK error, a
-      !! subspace too small for the roots asked for -- and calling one of
-      !! those a triplet instability would be a diagnosis invented from the
-      !! manifold rather than read off the arithmetic.
+      !! **Only that one reason is relabelled**, and it is read from `reason`
+      !! rather than from the message text. `(A+B)` is where the Coulomb term
+      !! and the exchange-correlation kernel live, so it is the half that
+      !! differs between the manifolds and the only one a triplet run may
+      !! claim. `(A-B)` is exchange alone -- the identical operator for both
+      !! spins -- so calling its failure a triplet instability would tell the
+      !! reader to converge an unrestricted reference on the strength of the
+      !! manifold they happened to ask for, which is a diagnosis invented
+      !! rather than read off. The same goes for every other way the solve
+      !! fails: a LAPACK error, an exhausted subspace, a solve that ran out of
+      !! iterations.
       logical, intent(in) :: is_triplet
+      integer, intent(in) :: reason   !! One of the solver's `RPA_REASON_*`
       type(error_t), intent(inout) :: error
 
       character(len=:), allocatable :: was
 
       if (.not. is_triplet) return
       if (.not. error%has_error()) return
+      if (reason /= RPA_REASON_UNSTABLE_PLUS) return
       was = error%get_message()
-      if (index(was, "instability") == 0 .and. index(was, "unstable") == 0) return
       call error%set(ERROR_GENERIC, "the reference is triplet-unstable: the paired "// &
-                     "solve of the triplet manifold could not be reduced, which for "// &
-                     "a closed shell means it is a saddle point against spin "// &
-                     "polarisation. The solver reported: "//was)
+                     "solve of the triplet manifold found an imaginary excitation "// &
+                     "energy, which for a closed shell means it is a saddle point "// &
+                     "against spin polarisation. The solver reported: "//was)
    end subroutine name_the_instability
 
    subroutine response_excitations(mol, orbitals, energies, n_occ, n_states, method, &

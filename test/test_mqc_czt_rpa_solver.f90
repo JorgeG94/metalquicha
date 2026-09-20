@@ -22,7 +22,9 @@ module test_mqc_czt_rpa_solver
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t
-   use mqc_czt_rpa_solver, only: paired_operator_t, rpa_solve
+   use mqc_czt_rpa_solver, only: paired_operator_t, rpa_solve, RPA_REASON_NONE, &
+                                 RPA_REASON_OTHER, RPA_REASON_UNSTABLE_MINUS, &
+                                 RPA_REASON_UNSTABLE_PLUS
    implicit none
    private
 
@@ -67,6 +69,8 @@ contains
                                test_instability), &
                   new_unittest("an_indefinite_sum_is_named_an_instability", &
                                test_plus_instability), &
+                  new_unittest("the_failure_reason_tells_the_two_halves_apart", &
+                               test_failure_reason), &
                   new_unittest("an_unreachable_tolerance_stops_and_says_so", &
                                test_stagnation) &
                   ]
@@ -347,6 +351,65 @@ contains
                  "an indefinite (A+B) was reported without naming the instability: "// &
                  err%get_message())
    end subroutine test_plus_instability
+
+   subroutine test_failure_reason(error)
+      !! Why the solve failed comes back as a code, not as prose
+      !!
+      !! The two instabilities both put the word "unstable" in the message
+      !! and they do not mean the same thing. `(A-B)` carries only exchange
+      !! and is the same operator in every spin manifold; `(A+B)` carries the
+      !! Coulomb term and the kernel, and is where a singlet and a triplet
+      !! differ. A caller that matched on the text would call both of them a
+      !! triplet instability and tell the user to converge an unrestricted
+      !! reference on the strength of the manifold they happened to ask for.
+      !!
+      !! All four outcomes are checked in one case, because what is being
+      !! asserted is that the code *separates* them -- a test of one value
+      !! would pass on a routine that returned it unconditionally.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(dense_paired_t) :: operator
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), xpy(:, :), xmy(:, :), residuals(:)
+      integer :: iterations, products, why
+      logical :: converged
+
+      call make_problem(operator, .false.)
+      call rpa_solve(operator, diagonal_of(operator), N_ROOTS, omega, xpy, xmy, &
+                     residuals, iterations, products, converged, err, &
+                     tolerance=1.0e-10_dp, max_iterations=100, reason=why)
+      call check(error,.not. err%has_error() .and. why == RPA_REASON_NONE, &
+                 "a solve that succeeded did not report RPA_REASON_NONE")
+      if (allocated(error)) return
+
+      call make_problem(operator, .true.)
+      call rpa_solve(operator, diagonal_of(operator), N_ROOTS, omega, xpy, xmy, &
+                     residuals, iterations, products, converged, err, &
+                     tolerance=1.0e-8_dp, max_iterations=50, reason=why)
+      call check(error, why == RPA_REASON_UNSTABLE_MINUS, &
+                 "an indefinite (A-B) was not reported as RPA_REASON_UNSTABLE_MINUS")
+      if (allocated(error)) return
+
+      call err%clear()
+      call make_problem(operator, .false., plus_unstable=.true.)
+      call rpa_solve(operator, diagonal_of(operator), N_ROOTS, omega, xpy, xmy, &
+                     residuals, iterations, products, converged, err, &
+                     tolerance=1.0e-8_dp, max_iterations=50, reason=why)
+      call check(error, why == RPA_REASON_UNSTABLE_PLUS, &
+                 "an indefinite (A+B) was not reported as RPA_REASON_UNSTABLE_PLUS")
+      if (allocated(error)) return
+
+      ! A stable problem asked for more roots than it has dimensions: a
+      ! failure that says nothing at all about the reference, and the one a
+      ! text match on "unstable" would also get right. It is here for the
+      ! other direction -- that an ordinary failure is not promoted.
+      call err%clear()
+      call make_problem(operator, .false.)
+      call rpa_solve(operator, diagonal_of(operator), N_DIM + 1, omega, xpy, xmy, &
+                     residuals, iterations, products, converged, err, reason=why)
+      call check(error, err%has_error() .and. why == RPA_REASON_OTHER, &
+                 "an ordinary failure was not reported as RPA_REASON_OTHER")
+   end subroutine test_failure_reason
 
    subroutine spectrum_of(matrix, values, info)
       !! Eigenvalues of a symmetric matrix, for a fixture assertion
