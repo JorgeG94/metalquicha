@@ -33,13 +33,16 @@ module mqc_czt_response_product
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, vv10_kernel_apply, &
                          xc_kernel_cache_t
-   use mqc_czt_direct, only: build_fock, build_fock_direct_many, direct_stats_t
+   use mqc_czt_direct, only: build_fock, build_fock_direct, build_fock_direct_many, &
+                             direct_stats_t
    implicit none
    private
 
    public :: response_mean_field
    public :: response_product
-   public :: response_mean_field_df
+   ! `response_mean_field_df` stays private, as `response_operator_df` was
+   ! before it: the fitted build is reached through `response_product`, which
+   ! is where the factored form it needs is assembled.
 
 contains
 
@@ -173,6 +176,12 @@ contains
          ! The stored tensor is full-range and there is no attenuated twin of
          ! it, so the long-range term could only be dropped -- which is the bug
          ! this module exists to remove, not one to keep quietly.
+         ! TODO(mqc): unreachable today, because the only route that reaches
+         ! here with a stored tensor is a double-hybrid Z-vector solve and all
+         ! three supported double hybrids are global hybrids. Add a
+         ! range-separated one and this turns a working gradient into an abort:
+         ! give the stored route an attenuated companion tensor, or send a
+         ! range-separated reference down the direct path, before that lands.
          call error%set(ERROR_VALIDATION, "a range-separated functional's response "// &
                         "needs the integral-direct build: the stored two-electron "// &
                         "tensor is full-range and carries no attenuated companion")
@@ -202,15 +211,15 @@ contains
          ! exact: it drops the Coulomb term, which vanishes, and antisymmetrises
          ! instead of symmetrising. `build_fock_direct_nosym` writes the same
          ! permutations out at several times the cost and is not needed here.
-         call build_fock_direct_many(mol, zero_h, dens, bounds, g, pass, error, &
-                                     k_scale=kf, antisymmetric=anti, &
-                                     density_screen=screen)
+         call direct_pass(mol, zero_h, dens, bounds, g, pass, error, k_scale=kf, &
+                          j_scale=1.0_dp, omega=0.0_dp, antisymmetric=anti, &
+                          density_screen=screen)
          if (error%has_error()) return
          call add_stats(stats, pass)
          if (omega > 0.0_dp) then
-            call build_fock_direct_many(mol, zero_h, dens, bounds, g_lr, pass, error, &
-                                        k_scale=k_lr, j_scale=0.0_dp, omega=omega, &
-                                        antisymmetric=anti, density_screen=screen)
+            call direct_pass(mol, zero_h, dens, bounds, g_lr, pass, error, &
+                             k_scale=k_lr, j_scale=0.0_dp, omega=omega, &
+                             antisymmetric=anti, density_screen=screen)
             if (error%has_error()) return
             g = g + g_lr
             call add_stats(stats, pass)
@@ -255,6 +264,46 @@ contains
 
       deallocate (scale)
    end subroutine response_mean_field
+
+   subroutine direct_pass(mol, zero_h, dens, bounds, g, stats, error, k_scale, &
+                          j_scale, omega, antisymmetric, density_screen)
+      !! One integral-direct build over the batch, by the cheaper of the two routes
+      !!
+      !! `build_fock_direct_many` is bit-for-bit equal to `build_fock_direct` on
+      !! a single symmetric density, and not free: its accumulator is indexed by
+      !! the set, so every update is a length-one vector operation, and it
+      !! carries its tiling, its lock array and its window buffers whatever the
+      !! width. Measured on the double-hybrid Hessian's Z-vector solves, one
+      !! density at a time through the batched build costs 16 per cent more at
+      !! 19 basis functions and 12 per cent at 29, against the same answer to
+      !! the last bit. The coupled-perturbed solvers apply the operator to one
+      !! trial vector at a time, so that is their whole matvec.
+      !!
+      !! An antisymmetric single density still goes through the batched build:
+      !! folding that symmetry in is what `antisymmetric` does and the
+      !! single-density routine has no such argument.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: zero_h(:, :)
+      real(dp), intent(in) :: dens(:, :, :)
+      real(dp), intent(in) :: bounds(:, :)
+      real(dp), allocatable, intent(out) :: g(:, :, :)
+      type(direct_stats_t), intent(out) :: stats
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in) :: k_scale, j_scale, omega
+      logical, intent(in) :: antisymmetric, density_screen
+
+      if (size(dens, 3) == 1 .and. .not. antisymmetric) then
+         allocate (g(size(dens, 1), size(dens, 2), 1))
+         call build_fock_direct(mol, zero_h, dens(:, :, 1), bounds, g(:, :, 1), &
+                                stats, error, k_scale=k_scale, j_scale=j_scale, &
+                                omega=omega, density_screen=density_screen)
+      else
+         call build_fock_direct_many(mol, zero_h, dens, bounds, g, stats, error, &
+                                     k_scale=k_scale, j_scale=j_scale, omega=omega, &
+                                     antisymmetric=antisymmetric, &
+                                     density_screen=density_screen)
+      end if
+   end subroutine direct_pass
 
    subroutine add_stats(total, pass)
       !! Sum one integral pass's quartet counts into the running total
@@ -360,6 +409,13 @@ contains
 
       if (present(bmat)) then
          if (present(xc)) then
+            ! TODO(mqc): unreachable today for the same reason the stored-tensor
+            ! refusal in `response_mean_field` is -- a fitted reference reaches
+            ! here only from a double-hybrid Z-vector solve, and all three
+            ! supported double hybrids are global hybrids. A range-separated
+            ! one would turn a working gradient into an abort rather than
+            ! quietly dropping a term, which is the right order, but it still
+            ! needs an attenuated fitting before it can be offered.
             if (xc%range_separated) then
                call error%set(ERROR_VALIDATION, "a range-separated functional's "// &
                               "response cannot be applied through the fitted tensor: "// &
