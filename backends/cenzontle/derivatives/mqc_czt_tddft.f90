@@ -127,15 +127,51 @@ module mqc_czt_tddft
       !! The starting vectors are unit vectors on the lowest gaps. Splitting a
       !! degenerate pair between the guess and the space outside it leaves the
       !! solver converging one partner against a subspace that cannot represent
-      !! the other, which stalls rather than converging to the wrong answer --
-      !! so the count is extended over the whole degenerate block and the extra
-      !! roots are found and then not reported.
+      !! the other, so the count is extended over the whole degenerate block
+      !! and the extra roots are found and then not reported.
+      !!
+      !! It is a window on the **gaps**, and so necessary rather than
+      !! sufficient: the coupling reorders them, so a root of the spectrum can
+      !! sit outside a guess sized on the gaps with nothing degenerate at the
+      !! edge for this to catch. `GUESS_PER_ROOT` is what covers that.
 
    integer, parameter :: MAX_EXTRA_ROOTS = 8
       !! A cap on that extension. A highly symmetric molecule can put many gaps
       !! inside the window, and every one of them costs a converged root; eight
       !! covers a degeneracy no point group produces and stops a pathological
       !! case from turning a five-root request into a fifty-root solve.
+
+   integer, parameter :: GUESS_PER_ROOT = 4
+      !! Starting unit vectors per root converged.
+      !!
+      !! One per root is what a Hermitian Davidson starts from, and it is not
+      !! enough here. The guess is picked on the gaps and what comes back is
+      !! the spectrum; the coupling reorders the two, so the lowest `k` roots
+      !! are not in general built on the `k` lowest gaps. A starting space
+      !! that cannot reach one of them does not stall on it either: every
+      !! root returned is converged to the tolerance asked for and is a true
+      !! eigenpair, one of them simply a higher one, and nothing in the
+      !! output says which.
+      !!
+      !! F2/cc-pVDZ asked for three singlets is the case in the suite. Its
+      !! three lowest gaps are 0.759, 0.759 and 0.841 hartree; the 0.841 one
+      !! carries the **fifth** root, and the pair carrying the third and
+      !! fourth sits at 0.903, outside a three-vector guess and 0.06 hartree
+      !! past anything `DEGENERACY_WINDOW` would have reached. The three
+      !! roots come back as roots one, two and five. Asked for five the same
+      !! solver finds all five, which is the signature of a starting space
+      !! too narrow rather than of a solver defect.
+      !!
+      !! Four per root is what Psi4 uses; PySCF relies on the degeneracy
+      !! window alone and is exposed to the same failure. The cost is
+      !! matrix-vector products in the first iteration only -- the subspace
+      !! that follows is driven by the residuals of the roots asked for, not
+      !! by the width of the start.
+
+   integer, parameter :: MAX_EXTRA_GUESS = 16
+      !! A cap on the degeneracy extension of the guess, as `MAX_EXTRA_ROOTS`
+      !! is of the root count. Wider, because a vector added here costs one
+      !! product rather than a converged root.
 
    real(dp), parameter :: PYSCF_HARTREE_TO_EV = 27.21138602_dp
       !! What PySCF converts with, for the note the state table prints.
@@ -293,7 +329,13 @@ contains
       integer, allocatable :: idx(:)
       integer :: n_ov, n_vec, width, first, last, w, m
 
-      if (error%has_error()) return
+      ! `images` is intent(out) and every exit below zeroes it; this one has
+      ! to as well, or a caller that ignored an error it was already carrying
+      ! reads whatever the array held.
+      if (error%has_error()) then
+         images = 0.0_dp
+         return
+      end if
 
       n_ov = this%length()
       n_vec = size(vectors, 2)
@@ -541,6 +583,17 @@ contains
             core%gaps(a, i) = energies(n_occ + a) - energies(i)
          end do
       end do
+
+      ! Here, and not after the Schwarz bounds and the kernel fill: it reads
+      ! nothing but the gaps just formed, and the two it used to sit behind
+      ! are the expensive part of building the operator.
+      if (any(core%gaps <= 0.0_dp)) then
+         call error%set(ERROR_VALIDATION, "an occupied orbital lies above a virtual "// &
+                        "one, so these are not the aufbau orbitals and the gaps the "// &
+                        "excitation solver preconditions on are not positive")
+         return
+      end if
+
       if (present(batch)) then
          if (batch > 0) core%batch = batch
       end if
@@ -564,13 +617,6 @@ contains
          if (error%has_error()) return
       else
          core%k_scale = 1.0_dp
-      end if
-
-      if (any(core%gaps <= 0.0_dp)) then
-         call error%set(ERROR_VALIDATION, "an occupied orbital lies above a virtual "// &
-                        "one, so these are not the aufbau orbitals and the gaps the "// &
-                        "excitation solver preconditions on are not positive")
-         return
       end if
    end subroutine build_response_core
 
@@ -704,36 +750,103 @@ contains
       integer, intent(in) :: n_states
       integer :: n_solve
 
-      real(dp), allocatable :: sorted(:)
-      real(dp) :: best
-      logical, allocatable :: taken(:)
-      integer :: n, k, i, pick
+      real(dp) :: edge
+      integer :: n, want
 
       n = size(diagonal)
-      n_solve = min(max(n_states, 1), n)
-      allocate (taken(n), sorted(n_solve))
-      taken = .false.
-      ! A partial selection rather than a sort: `n_states` is small and the
-      ! space is not.
-      do k = 1, n_solve
-         pick = 0
-         best = 0.0_dp
-         do i = 1, n
-            if (taken(i)) cycle
-            if (pick == 0 .or. diagonal(i) < best) then
-               pick = i
-               best = diagonal(i)
-            end if
-         end do
-         taken(pick) = .true.
-         sorted(k) = diagonal(pick)
-      end do
+      want = min(max(n_states, 1), n)
+      edge = lowest_edge(diagonal, want)
 
-      n_solve = count(diagonal <= sorted(n_solve) + DEGENERACY_WINDOW)
-      n_solve = min(n_solve, min(n_states, n) + MAX_EXTRA_ROOTS, n)
-      n_solve = max(n_solve, min(max(n_states, 1), n))
-      deallocate (taken, sorted)
+      n_solve = count(diagonal <= edge + DEGENERACY_WINDOW)
+      n_solve = min(n_solve, want + MAX_EXTRA_ROOTS, n)
+      n_solve = max(n_solve, want)
    end function roots_to_solve
+
+   function guess_count(diagonal, n_solve) result(n_guess)
+      !! How many unit vectors the starting space needs
+      !!
+      !! `GUESS_PER_ROOT` per root converged, extended over every gap within
+      !! `DEGENERACY_WINDOW` of the last one taken, and capped by
+      !! `MAX_EXTRA_GUESS` and by the space itself. Counted before anything is
+      !! allocated, because the subspace cap is sized from it.
+      real(dp), intent(in) :: diagonal(:)
+      integer, intent(in) :: n_solve
+      integer :: n_guess
+
+      real(dp) :: edge
+      integer :: n, want
+
+      n = size(diagonal)
+      want = min(GUESS_PER_ROOT*max(n_solve, 1), n)
+      edge = lowest_edge(diagonal, want)
+
+      n_guess = min(count(diagonal <= edge + DEGENERACY_WINDOW), &
+                    want + MAX_EXTRA_GUESS, n)
+      n_guess = max(n_guess, want)
+   end function guess_count
+
+   function lowest_edge(diagonal, k) result(edge)
+      !! The `k`-th smallest diagonal element
+      !!
+      !! A partial selection rather than a sort: `k` is a small multiple of
+      !! the roots asked for and the space is not.
+      real(dp), intent(in) :: diagonal(:)
+      integer, intent(in) :: k
+      real(dp) :: edge
+
+      logical, allocatable :: taken(:)
+      integer :: i, pick
+
+      allocate (taken(size(diagonal)))
+      taken = .false.
+      edge = 0.0_dp
+      do i = 1, k
+         pick = lowest_free(diagonal, taken)
+         taken(pick) = .true.
+         edge = diagonal(pick)
+      end do
+      deallocate (taken)
+   end function lowest_edge
+
+   function lowest_free(diagonal, taken) result(pick)
+      !! The smallest diagonal element not already spoken for
+      real(dp), intent(in) :: diagonal(:)
+      logical, intent(in) :: taken(:)
+      integer :: pick
+
+      integer :: i
+
+      pick = 0
+      do i = 1, size(diagonal)
+         if (taken(i)) cycle
+         if (pick == 0) then
+            pick = i
+         else if (diagonal(i) < diagonal(pick)) then
+            pick = i
+         end if
+      end do
+   end function lowest_free
+
+   subroutine fill_guess(diagonal, n_guess, guess)
+      !! Unit vectors on the `n_guess` lowest gaps
+      real(dp), intent(in) :: diagonal(:)
+      integer, intent(in) :: n_guess
+      real(dp), intent(out) :: guess(:, :)
+         !! (n_ov, n_guess), one starting vector a column
+
+      logical, allocatable :: taken(:)
+      integer :: k, pick
+
+      allocate (taken(size(diagonal)))
+      taken = .false.
+      guess = 0.0_dp
+      do k = 1, n_guess
+         pick = lowest_free(diagonal, taken)
+         taken(pick) = .true.
+         guess(pick, k) = 1.0_dp
+      end do
+      deallocate (taken)
+   end subroutine fill_guess
 
    subroutine singlet_excitations(mol, orbitals, energies, n_occ, n_states, method, &
                                   excitations, x_amplitudes, y_amplitudes, error, xc, &
@@ -776,10 +889,11 @@ contains
       integer, intent(in), optional :: max_iter
       integer, intent(in), optional :: max_subspace
          !! Trial vectors kept before the subspace is collapsed. Zero or
-         !! absent reproduces each solver's own rule, which is why this is
-         !! resolved here rather than forwarded: a deck's unset `max_subspace`
-         !! is a zero, and a solver would read that as a subspace of no
-         !! vectors.
+         !! absent sizes it from the starting space, which is wider than the
+         !! rule each solver would apply on its own; it is decided here rather
+         !! than forwarded because a deck's unset `max_subspace` is a zero and
+         !! a solver would read that as a subspace of no vectors. Set below
+         !! the starting space, it truncates the guess.
       integer, intent(in), optional :: batch
       logical, intent(in), optional :: verbose
          !! A line per iteration. Each one is an integral pass.
@@ -789,10 +903,12 @@ contains
       type(casida_operator_t) :: casida
       real(dp), allocatable :: diagonal(:), values(:), vectors(:, :), residuals(:)
       real(dp), allocatable :: xpy(:, :), xmy(:, :), all_x(:, :), all_y(:, :)
+      real(dp), allocatable :: guess(:, :)
       real(dp) :: tol
       character(len=MAX_LINE_LENGTH) :: line
       character(len=16) :: route
-      integer :: n_ov, n_solve, iterations, products, n_found, k, keep, subspace
+      integer :: n_ov, n_solve, n_guess, iterations, products, n_found, k, keep
+      integer :: subspace
       logical :: converged
 
       if (error%has_error()) return
@@ -865,6 +981,7 @@ contains
       end if
 
       n_solve = roots_to_solve(diagonal, n_states)
+      n_guess = guess_count(diagonal, n_solve)
       tol = DEFAULT_EXCITED_TOL
       if (present(tolerance)) tol = tolerance
       subspace = 0
@@ -873,6 +990,29 @@ contains
       end if
 
       allocate (all_x(n_ov, n_solve), all_y(n_ov, n_solve))
+
+      ! The solver with no guess starts on one unit vector per root at the
+      ! lowest diagonal elements. That is the right *kind* of guess here --
+      ! the diagonal is the orbital-energy gaps -- and the wrong width: see
+      ! `GUESS_PER_ROOT`. The extra columns are a wider starting subspace and
+      ! not more roots; `n_solve` eigenpairs still come back. The paired
+      ! solver needs nothing here because it builds a start of the same width
+      ! itself, out of its own copy of these rules.
+      !
+      ! Widening the guess is all that is done about this, because there is
+      ! nothing cheap to check the answer against afterwards. Two routes were
+      ! tried. The eigenvalues of a symmetric matrix majorise its diagonal,
+      ! so the `k` smallest sum to no more than the `k` smallest elements of
+      ! `diag(A)` and a converged set summing to more is proof it is not the
+      ! lowest `k` -- but `diag(A)` is not what this operator's diagonal is.
+      ! The three lowest gaps of the F2 case sum to 2.36 hartree where the
+      ! three lowest of `diag(A)` sum to 0.76, so the bound is empty, and
+      ! `diag(A)` itself costs one product per element, which is the whole
+      ! matrix. Nothing inside the solve helps either: the `k`-th Ritz value
+      ! never rises, collapses included, so every bound the subspace has
+      ! produced already sits at or above what came back. Evidence for a root
+      ! outside the final subspace has to come from outside it, and that is
+      ! another solve.
 
       select case (route)
       case ("rpa")
@@ -892,24 +1032,34 @@ contains
       case ("casida")
          ! The eigenvalue is `w^2` and so is the preconditioner: `dEps^2` is
          ! the diagonal of the reduced operator up to its two-electron part,
-         ! the way `dEps` is the diagonal of `A`.
+         ! the way `dEps` is the diagonal of `A`. The guess is picked on
+         ! `dEps` rather than its square, which orders the two the same way.
+         subspace = davidson_subspace(subspace, n_solve, n_guess, n_ov)
+         n_guess = min(n_guess, subspace)
+         allocate (guess(n_ov, n_guess))
+         call fill_guess(diagonal, n_guess, guess)
          call davidson_flat(casida, diagonal*diagonal, n_solve, values, vectors, &
                             residuals, iterations, products, converged, error, &
                             tolerance=tol, max_iterations=max_iter, &
-                            max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
+                            max_subspace=subspace, guess=guess, &
                             verbose=verbose, label="Casida iterations", &
                             value_label="omega^2")
+         deallocate (guess)
          if (error%has_error()) return
          call casida_amplitudes(values, vectors, diagonal, all_x, all_y)
          values = sqrt(max(values, 0.0_dp))
          products = casida%core%n_products
       case default
+         subspace = davidson_subspace(subspace, n_solve, n_guess, n_ov)
+         n_guess = min(n_guess, subspace)
+         allocate (guess(n_ov, n_guess))
+         call fill_guess(diagonal, n_guess, guess)
          call davidson_flat(tda, diagonal, n_solve, values, vectors, residuals, &
                             iterations, products, converged, error, tolerance=tol, &
-                            max_iterations=max_iter, &
-                            max_subspace=davidson_subspace(subspace, n_solve, n_ov), &
-                            verbose=verbose, label="TDA iterations", &
+                            max_iterations=max_iter, max_subspace=subspace, &
+                            guess=guess, verbose=verbose, label="TDA iterations", &
                             value_label="excitation")
+         deallocate (guess)
          if (error%has_error()) return
          all_x = vectors
          all_y = 0.0_dp
@@ -942,12 +1092,36 @@ contains
          y_amplitudes(:, keep) = all_y(:, k)
       end do
 
+      ! Name every root the filter removed, with its value, and separate the
+      ! two reasons one lands below the floor. A small positive root is a
+      ! rotation the solver has not resolved from zero. A *negative* one is a
+      ! different statement about the reference, not about the solver: `A` is
+      ! not positive definite, so the closed shell is a saddle point and
+      ! every energy reported above it is an excitation of an unstable
+      ! reference. Reported whether or not enough roots survived, because it
+      ! is a fact about the ground state rather than about the request.
+      do k = 1, n_solve
+         if (values(k) > EXCITATION_FLOOR) cycle
+         if (values(k) < 0.0_dp) then
+            call logger%warning("  root "//to_char(k)//" converged to "// &
+                                to_char(values(k))//" hartree, which is negative: "// &
+                                "the Tamm-Dancoff matrix is not positive definite, "// &
+                                "so this reference is a saddle point rather than a "// &
+                                "minimum and the spectrum below is taken from an "// &
+                                "unstable reference. keywords.scf.stability examines "// &
+                                "the reference itself.")
+         else
+            call logger%warning("  root "//to_char(k)//" converged to "// &
+                                to_char(values(k))//" hartree, below the "// &
+                                to_char(EXCITATION_FLOOR)//" hartree floor: a "// &
+                                "rotation of the reference the solver has not "// &
+                                "separated from zero, not an excitation.")
+         end if
+      end do
       if (n_found < n_states) then
          call logger%warning("  only "//to_char(n_found)//" of the "// &
                              to_char(n_states)//" roots asked for are excitations; "// &
-                             "the rest converged below "//to_char(EXCITATION_FLOOR)// &
-                             " hartree and are rotations of the reference, not "// &
-                             "excited states")
+                             "the values dropped are named above")
       end if
 
       write (line, "(a,a,a,i0,a,i0,a)") "  ", route_name(route), ": ", n_found, &
@@ -957,7 +1131,7 @@ contains
                            n_ov/n_occ)
    end subroutine singlet_excitations
 
-   function davidson_subspace(requested, n_solve, n_ov) result(subspace)
+   function davidson_subspace(requested, n_solve, n_guess, n_ov) result(subspace)
       !! The Davidson's subspace cap, with a deck's unset zero resolved
       !!
       !! `davidson_flat` takes the cap as a plain integer and would read a
@@ -965,11 +1139,20 @@ contains
       !! here rather than forwarded. Shared by the Tamm-Dancoff and Casida
       !! routes, which both go through that solver; the paired solver takes
       !! the zero itself and has a rule of its own.
+      !!
+      !! Sized from the **starting space** plus the room the solver's own rule
+      !! leaves for expansion, `n_solve` vectors an iteration and eight over.
+      !! Taking `n_guess` rather than `n_solve` as the base is what keeps a
+      !! start wider than the roots asked for from being collapsed away after
+      !! one iteration. A cap the caller asked for is honoured as given, and
+      !! set below the starting space it truncates the guess.
       integer, intent(in) :: requested   !! Zero for the default
-      integer, intent(in) :: n_solve, n_ov
+      integer, intent(in) :: n_solve
+      integer, intent(in) :: n_guess     !! Columns the starting space wants
+      integer, intent(in) :: n_ov
       integer :: subspace
 
-      subspace = max(2*n_solve + 8, 16)
+      subspace = max(n_guess + n_solve + 8, 16)
       if (requested > 0) subspace = requested
       subspace = max(min(subspace, n_ov), n_solve)
    end function davidson_subspace
@@ -1081,16 +1264,24 @@ contains
             write (line, "(a,i4,f16.9,f13.4,a)") "   ", k, excitations(k), &
                excitations(k)*HARTREE_TO_EV, "   "
          end if
-         do i = 1, n_occ
+         contributions: do i = 1, n_occ
             do a = 1, n_vir
                idx = (i - 1)*n_vir + a
                if (abs(x(idx, k)) < AMPLITUDE_FLOOR) cycle
                write (piece, "(i0,a,i0,a,f7.3,a)") i, " -> ", n_occ + a, " (", &
                   x(idx, k), ")  "
-               if (len_trim(line) + len_trim(piece) + 1 > len(line)) cycle
+               ! Out of line: stop, rather than skip this one and keep going.
+               ! A later, shorter contribution would fit and be printed where
+               ! the omitted ones should have been, and the row would read as
+               ! a complete list in orbital order when it is not one. The
+               ! ellipsis says the row was cut, where there is room to say it.
+               if (len_trim(line) + len_trim(piece) + 1 > len(line)) then
+                  if (len_trim(line) + 4 <= len(line)) line = trim(line)//" ..."
+                  exit contributions
+               end if
                line = trim(line)//" "//trim(piece)
             end do
-         end do
+         end do contributions
          call logger%info(trim(line))
       end do
    end subroutine log_state_table

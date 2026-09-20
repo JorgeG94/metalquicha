@@ -362,7 +362,7 @@ contains
          n_positive = count(w2 > OMEGA2_FLOOR)
          n_flat = nsub - n_positive
          if (n_flat > 0 .and. loud) then
-            write (line, '(a,i0,a)') "   skipped ", n_flat, &
+            write (line, "(a,i0,a)") "   skipped ", n_flat, &
                " rotation(s) of the reference at zero frequency"
             call logger%debug(trim(line))
          end if
