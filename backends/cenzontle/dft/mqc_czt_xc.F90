@@ -24,6 +24,7 @@ module mqc_czt_xc
    use pic_io, only: to_char
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_memory, only: memory_budget
    use mqc_czt_vv10, only: vv10_nlc, vv10_hessian_kernel
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, DEFAULT_GRID_LEVEL
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, MAX_XC_COMPONENTS
@@ -95,6 +96,18 @@ module mqc_czt_xc
       !! reports a saddle point that is not there. `vrho` and `exc` stay finite
       !! where `v2rho2` does not, which is why nothing before the kernel needed a
       !! floor.
+
+   real(dp), parameter :: KERNEL_CACHE_BUDGET_SHARE = 0.25_dp
+      !! The share of the machine's available memory `xc_kernel_cache_fill` may
+      !! plan on. Well below the response solver's own share, because the solve
+      !! that asked for the cache is holding its trial vectors, its operators
+      !! and the reference at the same time, and the cache only has to pay for
+      !! itself: declining it costs a libxc pass per application, not the run.
+
+   real(dp), parameter :: KERNEL_CACHE_BLIND_LIMIT = 2.0e9_dp
+      !! What the cache may take, in bytes, on a machine that reports nothing
+      !! about its memory. Two gigabytes is a meta-GGA grid of twenty-three
+      !! million points, which is a few thousand atoms.
 
    type :: xc_context_t
       !! A functional, a grid, and the fraction of exact exchange to keep
@@ -178,12 +191,22 @@ module mqc_czt_xc
       !! second derivatives per grid block on **every** call, and every one of
       !! those is a property of the converged density alone: a response solve
       !! applying the same kernel a hundred times pays for the same numbers a
-      !! hundred times. These are O(n_points) scalars, so holding them costs
-      !! ten arrays over the grid and saves a libxc pass per call.
+      !! hundred times. These are O(n_points) scalars, so holding them costs a
+      !! handful of arrays over the grid and saves a libxc pass per call.
       !!
       !! **Not the basis functions**, which stay per block for the reason the
       !! module header gives: those are `n_points` by `n_ao` and a cache of them
       !! is the one thing here that does not fit.
+      !!
+      !! **What it costs, per grid point.** Only the channels the rung defines
+      !! are held, so the figure is 8 bytes on an LDA (`frr` alone), 56 on a GGA
+      !! (`rho_grad`, `frs`, `fss`, `vsig` beside it) and 88 on a meta-GGA (the
+      !! four tau channels as well). A 200-atom level-5 grid is a few million
+      !! points, so a GGA cache over it is a couple of hundred megabytes and a
+      !! meta-GGA one half again as much. `xc_kernel_cache_fill` weighs that
+      !! against `memory_budget` and declines rather than allocating over it;
+      !! a declined cache comes back unfilled, and its consumer takes the
+      !! uncached path.
       !!
       !! Filled by `xc_kernel_cache_fill` from the reference density, and handed
       !! back to `xc_kernel_apply` or `xc_kernel_apply_many` as an optional
@@ -204,28 +227,36 @@ module mqc_czt_xc
       logical :: mgga = .false.
          !! What the context was when the fill ran. Checked on use, because a
          !! GGA cache read by a meta-GGA contraction is short three channels.
-      real(dp), allocatable :: rho(:)
-         !! (n_points) the reference density. Not read by the contraction --
-         !! the floor it decides was already applied below -- and kept because
-         !! it is what a second, polarised evaluation would be built from.
+      integer :: point_block = 0
+         !! The block width the fill walked the grid in.
+      real(dp) :: screen_tol = 0.0_dp
+         !! The AO screening tolerance the fill decided block membership with.
+         !!
+         !! Both are the context's, and both are checked on use: the fill and
+         !! the contraction agree on where the blocks fall and on which
+         !! functions reach them only because they read the same two numbers,
+         !! and a cache filled against one context and applied against another
+         !! that differs in either is misaligned point by point.
       real(dp), allocatable :: rho_grad(:, :)
-         !! (n_points, 3) its gradient, which the contraction does read: it
-         !! makes `dsigma` and multiplies the response's gradient coefficient.
-         !! Zero throughout for an LDA.
+         !! (n_points, 3) the reference density's gradient, which the
+         !! contraction reads: it makes `dsigma` and multiplies the response's
+         !! gradient coefficient. Unallocated on an LDA, where it is zero.
       real(dp), allocatable :: frr(:), frs(:), fss(:)
          !! (n_points) `v2rho2`, `v2rhosigma` and `v2sigma2`, summed over the
          !! functional's components with their weights and floored at
-         !! `KERNEL_RHO_FLOOR`.
+         !! `KERNEL_RHO_FLOOR`. Only `frr` is allocated on an LDA.
       real(dp), allocatable :: vsig(:)
          !! (n_points) `vsigma`, a *first* derivative, here because the
-         !! response density's gradient multiplies it.
+         !! response density's gradient multiplies it. Unallocated on an LDA.
       real(dp), allocatable :: frt(:), fst(:), ftt(:)
          !! (n_points) the kinetic-energy-density channels `v2rhotau`,
-         !! `v2sigmatau` and `v2tau2`. Zero unless the context is a meta-GGA.
+         !! `v2sigmatau` and `v2tau2`. Unallocated unless the context is a
+         !! meta-GGA, where they are zero.
       real(dp), allocatable :: vtau(:)
          !! (n_points) `vtau`. Floored with the rest and carried for symmetry
          !! with `vsig`; the contraction does not read it, because tau is
          !! linear in the density and so has no analogue of the `vsigma` term.
+         !! Unallocated off the meta-GGA rung, like the three above.
       ! TODO(mqc): a triplet slot. Layer 3 of the TDDFT plan needs the same
       ! coefficients from a *polarised* evaluation at `rho_alpha = rho_beta =
       ! rho/2` and `sigma_aa = sigma/4`, whose `(f_aa - f_ab)/2` is the triplet
@@ -236,6 +267,39 @@ module mqc_czt_xc
    contains
       procedure :: destroy => xc_kernel_cache_destroy
    end type xc_kernel_cache_t
+
+   type :: xc_kernel_block_t
+      !! One grid block's worth of the reference density and the kernel
+      !!
+      !! What the contraction needs on a block that does not depend on the
+      !! response density, in the shapes it indexes: everything from one, not
+      !! from the block's first grid point. `kernel_block_reference` evaluates
+      !! one and `kernel_block_from_cache` copies one out of a filled cache,
+      !! and they are interchangeable -- that they produce the same object is
+      !! what makes the cache a cache rather than a second kernel.
+      !!
+      !! Every component is allocated whichever rung is in play, because the
+      !! contraction multiplies all of them; the ones the rung does not define
+      !! are zero.
+      real(dp), allocatable :: rho(:)
+         !! (n_block) the reference density. Evaluated on the uncached path
+         !! because libxc is evaluated at it; unallocated on the cached one,
+         !! where nothing downstream reads it.
+      real(dp), allocatable :: rho_grad(:, :)
+         !! (n_block, 3) its gradient. Zero off the GGA and meta-GGA rungs.
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+         !! (n_block) `v2rho2`, `v2rhosigma` and `v2sigma2`, weighted over the
+         !! functional's components and floored at `KERNEL_RHO_FLOOR`.
+      real(dp), allocatable :: vsig(:)
+         !! (n_block) `vsigma`, a first derivative, which the response
+         !! density's gradient multiplies.
+      real(dp), allocatable :: frt(:), fst(:), ftt(:)
+         !! (n_block) the kinetic-energy-density channels. Zero off the
+         !! meta-GGA rung.
+      real(dp), allocatable :: vtau(:)
+         !! (n_block) `vtau`, floored with the rest and not read: tau is
+         !! linear in the density, so it has no analogue of the `vsigma` term.
+   end type xc_kernel_block_t
 
 contains
 
@@ -497,7 +561,6 @@ contains
       !! Release the grid-sized arrays and mark the cache unfilled
       class(xc_kernel_cache_t), intent(inout) :: this
 
-      if (allocated(this%rho)) deallocate (this%rho)
       if (allocated(this%rho_grad)) deallocate (this%rho_grad)
       if (allocated(this%frr)) deallocate (this%frr)
       if (allocated(this%frs)) deallocate (this%frs)
@@ -511,6 +574,8 @@ contains
       this%n_points = 0
       this%gga = .false.
       this%mgga = .false.
+      this%point_block = 0
+      this%screen_tol = 0.0_dp
    end subroutine xc_kernel_cache_destroy
 
    subroutine xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
@@ -1849,9 +1914,7 @@ contains
    end subroutine xc_add_potential_uks
 
 #ifdef MQC_WITH_LIBXC
-   subroutine kernel_block_reference(ctx, ao, ao_grad, d_sig, gga, mgga, &
-                                     rho, rho_grad, frr, frs, fss, vsig, &
-                                     frt, fst, ftt, vtau)
+   subroutine kernel_block_reference(ctx, ao, ao_grad, d_sig, blk)
       !! The reference density and the kernel's coefficients on one grid block
       !!
       !! Everything the kernel contraction needs that does not depend on the
@@ -1865,19 +1928,23 @@ contains
       !! a cache that rounded differently from the path it replaces would be a
       !! second implementation of the kernel rather than a cache of the first.
       !! `KERNEL_RHO_FLOOR` is applied here for the same reason.
+      !!
+      !! The rung is read off `ctx` rather than passed, so the two callers
+      !! cannot disagree about it either.
       type(xc_context_t), intent(inout) :: ctx
       real(dp), intent(in) :: ao(:, :)   !! (n_block, n_sig), the kept functions
       real(dp), allocatable, intent(in) :: ao_grad(:, :, :)
          !! (n_block, n_sig, 3), and unallocated where the context is an LDA
       real(dp), intent(in) :: d_sig(:, :)
          !! (n_sig, n_sig), the reference density over the kept functions
-      logical, intent(in) :: gga, mgga
-      real(dp), allocatable, intent(out) :: rho(:)          !! (n_block)
-      real(dp), allocatable, intent(out) :: rho_grad(:, :)  !! (n_block, 3), zero for an LDA
-      real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:), vsig(:)
-      real(dp), allocatable, intent(out) :: frt(:), fst(:), ftt(:), vtau(:)
-         !! The tau channels, zero unless the context is a meta-GGA
+      type(xc_kernel_block_t), intent(out) :: blk
+         !! Every channel allocated over the block, and zero on a rung that
+         !! does not define it
 
+      logical :: gga, mgga
+      real(dp), allocatable :: rho(:), rho_grad(:, :)
+      real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
+      real(dp), allocatable :: frt(:), fst(:), ftt(:), vtau(:)
       real(dp), allocatable :: sigma(:), tau(:), lapl(:), lapl_scratch(:)
          !! libxc's meta-GGA entry points take the Laplacian and return its
          !! derivatives whether or not the functional uses them. Laplacian
@@ -1889,6 +1956,9 @@ contains
       integer :: nb, i, ig
 
       nb = size(ao, 1)
+      mgga = ctx%any_mgga
+      ! A meta-GGA needs the density gradients a GGA needs, and tau on top.
+      gga = ctx%any_gga .or. mgga
 
       ! The reference density, once for the block: what `f_xc` is evaluated
       ! at. Its tau only where a meta-GGA asks.
@@ -1987,6 +2057,17 @@ contains
             vtau(ig) = 0.0_dp
          end if
       end do
+
+      call move_alloc(rho, blk%rho)
+      call move_alloc(rho_grad, blk%rho_grad)
+      call move_alloc(frr, blk%frr)
+      call move_alloc(frs, blk%frs)
+      call move_alloc(fss, blk%fss)
+      call move_alloc(vsig, blk%vsig)
+      call move_alloc(frt, blk%frt)
+      call move_alloc(fst, blk%fst)
+      call move_alloc(ftt, blk%ftt)
+      call move_alloc(vtau, blk%vtau)
    end subroutine kernel_block_reference
 #endif
 
@@ -2056,9 +2137,40 @@ contains
    subroutine xc_kernel_apply_many(ctx, mol, density, dtildes, v_kernels, error, cache)
       !! The exchange-correlation kernel applied to a batch of response densities
       !!
-      !! The whole of it is `kernel_apply_batch`; this exists to turn one
-      !! optional argument into two ordinary ones. An absent optional dummy
-      !! cannot portably be named in an OpenMP data-sharing clause, and the
+      !! `xc_kernel_apply` for `n_set` densities in one pass over the grid. The
+      !! basis functions, the reference density and its kernel are evaluated
+      !! once per block and every set is contracted against them; what a set
+      !! costs on top of the first is its own density on the block and one
+      !! matrix assembly. Accumulates into `v_kernels`, as `xc_kernel_apply`
+      !! does into its one.
+      !!
+      !! **A set is skipped where its density is negligible.** A response to
+      !! one atom's displacement is small far from that atom, and the bound
+      !! `max|D| (sum_u |chi_u|)^2` on its density over the block, against the
+      !! set's largest element scaled by `ctx%screen_tol`, says so before
+      !! anything is contracted. Relative to the set itself, so a trial vector
+      !! of any size is screened the same way.
+      !!
+      !! **Sets are contracted in stacks.** The densities of up to
+      !! `KERNEL_SET_CHUNK` sets are gathered side by side into one matrix,
+      !! contracted against the block's basis in one gemm with a long inner
+      !! dimension, and their output matrices assembled by one gemm the same
+      !! way. Set by set the same arithmetic streams a half-megabyte density
+      !! through a gemm too small to hide it, and on a hundred cores at once
+      !! that ran at a third of the rate this reaches. A meta-GGA keeps the
+      !! set-by-set path, since its tau needs three more gemms per set.
+      !!
+      !! **Given a filled `cache`, the reference is not evaluated here at
+      !! all.** The basis functions still are, per block, and so is every
+      !! response density; what the cache removes is `eval_rho` on the
+      !! reference and the libxc calls, which is what a Davidson or a
+      !! coupled-perturbed solve repeats identically on every application. The
+      !! answer is the same to the bit, because the fill and the uncached path
+      !! are the same routine.
+      !!
+      !! The body is `kernel_apply_batch`; this exists to turn one optional
+      !! argument into two ordinary ones. An absent optional dummy cannot
+      !! portably be named in an OpenMP data-sharing clause, and the
       !! contraction's parallel region is `default(none)`, which is worth
       !! keeping over a shorter call chain.
       type(xc_context_t), intent(inout) :: ctx
@@ -2088,40 +2200,18 @@ contains
                                  cache, have_cache)
       !! The batched kernel contraction, with the cache made unconditional
       !!
-      !! `xc_kernel_apply` for `n_set` densities in one pass over the grid. The
-      !! basis functions, the reference density and its kernel are evaluated
-      !! once per block and every set is contracted against them; what a set
-      !! costs on top of the first is its own density on the block and one
-      !! matrix assembly.
-      !!
-      !! **A set is skipped where its density is negligible.** A response to
-      !! one atom's displacement is small far from that atom, and the bound
-      !! `max|D| (sum_u |chi_u|)^2` on its density over the block, against the
-      !! set's largest element scaled by `ctx%screen_tol`, says so before
-      !! anything is contracted. Relative to the set itself, so a trial vector
-      !! of any size is screened the same way.
+      !! The body of `xc_kernel_apply_many`, whose docstring carries the
+      !! contract: the grid pass, the per-set screen, the stacking of up to
+      !! `KERNEL_SET_CHUNK` densities per gemm and what a filled cache removes.
+      !! What is only true down here is the pair of arguments -- `cache` is an
+      !! ordinary dummy and `have_cache` says whether to read it, because an
+      !! absent optional cannot be named in the `default(none)` clause of the
+      !! parallel region below.
       !!
       !! **Written under a lock per set.** The block's result for a set is the
       !! significant functions squared, and it goes straight into that set's
       !! output; there is no copy per thread, so the memory is the batch and
       !! nothing times the thread count.
-      !!
-      !! **Sets are contracted in stacks.** The densities of up to
-      !! `KERNEL_SET_CHUNK` sets are gathered side by side into one matrix,
-      !! contracted against the block's basis in one gemm with a long inner
-      !! dimension, and their output matrices assembled by one gemm the same
-      !! way. Set by set the same arithmetic streams a half-megabyte density
-      !! through a gemm too small to hide it, and on a hundred cores at once
-      !! that ran at a third of the rate this reaches. A meta-GGA keeps the
-      !! set-by-set path, since its tau needs three more gemms per set.
-      !!
-      !! Accumulates into `v_kernels`, as `xc_kernel_apply` does into its one.
-      !!
-      !! **With `have_cache` the reference is not evaluated at all here.** The
-      !! basis functions still are, per block, and so is every response
-      !! density; what the cache removes is `eval_rho` on the reference and the
-      !! libxc calls, which is what a Davidson or a coupled-perturbed solve
-      !! repeats identically on every application.
 !$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(xc_context_t), intent(inout) :: ctx
       type(czt_molecule_t), intent(in) :: mol
@@ -2135,13 +2225,14 @@ contains
 
 #ifdef MQC_WITH_LIBXC
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
-      real(dp), allocatable :: rho(:), rho_grad(:, :), drho(:), drho_grad(:, :)
+      real(dp), allocatable :: drho(:), drho_grad(:, :)
       real(dp), allocatable :: dsigma(:)
-      real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
       real(dp), allocatable :: c_rho(:), c_grad(:, :), c_tau(:), no_tau(:)
       real(dp), allocatable :: dtau(:)
-      real(dp), allocatable :: frt(:), fst(:), ftt(:), vtau(:)
       real(dp), allocatable :: v_sig(:, :), d_sig(:, :), dt_sig(:, :)
+      type(xc_kernel_block_t) :: blk
+         !! The reference and the kernel over the block one thread is on,
+         !! cached or evaluated
       real(dp), allocatable :: extents(:), dmax(:)
       real(dp), allocatable :: dt_all(:, :), x_all(:, :), s_all(:, :), m_all(:, :), wg(:)
       logical, allocatable :: shell_mask(:)
@@ -2179,7 +2270,10 @@ contains
       ! A cache belonging to another context is the failure worth catching
       ! here: its arrays are the right shape often enough, and a GGA's
       ! coefficients read by a meta-GGA contraction are three channels short
-      ! of the answer with nothing to show for it.
+      ! of the answer with nothing to show for it. The block width and the
+      ! screening tolerance are in the test because the fill and this loop
+      ! agree on where the blocks fall, and on which functions reach them,
+      ! only by reading the same two numbers off the same context.
       if (have_cache) then
          if (.not. cache%filled) then
             call error%set(ERROR_VALIDATION, "the exchange-correlation kernel was "// &
@@ -2188,10 +2282,13 @@ contains
             return
          end if
          if (cache%n_points /= npts .or. (cache%gga .neqv. gga) &
-             .or. (cache%mgga .neqv. mgga)) then
+             .or. (cache%mgga .neqv. mgga) &
+             .or. cache%point_block /= ctx%point_block &
+             .or. cache%screen_tol /= ctx%screen_tol) then
             call error%set(ERROR_VALIDATION, "the exchange-correlation kernel cache "// &
-                           "was filled for a different grid or a different "// &
-                           "functional rung than the context it was handed with")
+                           "was filled for a different grid, a different "// &
+                           "functional rung or a different blocking than the "// &
+                           "context it was handed with")
             return
          end if
       end if
@@ -2213,9 +2310,9 @@ contains
       !$omp    shared(ctx, mol, density, dtildes, v_kernels, error, failed, &
       !$omp           gga, mgga, npts, extents, n_set, dmax, locks, &
       !$omp           cache, have_cache) &
-      !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho, rho_grad, drho, &
-      !$omp            drho_grad, dsigma, frr, frs, fss, vsig, c_rho, c_grad, &
-      !$omp            c_tau, no_tau, dtau, frt, fst, ftt, vtau) &
+      !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, blk, drho, &
+      !$omp            drho_grad, dsigma, c_rho, c_grad, &
+      !$omp            c_tau, no_tau, dtau) &
       !$omp    private(v_sig, d_sig, dt_sig, shell_mask, ao_list, ao_offset, &
       !$omp            n_sig, ia, ja, iset, amax, agmax, dmax_blk, s, &
       !$omp            dt_all, x_all, s_all, m_all, wg, keep, nk, ik, nc, c, col0, mu) &
@@ -2275,12 +2372,9 @@ contains
          ! there is not. The evaluation is one routine shared with the fill,
          ! so the two paths cannot drift -- including where the floor falls.
          if (have_cache) then
-            call kernel_block_from_cache(cache, g0, g1, rho_grad, frr, frs, fss, vsig, &
-                                         frt, fst, ftt, vtau)
+            call kernel_block_from_cache(cache, g0, g1, blk)
          else
-            call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
-                                        gga, mgga, rho, rho_grad, &
-                                        frr, frs, fss, vsig, frt, fst, ftt, vtau)
+            call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), blk)
          end if
 
          ! The response side's own scratch, which no cache can hold: it is the
@@ -2349,9 +2443,9 @@ contains
                dsigma = 0.0_dp
                if (gga) then
                   do ig = 1, nb
-                     dsigma(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_grad(ig, 1) &
-                                          + rho_grad(ig, 2)*drho_grad(ig, 2) &
-                                          + rho_grad(ig, 3)*drho_grad(ig, 3))
+                     dsigma(ig) = 2.0_dp*(blk%rho_grad(ig, 1)*drho_grad(ig, 1) &
+                                          + blk%rho_grad(ig, 2)*drho_grad(ig, 2) &
+                                          + blk%rho_grad(ig, 3)*drho_grad(ig, 3))
                   end do
                end if
 
@@ -2365,22 +2459,25 @@ contains
                ! `dtau` is zero on the LDA and GGA paths, so the same three lines
                ! reduce to what they were rather than branching.
                do ig = 1, nb
-                  c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig) + frt(ig)*dtau(ig)
+                  c_rho(ig) = blk%frr(ig)*drho(ig) + blk%frs(ig)*dsigma(ig) &
+                              + blk%frt(ig)*dtau(ig)
                end do
                if (gga) then
                   if (allocated(c_grad)) deallocate (c_grad)
                   allocate (c_grad(nb, 3))
                   do id = 1, 3
                      do ig = 1, nb
-                        c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig) &
-                                                 + fst(ig)*dtau(ig))*rho_grad(ig, id) &
-                                         + 2.0_dp*vsig(ig)*drho_grad(ig, id)
+                        c_grad(ig, id) = 2.0_dp*(blk%frs(ig)*drho(ig) &
+                                                 + blk%fss(ig)*dsigma(ig) &
+                                                 + blk%fst(ig)*dtau(ig))*blk%rho_grad(ig, id) &
+                                         + 2.0_dp*blk%vsig(ig)*drho_grad(ig, id)
                      end do
                   end do
                end if
                if (mgga) then
                   do ig = 1, nb
-                     c_tau(ig) = frt(ig)*drho(ig) + fst(ig)*dsigma(ig) + ftt(ig)*dtau(ig)
+                     c_tau(ig) = blk%frt(ig)*drho(ig) + blk%fst(ig)*dsigma(ig) &
+                                 + blk%ftt(ig)*dtau(ig)
                   end do
                end if
 
@@ -2480,9 +2577,9 @@ contains
                         end do
                      end do
                      do ig = 1, nb
-                        dsigma(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_grad(ig, 1) &
-                                             + rho_grad(ig, 2)*drho_grad(ig, 2) &
-                                             + rho_grad(ig, 3)*drho_grad(ig, 3))
+                        dsigma(ig) = 2.0_dp*(blk%rho_grad(ig, 1)*drho_grad(ig, 1) &
+                                             + blk%rho_grad(ig, 2)*drho_grad(ig, 2) &
+                                             + blk%rho_grad(ig, 3)*drho_grad(ig, 3))
                      end do
                   end if
 
@@ -2493,13 +2590,15 @@ contains
                   ! `M = (w dv_rho chi / 2 + w dv_grad . grad chi)^T chi`, as
                   ! `accumulate_xc_matrix` builds it.
                   do ig = 1, nb
-                     c_rho(ig) = frr(ig)*drho(ig) + frs(ig)*dsigma(ig)
+                     c_rho(ig) = blk%frr(ig)*drho(ig) + blk%frs(ig)*dsigma(ig)
                   end do
                   if (gga) then
                      do id = 1, 3
                         do ig = 1, nb
-                           c_grad(ig, id) = 2.0_dp*(frs(ig)*drho(ig) + fss(ig)*dsigma(ig)) &
-                                            *rho_grad(ig, id) + 2.0_dp*vsig(ig)*drho_grad(ig, id)
+                           c_grad(ig, id) = 2.0_dp*(blk%frs(ig)*drho(ig) &
+                                                    + blk%fss(ig)*dsigma(ig)) &
+                                            *blk%rho_grad(ig, id) &
+                                            + 2.0_dp*blk%vsig(ig)*drho_grad(ig, id)
                         end do
                      end do
                      do mu = 1, n_sig
@@ -2557,37 +2656,61 @@ contains
 #endif
    end subroutine kernel_apply_batch
 
-   subroutine kernel_block_from_cache(cache, g0, g1, rho_grad, frr, frs, fss, vsig, &
-                                      frt, fst, ftt, vtau)
+   subroutine kernel_block_from_cache(cache, g0, g1, blk)
       !! One block's worth of cached coefficients, in the shapes the block wants
       !!
-      !! A copy rather than a slice, because the contraction below indexes
-      !! everything from one and a pointer into the middle of a cache array
-      !! would have to be rebased anyway. It is ten `n_block` copies against a
-      !! libxc pass.
+      !! What `kernel_block_reference` would have evaluated for this block,
+      !! read out of a filled cache instead. A copy rather than a slice,
+      !! because the contraction indexes everything from one and a pointer
+      !! into the middle of a cache array would have to be rebased anyway. It
+      !! is ten `n_block` copies against a libxc pass.
+      !!
+      !! **Every channel comes back allocated, whatever the cache holds.** The
+      !! cache only stores the ones its rung defines; the rest are zero
+      !! everywhere and are written as zeros here, because the contraction
+      !! multiplies them unconditionally and zero times unallocated is not
+      !! zero. `blk%rho` is the exception and stays unallocated: the cache
+      !! does not hold it and nothing downstream reads it.
       type(xc_kernel_cache_t), intent(in) :: cache
       integer, intent(in) :: g0, g1   !! First and last grid point of the block
-      real(dp), allocatable, intent(out) :: rho_grad(:, :)   !! (n_block, 3)
-      real(dp), allocatable, intent(out) :: frr(:), frs(:), fss(:), vsig(:)
-      real(dp), allocatable, intent(out) :: frt(:), fst(:), ftt(:), vtau(:)
+      type(xc_kernel_block_t), intent(out) :: blk
 
       integer :: nb, id
 
       nb = g1 - g0 + 1
-      allocate (rho_grad(nb, 3))
-      do id = 1, 3
-         rho_grad(:, id) = cache%rho_grad(g0:g1, id)
-      end do
-      allocate (frr(nb), frs(nb), fss(nb), vsig(nb), frt(nb), fst(nb), ftt(nb), vtau(nb))
-      frr = cache%frr(g0:g1)
-      frs = cache%frs(g0:g1)
-      fss = cache%fss(g0:g1)
-      vsig = cache%vsig(g0:g1)
-      frt = cache%frt(g0:g1)
-      fst = cache%fst(g0:g1)
-      ftt = cache%ftt(g0:g1)
-      vtau = cache%vtau(g0:g1)
+      allocate (blk%rho_grad(nb, 3))
+      if (allocated(cache%rho_grad)) then
+         do id = 1, 3
+            blk%rho_grad(:, id) = cache%rho_grad(g0:g1, id)
+         end do
+      else
+         blk%rho_grad = 0.0_dp
+      end if
+      allocate (blk%frr(nb), blk%frs(nb), blk%fss(nb), blk%vsig(nb), &
+                blk%frt(nb), blk%fst(nb), blk%ftt(nb), blk%vtau(nb))
+      blk%frr = cache%frr(g0:g1)
+      call cached_channel(cache%frs, g0, g1, blk%frs)
+      call cached_channel(cache%fss, g0, g1, blk%fss)
+      call cached_channel(cache%vsig, g0, g1, blk%vsig)
+      call cached_channel(cache%frt, g0, g1, blk%frt)
+      call cached_channel(cache%fst, g0, g1, blk%fst)
+      call cached_channel(cache%ftt, g0, g1, blk%ftt)
+      call cached_channel(cache%vtau, g0, g1, blk%vtau)
    end subroutine kernel_block_from_cache
+
+   subroutine cached_channel(channel, g0, g1, block_values)
+      !! One cached channel over one block, or zeros where the rung has none
+      real(dp), allocatable, intent(in) :: channel(:)
+         !! (n_points) over the whole grid, unallocated off its own rung
+      integer, intent(in) :: g0, g1   !! First and last grid point of the block
+      real(dp), intent(out) :: block_values(:)   !! (n_block)
+
+      if (allocated(channel)) then
+         block_values = channel(g0:g1)
+      else
+         block_values = 0.0_dp
+      end if
+   end subroutine cached_channel
 
    subroutine xc_kernel_cache_fill(ctx, mol, density, cache, error)
       !! Evaluate the kernel's coefficients over the whole grid, once
@@ -2603,7 +2726,22 @@ contains
       !! time, `block_significant_aos` deciding which functions reach them,
       !! `kernel_block_reference` doing the evaluation -- so a cached
       !! application reproduces an uncached one bit for bit rather than to
-      !! within a tolerance.
+      !! within a tolerance. `ctx%point_block` and `ctx%screen_tol` are
+      !! recorded in the cache so that the agreement is checked on use rather
+      !! than assumed.
+      !!
+      !! **Only the rung's own channels are held.** An LDA defines `frr` and
+      !! nothing else, a GGA adds the density gradient and three more, and the
+      !! four tau channels arrive with the meta-GGA -- 8, 56 and 88 bytes per
+      !! grid point. The rest are zero everywhere, and
+      !! `kernel_block_from_cache` hands the contraction zeros for them.
+      !!
+      !! **It can decline.** The arrays are O(n_points) and a large grid makes
+      !! them hundreds of megabytes, so the total is weighed against
+      !! `memory_budget` first. Over budget, nothing is allocated, the cache
+      !! comes back with `filled` false and no error is raised: every consumer
+      !! already has an uncached path, and taking it costs a libxc pass per
+      !! application rather than the run. The decision is logged.
       !!
       !! Restricted only, as the kernel itself is.
       type(xc_context_t), intent(inout) :: ctx
@@ -2614,14 +2752,13 @@ contains
 
 #ifdef MQC_WITH_LIBXC
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
-      real(dp), allocatable :: rho(:), rho_grad(:, :)
-      real(dp), allocatable :: frr(:), frs(:), fss(:), vsig(:)
-      real(dp), allocatable :: frt(:), fst(:), ftt(:), vtau(:)
       real(dp), allocatable :: d_sig(:, :), extents(:)
+      type(xc_kernel_block_t) :: blk
       logical, allocatable :: shell_mask(:)
       integer, allocatable :: ao_list(:), ao_offset(:)
-      integer :: g0, g1, ia, ja, id, n_sig, npts
+      integer :: g0, g1, ia, ja, id, n_sig, npts, n_channels
       logical :: gga, mgga, failed
+      real(dp) :: wanted, budget
       type(error_t) :: local_error
 #endif
 
@@ -2641,24 +2778,46 @@ contains
       mgga = ctx%any_mgga
       npts = ctx%grid%n_points
 
-      allocate (cache%rho(npts), cache%rho_grad(npts, 3), cache%frr(npts), &
-                cache%frs(npts), cache%fss(npts), cache%vsig(npts), &
-                cache%frt(npts), cache%fst(npts), cache%ftt(npts), cache%vtau(npts))
+      ! What this rung actually holds: `frr` always, the gradient and three
+      ! more channels on a GGA, the four tau channels on a meta-GGA. One
+      ! `n_points` vector each, and `rho_grad` counts three.
+      n_channels = 1
+      if (gga) n_channels = n_channels + 6
+      if (mgga) n_channels = n_channels + 4
+      wanted = real(npts, dp)*real(n_channels, dp)*8.0_dp
+      budget = memory_budget(KERNEL_CACHE_BLIND_LIMIT, KERNEL_CACHE_BUDGET_SHARE)
+      if (wanted > budget) then
+         call logger%info("  xc kernel cache: declined, it wants "// &
+                          to_char(nint(wanted/1.048576e6_dp))//" MB against a budget of "// &
+                          to_char(nint(budget/1.048576e6_dp))//" MB; the kernel is "// &
+                          "re-evaluated on each application instead")
+         return
+      end if
+
+      allocate (cache%frr(npts))
       ! Zero where no basis function reaches, which is where the contraction
       ! skips the block outright and never reads these.
-      cache%rho = 0.0_dp
-      cache%rho_grad = 0.0_dp
       cache%frr = 0.0_dp
-      cache%frs = 0.0_dp
-      cache%fss = 0.0_dp
-      cache%vsig = 0.0_dp
-      cache%frt = 0.0_dp
-      cache%fst = 0.0_dp
-      cache%ftt = 0.0_dp
-      cache%vtau = 0.0_dp
+      if (gga) then
+         allocate (cache%rho_grad(npts, 3), cache%frs(npts), cache%fss(npts), &
+                   cache%vsig(npts))
+         cache%rho_grad = 0.0_dp
+         cache%frs = 0.0_dp
+         cache%fss = 0.0_dp
+         cache%vsig = 0.0_dp
+      end if
+      if (mgga) then
+         allocate (cache%frt(npts), cache%fst(npts), cache%ftt(npts), cache%vtau(npts))
+         cache%frt = 0.0_dp
+         cache%fst = 0.0_dp
+         cache%ftt = 0.0_dp
+         cache%vtau = 0.0_dp
+      end if
       cache%n_points = npts
       cache%gga = gga
       cache%mgga = mgga
+      cache%point_block = ctx%point_block
+      cache%screen_tol = ctx%screen_tol
 
       call shell_extents(mol, ctx%screen_tol, extents)
       failed = .false.
@@ -2667,8 +2826,7 @@ contains
       ! block, so the threads write disjoint slices of each array.
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, cache, error, failed, gga, mgga, npts, extents) &
-      !$omp    private(g0, g1, ia, ja, id, n_sig, ao, ao_grad, rho, rho_grad, &
-      !$omp            frr, frs, fss, vsig, frt, fst, ftt, vtau, d_sig, &
+      !$omp    private(g0, g1, ia, ja, id, n_sig, ao, ao_grad, blk, d_sig, &
       !$omp            shell_mask, ao_list, ao_offset) &
       !$omp    firstprivate(local_error)
       allocate (d_sig(mol%nao, mol%nao))
@@ -2708,22 +2866,23 @@ contains
             cycle
          end if
 
-         call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
-                                     gga, mgga, rho, rho_grad, &
-                                     frr, frs, fss, vsig, frt, fst, ftt, vtau)
+         call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), blk)
 
-         cache%rho(g0:g1) = rho
-         do id = 1, 3
-            cache%rho_grad(g0:g1, id) = rho_grad(:, id)
-         end do
-         cache%frr(g0:g1) = frr
-         cache%frs(g0:g1) = frs
-         cache%fss(g0:g1) = fss
-         cache%vsig(g0:g1) = vsig
-         cache%frt(g0:g1) = frt
-         cache%fst(g0:g1) = fst
-         cache%ftt(g0:g1) = ftt
-         cache%vtau(g0:g1) = vtau
+         cache%frr(g0:g1) = blk%frr
+         if (gga) then
+            do id = 1, 3
+               cache%rho_grad(g0:g1, id) = blk%rho_grad(:, id)
+            end do
+            cache%frs(g0:g1) = blk%frs
+            cache%fss(g0:g1) = blk%fss
+            cache%vsig(g0:g1) = blk%vsig
+         end if
+         if (mgga) then
+            cache%frt(g0:g1) = blk%frt
+            cache%fst(g0:g1) = blk%fst
+            cache%ftt(g0:g1) = blk%ftt
+            cache%vtau(g0:g1) = blk%vtau
+         end if
       end do
       !$omp end do
       deallocate (d_sig, shell_mask, ao_offset, ao_list)
