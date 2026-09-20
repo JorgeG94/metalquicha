@@ -716,6 +716,49 @@ module test_mqc_czt_tddft
    !! `TOL_EXACT`.
    real(dp), parameter :: TOL_UKS_MANIFOLD = 1.0e-9_dp
 
+   !! ---- unrestricted transition properties, PySCF 2.14 ---------------------
+   !!
+   !! From `pyscf/tdscf/uhf.py`'s `_contract_multipole`, which sums the two
+   !! spin blocks and carries **no** factor of two: the unrestricted
+   !! amplitudes are at `sum_sigma (|X|^2 - |Y|^2) = 1` and the spin sum the
+   !! restricted factor stands for is written out instead. Taking the
+   !! restricted route here would double every number below, which is why
+   !! these are gated at all -- the energies are indifferent to it.
+   !!
+   !! Regenerated through `tools/tddft_validation/gen_tddft_refs.py`, so the
+   !! basis comes out of this repository's own JSON and the geometry is in
+   !! Bohr.
+
+   !! OH / cc-pVDZ Tamm-Dancoff, length gauge. The first entry is the
+   !! rotation of the half-filled shell, whose strength is an exact zero
+   !! rather than a small number; the four gated roots are 2 through 5.
+   real(dp), parameter :: OH_UHF_TDA_F(5) = [ &
+                          0.000000000000_dp, 0.002907286382_dp, 0.002890450224_dp, &
+                          0.017955105059_dp, 0.005689301472_dp]
+
+   !! OH / cc-pVDZ RPA, length gauge. No rotation root here -- the paired
+   !! problem dropped it -- so all five are physical and the four the plan
+   !! names are 1 through 4.
+   real(dp), parameter :: OH_UHF_RPA_F(5) = [ &
+                          0.002813257372_dp, 0.002835697679_dp, 0.018691764517_dp, &
+                          0.004312164576_dp, 0.019019968724_dp]
+
+   !! The water cation, UKS B3LYP Tamm-Dancoff, length gauge. The second root
+   !! is dark by symmetry and comes back as an exact zero on both sides.
+   real(dp), parameter :: CATION_B3LYP_TDA_F(5) = [ &
+                          0.001469503610_dp, 0.000000000000_dp, 0.004206399943_dp, &
+                          0.019383726738_dp, 0.080883930436_dp]
+
+   !! An unrestricted oscillator strength against PySCF's.
+   !!
+   !! The plan asks for 1e-6 and these are held at it. Measured: 2.3e-11 on
+   !! the worst OH Hartree-Fock root over both routes, and 1.2e-9 on the
+   !! worst cation B3LYP one, the latter carrying the quadrature through the
+   !! orbitals it was converged with. The two dark roots come back at 2e-33
+   !! and 8e-31 -- an exact cancellation of the moment rather than a small
+   !! number, which is what a symmetry-forbidden transition should give.
+   real(dp), parameter :: TOL_UHF_OSCILLATOR = 1.0e-6_dp
+
 contains
 
    subroutine collect_mqc_czt_tddft_tests(testsuite)
@@ -808,7 +851,15 @@ contains
                   new_unittest("the_unrestricted_hf_operator_holds_both_manifolds", &
                                test_restricted_from_unrestricted_hf), &
                   new_unittest("the_unrestricted_pbe_operator_holds_both_manifolds", &
-                               test_restricted_from_unrestricted_pbe) &
+                               test_restricted_from_unrestricted_pbe), &
+                  new_unittest("oh_uhf_tda_strengths_match_pyscf", &
+                               test_oh_uhf_tda_strengths), &
+                  new_unittest("oh_uhf_rpa_strengths_match_pyscf", &
+                               test_oh_uhf_rpa_strengths), &
+                  new_unittest("cation_uks_b3lyp_tda_strengths_match_pyscf", &
+                               test_cation_b3lyp_strengths), &
+                  new_unittest("an_unrestricted_moment_carries_no_closed_shell_factor", &
+                               test_unrestricted_spin_sum) &
                   ]
    end subroutine collect_mqc_czt_tddft_tests
 
@@ -3359,6 +3410,213 @@ contains
       call check(error, worst_triplet < TOL_UKS_MANIFOLD, "the unrestricted PBE "// &
                  "operator's spin difference is not the restricted triplet A")
    end subroutine test_restricted_from_unrestricted_pbe
+
+   subroutine compare_uhf_strengths(error, result, reference, what)
+      !! Every length-gauge oscillator strength of an unrestricted run
+      !!
+      !! The energies are compared elsewhere; what this adds is the moment,
+      !! which is where the normalisation lives. An oscillator strength is
+      !! quadratic in the amplitude, so a route that kept the closed-shell
+      !! factor of two would report exactly four times these numbers while
+      !! every excitation energy stayed right.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t), intent(in) :: result
+      real(dp), intent(in) :: reference(:)
+      character(len=*), intent(in) :: what
+
+      integer :: i
+
+      call check(error,.not. result%has_error, "the "//what//" run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(result%oscillator_strengths), "the "//what// &
+                 " run reported no oscillator strengths")
+      if (allocated(error)) return
+      call check(error, size(result%oscillator_strengths) == size(reference), &
+                 "the "//what//" run reported a different number of strengths "// &
+                 "than roots")
+      if (allocated(error)) return
+      do i = 1, size(reference)
+         call check(error, abs(result%oscillator_strengths(i) - reference(i)) < &
+                    TOL_UHF_OSCILLATOR, &
+                    "a "//what//" oscillator strength disagrees with PySCF")
+         if (allocated(error)) return
+      end do
+      ! Every root has a natural transition orbital weight, and the two spin
+      ! blocks' weights sum to one between them rather than to one each.
+      call check(error, allocated(result%nto_leading_weight), "the "//what// &
+                 " run reported no natural transition orbital weight")
+      if (allocated(error)) return
+      call check(error, all(result%nto_leading_weight > 0.0_dp) .and. &
+                 all(result%nto_leading_weight <= 1.0_dp + TOL_EXACT), &
+                 "an unrestricted leading weight is not a weight")
+   end subroutine compare_uhf_strengths
+
+   subroutine test_oh_uhf_tda_strengths(error)
+      !! The OH radical's unrestricted Tamm-Dancoff brightnesses
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "tda", result)
+      call compare_uhf_strengths(error, result, OH_UHF_TDA_F, "OH UHF TDA")
+      if (allocated(error)) return
+      ! The rotation root is dark exactly, not nearly: its transition density
+      ! is a rotation within the half-filled shell and the dipole integral
+      ! over it cancels component by component.
+      call check(error, result%oscillator_strengths(1) < 1.0e-12_dp, &
+                 "the rotation of the half-filled shell was reported as bright")
+   end subroutine test_oh_uhf_tda_strengths
+
+   subroutine test_oh_uhf_rpa_strengths(error)
+      !! The same molecule through the paired route
+      !!
+      !! A separate case rather than a loop because the two routes reach the
+      !! moments differently: Tamm-Dancoff has no `Y`, so `X+Y` and `X-Y` are
+      !! the same vector and the two gauges cannot disagree about which
+      !! amplitude they were handed. RPA can.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "rpa", result)
+      call compare_uhf_strengths(error, result, OH_UHF_RPA_F, "OH UHF RPA")
+      if (allocated(error)) return
+      ! Both gauges are reported, and they are not equal in a finite basis;
+      ! what is asserted is that the velocity one was computed at all, since
+      ! an unwired second gauge would leave it allocated and zero.
+      call check(error, allocated(result%oscillator_strengths_velocity), &
+                 "the unrestricted run reported no velocity-gauge strengths")
+      if (allocated(error)) return
+      call check(error, maxval(result%oscillator_strengths_velocity) > 1.0e-6_dp, &
+                 "every unrestricted velocity-gauge strength came back zero")
+   end subroutine test_oh_uhf_rpa_strengths
+
+   subroutine test_cation_b3lyp_strengths(error)
+      !! The water cation's unrestricted Kohn-Sham brightnesses
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("b3lyp", 5, "tda", result)
+      call compare_uhf_strengths(error, result, CATION_B3LYP_TDA_F, &
+                                 "H2O+ UKS B3LYP TDA")
+   end subroutine test_cation_b3lyp_strengths
+
+   subroutine test_unrestricted_spin_sum(error)
+      !! A closed shell's moment is the same whichever route computes it
+      !!
+      !! The one assertion here that needs no reference code, and the one
+      !! that pins the convention rather than a number. The two routes reach
+      !! a transition dipole by different arithmetic -- one spatial amplitude
+      !! times two, against two spin amplitudes times one -- and they agree
+      !! only if the factor and the normalisation were changed together.
+      !!
+      !! A closed shell written in the unrestricted layout has
+      !! `X_alpha = X_beta` over the same orbitals, and the restricted
+      !! amplitude at `|X|^2 = 1/2` is already what each spin block carries
+      !! at `sum_sigma |X|^2 = 1`. So the same vector, duplicated, is the
+      !! same state; the moments have to come out identical, to round-off and
+      !! not to a tolerance. Halving one convention and not the other leaves
+      !! every excitation energy right and every oscillator strength wrong by
+      !! a factor of four, which is what this catches.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      type(excited_properties_t) :: props_r, props_u
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      real(dp), allocatable :: x_two(:, :), y_two(:, :)
+      integer, allocatable :: spins(:)
+      integer :: n_ov, k
+
+      call water_reference("sto-3g", "", mol, scf, ctx, err)
+      call check(error,.not. err%has_error(), &
+                 "the closed-shell reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, 3, "rpa", "singlet", omega, spins, &
+                                x, y, err, tolerance=1.0e-10_dp, max_iter=200)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the restricted spectrum failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
+                              x, y, scf%energy, props_r, err)
+
+      ! The same states in the unrestricted layout: the alpha block, then an
+      ! identical beta block over identical orbitals.
+      n_ov = size(x, 1)
+      allocate (x_two(2*n_ov, size(x, 2)), y_two(2*n_ov, size(y, 2)))
+      x_two(1:n_ov, :) = x
+      x_two(n_ov + 1:, :) = x
+      y_two(1:n_ov, :) = y
+      y_two(n_ov + 1:, :) = y
+      ! Relabelled, because a root the restricted route called a singlet the
+      ! unrestricted one has no name for -- and a row still marked a triplet
+      ! would be short-circuited to zero on both sides and assert nothing.
+      spins = STATE_SPIN_UNRESTRICTED
+
+      if (.not. err%has_error()) &
+         call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, spins, &
+                                 x_two, y_two, scf%energy, props_u, err, &
+                                 orbitals_beta=scf%orbitals, &
+                                 n_occ_beta=scf%n_occupied)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the unrestricted moments failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(omega)
+         call check(error, maxval(abs(props_u%transition_dipole(:, k) - &
+                                      props_r%transition_dipole(:, k))) < TOL_EXACT, &
+                    "the unrestricted route reports a different transition dipole "// &
+                    "for the same closed-shell excitation")
+         if (allocated(error)) exit
+         call check(error, maxval(abs(props_u%velocity_moment(:, k) - &
+                                      props_r%velocity_moment(:, k))) < TOL_EXACT, &
+                    "the unrestricted route reports a different velocity moment "// &
+                    "for the same closed-shell excitation")
+         if (allocated(error)) exit
+         call check(error, abs(props_u%f_length(k) - props_r%f_length(k)) < TOL_EXACT, &
+                    "the unrestricted route reports a different oscillator strength "// &
+                    "for the same closed-shell excitation")
+         if (allocated(error)) exit
+         ! The two spin blocks hold half the weight each, so the merged column
+         ! still sums to one and its leading entry is half the restricted one.
+         call check(error, abs(sum(props_u%nto_weights(:, k)) - 1.0_dp) < TOL_NTO_SUM, &
+                    "the two spin blocks' natural transition orbital weights do "// &
+                    "not sum to one between them")
+         if (allocated(error)) exit
+         call check(error, abs(maxval(props_u%nto_weights(:, k)) - &
+                               0.5_dp*maxval(props_r%nto_weights(:, k))) < TOL_NTO, &
+                    "an unrestricted leading weight is not half its closed-shell "// &
+                    "partner")
+         if (allocated(error)) exit
+         ! Descending, which is what the caller reading only the first entry
+         ! is relying on.
+         call check(error, all(props_u%nto_weights(1:size(props_u%nto_weights, 1) - 1, k) &
+                               >= props_u%nto_weights(2:, k) - TOL_NTO_SUM), &
+                    "the merged natural transition orbital weights are not descending")
+         if (allocated(error)) exit
+      end do
+      call props_r%destroy()
+      call props_u%destroy()
+      deallocate (x_two, y_two)
+   end subroutine test_unrestricted_spin_sum
 
 end module test_mqc_czt_tddft
 

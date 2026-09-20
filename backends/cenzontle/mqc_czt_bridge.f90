@@ -1599,10 +1599,23 @@ contains
             ! the spectrum is already computed and correct, and refusing to
             ! report it because a one-electron integral set could not be
             ! formed would throw away the expensive half of the answer.
+            !
+            ! Two call sites again, and for the same reason the solve has
+            ! four: an unrestricted amplitude vector is two spin blocks over
+            ! two orbital sets, and handing the beta pair across is what tells
+            ! the moments to drop the closed-shell factor of two.
             if (result%has_excited_states) then
-               call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, &
-                                       omega_spin, x_amplitudes, y_amplitudes, &
-                                       scf%energy, props, td_error)
+               if (unrestricted) then
+                  call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, &
+                                          omega_spin, x_amplitudes, y_amplitudes, &
+                                          scf%energy, props, td_error, &
+                                          orbitals_beta=scf%orbitals_beta, &
+                                          n_occ_beta=scf%n_occupied_beta)
+               else
+                  call excited_properties(mol, scf%orbitals, scf%n_occupied, omega, &
+                                          omega_spin, x_amplitudes, y_amplitudes, &
+                                          scf%energy, props, td_error)
+               end if
                if (td_error%has_error()) then
                   call logger%warning("  the transition properties could not be "// &
                                       "computed: "//td_error%get_message())
