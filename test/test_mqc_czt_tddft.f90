@@ -594,6 +594,19 @@ module test_mqc_czt_tddft
                           0.089312820588_dp, 0.236158714407_dp, 0.482329524466_dp, &
                           0.517089540365_dp, 0.527087149050_dp]
 
+   !! The water cation's first three CAM-B3LYP roots, the same 175 spin-blocked
+   !! rotations dense-diagonalised out of PySCF's own operator.
+   !! `E(UKS CAM-B3LYP) = -75.939126000634`, converged to `|g| < 5e-10` from
+   !! the `minao`, `1e` and `atom` guesses, which agree with each other to
+   !! twelve decimals in the energy and to 1.2e-10 in the worst of these three
+   !! roots. **This is the only gate on the range-separated unrestricted
+   !! product**: CAM-B3LYP is the one functional here that makes
+   !! `response_mean_field_uhf` take its second integral pass, at `j_scale = 0`
+   !! and the attenuated `omega`, so a missing or misscaled long-range
+   !! exchange shows up nowhere else on the unrestricted path.
+   real(dp), parameter :: CATION_CAM_TDA(3) = [ &
+                          0.088470327358_dp, 0.234583947377_dp, 0.487459262577_dp]
+
    !! Triplet H2 at 1.4 Bohr, a reference with two alpha electrons and **no
    !! beta electrons at all**: the beta spin contributes no rotations, so the
    !! trial vector is the alpha block alone and every beta half is empty.
@@ -702,6 +715,8 @@ contains
                                test_cation_uks_b3lyp), &
                   new_unittest("cation_uks_b3lyp_rpa_roots_match_pyscf", &
                                test_cation_uks_b3lyp_rpa), &
+                  new_unittest("cation_uks_cam_b3lyp_tda_roots_match_pyscf", &
+                               test_cation_uks_cam), &
                   new_unittest("a_reference_with_no_beta_electrons_has_a_spectrum", &
                                test_no_beta_electrons), &
                   new_unittest("unrestricted_amplitudes_carry_unit_norm", &
@@ -2397,6 +2412,36 @@ contains
       call compare_uhf_roots(error, result, CATION_B3LYP_RPA, TOL_GRID, &
                              "H2O+ UKS B3LYP RPA")
    end subroutine test_cation_uks_b3lyp_rpa
+
+   subroutine test_cation_uks_cam(error)
+      !! The three lowest UKS CAM-B3LYP Tamm-Dancoff roots of the water cation
+      !!
+      !! **The range-separated unrestricted product, which nothing else here
+      !! reaches.** `response_mean_field_uhf` builds the short-range Fock and
+      !! then, only where `omega > 0`, a second unrestricted batch at
+      !! `j_scale = 0` with the attenuated exchange -- and the UKS gates above
+      !! are PBE and B3LYP, neither of which is range separated, so that pass
+      !! ran in no test until this one. Dropping it entirely would still leave
+      !! a converged spectrum, several parts in a hundred wrong.
+      !!
+      !! Held at `TOL_GRID`, the same 1e-7 as the other Kohn-Sham gates and
+      !! for the same reason: the two codes integrate the exchange-correlation
+      !! kernel on grids that are not the same points. Measured 3.0e-11,
+      !! 1.2e-11 and 2.8e-9 on the three roots, against a reference whose own
+      !! three PySCF guesses differ among themselves by 1.2e-10 -- so what
+      !! this tolerance bounds is a missing term, not a quadrature.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("cam-b3lyp", 3, "tda", result)
+      call compare_uhf_roots(error, result, CATION_CAM_TDA, TOL_GRID, &
+                             "H2O+ UKS CAM-B3LYP TDA")
+   end subroutine test_cation_uks_cam
 
    subroutine test_no_beta_electrons(error)
       !! Triplet H2: an unrestricted spectrum out of a reference with no beta
