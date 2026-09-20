@@ -1502,7 +1502,10 @@ contains
       ! does not move here, and `nuclear_apply` would otherwise re-evaluate
       ! them -- the reference density on every block and libxc's second
       ! derivatives over it -- on each of the solver's dozens of applications.
-      ! The cost is ten arrays over the grid, held until this returns.
+      ! The cost is up to eleven arrays over the grid, held until this
+      ! returns; the fill weighs that against the machine and declines rather
+      ! than allocating over it, which leaves the cache unfilled and the
+      ! applications below on their uncached path.
       if (present(xc)) then
          call xc_kernel_cache_fill(xc, mol, operator%reference, operator%kernel_cache, error)
          if (error%has_error()) return
