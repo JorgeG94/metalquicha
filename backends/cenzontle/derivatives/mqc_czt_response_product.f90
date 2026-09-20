@@ -248,6 +248,20 @@ contains
          ! The non-local kernel, once for the batch rather than per set:
          ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
          ! trial density or a dozen. It accumulates, hence the zeroed buffer.
+         !
+         ! TODO(mqc): this one is not cached, so on a VV10 reference the kernel
+         ! cache removes the smaller of the two grid costs an application pays
+         ! and leaves the larger. What is reusable is the reference half --
+         ! `vv10_nlc`'s U..C pair sums and the omega and kappa derivatives,
+         ! plus `rho`, `sigma` and `rho_grad` -- thirteen more grid-sized
+         ! arrays over the NLC grid, which is not the grid `xc_kernel_cache_t`
+         ! is filled over, so it would be a second cache with its own budget
+         ! rather than four more components on that one. The trial half,
+         ! `vv10_hessian_kernel`, cannot be cached at all: it is
+         ! O(npts^2 n_set) and moves with the densities. So the saving is one
+         ! pair sweep out of two at `n_set = 1` and one out of `n_set + 1` as
+         ! the batch widens -- most to a coupled-perturbed solve, least to the
+         ! Hessian's wide batches.
          if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
             allocate (vnl(n_ao, n_ao, n_set))
             vnl = 0.0_dp

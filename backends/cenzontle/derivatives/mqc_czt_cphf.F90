@@ -420,6 +420,7 @@ contains
       if (present(iterations)) iterations = worst
       nullify (eri)
       if (allocated(eri_own)) deallocate (eri_own)
+      call kernel_cache%destroy()
       deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
    end subroutine cphf_solve
 
