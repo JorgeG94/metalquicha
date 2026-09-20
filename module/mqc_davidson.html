@@ -223,16 +223,16 @@ checked separately rather than trusted because the solver seems to work.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
-                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -806,7 +806,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~151"></span>
+              <span class="anchor" id="variable-this~128"></span>
               class(<a href='../type/sigma_operator_t.html'>sigma_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -851,7 +851,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~189"></span>
+              <span class="anchor" id="variable-error~166"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -902,7 +902,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~8"></span>
+              <span class="anchor" id="variable-converged~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -970,7 +970,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~9"></span>
+              <span class="anchor" id="variable-values~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1064,7 +1064,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~13"></span>
+              <span class="anchor" id="variable-alpha~8"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
               <td>public,</td>
@@ -1081,7 +1081,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~13"></span>
+              <span class="anchor" id="variable-beta~8"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
               <td>public,</td>
@@ -1098,7 +1098,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~9"></span>
+              <span class="anchor" id="variable-folded~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1115,7 +1115,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~13"></span>
+              <span class="anchor" id="variable-na~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -1132,7 +1132,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~10"></span>
+              <span class="anchor" id="variable-nb~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1207,7 +1207,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~5"></span>
+              <span class="anchor" id="variable-diagonal~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1237,7 +1237,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~10"></span>
+              <span class="anchor" id="variable-values~7"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1312,7 +1312,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~9"></span>
+              <span class="anchor" id="variable-converged~5"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1327,7 +1327,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~192"></span>
+              <span class="anchor" id="variable-error~169"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1342,7 +1342,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~16"></span>
+              <span class="anchor" id="variable-tolerance~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1406,7 +1406,7 @@ reference determinant and its nearest neighbours in energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~13"></span>
+              <span class="anchor" id="variable-verbose~14"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1499,7 +1499,7 @@ curvature, not an energy.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~10"></span>
+              <span class="anchor" id="variable-folded~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1514,7 +1514,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~4"></span>
+              <span class="anchor" id="variable-diagonal~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1529,7 +1529,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~14"></span>
+              <span class="anchor" id="variable-alpha~9"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1544,7 +1544,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~14"></span>
+              <span class="anchor" id="variable-beta~9"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1574,7 +1574,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~54"></span>
+              <span class="anchor" id="variable-result~42"></span>
               type(<a href='../type/davidson_result_t.html'>davidson_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1589,7 +1589,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~191"></span>
+              <span class="anchor" id="variable-error~168"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1604,7 +1604,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~15"></span>
+              <span class="anchor" id="variable-tolerance~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1664,7 +1664,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~12"></span>
+              <span class="anchor" id="variable-verbose~13"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1722,7 +1722,7 @@ constant this adds back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~152"></span>
+              <span class="anchor" id="variable-this~129"></span>
               class(<a href='../type/cas_operator_t.html'>cas_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1767,7 +1767,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~190"></span>
+              <span class="anchor" id="variable-error~167"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1807,7 +1807,7 @@ constant this adds back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~6"></span>
+              <span class="anchor" id="variable-diagonal~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1837,7 +1837,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~8"></span>
+              <span class="anchor" id="variable-ndet~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1910,7 +1910,7 @@ constant this adds back.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-19 15:38 +0000             </p>
+ on 2026-09-20 01:28 +0000             </p>
           </div>
         </div>
         <br>
