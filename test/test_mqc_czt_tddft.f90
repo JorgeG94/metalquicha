@@ -40,8 +40,7 @@ module test_mqc_czt_tddft
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
-   use mqc_czt_direct, only: schwarz_bounds
-   use mqc_czt_response_product, only: response_product
+   use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_bridge, only: run_czt_hf
    use mqc_cuest_iface, only: cuest_scf_settings_t
@@ -285,79 +284,41 @@ contains
    end subroutine water_sto3g
 
    subroutine dense_tda(mol, scf, ctx, kohn_sham, a, err)
-      !! The explicit TDA matrix, from the operator applied to unit vectors
+      !! The explicit TDA matrix, through the operator the solver uses
       !!
-      !! `A = (1/2)[(A+B) + (A-B)]`, both halves from `response_product`. The
-      !! identity is exact rather than an approximation of one: `(A+B)` is
-      !! `dEps + 4(ai|bj) - c_x[(ab|ij)+(aj|ib)] + 4 f_xc` and `(A-B)` is
-      !! `dEps - c_x[(ab|ij)-(aj|ib)]`, whose half sum is
-      !! `dEps + 2(ai|bj) - c_x(ab|ij) + 2 f_xc`, which is `A`.
-      type(czt_molecule_t), intent(in) :: mol
+      !! `tda_dense_matrix` applies the shipped operator to the ten unit
+      !! vectors, which is the construction PySCF's side of the reference
+      !! used as well -- so the two are compared as matrices and not as two
+      !! summaries of one. Going through the real operator rather than
+      !! assembling `(1/2)[(A+B)+(A-B)]` here is the point: a test that redid
+      !! the half sum itself would agree with a shipped operator that had
+      !! dropped a term, since both halves come from the same routine.
+      !!
+      !! `mol` and `ctx` are `target` because the operator keeps pointers to
+      !! them; they stay valid for as long as this call runs, which is longer
+      !! than the operator is used for.
+      type(czt_molecule_t), intent(in), target :: mol
       type(rhf_result_t), intent(in) :: scf
-      type(xc_context_t), intent(inout) :: ctx
+      type(xc_context_t), intent(inout), target :: ctx
       logical, intent(in) :: kohn_sham
       real(dp), allocatable, intent(out) :: a(:, :)
       type(error_t), intent(inout) :: err
 
-      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), zero_h(:, :)
-      real(dp), allocatable :: bounds(:, :), u(:, :, :), ap(:, :, :), am(:, :, :)
-      integer, allocatable :: idx(:)
-      integer :: n_ao, n_mo, n_occ, n_vir, n_ov, i, jj, aa
+      type(tda_operator_t) :: operator
 
       if (err%has_error()) return
-
-      n_ao = mol%nao
-      n_mo = size(scf%orbitals, 2)
-      n_occ = scf%n_occupied
-      n_vir = n_mo - n_occ
-      n_ov = n_vir*n_occ
-
-      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
-      allocate (zero_h(n_ao, n_ao))
-      c_occ = scf%orbitals(:, 1:n_occ)
-      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
-      zero_h = 0.0_dp
-      do i = 1, n_occ
-         do aa = 1, n_vir
-            gaps(aa, i) = scf%orbital_energies(n_occ + aa) - scf%orbital_energies(i)
-         end do
-      end do
-
-      call schwarz_bounds(mol, bounds, err)
-      if (err%has_error()) return
-
-      allocate (u(n_vir, n_occ, n_ov), ap(n_vir, n_occ, n_ov), am(n_vir, n_occ, n_ov))
-      allocate (idx(n_ov), a(n_ov, n_ov))
-      u = 0.0_dp
-      do jj = 1, n_ov
-         aa = mod(jj - 1, n_vir) + 1
-         i = (jj - 1)/n_vir + 1
-         u(aa, i, jj) = 1.0_dp
-         idx(jj) = jj
-      end do
-      ap = 0.0_dp
-      am = 0.0_dp
 
       if (kohn_sham) then
-         call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, n_ov, .false., &
-                               ap, err, bounds=bounds, k_scale=ctx%exx_fraction, &
-                               xc=ctx, reference=scf%density)
-         if (.not. err%has_error()) &
-            call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, n_ov, .true., &
-                                  am, err, bounds=bounds, k_scale=ctx%exx_fraction, &
-                                  xc=ctx, reference=scf%density)
+         call build_tda_operator(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, operator, err, xc=ctx, &
+                                 reference=scf%density)
       else
-         call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, n_ov, .false., &
-                               ap, err, bounds=bounds, k_scale=1.0_dp)
-         if (.not. err%has_error()) &
-            call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, n_ov, .true., &
-                                  am, err, bounds=bounds, k_scale=1.0_dp)
+         call build_tda_operator(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, operator, err)
       end if
       if (err%has_error()) return
 
-      do jj = 1, n_ov
-         a(:, jj) = 0.5_dp*(reshape(ap(:, :, jj), [n_ov]) + reshape(am(:, :, jj), [n_ov]))
-      end do
+      call tda_dense_matrix(operator, a, err)
    end subroutine dense_tda
 
    subroutine compare_matrix(error, a, reference, tol, what)
@@ -408,9 +369,9 @@ contains
       !! The ten-by-ten singlet TDA matrix of H2O/STO-3G, element by element
       type(error_type), allocatable, intent(out) :: error
 
-      type(czt_molecule_t) :: mol
+      type(czt_molecule_t), target :: mol
       type(rhf_result_t) :: scf
-      type(xc_context_t) :: ctx
+      type(xc_context_t), target :: ctx
       type(error_t) :: err
       real(dp), allocatable :: a(:, :)
 
@@ -453,9 +414,9 @@ contains
       !! Every root of that matrix, not only the ones a solver would look for
       type(error_type), allocatable, intent(out) :: error
 
-      type(czt_molecule_t) :: mol
+      type(czt_molecule_t), target :: mol
       type(rhf_result_t) :: scf
-      type(xc_context_t) :: ctx
+      type(xc_context_t), target :: ctx
       type(error_t) :: err
       real(dp), allocatable :: a(:, :), values(:)
       logical :: ok
@@ -484,9 +445,9 @@ contains
       !! has nothing to hide behind here.
       type(error_type), allocatable, intent(out) :: error
 
-      type(czt_molecule_t) :: mol
+      type(czt_molecule_t), target :: mol
       type(rhf_result_t) :: scf
-      type(xc_context_t) :: ctx
+      type(xc_context_t), target :: ctx
       type(error_t) :: err
       real(dp), allocatable :: a(:, :), values(:)
       logical :: ok
@@ -620,9 +581,9 @@ contains
       !! right.
       type(error_type), allocatable, intent(out) :: error
 
-      type(czt_molecule_t) :: mol
+      type(czt_molecule_t), target :: mol
       type(rhf_result_t) :: scf
-      type(xc_context_t) :: ctx
+      type(xc_context_t), target :: ctx
       type(error_t) :: err
       type(calculation_result_t) :: result
       real(dp), allocatable :: a(:, :), values(:)
