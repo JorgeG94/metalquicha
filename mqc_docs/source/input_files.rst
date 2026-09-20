@@ -1484,15 +1484,29 @@ reference:
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.
 
-**The physics behind this block is not implemented yet.** Everything above
-parses, validates and reaches the CPU backend, which then stops with a message
-saying so; the linear-response solver arrives in a later change. Until then, a
-deck naming ``n_states`` greater than zero will not produce a number. A
-calculation that cannot have these states at all -- an unrestricted reference,
-a correlated method, a density-fitted reference, continuum solvation, a
-hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or the cuEST
-backend -- is refused by name instead, rather than answered from an operator
-missing a term.
+**What is implemented is the Tamm-Dancoff approximation, singlets, over a
+restricted reference** -- Hartree-Fock or Kohn-Sham, on the CPU backend. Note
+that ``method`` still **defaults to** ``"rpa"``, which is not implemented: a
+deck setting only ``n_states`` is refused by name, and has to say
+``"method": "tda"`` until the full Casida solver lands. ``spin`` likewise
+defaults to the one value that works, so ``"triplet"`` and ``"both"`` are
+refused rather than approximated by the singlet operator.
+
+**Only an unfragmented energy run may ask for a spectrum.** The solve happens
+on the converged orbitals of an SCF, and every driver reaches the same SCF --
+a finite-difference Hessian would converge a full Davidson per displacement, a
+geometry optimization one per step, and a fragmented run one per fragment,
+and none of those roots is ever read back. So ``driver`` other than
+``"energy"``, and any fragmented deck, are refused when the input is read
+rather than computed and discarded. Excited-state gradients are a separate
+piece of work -- a Z-vector solve for the relaxed density, not this solve run
+more often.
+
+A calculation that cannot have these states at all -- an unrestricted
+reference, a correlated method, a density-fitted reference, continuum
+solvation, a hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or
+the cuEST backend -- is refused by name too, rather than answered from an
+operator missing a term.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
