@@ -24,12 +24,12 @@ module mqc_czt_hessian
                                 hess_2e_contract, h1_contract, &
                                 HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                 HESS_NUC_II, HESS_NUC_IJ
-   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, xc_add_potential, &
-                         vv10_kernel_apply, xc_kernel_cache_t, xc_kernel_cache_fill
+   use mqc_czt_xc, only: xc_context_t, xc_add_potential, &
+                         xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
-   use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
-                             schwarz_bounds, direct_stats_t
+   use mqc_czt_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use mqc_czt_response, only: response_operator_t, solve_response
+   use mqc_czt_response_product, only: response_mean_field
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_ecp, only: ecp_refuses_derivatives
    implicit none
@@ -490,17 +490,14 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: mo1(:, :, :), half(:, :), dens(:, :, :), g(:, :, :)
-      real(dp), allocatable :: vnl(:, :, :)
-      real(dp), allocatable :: g_lr(:, :, :)
-      real(dp), allocatable :: work(:, :), gmo(:, :), scale(:)
-      real(dp) :: dmax
+      real(dp), allocatable :: work(:, :), gmo(:, :)
       type(direct_stats_t) :: stats
       integer :: n_ao, i, a, p
 
       if (error%has_error()) return
 
       n_ao = size(this%orbitals, 1)
-      allocate (mo1(this%n_mo, this%n_occ, this%n_pert), scale(this%n_pert))
+      allocate (mo1(this%n_mo, this%n_occ, this%n_pert))
       mo1 = reshape(vector, [this%n_mo, this%n_occ, this%n_pert])
 
       ! The densities these responses imply, symmetrised, one per perturbation.
@@ -516,83 +513,37 @@ contains
          dens(:, :, p) = dens(:, :, p) + transpose(dens(:, :, p))
       end do
 
-      ! **A tiny trial density is applied at unit scale and its image scaled
-      ! back.** The Fock build's density screen is absolute, and a conjugate-
-      ! gradient direction shrinks as the solve converges: once its largest
-      ! element is near the screening tolerance the surviving quartets are an
-      ! arbitrary subset of the operator and the image is noise, which the
-      ! solver sees as an operator that is not positive definite. Everything
-      ! applied below is linear in the density, so scaling up, screening at
-      ! the same tolerance and scaling down is the same operator with a
-      ! screen relative to the direction. The floor keeps that for directions
-      ! that need it and leaves a large one to shrink its own pass.
-      do p = 1, this%n_pert
-         dmax = maxval(abs(dens(:, :, p)))
-         scale(p) = 1.0_dp
-         if (dmax > 0.0_dp .and. dmax < RESPONSE_SCREEN_FLOOR) scale(p) = RESPONSE_SCREEN_FLOOR/dmax
-         if (scale(p) /= 1.0_dp) dens(:, :, p) = scale(p)*dens(:, :, p)
-      end do
-
-      ! One integral pass for the whole batch, screened on the Schwarz bound
-      ! weighted by the largest trial-density element a quartet touches. The
-      ! bound is rigorous for any symmetric matrix, so a response density
-      ! qualifies although it is not a density; what the weighting buys is
-      ! that a response to one atom's displacement is small far from it.
-      call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g, stats, error, &
-                                  k_scale=this%k_scale, density_screen=.true.)
+      ! The whole mean field -- Coulomb, exact exchange at the reference's own
+      ! fraction, a range-separated functional's attenuated pass, the
+      ! semilocal kernel and the non-local one -- in one place shared with the
+      ! coupled-perturbed routes, screened on the Schwarz bound weighted by
+      ! the largest trial-density element a quartet touches, and with the
+      ! screen floor that keeps a shrinking conjugate-gradient direction from
+      ! being screened into noise. `dens` is consumed: the floor rescales it.
+      if (associated(this%xc)) then
+         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
+                                  direct=.true., bounds=this%bounds, &
+                                  k_scale=this%k_scale, xc=this%xc, &
+                                  reference=this%reference, rs_k_lr=this%rs_k_lr, &
+                                  rs_omega=this%rs_omega, cache=this%kernel_cache, &
+                                  density_screen=.true., &
+                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
+      else
+         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
+                                  direct=.true., bounds=this%bounds, &
+                                  k_scale=this%k_scale, rs_k_lr=this%rs_k_lr, &
+                                  rs_omega=this%rs_omega, density_screen=.true., &
+                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
+      end if
       if (error%has_error()) return
       this%last_computed = stats%quartets_computed
       this%last_screened = stats%quartets_screened
-
-      ! The long-range half of a range-separated functional's exchange. No
-      ! Coulomb: the full-range pass above already supplied it.
-      if (this%rs_omega > 0.0_dp) then
-         if (.not. allocated(g_lr)) allocate (g_lr(size(g, 1), size(g, 2), size(g, 3)))
-         call build_fock_direct_many(this%mol, this%zero_h, dens, this%bounds, g_lr, &
-                                     stats, error, k_scale=this%rs_k_lr, j_scale=0.0_dp, &
-                                     omega=this%rs_omega, density_screen=.true.)
-         if (error%has_error()) return
-         g = g + g_lr
-         this%last_computed = this%last_computed + stats%quartets_computed
-         this%last_screened = this%last_screened + stats%quartets_screened
-      end if
       this%total_computed = this%total_computed + this%last_computed
       this%n_apply = this%n_apply + 1
-
-      ! The exchange-correlation kernel, for a Kohn-Sham reference: the second
-      ! derivative of E_xc with respect to the density, contracted against the
-      ! trial density. Leaving it out does not fail, it converges to the wrong
-      ! orbital response.
-      if (associated(this%xc)) then
-         ! One grid pass for the whole batch: the basis functions and the
-         ! reference kernel are evaluated once per block and every trial
-         ! density is contracted against them. Accumulates into `g`.
-         if (this%kernel_cache%filled) then
-            call xc_kernel_apply_many(this%xc, this%mol, this%reference, dens, g, error, &
-                                      cache=this%kernel_cache)
-         else
-            call xc_kernel_apply_many(this%xc, this%mol, this%reference, dens, g, error)
-         end if
-         if (error%has_error()) return
-         ! The non-local kernel, once for the whole batch rather than inside
-         ! the loop above: `vv10_kernel_apply`'s pair sweep is O(npts^2)
-         ! whether it carries one trial or a dozen. It accumulates, like the
-         ! semilocal kernel, hence the zeroed buffer of its own.
-         if (this%xc%nlc_b /= 0.0_dp .or. this%xc%nlc_c /= 0.0_dp) then
-            allocate (vnl(size(dens, 1), size(dens, 2), size(dens, 3)))
-            vnl = 0.0_dp
-            call vv10_kernel_apply(this%xc, this%mol, this%reference, dens, vnl, error)
-            if (error%has_error()) return
-            g = g + vnl
-            deallocate (vnl)
-         end if
-      end if
-      if (error%has_error()) return
 
       ! Back to the molecular basis, occupied columns only.
       allocate (work(n_ao, this%n_occ), gmo(this%n_mo, this%n_occ))
       do p = 1, this%n_pert
-         if (scale(p) /= 1.0_dp) g(:, :, p) = g(:, :, p)/scale(p)
          call pic_gemm(g(:, :, p), this%c_occ, work)
          call pic_gemm(this%orbitals, work, gmo, transa="T")
          do i = 1, this%n_occ
@@ -1609,8 +1560,6 @@ contains
 
       integer :: max_batch
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
-      real(dp), allocatable :: vnl_chunk(:, :, :), out_lr(:, :, :)
-      type(direct_stats_t) :: stats
       integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
       integer :: n_chunks, per_chunk
 
@@ -1647,36 +1596,14 @@ contains
             a = p - 3*(ia - 1)
             chunk(:, :, q) = d1(:, :, a, ia)
          end do
-         call build_fock_direct_many(mol, zero_h, chunk, bounds, out, stats, error, &
-                                     k_scale=k_scale, density_screen=.true.)
+         ! The same two-electron build and the same kernel the response
+         ! operator applies, for the reason `k_scale` above gives -- literally
+         ! the same routine, so the two cannot drift apart again.
+         call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
+                                  bounds=bounds, k_scale=k_scale, &
+                                  xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
+                                  rs_omega=rs_omega, density_screen=.true.)
          if (error%has_error()) return
-         if (present(rs_omega)) then
-            if (rs_omega > 0.0_dp) then
-               if (.not. allocated(out_lr)) allocate (out_lr, mold=out)
-               call build_fock_direct_many(mol, zero_h, chunk, bounds, out_lr, stats, &
-                                           error, k_scale=rs_k_lr, j_scale=0.0_dp, &
-                                           omega=rs_omega, density_screen=.true.)
-               if (error%has_error()) return
-               out = out + out_lr
-            end if
-         end if
-
-         ! The same kernel the response operator applies, for the reason
-         ! `k_scale` above gives.
-         if (present(xc) .and. present(reference)) then
-            call xc_kernel_apply_many(xc, mol, reference, chunk, out, error)
-            if (error%has_error()) return
-            ! The non-local kernel, once per chunk for the reason
-            ! `nuclear_apply` gives.
-            if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
-               allocate (vnl_chunk(size(chunk, 1), size(chunk, 2), size(chunk, 3)))
-               vnl_chunk = 0.0_dp
-               call vv10_kernel_apply(xc, mol, reference, chunk, vnl_chunk, error)
-               if (error%has_error()) return
-               out = out + vnl_chunk
-               deallocate (vnl_chunk)
-            end if
-         end if
          g1(:, :, first:last) = out
          deallocate (chunk, out)
          first = last + 1
