@@ -16,6 +16,7 @@ module mqc_czt_bridge
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
+                               STATE_SPIN_SINGLET, &
                                scf_not_converged_message
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol, core_orbital_count
@@ -1177,18 +1178,30 @@ contains
                                      "this calculation: "//decline//". Refused rather "// &
                                      "than approximated -- a spectrum from the wrong "// &
                                      "operator converges and looks like a spectrum.")
-            else
-               call result%error%set(ERROR_VALIDATION, "excited states requested but "// &
-                                     "not implemented yet (Layer 2). "// &
-                                     "keywords.excited_states parses, validates and "// &
-                                     "reaches this backend; the linear-response solver "// &
-                                     "behind it does not exist. Drop the block, or set "// &
-                                     "n_states to 0, to run the ground state.")
+            else if (trim(settings%excited%method) /= "tda") then
+               call result%error%set(ERROR_VALIDATION, "keywords.excited_states.method "// &
+                                     "is '"//trim(settings%excited%method)//"', and "// &
+                                     "only 'tda' is implemented. The full RPA is "// &
+                                     "Layer 4 of the TDDFT plan: its paired "// &
+                                     "eigenproblem is a different solver, not a "// &
+                                     "different tolerance, and answering it with a "// &
+                                     "Tamm-Dancoff number would be a converged "// &
+                                     "spectrum of the wrong problem.")
+            else if (trim(settings%excited%spin) /= "singlet") then
+               call result%error%set(ERROR_VALIDATION, "keywords.excited_states.spin "// &
+                                     "is '"//trim(settings%excited%spin)//"', and only "// &
+                                     "'singlet' is implemented. Triplets are Layer 3: "// &
+                                     "they need the exchange-only two-electron part "// &
+                                     "and the spin-polarised kernel, neither of which "// &
+                                     "is a rescaling of what the singlet operator "// &
+                                     "already builds.")
             end if
-            result%has_error = .true.
-            if (kohn_sham) call xc%destroy()
-            call mol%destroy()
-            return
+            if (result%error%has_error()) then
+               result%has_error = .true.
+               if (kohn_sham) call xc%destroy()
+               call mol%destroy()
+               return
+            end if
          end block
       end if
 
@@ -1497,6 +1510,63 @@ contains
                result%stability_rotations = stab%n_parameters
                result%has_stability = .true.
             end if
+         end block
+      end if
+
+      ! The linear-response spectrum, on the converged orbitals and while the
+      ! exchange-correlation context is still alive -- the kernel is evaluated
+      ! at this density on this grid, so there is nowhere later this could
+      ! run. What this backend cannot do was refused before the SCF; what is
+      ! left is a Tamm-Dancoff singlet solve, and a failure in it is reported
+      ! and propagated rather than dropped: a deck that asked for a spectrum
+      ! and got an energy has not been answered.
+      if (settings%excited%enabled .and. settings%excited%n_states > 0 &
+          .and. .not. result%has_error) then
+         block
+            use mqc_czt_tddft, only: tda_singlet_excitations
+            real(dp), allocatable :: omega(:), x_amplitudes(:, :)
+            type(error_t) :: td_error
+            ! `x_amplitudes` is taken and dropped. It is what Layer 5's
+            ! transition dipoles and natural transition orbitals are built
+            ! from, and the solve produces it whether or not anything reads
+            ! it, so the argument is here rather than added later.
+
+            if (kohn_sham) then
+               call tda_singlet_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                            scf%n_occupied, settings%excited%n_states, &
+                                            omega, x_amplitudes, td_error, xc=xc, &
+                                            reference=scf%density, &
+                                            tolerance=settings%excited%tolerance, &
+                                            max_iter=settings%excited%max_iter, &
+                                            max_subspace=settings%excited%max_subspace, &
+                                            batch=settings%excited%batch, &
+                                            verbose=settings%verbose)
+            else
+               call tda_singlet_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                            scf%n_occupied, settings%excited%n_states, &
+                                            omega, x_amplitudes, td_error, &
+                                            tolerance=settings%excited%tolerance, &
+                                            max_iter=settings%excited%max_iter, &
+                                            max_subspace=settings%excited%max_subspace, &
+                                            batch=settings%excited%batch, &
+                                            verbose=settings%verbose)
+            end if
+            if (td_error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "the excited-state solve "// &
+                                     "failed: "//td_error%get_message())
+               result%has_error = .true.
+               if (kohn_sham) call xc%destroy()
+               call mol%destroy()
+               return
+            end if
+            ! Oscillator strengths and transition dipoles are Layer 5 and are
+            ! deliberately left unallocated: the writer omits what is absent,
+            ! and a column of zeros would read as a dark spectrum rather than
+            ! as a property that was not computed.
+            result%excitation_energies = omega
+            allocate (result%state_spin(size(omega)))
+            result%state_spin = STATE_SPIN_SINGLET
+            result%has_excited_states = size(omega) > 0
          end block
       end if
 

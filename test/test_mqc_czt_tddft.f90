@@ -211,21 +211,28 @@ module test_mqc_czt_tddft
    !! diagonal element, 2.0e-11 off it, 3.4e-10 on the spectrum, and 1.7e-13
    !! on the total energy. `test_mqc_czt_cphf`'s CAM-B3LYP polarizability, the
    !! nearest existing comparison, lands at 5.4e-9 against the same reference
-   !! under the same grid; 1e-7 clears the worse of the two by more than an
-   !! order and leaves the compiler spread room, which the double-hybrid
-   !! Hessian shows can reach 2e-9 on a quadrature of this kind.
+   !! under the same grid. On cc-pVDZ, where the roots come through the
+   !! solver rather than off a dense matrix, the worst of the five is 1.9e-10
+   !! for PBE, 1.6e-9 for B3LYP and 6.4e-10 for CAM-B3LYP -- B3LYP being the
+   !! one to watch, at a sixtieth of this bound. 1e-7 clears the worst of them
+   !! by that margin and leaves the compiler spread room, which the
+   !! double-hybrid Hessian shows can reach 2e-9 on a quadrature of this kind.
+   !! Tightening it to the measured numbers would be re-recording a pin to
+   !! make it pass on one compiler.
    real(dp), parameter :: TOL_GRID = 1.0e-7_dp
 
    !! The Davidson's own floor, against a dense diagonalisation of the same
    !! operator. Roots are accepted on a residual of 1e-8 here, and the
    !! eigenvalue error near an eigenvector is second order in the vector
-   !! error, so 1e-9 on the eigenvalue is a bound the solver clears by
-   !! construction rather than one fitted to it.
+   !! error, so this is a bound the solver clears by construction rather than
+   !! one fitted to it -- measured 1.5e-11 on the worst of the five STO-3G
+   !! roots, against both the dense spectrum and PySCF's.
    real(dp), parameter :: TOL_DAVIDSON = 1.0e-9_dp
 
    !! The cc-pVDZ Hartree-Fock roots. Looser than `TOL_EXACT` because these
    !! come out of the Davidson rather than off a dense diagonalisation, so the
-   !! solver's own floor is in them as well as the integrals'.
+   !! solver's own floor is in them as well as the integrals'. Measured
+   !! 3.1e-12 on the worst of the five, so the margin is four orders.
    real(dp), parameter :: TOL_CCPVDZ_HF = 1.0e-8_dp
 
 contains
