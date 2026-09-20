@@ -4035,7 +4035,6 @@ contains
       !!
       !! Accumulates into `v_alpha` and `v_beta`, as the restricted routine
       !! does into its one output.
-!$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(xc_context_t), intent(inout) :: ctx
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: d_alpha(:, :), d_beta(:, :)
@@ -4076,13 +4075,10 @@ contains
       !! restricted contraction's stacked gemms -- an unrestricted response
       !! carries twice the channels and half the batch, and the stacking is an
       !! optimisation to make once this path has a cost worth measuring.
-      !!
-      !! ## TODO(mqc)
-      !!
-      !! The sets are not stacked into one gemm as `kernel_apply_batch` stacks
-      !! them, so a wide unrestricted batch streams its densities through gemms
-      !! too small to hide the memory traffic. Measured on the restricted path
-      !! at a hundred cores, that cost a factor of three.
+      ! TODO(mqc): the sets are not stacked into one gemm as `kernel_apply_batch`
+      ! stacks them, so a wide unrestricted batch streams its densities through
+      ! gemms too small to hide the memory traffic. Measured on the restricted
+      ! path at a hundred cores, that cost a factor of three.
 !$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(xc_context_t), intent(inout) :: ctx
       type(czt_molecule_t), intent(in) :: mol
