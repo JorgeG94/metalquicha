@@ -47,7 +47,7 @@ module mqc_json_config_reader
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
    use mqc_dispersion_names, only: dispersion_kind_is_known, DISPERSION_KINDS
-   use mqc_dispersion, only: dispersion_available
+   use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
    ! `json_integer` and `json_string` are imported here and not inside
    ! `read_neo`, where they are used: a routine-level `use json_module` in a
    ! module that already imports it makes ifx (2026.0, and 2025.3 before it)
@@ -780,13 +780,16 @@ contains
       !! `keywords.dft.dispersion`: the name of a correction, or `false`
       !!
       !! Two JSON types are accepted because two readings of the key are both
-      !! natural: `"d3bj"` says which correction, and `false` says none. A bare
-      !! `true` is refused rather than defaulted -- which correction was meant
-      !! is exactly the thing a total energy will not reveal afterwards, and
-      !! D3(BJ) and D3(0) are different numbers for the same functional.
+      !! natural: `"d3bj"` or `"d4"` says which correction, and `false` says
+      !! none. A bare `true` is refused rather than defaulted -- which
+      !! correction was meant is exactly the thing a total energy will not
+      !! reveal afterwards, and D3(BJ), D3(0) and D4 are different numbers for
+      !! the same functional.
       !!
-      !! The spelling and the build are both checked here, so a deck that
-      !! cannot run is refused before a basis or a geometry is built. Whether
+      !! The spelling and the build are both checked here -- the build per
+      !! correction, since the two libraries are behind two independent options
+      !! -- so a deck that cannot run is refused before a basis or a geometry is
+      !! built. Whether
       !! the *functional* has published damping parameters is not -- that needs
       !! `model.functional`, and is answered where the correction is evaluated.
       type(json_file), intent(inout) :: json
@@ -831,14 +834,16 @@ contains
                            "'. Accepted: "//DISPERSION_KINDS//", none")
             return
          end if
-         if (.not. dispersion_available()) then
+         if (.not. dispersion_kind_available(lowered)) then
             ! Refused here rather than after a basis and a geometry have been
-            ! built, and naming the flag that fixes it. Running without the
-            ! correction is not an option: it biases every energy the same way
-            ! and nothing in the output would say it was missing.
+            ! built, and naming the flag that fixes it -- the one for *this*
+            ! correction, since "d3bj" and "d4" come from two libraries behind
+            ! two independent options. Running without the correction is not an
+            ! option: it biases every energy the same way and nothing in the
+            ! output would say it was missing.
             call error%set(ERROR_VALIDATION, "keywords.dft.dispersion asked for '"// &
-                           trim(lowered)//"', and this build has no dispersion library. "// &
-                           "Configure with -DMQC_ENABLE_DFTD3=ON.")
+                           trim(lowered)//"', and this build has no library for it. "// &
+                           "Configure with -D"//trim(dispersion_kind_option(lowered))//"=ON.")
             return
          end if
          config%dft_dispersion = .true.

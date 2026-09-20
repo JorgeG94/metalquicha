@@ -1494,6 +1494,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>s-dftd3&rsquo;s spelling of <code>functional</code>, or a refusal saying why there is none</p><a href="../proc/d3_functional_alias.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/d4_functional_alias.html'>d4_functional_alias</a></td>
+                 <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
+                 <td>Subroutine</td>
+                 <td><p>dftd4&rsquo;s spelling of <code>functional</code>, or a refusal saying why there is none</p><a href="../proc/d4_functional_alias.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/davidson_flat.html'>davidson_flat</a></td>
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td>Subroutine</td>
@@ -1632,6 +1638,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>The directory part of a path, or &ldquo;.&rdquo; when there is none</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/dispersion_apply.html'>dispersion_apply</a></td>
+                 <td><a href='../module/mqc_dispersion_apply.html'>mqc_dispersion_apply</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The dispersion energy for <code>kind</code>, and its gradient when one is asked for</p><a href="../proc/dispersion_apply.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/dispersion_available.html'>dispersion_available</a></td>
                  <td><a href='../module/mqc_dispersion.html'>mqc_dispersion</a></td>
                  <td>Function</td>
@@ -1644,10 +1656,46 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>No-op stand-in: report the missing library, compute nothing</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/dispersion_d4_available.html'>dispersion_d4_available</a></td>
+                 <td><a href='../module/mqc_dispersion_d4.html'>mqc_dispersion_d4</a></td>
+                 <td>Function</td>
+                 <td><p>.false. &ndash; this build has no dftd4</p><a href="../proc/dispersion_d4_available.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_d4_correction.html'>dispersion_d4_correction</a></td>
+                 <td><a href='../module/mqc_dispersion_d4.html'>mqc_dispersion_d4</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: report the missing library, compute nothing</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_kind_available.html'>dispersion_kind_available</a></td>
+                 <td><a href='../module/mqc_dispersion_apply.html'>mqc_dispersion_apply</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this build linked the library that serves <code>kind</code></p><a href="../proc/dispersion_kind_available.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_kind_is_d3.html'>dispersion_kind_is_d3</a></td>
+                 <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this correction is one s-dftd3 serves</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_kind_is_d4.html'>dispersion_kind_is_d4</a></td>
+                 <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this correction is one dftd4 serves</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/dispersion_kind_is_known.html'>dispersion_kind_is_known</a></td>
                  <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
                  <td>Function</td>
-                 <td><p>Whether <code>keywords.dft.dispersion</code> named a correction this build can run</p></td>
+                 <td><p>Whether <code>keywords.dft.dispersion</code> named a correction this program has</p><a href="../proc/dispersion_kind_is_known.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dispersion_kind_option.html'>dispersion_kind_option</a></td>
+                 <td><a href='../module/mqc_dispersion_apply.html'>mqc_dispersion_apply</a></td>
+                 <td>Function</td>
+                 <td><p>The CMake option that would have supplied <code>kind</code></p><a href="../proc/dispersion_kind_option.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
@@ -2019,6 +2067,12 @@ Resets the stack trace</p></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td><p>Fold every PIE term whose displacement results have all landed</p><a href="../proc/fold_completed_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/folded.html'>folded</a></td>
+                 <td><a href='../module/mqc_dispersion_names.html'>mqc_dispersion_names</a></td>
+                 <td>Function</td>
+                 <td><p><code>given</code> with A-Z folded to a-z, and nothing else touched</p><a href="../proc/folded.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/fraglist_close_subsets.html'>fraglist_close_subsets</a></td>
@@ -4941,15 +4995,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -5153,15 +5207,15 @@ guess would be read, validated and then silently ignored.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -5376,7 +5430,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 03:41 +0000             </p>
+ on 2026-09-20 14:23 +0000             </p>
           </div>
         </div>
         <br>

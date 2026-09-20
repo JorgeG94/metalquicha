@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-need_gradient">need_gradient</a>
             <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-need_hessian">need_hessian</a>
-            <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-result~55">result</a>
+            <a class="list-group-item" href="../proc/compute_energy_and_forces.html#variable-result~35">result</a>
         </div>
       </div>
     </div>
@@ -182,8 +182,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2422,18 +2422,18 @@
 <path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M929.64,-1481.2C916.73,-1450.74 878.5,-1370.31 820,-1330.26 813.47,-1325.8 806.09,-1322.28 798.46,-1319.5"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="799.32,-1316.1 788.73,-1316.38 797.18,-1322.77 799.32,-1316.1"/>
 </g>
-<!-- module~mqc_dispersion -->
+<!-- module~mqc_dispersion_apply -->
 <g id="proc~~compute_energy_and_forces~~UsesGraph_node73" class="node">
-<title>module~mqc_dispersion</title>
-<g id="a_proc~~compute_energy_and_forces~~UsesGraph_node73"><a xlink:href="../module/mqc_dispersion.html" xlink:title="mqc_dispersion">
-<polygon fill="#337ab7" stroke="#337ab7" points="782,-1565.26 686,-1565.26 686,-1541.26 782,-1541.26 782,-1565.26"/>
-<text text-anchor="middle" x="734" y="-1550.86" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion</text>
+<title>module~mqc_dispersion_apply</title>
+<g id="a_proc~~compute_energy_and_forces~~UsesGraph_node73"><a xlink:href="../module/mqc_dispersion_apply.html" xlink:title="mqc_dispersion_apply">
+<polygon fill="#337ab7" stroke="#337ab7" points="799,-1565.26 669,-1565.26 669,-1541.26 799,-1541.26 799,-1565.26"/>
+<text text-anchor="middle" x="734" y="-1550.86" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion_apply</text>
 </a>
 </g>
 </g>
-<!-- module~mqc_method_dft&#45;&gt;module~mqc_dispersion -->
+<!-- module~mqc_method_dft&#45;&gt;module~mqc_dispersion_apply -->
 <g id="proc~~compute_energy_and_forces~~UsesGraph_edge258" class="edge">
-<title>module~mqc_method_dft&#45;&gt;module~mqc_dispersion</title>
+<title>module~mqc_method_dft&#45;&gt;module~mqc_dispersion_apply</title>
 <path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M894.13,-1505.41C862.52,-1514.91 818.41,-1528.18 784.65,-1538.33"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="783.54,-1535.01 774.97,-1541.24 785.56,-1541.71 783.54,-1535.01"/>
 </g>
@@ -2886,7 +2886,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~87"></span>
+              <span class="anchor" id="variable-sys_geom~18"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2901,7 +2901,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~11"></span>
+              <span class="anchor" id="variable-driver_config~7"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2916,7 +2916,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~16"></span>
+              <span class="anchor" id="variable-resources~2"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2931,7 +2931,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~27"></span>
+              <span class="anchor" id="variable-energy~11"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2946,7 +2946,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~15"></span>
+              <span class="anchor" id="variable-gradient~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2961,7 +2961,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~17"></span>
+              <span class="anchor" id="variable-hessian~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2976,7 +2976,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~21"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2991,7 +2991,7 @@ is the only one where <code>energy</code>, <code>gradient</code> and <code>hessi
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output~9"></span>
+              <span class="anchor" id="variable-write_output"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -6500,7 +6500,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~55"></span>
+              <span class="anchor" id="variable-result~35"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -6613,7 +6613,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 03:41 +0000             </p>
+ on 2026-09-20 14:23 +0000             </p>
           </div>
         </div>
         <br>

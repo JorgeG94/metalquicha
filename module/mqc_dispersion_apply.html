@@ -1,0 +1,1208 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_dispersion_apply &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_dispersion_apply
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for modules and submodules.">60 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_dispersion_apply.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_dispersion_apply.f90.html'>mqc_dispersion_apply.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_dispersion_apply</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_dispersion_apply.html#proc-dispersion_kind_available">dispersion_kind_available</a>
+            <a class="list-group-item" href="../module/mqc_dispersion_apply.html#proc-dispersion_kind_option">dispersion_kind_option</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_dispersion_apply.html#proc-dispersion_apply">dispersion_apply</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>The only module that knows the mapping from a <code>keywords.dft.dispersion</code>
+value to a library.</p>
+<p>There are two of those libraries now and they are not interchangeable:
+s-dftd3 computes &ldquo;d3bj&rdquo; from the nuclei alone, dftd4 computes &ldquo;d4&rdquo; from
+the nuclei <em>and the total molecular charge</em>, each is behind its own CMake
+option, and a build may have either, both or neither. Three places would
+otherwise need that table &ndash; the reader, the method, and the version
+banner &ndash; and three copies of a routing table is how a correction comes to
+be accepted by a deck and then not applied.</p>
+<p>Always compiled. The wrappers behind it are the pieces that come in two
+forms; this one calls whichever pair was built and reports what it found.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_dispersion.html'>mqc_dispersion</a></li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_d4.html'>mqc_dispersion_d4</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_names.html'>mqc_dispersion_names</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_dispersion_apply~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_dispersion_applyUsesGraph" width="414pt" height="173pt"
+ viewBox="0.00 0.00 414.00 173.21" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_dispersion_apply~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 169.21)">
+<title>module~~mqc_dispersion_apply~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-169.21 410,-169.21 410,4 -4,4"/>
+<!-- module~mqc_dispersion_apply -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_node1" class="node">
+<title>module~mqc_dispersion_apply</title>
+<polygon fill="none" stroke="black" points="406,-85.21 276,-85.21 276,-61.21 406,-61.21 406,-85.21"/>
+<text text-anchor="middle" x="341" y="-70.81" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_dispersion_apply</text>
+</g>
+<!-- module~mqc_dispersion -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_node2" class="node">
+<title>module~mqc_dispersion</title>
+<g id="a_module~~mqc_dispersion_apply~~UsesGraph_node2"><a xlink:href="../module/mqc_dispersion.html" xlink:title="mqc_dispersion">
+<polygon fill="#337ab7" stroke="#337ab7" points="219.5,-43.21 123.5,-43.21 123.5,-19.21 219.5,-19.21 219.5,-43.21"/>
+<text text-anchor="middle" x="171.5" y="-28.81" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_dispersion_apply&#45;&gt;module~mqc_dispersion -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge1" class="edge">
+<title>module~mqc_dispersion_apply&#45;&gt;module~mqc_dispersion</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M292,-61.17C272.48,-56.28 249.76,-50.58 229.41,-45.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="230.19,-42.07 219.64,-43.03 228.49,-48.86 230.19,-42.07"/>
+</g>
+<!-- module~mqc_dispersion_d4 -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_node3" class="node">
+<title>module~mqc_dispersion_d4</title>
+<g id="a_module~~mqc_dispersion_apply~~UsesGraph_node3"><a xlink:href="../module/mqc_dispersion_d4.html" xlink:title="mqc_dispersion_d4">
+<polygon fill="#337ab7" stroke="#337ab7" points="229,-85.21 114,-85.21 114,-61.21 229,-61.21 229,-85.21"/>
+<text text-anchor="middle" x="171.5" y="-70.81" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion_d4</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_dispersion_apply&#45;&gt;module~mqc_dispersion_d4 -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge2" class="edge">
+<title>module~mqc_dispersion_apply&#45;&gt;module~mqc_dispersion_d4</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M275.72,-73.21C263.87,-73.21 251.48,-73.21 239.55,-73.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="239.22,-69.71 229.22,-73.21 239.22,-76.71 239.22,-69.71"/>
+</g>
+<!-- module~mqc_dispersion_names -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_node4" class="node">
+<title>module~mqc_dispersion_names</title>
+<g id="a_module~~mqc_dispersion_apply~~UsesGraph_node4"><a xlink:href="../module/mqc_dispersion_names.html" xlink:title="mqc_dispersion_names">
+<polygon fill="#337ab7" stroke="#337ab7" points="240,-165.21 103,-165.21 103,-141.21 240,-141.21 240,-165.21"/>
+<text text-anchor="middle" x="171.5" y="-150.81" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion_names</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_dispersion_apply&#45;&gt;module~mqc_dispersion_names -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge3" class="edge">
+<title>module~mqc_dispersion_apply&#45;&gt;module~mqc_dispersion_names</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M319.33,-85.38C299.38,-96.88 268.14,-114.26 240,-127.21 232.29,-130.76 223.95,-134.24 215.85,-137.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="214.56,-134.2 206.5,-141.08 217.09,-140.73 214.56,-134.2"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_node5" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_dispersion_apply~~UsesGraph_node5"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="67,-105.21 0,-105.21 0,-81.21 67,-81.21 67,-105.21"/>
+<text text-anchor="middle" x="33.5" y="-90.81" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_dispersion_apply&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge4" class="edge">
+<title>module~mqc_dispersion_apply&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M292.76,-85.23C276.19,-88.88 257.38,-92.4 240,-94.21 179.44,-100.5 163.89,-94.65 103,-94.21 94.71,-94.15 85.86,-94.05 77.37,-93.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="77.3,-90.43 67.25,-93.78 77.2,-97.43 77.3,-90.43"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_node6" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="64.5,-43.21 2.5,-43.21 2.5,-19.21 64.5,-19.21 64.5,-43.21"/>
+<text text-anchor="middle" x="33.5" y="-28.81" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_dispersion_apply&#45;&gt;pic_types -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge5" class="edge">
+<title>module~mqc_dispersion_apply&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M326.35,-61.01C308.17,-45.66 274.3,-20.11 240,-10.21 181.5,6.68 163.22,-1.19 103,-10.21 93.6,-11.62 83.72,-14.05 74.47,-16.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="73.24,-13.5 64.74,-19.82 75.33,-20.18 73.24,-13.5"/>
+</g>
+<!-- module~mqc_dispersion&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge6" class="edge">
+<title>module~mqc_dispersion&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M126.37,-43.28C118.46,-45.91 110.39,-48.9 103,-52.21 88.44,-58.72 73.13,-67.66 60.68,-75.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="58.68,-72.66 52.18,-81.03 62.48,-78.54 58.68,-72.66"/>
+</g>
+<!-- module~mqc_dispersion&#45;&gt;pic_types -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge7" class="edge">
+<title>module~mqc_dispersion&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M123.32,-31.21C107.48,-31.21 89.98,-31.21 74.73,-31.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="74.58,-27.71 64.58,-31.21 74.58,-34.71 74.58,-27.71"/>
+</g>
+<!-- module~mqc_dispersion_d4&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge8" class="edge">
+<title>module~mqc_dispersion_d4&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M113.61,-81.58C101.46,-83.36 88.83,-85.22 77.31,-86.91"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="76.49,-83.5 67.1,-88.42 77.51,-90.42 76.49,-83.5"/>
+</g>
+<!-- module~mqc_dispersion_d4&#45;&gt;pic_types -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge9" class="edge">
+<title>module~mqc_dispersion_d4&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M131.53,-61.17C113.65,-55.65 92.47,-49.11 74.47,-43.55"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="75.42,-40.18 64.83,-40.58 73.36,-46.87 75.42,-40.18"/>
+</g>
+<!-- module~mqc_dispersion_names&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_dispersion_apply~~UsesGraph_edge10" class="edge">
+<title>module~mqc_dispersion_names&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M137.29,-141.12C126.29,-136.93 114.04,-132.06 103,-127.21 90.94,-121.91 77.94,-115.61 66.54,-109.88"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="67.89,-106.64 57.39,-105.24 64.73,-112.89 67.89,-106.64"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_dispersion_apply~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_dispersion_applyUsedByGraph" width="641pt" height="197pt"
+ viewBox="0.00 0.00 641.00 197.06" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_dispersion_apply~~UsedByGraph" class="graph" transform="scale(0.43 0.43) rotate(0) translate(4 458.98)">
+<title>module~~mqc_dispersion_apply~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-458.98 1502,-458.98 1502,4 -4,4"/>
+<!-- module~mqc_dispersion_apply -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node1" class="node">
+<title>module~mqc_dispersion_apply</title>
+<polygon fill="none" stroke="black" points="130,-351.98 0,-351.98 0,-327.98 130,-327.98 130,-351.98"/>
+<text text-anchor="middle" x="65" y="-337.58" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_dispersion_apply</text>
+</g>
+<!-- module~mqc_json_config_reader -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node2" class="node">
+<title>module~mqc_json_config_reader</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node2"><a xlink:href="../module/mqc_json_config_reader.html" xlink:title="mqc_json_config_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="923.5,-454.98 781.5,-454.98 781.5,-430.98 923.5,-430.98 923.5,-454.98"/>
+<text text-anchor="middle" x="852.5" y="-440.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_config_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_json_config_reader&#45;&gt;module~mqc_dispersion_apply -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_json_config_reader&#45;&gt;module~mqc_dispersion_apply</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M781.45,-433.8C633.77,-414.43 291.71,-369.58 140.35,-349.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="140.59,-346.23 130.22,-348.4 139.68,-353.17 140.59,-346.23"/>
+</g>
+<!-- module~mqc_method_dft -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node3" class="node">
+<title>module~mqc_method_dft</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node3"><a xlink:href="../module/mqc_method_dft.html" xlink:title="mqc_method_dft">
+<polygon fill="#337ab7" stroke="#337ab7" points="268,-331.98 166,-331.98 166,-307.98 268,-307.98 268,-331.98"/>
+<text text-anchor="middle" x="217" y="-317.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_dft</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_dft&#45;&gt;module~mqc_dispersion_apply -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_method_dft&#45;&gt;module~mqc_dispersion_apply</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M165.63,-326.7C157.44,-327.79 148.8,-328.94 140.17,-330.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="139.53,-326.65 130.08,-331.44 140.46,-333.58 139.53,-326.65"/>
+</g>
+<!-- module~mqc_method_factory -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node4" class="node">
+<title>module~mqc_method_factory</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node4"><a xlink:href="../module/mqc_method_factory.html" xlink:title="mqc_method_factory">
+<polygon fill="#337ab7" stroke="#337ab7" points="429,-269.98 304,-269.98 304,-245.98 429,-245.98 429,-269.98"/>
+<text text-anchor="middle" x="366.5" y="-255.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_factory</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_factory&#45;&gt;module~mqc_method_dft -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge5" class="edge">
+<title>module~mqc_method_factory&#45;&gt;module~mqc_method_dft</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M336.71,-270.08C313.66,-279.77 281.15,-293.44 255.97,-304.02"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="254.58,-300.81 246.72,-307.91 257.29,-307.26 254.58,-300.81"/>
+</g>
+<!-- module~mqc_session -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node5" class="node">
+<title>module~mqc_session</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node5"><a xlink:href="../module/mqc_session.html" xlink:title="mqc_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="1159.5,-412.98 1079.5,-412.98 1079.5,-388.98 1159.5,-388.98 1159.5,-412.98"/>
+<text text-anchor="middle" x="1119.5" y="-398.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_json_config_reader -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge3" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_json_config_reader</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1079.4,-407.18C1041.23,-413.23 982.01,-422.61 933.78,-430.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="933,-426.84 923.67,-431.86 934.09,-433.75 933,-426.84"/>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge7" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1079.29,-402.58C1009.19,-404.71 858.04,-405.95 733,-383.98 610.06,-362.38 582.03,-343.4 465,-299.98 444.1,-292.23 421.2,-282.43 402.84,-274.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="404.24,-271.04 393.69,-270.13 401.37,-277.43 404.24,-271.04"/>
+</g>
+<!-- module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node14" class="node">
+<title>module~mqc_driver</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node14"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="889,-248.98 816,-248.98 816,-224.98 889,-224.98 889,-248.98"/>
+<text text-anchor="middle" x="852.5" y="-234.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge23" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1079.43,-395.46C1055.94,-390.24 1027.01,-380.2 1008,-360.98 973.9,-326.5 1008.93,-289.41 972,-257.98 952.09,-241.04 923.33,-235.64 899.13,-234.55"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="899.16,-231.05 889.08,-234.33 899,-238.05 899.16,-231.05"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node6" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node6"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1146.5,-454.98 1092.5,-454.98 1092.5,-430.98 1146.5,-430.98 1146.5,-454.98"/>
+<text text-anchor="middle" x="1119.5" y="-440.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_json_config_reader -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;module~mqc_json_config_reader</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1092.12,-442.98C1055.53,-442.98 987.79,-442.98 933.8,-442.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="933.55,-439.48 923.55,-442.98 933.55,-446.48 933.55,-439.48"/>
+</g>
+<!-- program~main&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge29" class="edge">
+<title>program~main&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1092.04,-445.56C1067.03,-446.45 1030.12,-443.49 1008,-421.98 954.49,-369.97 1025.83,-309.66 972,-257.98 953.01,-239.75 924.01,-234.38 899.45,-233.62"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="899.26,-230.12 889.24,-233.56 899.21,-237.12 899.26,-230.12"/>
+</g>
+<!-- module~mqc_capi_run -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node7" class="node">
+<title>module~mqc_capi_run</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node7"><a xlink:href="../module/mqc_capi_run.html" xlink:title="mqc_capi_run">
+<polygon fill="#337ab7" stroke="#337ab7" points="1498,-412.98 1411,-412.98 1411,-388.98 1498,-388.98 1498,-412.98"/>
+<text text-anchor="middle" x="1454.5" y="-398.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge11" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1410.72,-401.63C1399.13,-401.77 1386.58,-401.91 1375,-401.98 1303.7,-402.44 1221.15,-401.92 1169.88,-401.48"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1169.77,-397.98 1159.74,-401.39 1169.71,-404.98 1169.77,-397.98"/>
+</g>
+<!-- module~mqc_capi_session -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node8" class="node">
+<title>module~mqc_capi_session</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node8"><a xlink:href="../module/mqc_capi_session.html" xlink:title="mqc_capi_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="1375,-392.98 1267,-392.98 1267,-368.98 1375,-368.98 1375,-392.98"/>
+<text text-anchor="middle" x="1321" y="-378.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_session -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge13" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_session</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M1410.81,-394.49C1402.61,-393.24 1393.87,-391.91 1385.19,-390.59"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1385.48,-387.1 1375.07,-389.05 1384.43,-394.02 1385.48,-387.1"/>
+</g>
+<!-- module~mqc_capi_session&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge12" class="edge">
+<title>module~mqc_capi_session&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1266.8,-386.32C1236.65,-389.34 1199.19,-393.09 1169.72,-396.05"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1169.25,-392.58 1159.65,-397.06 1169.95,-399.54 1169.25,-392.58"/>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node9" class="node">
+<title>module~mqc_mbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node9"><a xlink:href="../module/mqc_mbe_fragment_distribution_scheme.html" xlink:title="mqc_mbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="697,-248.98 465,-248.98 465,-224.98 697,-224.98 697,-248.98"/>
+<text text-anchor="middle" x="581" y="-234.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge6" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M464.73,-248.37C455.99,-249.24 447.33,-250.09 439,-250.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="438.61,-247.44 429,-251.9 439.3,-254.4 438.61,-247.44"/>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node10" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node10"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="641.5,-206.98 520.5,-206.98 520.5,-182.98 641.5,-182.98 641.5,-206.98"/>
+<text text-anchor="middle" x="581" y="-192.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge8" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M520.29,-203.24C502.32,-206.44 482.68,-210.64 465,-215.98 442.92,-222.66 419.12,-232.85 400.56,-241.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="398.9,-238.43 391.37,-245.89 401.91,-244.76 398.9,-238.43"/>
+</g>
+<!-- proc~hessian_worker -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node11" class="node">
+<title>proc~hessian_worker</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node11"><a xlink:href="../proc/hessian_worker.html" xlink:title="hessian_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="628.5,-164.98 533.5,-164.98 533.5,-140.98 628.5,-140.98 628.5,-164.98"/>
+<text text-anchor="middle" x="581" y="-150.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_worker&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge9" class="edge">
+<title>proc~hessian_worker&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M533.5,-155.84C511.84,-158.57 486.24,-163.83 465,-173.98 432.58,-189.48 402.41,-218.66 384.46,-238.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="381.83,-235.9 377.76,-245.69 387.04,-240.58 381.83,-235.9"/>
+</g>
+<!-- proc~print_version -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node12" class="node">
+<title>proc~print_version</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node12"><a xlink:href="../proc/print_version.html" xlink:title="print_version">
+<polygon fill="#d9534f" stroke="#d9534f" points="622,-290.98 540,-290.98 540,-266.98 622,-266.98 622,-290.98"/>
+<text text-anchor="middle" x="581" y="-276.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_version</text>
+</a>
+</g>
+</g>
+<!-- proc~print_version&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge10" class="edge">
+<title>proc~print_version&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M539.78,-275.01C511.54,-272.22 472.98,-268.41 439.51,-265.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="439.59,-261.59 429.3,-264.09 438.91,-268.56 439.59,-261.59"/>
+</g>
+<!-- module~mpi_fragment_work_smod -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node13" class="node">
+<title>module~mpi_fragment_work_smod</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node13"><a xlink:href="../module/mpi_fragment_work_smod.html" xlink:title="mpi_fragment_work_smod">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="929,-290.98 776,-290.98 776,-266.98 929,-266.98 929,-290.98"/>
+<text text-anchor="middle" x="852.5" y="-276.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mpi_fragment_work_smod</text>
+</a>
+</g>
+</g>
+<!-- module~mpi_fragment_work_smod&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge19" class="edge">
+<title>module~mpi_fragment_work_smod&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M775.71,-267.17C742.55,-262 703.46,-255.91 669.11,-250.56"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="669.51,-247.08 659.09,-249 668.43,-253.99 669.51,-247.08"/>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge14" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M815.99,-236.98C787.92,-236.98 746.97,-236.98 707.14,-236.98"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="707.05,-233.48 697.05,-236.98 707.05,-240.48 707.05,-233.48"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node15" class="node">
+<title>module~mqc_gmbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node15"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="972,-206.98 733,-206.98 733,-182.98 972,-182.98 972,-206.98"/>
+<text text-anchor="middle" x="852.5" y="-192.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge15" class="edge">
+<title>module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M774.27,-207.02C741.43,-212.14 702.97,-218.13 669.12,-223.4"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="668.58,-219.95 659.24,-224.94 669.66,-226.86 668.58,-219.95"/>
+</g>
+<!-- module~mqc_hessian_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node16" class="node">
+<title>module~mqc_hessian_distribution_scheme</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node16"><a xlink:href="../module/mqc_hessian_distribution_scheme.html" xlink:title="mqc_hessian_distribution_scheme">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="949.5,-164.98 755.5,-164.98 755.5,-140.98 949.5,-140.98 949.5,-164.98"/>
+<text text-anchor="middle" x="852.5" y="-150.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hessian_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge20" class="edge">
+<title>module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M755.36,-164.06C747.55,-166.73 739.99,-169.99 733,-173.98 711.65,-186.17 718.32,-203.74 697,-215.98 693.73,-217.86 690.32,-219.58 686.83,-221.15"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="685.33,-217.98 677.37,-224.96 687.95,-224.47 685.33,-217.98"/>
+</g>
+<!-- module~mqc_serial_fragment_processor -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node17" class="node">
+<title>module~mqc_serial_fragment_processor</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node17"><a xlink:href="../module/mqc_serial_fragment_processor.html" xlink:title="mqc_serial_fragment_processor">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="943.5,-122.98 761.5,-122.98 761.5,-98.98 943.5,-98.98 943.5,-122.98"/>
+<text text-anchor="middle" x="852.5" y="-108.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_serial_fragment_processor&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge21" class="edge">
+<title>module~mqc_serial_fragment_processor&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M761.29,-117.07C751.07,-120.54 741.35,-125.36 733,-131.98 701.18,-157.23 728.75,-190.66 697,-215.98 695.36,-217.29 693.67,-218.52 691.93,-219.69"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="689.75,-216.91 682.88,-224.97 693.28,-222.96 689.75,-216.91"/>
+</g>
+<!-- module~mqc_unfragmented_workflow -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node18" class="node">
+<title>module~mqc_unfragmented_workflow</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node18"><a xlink:href="../module/mqc_unfragmented_workflow.html" xlink:title="mqc_unfragmented_workflow">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="937.5,-80.98 767.5,-80.98 767.5,-56.98 937.5,-56.98 937.5,-80.98"/>
+<text text-anchor="middle" x="852.5" y="-66.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_unfragmented_workflow</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_unfragmented_workflow&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge22" class="edge">
+<title>module~mqc_unfragmented_workflow&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" d="M767.36,-71.85C754.72,-75.51 742.7,-81.24 733,-89.98 689.75,-128.99 740.14,-176.86 697,-215.98 695.83,-217.05 694.62,-218.07 693.37,-219.04"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="691.07,-216.37 684.74,-224.87 694.99,-222.17 691.07,-216.37"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node19" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node19"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="1231,-60.98 1008,-60.98 1008,-36.98 1231,-36.98 1231,-60.98"/>
+<text text-anchor="middle" x="1119.5" y="-46.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge16" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1086.71,-36.97C1014.72,-12.02 837.35,36.38 733,-47.98 673.62,-95.99 751.81,-162.82 697,-215.98 696.02,-216.94 695.01,-217.85 693.97,-218.74"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="691.58,-216.15 685.54,-224.86 695.69,-221.81 691.58,-216.15"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge30" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1085.62,-60.99C1061.82,-70.97 1030.09,-87.08 1008,-108.98 984.55,-132.24 998.87,-154.79 972,-173.98 969.88,-175.5 967.69,-176.91 965.43,-178.24"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="963.7,-175.19 956.44,-182.9 966.93,-181.4 963.7,-175.19"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node20" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node20"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="957,-374.98 748,-374.98 748,-350.98 957,-350.98 957,-374.98"/>
+<text text-anchor="middle" x="852.5" y="-360.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge17" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M747.85,-351.33C742.58,-348.71 737.58,-345.62 733,-341.98 701.18,-316.74 728.75,-283.31 697,-257.98 695.36,-256.68 693.67,-255.44 691.93,-254.28"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="693.28,-251.01 682.88,-248.99 689.75,-257.05 693.28,-251.01"/>
+</g>
+<!-- proc~mbe_run_serial -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node21" class="node">
+<title>proc~mbe_run_serial</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node21"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="943,-332.98 762,-332.98 762,-308.98 943,-308.98 943,-332.98"/>
+<text text-anchor="middle" x="852.5" y="-318.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_serial&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge18" class="edge">
+<title>proc~mbe_run_serial&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M761.8,-311.95C751.72,-308.96 741.89,-305.06 733,-299.98 711.65,-287.79 718.32,-270.23 697,-257.98 693.73,-256.1 690.32,-254.38 686.83,-252.82"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="687.95,-249.5 677.37,-249 685.33,-255.99 687.95,-249.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node22" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node22"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="1202.5,-183.98 1036.5,-183.98 1036.5,-159.98 1202.5,-159.98 1202.5,-183.98"/>
+<text text-anchor="middle" x="1119.5" y="-169.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge24" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1036.33,-183.96C1026.62,-186.44 1016.98,-189.41 1008,-192.98 990.35,-199.99 989.69,-209.08 972,-215.98 948.88,-225 921.69,-230.17 899.2,-233.13"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="898.73,-229.66 889.22,-234.33 899.57,-236.61 898.73,-229.66"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node23" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node23"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1195.5,-351.98 1043.5,-351.98 1043.5,-327.98 1195.5,-327.98 1195.5,-351.98"/>
+<text text-anchor="middle" x="1119.5" y="-337.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge25" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1043.38,-334.62C1030.81,-331.3 1018.46,-326.34 1008,-318.98 982.25,-300.88 997.87,-275.93 972,-257.98 950.91,-243.35 922.78,-237.93 899.22,-236.24"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="899.27,-232.74 889.1,-235.72 898.91,-239.73 899.27,-232.74"/>
+</g>
+<!-- proc~gmbe_run_serial -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node24" class="node">
+<title>proc~gmbe_run_serial</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node24"><a xlink:href="../proc/gmbe_run_serial.html" xlink:title="gmbe_context_t%gmbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="1217,-141.98 1022,-141.98 1022,-117.98 1217,-117.98 1217,-141.98"/>
+<text text-anchor="middle" x="1119.5" y="-127.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_serial&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge31" class="edge">
+<title>proc~gmbe_run_serial&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1036.04,-142.04C1026.43,-144.5 1016.89,-147.45 1008,-150.98 990.35,-157.99 989.69,-167.08 972,-173.98 965.85,-176.38 959.42,-178.51 952.86,-180.39"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="951.94,-177.01 943.19,-182.98 953.76,-183.77 951.94,-177.01"/>
+</g>
+<!-- proc~run_step -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node25" class="node">
+<title>proc~run_step</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node25"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="1148.5,-309.98 1090.5,-309.98 1090.5,-285.98 1148.5,-285.98 1148.5,-309.98"/>
+<text text-anchor="middle" x="1119.5" y="-295.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge26" class="edge">
+<title>proc~run_step&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1090.2,-294.96C1067.51,-291.98 1035.09,-286.47 1008,-276.98 990.92,-271 989.11,-263.85 972,-257.98 948.61,-249.96 921.51,-244.86 899.14,-241.71"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="899.6,-238.24 889.22,-240.39 898.67,-245.17 899.6,-238.24"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node26" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node26"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="1158.5,-267.98 1080.5,-267.98 1080.5,-243.98 1158.5,-243.98 1158.5,-267.98"/>
+<text text-anchor="middle" x="1119.5" y="-253.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge27" class="edge">
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1080.25,-253.24C1032.38,-249.81 950.47,-243.93 899.31,-240.27"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="899.42,-236.77 889.19,-239.54 898.92,-243.75 899.42,-236.77"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_node27" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node27"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="1187.5,-225.98 1051.5,-225.98 1051.5,-201.98 1187.5,-201.98 1187.5,-225.98"/>
+<text text-anchor="middle" x="1119.5" y="-211.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_dispersion_apply~~UsedByGraph_edge28" class="edge">
+<title>proc~write_final_single_point&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1051.29,-219.82C1003.79,-223.94 941.37,-229.36 899.47,-232.99"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="898.94,-229.52 889.28,-233.88 899.55,-236.5 898.94,-229.52"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_dispersion_applyUsedByGraph = svgPanZoom('#modulemqc_dispersion_applyUsedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dispersion_kind_available"></span> <h3>public pure function <a href='../proc/dispersion_kind_available.html'>dispersion_kind_available</a>(kind) result(available)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Whether this build linked the library that serves <code>kind</code></p><a href="../proc/dispersion_kind_available.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kind~10"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kind</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dispersion_kind_option"></span> <h3>public pure function <a href='../proc/dispersion_kind_option.html'>dispersion_kind_option</a>(kind) result(option)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The CMake option that would have supplied <code>kind</code></p><a href="../proc/dispersion_kind_option.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kind~11"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kind</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=16)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dispersion_apply"></span> <h3>public  subroutine <a href='../proc/dispersion_apply.html'>dispersion_apply</a>(kind, functional, charge, atomic_numbers, coordinates, energy, gradient, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The dispersion energy for <code>kind</code>, and its gradient when one is asked for</p><a href="../proc/dispersion_apply.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kind~12"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kind</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-functional~9"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>functional</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-charge~14"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>charge</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atomic_numbers~20"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atomic_numbers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coordinates~23"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coordinates</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy~26"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energy</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gradient~15"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gradient</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~176"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-20 14:23 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

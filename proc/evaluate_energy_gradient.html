@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-gradient_config">gradient_config</a>
-            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-line~3">line</a>
+            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-line~15">line</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-now_wall">now_wall</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-opt_time">opt_time</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-qc_time">qc_time</a>
-            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-result~15">result</a>
+            <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-result~52">result</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-saved_level">saved_level</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-step_clock">step_clock</a>
             <a class="list-group-item" href="../proc/evaluate_energy_gradient.html#variable-step_time">step_time</a>
@@ -2416,20 +2416,20 @@
 <path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M925.55,-2490.41C907.93,-2513.66 866.43,-2564.32 820,-2592.16 813.3,-2596.17 805.92,-2599.62 798.4,-2602.56"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="797.05,-2599.33 788.84,-2606.02 799.44,-2605.91 797.05,-2599.33"/>
 </g>
-<!-- module~mqc_dispersion -->
+<!-- module~mqc_dispersion_apply -->
 <g id="proc~~evaluate_energy_gradient~~UsesGraph_node73" class="node">
-<title>module~mqc_dispersion</title>
-<g id="a_proc~~evaluate_energy_gradient~~UsesGraph_node73"><a xlink:href="../module/mqc_dispersion.html" xlink:title="mqc_dispersion">
-<polygon fill="#337ab7" stroke="#337ab7" points="782,-2470.16 686,-2470.16 686,-2446.16 782,-2446.16 782,-2470.16"/>
-<text text-anchor="middle" x="734" y="-2455.76" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion</text>
+<title>module~mqc_dispersion_apply</title>
+<g id="a_proc~~evaluate_energy_gradient~~UsesGraph_node73"><a xlink:href="../module/mqc_dispersion_apply.html" xlink:title="mqc_dispersion_apply">
+<polygon fill="#337ab7" stroke="#337ab7" points="799,-2470.16 669,-2470.16 669,-2446.16 799,-2446.16 799,-2470.16"/>
+<text text-anchor="middle" x="734" y="-2455.76" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_dispersion_apply</text>
 </a>
 </g>
 </g>
-<!-- module~mqc_method_dft&#45;&gt;module~mqc_dispersion -->
+<!-- module~mqc_method_dft&#45;&gt;module~mqc_dispersion_apply -->
 <g id="proc~~evaluate_energy_gradient~~UsesGraph_edge257" class="edge">
-<title>module~mqc_method_dft&#45;&gt;module~mqc_dispersion</title>
-<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M884.42,-2473.14C856.33,-2470.32 821.2,-2466.8 792.05,-2463.88"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="792.32,-2460.39 782.02,-2462.87 791.62,-2467.35 792.32,-2460.39"/>
+<title>module~mqc_method_dft&#45;&gt;module~mqc_dispersion_apply</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M884.42,-2473.14C861.69,-2470.86 834.35,-2468.12 809.3,-2465.61"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="809.4,-2462.1 799.1,-2464.58 808.7,-2469.06 809.4,-2462.1"/>
 </g>
 <!-- module~mqc_semi_numerical_hessian -->
 <g id="proc~~evaluate_energy_gradient~~UsesGraph_node74" class="node">
@@ -2888,7 +2888,7 @@ tolerates.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~3"></span>
+              <span class="anchor" id="variable-n_atoms~37"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2903,7 +2903,7 @@ tolerates.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coords~2"></span>
+              <span class="anchor" id="variable-coords~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2918,7 +2918,7 @@ tolerates.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~5"></span>
+              <span class="anchor" id="variable-energy~22"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2933,7 +2933,7 @@ tolerates.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~4"></span>
+              <span class="anchor" id="variable-gradient~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2948,7 +2948,7 @@ tolerates.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~11"></span>
+              <span class="anchor" id="variable-status~36"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -5889,7 +5889,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~3"></span>
+              <span class="anchor" id="variable-line~15"></span>
               character(len=100),
             </td>
               <td>private</td>
@@ -5957,7 +5957,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~15"></span>
+              <span class="anchor" id="variable-result~52"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -6161,7 +6161,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 03:41 +0000             </p>
+ on 2026-09-20 14:23 +0000             </p>
           </div>
         </div>
         <br>
