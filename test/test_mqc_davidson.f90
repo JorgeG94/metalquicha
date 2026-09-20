@@ -598,8 +598,13 @@ contains
       call check(error, loop_converged .and. block_converged, "and both converge")
       if (allocated(error)) return
 
-      call check(error, looped%block_calls, 0, &
-                 "the inherited default is not the counting override")
+      ! `looped` inherits `apply_many`, so nothing it owns can ever increment
+      ! `block_calls` and asserting it is zero asserts nothing. What the
+      ! inherited route is on the hook for is one single-vector product per
+      ! sigma product counted -- which is also what makes the comparison
+      ! below one between two different routes rather than one route twice.
+      call check(error, looped%apply_calls, loop_products, &
+                 "the inherited default should apply one vector per sigma product")
       if (allocated(error)) return
       call check(error, blocked%block_calls > 0, "and the override is")
       if (allocated(error)) return

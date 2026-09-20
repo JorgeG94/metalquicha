@@ -97,7 +97,15 @@ module mqc_davidson
          !! (n_alpha, n_beta, n_roots), each normalised
       real(dp), allocatable :: residuals(:)    !! (n_roots), final norms
       integer :: iterations = 0
-      integer :: sigma_products = 0            !! What the cost is actually made of
+      integer :: sigma_products = 0
+         !! Columns handed to the operator, summed over the block calls
+         !!
+         !! That is the cost only for an operator that inherits the default
+         !! `apply_many`, which is a loop over single-vector products. An
+         !! operator that overrides it pays once per call for whatever the
+         !! block shares, so `iterations` is the count to read there: the
+         !! solver makes one block call before the loop and one more per
+         !! iteration that expands the subspace.
       logical :: converged = .false.
    end type davidson_result_t
 
@@ -219,7 +227,11 @@ contains
       real(dp), intent(in) :: diagonal(:)       !! `<D|H|D>` for every determinant
       integer, intent(in) :: n_roots
       real(dp), allocatable, intent(out) :: values(:), vectors(:, :), residuals(:)
-      integer, intent(out) :: iterations_taken, sigma_products
+      integer, intent(out) :: iterations_taken
+      integer, intent(out) :: sigma_products
+         !! Columns handed to the operator, not calls made to it. The two
+         !! differ for an operator that overrides `apply_many`; see
+         !! `davidson_result_t`.
       logical, intent(out) :: converged
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: tolerance
