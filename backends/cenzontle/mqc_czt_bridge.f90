@@ -1510,6 +1510,14 @@ contains
       ! left is a singlet solve, Tamm-Dancoff or paired, and a failure in it
       ! is reported and propagated rather than dropped: a deck that asked for
       ! a spectrum and got an energy has not been answered.
+      !
+      ! This runs once per SCF and this routine is the SCF every driver takes,
+      ! so nothing here can tell a single point from the two hundredth
+      ! displacement of a finite-difference Hessian. That is why the driver
+      ! and the partition are gated in the reader instead
+      ! (`check_excited_states_run`): by the time a fragment or a displacement
+      ! reaches this line, the deck that would have paid for it has already
+      ! been refused by name.
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
@@ -1551,6 +1559,7 @@ contains
                                      "failed: "//td_error%get_message())
                result%has_error = .true.
                if (kohn_sham) call xc%destroy()
+               call aux%destroy()
                call mol%destroy()
                return
             end if
@@ -2804,6 +2813,12 @@ contains
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
       end if
+      ! A range-separated functional is *not* on this list, though
+      ! `hessian_decline_reason` names one: the response operator here makes
+      ! the attenuated second pass, `rs_k_lr` of the matrix built against
+      ! `erf(omega r)/r` beside `exx_fraction` of the full-range one, and the
+      ! CAM-B3LYP spectrum it produces is checked against a table in
+      ! `test_mqc_czt_tddft`.
    end function excited_decline_reason
 
    subroutine frontier_summary(scf)

@@ -1659,7 +1659,11 @@ contains
       !! second pass of a range-separated one are available on this build too.
       !! With `j_scale` zero the Coulomb update is not merely scaled away, it is
       !! not made at all, which is most of what the long-range pass would have
-      !! cost.
+      !! cost. No production caller passes any of the three, and none is
+      !! expected to: the `A - B` half of the response goes through
+      !! `build_fock_direct_many` under `antisymmetric`, which is exact for it
+      !! and cheaper. They are here so the three scalings mean the same thing on
+      !! every direct build, and the tests are what exercises them.
       !!
       !! For a symmetric density this reduces term by term to what
       !! `build_fock_direct_many` computes, which is asserted in the tests rather

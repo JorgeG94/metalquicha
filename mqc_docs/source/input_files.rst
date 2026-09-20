@@ -1478,21 +1478,39 @@ reference:
   a deck is never told it converged to a threshold it did not ask for.
 - ``max_iter`` (default: 100): cycles that solve may take.
 - ``max_subspace`` (default: 0): trial vectors the Davidson subspace may hold
-  before it collapses. Zero leaves the rule to the solver, which derives it
-  from the number of roots; set it only to bound memory.
+  before it collapses. Zero derives it from the starting space, which is
+  several vectors per root; set it only to bound memory, and not below that
+  starting space -- a smaller cap truncates the guess, and a guess too narrow
+  to reach a root converges the ones it can reach instead. Those are true
+  excitation energies of the right operator; they are simply not the lowest
+  ones, and nothing in the output can say so.
 - ``batch`` (default: 12): trial vectors contracted against one pass over the
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.
 
-**The physics behind this block is not implemented yet.** Everything above
-parses, validates and reaches the CPU backend, which then stops with a message
-saying so; the linear-response solver arrives in a later change. Until then, a
-deck naming ``n_states`` greater than zero will not produce a number. A
-calculation that cannot have these states at all -- an unrestricted reference,
-a correlated method, a density-fitted reference, continuum solvation, a
-hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or the cuEST
-backend -- is refused by name instead, rather than answered from an operator
-missing a term.
+**What is implemented is the Tamm-Dancoff approximation, singlets, over a
+restricted reference** -- Hartree-Fock or Kohn-Sham, on the CPU backend. Note
+that ``method`` still **defaults to** ``"rpa"``, which is not implemented: a
+deck setting only ``n_states`` is refused by name, and has to say
+``"method": "tda"`` until the full Casida solver lands. ``spin`` likewise
+defaults to the one value that works, so ``"triplet"`` and ``"both"`` are
+refused rather than approximated by the singlet operator.
+
+**Only an unfragmented energy run may ask for a spectrum.** The solve happens
+on the converged orbitals of an SCF, and every driver reaches the same SCF --
+a finite-difference Hessian would converge a full Davidson per displacement, a
+geometry optimization one per step, and a fragmented run one per fragment,
+and none of those roots is ever read back. So ``driver`` other than
+``"energy"``, and any fragmented deck, are refused when the input is read
+rather than computed and discarded. Excited-state gradients are a separate
+piece of work -- a Z-vector solve for the relaxed density, not this solve run
+more often.
+
+A calculation that cannot have these states at all -- an unrestricted
+reference, a correlated method, a density-fitted reference, continuum
+solvation, a hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or
+the cuEST backend -- is refused by name too, rather than answered from an
+operator missing a term.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^

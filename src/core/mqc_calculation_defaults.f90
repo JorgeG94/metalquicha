@@ -43,6 +43,14 @@ module mqc_calculation_defaults
    !! it asked for does not exist.
    integer, parameter, public :: DEFAULT_EXCITED_MAX_ITER = 100
    !! Davidson cycles the excitation solver may take before it gives up.
+   integer, parameter, public :: DEFAULT_EXCITED_BATCH = 12
+   !! Trial vectors contracted against one pass over the integrals.
+   !!
+   !! The same machine trade-off `DEFAULT_RESPONSE_BATCH` describes, and the
+   !! same number today, but its own constant: the two solves batch different
+   !! objects over different iteration counts, so retuning the
+   !! frequency-dependent response for a machine must not silently retune the
+   !! excitation solver with it.
 
    integer, parameter, public :: STATE_SPIN_UNKNOWN = 0
    !! The spin of an excited state was not assigned. What an unrestricted

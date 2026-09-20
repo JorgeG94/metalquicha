@@ -84,6 +84,8 @@ contains
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
                   new_unittest("excited_states_keywords", test_excited_states), &
+                  new_unittest("excited_states_only_where_they_are_read", &
+                               test_excited_states_run_gate), &
                   new_unittest("cc_spin_adapted_keyword", test_cc_spin_adapted), &
                   new_unittest("mcscf_keywords", test_mcscf_keywords), &
                   new_unittest("casci_spelling_fixes_the_orbitals", test_casci_spelling), &
@@ -1595,6 +1597,92 @@ contains
       call check(error, parse_error%has_error(), &
                  "a negative root count was accepted")
    end subroutine test_excited_states
+
+   subroutine test_excited_states_run_gate(error)
+      !! An excited-state block is allowed only where the spectrum is read
+      !!
+      !! The solve sits on the converged orbitals of an SCF, and every driver
+      !! reaches the same SCF. A finite-difference Hessian would run a full
+      !! Davidson per displacement and throw every root away, because only the
+      !! unfragmented workflow copies a spectrum out of the result; a
+      !! fragmented run would do the same once per fragment. Both are refused
+      !! by name at read time, so the cost is never paid.
+      !!
+      !! The energy cases here are the other half of the contract: the gate
+      !! must not refuse the one run that does read the roots, and must not
+      !! fire at all on a deck asking for no roots.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! The case the gate exists for.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Hessian", &
+                      '"excited_states": {"n_states": 3, "method": "tda"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, refused_for_excited_states(parse_error), &
+                 "a Hessian deck carrying an excited-state block was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Gradient", &
+                      '"excited_states": {"n_states": 3, "method": "tda"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, refused_for_excited_states(parse_error), &
+                 "a gradient deck carrying an excited-state block was accepted")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Optimize", &
+                      '"excited_states": {"n_states": 3, "method": "tda"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, refused_for_excited_states(parse_error), &
+                 "an optimization deck carrying an excited-state block was accepted")
+      if (allocated(error)) return
+
+      ! Fragmented: declared fragments and an expansion over them.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "method": "tda"}, '// &
+                      '"fragmentation": {"method": "MBE", "level": 2}', "", &
+                      '"symbols": ["H", "H", "H", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, 4,0,0, 4.7,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1], [2, 3]]')
+      call read_deck(config, parse_error)
+      call check(error, refused_for_excited_states(parse_error), &
+                 "a fragmented deck carrying an excited-state block was accepted")
+      if (allocated(error)) return
+
+      ! And the run that does read the spectrum.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"excited_states": {"n_states": 3, "method": "tda"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%excited_n_states, 3)
+      if (allocated(error)) return
+
+      ! No roots asked for: the gate has nothing to say, whatever the driver.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Hessian", &
+                      '"excited_states": {"n_states": 0}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+   end subroutine test_excited_states_run_gate
+
+   logical function refused_for_excited_states(parse_error) result(refused)
+      !! Whether the read failed, and failed over `keywords.excited_states`
+      !!
+      !! The message is checked and not only the flag: a deck written to be
+      !! refused for one reason can be refused for another -- a driver the
+      !! method does not support, say -- and a test reading `has_error` alone
+      !! would pass without the gate it is about existing at all.
+      type(error_t), intent(in) :: parse_error
+
+      refused = .false.
+      if (.not. parse_error%has_error()) return
+      refused = index(parse_error%get_message(), "keywords.excited_states") > 0
+   end function refused_for_excited_states
 
    subroutine test_mcscf_keywords(error)
       !! keywords.mcscf, every key of it
