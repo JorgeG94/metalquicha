@@ -625,15 +625,42 @@ contains
       ! without the spins could not label a single root.
       call send(comm, result%has_excited_states, dest, tag)
       if (result%has_excited_states) then
-         call send(comm, result%excitation_energies, dest, tag)
-         call send(comm, result%excited_total_energies, dest, tag)
-         call send(comm, result%oscillator_strengths, dest, tag)
-         call send(comm, result%oscillator_strengths_velocity, dest, tag)
-         call send(comm, result%transition_dipoles, dest, tag)
-         call send(comm, result%transition_velocities, dest, tag)
-         call send(comm, result%transition_dipole_origin, dest, tag)
-         call send(comm, result%nto_leading_weight, dest, tag)
-         call send(comm, result%state_spin, dest, tag)
+         call send(comm, allocated(result%excitation_energies), dest, tag)
+         if (allocated(result%excitation_energies)) then
+            call send(comm, result%excitation_energies, dest, tag)
+         end if
+         call send(comm, allocated(result%excited_total_energies), dest, tag)
+         if (allocated(result%excited_total_energies)) then
+            call send(comm, result%excited_total_energies, dest, tag)
+         end if
+         call send(comm, allocated(result%oscillator_strengths), dest, tag)
+         if (allocated(result%oscillator_strengths)) then
+            call send(comm, result%oscillator_strengths, dest, tag)
+         end if
+         call send(comm, allocated(result%oscillator_strengths_velocity), dest, tag)
+         if (allocated(result%oscillator_strengths_velocity)) then
+            call send(comm, result%oscillator_strengths_velocity, dest, tag)
+         end if
+         call send(comm, allocated(result%transition_dipoles), dest, tag)
+         if (allocated(result%transition_dipoles)) then
+            call send(comm, result%transition_dipoles, dest, tag)
+         end if
+         call send(comm, allocated(result%transition_velocities), dest, tag)
+         if (allocated(result%transition_velocities)) then
+            call send(comm, result%transition_velocities, dest, tag)
+         end if
+         call send(comm, allocated(result%transition_dipole_origin), dest, tag)
+         if (allocated(result%transition_dipole_origin)) then
+            call send(comm, result%transition_dipole_origin, dest, tag)
+         end if
+         call send(comm, allocated(result%nto_leading_weight), dest, tag)
+         if (allocated(result%nto_leading_weight)) then
+            call send(comm, result%nto_leading_weight, dest, tag)
+         end if
+         call send(comm, allocated(result%state_spin), dest, tag)
+         if (allocated(result%state_spin)) then
+            call send(comm, result%state_spin, dest, tag)
+         end if
       end if
 
       ! Failure state last, so the receiver has the whole payload drained
@@ -698,15 +725,42 @@ contains
       ! without the spins could not label a single root.
       call send(comm, result%has_excited_states, dest, tag)
       if (result%has_excited_states) then
-         call send(comm, result%excitation_energies, dest, tag)
-         call send(comm, result%excited_total_energies, dest, tag)
-         call send(comm, result%oscillator_strengths, dest, tag)
-         call send(comm, result%oscillator_strengths_velocity, dest, tag)
-         call send(comm, result%transition_dipoles, dest, tag)
-         call send(comm, result%transition_velocities, dest, tag)
-         call send(comm, result%transition_dipole_origin, dest, tag)
-         call send(comm, result%nto_leading_weight, dest, tag)
-         call send(comm, result%state_spin, dest, tag)
+         call send(comm, allocated(result%excitation_energies), dest, tag)
+         if (allocated(result%excitation_energies)) then
+            call send(comm, result%excitation_energies, dest, tag)
+         end if
+         call send(comm, allocated(result%excited_total_energies), dest, tag)
+         if (allocated(result%excited_total_energies)) then
+            call send(comm, result%excited_total_energies, dest, tag)
+         end if
+         call send(comm, allocated(result%oscillator_strengths), dest, tag)
+         if (allocated(result%oscillator_strengths)) then
+            call send(comm, result%oscillator_strengths, dest, tag)
+         end if
+         call send(comm, allocated(result%oscillator_strengths_velocity), dest, tag)
+         if (allocated(result%oscillator_strengths_velocity)) then
+            call send(comm, result%oscillator_strengths_velocity, dest, tag)
+         end if
+         call send(comm, allocated(result%transition_dipoles), dest, tag)
+         if (allocated(result%transition_dipoles)) then
+            call send(comm, result%transition_dipoles, dest, tag)
+         end if
+         call send(comm, allocated(result%transition_velocities), dest, tag)
+         if (allocated(result%transition_velocities)) then
+            call send(comm, result%transition_velocities, dest, tag)
+         end if
+         call send(comm, allocated(result%transition_dipole_origin), dest, tag)
+         if (allocated(result%transition_dipole_origin)) then
+            call send(comm, result%transition_dipole_origin, dest, tag)
+         end if
+         call send(comm, allocated(result%nto_leading_weight), dest, tag)
+         if (allocated(result%nto_leading_weight)) then
+            call send(comm, result%nto_leading_weight, dest, tag)
+         end if
+         call send(comm, allocated(result%state_spin), dest, tag)
+         if (allocated(result%state_spin)) then
+            call send(comm, result%state_spin, dest, tag)
+         end if
       end if
 
       ! Failure state last, so the receiver has the whole payload drained
@@ -720,6 +774,14 @@ contains
       type(comm_t), intent(in) :: comm
       integer, intent(in) :: source, tag
       type(MPI_Status), intent(out) :: status
+      logical :: present_excitation_energies, present_excited_total_energies
+      logical :: present_oscillator_strengths, present_oscillator_strengths_velocity
+      logical :: present_transition_dipoles, present_transition_velocities
+      logical :: present_transition_dipole_origin, present_nto_leading_weight
+      logical :: present_state_spin
+         !! Presence bytes for the excited-state arrays, read off the
+         !! wire ahead of each one. A spectrum can arrive without its
+         !! transition properties; see the note at the send.
 
       ! Same reuse hazard as result_irecv -- see the note there.
       call result%destroy()
@@ -773,15 +835,42 @@ contains
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
       if (result%has_excited_states) then
-         call recv(comm, result%excitation_energies, source, tag, status)
-         call recv(comm, result%excited_total_energies, source, tag, status)
-         call recv(comm, result%oscillator_strengths, source, tag, status)
-         call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
-         call recv(comm, result%transition_dipoles, source, tag, status)
-         call recv(comm, result%transition_velocities, source, tag, status)
-         call recv(comm, result%transition_dipole_origin, source, tag, status)
-         call recv(comm, result%nto_leading_weight, source, tag, status)
-         call recv(comm, result%state_spin, source, tag, status)
+         call recv(comm, present_excitation_energies, source, tag, status)
+         if (present_excitation_energies) then
+            call recv(comm, result%excitation_energies, source, tag, status)
+         end if
+         call recv(comm, present_excited_total_energies, source, tag, status)
+         if (present_excited_total_energies) then
+            call recv(comm, result%excited_total_energies, source, tag, status)
+         end if
+         call recv(comm, present_oscillator_strengths, source, tag, status)
+         if (present_oscillator_strengths) then
+            call recv(comm, result%oscillator_strengths, source, tag, status)
+         end if
+         call recv(comm, present_oscillator_strengths_velocity, source, tag, status)
+         if (present_oscillator_strengths_velocity) then
+            call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
+         end if
+         call recv(comm, present_transition_dipoles, source, tag, status)
+         if (present_transition_dipoles) then
+            call recv(comm, result%transition_dipoles, source, tag, status)
+         end if
+         call recv(comm, present_transition_velocities, source, tag, status)
+         if (present_transition_velocities) then
+            call recv(comm, result%transition_velocities, source, tag, status)
+         end if
+         call recv(comm, present_transition_dipole_origin, source, tag, status)
+         if (present_transition_dipole_origin) then
+            call recv(comm, result%transition_dipole_origin, source, tag, status)
+         end if
+         call recv(comm, present_nto_leading_weight, source, tag, status)
+         if (present_nto_leading_weight) then
+            call recv(comm, result%nto_leading_weight, source, tag, status)
+         end if
+         call recv(comm, present_state_spin, source, tag, status)
+         if (present_state_spin) then
+            call recv(comm, result%state_spin, source, tag, status)
+         end if
       end if
 
       call recv_error_state(result, comm, source, tag)
@@ -795,6 +884,14 @@ contains
       integer, intent(in) :: source, tag
       type(request_t), intent(out) :: req
       type(MPI_Status) :: status
+      logical :: present_excitation_energies, present_excited_total_energies
+      logical :: present_oscillator_strengths, present_oscillator_strengths_velocity
+      logical :: present_transition_dipoles, present_transition_velocities
+      logical :: present_transition_dipole_origin, present_nto_leading_weight
+      logical :: present_state_spin
+         !! Presence bytes for the excited-state arrays, read off the
+         !! wire ahead of each one. A spectrum can arrive without its
+         !! transition properties; see the note at the send.
 
       ! Start from an empty result. pic-mpi's array receives allocate only when
       ! the target is unallocated -- they will not resize a buffer that is
@@ -854,15 +951,42 @@ contains
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
       if (result%has_excited_states) then
-         call recv(comm, result%excitation_energies, source, tag, status)
-         call recv(comm, result%excited_total_energies, source, tag, status)
-         call recv(comm, result%oscillator_strengths, source, tag, status)
-         call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
-         call recv(comm, result%transition_dipoles, source, tag, status)
-         call recv(comm, result%transition_velocities, source, tag, status)
-         call recv(comm, result%transition_dipole_origin, source, tag, status)
-         call recv(comm, result%nto_leading_weight, source, tag, status)
-         call recv(comm, result%state_spin, source, tag, status)
+         call recv(comm, present_excitation_energies, source, tag, status)
+         if (present_excitation_energies) then
+            call recv(comm, result%excitation_energies, source, tag, status)
+         end if
+         call recv(comm, present_excited_total_energies, source, tag, status)
+         if (present_excited_total_energies) then
+            call recv(comm, result%excited_total_energies, source, tag, status)
+         end if
+         call recv(comm, present_oscillator_strengths, source, tag, status)
+         if (present_oscillator_strengths) then
+            call recv(comm, result%oscillator_strengths, source, tag, status)
+         end if
+         call recv(comm, present_oscillator_strengths_velocity, source, tag, status)
+         if (present_oscillator_strengths_velocity) then
+            call recv(comm, result%oscillator_strengths_velocity, source, tag, status)
+         end if
+         call recv(comm, present_transition_dipoles, source, tag, status)
+         if (present_transition_dipoles) then
+            call recv(comm, result%transition_dipoles, source, tag, status)
+         end if
+         call recv(comm, present_transition_velocities, source, tag, status)
+         if (present_transition_velocities) then
+            call recv(comm, result%transition_velocities, source, tag, status)
+         end if
+         call recv(comm, present_transition_dipole_origin, source, tag, status)
+         if (present_transition_dipole_origin) then
+            call recv(comm, result%transition_dipole_origin, source, tag, status)
+         end if
+         call recv(comm, present_nto_leading_weight, source, tag, status)
+         if (present_nto_leading_weight) then
+            call recv(comm, result%nto_leading_weight, source, tag, status)
+         end if
+         call recv(comm, present_state_spin, source, tag, status)
+         if (present_state_spin) then
+            call recv(comm, result%state_spin, source, tag, status)
+         end if
       end if
 
       call recv_error_state(result, comm, source, tag)
