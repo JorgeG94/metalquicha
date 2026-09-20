@@ -98,9 +98,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   # writer get exercised: those are reached by *running* the program rather than
   # by calling into it, so no unit test touches them, and the coverage report
   # showed them near zero until this ran.
+  #
   # `-j 2` because a GitHub runner has two cores and the unit tests were being
-  # run one at a time, leaving one of them idle for the whole ctest phase --
-  # the build step next door already passes `--parallel 2` for the same reason.
+  # run one at a time, leaving one of them idle for the whole ctest phase -- the
+  # build step next door already passes `--parallel 2` for the same reason.
   # `OMP_NUM_THREADS=1` is what makes that safe rather than a wash: two tests
   # sharing two cores is a speedup, two tests each opening a two-thread team on
   # two cores is oversubscription. Scoped to this command, so the validation
