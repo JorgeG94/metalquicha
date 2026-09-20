@@ -24,7 +24,8 @@ module mqc_czt_hessian
                                 hess_2e_contract, h1_contract, &
                                 HESS_OVLP_II, HESS_OVLP_IJ, HESS_KIN_II, HESS_KIN_IJ, &
                                 HESS_NUC_II, HESS_NUC_IJ
-   use mqc_czt_xc, only: xc_context_t, xc_add_potential
+   use mqc_czt_xc, only: xc_context_t, xc_add_potential, &
+                         xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
    use mqc_czt_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use mqc_czt_response, only: response_operator_t, solve_response
@@ -95,6 +96,14 @@ module mqc_czt_hessian
       real(dp), allocatable :: reference(:, :)
          !! The converged density the kernel is evaluated at, which is not the
          !! trial density being contracted.
+      type(xc_kernel_cache_t) :: kernel_cache
+         !! That kernel's coefficients on the grid, when a caller filled them.
+         !!
+         !! They depend on the reference density and the grid and on nothing
+         !! the solver moves, so evaluating them inside every application is
+         !! the same libxc pass repeated once per conjugate-gradient step.
+         !! Unfilled is the ordinary case and costs nothing; `solve_mo1_batch`
+         !! fills it before the solve, and `solve_mo1_atom` does not.
       real(dp) :: k_scale = 1.0_dp
          !! Exact exchange in the response operator. One for Hartree-Fock, zero
          !! for a pure functional, the mixing fraction for a hybrid.
@@ -511,12 +520,16 @@ contains
       ! the largest trial-density element a quartet touches, and with the
       ! screen floor that keeps a shrinking conjugate-gradient direction from
       ! being screened into noise. `dens` is consumed: the floor rescales it.
+      ! The kernel cache goes with the context: filled by `solve_mo1_batch`
+      ! before the solve, it spares every one of these hundreds of calls the
+      ! libxc pass over the grid. Unfilled, it is ignored.
       if (associated(this%xc)) then
          call response_mean_field(this%mol, dens, this%zero_h, g, error, &
                                   direct=.true., bounds=this%bounds, &
                                   k_scale=this%k_scale, xc=this%xc, &
                                   reference=this%reference, rs_k_lr=this%rs_k_lr, &
-                                  rs_omega=this%rs_omega, density_screen=.true., &
+                                  rs_omega=this%rs_omega, cache=this%kernel_cache, &
+                                  density_screen=.true., &
                                   screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
       else
          call response_mean_field(this%mol, dens, this%zero_h, g, error, &
@@ -1435,6 +1448,17 @@ contains
          operator%bounds = bounds
       else
          call schwarz_bounds(mol, operator%bounds, error)
+         if (error%has_error()) return
+      end if
+
+      ! The exchange-correlation kernel's coefficients over the grid, once for
+      ! the whole solve. They are a property of the reference density, which
+      ! does not move here, and `nuclear_apply` would otherwise re-evaluate
+      ! them -- the reference density on every block and libxc's second
+      ! derivatives over it -- on each of the solver's dozens of applications.
+      ! The cost is ten arrays over the grid, held until this returns.
+      if (present(xc)) then
+         call xc_kernel_cache_fill(xc, mol, operator%reference, operator%kernel_cache, error)
          if (error%has_error()) return
       end if
 

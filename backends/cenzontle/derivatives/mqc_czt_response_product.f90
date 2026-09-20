@@ -31,7 +31,8 @@ module mqc_czt_response_product
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
-   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, vv10_kernel_apply
+   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, vv10_kernel_apply, &
+                         xc_kernel_cache_t
    use mqc_czt_direct, only: build_fock, build_fock_direct_many, direct_stats_t
    implicit none
    private
@@ -44,7 +45,7 @@ contains
 
    subroutine response_mean_field(mol, dens, zero_h, g, error, minus, direct, eri, &
                                   bounds, k_scale, xc, reference, rs_k_lr, rs_omega, &
-                                  density_screen, screen_floor, stats)
+                                  cache, density_screen, screen_floor, stats)
       !! `G(D')` for a batch of response densities, over one pass of the integrals
       !!
       !! The Coulomb and exchange terms come from whichever source the caller
@@ -92,6 +93,13 @@ contains
          !! come from `xc` when it is given and says it is range separated --
          !! which is what makes a CAM-B3LYP response carry its long-range
          !! exchange without every caller in the chain knowing about it.
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients over the whole grid, from
+         !! `xc_kernel_cache_fill`. Forwarded to the kernel contraction, which
+         !! then skips the libxc pass it would otherwise make on every call --
+         !! and a response solve makes hundreds. A cache that was never filled
+         !! is ignored, so a caller holding one as a plain component may pass
+         !! it unconditionally.
       logical, intent(in), optional :: density_screen
          !! Weight the Schwarz bound by the largest trial-density element a
          !! quartet touches. Off by default, which keeps a batch bit-for-bit
@@ -114,7 +122,7 @@ contains
       type(direct_stats_t) :: pass
       real(dp) :: kf, k_lr, omega, dmax
       integer :: n_ao, n_set, p
-      logical :: anti, is_direct, screen
+      logical :: anti, is_direct, screen, use_cache
 
       if (error%has_error()) return
 
@@ -126,6 +134,8 @@ contains
       if (present(direct)) is_direct = direct
       screen = .false.
       if (present(density_screen)) screen = density_screen
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
       ! The context first, an explicit coefficient over it. The analytic
       ! Hessian carries these as scalars on its operator and passes them; the
       ! coupled-perturbed routes pass only the context.
@@ -220,7 +230,11 @@ contains
       ! Leaving it out does not fail; it converges to the wrong orbital
       ! response. One grid pass serves the whole batch.
       if (present(xc) .and. .not. anti) then
-         call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+         if (use_cache) then
+            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache)
+         else
+            call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+         end if
          if (error%has_error()) return
          ! The non-local kernel, once for the batch rather than per set:
          ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
@@ -255,7 +269,7 @@ contains
 
    subroutine response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, nact, minus, &
                                au, error, direct, eri, bounds, k_scale, xc, reference, &
-                               rs_k_lr, rs_omega, bmat, density_screen, &
+                               rs_k_lr, rs_omega, cache, bmat, density_screen, &
                                t_dens, t_fock, t_back)
       !! `(A+B)u` or `(A-B)u` for many trial rotations in one integral pass
       !!
@@ -293,6 +307,10 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(in), optional :: reference(:, :)
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients, filled once and reused. See
+         !! `response_mean_field`, which is where it ends up on the exact
+         !! route; the fitted one below reads it too.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`, in place of any four-index
          !! integrals. Not a storage choice: it makes the operator the fitted
@@ -306,9 +324,13 @@ contains
       real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :, :), work(:, :)
       real(dp) :: t0, t1, kf
       integer :: n_ao, n_occ, m, j
+      logical :: use_cache
 
       if (error%has_error()) return
       if (nact <= 0) return
+
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
 
       ! Only the fitted branch needs this here; the others let
       ! `response_mean_field` resolve it the same way.
@@ -364,14 +386,18 @@ contains
             ! fitted route, only on the two exact ones, so a fitted reference
             ! with VV10 gets a response missing that term. It was missing
             ! before this routine existed too.
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            if (use_cache) then
+               call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache)
+            else
+               call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            end if
             if (error%has_error()) return
          end if
       else
          call response_mean_field(mol, dens, zero_h, g, error, minus=minus, &
                                   direct=direct, eri=eri, bounds=bounds, &
                                   k_scale=k_scale, xc=xc, reference=reference, &
-                                  rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
+                                  rs_k_lr=rs_k_lr, rs_omega=rs_omega, cache=cache, &
                                   density_screen=density_screen)
          if (error%has_error()) return
       end if
