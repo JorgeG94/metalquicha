@@ -2739,6 +2739,9 @@ contains
       else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
+      else if (kohn_sham .and. xc%range_separated) then
+         reason = "a range-separated functional, whose long-range exchange needs a "// &
+                  "second attenuated Fock build in the response that is not wired up"
       end if
    end function excited_decline_reason
 
