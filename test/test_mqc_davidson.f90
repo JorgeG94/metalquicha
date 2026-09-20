@@ -146,6 +146,7 @@ contains
                   new_unittest("subspace_collapse", test_collapse), &
                   new_unittest("guess_is_used", test_guess), &
                   new_unittest("dependent_guess_is_replaced", test_dependent_guess), &
+                  new_unittest("guess_scale_is_not_dependence", test_guess_scale), &
                   new_unittest("one_block_call_per_iteration", test_block_calls), &
                   new_unittest("block_matches_loop", test_block_matches_loop), &
                   new_unittest("refusals", test_refusals) &
@@ -465,6 +466,65 @@ contains
          if (allocated(error)) return
       end do
    end subroutine test_dependent_guess
+
+   subroutine test_guess_scale(error)
+      !! The same guess at two magnitudes gives the same solve
+      !!
+      !! Whether a starting vector is worth keeping is a question about its
+      !! direction, so the linear-dependence test asks what *fraction* of a
+      !! column survives projection rather than how long what survives is.
+      !! Scaling the whole guess must therefore change nothing. Tested with a
+      !! factor small enough that an absolute test would throw the guess away
+      !! -- `2**-40` is nine orders below `LINEAR_DEPENDENCE` -- and a power
+      !! of two, so that every operation on the scaled guess is the unscaled
+      !! one with the exponent moved and the comparison below can be equality
+      !! rather than a threshold.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(dense_operator_t) :: plain, scaled
+      real(dp), allocatable :: plain_diagonal(:), scaled_diagonal(:), guess(:, :)
+      real(dp), allocatable :: plain_values(:), plain_vectors(:, :), plain_residuals(:)
+      real(dp), allocatable :: values(:), vectors(:, :), residuals(:)
+      integer :: plain_iterations, plain_products, iterations, products, i
+      logical :: plain_converged, converged
+      real(dp), parameter :: SMALL_SCALE = 2.0_dp**(-40)
+
+      call dense_model(plain%matrix, plain_diagonal)
+      call dense_model(scaled%matrix, scaled_diagonal)
+
+      ! Two independent columns, neither of them a unit vector the fallback
+      ! could reach for, and not orthogonal to each other either -- so the
+      ! second one has to survive the projection on its own merits.
+      allocate (guess(NDENSE, 2))
+      guess = 0.0_dp
+      guess(:, 1) = 1.0_dp/sqrt(real(NDENSE, dp))
+      guess(1, 2) = 1.0_dp
+
+      call davidson_flat(plain, plain_diagonal, 2, plain_values, plain_vectors, &
+                         plain_residuals, plain_iterations, plain_products, &
+                         plain_converged, err, guess=guess)
+      call davidson_flat(scaled, scaled_diagonal, 2, values, vectors, residuals, &
+                         iterations, products, converged, err, &
+                         guess=SMALL_SCALE*guess)
+      call check(error,.not. err%has_error(), "both solves should run")
+      if (allocated(error)) return
+      call check(error, plain_converged .and. converged, "and both converge")
+      if (allocated(error)) return
+
+      call check(error, iterations, plain_iterations, &
+                 "a scaled guess should take the same number of iterations")
+      if (allocated(error)) return
+      call check(error, products, plain_products, &
+                 "and the same number of sigma products")
+      if (allocated(error)) return
+      do i = 1, 2
+         call check(error, values(i) == plain_values(i), &
+                    "root "//char(48 + i)//" should be bit-identical")
+         if (allocated(error)) return
+      end do
+      call check(error, all(vectors == plain_vectors), &
+                 "and so should the eigenvectors")
+   end subroutine test_guess_scale
 
    subroutine test_block_calls(error)
       !! One block product per iteration, and nothing applied outside a block
