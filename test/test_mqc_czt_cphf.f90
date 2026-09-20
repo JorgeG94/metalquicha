@@ -29,6 +29,8 @@ module test_mqc_czt_cphf
                            dynamic_polarizability, dynamic_response_iterative, &
                            casimir_polder_frequencies, distributed_dynamic_cross, &
                            fitted_response_t, build_fitted_response
+   use mqc_czt_response_product, only: response_product
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_calculation_defaults, only: EFP_RESPONSE_DENSE, EFP_RESPONSE_MATRIX_FREE
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
@@ -48,6 +50,21 @@ module test_mqc_czt_cphf
    !! cancels to leading order anyway, being an even-order effect in a central
    !! difference of the dipole.
    real(dp), parameter :: FIELD_STRENGTH = 1.0e-3_dp
+
+   !! CAM-B3LYP/STO-3G static polarizability of the water below, in Bohr^3,
+   !! from PySCF 2.14 fed this repository's own basis JSON through
+   !! `bse_to_pyscf` at `grids.level = 5`, libxc `HYB_GGA_XC_CAM_B3LYP` on both
+   !! sides. The reference is a **dense** solve of `(A+B) U = -h`, with `(A+B)`
+   !! probed column by column out of PySCF's own `gen_response`: its
+   !! `Polarizability` class reaches the same tensor through
+   !! `pyscf.scf.cphf.solve`, which carries about 5e-7 that its `tol` does not
+   !! control. The two agree to 1e-10, and a finite field of the PySCF dipole
+   !! at 1e-3 a.u. reproduces the dense number to 1.1e-6, which is the
+   !! truncation of that difference.
+   real(dp), parameter :: CAM_ALPHA_XX = 3.240594827159_dp
+   real(dp), parameter :: CAM_ALPHA_YY = 0.040692221111_dp
+   real(dp), parameter :: CAM_ALPHA_ZZ = 3.958111590589_dp
+   real(dp), parameter :: CAM_ALPHA_XZ = -1.369143492781_dp
    ! **`water` converges to 1e-14, not the 1e-12 it used to.** What is
    ! differenced here is a *dipole*, which comes from the density, and the
    ! convergence test no longer looks at the density at all -- so the SCF has to
@@ -94,7 +111,11 @@ contains
                   new_unittest("the_dense_dynamic_solve_equals_the_matrix_free_one", &
                                test_dynamic_matrix_free), &
                   new_unittest("the_static_response_rides_with_the_dynamic_solve", &
-                               test_static_rides_along) &
+                               test_static_rides_along), &
+                  new_unittest("the_shared_product_reproduces_the_assembled_hessian", &
+                               test_shared_product), &
+                  new_unittest("a_range_separated_polarizability_keeps_its_long_range_exchange", &
+                               test_range_separated_polarizability) &
                   ]
    end subroutine collect_mqc_czt_cphf_tests
 
@@ -1223,6 +1244,210 @@ contains
 
       call mol%destroy()
    end subroutine test_static_rides_along
+
+   subroutine test_shared_product(error)
+      !! `response_product` on unit vectors is the assembled Hessian
+      !!
+      !! One routine now applies `(A+B)` and `(A-B)` for the static solve, the
+      !! frequency-dependent one and the analytic Hessian's fixed point, so the
+      !! thing worth pinning is the routine itself rather than any one caller:
+      !! its image of `e_j` is column `j` of the operator, and
+      !! `build_hessian_mo` assembles the same two matrices from transformed
+      !! integrals through no shared code at all.
+      !!
+      !! Both integral sources, because `minus` picks a different accumulation
+      !! in each -- the folded build announced antisymmetric on the direct
+      !! route, the plain four-index contraction on the stored one -- and only
+      !! the second is obviously right by construction.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :)
+      real(dp), allocatable :: plus_mo(:, :), minus_mo(:, :)
+      real(dp), allocatable :: u(:, :, :), au(:, :, :)
+      real(dp), allocatable :: plus_p(:, :), minus_p(:, :)
+      integer, allocatable :: idx(:)
+      integer :: n_ao, n_mo, n_occ, n_vir, n_ov, j, a, i, pass
+      logical :: direct
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+      n_ov = n_vir*n_occ
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+
+      call mol%eris(eri)
+      call schwarz_bounds(mol, bounds, err)
+      allocate (zero_h(n_ao, n_ao))
+      zero_h = 0.0_dp
+      call build_hessian_mo(mol, eri, c_occ, c_vir, gaps, plus_mo, minus_mo, err)
+      call check(error,.not. err%has_error(), "the transform failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! Every column at once: `idx` is the identity and `nact` the whole set,
+      ! which is also the widest batch the routine will be handed here.
+      allocate (u(n_vir, n_occ, n_ov), au(n_vir, n_occ, n_ov), idx(n_ov))
+      allocate (plus_p(n_ov, n_ov), minus_p(n_ov, n_ov))
+      u = 0.0_dp
+      do j = 1, n_ov
+         a = mod(j - 1, n_vir) + 1
+         i = (j - 1)/n_vir + 1
+         u(a, i, j) = 1.0_dp
+         idx(j) = j
+      end do
+
+      do pass = 1, 2
+         direct = pass == 1
+         au = 0.0_dp
+         call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, n_ov, .false., &
+                               au, err, direct=direct, eri=eri, bounds=bounds)
+         if (err%has_error()) exit
+         do j = 1, n_ov
+            plus_p(:, j) = reshape(au(:, :, j), [n_ov])
+         end do
+         au = 0.0_dp
+         call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, n_ov, .true., &
+                               au, err, direct=direct, eri=eri, bounds=bounds)
+         if (err%has_error()) exit
+         do j = 1, n_ov
+            minus_p(:, j) = reshape(au(:, :, j), [n_ov])
+         end do
+
+         call check(error, maxval(abs(plus_p - plus_mo)) < 1.0e-10_dp, &
+                    "(A+B) from the shared product disagrees with the assembled one")
+         if (allocated(error)) exit
+         call check(error, maxval(abs(minus_p - minus_mo)) < 1.0e-10_dp, &
+                    "(A-B) from the shared product disagrees with the assembled one")
+         if (allocated(error)) exit
+      end do
+      call mol%destroy()
+      if (allocated(error)) return
+      call check(error,.not. err%has_error(), "the shared product failed: "// &
+                 err%get_message())
+   end subroutine test_shared_product
+
+   subroutine test_range_separated_polarizability(error)
+      !! A CAM-B3LYP polarizability carries the attenuated exchange pass
+      !!
+      !! The coupled-perturbed operator of a range-separated hybrid has two
+      !! exchange terms: `exx_fraction` of the full-range matrix and `rs_k_lr`
+      !! of the one built against `erf(omega r)/r`. Until the response product
+      !! was shared with the analytic Hessian the second one was simply absent
+      !! here -- `rs_k_lr` appeared nowhere in this module -- so a CAM-B3LYP
+      !! polarizability was the response of a plain 0.19-hybrid over
+      !! CAM-B3LYP orbitals, converged, plausible and wrong.
+      !!
+      !! The second half of the test reinstates exactly that fault, by telling
+      !! the context it is not range separated, and requires the answer to move
+      !! far more than the tolerance. Without it the first half would still
+      !! pass on a build that had quietly dropped the long-range pass again, as
+      !! long as it dropped it by enough less than the agreement demanded --
+      !! and here the fault is worth 2e-2, which is seven orders above the bound.
+      type(error_type), allocatable, intent(out) :: error
+
+      !! Measured agreement is 5.4e-9 on the worst of the four components
+      !! (4.2e-9 xx, 5.8e-11 yy, 5.4e-9 zz, 1.9e-9 xz), which is the
+      !! quadrature and not either solver: both sides are converged far past
+      !! that, and what differs is that mqc integrates the functional on its
+      !! own level-5 grid and PySCF on its own -- the same prescription, not
+      !! the same points. Two orders over that leaves room for the spread
+      !! between compilers without going anywhere near the fault below, which
+      !! is worth 5.4e-1: eight orders above the agreement, so there is no
+      !! tolerance in between that could confuse the two.
+      real(dp), parameter :: TOL = 1.0e-7_dp
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      real(dp) :: c(3, 3), alpha(3, 3), broken(3, 3)
+
+      if (.not. xc_available()) return
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "sto-3g", mol, err)
+      if (.not. err%has_error()) &
+         call xc_context_create(mol, "cam-b3lyp", ctx, err, level=5)
+      if (.not. err%has_error()) &
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call check(error,.not. err%has_error(), "the Kohn-Sham reference failed: "// &
+                 err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call check(error, ctx%range_separated, "cam-b3lyp did not resolve to a "// &
+                 "range-separated functional, so this test measures nothing")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, alpha, err, tol=1.0e-10_dp, &
+                                 xc=ctx, density=scf%density)
+      call check(error,.not. err%has_error(), "the polarizability failed: "// &
+                 err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call check(error, abs(alpha(1, 1) - CAM_ALPHA_XX) < TOL, &
+                 "alpha_xx disagrees with PySCF for cam-b3lyp")
+      if (.not. allocated(error)) &
+         call check(error, abs(alpha(2, 2) - CAM_ALPHA_YY) < TOL, &
+                    "alpha_yy disagrees with PySCF for cam-b3lyp")
+      if (.not. allocated(error)) &
+         call check(error, abs(alpha(3, 3) - CAM_ALPHA_ZZ) < TOL, &
+                    "alpha_zz disagrees with PySCF for cam-b3lyp")
+      if (.not. allocated(error)) &
+         call check(error, abs(alpha(1, 3) - CAM_ALPHA_XZ) < TOL, &
+                    "alpha_xz disagrees with PySCF for cam-b3lyp")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! The fault, put back deliberately. Nothing else about the context
+      ! changes: the reference orbitals, the grid and the kernel are the ones
+      ! just used, and only the second exchange pass stops being made.
+      ctx%range_separated = .false.
+      call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, broken, err, tol=1.0e-10_dp, &
+                                 xc=ctx, density=scf%density)
+      ctx%range_separated = .true.
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the long-range-free polarizability "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, maxval(abs(broken - alpha)) > 1.0e3_dp*TOL, &
+                 "dropping the long-range exchange pass left the polarizability "// &
+                 "where it was, so this comparison cannot see it")
+   end subroutine test_range_separated_polarizability
 
 end module test_mqc_czt_cphf
 
