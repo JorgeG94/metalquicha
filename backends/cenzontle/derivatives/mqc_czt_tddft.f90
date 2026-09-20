@@ -588,12 +588,36 @@ contains
          amplitudes(:, keep) = vectors(:, k)
       end do
 
+      ! Name every root the filter removed, with its value, and separate the
+      ! two reasons one lands below the floor. A small positive root is a
+      ! rotation the solver has not resolved from zero. A *negative* one is a
+      ! different statement about the reference, not about the solver: `A` is
+      ! not positive definite, so the closed shell is a saddle point and
+      ! every energy reported above it is an excitation of an unstable
+      ! reference. Reported whether or not enough roots survived, because it
+      ! is a fact about the ground state rather than about the request.
+      do k = 1, n_solve
+         if (values(k) > EXCITATION_FLOOR) cycle
+         if (values(k) < 0.0_dp) then
+            call logger%warning("  root "//to_char(k)//" converged to "// &
+                                to_char(values(k))//" hartree, which is negative: "// &
+                                "the Tamm-Dancoff matrix is not positive definite, "// &
+                                "so this reference is a saddle point rather than a "// &
+                                "minimum and the spectrum below is taken from an "// &
+                                "unstable reference. keywords.scf.stability examines "// &
+                                "the reference itself.")
+         else
+            call logger%warning("  root "//to_char(k)//" converged to "// &
+                                to_char(values(k))//" hartree, below the "// &
+                                to_char(EXCITATION_FLOOR)//" hartree floor: a "// &
+                                "rotation of the reference the solver has not "// &
+                                "separated from zero, not an excitation.")
+         end if
+      end do
       if (n_found < n_states) then
          call logger%warning("  only "//to_char(n_found)//" of the "// &
                              to_char(n_states)//" roots asked for are excitations; "// &
-                             "the rest converged below "//to_char(EXCITATION_FLOOR)// &
-                             " hartree and are rotations of the reference, not "// &
-                             "excited states")
+                             "the values dropped are named above")
       end if
 
       write (line, "(a,i0,a,i0,a)") "  Tamm-Dancoff: ", n_found, &
