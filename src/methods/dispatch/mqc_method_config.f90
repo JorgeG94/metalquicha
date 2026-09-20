@@ -374,9 +374,10 @@ module mqc_method_config
       !!
       !! Backend-neutral in shape, and separate from `cc_config_t` on purpose:
       !! these are the TDHF/TDDFT roots of the reference itself, not an EOM
-      !! treatment on top of a coupled-cluster wave function. Nothing is
-      !! computed from this yet -- see `excited_decline_reason` in
-      !! `mqc_czt_bridge` for what is refused and why.
+      !! treatment on top of a coupled-cluster wave function. The cenzontle
+      !! backend solves it, on an `Energy` driver; see
+      !! `excited_decline_reason` in `mqc_czt_bridge` for the calculations it
+      !! is refused on and why.
       logical :: enabled = .false.
          !! Whether any excited state was asked for. Derived from
          !! `n_states > 0` by the adapter rather than read from a deck, so

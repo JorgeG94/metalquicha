@@ -54,17 +54,34 @@ while the run is going.
    * - Hydrogen-capped fragment
      - **no**
      - refused; a cap's response has nowhere to be redistributed to
-   * - MP2, coupled cluster, MCSCF reference
+   * - MP2 or coupled-cluster reference
      - **no**
      - refused; that would be an equation-of-motion treatment
+   * - MCSCF reference
+     - **no**
+     - *silently ignored*, see below; it too would be an
+       equation-of-motion treatment
    * - cuEST (GPU) backend
      - **no**
      - refused; the solver is on the CPU backend
+   * - terco (GPU) backend
+     - **no**
+     - *silently ignored*, see below
 
-Every "no" above is a refusal by name, not an approximation. The reason is the
-same in every case and is worth stating once: a response operator missing a
-term still converges, and the spectrum it produces still looks like a
-spectrum. Nothing in an excitation energy says which terms went into it.
+Every "no" above is a refusal by name, not an approximation, **except the two
+marked silently ignored**. The reason for refusing is the same in every case
+and is worth stating once: a response operator missing a term still converges,
+and the spectrum it produces still looks like a spectrum. Nothing in an
+excitation energy says which terms went into it.
+
+The two exceptions are a defect rather than a decision, and a fix is in
+flight. An MCSCF deck and a ``backend: "terco"`` deck each carry
+``keywords.excited_states`` all the way through the reader, the schema and the
+settings object, and then reach a driver that does not look at it: the run
+produces its ground state, reports no spectrum, and says nothing about the
+block it was handed. Until that lands, do not read a missing
+``excited_states`` section in the JSON output of either as "there were no
+roots".
 
 Two methods
 ===========

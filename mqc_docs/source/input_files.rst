@@ -1495,10 +1495,15 @@ both the length and the velocity gauge, and its leading natural transition
 orbital weight. Restricted and unrestricted references are both supported, as
 are Hartree-Fock and Kohn-Sham up to and including range-separated hybrids.
 
-A calculation that cannot have these states at all -- a correlated method, a
-density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
+A calculation that cannot have these states at all -- MP2 or coupled cluster,
+a density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
 meta-GGA functional, a VV10 term, or the cuEST backend -- is refused by name,
-rather than answered from an operator missing a term. See
+rather than answered from an operator missing a term.
+
+Two cases are **not** refused and should be: an MCSCF deck and a
+``backend: "terco"`` deck both carry this block through to a driver that never
+reads it, so the run reports its ground state and says nothing about the roots
+it was asked for. That is a defect with a fix in flight, not a design. See
 :doc:`excited_states` for the whole table, for the two amplitude
 normalisations and for the transition-dipole origin.
 
