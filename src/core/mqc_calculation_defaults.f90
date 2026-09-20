@@ -44,6 +44,23 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_EXCITED_MAX_ITER = 100
    !! Davidson cycles the excitation solver may take before it gives up.
 
+   integer, parameter, public :: STATE_SPIN_UNKNOWN = 0
+   !! The spin of an excited state was not assigned. What an unrestricted
+   !! reference gives: its roots are not spin eigenstates, so there is no
+   !! singlet or triplet label to attach and claiming one would be wrong.
+   integer, parameter, public :: STATE_SPIN_SINGLET = 1
+   !! Spin-conserving excitation out of a closed shell.
+   integer, parameter, public :: STATE_SPIN_TRIPLET = 3
+   !! Spin-flipped excitation out of a closed shell. Numbered as the spin
+   !! multiplicity 2S+1, so the code reads as the thing it names.
+   !!
+   !! These three live here, beside the excitation solver's other constants,
+   !! rather than in `mqc_result_types` where the container that carries them
+   !! is: a backend has to write the label, and `mqc_result_types` pulls in
+   !! `pic_mpi_lib` for the transfer of a result. Only the bridge should be
+   !! carrying that. `mqc_result_types` re-exports them, so a consumer of
+   !! `calculation_result_t%state_spin` still finds them where the field is.
+
    real(dp), parameter, public :: DEFAULT_STABILITY_TOL = 1.0e-6_dp
    !! Root-mean-square residual at which a wavefunction stability analysis
    !! accepts its lowest orbital-rotation eigenpair. Looser than the response

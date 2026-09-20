@@ -115,14 +115,14 @@ module mqc_czt_tddft
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_physical_constants, only: HARTREE_TO_EV
-   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_EXCITED_TOL
+   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_EXCITED_TOL, &
+                                       STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_response_product, only: response_product
    use mqc_davidson, only: davidson_flat, sigma_operator_t
    use mqc_czt_rpa_solver, only: paired_operator_t, rpa_solve, RPA_REASON_UNSTABLE_PLUS
-   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    implicit none
    private
 
