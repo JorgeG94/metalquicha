@@ -23,6 +23,7 @@ module test_mqc_xc_kernel_cache
 !$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use pic_types, only: dp
    use mqc_error, only: error_t
+   use mqc_memory, only: set_memory_budget
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
@@ -55,8 +56,10 @@ contains
       testsuite = [ &
                   new_unittest("cached_gga_kernel_is_bit_identical", test_gga), &
                   new_unittest("cached_mgga_kernel_is_bit_identical", test_mgga), &
-                  new_unittest("cached_hybrid_kernel_matches", test_hybrid), &
+                  new_unittest("cached_hybrid_kernel_is_bit_identical", test_hybrid), &
                   new_unittest("an_unfilled_cache_is_refused", test_unfilled), &
+                  new_unittest("a_cache_from_another_rung_is_refused", test_wrong_rung), &
+                  new_unittest("an_over_budget_cache_is_declined", test_over_budget), &
                   new_unittest("cached_triplet_kernel_is_bit_identical", test_triplet), &
                   new_unittest("a_singlet_only_cache_refuses_a_triplet", test_triplet_refused) &
                   ]
@@ -105,10 +108,10 @@ contains
 
       call cache_case("b3lyp", worst, worst_one, error, ok)
       if (allocated(error) .or. .not. ok) return
-      call check(error, worst < 1.0e-12_dp, "the cached B3LYP kernel differs from "// &
+      call check(error, worst == 0.0_dp, "the cached B3LYP kernel differs from "// &
                  "the evaluated one")
       if (allocated(error)) return
-      call check(error, worst_one < 1.0e-12_dp, "the cached single-density B3LYP "// &
+      call check(error, worst_one == 0.0_dp, "the cached single-density B3LYP "// &
                  "kernel differs from the evaluated one")
    end subroutine test_hybrid
 
@@ -161,6 +164,14 @@ contains
       real(dp) :: worst, manifold_gap
       logical :: ok
 
+      ! As every other case here does, and for a reason this one makes sharp:
+      ! `triplet_case` reports a libxc-less build as `ok = .true.` -- nothing
+      ! went wrong -- while leaving `manifold_gap` at zero. Read as "the
+      ! outputs are meaningful" that is a failure of the second assertion
+      ! below, which is what turned three of the eleven CI jobs red: the three
+      ! built with MQC_ENABLE_LIBXC=OFF.
+      if (.not. xc_available()) return
+
       call triplet_case("pbe", worst, manifold_gap, error, ok)
       if (allocated(error) .or. .not. ok) return
       call check(error, worst == 0.0_dp, "the cached triplet kernel differs from "// &
@@ -206,6 +217,116 @@ contains
       call mol%destroy()
    end subroutine test_triplet_refused
 
+   subroutine test_over_budget(error)
+      !! A fill that will not fit declines rather than allocating over the
+      !! budget: no error, an unfilled cache, and a consumer left on the path
+      !! it would have taken had nobody asked for a cache at all. Forced by
+      !! fixing the budget at a byte, which is what a deck's `system.memory_gb`
+      !! reaches the same code through.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(xc_kernel_cache_t) :: cache
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :)
+      logical :: ok
+
+      if (.not. xc_available()) return
+      call reference_state("pbe", mol, ctx, dens, err, ok)
+      if (.not. ok) then
+         call check(error, .false., "the reference Kohn-Sham state failed")
+         return
+      end if
+
+      call set_memory_budget(1.0e-9_dp)     ! one byte
+      call xc_kernel_cache_fill(ctx, mol, dens, cache, err)
+      call set_memory_budget(-1.0_dp)       ! back to the machine
+
+      call check(error,.not. err%has_error(), "a declined kernel cache raised an "// &
+                 "error, where its consumers expect to be left on the uncached path")
+      if (.not. allocated(error)) then
+         call check(error,.not. cache%filled, "a kernel cache was filled over its "// &
+                    "budget")
+      end if
+      call cache%destroy()
+      call ctx%destroy()
+      call mol%destroy()
+   end subroutine test_over_budget
+
+   subroutine test_wrong_rung(error)
+      !! A cache filled against a GGA and handed to a meta-GGA contraction is
+      !! three channels short of the answer, and the shapes do not say so: the
+      !! two contexts are the same grid over the same molecule, so every array
+      !! is exactly the right length. Refused on the recorded rung, not on a
+      !! size.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol_gga, mol_mgga
+      type(xc_context_t) :: ctx_gga, ctx_mgga
+      type(xc_kernel_cache_t) :: cache
+      type(error_t) :: err
+      real(dp), allocatable :: dens_gga(:, :), dens_mgga(:, :)
+      real(dp), allocatable :: trials(:, :, :), out(:, :, :)
+      integer :: nao
+      logical :: ok
+
+      if (.not. xc_available()) return
+
+      call reference_state("pbe", mol_gga, ctx_gga, dens_gga, err, ok)
+      if (.not. ok) then
+         call check(error, .false., "the reference GGA Kohn-Sham state failed")
+         return
+      end if
+      call reference_state("mgga_x_tpss", mol_mgga, ctx_mgga, dens_mgga, err, ok)
+      if (.not. ok) then
+         call check(error, .false., "the reference meta-GGA Kohn-Sham state failed")
+         call ctx_gga%destroy()
+         call mol_gga%destroy()
+         return
+      end if
+
+      call xc_kernel_cache_fill(ctx_gga, mol_gga, dens_gga, cache, err)
+      call check(error,.not. err%has_error(), "the GGA cache fill failed")
+      if (allocated(error)) then
+         call cleanup()
+         return
+      end if
+      call check(error, cache%filled, "the GGA cache was declined, so the refusal "// &
+                 "below would fire for the wrong reason")
+      if (allocated(error)) then
+         call cleanup()
+         return
+      end if
+
+      ! The same grid, so the cache's arrays are the length this context wants.
+      call check(error, cache%n_points == ctx_mgga%grid%n_points, "the two contexts "// &
+                 "do not share a grid, so a length check alone would catch this")
+      if (allocated(error)) then
+         call cleanup()
+         return
+      end if
+
+      nao = size(dens_mgga, 1)
+      allocate (trials(nao, nao, 1), out(nao, nao, 1))
+      trials(:, :, 1) = dens_mgga
+      out = 0.0_dp
+      call xc_kernel_apply_many(ctx_mgga, mol_mgga, dens_mgga, trials, out, err, cache=cache)
+      call check(error, err%has_error(), "a GGA kernel cache was accepted by a "// &
+                 "meta-GGA contraction")
+      call cleanup()
+
+   contains
+
+      subroutine cleanup()
+         call cache%destroy()
+         call ctx_gga%destroy()
+         call mol_gga%destroy()
+         call ctx_mgga%destroy()
+         call mol_mgga%destroy()
+      end subroutine cleanup
+   end subroutine test_wrong_rung
+
    subroutine triplet_case(functional, worst, manifold_gap, error, ok)
       !! The triplet kernel both ways, and how far it is from the singlet one
       character(len=*), intent(in) :: functional
@@ -217,6 +338,10 @@ contains
          !! the singlet one, which says the polarised evaluation ran
       type(error_type), allocatable, intent(out) :: error
       logical, intent(out) :: ok
+         !! `.true.` means nothing failed, **not** that the outputs are
+         !! meaningful: a build without libxc returns `.true.` with both
+         !! differences left at zero. Guard on `xc_available()` before
+         !! asserting anything about them.
 
       type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx

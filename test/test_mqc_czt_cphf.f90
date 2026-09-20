@@ -30,8 +30,11 @@ module test_mqc_czt_cphf
                            casimir_polder_frequencies, distributed_dynamic_cross, &
                            fitted_response_t, build_fitted_response
    use mqc_czt_response_product, only: response_product
-   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
+                         xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_calculation_defaults, only: EFP_RESPONSE_DENSE, EFP_RESPONSE_MATRIX_FREE
+   use mqc_memory, only: set_memory_budget
+   use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
    implicit none
@@ -50,6 +53,13 @@ module test_mqc_czt_cphf
    !! cancels to leading order anyway, being an even-order effect in a central
    !! difference of the dipole.
    real(dp), parameter :: FIELD_STRENGTH = 1.0e-3_dp
+
+   !! A memory budget of one byte, in the gigabytes `set_memory_budget` takes.
+   !!
+   !! Every cache weighed against `memory_budget` declines at this, which is
+   !! how `test_cached_kernel_solve` reaches the uncached path without a
+   !! switch that exists only for the test.
+   real(dp), parameter :: BUDGET_OF_ONE_BYTE = 1.0e-9_dp
 
    !! CAM-B3LYP/STO-3G static polarizability of the water below, in Bohr^3,
    !! from PySCF 2.14 fed this repository's own basis JSON through
@@ -108,6 +118,8 @@ contains
                                test_static_dense), &
                   new_unittest("the_fitted_matrix_free_solve_equals_the_fitted_dense_one", &
                                test_dynamic_matrix_free_fitted), &
+                  new_unittest("the_fitted_route_refuses_a_kernel_it_cannot_apply", &
+                               test_fitted_kernel_refusal), &
                   new_unittest("the_dense_dynamic_solve_equals_the_matrix_free_one", &
                                test_dynamic_matrix_free), &
                   new_unittest("the_static_response_rides_with_the_dynamic_solve", &
@@ -115,7 +127,9 @@ contains
                   new_unittest("the_shared_product_reproduces_the_assembled_hessian", &
                                test_shared_product), &
                   new_unittest("a_range_separated_polarizability_keeps_its_long_range_exchange", &
-                               test_range_separated_polarizability) &
+                               test_range_separated_polarizability), &
+                  new_unittest("a_cached_kernel_leaves_the_solve_where_it_was", &
+                               test_cached_kernel_solve) &
                   ]
    end subroutine collect_mqc_czt_cphf_tests
 
@@ -989,6 +1003,83 @@ contains
       call aux%destroy()
    end subroutine test_dynamic_matrix_free_fitted
 
+   subroutine test_fitted_kernel_refusal(error)
+      !! The fitted frequency-dependent route refuses a functional's kernel
+      !!
+      !! `apply_fitted_batch` contracts the three fitted molecular-orbital
+      !! blocks and nothing else; there is nowhere in it for a kernel to go.
+      !! Given both, the chunking used to forward `xc` and then call the fitted
+      !! application anyway, which answers the Hartree-Fock response of
+      !! Kohn-Sham orbitals and says nothing about it -- the silence this whole
+      !! route was rewritten to remove. `dynamic_polarizability` never asks for
+      !! the pair, but `dynamic_response_iterative` is public and can.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      type(fitted_response_t) :: fit
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
+      real(dp), allocatable :: eri(:, :, :, :), zero_h(:, :), bounds(:, :)
+      real(dp), allocatable :: alpha(:, :, :)
+      real(dp) :: c(3, 3)
+      integer :: n_ao, n_mo, n_occ, n_vir, a, i
+
+      if (.not. xc_available()) return
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz-rifit", aux, err)
+      if (.not. err%has_error()) call xc_context_create(mol, "b3lyp", ctx, err, level=1)
+      call check(error,.not. err%has_error(), "the auxiliary basis or the "// &
+                 "exchange-correlation context failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      n_occ = scf%n_occupied
+      n_vir = n_mo - n_occ
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir), gaps(n_vir, n_occ))
+      allocate (zero_h(n_ao, n_ao), h(n_vir, n_occ, 1))
+      c_occ = scf%orbitals(:, 1:n_occ)
+      c_vir = scf%orbitals(:, n_occ + 1:n_mo)
+      zero_h = 0.0_dp
+      h = 1.0_dp
+      do i = 1, n_occ
+         do a = 1, n_vir
+            gaps(a, i) = scf%orbital_energies(n_occ + a) - scf%orbital_energies(i)
+         end do
+      end do
+      ! Never read: the refusal comes before the first application.
+      allocate (eri(0, 0, 0, 0), bounds(0, 0))
+
+      call build_fitted_response(mol, aux, c_occ, c_vir, fit, err)
+      call check(error,.not. err%has_error(), "the fitted blocks failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         call aux%destroy()
+         return
+      end if
+
+      call dynamic_response_iterative(mol, .true., eri, bounds, zero_h, c_occ, c_vir, &
+                                      gaps, h, [0.1_dp], alpha, err, tol=1.0e-8_dp, &
+                                      fit=fit, xc=ctx, reference=scf%density)
+      call mol%destroy()
+      call aux%destroy()
+      call check(error, err%has_error(), "the fitted route accepted an "// &
+                 "exchange-correlation kernel it cannot apply")
+   end subroutine test_fitted_kernel_refusal
+
    subroutine test_dynamic_matrix_free(error)
       !! The frequency-dependent response, built two ways that share no code
       !!
@@ -1448,6 +1539,105 @@ contains
                  "dropping the long-range exchange pass left the polarizability "// &
                  "where it was, so this comparison cannot see it")
    end subroutine test_range_separated_polarizability
+
+   subroutine test_cached_kernel_solve(error)
+      !! A coupled-perturbed solve is the same solve whether the kernel is cached
+      !!
+      !! `cphf_solve` evaluates the exchange-correlation kernel over the grid
+      !! once and hands the coefficients to every application, where it used to
+      !! re-evaluate the reference density and run libxc over it on each of
+      !! them. That is an optimisation, so the number it produces has to be the
+      !! number the uncached path produces -- **exactly**, not to a tolerance:
+      !! the cached and uncached contractions read the same blocks, the same
+      !! screen and the same coefficients, so any difference at all is a
+      !! difference in what was cached.
+      !!
+      !! The uncached path is reached the way a large system reaches it, by
+      !! leaving the cache no memory to fit in: `xc_kernel_cache_fill` weighs
+      !! itself against `memory_budget` and declines rather than allocating
+      !! over it, and a declined cache comes back unfilled and is ignored. So
+      !! this also covers the decline itself, and the test asserts that the
+      !! budget really did turn the cache off -- otherwise it would be
+      !! comparing the cached path with itself and could not fail.
+      !!
+      !! **One thread.** The comparison is for bit equality and the Fock build
+      !! underneath merges its thread-private accumulators in whatever order
+      !! they arrive, which moves the last digits run to run for reasons that
+      !! have nothing to do with the cache.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: ctx
+      type(xc_kernel_cache_t) :: probe
+      type(error_t) :: err
+      real(dp) :: c(3, 3), cached(3, 3), uncached(3, 3)
+      logical :: declined, filled
+      integer :: threads
+
+      if (.not. xc_available()) return
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "sto-3g", mol, err)
+      if (.not. err%has_error()) &
+         call xc_context_create(mol, "b3lyp", ctx, err, level=3)
+      if (.not. err%has_error()) &
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
+      call check(error,.not. err%has_error(), "the Kohn-Sham reference failed: "// &
+                 err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         call omp_set_num_threads(threads)
+         return
+      end if
+
+      ! What the two halves below will actually run on, asked directly rather
+      ! than inferred: one byte of budget declines, the machine's own answer
+      ! does not.
+      call set_memory_budget(BUDGET_OF_ONE_BYTE)
+      call xc_kernel_cache_fill(ctx, mol, scf%density, probe, err)
+      declined = .not. probe%filled
+      call probe%destroy()
+      call set_memory_budget(-1.0_dp)
+      call xc_kernel_cache_fill(ctx, mol, scf%density, probe, err)
+      filled = probe%filled
+      call probe%destroy()
+      call check(error,.not. err%has_error(), "the kernel cache failed to fill: "// &
+                 err%get_message())
+      if (.not. allocated(error)) &
+         call check(error, declined .and. filled, "the memory budget did not decide "// &
+                    "whether the kernel is cached, so the two solves below are the "// &
+                    "same solve and the comparison cannot fail")
+      if (allocated(error)) then
+         call mol%destroy()
+         call omp_set_num_threads(threads)
+         return
+      end if
+
+      call set_memory_budget(BUDGET_OF_ONE_BYTE)
+      call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, uncached, err, tol=1.0e-10_dp, &
+                                 xc=ctx, density=scf%density)
+      call set_memory_budget(-1.0_dp)
+      if (.not. err%has_error()) &
+         call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                    scf%n_occupied, cached, err, tol=1.0e-10_dp, &
+                                    xc=ctx, density=scf%density)
+      call mol%destroy()
+      call omp_set_num_threads(threads)
+      call check(error,.not. err%has_error(), "a coupled-perturbed solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(cached - uncached)) == 0.0_dp, &
+                 "the cached kernel moved the coupled-perturbed solution, which it "// &
+                 "cannot do by construction: the cache holds the same coefficients "// &
+                 "the uncached path evaluates, over the same blocks")
+   end subroutine test_cached_kernel_solve
 
 end module test_mqc_czt_cphf
 

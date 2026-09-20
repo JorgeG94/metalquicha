@@ -4,6 +4,8 @@ module mqc_result_types
    use pic_types, only: dp, int32
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
    use mqc_error, only: error_t
+   use mqc_calculation_defaults, only: STATE_SPIN_UNKNOWN, STATE_SPIN_SINGLET, &
+                                       STATE_SPIN_TRIPLET
    implicit none
    private
 
@@ -29,15 +31,10 @@ module mqc_result_types
    public :: result_send, result_isend  !! Send result over MPI
    public :: result_recv, result_irecv  !! Receive result over MPI
 
-   integer, parameter :: STATE_SPIN_UNKNOWN = 0
-      !! The spin of an excited state was not assigned. What an unrestricted
-      !! reference gives: its roots are not spin eigenstates, so there is no
-      !! singlet or triplet label to attach and claiming one would be wrong.
-   integer, parameter :: STATE_SPIN_SINGLET = 1
-      !! Spin-conserving excitation out of a closed shell.
-   integer, parameter :: STATE_SPIN_TRIPLET = 3
-      !! Spin-flipped excitation out of a closed shell. Numbered as the spin
-      !! multiplicity 2S+1, so the code reads as the thing it names.
+   ! `STATE_SPIN_*` are defined in `mqc_calculation_defaults` and re-exported
+   ! above. They are declared beside the excitation solver's other constants
+   ! so that a backend can write the label without importing this module,
+   ! which carries `pic_mpi_lib` for the result transfer below.
 
    ! SCS-MP2 scaling parameters
    real(dp), parameter :: SCS_SS_SCALE = 1.0_dp/3.0_dp  !! SCS same-spin scaling factor

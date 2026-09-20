@@ -52,12 +52,19 @@ module mqc_czt_rpa_solver
    !!
    !! ## The instability
    !!
-   !! `(A-B)` is positive definite exactly when the reference is a minimum of
-   !! the energy with respect to the rotations the operator spans. When it is
-   !! not, `H2^{1/2}` does not exist, `w^2` is not what this solves for, and
-   !! there is no excitation spectrum to report -- the reference itself is
-   !! wrong. That is caught here on the projected `H2`, by name, rather than
-   !! left to a square root of a negative number downstream.
+   !! The reference is a minimum of the energy along the rotations the
+   !! operator spans exactly when `(A-B)` *and* `(A+B)` are both positive
+   !! definite, and the two halves fail separately. An indefinite `(A-B)` is
+   !! caught in `square_root`, where `H2^{1/2}` does not exist. An indefinite
+   !! `(A+B)` still factorises and shows itself one step later, as a negative
+   !! `w^2`: by Sylvester's law of inertia the reduced matrix has a negative
+   !! eigenvalue exactly when `(A+B)` does. Both are refused here, by name,
+   !! rather than left to a square root of a negative number downstream.
+   !!
+   !! Which of the two it was reaches the caller as `reason`, because they do
+   !! not mean the same thing. `(A-B)` carries only exchange and is the same
+   !! operator in every spin manifold; `(A+B)` carries the Coulomb term and
+   !! the kernel, which is where a singlet and a triplet differ.
    !!
    !! ## What comes back
    !!
@@ -84,6 +91,28 @@ module mqc_czt_rpa_solver
       !! floor near 1e-7 on a quadrature, so this is a default that can be
       !! reached rather than the CI Davidson's 1e-10.
    integer, parameter, public :: DEFAULT_RPA_MAX_ITERATIONS = 100
+
+   integer, parameter, public :: RPA_REASON_NONE = 0
+      !! `rpa_solve` raised no error.
+   integer, parameter, public :: RPA_REASON_OTHER = 1
+      !! It failed for a reason that says nothing about the reference: a bad
+      !! root count, a LAPACK failure, a subspace that ran out of directions,
+      !! a stagnated or unconverged solve.
+   integer, parameter, public :: RPA_REASON_UNSTABLE_MINUS = 2
+      !! `(A-B)` is not positive definite, so `H2^{1/2}` does not exist.
+      !!
+      !! `(A-B)` carries no Coulomb term and no exchange-correlation kernel,
+      !! only exchange, which makes it the **same operator in every spin
+      !! manifold**. A caller therefore learns from this that the reference is
+      !! wrong, and learns nothing about the manifold it asked for.
+   integer, parameter, public :: RPA_REASON_UNSTABLE_PLUS = 3
+      !! A squared frequency came out negative: `(A+B)` is not positive
+      !! definite on the subspace.
+      !!
+      !! Unlike the above this **is** manifold-specific -- `(A+B)` is where
+      !! the Coulomb term and the kernel live, and they are what differ
+      !! between a singlet and a triplet. A caller solving one manifold may
+      !! name it in the diagnosis; on the other it would be inventing one.
 
    integer, parameter :: GUESS_PER_ROOT = 4
       !! Starting vectors per root, on the lowest diagonal elements.
@@ -177,7 +206,7 @@ contains
 
    subroutine rpa_solve(operator, diagonal, n_roots, omega, xpy, xmy, residuals, &
                         iterations_taken, products, converged, error, tolerance, &
-                        max_iterations, max_subspace, verbose, label, imaginary_roots)
+                        max_iterations, max_subspace, verbose, label, reason)
       !! The `n_roots` lowest excitation energies of a paired response operator
       !!
       !! `diagonal` is what the corrections are preconditioned with and what
@@ -219,13 +248,15 @@ contains
          !! A line per iteration. Each one is an integral pass, or several.
       character(len=*), intent(in), optional :: label
          !! What the iteration table is called.
-      integer, intent(out), optional :: imaginary_roots
-         !! How many squared frequencies of the **last** subspace came out at
-         !! or below zero. Zero for a stable reference. They are not roots and
-         !! are skipped rather than returned, so without this a caller asking
-         !! for fewer roots than there are imaginary ones gets a clean answer
-         !! and no indication that the reference is unstable -- which for a
-         !! triplet manifold is the whole diagnosis.
+      integer, intent(out), optional :: reason
+         !! Which of the `RPA_REASON_*` above the solve failed for.
+         !!
+         !! `RPA_REASON_NONE` exactly when `error` was not set. It exists so a
+         !! caller can tell the two instabilities apart, and tell either from
+         !! an ordinary failure, without matching on the message text -- which
+         !! reads a sentence written for a human as though it were an
+         !! interface, and cannot distinguish the two spellings of "unstable"
+         !! this routine uses for two different things.
 
       real(dp), allocatable :: basis(:, :), sp(:, :), sm(:, :)
       real(dp), allocatable :: h1(:, :), h2(:, :), root(:, :), hss(:, :)
@@ -234,18 +265,22 @@ contains
       real(dp), allocatable :: kept(:)
       integer(int64) :: tick, last, rate
       character(len=128) :: line
-      real(dp) :: tol, best_worst, worst, denominator, norm
+      real(dp) :: tol, best_worst, worst, norm, unstable_tol
       integer :: n, nmax, iterations, iteration, nsub, n_new, first_new
-      integer :: k, i, added, stall, n_positive
-      logical :: loud
+      integer :: k, i, added, stall, n_positive, n_flat
+      logical :: loud, indefinite
       logical, allocatable :: root_converged(:)
+
+      ! Anything that leaves before the end of the routine leaves through an
+      ! error, and everything but the two instabilities below is an ordinary
+      ! failure; the successful exit resets this at the bottom.
+      if (present(reason)) reason = RPA_REASON_OTHER
 
       if (error%has_error()) return
 
       n = size(diagonal)
       iterations_taken = 0
       products = 0
-      if (present(imaginary_roots)) imaginary_roots = 0
       converged = .false.
 
       tol = DEFAULT_RPA_TOLERANCE
@@ -321,8 +356,9 @@ contains
          ! reference. A projected eigenvalue at or below zero says the energy
          ! is not a minimum along some rotation the subspace holds, and no
          ! excitation energy follows from it.
-         call square_root(h2, root, error)
+         call square_root(h2, root, error, indefinite)
          if (error%has_error()) then
+            if (indefinite .and. present(reason)) reason = RPA_REASON_UNSTABLE_MINUS
             deallocate (h1, h2)
             return
          end if
@@ -337,16 +373,50 @@ contains
             return
          end if
 
+         ! A negative `w^2` is not a small root to be stepped over. By
+         ! Sylvester's law of inertia it is a negative eigenvalue of the
+         ! projected `(A+B)`, which `square_root` cannot see because that only
+         ! tests `(A-B)`: the two halves of one instability, and only one of
+         ! them was being caught. Answering from the positive roots above it
+         ! returns a converged, plausible spectrum with the lowest state
+         ! missing and every index below it shifted up -- no error, no
+         ! warning. It is refused here instead.
+         !
+         ! A root merely *at* zero is different and is stepped over, not
+         ! refused: those are the rotations the reference is flat along, and
+         ! an unrestricted reference carries one by construction. The
+         ! threshold separates the two, scaled by the spectrum so it means the
+         ! same thing for a valence problem and a core one.
+         unstable_tol = -max(OMEGA2_FLOOR, epsilon(1.0_dp)*maxval(abs(w2)))
+         if (any(w2 < unstable_tol)) then
+            if (present(reason)) reason = RPA_REASON_UNSTABLE_PLUS
+            call error%set(ERROR_GENERIC, "the reference is unstable ((A+B) is not "// &
+                           "positive definite): the projected matrix has a squared "// &
+                           "frequency of "//to_char(minval(w2))//", so the excitation "// &
+                           "energy there is imaginary. There is no excitation "// &
+                           "spectrum of an unstable reference; reconverge it -- "// &
+                           "keywords.scf.stability will say which rotation, and "// &
+                           "keywords.scf.second_order can escape it -- before asking "// &
+                           "for one")
+            deallocate (h1, h2, root, work, hss, w2)
+            return
+         end if
+
          ! Ascending, so everything at or below the floor is at the front and
          ! the roots wanted are the next `n_roots`.
          n_positive = count(w2 > OMEGA2_FLOOR)
-         if (present(imaginary_roots)) imaginary_roots = nsub - n_positive
+         n_flat = nsub - n_positive
+         if (n_flat > 0 .and. loud) then
+            write (line, "(a,i0,a)") "   skipped ", n_flat, &
+               " rotation(s) of the reference at zero frequency"
+            call logger%debug(trim(line))
+         end if
          if (n_positive < n_roots) then
             call error%set(ERROR_GENERIC, "the paired response subspace holds only "// &
                            to_char(n_positive)//" positive squared frequencies, and "// &
-                           to_char(n_roots)//" roots were asked for: the rest are "// &
-                           "imaginary, which is an instability of the reference "// &
-                           "rather than an excitation")
+                           to_char(n_roots)//" roots were asked for: the rest are at "// &
+                           "zero, which are rotations the reference is flat along "// &
+                           "rather than excitations. Ask for fewer roots")
             deallocate (h1, h2, root, work, hss, w2)
             return
          end if
@@ -471,6 +541,22 @@ contains
 
       call convergence_footer(loud, converged, iterations_taken, "iterations", 74)
 
+      ! The other two ways out of the loop -- stagnation and an exhausted
+      ! subspace -- both raise. Falling out on `max_iterations` used to return
+      ! normally with `converged` false, so a caller that forgot to test it
+      ! got partly-converged roots that look like an answer. The shipped
+      ! caller does test it; a reusable solver should not depend on that.
+      if (.not. converged .and. .not. error%has_error()) then
+         call error%set(ERROR_GENERIC, "the paired response solver used all "// &
+                        to_char(iterations)//" iterations without converging; the "// &
+                        "worst residual was "//to_char(best_worst)//" against a "// &
+                        "tolerance of "//to_char(tol)//". Raise "// &
+                        "keywords.excited_states.max_iter, or loosen "// &
+                        "keywords.excited_states.tolerance")
+      end if
+
+      if (present(reason) .and. .not. error%has_error()) reason = RPA_REASON_NONE
+
       deallocate (basis, sp, sm, correction, root_converged)
    end subroutine rpa_solve
 
@@ -583,7 +669,7 @@ contains
       nmax = min(nmax, n)
    end function subspace_cap
 
-   subroutine square_root(h, root, error)
+   subroutine square_root(h, root, error, indefinite)
       !! `H^{1/2}` of a small symmetric matrix, or the instability by name
       !!
       !! By eigendecomposition rather than a Cholesky, because the
@@ -593,10 +679,14 @@ contains
       real(dp), intent(in) :: h(:, :)
       real(dp), allocatable, intent(out) :: root(:, :)
       type(error_t), intent(inout) :: error
+      logical, intent(out) :: indefinite
+         !! `.true.` when the error raised was the indefiniteness rather than
+         !! a failure of the eigendecomposition itself. Always assigned.
 
       real(dp), allocatable :: vectors(:, :), values(:), scaled(:, :)
       integer :: m, k
 
+      indefinite = .false.
       m = size(h, 1)
       allocate (vectors(m, m), values(m), scaled(m, m), root(m, m))
       vectors = h
@@ -606,7 +696,13 @@ contains
          return
       end if
 
-      if (any(values <= 0.0_dp)) then
+      ! Relative to the spectrum, not against zero: an eigenvalue of 1e-18
+      ! passes an absolute test, `sqrt` returns 1e-9, and the root is then
+      ! numerically the square root of nothing -- `S H1 S` comes back as noise
+      ! with no error raised. A near-instability is exactly what this is here
+      ! to catch, so the threshold has to be able to see one.
+      if (any(values <= max(1.0e-12_dp, epsilon(1.0_dp)*maxval(abs(values))))) then
+         indefinite = .true.
          call error%set(ERROR_GENERIC, "the reference is unstable ((A-B) is not "// &
                         "positive definite): the projected matrix has an eigenvalue "// &
                         "of "//to_char(minval(values))//", so the energy falls along "// &

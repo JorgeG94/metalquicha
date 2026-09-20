@@ -501,6 +501,13 @@ contains
       !! the internal unit and what a cross-code comparison uses; eV is what a
       !! spectrum is read in, and a consumer converting it itself is a place
       !! for the conversion factor to be wrong.
+      ! TODO(mqc): only the unfragmented and vibrational writers call this, so
+      ! a fragmented run's spectra are carried through all six MPI routines in
+      ! `mqc_result_types` and then dropped. No result is lost today -- no
+      ! backend fills those arrays yet, and the reader refuses a fragmented
+      ! deck asking for excited states once the solver lands -- so this is
+      ! plumbing ahead of a feature. Whatever lifts that refusal has to add
+      ! the fragmented writer with it.
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
@@ -537,32 +544,42 @@ contains
          call json%add(entry, "excitation_energy_hartree", data%excitation_energies(i))
          call json%add(entry, "excitation_energy_ev", &
                        data%excitation_energies(i)*HARTREE_TO_EV)
-         if (allocated(data%excited_total_energies)) then
+         ! Length as well as allocation, the way `state_spin_label` tests it.
+         ! These arrays are filled together by the solver, but they reach this
+         ! writer through the MPI reducers, and a short one would be read past
+         ! its end rather than left out.
+         if (allocated(data%excited_total_energies) .and. &
+             size(data%excited_total_energies) >= n_states) then
             call json%add(entry, "total_energy_hartree", &
                           data%excited_total_energies(i))
          end if
-         if (allocated(data%oscillator_strengths)) then
+         if (allocated(data%oscillator_strengths) .and. &
+             size(data%oscillator_strengths) >= n_states) then
             call json%add(entry, "oscillator_strength", data%oscillator_strengths(i))
          end if
-         if (allocated(data%oscillator_strengths_velocity)) then
+         if (allocated(data%oscillator_strengths_velocity) .and. &
+             size(data%oscillator_strengths_velocity) >= n_states) then
             call json%add(entry, "oscillator_strength_velocity", &
                           data%oscillator_strengths_velocity(i))
          end if
-         if (allocated(data%transition_dipoles)) then
+         if (allocated(data%transition_dipoles) .and. &
+             size(data%transition_dipoles, 2) >= n_states) then
             call json%create_array(dip_arr, "transition_dipole")
             call json%add(entry, dip_arr)
             do comp = 1, 3
                call json%add(dip_arr, "", data%transition_dipoles(comp, i))
             end do
          end if
-         if (allocated(data%transition_velocities)) then
+         if (allocated(data%transition_velocities) .and. &
+             size(data%transition_velocities, 2) >= n_states) then
             call json%create_array(dip_arr, "transition_velocity")
             call json%add(entry, dip_arr)
             do comp = 1, 3
                call json%add(dip_arr, "", data%transition_velocities(comp, i))
             end do
          end if
-         if (allocated(data%nto_leading_weight)) then
+         if (allocated(data%nto_leading_weight) .and. &
+             size(data%nto_leading_weight) >= n_states) then
             call json%add(entry, "nto_leading_weight", data%nto_leading_weight(i))
          end if
       end do
