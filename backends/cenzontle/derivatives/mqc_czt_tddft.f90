@@ -1022,8 +1022,13 @@ contains
       !! not go through. That is the right diagnosis in the solver's own
       !! terms and the wrong one for a reader, who has asked for a spectrum
       !! and wants to know that the *reference* is what is wrong. The solver's
-      !! message is kept and prefixed rather than replaced, because the same
-      !! failure has other causes.
+      !! message is kept and prefixed rather than replaced.
+      !!
+      !! Only a failure the solver itself called an instability is relabelled.
+      !! The paired solve fails for other reasons -- a LAPACK error, a
+      !! subspace too small for the roots asked for -- and calling one of
+      !! those a triplet instability would be a diagnosis invented from the
+      !! manifold rather than read off the arithmetic.
       logical, intent(in) :: is_triplet
       type(error_t), intent(inout) :: error
 
@@ -1032,6 +1037,7 @@ contains
       if (.not. is_triplet) return
       if (.not. error%has_error()) return
       was = error%get_message()
+      if (index(was, "instability") == 0 .and. index(was, "unstable") == 0) return
       call error%set(ERROR_GENERIC, "the reference is triplet-unstable: the paired "// &
                      "solve of the triplet manifold could not be reduced, which for "// &
                      "a closed shell means it is a saddle point against spin "// &
