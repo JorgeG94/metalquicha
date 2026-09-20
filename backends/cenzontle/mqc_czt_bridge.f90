@@ -2901,6 +2901,21 @@ contains
                   "' over an unrestricted reference, whose roots are not spin "// &
                   "eigenstates and so are neither singlets nor triplets. Remove "// &
                   "the key to get the unrestricted spectrum"
+      else if (kohn_sham .and. xc%pt2_fraction /= 0.0_dp) then
+         ! `run_mp2` above does not stand in for a double hybrid. Its PT2
+         ! correlation is driven from `xc%pt2_fraction` and never sets that
+         ! flag -- the comment above `dh_analytic` further down says so, and
+         ! says what the same assumption already cost once: an analytic
+         ! `b2plyp` Hessian that was its underlying hybrid's, printed beside
+         ! the double hybrid's own "PT2 x X" energy line with nothing to say
+         ! the two came from different operators.
+         !
+         ! The linear-response operator here has no counterpart to the
+         ! second-order term at all, so a spectrum would be the hybrid part
+         ! alone: right order of magnitude, converged, and wrong.
+         reason = "a double-hybrid functional, whose second-order correlation has no "// &
+                  "counterpart in the linear-response operator: the spectrum would be "// &
+                  "the hybrid part alone, with nothing in the output to say so"
       end if
       ! A range-separated functional is *not* on this list, though
       ! `hessian_decline_reason` names one: the response operator here makes

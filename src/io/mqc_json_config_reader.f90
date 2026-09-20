@@ -1048,10 +1048,34 @@ contains
          return
       end if
 
+      ! `n_states` and `tolerance` above are refused when they are outside what
+      ! the solver can do; these three were read straight through, so "batch":
+      ! 0 or "max_iter": -1 validated, fingerprinted, and reached the backend
+      ! to be found there or not at all.
       call optional_int(json, "keywords.excited_states.max_iter", config%excited_max_iter)
+      if (config%excited_max_iter < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.max_iter is "// &
+                        trim(to_char(config%excited_max_iter))//", and a solver given "// &
+                        "no iterations cannot converge anything. Ask for 1 or more.")
+         return
+      end if
+
       call optional_int(json, "keywords.excited_states.max_subspace", &
                         config%excited_max_subspace)
+      if (config%excited_max_subspace < 0) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.max_subspace is "// &
+                        trim(to_char(config%excited_max_subspace))//". Zero takes the "// &
+                        "solver's own rule; a negative subspace is not a size.")
+         return
+      end if
+
       call optional_int(json, "keywords.excited_states.batch", config%excited_batch)
+      if (config%excited_batch < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.batch is "// &
+                        trim(to_char(config%excited_batch))//", and a batch of no "// &
+                        "vectors is a loop that does nothing. Ask for 1 or more.")
+         return
+      end if
    end subroutine read_excited_states
 
    subroutine read_neo(json, config, error)
