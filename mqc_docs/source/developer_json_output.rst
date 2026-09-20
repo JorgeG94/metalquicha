@@ -165,17 +165,23 @@ what produced them, and one flag for all of it:
 .. code-block:: fortran
 
    real(dp), allocatable :: excitation_energies(:)   ! (n_states) Hartree
-   real(dp), allocatable :: oscillator_strengths(:)  ! (n_states)
+   real(dp), allocatable :: oscillator_strengths(:)  ! (n_states) length gauge
+   real(dp), allocatable :: oscillator_strengths_velocity(:)   ! (n_states)
    real(dp), allocatable :: transition_dipoles(:, :) ! (3, n_states) a.u.
+   real(dp), allocatable :: nto_leading_weight(:)    ! (n_states)
    integer, allocatable :: state_spin(:)             ! (n_states) STATE_SPIN_*
    character(len=16) :: excited_method = ""
    character(len=16) :: excited_spin = ""
    logical :: has_excited_states = .false.
 
 One flag rather than one per array, because the solver fills them together and
-a consumer holding energies without spins cannot label a single root.
+a consumer holding energies without spins cannot label a single root. The
+transition properties arrived a layer after the energies did, and each is
+still written under ``allocated()``: a spectrum whose one-electron integrals
+could not be formed reports its energies and warns, rather than losing the
+expensive half of the answer to the cheap half.
 
-**2. Cleanup** -- all four arrays in ``json_output_data_destroy``, the flag and
+**2. Cleanup** -- every array in ``json_output_data_destroy``, the flag and
 both strings in ``json_output_data_reset``.
 
 **3. In mqc_unfragmented_workflow.f90**, at *both* copy points -- the

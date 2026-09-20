@@ -1470,7 +1470,12 @@ reference:
   different energies; anything else is refused by name.
 - ``spin`` (default: ``"singlet"``): ``"singlet"``, ``"triplet"`` or
   ``"both"``. Out of a closed shell the two spins are separate eigenproblems,
-  so ``"both"`` is two solves rather than one.
+  so ``"both"`` is two solves rather than one, merged into one list ordered by
+  energy with each root's spin recorded beside it -- and ``n_states`` then
+  counts roots **per manifold**, so the run reports up to twice that many.
+  Not read at all over an unrestricted reference, whose roots are not spin
+  eigenstates; naming ``"triplet"`` or ``"both"`` there is refused rather than
+  answered with a label the spectrum does not deserve.
 - ``tolerance`` (default: 1e-6): residual at which a root is accepted.
   **Refused below 1e-8**: the exchange-correlation quadrature underneath
   carries more error than that on any grid a production run uses, so a tighter
@@ -1484,15 +1489,18 @@ reference:
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.
 
-**The physics behind this block is not implemented yet.** Everything above
-parses, validates and reaches the CPU backend, which then stops with a message
-saying so; the linear-response solver arrives in a later change. Until then, a
-deck naming ``n_states`` greater than zero will not produce a number. A
-calculation that cannot have these states at all -- an unrestricted reference,
-a correlated method, a density-fitted reference, continuum solvation, a
-hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or the cuEST
-backend -- is refused by name instead, rather than answered from an operator
-missing a term.
+Each root comes back with its excitation energy, its spin, the excited
+state's own total energy, its transition dipole and oscillator strength in
+both the length and the velocity gauge, and its leading natural transition
+orbital weight. Restricted and unrestricted references are both supported, as
+are Hartree-Fock and Kohn-Sham up to and including range-separated hybrids.
+
+A calculation that cannot have these states at all -- a correlated method, a
+density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
+meta-GGA functional, a VV10 term, or the cuEST backend -- is refused by name,
+rather than answered from an operator missing a term. See
+:doc:`excited_states` for the whole table, for the two amplitude
+normalisations and for the transition-dipole origin.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
