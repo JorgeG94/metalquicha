@@ -45,6 +45,7 @@ module mqc_czt_bridge
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                               nuclear_repulsion_hessian, response_hessian
+   use mqc_czt_tddft, only: tda_excitations
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
@@ -1514,7 +1515,6 @@ contains
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
-            use mqc_czt_tddft, only: tda_excitations
             real(dp), allocatable :: omega(:), x_amplitudes(:, :)
             integer, allocatable :: omega_spin(:)
             type(error_t) :: td_error
