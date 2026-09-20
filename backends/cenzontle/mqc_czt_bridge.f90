@@ -1156,6 +1156,42 @@ contains
          end if
       end if
 
+      ! ---- excited states, or a refusal -------------------------------------
+      !
+      ! Before the SCF rather than after it. Unlike the Hessian, which falls
+      ! back to central differences and is only warned about, an excitation
+      ! this backend cannot compute has no substitute, so the run stops -- and
+      ! stopping after converging an SCF nobody will read is a waste of the
+      ! only expensive part. Everything the decision needs is already known
+      ! here: the reference's spin, the functional, and the fragment.
+      if (settings%excited%enabled) then
+         block
+            character(len=:), allocatable :: decline
+
+            decline = excited_decline_reason(settings, unrestricted, kohn_sham, xc, &
+                                             fragment%n_caps)
+            if (len_trim(decline) > 0) then
+               call result%error%set(ERROR_VALIDATION, "keywords.excited_states asked "// &
+                                     "for "//int_to_text(settings%excited%n_states)// &
+                                     " root(s), which this backend cannot compute for "// &
+                                     "this calculation: "//decline//". Refused rather "// &
+                                     "than approximated -- a spectrum from the wrong "// &
+                                     "operator converges and looks like a spectrum.")
+            else
+               call result%error%set(ERROR_VALIDATION, "excited states requested but "// &
+                                     "not implemented yet (Layer 2). "// &
+                                     "keywords.excited_states parses, validates and "// &
+                                     "reaches this backend; the linear-response solver "// &
+                                     "behind it does not exist. Drop the block, or set "// &
+                                     "n_states to 0, to run the ground state.")
+            end if
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end block
+      end if
+
       ! ---- which initial guess? ---------------------------------------------
       call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
       ! The convergence rule, assembled once per run rather than at each SCF
@@ -2659,6 +2695,52 @@ contains
          reason = "not on the analytic list"
       end if
    end function hessian_decline_reason
+
+   function excited_decline_reason(settings, unrestricted, kohn_sham, xc, n_caps) result(reason)
+      !! Why this run cannot have the excited states it asked for, in a few words
+      !!
+      !! An empty result means nothing declines and the request is merely
+      !! unimplemented, which the caller reports separately -- the two are
+      !! different messages because they have different futures.
+      !!
+      !! Each entry is a refusal rather than an approximation, for the reason
+      !! recorded in the TDDFT plan: every one of these would produce a
+      !! converged spectrum built from an operator that is missing a term, and
+      !! nothing in an excitation energy says which terms went into it.
+      !! Ordered so the first condition named is the one a user would fix
+      !! first.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      logical, intent(in) :: unrestricted
+      logical, intent(in) :: kohn_sham
+      type(xc_context_t), intent(in) :: xc
+      integer, intent(in) :: n_caps
+      character(len=:), allocatable :: reason
+
+      reason = ""
+      if (unrestricted) then
+         reason = "the reference is unrestricted, and the spin-blocked response "// &
+                  "operator is not written"
+      else if (settings%run_mp2 .or. settings%run_cc) then
+         reason = "the reference is followed by a correlated method, whose excited "// &
+                  "states would be an EOM treatment rather than a linear response of "// &
+                  "the SCF"
+      else if (settings%density_fitting) then
+         reason = "the reference is density-fitted, and the fitted Fock build assumes "// &
+                  "an idempotent density that a transition density is not"
+      else if (settings%pcm%enabled) then
+         reason = "continuum solvation, whose response to a transition density is a "// &
+                  "separate term that does not exist here"
+      else if (n_caps > 0) then
+         reason = "hydrogen caps on the fragment, whose response has nowhere to be "// &
+                  "redistributed to"
+      else if (kohn_sham .and. xc%any_mgga) then
+         reason = "a meta-GGA functional, whose kernel exists but has no validated "// &
+                  "reference to check it against"
+      else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
+         reason = "a VV10 non-local correlation term, which the reference codes "// &
+                  "exclude from the kernel by default"
+      end if
+   end function excited_decline_reason
 
    subroutine frontier_summary(scf)
       !! HOMO, LUMO and the gap in eV, one row per spin the SCF carried
