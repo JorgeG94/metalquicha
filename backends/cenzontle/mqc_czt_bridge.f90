@@ -2818,10 +2818,13 @@ contains
       else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
-      else if (kohn_sham .and. xc%range_separated) then
-         reason = "a range-separated functional, whose long-range exchange needs a "// &
-                  "second attenuated Fock build in the response that is not wired up"
       end if
+      ! A range-separated functional is *not* on this list, though
+      ! `hessian_decline_reason` names one: the response operator here makes
+      ! the attenuated second pass, `rs_k_lr` of the matrix built against
+      ! `erf(omega r)/r` beside `exx_fraction` of the full-range one, and the
+      ! CAM-B3LYP spectrum it produces is checked against a table in
+      ! `test_mqc_czt_tddft`.
    end function excited_decline_reason
 
    subroutine frontier_summary(scf)
