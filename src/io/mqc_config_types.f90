@@ -24,6 +24,7 @@ module mqc_config_types
                                        DEFAULT_RESPONSE_BATCH, &
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
+                                       DEFAULT_EXCITED_BATCH, &
                                        EFP_RESPONSE_AUTO, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
@@ -493,10 +494,10 @@ module mqc_config_types
          !! Trial vectors the Davidson subspace may hold before it collapses.
          !! Zero means the solver's own rule, which is derived from the number
          !! of roots; a deck sets this only to bound memory.
-      integer :: excited_batch = DEFAULT_RESPONSE_BATCH
+      integer :: excited_batch = DEFAULT_EXCITED_BATCH
          !! Trial vectors contracted against one pass over the integrals. The
          !! same machine trade-off `keywords.hessian.response_batch` makes, on
-         !! a different solve.
+         !! a different solve, and so its own constant rather than that one's.
 
       ! AIMD settings
       real(dp) :: aimd_dt = DEFAULT_AIMD_DT                          !! Timestep (femtoseconds)
