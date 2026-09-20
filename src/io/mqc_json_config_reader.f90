@@ -31,6 +31,7 @@ module mqc_json_config_reader
                                  MAX_ORBITAL_LABEL_LEN
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
+   use pic_ascii, only: to_lower
    use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
@@ -951,9 +952,9 @@ contains
 
       call optional_string(json, "keywords.excited_states.method", text)
       if (allocated(text)) then
-         select case (lowercase(text))
+         select case (to_lower(trim(adjustl(text))))
          case ("tda", "rpa")
-            config%excited_method = lowercase(text)
+            config%excited_method = to_lower(trim(adjustl(text)))
          case default
             call error%set(ERROR_VALIDATION, "unknown keywords.excited_states.method '"// &
                            trim(text)//"'. Accepted: tda, rpa")
@@ -964,9 +965,9 @@ contains
 
       call optional_string(json, "keywords.excited_states.spin", text)
       if (allocated(text)) then
-         select case (lowercase(text))
+         select case (to_lower(trim(adjustl(text))))
          case ("singlet", "triplet", "both")
-            config%excited_spin = lowercase(text)
+            config%excited_spin = to_lower(trim(adjustl(text)))
          case default
             call error%set(ERROR_VALIDATION, "unknown keywords.excited_states.spin '"// &
                            trim(text)//"'. Accepted: singlet, triplet, both")
@@ -991,21 +992,6 @@ contains
                         config%excited_max_subspace)
       call optional_int(json, "keywords.excited_states.batch", config%excited_batch)
    end subroutine read_excited_states
-
-   pure function lowercase(text) result(lowered)
-      !! `text` with every A-Z mapped down, for comparing a spelled keyword
-      character(len=*), intent(in) :: text
-      character(len=:), allocatable :: lowered
-
-      integer :: i
-
-      lowered = trim(adjustl(text))
-      do i = 1, len(lowered)
-         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
-            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
-         end if
-      end do
-   end function lowercase
 
    subroutine read_neo(json, config, error)
       !! `keywords.neo`: which nuclei get orbitals of their own, and in what basis
