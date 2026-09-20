@@ -337,6 +337,19 @@ contains
                json_data%has_charges = .true.
             end if
 
+            ! Bond orders, when `properties.bond_orders` asked. The matrix
+            ! whole, plus the valence it sums to: the valence is what a reader
+            ! looks at and the matrix is what a consumer filters, and neither
+            ! can be recovered from the other after the fact.
+            if (result%has_bond_orders) then
+               json_data%bond_orders = result%bond_orders
+               if (allocated(result%bond_order_valences)) then
+                  json_data%bond_order_valences = result%bond_order_valences
+               end if
+               json_data%bond_order_scheme = result%bond_order_scheme
+               json_data%has_bond_orders = .true.
+            end if
+
             ! Where the molecule reacts, when `properties.fukui` asked. Carried
             ! per atom rather than reduced to "the most reactive site": ranking
             ! sites is what the caller is doing, and which index to rank on

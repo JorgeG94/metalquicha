@@ -92,6 +92,9 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "properties", "charges", &
                                    charges_keys(), error)
+      call check_grandchild_object(core, root, "properties", "bond_orders", &
+                                   bond_orders_keys(), error)
+      call check_bond_orders(core, root, error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
@@ -248,6 +251,7 @@ contains
       call allow(keys, "bonding_analysis")
       call allow(keys, "fukui")
       call allow(keys, "charges")
+      call allow(keys, "bond_orders")
    end function properties_keys
 
    function fukui_keys() result(keys)
@@ -314,6 +318,17 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "scheme")
    end function charges_keys
+
+   function bond_orders_keys() result(keys)
+      !! Settings for the bond orders over the converged density
+      !!
+      !! Shaped like `charges`: the OBJECT is the request and `scheme` only
+      !! says which definition. There is one scheme today and the key exists
+      !! anyway, because a bond order without the name of its scheme is not a
+      !! number anyone can compare against another program.
+      type(key_set_t) :: keys
+      call allow(keys, "scheme")
+   end function bond_orders_keys
 
    function bonding_analysis_keys() result(keys)
       !! Settings for the quasi-atomic bonding analysis
@@ -1055,6 +1070,46 @@ contains
          ! which backend runs is not a `model` key and cannot be seen here.
       end select
    end subroutine check_ecp_supported
+
+   subroutine check_bond_orders(core, root, error)
+      !! `properties.bond_orders.scheme` names a definition we have
+      !!
+      !! The refusal is long on purpose. Three different quantities in this
+      !! code are called bond orders, and a deck asking for the wrong one by a
+      !! plausible name -- "wiberg", "quao" -- is asking a different question
+      !! rather than making a typo, so the message says where each of the
+      !! others lives.
+      type(json_core), intent(inout) :: core
+      type(json_value), pointer, intent(in) :: root
+      type(error_t), intent(inout) :: error
+
+      type(json_value), pointer :: properties, request, entry
+      character(len=:), allocatable :: name
+      logical :: found
+
+      if (error%has_error()) return
+      call core%get(root, "properties", properties, found)
+      if (.not. found .or. .not. associated(properties)) return
+      call core%get(properties, "bond_orders", request, found)
+      if (.not. found .or. .not. associated(request)) return
+      call core%get(request, "scheme", entry, found)
+      if (.not. found .or. .not. associated(entry)) return
+
+      call core%get(request, "scheme", name)
+      select case (lowered(trim(adjustl(name))))
+      case ("mayer")
+      case default
+         call error%set(ERROR_VALIDATION, "properties.bond_orders.scheme is '"// &
+                        trim(name)//"'. The one scheme here is 'mayer', over the "// &
+                        "converged density and the AO overlap. Wiberg's order is the "// &
+                        "same sum in an orthonormal basis and is meaningless over "// &
+                        "non-orthogonal AOs, so it is not offered under that name; "// &
+                        "the quasi-atomic bonding picture is "// &
+                        "properties.bonding_analysis.type = 'gms_quao', and the "// &
+                        "semi-empirical Wiberg-Mayer orders come from an xTB single "// &
+                        "point through the Python interface.")
+      end select
+   end subroutine check_bond_orders
 
    subroutine check_bonding_analysis(core, root, error)
       !! The value of `properties.bonding_analysis` names an analysis we have

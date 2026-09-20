@@ -18,6 +18,7 @@ module mqc_czt_bridge
    public :: run_czt_makefp
    public :: run_czt_neo
    public :: run_czt_charges
+   public :: run_czt_mayer_bond_orders
    public :: run_czt_efp
    public :: run_czt_sapt0
    public :: run_czt_sapt2
@@ -128,6 +129,33 @@ contains
       if (len_trim(element_symbols(1))*len_trim(basis_name)*len_trim(scheme) < 0) return
       if (total_charge < -huge(1)) return
    end subroutine run_czt_charges
+
+   subroutine run_czt_mayer_bond_orders(atomic_numbers, element_symbols, coordinates, &
+                                        basis_name, total_charge, orders, valences, &
+                                        error)
+      !! No-op stand-in: Mayer bond orders need the CPU integral backend
+      !!
+      !! The xTB orders beside them do not, which is why the two are separate
+      !! entry points and why this one's refusal names a different option.
+      use pic_types, only: dp
+      use mqc_error, only: error_t
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      character(len=*), intent(in) :: basis_name
+      integer, intent(in) :: total_charge
+      real(dp), allocatable, intent(out) :: orders(:, :)
+      real(dp), allocatable, intent(out) :: valences(:)
+      type(error_t), intent(inout) :: error
+
+      allocate (orders(0, 0), valences(0))
+      call error%set(ERROR_VALIDATION, &
+                     "Mayer bond orders need the CPU integral backend; build with "// &
+                     "-DMQC_ENABLE_CZT=ON")
+      if (size(atomic_numbers) < 0 .or. size(coordinates) < 0) return
+      if (len_trim(element_symbols(1))*len_trim(basis_name) < 0) return
+      if (total_charge < -huge(1)) return
+   end subroutine run_czt_mayer_bond_orders
 
    subroutine run_czt_efp(potentials, fragment_sizes, fragment_atoms, &
                           coordinates, terms, error)

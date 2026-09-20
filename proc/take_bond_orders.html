@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">32 statements</a>
+                 title=" 0.1% of total for procedures.">34 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -215,7 +215,7 @@ and not of a spin.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~8"></span>
+              <span class="anchor" id="variable-n_atoms~45"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -230,7 +230,7 @@ and not of a spin.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~14"></span>
+              <span class="anchor" id="variable-result~51"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -619,6 +619,10 @@ large graphs.</div>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mat2</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">mat2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">mat2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            result</span><span class="p">%</span><span class="n">bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">mat2</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! Named, because these are not the Mayer orders the ab initio path</span>
+<span class="w">            </span><span class="c">! reports: same family, different Hamiltonian and basis, and they</span>
+<span class="w">            </span><span class="c">! agree only as a ranking.</span>
+<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">bond_order_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"xtb"</span>
 <span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -632,7 +636,8 @@ large graphs.</div>
 <span class="w">            </span><span class="k">do </span><span class="n">ispin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">mat3</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
 <span class="w">               </span><span class="k">result</span><span class="p">%</span><span class="n">bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">bond_orders</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">mat3</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">ispin</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end do</span>
-<span class="k">            result</span><span class="p">%</span><span class="n">has_bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="k">            result</span><span class="p">%</span><span class="n">bond_order_scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"xtb"</span>
+<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_bond_orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 <span class="k">      end if</span>
@@ -663,7 +668,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 01:28 +0000             </p>
+ on 2026-09-20 02:22 +0000             </p>
           </div>
         </div>
         <br>

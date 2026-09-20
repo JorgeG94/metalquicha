@@ -1,0 +1,973 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_capi_mayer &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_capi_mayer
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for modules and submodules.">59 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_mayer.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_mayer.f90.html'>mqc_capi_mayer.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_capi_mayer</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_mayer.html#proc-mqc_system_compute_mayer_bond_orders">mqc_system_compute_mayer_bond_orders</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>The ab initio half of <code>compute_bond_orders</code>: one RHF in the basis the
+caller names, and Mayer&rsquo;s orders off its converged density.</p>
+<p>Split from <a href="../module/mqc_capi_bond_orders.html">mqc_capi_bond_orders</a> rather than added to it because it
+needs the integrals backend and that module does not. A build without
+one keeps the xTB entry and simply lacks these symbols, which a Python
+caller sees as a named refusal rather than a link error &ndash; the same
+arrangement <a href="../module/mqc_capi_charges.html">mqc_capi_charges</a> has, for the same reason.</p>
+<p><strong>What this costs.</strong> An SCF, not an xTB single point. The two variants
+behind one Python call differ by orders of magnitude in price and by a
+whole Hamiltonian in meaning; the cheap one is for deciding where to cut
+a molecule, and this one is for finding out whether that decision was
+sound.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_capi_system.html'>mqc_capi_system</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_capi_mayer~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_capi_mayerUsesGraph" width="641pt" height="404pt"
+ viewBox="0.00 0.00 641.00 404.38" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_capi_mayer~~UsesGraph" class="graph" transform="scale(0.61 0.61) rotate(0) translate(4 660.29)">
+<title>module~~mqc_capi_mayer~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-660.29 1049,-660.29 1049,4 -4,4"/>
+<!-- module~mqc_capi_mayer -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node1" class="node">
+<title>module~mqc_capi_mayer</title>
+<polygon fill="none" stroke="black" points="1045,-510 942,-510 942,-486 1045,-486 1045,-510"/>
+<text text-anchor="middle" x="993.5" y="-495.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_capi_mayer</text>
+</g>
+<!-- iso_c_binding -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node2" class="node">
+<title>iso_c_binding</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node2"><a xlink:href="http://fortranwiki.org/fortran/show/iso_c_binding" xlink:title="iso_c_binding">
+<polygon fill="#337ab7" stroke="#337ab7" points="570.5,-626 486.5,-626 486.5,-602 570.5,-602 570.5,-626"/>
+<text text-anchor="middle" x="528.5" y="-611.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iso_c_binding</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;iso_c_binding -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge1" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;iso_c_binding</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M852,-614C785.35,-634.91 769.69,-649.21 700,-654"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M698,-654C675.07,-655.58 619.43,-641 578.32,-629.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="579.06,-625.58 568.48,-626.1 577.08,-632.29 579.06,-625.58"/>
+</g>
+<!-- module~mqc_capi_status -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node3" class="node">
+<title>module~mqc_capi_status</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node3"><a xlink:href="../module/mqc_capi_status.html" xlink:title="mqc_capi_status">
+<polygon fill="#337ab7" stroke="#337ab7" points="749,-626 649,-626 649,-602 749,-602 749,-626"/>
+<text text-anchor="middle" x="699" y="-611.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_status</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge2" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M852,-614C822.4,-623.29 787.93,-624.05 759.31,-622.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="759.29,-618.64 749.05,-621.34 758.74,-625.61 759.29,-618.64"/>
+</g>
+<!-- module~mqc_capi_system -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node4" class="node">
+<title>module~mqc_capi_system</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node4"><a xlink:href="../module/mqc_capi_system.html" xlink:title="mqc_capi_system">
+<polygon fill="#337ab7" stroke="#337ab7" points="906,-510 800,-510 800,-486 906,-486 906,-510"/>
+<text text-anchor="middle" x="853" y="-495.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_system</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;module~mqc_capi_system -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge3" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;module~mqc_capi_system</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M941.71,-498C933.48,-498 924.87,-498 916.4,-498"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="916.17,-494.5 906.17,-498 916.17,-501.5 916.17,-494.5"/>
+</g>
+<!-- module~mqc_czt_bridge -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node5" class="node">
+<title>module~mqc_czt_bridge</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node5"><a xlink:href="../module/mqc_czt_bridge.html" xlink:title="mqc_czt_bridge">
+<polygon fill="#337ab7" stroke="#337ab7" points="747,-292 651,-292 651,-268 747,-268 747,-292"/>
+<text text-anchor="middle" x="699" y="-277.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_czt_bridge</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;module~mqc_czt_bridge -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge4" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;module~mqc_czt_bridge</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M987.19,-485.81C972,-452.57 924.84,-360.18 854,-320"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M852,-320C823.02,-303.56 787.1,-293.71 757.46,-287.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="757.73,-284.38 747.26,-286 756.45,-291.27 757.73,-284.38"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node6" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node6"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="398,-592 307,-592 307,-568 398,-568 398,-592"/>
+<text text-anchor="middle" x="352.5" y="-577.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge5" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M983.52,-510.3C963.7,-536.18 913.25,-595.41 854,-614"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M852,-614C813.64,-626.04 803.85,-598.33 764,-593 637.52,-576.08 487.26,-576.47 408.28,-578.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="408,-574.73 398.09,-578.47 408.17,-581.73 408,-574.73"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node7" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node7"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="205.5,-348 138.5,-348 138.5,-324 205.5,-324 205.5,-348"/>
+<text text-anchor="middle" x="172" y="-333.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge6" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M852,-320C767.21,-271.92 730.76,-332.19 634,-344 587.49,-349.68 575.75,-365.52 529.5,-358"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M527.5,-358C447.09,-344.61 435.01,-298.63 353.5,-300"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node8" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-308 0,-308 0,-284 62,-284 62,-308"/>
+<text text-anchor="middle" x="31" y="-293.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_capi_mayer&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge7" class="edge">
+<title>module~mqc_capi_mayer&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M698,-654C591.69,-661.31 564.91,-646.73 459,-635 411.93,-629.79 400.08,-611.43 353.5,-620"/>
+</g>
+<!-- module~mqc_capi_status&#45;&gt;iso_c_binding -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge8" class="edge">
+<title>module~mqc_capi_status&#45;&gt;iso_c_binding</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M648.81,-614C627.34,-614 602.18,-614 580.51,-614"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="580.5,-610.5 570.5,-614 580.5,-617.5 580.5,-610.5"/>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;iso_c_binding -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge9" class="edge">
+<title>module~mqc_capi_system&#45;&gt;iso_c_binding</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M818.4,-510.09C759.47,-531.28 637.6,-575.12 572.57,-598.51"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="571.25,-595.26 563.02,-601.94 573.62,-601.85 571.25,-595.26"/>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;module~mqc_capi_status -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge11" class="edge">
+<title>module~mqc_capi_system&#45;&gt;module~mqc_capi_status</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M842.95,-510.03C828.24,-528.9 797.38,-565.59 764,-588 758.64,-591.6 752.71,-594.83 746.68,-597.7"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="744.92,-594.65 737.19,-601.89 747.75,-601.05 744.92,-594.65"/>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge12" class="edge">
+<title>module~mqc_capi_system&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M846.44,-485.64C834.77,-461.14 805.36,-406.24 764,-377 739.77,-359.87 728.25,-367.07 700,-358"/>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M698,-358C626.69,-335.12 603.42,-370.01 529.5,-358"/>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge15" class="edge">
+<title>module~mqc_capi_system&#45;&gt;pic_types</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M698,-498C536.62,-516.45 513.7,-593.2 353.5,-620"/>
+</g>
+<!-- module~mqc_bond_perception -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node10" class="node">
+<title>module~mqc_bond_perception</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node10"><a xlink:href="../module/mqc_bond_perception.html" xlink:title="mqc_bond_perception">
+<polygon fill="#337ab7" stroke="#337ab7" points="764,-410 634,-410 634,-386 764,-386 764,-410"/>
+<text text-anchor="middle" x="699" y="-395.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_bond_perception</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;module~mqc_bond_perception -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge10" class="edge">
+<title>module~mqc_capi_system&#45;&gt;module~mqc_bond_perception</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M833.67,-485.94C807.07,-468.44 757.64,-435.92 726.91,-415.71"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="728.68,-412.68 718.4,-410.11 724.83,-418.53 728.68,-412.68"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node12" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node12"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="598,-410 459,-410 459,-386 598,-386 598,-410"/>
+<text text-anchor="middle" x="528.5" y="-395.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge13" class="edge">
+<title>module~mqc_capi_system&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M698,-358C674.88,-350.58 613.84,-368.45 571.94,-382.65"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="570.58,-379.42 562.27,-385.98 572.86,-386.04 570.58,-379.42"/>
+</g>
+<!-- module~mqc_string_utils -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node14" class="node">
+<title>module~mqc_string_utils</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node14"><a xlink:href="../module/mqc_string_utils.html" xlink:title="mqc_string_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="221,-470 123,-470 123,-446 221,-446 221,-470"/>
+<text text-anchor="middle" x="172" y="-455.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_string_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_system&#45;&gt;module~mqc_string_utils -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge14" class="edge">
+<title>module~mqc_capi_system&#45;&gt;module~mqc_string_utils</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M799.79,-495.19C770.39,-494.3 733.05,-494.36 700,-498"/>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M698,-498C528.85,-516.62 328.08,-487.01 231.13,-469.46"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="231.7,-466.01 221.24,-467.65 230.44,-472.9 231.7,-466.01"/>
+</g>
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge17" class="edge">
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M527.5,-300C450.17,-300.14 430.82,-298.7 353.5,-300"/>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M351.5,-300C304.12,-300.8 251.02,-313 215.15,-322.99"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="214.16,-319.63 205.51,-325.73 216.08,-326.36 214.16,-319.63"/>
+</g>
+<!-- module~mqc_cuest_iface -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node11" class="node">
+<title>module~mqc_cuest_iface</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node11"><a xlink:href="../module/mqc_cuest_iface.html" xlink:title="mqc_cuest_iface">
+<polygon fill="#337ab7" stroke="#337ab7" points="579,-170 478,-170 478,-146 579,-146 579,-170"/>
+<text text-anchor="middle" x="528.5" y="-155.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_cuest_iface -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge16" class="edge">
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_cuest_iface</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M681.23,-267.86C651.45,-246.3 589.23,-201.25 554.43,-176.05"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="556.36,-173.12 546.2,-170.09 552.25,-178.79 556.36,-173.12"/>
+</g>
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge18" class="edge">
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M685.99,-292.14C663.88,-314.3 617.27,-360.1 598,-372 592.04,-375.68 585.47,-378.98 578.83,-381.9"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="577.04,-378.85 569.12,-385.89 579.7,-385.33 577.04,-378.85"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node13" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node13"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="404.5,-272 300.5,-272 300.5,-248 404.5,-248 404.5,-272"/>
+<text text-anchor="middle" x="352.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_czt_bridge&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge19" class="edge">
+<title>module~mqc_czt_bridge&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M650.97,-288.55C617.27,-293.95 570.74,-299.93 529.5,-300"/>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M527.5,-300C481.52,-300.08 430.39,-286.64 395.53,-275.31"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="396.3,-271.88 385.7,-272.04 394.08,-278.52 396.3,-271.88"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge22" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M306.82,-570.61C298.18,-567.68 289.5,-563.89 282,-559 261.41,-545.57 266.85,-530.03 246,-517 217.57,-499.24 199.82,-518.12 173,-498"/>
+</g>
+<!-- module~mqc_atomic_radii -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node9" class="node">
+<title>module~mqc_atomic_radii</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node9"><a xlink:href="../module/mqc_atomic_radii.html" xlink:title="mqc_atomic_radii">
+<polygon fill="#337ab7" stroke="#337ab7" points="225.5,-550 118.5,-550 118.5,-526 225.5,-526 225.5,-550"/>
+<text text-anchor="middle" x="172" y="-535.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_atomic_radii</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_elements&#45;&gt;module~mqc_atomic_radii -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge20" class="edge">
+<title>module~mqc_elements&#45;&gt;module~mqc_atomic_radii</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M306.92,-569.51C284.96,-564.34 258.15,-558.03 234.29,-552.42"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="234.81,-548.95 224.28,-550.06 233.21,-555.76 234.81,-548.95"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node15" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="201,-592 143,-592 143,-568 201,-568 201,-592"/>
+<text text-anchor="middle" x="172" y="-577.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge21" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M306.92,-580C277.53,-580 239.42,-580 211.38,-580"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="211.17,-576.5 201.17,-580 211.17,-583.5 211.17,-576.5"/>
+</g>
+<!-- module~mqc_atomic_radii&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge23" class="edge">
+<title>module~mqc_atomic_radii&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M118.33,-526.05C110.78,-522.52 103.67,-517.93 98,-512 45.42,-456.97 34.63,-361.21 32.49,-318.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="35.99,-317.99 32.1,-308.13 28.99,-318.26 35.99,-317.99"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge24" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M653.76,-410.08C618.77,-420.61 569.35,-437.69 529.5,-460"/>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M527.5,-460C491.67,-480.06 488.55,-493.49 459,-522 442.49,-537.93 442.6,-547.08 423,-559 418.29,-561.86 413.16,-564.36 407.89,-566.54"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="406.46,-563.34 398.31,-570.11 408.91,-569.89 406.46,-563.34"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge25" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M655.06,-386C621.21,-376.98 572.68,-365.02 529.5,-358"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge27" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M527.5,-460C493.47,-479.05 455.19,-578.98 423,-601 396.57,-619.08 385.13,-614.98 353.5,-620"/>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M351.5,-620C239.92,-637.72 183.22,-675.18 98,-601 55.11,-563.67 38.18,-382.52 33.48,-318.48"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="36.95,-318 32.76,-308.27 29.97,-318.49 36.95,-318"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge26" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M633.82,-398C625.55,-398 617.01,-398 608.54,-398"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="608.27,-394.5 598.27,-398 608.27,-401.5 608.27,-394.5"/>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge30" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;pic_types</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M477.72,-165.31C371.95,-181.09 131.7,-218.23 98,-235 78.33,-244.79 60.34,-262.26 48.12,-276"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="45.14,-274.1 41.3,-283.97 50.46,-278.65 45.14,-274.1"/>
+</g>
+<!-- module~mqc_method_config -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node18" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node18"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="413,-126 292,-126 292,-102 413,-102 413,-126"/>
+<text text-anchor="middle" x="352.5" y="-111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_method_config -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge28" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M479.95,-145.98C458.57,-140.57 433.14,-134.14 410.72,-128.47"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="411.54,-125.07 400.99,-126.01 409.83,-131.85 411.54,-125.07"/>
+</g>
+<!-- module~mqc_scf_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node21" class="node">
+<title>module~mqc_scf_types</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node21"><a xlink:href="../module/mqc_scf_types.html" xlink:title="mqc_scf_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="217,-24 127,-24 127,0 217,0 217,-24"/>
+<text text-anchor="middle" x="172" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_scf_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_cuest_iface&#45;&gt;module~mqc_scf_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge29" class="edge">
+<title>module~mqc_cuest_iface&#45;&gt;module~mqc_scf_types</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M510.84,-145.85C490.8,-131.67 455.75,-108.21 423,-93 358.02,-62.82 278.7,-39.18 227.07,-25.42"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="227.69,-21.97 217.13,-22.8 225.91,-28.74 227.69,-21.97"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge32" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M502.85,-410.01C488.21,-418.28 470.35,-430.56 459,-446 427.78,-488.47 460.55,-522.01 423,-559 418.63,-563.31 413.41,-566.74 407.81,-569.46"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="406.07,-566.4 398.14,-573.42 408.72,-572.87 406.07,-566.4"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge33" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M495.01,-385.91C483.6,-381.6 470.7,-376.66 459,-372 413.23,-353.78 402.44,-343.63 353.5,-338"/>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M351.5,-338C305.4,-332.7 252.17,-332.91 215.92,-334"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="215.58,-330.51 205.7,-334.35 215.81,-337.51 215.58,-330.51"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge38" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M351.5,-338C270.92,-328.73 251.27,-397.28 173,-376"/>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M171,-376C138.65,-367.21 127.42,-373.08 98,-357 78.95,-346.59 61.12,-329.48 48.8,-316.02"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="51.13,-313.38 41.88,-308.21 45.89,-318.02 51.13,-313.38"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node16" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node16"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="384.5,-550 320.5,-550 320.5,-526 384.5,-526 384.5,-550"/>
+<text text-anchor="middle" x="352.5" y="-535.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge31" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M509.09,-410.12C495.08,-419.53 475.47,-433.11 459,-446 428.42,-469.94 394.91,-499.83 374.05,-518.93"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="371.43,-516.57 366.44,-525.92 376.17,-521.73 371.43,-516.57"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node17" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node17"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="218.5,-428 125.5,-428 125.5,-404 218.5,-404 218.5,-428"/>
+<text text-anchor="middle" x="172" y="-413.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge34" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M505.47,-410.04C484.85,-420.58 452.83,-435.1 423,-441 361.52,-453.15 344.27,-448.05 282,-441 263.37,-438.89 243.29,-434.82 225.5,-430.56"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="225.87,-427.05 215.32,-428.05 224.19,-433.84 225.87,-427.05"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node19" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node19"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="423,-390 282,-390 282,-366 423,-366 423,-390"/>
+<text text-anchor="middle" x="352.5" y="-375.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge35" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M458.73,-390.1C450.33,-389.13 441.7,-388.14 433.16,-387.16"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="433.53,-383.68 423.2,-386.01 432.73,-390.63 433.53,-383.68"/>
+</g>
+<!-- module~mqc_program_limits -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node20" class="node">
+<title>module~mqc_program_limits</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node20"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
+<polygon fill="#337ab7" stroke="#337ab7" points="232.5,-188 111.5,-188 111.5,-164 232.5,-164 232.5,-188"/>
+<text text-anchor="middle" x="172" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_program_limits -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge36" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M516.07,-385.9C501.6,-370.18 476.45,-341.48 459,-314 439.18,-282.79 451.63,-262.39 423,-239 372.12,-197.43 297.39,-182.82 242.9,-177.92"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="242.87,-174.4 232.62,-177.09 242.31,-181.38 242.87,-174.4"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node22" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node22"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="402,-432 303,-432 303,-408 402,-408 402,-432"/>
+<text text-anchor="middle" x="352.5" y="-417.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge37" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M458.73,-406.69C443.37,-408.64 427.22,-410.68 412.31,-412.56"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="411.69,-409.12 402.2,-413.84 412.56,-416.06 411.69,-409.12"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge39" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M314.39,-272.09C303.72,-276.04 292.21,-280.78 282,-286 264.88,-294.76 263.19,-301.38 246,-310 236.34,-314.85 225.56,-319.21 215.3,-322.92"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="213.98,-319.67 205.69,-326.27 216.28,-326.28 213.98,-319.67"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge41" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M300.36,-268.99C283.13,-271.82 263.77,-274.78 246,-277 185.65,-284.53 115.36,-290.18 72.28,-293.28"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="71.92,-289.8 62.2,-294 72.42,-296.78 71.92,-289.8"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node23" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="208,-268 136,-268 136,-244 208,-244 208,-268"/>
+<text text-anchor="middle" x="172" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge40" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M300.35,-258.85C274.48,-258.27 243.35,-257.58 218.34,-257.02"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="218.11,-253.51 208.04,-256.79 217.95,-260.51 218.11,-253.51"/>
+</g>
+<!-- module~mqc_string_utils&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge42" class="edge">
+<title>module~mqc_string_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M122.89,-450.47C113.91,-447.4 105.12,-443.08 98,-437 61.22,-405.61 43.61,-349.23 36.35,-318.12"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="39.74,-317.27 34.19,-308.25 32.9,-318.77 39.74,-317.27"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge43" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M320.48,-531.74C270.95,-521.64 178.92,-502.44 173,-498"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M171,-498C144.18,-477.88 122.77,-501.6 98,-479 51,-436.11 37.43,-357.23 33.54,-318.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="37.01,-318.03 32.65,-308.37 30.04,-318.63 37.01,-318.03"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge44" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M125.17,-404.55C115.62,-400.87 106.03,-396.11 98,-390 72.52,-370.61 53.04,-338.56 42.05,-317.37"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="45.08,-315.59 37.48,-308.2 38.82,-318.71 45.08,-315.59"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge49" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M325.15,-101.9C299.32,-90.28 261.62,-74.06 246,-71 181.45,-58.35 150.65,-31.57 98,-71 65.06,-95.66 42.99,-221.69 35.16,-273.61"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="31.66,-273.37 33.67,-283.77 38.58,-274.38 31.66,-273.37"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_program_limits -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge47" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_program_limits</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M322.65,-126.03C301.59,-134.6 272.25,-146.14 246,-155 239.93,-157.05 233.54,-159.07 227.16,-161.01"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="225.79,-157.77 217.21,-163.98 227.79,-164.48 225.79,-157.77"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_scf_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge48" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_scf_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M332.62,-101.85C318.47,-92.59 298.75,-79.38 282,-67 265.48,-54.79 263.93,-48.03 246,-38 239.15,-34.17 231.63,-30.73 224.1,-27.71"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="225.2,-24.38 214.6,-24.1 222.71,-30.92 225.2,-24.38"/>
+</g>
+<!-- module~mqc_calculation_defaults -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node24" class="node">
+<title>module~mqc_calculation_defaults</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node24"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="246,-146 98,-146 98,-122 246,-122 246,-146"/>
+<text text-anchor="middle" x="172" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_calculation_defaults -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge45" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M291.57,-120.72C280.17,-121.99 268.06,-123.35 256.1,-124.69"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="255.65,-121.22 246.1,-125.81 256.43,-128.17 255.65,-121.22"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_node25" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_module~~mqc_capi_mayer~~UsesGraph_node25"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="230,-104 114,-104 114,-80 230,-80 230,-104"/>
+<text text-anchor="middle" x="172" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge46" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M291.57,-106.61C275.13,-104.59 257.19,-102.38 240.37,-100.3"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="240.41,-96.78 230.06,-99.03 239.55,-103.73 240.41,-96.78"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge50" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M281.72,-385.28C248.28,-386.75 207.99,-385.51 173,-376"/>
+</g>
+<!-- module~mqc_program_limits&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge51" class="edge">
+<title>module~mqc_program_limits&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M123.64,-188.05C114.6,-191.64 105.6,-196.22 98,-202 72.52,-221.39 53.04,-253.44 42.05,-274.63"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="38.82,-273.29 37.48,-283.8 45.08,-276.41 38.82,-273.29"/>
+</g>
+<!-- module~mqc_scf_types&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge52" class="edge">
+<title>module~mqc_scf_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M126.74,-20.13C116.09,-23.98 105.62,-29.65 98,-38 35.85,-106.13 30.48,-224.72 31.14,-273.78"/>
+<polygon fill="#003fff" stroke="#003fff" points="27.65,-274 31.38,-283.92 34.64,-273.84 27.65,-274"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge53" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M302.66,-408.7C295.47,-406.06 288.35,-402.86 282,-399 262.4,-387.08 265.31,-374.39 246,-362 236.64,-355.99 225.71,-351.15 215.2,-347.35"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="216.32,-344.04 205.72,-344.15 214.08,-350.67 216.32,-344.04"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge56" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M302.85,-408.67C266.87,-400.13 216.74,-387.89 173,-376"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_string_utils -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge55" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_string_utils</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M302.72,-430.38C280.6,-435.09 254.28,-440.7 231.14,-445.62"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="230.15,-442.25 221.1,-447.76 231.61,-449.1 230.15,-442.25"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge54" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M302.72,-418.91C279.89,-418.4 252.56,-417.78 228.89,-417.25"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="228.73,-413.75 218.65,-417.02 228.57,-420.75 228.73,-413.75"/>
+</g>
+<!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge57" class="edge">
+<title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M111.72,-146.13C106.78,-148.57 102.11,-151.49 98,-155 61.22,-186.39 43.61,-242.77 36.35,-273.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="32.9,-273.23 34.19,-283.75 39.74,-274.73 32.9,-273.23"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_mayer~~UsesGraph_edge58" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M113.89,-102.49C108.08,-105.23 102.62,-108.67 98,-113 51.55,-156.48 37.72,-235.08 33.66,-273.56"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="30.16,-273.42 32.72,-283.7 37.13,-274.07 30.16,-273.42"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_capi_mayerUsesGraph = svgPanZoom('#modulemqc_capi_mayerUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_system_compute_mayer_bond_orders"></span> <h3>public  function <a href='../proc/mqc_system_compute_mayer_bond_orders.html'>mqc_system_compute_mayer_bond_orders</a>(handle, basis_len, basis) result(status) bind(C, name="mqc_system_compute_mayer_bond_orders")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Run one RHF over the whole system and keep Mayer&rsquo;s bond orders</p><a href="../proc/mqc_system_compute_mayer_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~33"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis_len~2"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>basis_len</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis~12"></span>
+              character(kind=c_char, len=1),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basis</strong>(basis_len)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-20 02:22 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

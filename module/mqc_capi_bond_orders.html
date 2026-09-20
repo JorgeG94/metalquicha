@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for modules and submodules.">122 statements</a>
+                 title=" 0.6% of total for modules and submodules.">171 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -147,13 +147,25 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_capi_bond_orders.html#proc-mqc_system_bond_order">mqc_system_bond_order</a>
             <a class="list-group-item" href="../module/mqc_capi_bond_orders.html#proc-mqc_system_compute_bond_orders">mqc_system_compute_bond_orders</a>
+            <a class="list-group-item" href="../module/mqc_capi_bond_orders.html#proc-mqc_system_get_bond_order_valences">mqc_system_get_bond_order_valences</a>
             <a class="list-group-item" href="../module/mqc_capi_bond_orders.html#proc-mqc_system_get_bond_orders">mqc_system_get_bond_orders</a>
             <a class="list-group-item" href="../module/mqc_capi_bond_orders.html#proc-mqc_system_has_bond_orders">mqc_system_has_bond_orders</a>
         </div>
       </div>
     </div>
 
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_bond_orders.html#proc-mqc_system_bond_order_scheme">mqc_system_bond_order_scheme</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -168,19 +180,30 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Wiberg-Mayer bond orders from xTB, on a system handle.</p>
+      <p>Bond orders on a system handle, from either of two very different
+calculations.</p>
+<p><code>mqc_system_compute_bond_orders</code> runs one xTB single point and keeps its
+Wiberg-Mayer orders: cheap enough to point at a whole system and ask
+again for every trial partition, which is what a fragmentation search
+does. <code>mqc_system_compute_mayer_bond_orders</code> (in <code>mqc_capi_mayer</code>, and
+present only in a build with the integrals backend) converges a real SCF
+and takes Mayer&rsquo;s orders off its density.</p>
+<p>They are not the same number and do not agree beyond a ranking &ndash; which
+is exactly the comparison worth making, and why both live behind one
+<code>compute_bond_orders(variant=...)</code> in Python. The handle remembers which
+one it holds; ask <code>mqc_system_bond_order_scheme</code>.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_capi_system.html'>mqc_capi_system</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
               </ul>
             </li>
@@ -979,7 +1002,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~30"></span>
+              <span class="anchor" id="variable-handle~27"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -994,7 +1017,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~164"></span>
+              <span class="anchor" id="variable-i~162"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1009,7 +1032,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~45"></span>
+              <span class="anchor" id="variable-j~49"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1054,7 +1077,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~27"></span>
+              <span class="anchor" id="variable-handle~22"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1084,7 +1107,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-variant~2"></span>
+              <span class="anchor" id="variable-variant"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -1125,6 +1148,81 @@ large graphs.</div>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_system_get_bond_order_valences"></span> <h3>public  function <a href='../proc/mqc_system_get_bond_order_valences.html'>mqc_system_get_bond_order_valences</a>(handle, n, out) result(status) bind(C, name="mqc_system_get_bond_order_valences")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The Mayer valence of each atom, <code>sum_B B_AB</code>, into a buffer of n doubles</p><a href="../proc/mqc_system_get_bond_order_valences.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~25"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~54"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-out~3"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>out</strong>(n)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-mqc_system_get_bond_orders"></span> <h3>public  function <a href='../proc/mqc_system_get_bond_orders.html'>mqc_system_get_bond_orders</a>(handle, n, out) result(status) bind(C, name="mqc_system_get_bond_orders")  
 </h3></div>
     <div class="card-body">
@@ -1144,7 +1242,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~29"></span>
+              <span class="anchor" id="variable-handle~26"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1159,7 +1257,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~62"></span>
+              <span class="anchor" id="variable-n~55"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1219,7 +1317,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~28"></span>
+              <span class="anchor" id="variable-handle~23"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1247,6 +1345,80 @@ large graphs.</div>
         </section>
         <br>
 
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_system_bond_order_scheme"></span> <h3>public  subroutine <a href='../proc/mqc_system_bond_order_scheme.html'>mqc_system_bond_order_scheme</a>(handle, buffer_len, buffer) bind(C, name="mqc_system_bond_order_scheme")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Which calculation produced the orders currently on the handle</p><a href="../proc/mqc_system_bond_order_scheme.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~24"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-buffer_len~4"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>buffer_len</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-buffer~16"></span>
+              character(kind=c_char, len=1),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>buffer</strong>(buffer_len)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
 
 
 
@@ -1268,7 +1440,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 01:28 +0000             </p>
+ on 2026-09-20 02:22 +0000             </p>
           </div>
         </div>
         <br>

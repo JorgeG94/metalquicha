@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.5% of total for modules and submodules.">664 statements</a>
+                 title=" 2.6% of total for modules and submodules.">699 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -149,6 +149,7 @@
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_json_output">write_json_output</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-add_gradient">add_gradient</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-add_hessian">add_hessian</a>
+            <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_bond_orders_section">write_bond_orders_section</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_charges_section">write_charges_section</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_efmo_section">write_efmo_section</a>
             <a class="list-group-item" href="../module/mqc_json_writer.html#proc-write_fukui_section">write_fukui_section</a>
@@ -185,14 +186,14 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">json_module</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
               </ul>
             </li>
@@ -1003,18 +1004,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M297.85,-138C275.63,-138 244.2,-138 218.36,-138"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="218.04,-134.5 208.04,-138 218.04,-141.5 218.04,-134.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_json_writer~~UsedByGraph_node7" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_json_writer~~UsedByGraph_node7"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_json_writer~~UsedByGraph_node7"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="366,-108 288,-108 288,-84 366,-84 366,-108"/>
 <text text-anchor="middle" x="327" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_json_writer~~UsedByGraph_edge6" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M287.96,-105.45C274.09,-108.97 258.31,-113.07 244,-117 235.48,-119.34 226.42,-121.93 217.71,-124.46"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="216.68,-121.12 208.07,-127.29 218.65,-127.83 216.68,-121.12"/>
 </g>
@@ -1238,7 +1239,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~44"></span>
+              <span class="anchor" id="variable-json~5"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1253,7 +1254,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~4"></span>
+              <span class="anchor" id="variable-parent"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1268,7 +1269,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~14"></span>
+              <span class="anchor" id="variable-gradient~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1308,7 +1309,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~45"></span>
+              <span class="anchor" id="variable-json~6"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1323,7 +1324,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~5"></span>
+              <span class="anchor" id="variable-parent~2"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1338,7 +1339,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~18"></span>
+              <span class="anchor" id="variable-hessian~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1349,6 +1350,76 @@ large graphs.</div>
             <td><strong>hessian</strong>(:,:)</td>
             <td>
 <p>(3<em>natoms, 3</em>natoms)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-write_bond_orders_section"></span> <h3>private  subroutine <a href='../proc/write_bond_orders_section.html'>write_bond_orders_section</a>(json, parent, data)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Bond orders per atom pair, with the valence they sum to</p><a href="../proc/write_bond_orders_section.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~10"></span>
+              type(json_core),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-parent~4"></span>
+              type(json_value),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>parent</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-data~6"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>data</strong></td>
+            <td>
+
             </td>
         </tr>
     </tbody>
@@ -1378,7 +1449,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~48"></span>
+              <span class="anchor" id="variable-json~9"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1393,7 +1464,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~6"></span>
+              <span class="anchor" id="variable-parent~3"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1408,7 +1479,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~8"></span>
+              <span class="anchor" id="variable-data~5"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1448,7 +1519,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~55"></span>
+              <span class="anchor" id="variable-json~17"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1463,7 +1534,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~11"></span>
+              <span class="anchor" id="variable-parent~9"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1478,7 +1549,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~15"></span>
+              <span class="anchor" id="variable-data~13"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1518,7 +1589,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~49"></span>
+              <span class="anchor" id="variable-json~11"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1533,7 +1604,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~7"></span>
+              <span class="anchor" id="variable-parent~5"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1548,7 +1619,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~9"></span>
+              <span class="anchor" id="variable-data~7"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1588,7 +1659,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~12"></span>
+              <span class="anchor" id="variable-data~10"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1628,7 +1699,117 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~54"></span>
+              <span class="anchor" id="variable-json~16"></span>
+              type(json_core),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-parent~8"></span>
+              type(json_value),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>parent</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-data~12"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>data</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-write_mbe_breakdown_json_impl"></span> <h3>private  subroutine <a href='../proc/write_mbe_breakdown_json_impl.html'>write_mbe_breakdown_json_impl</a>(data)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Write detailed MBE energy breakdown to JSON file</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-data~4"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>data</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-write_sapt_section"></span> <h3>private  subroutine <a href='../proc/write_sapt_section.html'>write_sapt_section</a>(json, parent, data)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The decomposition, under <code>sapt</code>, when there is one</p><a href="../proc/write_sapt_section.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~18"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1679,116 +1860,6 @@ large graphs.</div>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-write_mbe_breakdown_json_impl"></span> <h3>private  subroutine <a href='../proc/write_mbe_breakdown_json_impl.html'>write_mbe_breakdown_json_impl</a>(data)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Write detailed MBE energy breakdown to JSON file</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-data~7"></span>
-              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>data</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-write_sapt_section"></span> <h3>private  subroutine <a href='../proc/write_sapt_section.html'>write_sapt_section</a>(json, parent, data)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>The decomposition, under <code>sapt</code>, when there is one</p><a href="../proc/write_sapt_section.html" class="pull-right"><emph>Read more&hellip;</emph></a>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-json~56"></span>
-              type(json_core),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>json</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-parent~12"></span>
-              type(json_value),
-            </td>
-<td>intent(in),</td>
-              <td></td>            <td>
-              pointer
-            </td>
-            <td>::</td>
-            <td><strong>parent</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-data~16"></span>
-              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>data</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-write_stability_section"></span> <h3>private  subroutine <a href='../proc/write_stability_section.html'>write_stability_section</a>(json, parent, data)  
 </h3></div>
     <div class="card-body">
@@ -1808,7 +1879,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~50"></span>
+              <span class="anchor" id="variable-json~12"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1823,7 +1894,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~8"></span>
+              <span class="anchor" id="variable-parent~6"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1838,7 +1909,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~10"></span>
+              <span class="anchor" id="variable-data~8"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1878,7 +1949,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~51"></span>
+              <span class="anchor" id="variable-json~13"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -1893,7 +1964,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-parent~9"></span>
+              <span class="anchor" id="variable-parent~7"></span>
               type(json_value),
             </td>
 <td>intent(in),</td>
@@ -1908,7 +1979,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~11"></span>
+              <span class="anchor" id="variable-data~9"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1948,7 +2019,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~6"></span>
+              <span class="anchor" id="variable-data~3"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1988,7 +2059,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~13"></span>
+              <span class="anchor" id="variable-data~11"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2031,7 +2102,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 01:28 +0000             </p>
+ on 2026-09-20 02:22 +0000             </p>
           </div>
         </div>
         <br>

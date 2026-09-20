@@ -132,6 +132,12 @@
                  <td><p>Fold coeff * (one fragment&rsquo;s derivatives) into the system-sized totals</p><a href="../proc/accumulate_fragment_derivatives.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/accumulate_pair_blocks.html'>accumulate_pair_blocks</a></td>
+                 <td><a href='../module/mqc_population_analysis.html'>mqc_population_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>sum_{mu in A, nu in B} factor * (D S)_mu,nu (D S)_nu,mu, per atom pair</p><a href="../proc/accumulate_pair_blocks.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/accumulate_uncapped.html'>accumulate_uncapped</a></td>
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
@@ -583,6 +589,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Whether fragmentation severs the bond between two atoms</p><a href="../proc/bond_is_broken.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/bond_orders_keys.html'>bond_orders_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Settings for the bond orders over the converged density</p><a href="../proc/bond_orders_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/bonded.html'>bonded</a></td>
                  <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
@@ -831,6 +843,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>The single angular momentum one ECP channel carries</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/charge_density_matrix.html'>charge_density_matrix</a></td>
+                 <td><a href='../module/mqc_population_analysis.html'>mqc_population_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>D S</code>, with the shapes and the owner map checked first</p><a href="../proc/charge_density_matrix.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/charges_keys.html'>charges_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -847,6 +865,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
                  <td><p><code>keywords.mcscf.avas</code>, and that it does not fight the explicit space</p><a href="../proc/check_avas_group.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_bond_orders.html'>check_bond_orders</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>properties.bond_orders.scheme</code> names a definition we have</p><a href="../proc/check_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/check_bonding_analysis.html'>check_bonding_analysis</a></td>
@@ -2848,6 +2872,25 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Apply mass weighting to Hessian matrix.</p><a href="../proc/mass_weight_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mayer_atomic_bond_orders.html'>mayer_atomic_bond_orders</a></td>
+                 <td><a href='../module/mqc_population_analysis.html'>mqc_population_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>B_AB = sum_{mu in A} sum_{nu in B} (D S)_mu,nu (D S)_nu,mu</p><a href="../proc/mayer_atomic_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mayer_atomic_bond_orders_open_shell.html'>mayer_atomic_bond_orders_open_shell</a></td>
+                 <td><a href='../module/mqc_population_analysis.html'>mqc_population_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>B_AB = 2 sum_{mu in A, nu in B} [ (Da S)_mu,nu (Da S)_nu,mu
+                                + (Db S)_mu,nu (Db S)_nu,mu ]</p><a href="../proc/mayer_atomic_bond_orders_open_shell.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mayer_atomic_valences.html'>mayer_atomic_valences</a></td>
+                 <td><a href='../module/mqc_population_analysis.html'>mqc_population_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>V_A = sum_{B /= A} B_AB, the Mayer valence</p><a href="../proc/mayer_atomic_valences.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mbe_base_destroy.html'>mbe_base_destroy</a></td>
                  <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
                  <td>Subroutine</td>
@@ -3246,6 +3289,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>One element, 0-based, for a caller probing a single pair</p><a href="../proc/mqc_system_bond_order.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mqc_system_bond_order_scheme.html'>mqc_system_bond_order_scheme</a></td>
+                 <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Which calculation produced the orders currently on the handle</p><a href="../proc/mqc_system_bond_order_scheme.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mqc_system_bonds_declared.html'>mqc_system_bonds_declared</a></td>
                  <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
@@ -3276,6 +3325,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Run one RHF over the whole system and keep its atomic charges</p><a href="../proc/mqc_system_compute_charges.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mqc_system_compute_mayer_bond_orders.html'>mqc_system_compute_mayer_bond_orders</a></td>
+                 <td><a href='../module/mqc_capi_mayer.html'>mqc_capi_mayer</a></td>
+                 <td>Function</td>
+                 <td><p>Run one RHF over the whole system and keep Mayer&rsquo;s bond orders</p><a href="../proc/mqc_system_compute_mayer_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mqc_system_count_missing_bonds.html'>mqc_system_count_missing_bonds</a></td>
                  <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
@@ -3286,6 +3341,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Subroutine</td>
                  <td><p>Release a system. Safe on a null handle.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_get_bond_order_valences.html'>mqc_system_get_bond_order_valences</a></td>
+                 <td><a href='../module/mqc_capi_bond_orders.html'>mqc_capi_bond_orders</a></td>
+                 <td>Function</td>
+                 <td><p>The Mayer valence of each atom, <code>sum_B B_AB</code>, into a buffer of n doubles</p><a href="../proc/mqc_system_get_bond_order_valences.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mqc_system_get_bond_orders.html'>mqc_system_get_bond_orders</a></td>
@@ -4430,6 +4491,12 @@ Sends SCF energy (non-blocking) and other components (blocking)</p></td>
                  <td><p>No-op stand-in: an effective fragment potential needs the CPU backend</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_czt_mayer_bond_orders.html'>run_czt_mayer_bond_orders</a></td>
+                 <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: Mayer bond orders need the CPU integral backend</p><a href="../proc/run_czt_mayer_bond_orders.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_czt_mcscf.html'>run_czt_mcscf</a></td>
                  <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
                  <td>Subroutine</td>
@@ -5050,21 +5117,27 @@ guess would be read, validated and then silently ignored.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
                  <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
                  <td><p>A worker&rsquo;s half of a calculation</p><a href="../proc/worker_run.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_bond_orders_section.html'>write_bond_orders_section</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Bond orders per atom pair, with the valence they sum to</p><a href="../proc/write_bond_orders_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/write_charges_section.html'>write_charges_section</a></td>
@@ -5267,7 +5340,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 01:28 +0000             </p>
+ on 2026-09-20 02:22 +0000             </p>
           </div>
         </div>
         <br>
