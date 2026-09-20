@@ -365,6 +365,10 @@ contains
          driver_config%method_config%properties%charges_scheme = &
             mqc_config%charges_scheme
       end if
+      if (allocated(mqc_config%bond_order_scheme)) then
+         driver_config%method_config%properties%bond_order_scheme = &
+            mqc_config%bond_order_scheme
+      end if
       if (allocated(mqc_config%bonding_analysis)) then
          driver_config%method_config%properties%bonding_analysis = &
             mqc_config%bonding_analysis

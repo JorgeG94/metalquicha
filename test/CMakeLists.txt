@@ -405,6 +405,16 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_charges)
   target_link_libraries(test_mqc_czt_charges PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Mayer bond orders, against PySCF and numpy over the same density and
+  # overlap. Unlike a population charge these have a reference, so the numbers
+  # themselves are pinned -- including the open-shell case, where the formula is
+  # a sum over spins and not the closed-shell expression with the total density.
+  # That mistake is invisible on every restricted test there is, so one test
+  # computes both forms on triplet O2 and insists they differ.
+  addtest(mqc_mayer_bond_orders)
+  target_link_libraries(test_mqc_mayer_bond_orders
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The multipole matrices every distributed multipole and every localization
   # centroid is built from. Origin shifts, symmetry, and the redundancy in the
   # full Cartesian tensor -- the three things a transposed component breaks

@@ -193,13 +193,21 @@ by a calculation you have to assemble yourself:
    cluster.compute_bond_orders(variant="gfn2")   # one xTB single point
    cluster.bond_order(4, 7)                      # Wiberg-Mayer, 0-based
 
+   cluster.compute_bond_orders(variant="mayer", basis="6-31g")  # one RHF
+   cluster.bond_order_scheme                     # "mayer" -- which one is here
+
    cluster.compute_charges(scheme="chelpg", basis="6-31g")   # one RHF
    cluster.charges()
 
-Both are computed once and read many times, because a caller trying twenty
+All are computed once and read many times, because a caller trying twenty
 trial fragmentations does not want twenty calculations. Bond orders separate a
 real bond from a hydrogen bond in a way a distance rule cannot; charges come
-from CHELPG or Mulliken, and the two disagree by design. See
+from CHELPG or Mulliken, and the two disagree by design.
+
+The two bond-order variants are a cheap question and an expensive one about the
+same molecule: ``"gfn2"`` is a semi-empirical single point, ``"mayer"`` is a
+real SCF, and they agree on which pairs are bonds while disagreeing on the
+magnitudes. Ask ``bond_order_scheme`` before comparing two runs. See
 :doc:`charges_and_bond_orders`.
 
 Effective fragment potentials
@@ -990,10 +998,13 @@ Session
      - Fill the bond list in from the geometry, and declare it.
    * - ``missing_bonds(tolerance=1.2)``
      - Cross-monomer bonds the geometry implies and you did not declare.
-   * - ``compute_bond_orders(variant="gfn2", accuracy=0.0)``
-     - One xTB single point, kept on the system.
+   * - ``compute_bond_orders(variant="gfn2", accuracy=0.0, basis="6-31g")``
+     - One xTB single point, or with ``variant="mayer"`` one RHF. Kept on the
+       system either way.
    * - ``bond_orders()`` / ``bond_order(i, j)`` / ``has_bond_orders``
-     - The Wiberg-Mayer matrix, one pair, whether it exists.
+     - The matrix, one pair, whether it exists.
+   * - ``bond_order_scheme`` / ``bond_order_valences()``
+     - Which variant produced them; the Mayer valence per atom, Mayer only.
    * - ``compute_charges(scheme="chelpg", basis="6-31g")``
      - One RHF, kept on the system. Closed shell only.
    * - ``charges()`` / ``charge_on(i)`` / ``charge_scheme`` / ``has_charges``

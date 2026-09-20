@@ -94,6 +94,7 @@ contains
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
                   new_unittest("bonding_analysis_property", test_bonding_analysis), &
                   new_unittest("charges_property", test_charges_property), &
+                  new_unittest("bond_orders_property", test_bond_orders_property), &
                   new_unittest("avas_orbital_labels", test_avas_keywords), &
                   new_unittest("ormas_partition", test_ormas_keywords), &
                   new_unittest("full_valence_space", test_full_valence), &
@@ -1739,6 +1740,69 @@ contains
       call check(error, parse_error%has_error(), &
                  "a misspelled key inside properties.charges should be refused")
    end subroutine test_charges_property
+
+   subroutine test_bond_orders_property(error)
+      !! `properties.bond_orders`, shaped like `charges` and refusing a
+      !! plausible wrong answer
+      !!
+      !! The object is the request and `scheme` only says which definition, so
+      !! an empty object still asks for orders. The last case is the one that
+      !! matters: "wiberg" is a real bond order that this is not, and a deck
+      !! asking for it is asking a different question rather than misspelling
+      !! this one, so it is refused by name instead of being run as Mayer.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Absent object: no bond orders.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), "")
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%bond_order_scheme), &
+                 "no bond_orders object means no bond orders")
+      if (allocated(error)) return
+
+      ! Empty object: bond orders, at the documented default.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%bond_order_scheme), &
+                 "the object alone should ask for bond orders")
+      if (allocated(error)) return
+      call check(error, trim(config%bond_order_scheme), "mayer", &
+                 "and should default to the scheme the schema documents")
+      if (allocated(error)) return
+
+      ! Named scheme: taken as written.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {"scheme": "mayer"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%bond_order_scheme), "mayer", &
+                 "a named scheme should be what the deck asked for")
+      if (allocated(error)) return
+
+      ! An unknown key inside the object is refused, like every other object.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {"type": "mayer"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a misspelled key inside properties.bond_orders should be refused")
+      if (allocated(error)) return
+
+      ! And a scheme that names a different quantity.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {"scheme": "wiberg"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "'wiberg' names a bond order in an orthonormal basis and must be "// &
+                 "refused rather than silently run as Mayer")
+   end subroutine test_bond_orders_property
 
    subroutine test_bonding_analysis(error)
       !! `properties.bonding_analysis`, and that an unknown one is refused

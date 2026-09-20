@@ -152,6 +152,7 @@ contains
       call write_efmo_section(json, main_obj, data)
       call write_ieda_section(json, main_obj, data)
       call write_charges_section(json, main_obj, data)
+      call write_bond_orders_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
 
@@ -366,6 +367,59 @@ contains
          end if
       end do
    end subroutine write_charges_section
+
+   subroutine write_bond_orders_section(json, parent, data)
+      !! Bond orders per atom pair, with the valence they sum to
+      !!
+      !! The scheme travels with the numbers for the same reason it does with
+      !! the charges, and here it matters more: "bond order" names at least
+      !! three different quantities in this code, and a Mayer order from an
+      !! ab initio density is not comparable with a semi-empirical
+      !! Wiberg-Mayer one from xTB.
+      !!
+      !! The whole matrix is written rather than a list of bonded pairs. Where
+      !! the line between a weak bond and none falls is the consumer's
+      !! question, and a threshold applied here would answer it silently.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, row, entry
+      integer :: i, j, natm
+      logical :: with_valence
+
+      if (.not. data%has_bond_orders) return
+      if (.not. allocated(data%bond_orders)) return
+      natm = size(data%bond_orders, 1)
+      with_valence = allocated(data%bond_order_valences)
+      if (with_valence) with_valence = size(data%bond_order_valences) == natm
+
+      call json%create_object(section, "bond_orders")
+      call json%add(parent, section)
+      call json%add(section, "scheme", trim(data%bond_order_scheme))
+
+      ! Row by row, symmetric, zero on the diagonal -- an atom is not bonded
+      ! to itself and the diagonal of this matrix is a different quantity.
+      call json%create_array(arr, "matrix")
+      call json%add(section, arr)
+      do i = 1, natm
+         call json%create_array(row, "")
+         call json%add(arr, row)
+         do j = 1, natm
+            call json%add(row, "", data%bond_orders(i, j))
+         end do
+      end do
+
+      if (.not. with_valence) return
+      call json%create_array(arr, "atoms")
+      call json%add(section, arr)
+      do i = 1, natm
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         call json%add(entry, "atom", i)
+         call json%add(entry, "valence", data%bond_order_valences(i))
+      end do
+   end subroutine write_bond_orders_section
 
    subroutine write_fukui_section(json, parent, data)
       !! Where the molecule reacts, per atom, for something other than a reader

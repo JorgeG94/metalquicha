@@ -458,6 +458,21 @@ contains
          end block
       end if
 
+      ! Bond orders are refused rather than computed here, and the refusal is
+      ! deliberate. The arithmetic is backend-independent -- the same
+      ! `mqc_population_analysis` entry the CPU path calls, over this
+      ! backend's own AO-to-atom counts -- but the spin convention is not:
+      ! `scf%density` is the *total* on this backend where it is alpha on the
+      ! CPU one, and Mayer's open-shell form is a sum over spins, so the one
+      ! line that splits it is exactly the line that cannot be checked without
+      ! a GPU. Saying so beats shipping an unverified factor of two.
+      if (allocated(settings%bond_order_scheme)) then
+         call logger%warning("  bond orders could not be computed: "// &
+                             "properties.bond_orders is not implemented on the GPU "// &
+                             "backend. Run it on the CPU backend, which computes the "// &
+                             "same quantity from the same density.")
+      end if
+
       if (need_gradient) then
          call move_alloc(gradient, result%gradient)
          result%has_gradient = .true.

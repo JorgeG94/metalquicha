@@ -72,6 +72,7 @@ module mqc_czt_bridge
    public :: run_czt_makefp
    public :: run_czt_neo
    public :: run_czt_charges
+   public :: run_czt_mayer_bond_orders
    public :: run_czt_efp
    public :: run_czt_sapt0
    public :: run_czt_sapt2
@@ -276,6 +277,76 @@ contains
                              total_charge=real(total_charge, dp))
       end if
    end subroutine run_czt_charges
+
+   subroutine run_czt_mayer_bond_orders(atomic_numbers, element_symbols, coordinates, &
+                                        basis_name, total_charge, orders, valences, &
+                                        error)
+      !! Mayer bond orders from an RHF density
+      !!
+      !! The ab initio counterpart to the xTB orders the same Python call
+      !! offers, and the reason both exist: one is cheap enough to point at a
+      !! whole system repeatedly, the other is what the cheap one is being
+      !! checked against. Like `run_czt_charges` this costs a real SCF in the
+      !! basis the caller names.
+      !!
+      !! Closed shell only; an odd electron count is refused rather than
+      !! paired up. The open-shell formula is implemented and reachable from a
+      !! deck -- it is this *entry* that has no unrestricted reference to hand,
+      !! since it drives an RHF.
+      use pic_types, only: dp
+      use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+      use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_valences
+      use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)     !! (3, n), Bohr
+      character(len=*), intent(in) :: basis_name
+      integer, intent(in) :: total_charge
+      real(dp), allocatable, intent(out) :: orders(:, :)
+      real(dp), allocatable, intent(out) :: valences(:)
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: SCF_MAX_ITER = 100
+      real(dp), parameter :: SCF_ENERGY_TOL = 1.0e-9_dp
+      real(dp), parameter :: SCF_DENSITY_TOL = 1.0e-7_dp
+      real(dp), parameter :: SCF_GRAD_TOL = 1.0e-7_dp
+         !! Stated rather than derived, for the reason `run_czt_charges` gives:
+         !! this routine consumes the density, whose error goes as the
+         !! commutator and not as its square.
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: overlap(:, :)
+      integer :: nelec
+
+      nelec = sum(atomic_numbers) - total_charge
+      if (mod(nelec, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "Mayer bond orders through this entry come "// &
+                        "from a closed-shell RHF and this system has an odd number of "// &
+                        "electrons")
+         return
+      end if
+
+      call build_czt_molecule(atomic_numbers, element_symbols, coordinates, &
+                              basis_name, mol, error)
+      if (error%has_error()) return
+
+      ! mqc: scf-subset -- a C API entry point whose signature carries no SCF
+      ! settings; the SCF_* constants are this entry's documented defaults.
+      call run_czt_rhf(mol, nelec, SCF_MAX_ITER, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
+                       .false., scf, error, grad_tol=SCF_GRAD_TOL)
+      if (error%has_error()) return
+      if (.not. scf%converged) then
+         call error%set(ERROR_VALIDATION, "the SCF did not converge, so there is no "// &
+                        "density to take bond orders from")
+         return
+      end if
+
+      call mol%overlap(overlap)
+      call mayer_bond_orders(mol, scf%density, overlap, orders, error)
+      if (error%has_error()) return
+      call mayer_valences(orders, valences)
+   end subroutine run_czt_mayer_bond_orders
 
    subroutine run_czt_efp(potentials, fragment_sizes, fragment_atoms, &
                           coordinates, terms, error)
@@ -786,6 +857,8 @@ contains
       !! Closed-shell HF for one fragment, on the CPU
       use mqc_czt_charges, only: mulliken_charges, chelpg_charges, &
                                  mulliken_spin_populations
+      use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
+                                     mayer_valences, print_mayer_report
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
@@ -1603,6 +1676,53 @@ contains
                if (allocated(q_spin)) call move_alloc(q_spin, result%spin_populations)
                result%charge_scheme = trim(settings%charges_scheme)
                result%has_charges = .true.
+            end if
+         end block
+      end if
+
+      ! ---- bond orders ------------------------------------------------------
+      !
+      ! The same density again, asked a different question: not how much of it
+      ! sits on each atom but how much of it two atoms share. Free next to the
+      ! SCF -- one GEMM against the overlap -- and it needs no second
+      ! calculation for the same reason the charges do not.
+      !
+      ! **The open-shell form is not the closed-shell one with the total
+      ! density.** It is a sum over spins, doubled, and it reduces to the
+      ! closed-shell expression only when the two spin densities are equal. So
+      ! the branch below is on the *reference*, not on the multiplicity: an
+      ! unrestricted singlet takes the open-shell entry and gets the same
+      ! answer, which is the point.
+      if (allocated(settings%bond_order_scheme)) then
+         block
+            real(dp), allocatable :: orders(:, :), valences(:), s_bond(:, :)
+
+            call analysis_error%clear()
+            select case (trim(settings%bond_order_scheme))
+            case ("mayer")
+               call mol%overlap(s_bond)
+               if (allocated(scf%density_beta)) then
+                  call mayer_bond_orders_open_shell(mol, scf%density, scf%density_beta, &
+                                                    s_bond, orders, analysis_error)
+               else
+                  call mayer_bond_orders(mol, scf%density, s_bond, orders, analysis_error)
+               end if
+            case default
+               call analysis_error%set(ERROR_VALIDATION, "unknown bond order scheme '"// &
+                                       trim(settings%bond_order_scheme)// &
+                                       "'; expected 'mayer'.")
+            end select
+
+            if (analysis_error%has_error()) then
+               call logger%warning("  bond orders could not be computed: "// &
+                                   analysis_error%get_message())
+            else
+               call mayer_valences(orders, valences)
+               call print_mayer_report(orders, valences, symbols)
+               call move_alloc(orders, result%bond_orders)
+               call move_alloc(valences, result%bond_order_valences)
+               result%bond_order_scheme = trim(settings%bond_order_scheme)
+               result%has_bond_orders = .true.
             end if
          end block
       end if
@@ -2738,6 +2858,19 @@ contains
                                "function: the partition needs an AO density this path "// &
                                "does not form. Ask for them on the reference method "// &
                                "instead, or drop properties.charges.")
+         result%has_error = .true.
+         return
+      end if
+
+      ! Refused for the same reason and at the same point as the charges: a
+      ! Mayer order is a function of an AO density matrix, and this path has
+      ! only a 1-RDM over fractionally occupied orbitals.
+      if (allocated(settings%bond_order_scheme)) then
+         call result%error%set(ERROR_VALIDATION, "bond orders (properties.bond_orders) "// &
+                               "are not implemented for a multiconfigurational wave "// &
+                               "function: Mayer's definition needs an AO density this "// &
+                               "path does not form. Ask for them on the reference "// &
+                               "method instead, or drop properties.bond_orders.")
          result%has_error = .true.
          return
       end if

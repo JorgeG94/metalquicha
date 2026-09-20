@@ -1,6 +1,19 @@
 !! Bond orders over the C boundary, for callers building their own connectivity
 module mqc_capi_bond_orders
-   !! Wiberg-Mayer bond orders from xTB, on a system handle.
+   !! Bond orders on a system handle, from either of two very different
+   !! calculations.
+   !!
+   !! `mqc_system_compute_bond_orders` runs one xTB single point and keeps its
+   !! Wiberg-Mayer orders: cheap enough to point at a whole system and ask
+   !! again for every trial partition, which is what a fragmentation search
+   !! does. `mqc_system_compute_mayer_bond_orders` (in `mqc_capi_mayer`, and
+   !! present only in a build with the integrals backend) converges a real SCF
+   !! and takes Mayer's orders off its density.
+   !!
+   !! They are not the same number and do not agree beyond a ranking -- which
+   !! is exactly the comparison worth making, and why both live behind one
+   !! `compute_bond_orders(variant=...)` in Python. The handle remembers which
+   !! one it holds; ask `mqc_system_bond_order_scheme`.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_associated, c_f_pointer
    use pic_types, only: dp
    use mqc_capi_system, only: system_handle_t, last_message
@@ -17,6 +30,8 @@ module mqc_capi_bond_orders
    public :: mqc_system_get_bond_orders
    public :: mqc_system_bond_order
    public :: mqc_system_has_bond_orders
+   public :: mqc_system_bond_order_scheme
+   public :: mqc_system_get_bond_order_valences
 
 contains
 
@@ -94,6 +109,11 @@ contains
 
       if (allocated(h%bond_orders)) deallocate (h%bond_orders)
       allocate (h%bond_orders(whole%n_atoms, whole%n_atoms), source=res%bond_orders)
+      ! The xTB path reports no valence of its own, so anything left on the
+      ! handle from a previous Mayer call has to go: it would otherwise be read
+      ! as this matrix's row sums.
+      if (allocated(h%bond_order_valences)) deallocate (h%bond_order_valences)
+      h%bond_order_scheme = "xtb"
       status = MQC_OK
 #endif
    end function mqc_system_compute_bond_orders
@@ -111,6 +131,74 @@ contains
       call c_f_pointer(handle, h)
       if (allocated(h%bond_orders)) has = 1
    end function mqc_system_has_bond_orders
+
+   subroutine mqc_system_bond_order_scheme(handle, buffer_len, buffer) &
+      bind(C, name="mqc_system_bond_order_scheme")
+      !! Which calculation produced the orders currently on the handle
+      !!
+      !! "xtb", "mayer", or empty if none have been computed. Worth asking
+      !! before comparing two systems: a semi-empirical Wiberg-Mayer order and
+      !! an ab initio Mayer order are different quantities.
+      use, intrinsic :: iso_c_binding, only: c_null_char
+      type(c_ptr), value :: handle
+      integer(c_int), value :: buffer_len
+      character(kind=c_char), intent(inout) :: buffer(buffer_len)
+
+      type(system_handle_t), pointer :: h
+      character(len=:), allocatable :: text
+      integer :: n, i
+
+      if (buffer_len <= 0) return
+      text = ""
+      if (c_associated(handle)) then
+         call c_f_pointer(handle, h)
+         if (allocated(h%bond_orders)) text = trim(h%bond_order_scheme)
+      end if
+
+      n = min(len(text), int(buffer_len) - 1)
+      do i = 1, n
+         buffer(i) = text(i:i)
+      end do
+      buffer(n + 1) = c_null_char
+   end subroutine mqc_system_bond_order_scheme
+
+   function mqc_system_get_bond_order_valences(handle, n, out) result(status) &
+      bind(C, name="mqc_system_get_bond_order_valences")
+      !! The Mayer valence of each atom, `sum_B B_AB`, into a buffer of n doubles
+      !!
+      !! Fails rather than summing the matrix when the orders came from xTB:
+      !! that path reports no valence, and a row sum of a different definition
+      !! is a number nobody computed.
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n
+      real(c_double), intent(out) :: out(n)
+      integer(c_int) :: status
+
+      type(system_handle_t), pointer :: h
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, h)
+
+      if (.not. allocated(h%bond_order_valences)) then
+         last_message = "mqc_system_get_bond_order_valences: no valences on this "// &
+                        "handle; they come with the 'mayer' variant"
+         status = MQC_FAIL
+         return
+      end if
+      if (n /= size(h%bond_order_valences)) then
+         last_message = "mqc_system_get_bond_order_valences: buffer is the wrong size "// &
+                        "for this system"
+         status = MQC_FAIL
+         return
+      end if
+
+      out = h%bond_order_valences
+      status = MQC_OK
+   end function mqc_system_get_bond_order_valences
 
    function mqc_system_get_bond_orders(handle, n, out) result(status) &
       bind(C, name="mqc_system_get_bond_orders")

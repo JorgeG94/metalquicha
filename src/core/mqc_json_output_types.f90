@@ -114,6 +114,14 @@ module mqc_json_output_types
       real(dp), allocatable :: spin_populations(:)
       character(len=16) :: charge_scheme = ""
       logical :: has_charges = .false.
+      ! Bond orders over a converged density, when `properties.bond_orders`
+      ! asked for them. The scheme travels with the matrix for the reason
+      ! given in `calculation_result_t`: two things called bond orders here
+      ! are not the same quantity.
+      real(dp), allocatable :: bond_orders(:, :)
+      real(dp), allocatable :: bond_order_valences(:)
+      character(len=16) :: bond_order_scheme = ""
+      logical :: has_bond_orders = .false.
       real(dp), allocatable :: fukui_plus(:), fukui_minus(:), fukui_dual(:)
       real(dp) :: fukui_ip = 0.0_dp
       real(dp) :: fukui_ea = 0.0_dp
@@ -207,6 +215,8 @@ contains
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
+      if (allocated(this%bond_orders)) deallocate (this%bond_orders)
+      if (allocated(this%bond_order_valences)) deallocate (this%bond_order_valences)
       if (allocated(this%fukui_plus)) deallocate (this%fukui_plus)
       if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
       if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
@@ -242,6 +252,7 @@ contains
       this%efmo_qm_groups = 0
       this%has_ieda = .false.
       this%has_fukui = .false.
+      this%has_bond_orders = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.

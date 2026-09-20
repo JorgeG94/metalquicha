@@ -89,6 +89,9 @@ module mqc_cuest_iface
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for.
+      character(len=:), allocatable :: bond_order_scheme
+         !! Bond orders over the converged density from
+         !! `properties.bond_orders`, unallocated when none were asked for.
       logical :: bonding_energy = .false.
       logical :: bonding_no_sharing = .false.
       logical :: bonding_restrict_localization = .false.
@@ -181,7 +184,8 @@ contains
    subroutine apply_properties_settings(settings, properties)
       !! Hand a backend the post-SCF properties the deck asked for
       !!
-      !! `fukui_population`, `fukui_guess` and `charges_scheme` are allocatable
+      !! `fukui_population`, `fukui_guess`, `charges_scheme` and
+      !! `bond_order_scheme` are allocatable
       !! and stay guarded: an unset one must not overwrite what a backend
       !! already has.
       type(cuest_scf_settings_t), intent(inout) :: settings
@@ -202,6 +206,9 @@ contains
       settings%fukui_scf = properties%fukui_scf
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
+      end if
+      if (allocated(properties%bond_order_scheme)) then
+         settings%bond_order_scheme = properties%bond_order_scheme
       end if
    end subroutine apply_properties_settings
 

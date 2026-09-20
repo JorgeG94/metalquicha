@@ -85,8 +85,20 @@ module mqc_result_types
       real(dp), allocatable :: dipole(:)        !! Dipole moment vector (3) (Debye)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3N) in a.u. for IR intensities
       real(dp), allocatable :: bond_orders(:, :)
-         !! Wiberg-Mayer bond orders, (natoms, natoms), symmetric with a zero
-         !! diagonal.
+         !! Bond orders, (natoms, natoms), symmetric with a zero diagonal.
+         !!
+         !! Filled either by an xTB single point (Wiberg-Mayer, in that
+         !! Hamiltonian's own minimal basis) or from a converged ab initio
+         !! density (Mayer, in the AO basis). Those are different quantities
+         !! and only agree to a trend, so `bond_order_scheme` says which one is
+         !! here and a consumer that ignores it is comparing two numbers that
+         !! were never the same number.
+      real(dp), allocatable :: bond_order_valences(:)
+         !! (natoms) `sum_B B_AB`, the valence each atom's orders add up to.
+         !! Free once the matrix exists and the column a reader looks at first.
+      character(len=16) :: bond_order_scheme = ""
+         !! Which definition produced them: "mayer" or "xtb". Empty means
+         !! nothing has.
 
       ! Atomic partial charges, when `properties.charges` asked for them.
       real(dp), allocatable :: atomic_charges(:)
@@ -328,6 +340,7 @@ contains
       ! array left behind here comes back on the next fragment at the previous
       ! fragment's size.
       if (allocated(this%bond_orders)) deallocate (this%bond_orders)
+      if (allocated(this%bond_order_valences)) deallocate (this%bond_order_valences)
       if (allocated(this%fukui_plus)) deallocate (this%fukui_plus)
       if (allocated(this%fukui_minus)) deallocate (this%fukui_minus)
       if (allocated(this%fukui_dual)) deallocate (this%fukui_dual)
