@@ -90,12 +90,12 @@ module mqc_czt_tddft
    !! `response_product`, `mqc_czt_ov_hessian` and the CI Davidson already
    !! share.
    !!
-   !! **Amplitudes come back at different normalisations for the two
-   !! approximations, and `singlet_excitations` says which.** Tamm-Dancoff has
-   !! no `Y`, so its `X` is a unit vector; the paired problem conserves
-   !! `|X|^2 - |Y|^2` and nothing else, and its amplitudes carry the
-   !! restricted closed-shell convention `|X|^2 - |Y|^2 = 1/2` that PySCF,
-   !! Psi4 and the transition moments of Layer 5 are written in.
+   !! **Every route returns `|X|^2 - |Y|^2 = 1/2`,** which in Tamm-Dancoff --
+   !! where `Y` is zero -- reads `|X|^2 = 1/2`. It is the restricted
+   !! closed-shell convention PySCF and Psi4 report, and the one the
+   !! transition moments of Layer 5 are written in. One convention rather than
+   !! two, so nothing downstream has to ask which route produced what it was
+   !! handed.
    !!
    !! ## What is not here
    !!
@@ -103,12 +103,6 @@ module mqc_czt_tddft
    !! reference. `excited_decline_reason` in `mqc_czt_bridge` refuses what
    !! cannot be computed; the bridge refuses the rest by name rather than
    !! answering a different question.
-
-   ! TODO(mqc): the two amplitude normalisations above should be one.
-   ! Tamm-Dancoff amplitudes are unit vectors because that is what Layer 2
-   ! shipped, and halving them to match the paired route would silently move
-   ! every printed amplitude of an existing calculation -- so until it is
-   ! done, Layer 5 has to know which route produced what it is handed.
    use pic_types, only: dp
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
@@ -174,7 +168,7 @@ module mqc_czt_tddft
       !! comparison in eV trips over.
 
    real(dp), parameter :: RHF_PAIRED_NORM = 0.5_dp
-      !! `|X|^2 - |Y|^2` the paired amplitudes are handed back at.
+      !! `|X|^2 - |Y|^2` every route's amplitudes are handed back at.
       !!
       !! One half, not one. A closed-shell excitation is two spin-orbital
       !! excitations of equal weight and the spatial-orbital amplitude carries
@@ -183,6 +177,9 @@ module mqc_czt_tddft
       !! transition moment `mu = 2 sum <i|r|a> (X+Y)` is written for; handing
       !! back unit-normalised amplitudes instead would put a factor of the
       !! square root of two into every oscillator strength downstream.
+      !!
+      !! Tamm-Dancoff has no `Y`, so the Davidson's unit eigenvector is scaled
+      !! by the square root of this and the convention holds there too.
 
    type :: response_core_t
       !! Everything a response product needs, and nothing about which one
@@ -934,7 +931,10 @@ contains
                             value_label="excitation")
          core%n_products = tda%core%n_products
          if (error%has_error()) return
-         all_x = vectors
+         ! The Davidson returns unit eigenvectors; the closed-shell
+         ! convention is `|X|^2 = 1/2`, and scaling here rather than at every
+         ! reader is what makes the three routes one convention.
+         all_x = sqrt(RHF_PAIRED_NORM)*vectors
          all_y = 0.0_dp
       end select
 
@@ -1056,12 +1056,11 @@ contains
       !! rather than assume it. Always allocated when this returns without an
       !! error, empty included.
       !!
-      !! **Normalisation depends on `method`,** which is the one thing about
-      !! this routine a caller cannot ignore. `tda` returns a unit `X` and a
-      !! `Y` of zeros -- there is no `Y` in that approximation, and the zeros
-      !! say so rather than standing for something left unfilled. `rpa` and
-      !! `casida` return `X` and `Y` at `sum(X^2) - sum(Y^2) = 1/2`, the
-      !! restricted closed-shell convention.
+      !! **Normalisation does not depend on `method`.** All three routes
+      !! return `sum(X^2) - sum(Y^2) = 1/2`, the restricted closed-shell
+      !! convention. `tda` has no `Y` in its approximation, so its `Y` is
+      !! zeros -- which says there is none rather than standing for something
+      !! left unfilled -- and its `X` alone carries the half.
       !!
       !! With `spin = "both"` the two manifolds are solved over one core and
       !! one filled kernel cache, and the results are **interleaved by
@@ -1326,11 +1325,15 @@ contains
       !! all of them, occupied and virtual together, so the indices match what
       !! every other table in this program prints.
       !!
-      !! The paired routes carry a `|X|^2-|Y|^2` column. It is the norm the
-      !! problem conserves, and it is printed rather than asserted: a root
-      !! whose value has drifted off the convention is one whose
-      !! biorthonormalisation did not take, and every transition moment built
-      !! from it afterwards would be wrong by that factor.
+      !! The `|X|^2-|Y|^2` column is the norm the paired problem conserves
+      !! and the Tamm-Dancoff one is scaled to, and it is printed rather than
+      !! asserted: a root whose value has drifted off the convention is one
+      !! whose biorthonormalisation did not take, and every transition moment
+      !! built from it afterwards would be wrong by that factor.
+      !!
+      !! The amplitudes printed are the ones stored, so a dominant single
+      !! excitation reads about 0.707 rather than 1 -- `AMPLITUDE_FLOOR` is a
+      !! floor on a vector of norm `sqrt(1/2)`, not on a unit one.
       character(len=*), intent(in) :: route
       real(dp), intent(in) :: excitations(:)
       integer, intent(in) :: state_spin(:)
@@ -1344,10 +1347,8 @@ contains
       character(len=MAX_LINE_LENGTH) :: line, piece
       real(dp) :: weight
       integer :: k, i, a, idx
-      logical :: paired
 
       if (size(excitations) < 1) return
-      paired = trim(route) /= "tda"
 
       ! Said once, beside the numbers it applies to: the two codes a
       ! cross-check is run against convert with a different Hartree.
@@ -1357,27 +1358,16 @@ contains
             ", which differs in the eighth decimal"
          call logger%info(trim(line))
       end if
-      if (paired) then
-         call logger%info("  "//route_name(route)//" amplitudes are normalised to "// &
-                          "|X|^2 - |Y|^2 = 0.5")
-         call logger%info("   state     spin       hartree           eV    "// &
-                          "|X|^2-|Y|^2   dominant amplitudes")
-      else
-         call logger%info("   state     spin       hartree           eV   "// &
-                          "dominant amplitudes")
-      end if
+      call logger%info("  "//route_name(route)//" amplitudes are normalised to "// &
+                       "|X|^2 - |Y|^2 = 0.5")
+      call logger%info("   state     spin       hartree           eV    "// &
+                       "|X|^2-|Y|^2   dominant amplitudes")
 
       do k = 1, size(excitations)
-         if (paired) then
-            weight = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
-            write (line, "(a,i4,a9,f16.9,f13.4,f15.9,a)") "   ", k, &
-               trim(spin_word(state_spin(k))), excitations(k), &
-               excitations(k)*HARTREE_TO_EV, weight, "   "
-         else
-            write (line, "(a,i4,a9,f16.9,f13.4,a)") "   ", k, &
-               trim(spin_word(state_spin(k))), excitations(k), &
-               excitations(k)*HARTREE_TO_EV, "   "
-         end if
+         weight = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+         write (line, "(a,i4,a9,f16.9,f13.4,f15.9,a)") "   ", k, &
+            trim(spin_word(state_spin(k))), excitations(k), &
+            excitations(k)*HARTREE_TO_EV, weight, "   "
          do i = 1, n_occ
             do a = 1, n_vir
                idx = (i - 1)*n_vir + a

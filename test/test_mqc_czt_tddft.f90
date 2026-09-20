@@ -555,6 +555,8 @@ contains
                                test_casida_triplet), &
                   new_unittest("both_manifolds_interleave_by_energy", test_both_spins), &
                   new_unittest("a_triplet_unstable_reference_is_named", test_instability), &
+                  new_unittest("every_route_returns_the_same_amplitude_norm", &
+                               test_amplitude_norm), &
                   new_unittest("an_unreachable_tolerance_stops_and_says_so", &
                                test_unreachable_tolerance) &
                   ]
@@ -1842,6 +1844,53 @@ contains
                  "a stalled solve did not report the residual it reached: "// &
                  result%error%get_message())
    end subroutine test_unreachable_tolerance
+
+   subroutine test_amplitude_norm(error)
+      !! Tamm-Dancoff, RPA and Casida all hand back `|X|^2 - |Y|^2 = 1/2`
+      !!
+      !! One convention across the three routes, which is what lets anything
+      !! downstream contract the amplitudes without first asking which solver
+      !! produced them. The Tamm-Dancoff row is the one that moved: its
+      !! Davidson returns a unit eigenvector and the route now scales it, so
+      !! a regression would show up here as a half of two rather than as a
+      !! wrong excitation energy -- the energies do not move at all.
+      !!
+      !! `Y` is separately required to be exactly zero for Tamm-Dancoff. The
+      !! approximation has no de-excitation block, and a `Y` that had picked
+      !! up the scaling factor would satisfy the norm above and be wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+      real(dp) :: weight
+      integer :: k
+
+      call water_sto3g(mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, 3, "tda", "singlet", omega, &
+                                   spins, x, y, err, tolerance=1.0e-10_dp, &
+                                   max_iter=100)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the Tamm-Dancoff solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(omega)
+         weight = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+         call check(error, abs(weight - 0.5_dp) < TOL_PAIRED_NORM, &
+                    "a Tamm-Dancoff root's amplitudes are not at the "// &
+                    "|X|^2 - |Y|^2 = 1/2 every route now shares")
+         if (allocated(error)) return
+      end do
+      call check(error, all(y == 0.0_dp), "a Tamm-Dancoff solve returned "// &
+                 "de-excitation amplitudes, which its approximation does not have")
+   end subroutine test_amplitude_norm
 
 end module test_mqc_czt_tddft
 
