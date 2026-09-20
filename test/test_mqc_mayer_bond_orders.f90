@@ -47,17 +47,17 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
-              new_unittest("water_matches_pyscf", test_water), &
-              new_unittest("ethane_matches_pyscf_and_chemistry", test_ethane), &
-              new_unittest("open_shell_matches_pyscf", test_triplet_oxygen), &
-              new_unittest("open_shell_formula_is_not_the_closed", test_formulas_differ), &
-              new_unittest("equal_spin_densities_give_the_closed_shell", test_equal_spins), &
-              new_unittest("doublet_matches_pyscf", test_doublet_cation), &
-              new_unittest("matrix_is_symmetric_with_no_diagonal", test_shape), &
-              new_unittest("valence_is_the_row_sum", test_valence), &
-              new_unittest("an_ao_reordering_changes_nothing", test_reordering), &
-              new_unittest("mismatched_shapes_are_refused", test_refusal) &
-              ]
+                  new_unittest("water_matches_pyscf", test_water), &
+                  new_unittest("ethane_matches_pyscf_and_chemistry", test_ethane), &
+                  new_unittest("open_shell_matches_pyscf", test_triplet_oxygen), &
+                  new_unittest("open_shell_formula_is_not_the_closed", test_formulas_differ), &
+                  new_unittest("equal_spin_densities_give_the_closed_shell", test_equal_spins), &
+                  new_unittest("doublet_matches_pyscf", test_doublet_cation), &
+                  new_unittest("matrix_is_symmetric_with_no_diagonal", test_shape), &
+                  new_unittest("valence_is_the_row_sum", test_valence), &
+                  new_unittest("an_ao_reordering_changes_nothing", test_reordering), &
+                  new_unittest("mismatched_shapes_are_refused", test_refusal) &
+                  ]
    end subroutine collect_mqc_mayer_bond_orders_tests
 
    subroutine water(mol, err, basis)
