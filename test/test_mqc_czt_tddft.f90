@@ -597,6 +597,13 @@ module test_mqc_czt_tddft
    real(dp), parameter :: TOL_NTO = 1.0e-8_dp
    real(dp), parameter :: TOL_NTO_SUM = 1.0e-12_dp
 
+   !! The iterative spectrum's summed oscillator strength against a dense
+   !! evaluation of the same sum. Both sides use the same integrals and the
+   !! same contraction, so what is being compared is the amplitudes; measured
+   !! 8.3e-14 in the length gauge and 4.2e-14 in the velocity one, over all
+   !! ten roots of the space.
+   real(dp), parameter :: TOL_SUM_RULE = 1.0e-8_dp
+
    !! The Casida reduction against the paired solver, on the same PBE
    !! reference. Two solvers, two operators and one spectrum; measured
    !! 9.0e-14 on the worst of five, and 3.3e-14 in the triplet manifold.
@@ -669,6 +676,8 @@ contains
                                test_nto_weights), &
                   new_unittest("a_triplet_carries_no_transition_moment_at_all", &
                                test_triplet_moments), &
+                  new_unittest("the_iterative_properties_match_a_dense_evaluation", &
+                               test_property_sum_rule), &
                   new_unittest("a_run_through_the_bridge_reports_its_strengths", &
                                test_bridge_properties), &
                   new_unittest("an_unreachable_tolerance_stops_and_says_so", &
@@ -2425,6 +2434,160 @@ contains
                  "weights")
       call props%destroy()
    end subroutine test_triplet_moments
+
+   subroutine paired_amplitudes(aplus, aminus, values, x, y, ok)
+      !! Every root of `[A B; B A]` with its amplitudes, from the reduction
+      !!
+      !! `paired_spectrum` next door with the eigenvectors kept. From
+      !! `S (A+B) S z = w^2 z` with `S = (A-B)^{1/2}`, the pair is
+      !! `X+Y = S z / sqrt(w)` and `X-Y = S^{-1} z sqrt(w)`, whose inner
+      !! product is `z . z = 1`; the closed-shell half is taken exactly as
+      !! `solve_manifold` takes it, so what comes back here is on the same
+      !! footing as what the solver returns and the two can be contracted
+      !! against the same integrals.
+      real(dp), intent(in) :: aplus(:, :), aminus(:, :)
+      real(dp), allocatable, intent(out) :: values(:)
+      real(dp), allocatable, intent(out) :: x(:, :), y(:, :)
+      logical, intent(out) :: ok
+
+      real(dp), parameter :: HALF_NORM = 0.5_dp
+      real(dp), allocatable :: vectors(:, :), w(:), half(:, :), inverse_half(:, :)
+      real(dp), allocatable :: scaled(:, :), work(:, :), reduced(:, :)
+      real(dp), allocatable :: xpy(:, :), xmy(:, :)
+      integer :: n, info, k
+
+      n = size(aplus, 1)
+      ok = .false.
+      allocate (values(n), w(n), x(n, n), y(n, n))
+      vectors = 0.5_dp*(aminus + transpose(aminus))
+      call pic_syev(vectors, w, jobz="V", uplo="U", info=info)
+      if (info /= 0) return
+      if (minval(w) <= 0.0_dp) return
+
+      allocate (scaled(n, n), half(n, n), inverse_half(n, n))
+      allocate (work(n, n), reduced(n, n), xpy(n, n), xmy(n, n))
+      do k = 1, n
+         scaled(:, k) = vectors(:, k)*sqrt(w(k))
+      end do
+      call pic_gemm(scaled, vectors, half, transb="T")
+      do k = 1, n
+         scaled(:, k) = vectors(:, k)/sqrt(w(k))
+      end do
+      call pic_gemm(scaled, vectors, inverse_half, transb="T")
+
+      call pic_gemm(0.5_dp*(aplus + transpose(aplus)), half, work)
+      call pic_gemm(half, work, reduced)
+      reduced = 0.5_dp*(reduced + transpose(reduced))
+      call pic_syev(reduced, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) return
+      if (minval(values) <= 0.0_dp) return
+      values = sqrt(values)
+
+      call pic_gemm(half, reduced, xpy)
+      call pic_gemm(inverse_half, reduced, xmy)
+      do k = 1, n
+         xpy(:, k) = xpy(:, k)/sqrt(values(k))
+         xmy(:, k) = xmy(:, k)*sqrt(values(k))
+         x(:, k) = sqrt(HALF_NORM)*0.5_dp*(xpy(:, k) + xmy(:, k))
+         y(:, k) = sqrt(HALF_NORM)*0.5_dp*(xpy(:, k) - xmy(:, k))
+      end do
+      ok = .true.
+   end subroutine paired_amplitudes
+
+   subroutine test_property_sum_rule(error)
+      !! The whole RPA spectrum's summed oscillator strength, two ways
+      !!
+      !! ## Why the target is not ten
+      !!
+      !! The Thomas-Reiche-Kuhn sum rule says the oscillator strengths of a
+      !! complete spectrum sum to the electron count, which here would be ten.
+      !! It holds for RPA in a **complete** one-electron basis and nowhere
+      !! short of one: STO-3G has ten occupied-virtual rotations to represent
+      !! the entire continuum with, and the measured sum is 1.9459711 --
+      !! which is PySCF's 1.9459710921 for the same spectrum, to 5.2e-11.
+      !! Pinning 10 as a gate would be pinning a statement about the basis
+      !! set, and loosening the bound until STO-3G passed would leave a test
+      !! that no longer detects anything.
+      !!
+      !! ## What does hold exactly
+      !!
+      !! `sum_k f_k` computed from the iterative solver's amplitudes equals
+      !! the same sum computed from a dense diagonalisation of the same two
+      !! matrices, contracted against the same dipole integrals. Both sides
+      !! are the full ten-root spectrum, so nothing is left out of either, and
+      !! the only thing that differs is where the amplitudes came from. That
+      !! is a gate on the properties and the amplitudes together, and it is
+      !! exact rather than asymptotic.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: iterative, dense
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), values(:)
+      real(dp), allocatable :: x(:, :), y(:, :), omega(:)
+      integer, allocatable :: spins(:), all_singlet(:)
+      logical :: ok
+
+      call water_reference("sto-3g", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) call dense_rpa(mol, scf, ctx, .false., aplus, aminus, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the Hartree-Fock RPA matrices failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      call paired_amplitudes(aplus, aminus, values, x, y, ok)
+      call check(error, ok, "the dense paired reduction failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      allocate (all_singlet(size(values)))
+      all_singlet = STATE_SPIN_SINGLET
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, values, all_singlet, &
+                              x, y, scf%energy, dense, err)
+
+      ! Every root of the space, iteratively. Ten of ten, so nothing is left
+      ! out of the sum on this side either.
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "rpa", "singlet", N_OV, &
+                                    omega, spins, iterative, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the full-space RPA properties "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, size(omega) == N_OV, "the full-space RPA solve did not "// &
+                 "return every root of the space")
+      if (allocated(error)) return
+      call check(error, maxval(abs(omega - values)) < TOL_RPA_SOLVER, &
+                 "the iterative and dense full spectra disagree")
+      if (allocated(error)) return
+
+      call check(error, abs(sum(iterative%f_length) - sum(dense%f_length)) < &
+                 TOL_SUM_RULE, "the summed length-gauge oscillator strength of the "// &
+                 "iterative amplitudes disagrees with a dense evaluation of the same "// &
+                 "sum")
+      if (allocated(error)) return
+      call check(error, abs(sum(iterative%f_velocity) - sum(dense%f_velocity)) < &
+                 TOL_SUM_RULE, "the summed velocity-gauge oscillator strength of "// &
+                 "the iterative amplitudes disagrees with a dense evaluation")
+      if (allocated(error)) return
+
+      ! Said out loud rather than left implied: the sum is nowhere near the
+      ! electron count, and that is the basis rather than a fault.
+      call check(error, abs(sum(iterative%f_length) - 10.0_dp) > 1.0_dp, &
+                 "the STO-3G length-gauge sum came out near the electron count, "// &
+                 "which a minimal basis cannot do; the reference or the "// &
+                 "contraction has changed")
+      call iterative%destroy()
+      call dense%destroy()
+   end subroutine test_property_sum_rule
 
    subroutine test_bridge_properties(error)
       !! A whole run reports its strengths, dipoles and leading NTO weight
