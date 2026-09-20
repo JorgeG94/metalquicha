@@ -113,6 +113,43 @@ if(MQC_ENABLE_DFTD3)
                  "${MQC_DFTD3_REPOSITORY}@${MQC_DFTD3_TAG}")
 endif()
 
+# dftd4, for the charge-dependent D4 correction.
+#
+# The collision with tblite's copy resolves exactly as s-dftd3's does above, and
+# for the same reason: tblite's top level opens with `if(NOT TARGET
+# "dftd4::dftd4") find_package("dftd4" REQUIRED)`, a module-mode find that
+# reaches this project's cmake/modules/Finddftd4.cmake whether or not
+# MQC_ENABLE_DFTD4 is on. With the option on this block runs first and
+# `mqc_fetch`'s NAMESPACED_TARGET defines `dftd4::dftd4`, so tblite's guard
+# finds the target already there; with it off, tblite's find lands on this
+# project's find module anyway. One fetch, one library, this project's pin --
+# kept equal to the one tblite carries in config/cmake/Finddftd4.cmake (v4.2.0).
+#
+# dftd4 pulls mctc-lib and multicharge of its own. Both pins agree with tblite's
+# (v0.5.1 and v0.5.0), which is what makes the order the two are resolved in
+# irrelevant rather than merely untested.
+#
+# Independent of MQC_ENABLE_DFTD3, not implied by it: two libraries, two pins,
+# two fetches, and a deck naming a correction the build did not link is refused
+# by name. See the comment on the option in cmake/MqcOptions.cmake.
+#
+# Shared for the licensing reason given above, with BUILD_SHARED_LIBS set around
+# the fetch and restored after.
+if(MQC_ENABLE_DFTD4)
+  set(_mqc_shared_was "${BUILD_SHARED_LIBS}")
+  set(BUILD_SHARED_LIBS ON)
+  find_package("dftd4" REQUIRED)
+  set(BUILD_SHARED_LIBS "${_mqc_shared_was}")
+  unset(_mqc_shared_was)
+  # No compile definition, for the reason given above s-dftd3: which of
+  # `mqc_dispersion_d4`'s two implementations was compiled is what the source
+  # sees, and `dispersion_d4_available()` answers at run time.
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:dftd4-lib>)
+  add_subdirectory(backends/dftd4)
+  message(STATUS "Charge-dependent dispersion enabled: dftd4 "
+                 "${MQC_DFTD4_REPOSITORY}@${MQC_DFTD4_TAG}")
+endif()
+
 if(MQC_ENABLE_TBLITE)
   if(NOT TARGET "tblite::tblite")
     find_package("tblite" REQUIRED)

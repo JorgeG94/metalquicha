@@ -30,6 +30,7 @@ contains
       use mqc_cuest_bridge, only: cuest_backend_available
       use mqc_dlfind_bridge, only: dlfind_available
       use mqc_dispersion, only: dispersion_available
+      use mqc_dispersion_d4, only: dispersion_d4_available
 
       call logger%info("metalquicha version "//MQC_VERSION_STR)
       ! tblite has no bridge of its own to ask, so the question goes to the
@@ -41,7 +42,8 @@ contains
                        " cuest="//available(cuest_backend_available())// &
                        " dlfind="//available(dlfind_available())// &
                        " ecp="//available(ecp_backend_available())// &
-                       " dftd3="//available(dispersion_available()))
+                       " dftd3="//available(dispersion_available())// &
+                       " dftd4="//available(dispersion_d4_available()))
    end subroutine print_version
 
    pure function available(is_available) result(text)
