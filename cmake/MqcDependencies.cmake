@@ -150,6 +150,56 @@ if(MQC_ENABLE_DFTD4)
                  "${MQC_DFTD4_REPOSITORY}@${MQC_DFTD4_TAG}")
 endif()
 
+# Keep the dispersion tree's own executables out of the default build.
+#
+# Not tidiness. We build that tree with BUILD_SHARED_LIBS ON, for the licensing
+# reason above, so libmctc-lib.so records a DT_NEEDED on libgomp.so.1. Linking
+# an *executable* against it then needs the linker to FIND libgomp, not merely
+# to have compiled with -fopenmp: GNU ld on a host whose gcc lib directory is on
+# its default search path resolves it, conda's x86_64-conda-linux-gnu-ld does
+# not, and reports "libgomp.so.1, needed by ../libmctc-lib.so.0.4.1, not found"
+# followed by every GOMP symbol as undefined. The libraries we consume link fine
+# either way, so nothing fails until one of their front ends or testers is
+# built. With tblite ON the whole tree is static and the question never arises,
+# which is why nothing met this until dispersion was declared here.
+#
+# Swept rather than named. mctc-lib and dftd4 `add_subdirectory("test")`
+# unconditionally -- no BUILD_TESTING, no WITH_TESTS -- and mctc-lib builds an
+# `app` too, so there is no switch to turn off and a list of target names is a
+# list that grows: mctc-convert, then mctc-lib-tester, then the next one. This
+# walks each fetched project instead and excludes everything of type EXECUTABLE.
+#
+# Their ctest entries go with them, which costs nothing: this project runs
+# `ctest -R mqc`, so a dependency's own suite was never run here anyway.
+function(mqc_exclude_project_executables _dir)
+  get_property(
+    _targets
+    DIRECTORY "${_dir}"
+    PROPERTY BUILDSYSTEM_TARGETS)
+  foreach(_target IN LISTS _targets)
+    get_target_property(_type "${_target}" TYPE)
+    if(_type STREQUAL "EXECUTABLE")
+      set_target_properties("${_target}" PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    endif()
+  endforeach()
+  get_property(
+    _subdirs
+    DIRECTORY "${_dir}"
+    PROPERTY SUBDIRECTORIES)
+  foreach(_subdir IN LISTS _subdirs)
+    mqc_exclude_project_executables("${_subdir}")
+  endforeach()
+endfunction()
+
+# The projects that tree brings in, named because they are few and stable --
+# unlike their targets. A name absent from this build is simply skipped.
+foreach(_mqc_dep IN ITEMS s-dftd3 dftd4 mctc-lib toml-f multicharge mstore)
+  if(DEFINED ${_mqc_dep}_SOURCE_DIR)
+    mqc_exclude_project_executables("${${_mqc_dep}_SOURCE_DIR}")
+  endif()
+endforeach()
+unset(_mqc_dep)
+
 if(MQC_ENABLE_TBLITE)
   if(NOT TARGET "tblite::tblite")
     find_package("tblite" REQUIRED)
