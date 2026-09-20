@@ -16,6 +16,7 @@ module mqc_method_config
                                        DEFAULT_STABILITY_MAX_ITER, &
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
+                                       DEFAULT_EXCITED_BATCH, &
                                        DEFAULT_SOSCF_START
    implicit none
    private
@@ -388,13 +389,17 @@ module mqc_method_config
          !! "tda" or "rpa"; see `mqc_config_types` for what each one is.
       character(len=16) :: spin = "singlet"
          !! "singlet", "triplet" or "both".
+      logical :: spin_set = .false.
+         !! Whether `spin` came from the deck rather than from the default
+         !! above. A backend whose reference has no spin-adapted manifolds
+         !! refuses an explicit request and answers a silent one.
       real(dp) :: tolerance = DEFAULT_EXCITED_TOL
          !! Residual at which a root is accepted.
       integer :: max_iter = DEFAULT_EXCITED_MAX_ITER
          !! Cycles the solver may take.
       integer :: max_subspace = 0
          !! Trial vectors the subspace may hold; zero is the solver's own rule.
-      integer :: batch = DEFAULT_RESPONSE_BATCH
+      integer :: batch = DEFAULT_EXCITED_BATCH
          !! Trial vectors sharing one pass over the integrals.
    end type excited_config_t
 
@@ -875,10 +880,11 @@ contains
       this%excited%n_states = 0
       this%excited%method = "rpa"
       this%excited%spin = "singlet"
+      this%excited%spin_set = .false.
       this%excited%tolerance = DEFAULT_EXCITED_TOL
       this%excited%max_iter = DEFAULT_EXCITED_MAX_ITER
       this%excited%max_subspace = 0
-      this%excited%batch = DEFAULT_RESPONSE_BATCH
+      this%excited%batch = DEFAULT_EXCITED_BATCH
 
       ! F12 defaults
       this%f12%geminal_exponent = 1.0_dp

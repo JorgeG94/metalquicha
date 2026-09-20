@@ -358,12 +358,17 @@ contains
       integer :: a, b, c, d, n
       real(dp) :: kf, jf, dcd
       real(dp), allocatable :: j_mat(:, :), k_mat(:, :), j_local(:, :)
+      logical :: want_j
 
       n = size(h, 1)
       kf = 0.5_dp
       if (present(k_scale)) kf = 0.5_dp*k_scale
       jf = 1.0_dp
       if (present(j_scale)) jf = j_scale
+      ! An exact zero and not a tolerance: `j_scale` is a coefficient a caller
+      ! writes down, not a converged quantity, and the two callers that turn
+      ! the Coulomb term off pass a literal zero.
+      want_j = jf /= 0.0_dp
 
       allocate (j_mat(n, n), k_mat(n, n))
       j_mat = 0.0_dp
@@ -378,30 +383,42 @@ contains
       ! this region tens of thousands of times, and for a handful of basis
       ! functions the barriers cost more than the arithmetic.
       !$omp parallel default(none) private(a, b, c, d, dcd, j_local) &
-      !$omp shared(n, eri, density, j_mat, k_mat) if(n >= 16)
+      !$omp shared(n, eri, density, j_mat, k_mat, want_j) if(n >= 16)
       allocate (j_local(n, n))
       j_local = 0.0_dp
       !$omp do schedule(static)
       do c = 1, n
          do d = 1, n
-            dcd = density(c, d)
-            do b = 1, n
-               do a = 1, n
-                  j_local(a, b) = j_local(a, b) + dcd*eri(a, b, c, d)
+            ! Skipped, not scaled afterwards: this is the whole O(n^4) Coulomb
+            ! accumulation, and a triplet response or a long-range exchange
+            ! pass would otherwise pay for every term of a matrix it then
+            ! multiplies by zero. The direct builds have always skipped it.
+            if (want_j) then
+               dcd = density(c, d)
+               do b = 1, n
+                  do a = 1, n
+                     j_local(a, b) = j_local(a, b) + dcd*eri(a, b, c, d)
+                  end do
                end do
-            end do
+            end if
             ! beta = 1 to accumulate over d rather than overwrite.
             call pic_gemv(eri(:, :, c, d), density(:, d), k_mat(:, c), beta=1.0_dp)
          end do
       end do
       !$omp end do
-      !$omp critical(mqc_build_fock_coulomb)
-      j_mat = j_mat + j_local
-      !$omp end critical(mqc_build_fock_coulomb)
+      if (want_j) then
+         !$omp critical(mqc_build_fock_coulomb)
+         j_mat = j_mat + j_local
+         !$omp end critical(mqc_build_fock_coulomb)
+      end if
       deallocate (j_local)
       !$omp end parallel
 
-      fock = h + jf*j_mat - kf*k_mat
+      if (want_j) then
+         fock = h + jf*j_mat - kf*k_mat
+      else
+         fock = h - kf*k_mat
+      end if
       deallocate (j_mat, k_mat)
    end subroutine build_fock
 
@@ -1643,7 +1660,11 @@ contains
       !! second pass of a range-separated one are available on this build too.
       !! With `j_scale` zero the Coulomb update is not merely scaled away, it is
       !! not made at all, which is most of what the long-range pass would have
-      !! cost.
+      !! cost. No production caller passes any of the three, and none is
+      !! expected to: the `A - B` half of the response goes through
+      !! `build_fock_direct_many` under `antisymmetric`, which is exact for it
+      !! and cheaper. They are here so the three scalings mean the same thing on
+      !! every direct build, and the tests are what exercises them.
       !!
       !! For a symmetric density this reduces term by term to what
       !! `build_fock_direct_many` computes, which is asserted in the tests rather
@@ -2192,6 +2213,12 @@ contains
       !! on the single-density path this is a copy of. That is what caps the
       !! batch: `DEFAULT_RESPONSE_BATCH` vectors of a few hundred functions is
       !! tens of megabytes a thread, and a few thousand functions would not be.
+      ! TODO(mqc): the accumulator is a copy per thread reduced under one
+      ! `critical`, which is what `build_fock_direct_many` abandoned for the
+      ! tile-lock scheme above it: the copies cost `2 n_set n^2` doubles a
+      ! thread and the reduction over them grows with the batch width, so a
+      ! wide unrestricted batch is capped by memory long before the integrals
+      ! run out. Port the tile locks here once this path is worth measuring.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)             !! Core Hamiltonian, added to every set
       real(dp), intent(in) :: d_alpha(:, :, :)    !! (n_ao, n_ao, n_set)
@@ -2237,7 +2264,9 @@ contains
 
       n = mol%nao
       n_set = size(d_alpha, 3)
-      if (size(h, 1) /= n .or. size(d_alpha, 1) /= n .or. size(d_beta, 1) /= n &
+      if (size(h, 1) /= n .or. size(h, 2) /= n &
+          .or. size(d_alpha, 1) /= n .or. size(d_alpha, 2) /= n &
+          .or. size(d_beta, 1) /= n .or. size(d_beta, 2) /= n &
           .or. size(d_beta, 3) /= n_set) then
          call error%set(ERROR_VALIDATION, "direct UHF Fock batch: matrix dimensions "// &
                         "do not match the basis, or the two spins are different batches")

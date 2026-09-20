@@ -285,6 +285,46 @@ module test_mqc_czt_tddft
                           0.283543256194_dp, 0.353278202364_dp, 0.371105546022_dp, &
                           0.445649836132_dp, 0.517104469420_dp]
 
+   integer, parameter :: N_F2_STATES = 3
+      !! Roots asked for in the F2 case, which is the request that used to
+      !! come back with the wrong third one.
+
+   !! F2 at its equilibrium bond length, **in Bohr**, along z.
+   !!
+   !! 1.4119 Angstrom is the experimental `r_e`; 2.668 Bohr is that to the
+   !! four figures the reference was taken at, and PySCF was given the same
+   !! number as Bohr, so no conversion constant enters the comparison.
+   real(dp), parameter :: F2_BOHR(3, 2) = reshape([ &
+                                                  0.0_dp, 0.0_dp, 0.0_dp, &
+                                                  0.0_dp, 0.0_dp, 2.668_dp], [3, 2])
+
+   !! F2/cc-pVDZ, restricted Hartree-Fock, the three lowest singlet TDA roots.
+   !!
+   !! The spectrum this molecule is here for:
+   !!
+   !!     0.183610964  0.183610964  0.332986263  0.332986263  0.556013580
+   !!
+   !! two degenerate pairs and then a single root. What makes it the case to
+   !! pin is where those roots sit in the *gaps* the Davidson guess is picked
+   !! on: the three lowest are 0.759, 0.759 and 0.841 hartree, and the 0.841
+   !! one carries the fifth root, while the pair carrying the third and
+   !! fourth is at 0.903 -- outside a three-vector guess, and 0.06 hartree
+   !! past anything a degeneracy window closes. A guess of one unit vector
+   !! per root therefore converges roots one, two and *five* and reports the
+   !! fifth as the third: every one of them a true eigenpair, none of them
+   !! flagged. Asked for five roots the same solver finds all five, which is
+   !! what says the starting space was too narrow rather than the solver
+   !! broken.
+   !!
+   !! Taken the same way as the water tables: PySCF 2.14 fed this
+   !! repository's own cc-pVDZ JSON through `bse_to_pyscf`, `conv_tol =
+   !! 1e-15`, the whole 171 by 171 `A` probed out of `TDA.gen_vind` on the
+   !! unit vectors and diagonalised densely, so no iterative tolerance is in
+   !! the reference.
+   real(dp), parameter :: F2_CCPVDZ_ENERGY = -198.685678500661_dp
+   real(dp), parameter :: F2_CCPVDZ_TDA(N_F2_STATES) = [ &
+                          0.183610964095_dp, 0.183610964095_dp, 0.332986263273_dp]
+
    integer, parameter :: N_CCPVDZ_TRIPLETS = 3
       !! Triplets asked for in the cc-pVDZ cases, which is how many the plan's
       !! tables carry.
@@ -701,6 +741,43 @@ module test_mqc_czt_tddft
                           0.089312820588_dp, 0.236158714407_dp, 0.482329524466_dp, &
                           0.517089540365_dp, 0.527087149050_dp]
 
+   !! The water cation's first three CAM-B3LYP roots, the same 175 spin-blocked
+   !! rotations dense-diagonalised out of PySCF's own operator.
+   !! `E(UKS CAM-B3LYP) = -75.939126000634`, converged to `|g| < 5e-10` from
+   !! the `minao`, `1e` and `atom` guesses, which agree with each other to
+   !! twelve decimals in the energy and to 1.2e-10 in the worst of these three
+   !! roots. **This is the only gate on the range-separated unrestricted
+   !! product**: CAM-B3LYP is the one functional here that makes
+   !! `response_mean_field_uhf` take its second integral pass, at `j_scale = 0`
+   !! and the attenuated `omega`, so a missing or misscaled long-range
+   !! exchange shows up nowhere else on the unrestricted path.
+   real(dp), parameter :: CATION_CAM_TDA(3) = [ &
+                          0.088470327358_dp, 0.234583947377_dp, 0.487459262577_dp]
+
+   !! Triplet H2 at 1.4 Bohr, a reference with two alpha electrons and **no
+   !! beta electrons at all**: the beta spin contributes no rotations, so the
+   !! trial vector is the alpha block alone and every beta half is empty.
+   !! `E(UHF) = -0.766770390234`, `|g| = 1.8e-13`, 16 alpha excitations, and
+   !! the Fock matrix is diagonal in both sets of orbitals to 1.2e-13, so
+   !! these are canonical.
+   !!
+   !! Roots 3 and 4 are the two perpendicular pi components and are exactly
+   !! degenerate. **Five roots, not three**: asked for three, the Davidson
+   !! converges 1, 2 and 5 and reports the last as root 3 -- its guess is the
+   !! three lowest diagonal gaps and `roots_to_solve` extends that over a
+   !! degenerate *diagonal*, which this pair is not. That is the solver's
+   !! guess, not the unrestricted operator, and it happens on a closed shell
+   !! the same way; it is recorded here because a three-root gate on this
+   !! molecule would pin the wrong spectrum.
+   real(dp), parameter :: H2_TRIPLET_BOHR(3, 2) = reshape([ &
+                                                          0.0_dp, 0.0_dp, 0.0_dp, &
+                                                          0.0_dp, 0.0_dp, 1.4_dp], &
+                                                          [3, 2])
+
+   real(dp), parameter :: H2_TRIPLET_TDA(5) = [ &
+                          0.251093280011_dp, 0.598938222312_dp, 0.870154715086_dp, &
+                          0.870154715086_dp, 0.875564711106_dp]
+
    real(dp), parameter :: EXCITED_FLOOR = 1.0e-3_dp
       !! What the solver calls a rotation rather than an excitation, repeated
       !! here so the paired test can assert that the near-zero root fell below
@@ -773,6 +850,7 @@ contains
                   new_unittest("cc_pvdz_pbe_singlets_match_the_table", test_ccpvdz_pbe), &
                   new_unittest("cc_pvdz_b3lyp_singlets_match_the_table", test_ccpvdz_b3lyp), &
                   new_unittest("cc_pvdz_cam_b3lyp_singlets_match_the_table", test_ccpvdz_cam), &
+                  new_unittest("three_roots_of_f2_are_the_lowest_three", test_f2_lowest_three), &
                   new_unittest("no_states_asked_for_means_no_spectrum", test_no_states), &
                   new_unittest("an_unknown_method_or_spin_is_refused", &
                                test_later_layers), &
@@ -846,6 +924,10 @@ contains
                                test_cation_uks_b3lyp), &
                   new_unittest("cation_uks_b3lyp_rpa_roots_match_pyscf", &
                                test_cation_uks_b3lyp_rpa), &
+                  new_unittest("cation_uks_cam_b3lyp_tda_roots_match_pyscf", &
+                               test_cation_uks_cam), &
+                  new_unittest("a_reference_with_no_beta_electrons_has_a_spectrum", &
+                               test_no_beta_electrons), &
                   new_unittest("unrestricted_amplitudes_carry_unit_norm", &
                                test_uhf_amplitude_norm), &
                   new_unittest("the_unrestricted_hf_operator_holds_both_manifolds", &
@@ -1117,7 +1199,22 @@ contains
       fragment%coordinates = WATER_BOHR
    end subroutine water_fragment
 
-   subroutine excited_run(basis, functional, n_states, method, spin, result, tolerance)
+   subroutine difluorine_fragment(fragment)
+      !! F2 at `F2_BOHR`, closed shell, eighteen electrons
+      type(physical_fragment_t), intent(out) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      fragment%nelec = 18
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [9, 9]
+      fragment%coordinates = F2_BOHR
+   end subroutine difluorine_fragment
+
+   subroutine excited_run(basis, functional, n_states, method, spin, result, &
+                          tolerance, molecule)
       !! One whole calculation through the bridge, with an excited-state block
       !!
       !! Through `run_czt_hf` rather than the solver directly, because what
@@ -1129,11 +1226,17 @@ contains
       real(dp), intent(in), optional :: tolerance
          !! What a root is accepted at. Absent is 1e-8, which every case here
          !! but the deliberately unreachable one is compared at.
+      type(physical_fragment_t), intent(in), optional :: molecule
+         !! What to run it on. Absent is the water every other case here uses.
 
       type(cuest_scf_settings_t) :: settings
       type(physical_fragment_t) :: fragment
 
-      call water_fragment(fragment)
+      if (present(molecule)) then
+         fragment = molecule
+      else
+         call water_fragment(fragment)
+      end if
       settings%basis_set = basis
       settings%functional = functional
       settings%grid_level = 5
@@ -1303,6 +1406,43 @@ contains
       if (allocated(error)) return
       call compare_roots(error, result, CAM_CCPVDZ_TDA, TOL_GRID, "cc-pVDZ CAM-B3LYP")
    end subroutine test_ccpvdz_cam
+
+   subroutine test_f2_lowest_three(error)
+      !! Three roots means the lowest three, not three true roots of any rank
+      !!
+      !! The failure this pins is not a wrong number: every root the old
+      !! guess returned was an eigenvalue of the right matrix, converged to
+      !! the tolerance asked for, and the third one was the fifth of the
+      !! spectrum. Nothing in the run said so, which is why it is gated here
+      !! and not left to a user to notice.
+      !!
+      !! Both halves are checked: that the third root is 0.3330 and not
+      !! 0.5560, and that the first two are still the degenerate pair -- a
+      !! guess that lost the *pair* would move those instead and is a
+      !! different fault with the same cause.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+      type(physical_fragment_t) :: fragment
+
+      call difluorine_fragment(fragment)
+      call excited_run("cc-pvdz", "", N_F2_STATES, "tda", "singlet", result, &
+                       molecule=fragment)
+      call check(error, abs(result%energy%scf - F2_CCPVDZ_ENERGY) < 1.0e-8_dp, &
+                 "the F2/cc-pVDZ Hartree-Fock energy is not the one the reference "// &
+                 "spectrum was taken at")
+      if (allocated(error)) return
+      call compare_roots(error, result, F2_CCPVDZ_TDA, TOL_CCPVDZ_HF, "F2/cc-pVDZ")
+      if (allocated(error)) return
+
+      ! Said separately, because the bound above would also be cleared by a
+      ! run that reported two roots and stopped.
+      call check(error, size(result%excitation_energies) == N_F2_STATES, &
+                 "the F2 run did not report three roots")
+      if (allocated(error)) return
+      call check(error, result%excitation_energies(3) < 0.4_dp, &
+                 "the third F2 root is the fifth of the spectrum: the Davidson "// &
+                 "guess does not span the degenerate pair above the first two")
+   end subroutine test_f2_lowest_three
 
    subroutine test_no_states(error)
       !! `n_states = 0` leaves the calculation exactly as it was
@@ -1704,9 +1844,12 @@ contains
       !! Two wrong answers are possible and both look plausible from outside.
       !! The Tamm-Dancoff route can report the negative root as an excitation
       !! or drop it under the floor and hand back the ones above it as though
-      !! a state were merely missing. The paired route is worse: it *skips*
-      !! an imaginary frequency and only complains when it runs out of real
-      !! ones, so asking for one root succeeds and says nothing.
+      !! a state were merely missing. The paired route used to skip an
+      !! imaginary frequency and complain only when it ran out of real ones,
+      !! so asking for one root succeeded and said nothing; `rpa_solve`
+      !! refuses a negative squared frequency now, and what this case adds is
+      !! that the refusal reaching the user names the *triplet* manifold
+      !! rather than passing the solver's spin-agnostic wording through.
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t) :: result
       character(len=:), allocatable :: message
@@ -1724,8 +1867,8 @@ contains
                  "run still reported excited states")
       if (allocated(error)) return
 
-      ! One root, which the paired solver would otherwise answer happily out
-      ! of the two real frequencies above the imaginary one.
+      ! One root, which the paired solver would once have answered happily
+      ! out of the two real frequencies above the imaginary one.
       call h2_stretched_run(1, "rpa", "triplet", result)
       call check(error, result%has_error, "a triplet-unstable reference produced an "// &
                  "RPA spectrum rather than a diagnosis")
@@ -3210,6 +3353,82 @@ contains
       call compare_uhf_roots(error, result, CATION_B3LYP_RPA, TOL_GRID, &
                              "H2O+ UKS B3LYP RPA")
    end subroutine test_cation_uks_b3lyp_rpa
+
+   subroutine test_cation_uks_cam(error)
+      !! The three lowest UKS CAM-B3LYP Tamm-Dancoff roots of the water cation
+      !!
+      !! **The range-separated unrestricted product, which nothing else here
+      !! reaches.** `response_mean_field_uhf` builds the short-range Fock and
+      !! then, only where `omega > 0`, a second unrestricted batch at
+      !! `j_scale = 0` with the attenuated exchange -- and the UKS gates above
+      !! are PBE and B3LYP, neither of which is range separated, so that pass
+      !! ran in no test until this one. Dropping it entirely would still leave
+      !! a converged spectrum, several parts in a hundred wrong.
+      !!
+      !! Held at `TOL_GRID`, the same 1e-7 as the other Kohn-Sham gates and
+      !! for the same reason: the two codes integrate the exchange-correlation
+      !! kernel on grids that are not the same points. Measured 3.0e-11,
+      !! 1.2e-11 and 2.8e-9 on the three roots, against a reference whose own
+      !! three PySCF guesses differ among themselves by 1.2e-10 -- so what
+      !! this tolerance bounds is a missing term, not a quadrature.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("cam-b3lyp", 3, "tda", result)
+      call compare_uhf_roots(error, result, CATION_CAM_TDA, TOL_GRID, &
+                             "H2O+ UKS CAM-B3LYP TDA")
+   end subroutine test_cation_uks_cam
+
+   subroutine test_no_beta_electrons(error)
+      !! Triplet H2: an unrestricted spectrum out of a reference with no beta
+      !!
+      !! A high-spin reference can have an empty beta spin, and its alpha
+      !! excitations are as well defined as any other open shell's. The
+      !! operator used to refuse this outright. What it exercises that nothing
+      !! else does is the empty half of every unrestricted quantity: a
+      !! zero-length beta block in the trial vector and the diagonal, a beta
+      !! response density that is identically zero, a `(n_ao, 0)` orbital
+      !! rectangle, and the guards that keep those out of BLAS rather than
+      !! calling it with a vanishing inner dimension.
+      !!
+      !! Measured 2.7e-11 on the worst of the five roots.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 3
+      fragment%nelec = 2
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [1, 1]
+      fragment%coordinates = H2_TRIPLET_BOHR
+
+      settings%basis_set = "cc-pvdz"
+      settings%functional = ""
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-10_dp
+      settings%max_iter = 300
+      settings%excited%enabled = .true.
+      settings%excited%n_states = 5
+      settings%excited%method = "tda"
+      settings%excited%spin = "singlet"
+      settings%excited%tolerance = 1.0e-9_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+      call compare_uhf_roots(error, result, H2_TRIPLET_TDA, TOL_CCPVDZ_HF, &
+                             "triplet H2 UHF TDA")
+   end subroutine test_no_beta_electrons
 
    subroutine test_uhf_amplitude_norm(error)
       !! `sum_spin(|X|^2 - |Y|^2) = 1` for every unrestricted root

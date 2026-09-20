@@ -420,6 +420,7 @@ contains
       if (present(iterations)) iterations = worst
       nullify (eri)
       if (allocated(eri_own)) deallocate (eri_own)
+      call kernel_cache%destroy()
       deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
    end subroutine cphf_solve
 
@@ -1482,6 +1483,8 @@ contains
       type(fitted_response_t), intent(in), optional :: fit
          !! Apply the operator through these fitted blocks instead of through
          !! integral passes. `eri`, `bounds` and `zero_h` go unread then.
+         !! Refused together with `xc`: the blocks carry the two-electron terms
+         !! alone and no kernel can be added to them here.
       type(xc_context_t), intent(inout), optional :: xc
          !! A Kohn-Sham reference's exchange-correlation kernel and its
          !! exchange coefficients, long-range term included. Omitting it for a
@@ -1878,7 +1881,7 @@ contains
       type(fitted_response_t), intent(in), optional :: fit
          !! Apply through the fitted blocks rather than an integral pass. The
          !! chunking is kept: the per-thread accumulators of the fitted
-         !! application are `n_ov` per vector too.
+         !! application are `n_ov` per vector too. Refused together with `xc`.
       type(xc_context_t), intent(inout), optional :: xc
          !! A Kohn-Sham reference's exchange-correlation kernel and its
          !! exchange coefficients, long-range term included. Omitting it for a
@@ -1890,6 +1893,20 @@ contains
       integer :: max_batch
 
       integer :: first, last
+
+      ! `apply_fitted_batch` takes neither `xc` nor `reference`: its blocks are
+      ! the bare two-electron ones, so it would answer the Hartree-Fock
+      ! response of Kohn-Sham orbitals and say nothing. That silence is the bug
+      ! this route was rewritten to remove, so the combination is refused
+      ! rather than served. `dynamic_polarizability` never asks for it;
+      ! `dynamic_response_iterative` is public and could.
+      if (present(fit) .and. present(xc)) then
+         call error%set(ERROR_VALIDATION, "the frequency-dependent response cannot "// &
+                        "apply an exchange-correlation kernel through the fitted "// &
+                        "blocks: they carry the two-electron terms alone, and the "// &
+                        "answer would silently be the Hartree-Fock one")
+         return
+      end if
 
       max_batch = DEFAULT_RESPONSE_BATCH
       if (present(width)) then

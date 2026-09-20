@@ -764,6 +764,27 @@ class Result:
         return self._section("fukui")
 
     @property
+    def excited_states(self):
+        """The linear-response spectrum, or None.
+
+        Present after a run whose deck carried
+        ``keywords.excited_states`` with ``n_states`` above zero, which is
+        an unfragmented energy run -- every other driver, and every
+        fragmented deck, is refused when the input is read, because the
+        spectrum would be solved once per displacement or once per fragment
+        and then discarded.
+
+        ``method`` and ``spin`` record what was asked for: which response
+        problem produced the roots is not recoverable from the numbers, and
+        a TDA energy and an RPA one are different quantities. ``states`` is
+        one object per root in ascending order, each carrying ``state``,
+        ``spin``, ``excitation_energy_hartree`` and
+        ``excitation_energy_ev``, with ``oscillator_strength`` and
+        ``transition_dipole`` beside them once the run computed any.
+        """
+        return self._section("excited_states")
+
+    @property
     def pie_terms(self):
         """The GMBE inclusion-exclusion terms, or None.
 

@@ -32,7 +32,8 @@ module mqc_json_config_reader
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use pic_ascii, only: to_lower
-   use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_UNKNOWN
+   use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, &
+                             CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
@@ -504,7 +505,9 @@ contains
             call error%set(ERROR_VALIDATION, "settings must not define 'molecules': the "// &
                            "system comes from the handle, so a geometry given here would "// &
                            "be read, validated, and then quietly discarded")
+            return
          end if
+         call check_excited_states_run(config, error)
          return
       end if
       if (.not. found .or. n_mol <= 0) then
@@ -538,7 +541,69 @@ contains
             if (error%has_error()) return
          end do
       end if
+
+      ! Last, because it is the only check that needs the driver, the
+      ! fragmentation block and the molecules together.
+      call check_excited_states_run(config, error)
    end subroutine populate_config
+
+   subroutine check_excited_states_run(config, error)
+      !! Refuse `keywords.excited_states` where the spectrum would be discarded
+      !!
+      !! The solve happens on the converged orbitals of an SCF, and every
+      !! driver reaches the same SCF. A finite-difference Hessian would pay a
+      !! full Davidson per displacement, a geometry optimization one per step,
+      !! and a fragmented run one per fragment -- and none of those roots is
+      !! ever read: only the unfragmented workflow copies a spectrum out of
+      !! the result. So the combination is refused by name here, at the first
+      !! place that knows both the driver and the partition, rather than
+      !! computed and dropped further down.
+      !!
+      !! Excited-state derivatives are Layer 8 of the TDDFT plan -- a Z-vector
+      !! solve and a relaxed density, not this solve run more times.
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(inout) :: error
+
+      integer :: imol
+      logical :: fragmented
+
+      if (config%excited_n_states <= 0) return
+
+      if (config%calc_type /= CALC_TYPE_ENERGY) then
+         call error%set(ERROR_VALIDATION, "driver '"// &
+                        calc_type_to_string(config%calc_type)//"' cannot be combined "// &
+                        "with keywords.excited_states. The excitation solve runs on "// &
+                        "the converged orbitals of each SCF this driver takes, so a "// &
+                        "finite-difference Hessian would pay a full Davidson per "// &
+                        "displacement and an optimization one per step, and nothing "// &
+                        "reads the roots back -- only an energy run writes a "// &
+                        "spectrum. Excited-state gradients are Layer 8 of the TDDFT "// &
+                        "plan (a Z-vector solve for the relaxed density), not this "// &
+                        "solve repeated. Use driver 'energy', or drop the block.")
+         return
+      end if
+
+      ! What the adapter calls fragmented: declared fragments and a level
+      ! above zero. Fragments with no expansion over them is the unfragmented
+      ! path, and reads the spectrum like any other.
+      fragmented = config%nfrag > 0
+      if (allocated(config%molecules)) then
+         do imol = 1, size(config%molecules)
+            if (config%molecules(imol)%nfrag > 0) fragmented = .true.
+         end do
+      end if
+      fragmented = fragmented .and. config%frag_level > 0
+
+      if (fragmented) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states cannot be combined "// &
+                        "with a fragmented calculation. Every fragment would converge "// &
+                        "its own spectrum and every one of them would be thrown away: "// &
+                        "the many-body expansion sums energies, and there is no "// &
+                        "expansion of an excitation energy here to sum them into. Run "// &
+                        "the whole system unfragmented, or drop the block.")
+         return
+      end if
+   end subroutine check_excited_states_run
 
    subroutine read_fragmentation(json, config, error)
       !! The keywords.fragmentation block, including per-level cutoffs
@@ -963,6 +1028,7 @@ contains
          select case (to_lower(trim(adjustl(text))))
          case ("singlet", "triplet", "both")
             config%excited_spin = to_lower(trim(adjustl(text)))
+            config%excited_spin_set = .true.
          case default
             call error%set(ERROR_VALIDATION, "unknown keywords.excited_states.spin '"// &
                            trim(text)//"'. Accepted: singlet, triplet, both")

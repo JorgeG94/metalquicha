@@ -226,7 +226,9 @@ the signal that a spectrum exists.
 writes it, and reads the document back with json-fortran -- the round trip a
 consumer makes. Anything the writer computes rather than copies (here the eV
 column and the spin word) is checked there, because it exists nowhere in the
-data.
+data. All four spin words get a case, ``unrestricted`` and ``unknown``
+included: those two are the ones no deck can ask for, so a round trip is the
+only place they are ever exercised.
 
 Architecture Notes
 ------------------

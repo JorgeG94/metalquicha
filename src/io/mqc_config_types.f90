@@ -24,6 +24,7 @@ module mqc_config_types
                                        DEFAULT_RESPONSE_BATCH, &
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
+                                       DEFAULT_EXCITED_BATCH, &
                                        EFP_RESPONSE_AUTO, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
@@ -483,6 +484,12 @@ module mqc_config_types
          !! `keywords.excited_states.spin`: "singlet", "triplet" or "both".
          !! A closed-shell reference has no spin-adapted solution that carries
          !! both in one eigenproblem, so "both" is two solves, not one.
+      logical :: excited_spin_set = .false.
+         !! Whether the deck wrote `keywords.excited_states.spin` at all.
+         !! The default above is a value like any other once it is read, and
+         !! an unrestricted reference has to tell a deck that asked for a
+         !! spin-adapted manifold -- whose roots it cannot produce -- from one
+         !! that asked for nothing and gets the spectrum it does have.
       real(dp) :: excited_tolerance = DEFAULT_EXCITED_TOL
          !! Residual at which the eigensolver accepts a root. Refused below
          !! `MIN_EXCITED_TOL`; see that constant for why.
@@ -492,10 +499,10 @@ module mqc_config_types
          !! Trial vectors the Davidson subspace may hold before it collapses.
          !! Zero means the solver's own rule, which is derived from the number
          !! of roots; a deck sets this only to bound memory.
-      integer :: excited_batch = DEFAULT_RESPONSE_BATCH
+      integer :: excited_batch = DEFAULT_EXCITED_BATCH
          !! Trial vectors contracted against one pass over the integrals. The
          !! same machine trade-off `keywords.hessian.response_batch` makes, on
-         !! a different solve.
+         !! a different solve, and so its own constant rather than that one's.
 
       ! AIMD settings
       real(dp) :: aimd_dt = DEFAULT_AIMD_DT                          !! Timestep (femtoseconds)

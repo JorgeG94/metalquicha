@@ -1513,6 +1513,14 @@ contains
       ! Tamm-Dancoff or paired, and a failure in it is reported and propagated
       ! rather than dropped: a deck that asked for a spectrum and got an
       ! energy has not been answered.
+      !
+      ! This runs once per SCF and this routine is the SCF every driver takes,
+      ! so nothing here can tell a single point from the two hundredth
+      ! displacement of a finite-difference Hessian. That is why the driver
+      ! and the partition are gated in the reader instead
+      ! (`check_excited_states_run`): by the time a fragment or a displacement
+      ! reaches this line, the deck that would have paid for it has already
+      ! been refused by name.
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
@@ -1587,6 +1595,7 @@ contains
                                      "failed: "//td_error%get_message())
                result%has_error = .true.
                if (kohn_sham) call xc%destroy()
+               call aux%destroy()
                call mol%destroy()
                return
             end if
@@ -2871,16 +2880,25 @@ contains
       else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
-      else if (unrestricted .and. trim(settings%excited%spin) /= "singlet") then
-         ! `singlet` is the field's default, so this refuses only a deck that
-         ! asked for one of the restricted manifolds by name. An unrestricted
+      else if (unrestricted .and. settings%excited%spin_set) then
+         ! `spin_set` and not the value: `singlet` is the field's default, so
+         ! comparing the value cannot tell a deck that asked for a restricted
+         ! manifold by name from one that asked for nothing. An unrestricted
          ! reference is not a spin eigenfunction and neither are its roots, so
-         ! answering "triplet" with the one spectrum it has would be labelling
-         ! a mixture.
+         ! answering any of the three words with the one spectrum it has would
+         ! be labelling a mixture. A deck that named none of them is answered
+         ! with that spectrum, labelled `unrestricted`.
          reason = "keywords.excited_states.spin = '"//trim(settings%excited%spin)// &
                   "' over an unrestricted reference, whose roots are not spin "// &
-                  "eigenstates and so are neither singlets nor triplets"
+                  "eigenstates and so are neither singlets nor triplets. Remove "// &
+                  "the key to get the unrestricted spectrum"
       end if
+      ! A range-separated functional is *not* on this list, though
+      ! `hessian_decline_reason` names one: the response operator here makes
+      ! the attenuated second pass, `rs_k_lr` of the matrix built against
+      ! `erf(omega r)/r` beside `exx_fraction` of the full-range one, and the
+      ! CAM-B3LYP spectrum it produces is checked against a table in
+      ! `test_mqc_czt_tddft`.
    end function excited_decline_reason
 
    subroutine frontier_summary(scf)

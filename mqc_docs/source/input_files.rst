@@ -1473,9 +1473,13 @@ reference:
   so ``"both"`` is two solves rather than one, merged into one list ordered by
   energy with each root's spin recorded beside it -- and ``n_states`` then
   counts roots **per manifold**, so the run reports up to twice that many.
-  Not read at all over an unrestricted reference, whose roots are not spin
-  eigenstates; naming ``"triplet"`` or ``"both"`` there is refused rather than
-  answered with a label the spectrum does not deserve.
+  **Over an unrestricted reference the key is refused whichever of the three
+  words it names**, and naming none of them is how an unrestricted spectrum
+  is asked for: such a reference is not a spin eigenfunction, so neither are
+  its roots, and labelling them singlet or triplet would be labelling a
+  mixture. Those roots are reported with ``"spin": "unrestricted"`` in the
+  output document -- a fourth word that no deck may write, because it is a
+  statement about what came back rather than a request.
 - ``tolerance`` (default: 1e-6): residual at which a root is accepted.
   **Refused below 1e-8**: the exchange-correlation quadrature underneath
   carries more error than that on any grid a production run uses, so a tighter
@@ -1483,8 +1487,12 @@ reference:
   a deck is never told it converged to a threshold it did not ask for.
 - ``max_iter`` (default: 100): cycles that solve may take.
 - ``max_subspace`` (default: 0): trial vectors the Davidson subspace may hold
-  before it collapses. Zero leaves the rule to the solver, which derives it
-  from the number of roots; set it only to bound memory.
+  before it collapses. Zero derives it from the starting space, which is
+  several vectors per root; set it only to bound memory, and not below that
+  starting space -- a smaller cap truncates the guess, and a guess too narrow
+  to reach a root converges the ones it can reach instead. Those are true
+  excitation energies of the right operator; they are simply not the lowest
+  ones, and nothing in the output can say so.
 - ``batch`` (default: 12): trial vectors contracted against one pass over the
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.
@@ -1494,6 +1502,16 @@ state's own total energy, its transition dipole and oscillator strength in
 both the length and the velocity gauge, and its leading natural transition
 orbital weight. Restricted and unrestricted references are both supported, as
 are Hartree-Fock and Kohn-Sham up to and including range-separated hybrids.
+
+**Only an unfragmented energy run may ask for a spectrum.** The solve happens
+on the converged orbitals of an SCF, and every driver reaches the same SCF --
+a finite-difference Hessian would converge a full Davidson per displacement, a
+geometry optimization one per step, and a fragmented run one per fragment,
+and none of those roots is ever read back. So ``driver`` other than
+``"energy"``, and any fragmented deck, are refused when the input is read
+rather than computed and discarded. Excited-state gradients are a separate
+piece of work -- a Z-vector solve for the relaxed density, not this solve run
+more often.
 
 A calculation that cannot have these states at all -- MP2 or coupled cluster,
 a density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
