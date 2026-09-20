@@ -49,6 +49,25 @@ module mqc_json_output_types
       logical :: has_vibrational = .false.
       logical :: has_ir_intensities = .false.
 
+      !----- Linear-response excited states (optional) -----
+      ! Copied unchanged from `calculation_result_t`, which documents the
+      ! units, the ordering and the spin codes. All four run over the same
+      ! states in the same order and are allocated together.
+      real(dp), allocatable :: excitation_energies(:)   !! (n_states) Hartree
+      real(dp), allocatable :: oscillator_strengths(:)  !! (n_states)
+      real(dp), allocatable :: transition_dipoles(:, :)  !! (3, n_states) a.u.
+      integer, allocatable :: state_spin(:)             !! (n_states) STATE_SPIN_*
+      character(len=16) :: excited_method = ""
+         !! Which response problem produced them: "tda" or "rpa". Written
+         !! beside the numbers because the two are different answers to the
+         !! same deck and nothing in an excitation energy says which.
+      character(len=16) :: excited_spin = ""
+         !! What the deck asked for: "singlet", "triplet" or "both". The
+         !! per-state codes say what each root is; this says what was
+         !! requested, which is what a consumer needs to know a list is
+         !! complete.
+      logical :: has_excited_states = .false.
+
       !----- MBE-specific data (store ALL fragments for detailed output) -----
       integer, allocatable :: polymers(:, :)          !! Fragment composition (n_fragments, max_level)
       real(dp), allocatable :: fragment_energies(:)   !! Per-fragment total energies
@@ -230,6 +249,10 @@ contains
       if (allocated(this%ieda_free_atom)) deallocate (this%ieda_free_atom)
       if (allocated(this%ieda_pair)) deallocate (this%ieda_pair)
       if (allocated(this%ieda_classical)) deallocate (this%ieda_classical)
+      if (allocated(this%excitation_energies)) deallocate (this%excitation_energies)
+      if (allocated(this%oscillator_strengths)) deallocate (this%oscillator_strengths)
+      if (allocated(this%transition_dipoles)) deallocate (this%transition_dipoles)
+      if (allocated(this%state_spin)) deallocate (this%state_spin)
 
       call this%reset()
    end subroutine json_output_data_destroy
@@ -251,6 +274,9 @@ contains
       this%has_dipole = .false.
       this%has_vibrational = .false.
       this%has_ir_intensities = .false.
+      this%has_excited_states = .false.
+      this%excited_method = ""
+      this%excited_spin = ""
       this%fragment_count = 0
       this%max_level = 0
       this%n_pie_terms = 0

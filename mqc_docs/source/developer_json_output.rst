@@ -152,6 +152,76 @@ Here's a complete example of adding HOMO/LUMO energies:
       call json%add(orbitals_obj, 'gap_hartree', data%lumo_energy - data%homo_energy)
    end if
 
+Example: Adding the Excited-State Spectrum
+------------------------------------------
+
+A worked case with a shape the simple examples above do not cover: several
+parallel arrays that only mean anything together, written as an array of
+objects rather than as parallel arrays in the document.
+
+**1. In mqc_json_output_types.f90** -- the arrays, the two strings that say
+what produced them, and one flag for all of it:
+
+.. code-block:: fortran
+
+   real(dp), allocatable :: excitation_energies(:)   ! (n_states) Hartree
+   real(dp), allocatable :: oscillator_strengths(:)  ! (n_states)
+   real(dp), allocatable :: transition_dipoles(:, :) ! (3, n_states) a.u.
+   integer, allocatable :: state_spin(:)             ! (n_states) STATE_SPIN_*
+   character(len=16) :: excited_method = ""
+   character(len=16) :: excited_spin = ""
+   logical :: has_excited_states = .false.
+
+One flag rather than one per array, because the solver fills them together and
+a consumer holding energies without spins cannot label a single root.
+
+**2. Cleanup** -- all four arrays in ``json_output_data_destroy``, the flag and
+both strings in ``json_output_data_reset``.
+
+**3. In mqc_unfragmented_workflow.f90**, at *both* copy points -- the
+vibrational block and the non-Hessian one. They are separate blocks and a field
+added to one is silently missing from the other:
+
+.. code-block:: fortran
+
+   if (result%has_excited_states) then
+      json_data%excitation_energies = result%excitation_energies
+      ! ... the other three arrays, each guarded by allocated() ...
+      json_data%excited_method = config%method_config%excited%method
+      json_data%has_excited_states = .true.
+   end if
+
+**4. In mqc_json_writer.f90**, as a section routine on the
+``write_fukui_section`` pattern, called from both
+``write_unfragmented_json_impl`` and ``write_vibrational_json_impl``:
+
+.. code-block:: fortran
+
+   call json%create_object(section, "excited_states")
+   call json%add(parent, section)
+   call json%add(section, "n_states", n_states)
+   call json%create_array(arr, "states")
+   call json%add(section, arr)
+   do i = 1, n_states
+      call json%create_object(entry, "")
+      call json%add(arr, entry)
+      call json%add(entry, "state", i)
+      call json%add(entry, "excitation_energy_hartree", data%excitation_energies(i))
+      ! ...
+   end do
+
+One object per state rather than four parallel arrays: a consumer picking the
+brightest root, or the lowest triplet, needs one root's numbers together, and
+parallel arrays make that a join the reader has to get right. The routine
+returns immediately when the flag is false, so the section's presence is itself
+the signal that a spectrum exists.
+
+**5. Test it.** ``test/test_mqc_json_writer.f90`` fills the container by hand,
+writes it, and reads the document back with json-fortran -- the round trip a
+consumer makes. Anything the writer computes rather than copies (here the eV
+column and the spin word) is checked there, because it exists nowhere in the
+data.
+
 Architecture Notes
 ------------------
 

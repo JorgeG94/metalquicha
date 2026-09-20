@@ -1,7 +1,7 @@
 module test_mqc_result_types
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_result_types, only: mp2_energy_t, cc_energy_t, energy_t, calculation_result_t, &
-                               mbe_result_t
+                               mbe_result_t, STATE_SPIN_SINGLET
    use pic_types, only: dp
    use pic_test_helpers, only: is_equal
    implicit none
@@ -230,6 +230,20 @@ contains
       allocate (result%fukui_dual(5))
       result%fukui_dual = -0.1_dp
 
+      ! The excited-state block, for the same reason: `result_recv` destroys a
+      ! container to reuse it, and pic-mpi's array receives allocate only when
+      ! the target is unallocated. A spectrum of three roots surviving into a
+      ! fragment with ten would be received into the smaller allocation.
+      allocate (result%excitation_energies(3))
+      result%excitation_energies = 0.3_dp
+      allocate (result%oscillator_strengths(3))
+      result%oscillator_strengths = 0.02_dp
+      allocate (result%transition_dipoles(3, 3))
+      result%transition_dipoles = 0.5_dp
+      allocate (result%state_spin(3))
+      result%state_spin = STATE_SPIN_SINGLET
+      result%has_excited_states = .true.
+
       ! Destroy
       call result%destroy()
 
@@ -249,6 +263,21 @@ contains
       call check(error,.not. allocated(result%fukui_dual), &
                  "fukui_dual should be deallocated after destroy")
       if (allocated(error)) return
+      call check(error,.not. allocated(result%excitation_energies), &
+                 "excitation_energies should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%oscillator_strengths), &
+                 "oscillator_strengths should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%transition_dipoles), &
+                 "transition_dipoles should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. allocated(result%state_spin), &
+                 "state_spin should be deallocated after destroy")
+      if (allocated(error)) return
+      call check(error,.not. result%has_excited_states, &
+                 "has_excited_states should be false after destroy")
+      if (allocated(error)) return
 
       ! Check reset was called
       call check(error,.not. result%has_gradient, &
@@ -264,6 +293,7 @@ contains
       result%energy%mp2%ss = -0.5_dp
       result%has_energy = .true.
       result%has_gradient = .true.
+      result%has_excited_states = .true.
 
       ! Reset
       call result%reset()
@@ -279,6 +309,10 @@ contains
       if (allocated(error)) return
 
       call check(error,.not. result%has_dipole, "has_dipole should be false after reset")
+      if (allocated(error)) return
+
+      call check(error,.not. result%has_excited_states, &
+                 "has_excited_states should be false after reset")
       if (allocated(error)) return
 
       ! Check energy was reset
