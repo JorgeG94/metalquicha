@@ -26,7 +26,8 @@ module test_mqc_czt_direct
                                 hgp_grad_cached, rotaxis_grad_libfint, hgp_grad_libfint
    use mqc_czt_rhf, only: build_fock
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
-                             build_fock_direct_nosym, schwarz_bounds, &
+                             build_fock_direct_nosym, build_fock_direct_uhf, &
+                             build_fock_direct_uhf_many, schwarz_bounds, &
                              direct_stats_t
    use mqc_error, only: error_t
    implicit none
@@ -102,7 +103,13 @@ contains
                   new_unittest("nosym_takes_the_same_scales_as_the_fast_build", &
                                test_nosym_scales), &
                   new_unittest("nosym_scales_exchange_on_an_antisymmetric_density", &
-                               test_nosym_antisymmetric_scaled) &
+                               test_nosym_antisymmetric_scaled), &
+                  new_unittest("the_uhf_batch_is_the_closed_shell_build_on_equal_spins", &
+                               test_uhf_many_closed_shell), &
+                  new_unittest("the_uhf_batch_matches_an_explicit_contraction", &
+                               test_uhf_many_explicit), &
+                  new_unittest("the_uhf_batch_handles_antisymmetric_pairs", &
+                               test_uhf_many_antisymmetric) &
                   ]
    end subroutine collect_mqc_czt_direct_tests
 
@@ -994,6 +1001,217 @@ contains
                  "the general build does not reproduce a scaled exchange contraction "// &
                  "on an antisymmetric density")
    end subroutine test_nosym_antisymmetric_scaled
+
+   subroutine uhf_reference(eri, zero_h, d_alpha, d_beta, k, g_a, g_b)
+      !! `G_s = J[D_a + D_b] - k K[D_s]` from the stored tensor, by definition
+      !!
+      !! Two calls to `build_fock` per spin, which is the plain `n^4`
+      !! contraction with no symmetry assumption in it: one with the Coulomb
+      !! term alone on the total density, one with the exchange term alone on
+      !! that spin's. `build_fock` carries `K/2`, so `k_scale = 2 k` is what
+      !! makes the second call the **full** same-spin exchange an unrestricted
+      !! build wants.
+      real(dp), intent(in) :: eri(:, :, :, :), zero_h(:, :)
+      real(dp), intent(in) :: d_alpha(:, :), d_beta(:, :)
+      real(dp), intent(in) :: k
+      real(dp), allocatable, intent(out) :: g_a(:, :), g_b(:, :)
+
+      real(dp), allocatable :: coul(:, :), exch(:, :)
+      integer :: n
+
+      n = size(zero_h, 1)
+      allocate (g_a(n, n), g_b(n, n), coul(n, n), exch(n, n))
+      call build_fock(zero_h, eri, d_alpha + d_beta, coul, k_scale=0.0_dp)
+      call build_fock(zero_h, eri, d_alpha, exch, k_scale=2.0_dp*k, j_scale=0.0_dp)
+      g_a = coul + exch
+      call build_fock(zero_h, eri, d_beta, exch, k_scale=2.0_dp*k, j_scale=0.0_dp)
+      g_b = coul + exch
+      deallocate (coul, exch)
+   end subroutine uhf_reference
+
+   subroutine test_uhf_many_closed_shell(error)
+      !! Half the closed-shell density in each spin gives the closed-shell build
+      !!
+      !! This is the convention, stated as a test: the unrestricted build takes
+      !! the **true** spin densities and returns full same-spin exchange, so
+      !! `D_a = D_b = D/2` has to reproduce `J[D] - K[D]/2` -- the matrix the
+      !! restricted batch returns for `D` -- element for element. Get the
+      !! factor wrong in either direction and this fails by exactly two.
+      !!
+      !! A scaled batch of three, so the set index is exercised and a routine
+      !! that quietly contracted every set against the first would show up.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: SETS = 3
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :)
+      real(dp), allocatable :: batch(:, :, :), half(:, :, :)
+      real(dp), allocatable :: closed(:, :, :), ga(:, :, :), gb(:, :, :)
+      real(dp) :: worst
+      integer :: m
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+      allocate (batch(mol%nao, mol%nao, SETS), half(mol%nao, mol%nao, SETS))
+      do m = 1, SETS
+         batch(:, :, m) = (0.7_dp*m - 1.1_dp)*sym
+         half(:, :, m) = 0.5_dp*batch(:, :, m)
+      end do
+
+      call build_fock_direct_many(mol, zero_h, batch, bounds, closed, stats, err, &
+                                  screen_tol=NO_SCREENING, k_scale=CAM_K_FULL)
+      if (.not. err%has_error()) then
+         call build_fock_direct_uhf_many(mol, zero_h, half, half, bounds, ga, gb, &
+                                         stats, err, screen_tol=NO_SCREENING, &
+                                         k_scale=CAM_K_FULL)
+      end if
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "a build failed: "//err%get_message())
+         return
+      end if
+
+      worst = 0.0_dp
+      do m = 1, SETS
+         worst = max(worst, maxval(abs(ga(:, :, m) - closed(:, :, m))))
+         worst = max(worst, maxval(abs(gb(:, :, m) - closed(:, :, m))))
+      end do
+      call check(error, worst < 1.0e-12_dp, "the unrestricted batch on two equal "// &
+                 "half densities is not the closed-shell build")
+   end subroutine test_uhf_many_closed_shell
+
+   subroutine test_uhf_many_explicit(error)
+      !! A genuinely spin-polarised pair, against the four-index contraction
+      !!
+      !! Equal spin densities cannot separate `J[D_a + D_b]` from `2 J[D_a]`,
+      !! nor same-spin exchange from any other combination, so the case above
+      !! passes for several wrong builds. Here the two spins are different
+      !! matrices and every term is pinned on its own, against `build_fock` --
+      !! which assumes no permutational symmetry and is correct by
+      !! construction.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: SETS = 2
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :)
+      real(dp), allocatable :: da(:, :, :), db(:, :, :), ga(:, :, :), gb(:, :, :)
+      real(dp), allocatable :: ref_a(:, :), ref_b(:, :), single_a(:, :), single_b(:, :)
+      real(dp) :: worst
+      integer :: m, n, i, j
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+      n = mol%nao
+      allocate (da(n, n, SETS), db(n, n, SETS), single_a(n, n), single_b(n, n))
+      ! Two symmetric matrices that are not multiples of each other, so the
+      ! alpha and beta halves of every term are distinguishable.
+      do j = 1, n
+         do i = 1, n
+            da(i, j, 1) = 0.3_dp*sym(i, j) + 0.05_dp*cos(real(2*i + j, dp))
+            db(i, j, 1) = -0.4_dp*sym(i, j) + 0.02_dp*sin(real(i - 3*j, dp))
+         end do
+      end do
+      da(:, :, 1) = 0.5_dp*(da(:, :, 1) + transpose(da(:, :, 1)))
+      db(:, :, 1) = 0.5_dp*(db(:, :, 1) + transpose(db(:, :, 1)))
+      da(:, :, 2) = db(:, :, 1)
+      db(:, :, 2) = da(:, :, 1)
+
+      call build_fock_direct_uhf_many(mol, zero_h, da, db, bounds, ga, gb, stats, err, &
+                                      screen_tol=NO_SCREENING, k_scale=CAM_K_FULL)
+      ! And the single-density build it is the batch of: the two loops are
+      ! separate copies and this is what keeps them in step.
+      if (.not. err%has_error()) then
+         call build_fock_direct_uhf(mol, zero_h, da(:, :, 1), db(:, :, 1), bounds, &
+                                    single_a, single_b, stats, err, &
+                                    screen_tol=NO_SCREENING, k_scale=CAM_K_FULL)
+      end if
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "a build failed: "//err%get_message())
+         return
+      end if
+
+      worst = 0.0_dp
+      do m = 1, SETS
+         call uhf_reference(eri, zero_h, da(:, :, m), db(:, :, m), CAM_K_FULL, &
+                            ref_a, ref_b)
+         worst = max(worst, maxval(abs(ga(:, :, m) - ref_a)))
+         worst = max(worst, maxval(abs(gb(:, :, m) - ref_b)))
+         deallocate (ref_a, ref_b)
+      end do
+      call check(error, worst < 1.0e-10_dp, "the unrestricted batch disagrees with "// &
+                 "an explicit four-index contraction")
+      if (allocated(error)) return
+
+      worst = max(maxval(abs(ga(:, :, 1) - single_a)), &
+                  maxval(abs(gb(:, :, 1) - single_b)))
+      call check(error, worst < 1.0e-10_dp, "the unrestricted batch disagrees with "// &
+                 "the single-density unrestricted build it is a batch of")
+   end subroutine test_uhf_many_explicit
+
+   subroutine test_uhf_many_antisymmetric(error)
+      !! Announced antisymmetric: no Coulomb, and the output antisymmetrised
+      !!
+      !! `(A - B)` hands this build an antisymmetric pair. What has to come
+      !! back is exchange alone -- the Coulomb term vanishes for an
+      !! antisymmetric density and the fold that stands in for the remaining
+      !! permutations has to change sign with it. Checked against the
+      !! four-index contraction, which needs no announcement, and the result is
+      !! checked to be antisymmetric rather than assumed so.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: sym(:, :), anti(:, :)
+      real(dp), allocatable :: da(:, :, :), db(:, :, :), ga(:, :, :), gb(:, :, :)
+      real(dp), allocatable :: ref_a(:, :), ref_b(:, :)
+      real(dp) :: worst
+      integer :: n
+
+      call setup(mol, eri, bounds, zero_h, sym, anti, err)
+      if (err%has_error()) then
+         call check(error, .false., "setup failed: "//err%get_message())
+         return
+      end if
+      n = mol%nao
+      allocate (da(n, n, 1), db(n, n, 1))
+      da(:, :, 1) = anti
+      db(:, :, 1) = -0.6_dp*anti
+
+      call build_fock_direct_uhf_many(mol, zero_h, da, db, bounds, ga, gb, stats, err, &
+                                      screen_tol=NO_SCREENING, k_scale=CAM_K_FULL, &
+                                      antisymmetric=.true.)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the antisymmetric unrestricted build failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      call uhf_reference(eri, zero_h, da(:, :, 1), db(:, :, 1), CAM_K_FULL, ref_a, ref_b)
+      worst = max(maxval(abs(ga(:, :, 1) - ref_a)), maxval(abs(gb(:, :, 1) - ref_b)))
+      call check(error, worst < 1.0e-10_dp, "the announced-antisymmetric unrestricted "// &
+                 "batch disagrees with an explicit contraction")
+      if (allocated(error)) return
+      worst = max(maxval(abs(ga(:, :, 1) + transpose(ga(:, :, 1)))), &
+                  maxval(abs(gb(:, :, 1) + transpose(gb(:, :, 1)))))
+      call check(error, worst < 1.0e-12_dp, "an antisymmetric pair came back with a "// &
+                 "symmetric part")
+   end subroutine test_uhf_many_antisymmetric
 
 end module test_mqc_czt_direct
 
