@@ -85,6 +85,30 @@ test_mqc_*
 !test_mqc_*.f90
 !test_mqc_*.F90
 
+# The executables a build links at the root of its tree: `mqc` itself and the
+# validation and benchmark programs, each named for its target. Same problem as
+# the test drivers -- no extension is the only thing telling a linked binary
+# apart from the source it was built from -- so each prefix un-ignores the
+# extensions we actually author under it. Every tracked name under these
+# prefixes has one; none of the binaries does.
+mqc
+check_*
+bench_*
+sweep_*
+probe_*
+!check_*.f90
+!check_*.py
+!check_*.sh
+!bench_*.f90
+!bench_*.py
+!bench_*.sh
+!sweep_*.f90
+!sweep_*.py
+!sweep_*.sh
+!probe_*.f90
+!probe_*.py
+!probe_*.sh
+
 # profiling / scratch
 *.nsys-rep
 *.sqlite
