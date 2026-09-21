@@ -70,6 +70,44 @@ build*/
 **/_deps/
 **/cmake_install.cmake
 **/CTestTestfile.cmake
+**/compile_commands.json
+**/metalquichaConfig.cmake
+**/metalquichaConfigVersion.cmake
+
+# A generated Makefile is the one build-tree artefact that shares its name with
+# a file we author, so the rule is by name with the one real one exempted.
+**/Makefile
+!mqc_docs/Makefile
+
+# The compiled test drivers, which sit beside their sources under a build tree
+# and carry no extension to tell them apart from one.
+test_mqc_*
+!test_mqc_*.f90
+!test_mqc_*.F90
+
+# The executables a build links at the root of its tree: `mqc` itself and the
+# validation and benchmark programs, each named for its target. Same problem as
+# the test drivers -- no extension is the only thing telling a linked binary
+# apart from the source it was built from -- so each prefix un-ignores the
+# extensions we actually author under it. Every tracked name under these
+# prefixes has one; none of the binaries does.
+mqc
+check_*
+bench_*
+sweep_*
+probe_*
+!check_*.f90
+!check_*.py
+!check_*.sh
+!bench_*.f90
+!bench_*.py
+!bench_*.sh
+!sweep_*.f90
+!sweep_*.py
+!sweep_*.sh
+!probe_*.f90
+!probe_*.py
+!probe_*.sh
 
 # profiling / scratch
 *.nsys-rep
@@ -97,9 +135,12 @@ venv/
 # ctest scratch, swept in once by a broad git add
 Testing/
 
-# pyscf-forge DFDH writes a profiler log beside whatever invoked it. Only the
-# validation reference generator ever calls it, and the log is never wanted.
-tmp_timing.log
+# Build and run logs, whatever the run redirected to. This began as
+# pyscf-forge DFDH's tmp_timing.log -- a profiler log it writes beside
+# whatever invoked it, which only the validation reference generator ever
+# calls -- and widened to the pattern after a broad `git add` swept two
+# build logs into a commit. Nothing here is ever authored by hand.
+*.log
 
 # Throwaway Fortran drivers for poking at the library by hand -- see
 # scratch/README.md, which is the only tracked thing in there. Nothing under

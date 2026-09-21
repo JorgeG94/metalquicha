@@ -31,9 +31,10 @@ module mqc_json_config_reader
                                  MAX_ORBITAL_LABEL_LEN
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
+   use pic_ascii, only: to_lower
    use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
-                                       EFP_RESPONSE_MATRIX_FREE
+                                       EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
                                method_wants_density_fitting, method_type_to_string, &
                                method_is_casci, METHOD_TYPE_UNKNOWN, &
@@ -416,6 +417,9 @@ contains
       call optional_int(json, "keywords.hessian.response_max_iter", &
                         config%hessian_response_max_iter)
       call optional_int(json, "keywords.hessian.response_batch", config%hessian_response_batch)
+
+      call read_excited_states(json, config, error)
+      if (error%has_error()) return
 
       call optional_real(json, "keywords.aimd.dt", config%aimd_dt)
       call optional_real(json, "keywords.aimd.timestep", config%aimd_dt)
@@ -922,6 +926,96 @@ contains
                         "'. Accepted: auto, dense, matrix_free")
       end select
    end subroutine read_efp_response
+
+   subroutine read_excited_states(json, config, error)
+      !! `keywords.excited_states`: how many roots, of what kind, or a refusal
+      !!
+      !! The two spelled keys are validated here rather than where the solver
+      !! reads them, for the reason `read_efp_response` gives: a deck that
+      !! asked for `tda` and silently got the full problem would report a
+      !! number under the name of an approximation it did not run. The
+      !! tolerance floor is refused here for the same reason -- clamping it
+      !! would report convergence at a threshold the deck never asked for.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+
+      call optional_int(json, "keywords.excited_states.n_states", config%excited_n_states)
+      if (config%excited_n_states < 0) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.n_states is "// &
+                        trim(to_char(config%excited_n_states))//"; it counts roots, so "// &
+                        "it cannot be negative. Zero is how a deck asks for none.")
+         return
+      end if
+
+      call optional_string(json, "keywords.excited_states.method", text)
+      if (allocated(text)) then
+         select case (to_lower(trim(adjustl(text))))
+         case ("tda", "rpa")
+            config%excited_method = to_lower(trim(adjustl(text)))
+         case default
+            call error%set(ERROR_VALIDATION, "unknown keywords.excited_states.method '"// &
+                           trim(text)//"'. Accepted: tda, rpa")
+            return
+         end select
+         deallocate (text)
+      end if
+
+      call optional_string(json, "keywords.excited_states.spin", text)
+      if (allocated(text)) then
+         select case (to_lower(trim(adjustl(text))))
+         case ("singlet", "triplet", "both")
+            config%excited_spin = to_lower(trim(adjustl(text)))
+         case default
+            call error%set(ERROR_VALIDATION, "unknown keywords.excited_states.spin '"// &
+                           trim(text)//"'. Accepted: singlet, triplet, both")
+            return
+         end select
+         deallocate (text)
+      end if
+
+      call optional_real(json, "keywords.excited_states.tolerance", config%excited_tolerance)
+      if (config%excited_tolerance < MIN_EXCITED_TOL) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.tolerance is "// &
+                        trim(to_char(config%excited_tolerance))//", below the floor of "// &
+                        trim(to_char(MIN_EXCITED_TOL))//". The excitation energies rest "// &
+                        "on an exchange-correlation quadrature whose own error is well "// &
+                        "above that, so the solver would iterate on grid noise and never "// &
+                        "reach the residual. Ask for 1e-8 or looser.")
+         return
+      end if
+
+      ! `n_states` and `tolerance` above are refused when they are outside what
+      ! the solver can do; these three were read straight through, so "batch":
+      ! 0 or "max_iter": -1 validated, fingerprinted, and reached the backend
+      ! to be found there or not at all.
+      call optional_int(json, "keywords.excited_states.max_iter", config%excited_max_iter)
+      if (config%excited_max_iter < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.max_iter is "// &
+                        trim(to_char(config%excited_max_iter))//", and a solver given "// &
+                        "no iterations cannot converge anything. Ask for 1 or more.")
+         return
+      end if
+
+      call optional_int(json, "keywords.excited_states.max_subspace", &
+                        config%excited_max_subspace)
+      if (config%excited_max_subspace < 0) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.max_subspace is "// &
+                        trim(to_char(config%excited_max_subspace))//". Zero takes the "// &
+                        "solver's own rule; a negative subspace is not a size.")
+         return
+      end if
+
+      call optional_int(json, "keywords.excited_states.batch", config%excited_batch)
+      if (config%excited_batch < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.excited_states.batch is "// &
+                        trim(to_char(config%excited_batch))//", and a batch of no "// &
+                        "vectors is a loop that does nothing. Ask for 1 or more.")
+         return
+      end if
+   end subroutine read_excited_states
 
    subroutine read_neo(json, config, error)
       !! `keywords.neo`: which nuclei get orbitals of their own, and in what basis

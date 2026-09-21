@@ -45,7 +45,10 @@ contains
                   new_unittest("scf_gradient_threshold_moves_it", test_gradient_threshold), &
                   new_unittest("driver_moves_it", test_driver), &
                   new_unittest("verbosity_does_not", test_verbosity), &
-                  new_unittest("angular_form_moves_it", test_cartesian) &
+                  new_unittest("angular_form_moves_it", test_cartesian), &
+                  new_unittest("root_count_moves_it", test_excited_roots), &
+                  new_unittest("an_absent_excited_block_does_not", test_excited_absent), &
+                  new_unittest("a_fixed_calculation_keeps_its_hash", test_golden_hash) &
                   ]
    end subroutine collect_mqc_fingerprint
 
@@ -57,8 +60,10 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: ca, cb
 
-      call water_dimer(a); call water_dimer(b)
-      call gfn2(ca); call gfn2(cb)
+      call water_dimer(a)
+      call water_dimer(b)
+      call gfn2(ca)
+      call gfn2(cb)
       call check(error, calculation_fingerprint(a, ca, CALC_TYPE_ENERGY) == &
                  calculation_fingerprint(b, cb, CALC_TYPE_ENERGY), &
                  "identical calculations must fingerprint identically")
@@ -75,7 +80,8 @@ contains
       type(method_config_t) :: quiet, loud
 
       call water_dimer(sys)
-      call gfn2(quiet); call gfn2(loud)
+      call gfn2(quiet)
+      call gfn2(loud)
       loud%verbose = .true.
       loud%device_rank = 3
       call check(error, calculation_fingerprint(sys, quiet, CALC_TYPE_ENERGY) == &
@@ -93,7 +99,8 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: config
 
-      call water_dimer(a); call water_dimer(b)
+      call water_dimer(a)
+      call water_dimer(b)
       b%coordinates(1, 1) = -0.0_dp
       a%coordinates(1, 1) = 0.0_dp
       call gfn2(config)
@@ -109,7 +116,8 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: config
 
-      call water_dimer(a); call water_dimer(b)
+      call water_dimer(a)
+      call water_dimer(b)
       ! Far below any threshold anyone would notice by eye, and it still has
       ! to move the hash: a resumed run must not splice energies from a
       ! geometry that drifted.
@@ -123,7 +131,8 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: config
 
-      call water_dimer(a); call water_dimer(b)
+      call water_dimer(a)
+      call water_dimer(b)
       b%element_numbers(4) = 9   ! O -> F, same shape, different molecule
       call gfn2(config)
       call differ(error, a, b, config, config, "swapping an element")
@@ -134,7 +143,8 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: config
 
-      call water_dimer(a); call water_dimer(b)
+      call water_dimer(a)
+      call water_dimer(b)
       b%charge = 1
       call gfn2(config)
       call differ(error, a, b, config, config, "changing the charge")
@@ -150,7 +160,8 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: config
 
-      call water_dimer(a); call water_dimer(b)
+      call water_dimer(a)
+      call water_dimer(b)
       b%fragment_atoms(1, 1) = 3
       b%fragment_atoms(1, 2) = 0
       call gfn2(config)
@@ -162,7 +173,8 @@ contains
       type(system_geometry_t) :: a, b
       type(method_config_t) :: config
 
-      call water_dimer(a); call water_dimer(b)
+      call water_dimer(a)
+      call water_dimer(b)
       allocate (b%bonds(1))
       b%bonds(1)%atom_i = 0
       b%bonds(1)%atom_j = 3
@@ -178,7 +190,8 @@ contains
       type(method_config_t) :: a, b
 
       call water_dimer(sys)
-      call gfn2(a); call gfn2(b)
+      call gfn2(a)
+      call gfn2(b)
       b%method_type = METHOD_TYPE_HF
       call differ(error, sys, sys, a, b, "changing the method")
    end subroutine test_method
@@ -189,7 +202,8 @@ contains
       type(method_config_t) :: a, b
 
       call water_dimer(sys)
-      call dft(a); call dft(b)
+      call dft(a)
+      call dft(b)
       b%basis_set = "def2-tzvp"
       call differ(error, sys, sys, a, b, "changing the basis")
    end subroutine test_basis
@@ -208,7 +222,8 @@ contains
       type(method_config_t) :: a, b
 
       call water_dimer(sys)
-      call dft(a); call dft(b)
+      call dft(a)
+      call dft(b)
       b%scf%cartesian = .true.
       call differ(error, sys, sys, a, b, "forcing a Cartesian basis")
    end subroutine test_cartesian
@@ -223,7 +238,8 @@ contains
       type(method_config_t) :: a, b
 
       call water_dimer(sys)
-      call dft(a); call dft(b)
+      call dft(a)
+      call dft(b)
       b%dft%functional = "pbe0"
       call differ(error, sys, sys, a, b, "changing the functional")
    end subroutine test_functional
@@ -234,7 +250,8 @@ contains
       type(method_config_t) :: a, b
 
       call water_dimer(sys)
-      call dft(a); call dft(b)
+      call dft(a)
+      call dft(b)
       b%scf%energy_convergence = 1.0e-6_dp
       call differ(error, sys, sys, a, b, "loosening the SCF threshold")
    end subroutine test_threshold
@@ -252,7 +269,8 @@ contains
       type(method_config_t) :: a, b
 
       call water_dimer(sys)
-      call dft(a); call dft(b)
+      call dft(a)
+      call dft(b)
       b%scf%gradient_convergence = 1.0e-7_dp
       call differ(error, sys, sys, a, b, "naming a gradient threshold")
    end subroutine test_gradient_threshold
@@ -269,6 +287,105 @@ contains
                  calculation_fingerprint(sys, config, CALC_TYPE_GRADIENT), &
                  "energy and gradient runs must not share a fingerprint")
    end subroutine test_driver
+
+   subroutine test_excited_roots(error)
+      !! Three roots and ten roots are different calculations
+      !!
+      !! They share a reference, a basis, a functional and a total energy, so
+      !! every other field in the hash agrees. Without the excited block a
+      !! restart would splice a three-root checkpoint into a ten-root deck,
+      !! finish early, and report seven states it never computed.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a)
+      call dft(b)
+      a%excited%enabled = .true.
+      a%excited%n_states = 3
+      b%excited%enabled = .true.
+      b%excited%n_states = 10
+      call differ(error, sys, sys, a, b, "asking for more roots")
+      if (allocated(error)) return
+
+      ! And the approximation, which changes every energy in the list while
+      ! leaving their count alone.
+      call dft(a)
+      call dft(b)
+      a%excited%enabled = .true.
+      a%excited%n_states = 5
+      a%excited%method = "tda"
+      b%excited%enabled = .true.
+      b%excited%n_states = 5
+      b%excited%method = "rpa"
+      call differ(error, sys, sys, a, b, "switching TDA for RPA")
+      if (allocated(error)) return
+
+      call dft(a)
+      call dft(b)
+      a%excited%enabled = .true.
+      a%excited%n_states = 5
+      a%excited%spin = "singlet"
+      b%excited%enabled = .true.
+      b%excited%n_states = 5
+      b%excited%spin = "triplet"
+      call differ(error, sys, sys, a, b, "asking for triplets instead of singlets")
+   end subroutine test_excited_roots
+
+   subroutine test_excited_absent(error)
+      !! No excited states asked for hashes as it always did
+      !!
+      !! The other half of the Layer 1 contract: a deck with no
+      !! `keywords.excited_states` must produce the same fingerprint it
+      !! produced before the block existed, or every checkpoint ever written
+      !! is invalidated by a feature nobody used. The block's own defaults are
+      !! deliberately not hashed when it is off, which is what this pins.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a)
+      call dft(b)
+      ! `b` carries settings a deck could have left lying around with the
+      ! block switched off. None of them may reach the hash.
+      b%excited%n_states = 0
+      b%excited%method = "tda"
+      b%excited%spin = "triplet"
+      b%excited%tolerance = 1.0e-7_dp
+      call check(error, calculation_fingerprint(sys, a, CALC_TYPE_ENERGY) == &
+                 calculation_fingerprint(sys, b, CALC_TYPE_ENERGY), &
+                 "an excited block that asks for no roots must not move the hash")
+   end subroutine test_excited_absent
+
+   subroutine test_golden_hash(error)
+      !! One fingerprint, written down, for a calculation that never changes
+      !!
+      !! Every other test here is relative -- this field moved, so the hash
+      !! must move -- and a relative test is blind to the hash moving under a
+      !! calculation nobody touched. That is the expensive failure: a field
+      !! hashed unconditionally, outside the `if (config%excited%enabled)`
+      !! guard or any other, invalidates every checkpoint ever written and
+      !! passes every test above. A literal is the only thing that catches it.
+      !!
+      !! When this fails and the change was deliberate, move
+      !! `mqc-fingerprint-v1` in `calculation_fingerprint` with it, so stored
+      !! energies are rejected wholesale rather than mismatched one at a time,
+      !! and then write the new digest down here.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: config
+
+      character(len=*), parameter :: GOLDEN = "0684a824686c71d4"
+
+      call water_dimer(sys)
+      call dft(config)
+      call check(error, calculation_fingerprint(sys, config, CALC_TYPE_ENERGY) == GOLDEN, &
+                 "b3lyp/def2-svp on the water dimer used to fingerprint as "//GOLDEN// &
+                 " and now hashes as "//calculation_fingerprint(sys, config, CALC_TYPE_ENERGY)// &
+                 ". Every checkpoint written before this change is now unreadable")
+   end subroutine test_golden_hash
 
    ! -- helpers ---------------------------------------------------------------
 

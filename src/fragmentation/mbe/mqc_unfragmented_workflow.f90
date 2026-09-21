@@ -222,6 +222,28 @@ contains
                            json_data%has_dispersion = .true.
                         end if
 
+                        ! The excited-state spectrum, when
+                        ! `keywords.excited_states` asked for one. The request
+                        ! itself travels beside the roots: which response
+                        ! problem produced them is not recoverable from the
+                        ! numbers, and a consumer comparing a TDA energy with
+                        ! an RPA one has no way to notice.
+                        if (result%has_excited_states) then
+                           json_data%excitation_energies = result%excitation_energies
+                           if (allocated(result%oscillator_strengths)) then
+                              json_data%oscillator_strengths = result%oscillator_strengths
+                           end if
+                           if (allocated(result%transition_dipoles)) then
+                              json_data%transition_dipoles = result%transition_dipoles
+                           end if
+                           if (allocated(result%state_spin)) then
+                              json_data%state_spin = result%state_spin
+                           end if
+                           json_data%excited_method = config%method_config%excited%method
+                           json_data%excited_spin = config%method_config%excited%spin
+                           json_data%has_excited_states = .true.
+                        end if
+
                         ! Whether the reference the whole calculation rests on
                         ! is a minimum, when `keywords.scf.stability` asked.
                         if (result%has_stability) then
@@ -379,6 +401,27 @@ contains
             if (result%energy%dispersion /= 0.0_dp) then
                json_data%dispersion_energy = result%energy%dispersion
                json_data%has_dispersion = .true.
+            end if
+
+            ! The excited-state spectrum, when `keywords.excited_states` asked
+            ! for one. The request itself travels beside the roots: which
+            ! response problem produced them is not recoverable from the
+            ! numbers, and a consumer comparing a TDA energy with an RPA one
+            ! has no way to notice.
+            if (result%has_excited_states) then
+               json_data%excitation_energies = result%excitation_energies
+               if (allocated(result%oscillator_strengths)) then
+                  json_data%oscillator_strengths = result%oscillator_strengths
+               end if
+               if (allocated(result%transition_dipoles)) then
+                  json_data%transition_dipoles = result%transition_dipoles
+               end if
+               if (allocated(result%state_spin)) then
+                  json_data%state_spin = result%state_spin
+               end if
+               json_data%excited_method = config%method_config%excited%method
+               json_data%excited_spin = config%method_config%excited%spin
+               json_data%has_excited_states = .true.
             end if
 
             ! Whether the reference the whole calculation rests on

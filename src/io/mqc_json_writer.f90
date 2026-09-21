@@ -11,6 +11,7 @@ module mqc_json_writer
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
    use mqc_fragment_table_writer, only: write_fragment_table
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
    use json_module, only: json_core, json_value
    implicit none
    private
@@ -160,6 +161,7 @@ contains
       call write_bond_orders_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
+      call write_excited_states_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
@@ -475,6 +477,98 @@ contains
       end do
    end subroutine write_fukui_section
 
+   subroutine write_excited_states_section(json, parent, data)
+      !! The linear-response spectrum, one object per root
+      !!
+      !! Per state rather than as four parallel arrays: a consumer picking the
+      !! brightest state, or the lowest triplet, needs the energy, the spin and
+      !! the strength of one root together, and parallel arrays make that a
+      !! join the reader has to get right.
+      !!
+      !! The excitation energy appears twice, in Hartree and in eV. Hartree is
+      !! the internal unit and what a cross-code comparison uses; eV is what a
+      !! spectrum is read in, and a consumer converting it itself is a place
+      !! for the conversion factor to be wrong.
+      ! TODO(mqc): only the unfragmented and vibrational writers call this, so
+      ! a fragmented run's spectra are carried through all six MPI routines in
+      ! `mqc_result_types` and then dropped. No result is lost today -- no
+      ! backend fills those arrays yet, and the reader refuses a fragmented
+      ! deck asking for excited states once the solver lands -- so this is
+      ! plumbing ahead of a feature. Whatever lifts that refusal has to add
+      ! the fragmented writer with it.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, entry, dip_arr
+      integer :: i, n_states, comp
+
+      if (.not. data%has_excited_states) return
+      if (.not. allocated(data%excitation_energies)) return
+      n_states = size(data%excitation_energies)
+
+      call json%create_object(section, "excited_states")
+      call json%add(parent, section)
+      call json%add(section, "n_states", n_states)
+      call json%add(section, "method", trim(data%excited_method))
+      call json%add(section, "spin", trim(data%excited_spin))
+
+      call json%create_array(arr, "states")
+      call json%add(section, arr)
+      do i = 1, n_states
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         ! Numbered from one in the order the solver converged them, which is
+         ! ascending in energy.
+         call json%add(entry, "state", i)
+         call json%add(entry, "spin", state_spin_label(data, i))
+         call json%add(entry, "excitation_energy_hartree", data%excitation_energies(i))
+         call json%add(entry, "excitation_energy_ev", &
+                       data%excitation_energies(i)*HARTREE_TO_EV)
+         ! Length as well as allocation, the way `state_spin_label` tests it.
+         ! The four arrays are filled together by the solver, but they reach
+         ! this writer through the MPI reducers, and a short one would be read
+         ! past its end rather than left out.
+         if (allocated(data%oscillator_strengths) .and. &
+             size(data%oscillator_strengths) >= n_states) then
+            call json%add(entry, "oscillator_strength", data%oscillator_strengths(i))
+         end if
+         if (allocated(data%transition_dipoles) .and. &
+             size(data%transition_dipoles, 2) >= n_states) then
+            call json%create_array(dip_arr, "transition_dipole")
+            call json%add(entry, dip_arr)
+            do comp = 1, 3
+               call json%add(dip_arr, "", data%transition_dipoles(comp, i))
+            end do
+         end if
+      end do
+   end subroutine write_excited_states_section
+
+   pure function state_spin_label(data, i) result(label)
+      !! The `STATE_SPIN_*` code of state `i` as the word a reader expects
+      !!
+      !! "unknown" rather than a guess where the reference is unrestricted and
+      !! its roots are not spin eigenstates: there is no singlet or triplet to
+      !! report, and a label invented here would be believed.
+      type(json_output_data_t), intent(in) :: data
+      integer, intent(in) :: i
+      character(len=:), allocatable :: label
+
+      label = "unknown"
+      if (.not. allocated(data%state_spin)) return
+      if (i > size(data%state_spin)) return
+      select case (data%state_spin(i))
+      case (STATE_SPIN_SINGLET)
+         label = "singlet"
+      case (STATE_SPIN_TRIPLET)
+         label = "triplet"
+      case default
+         ! STATE_SPIN_UNKNOWN, and anything a later spin treatment adds
+         ! without teaching this routine about it. The initialiser above
+         ! already holds the right answer.
+      end select
+   end function state_spin_label
+
    subroutine write_stability_section(json, parent, data)
       !! Whether the reference is a minimum, for something other than a reader
       !!
@@ -732,6 +826,7 @@ contains
       ! the same reference, and a saddle point there is what produces the
       ! imaginary modes below.
       call write_stability_section(json, main_obj, data)
+      call write_excited_states_section(json, main_obj, data)
 
       ! Dipole
       if (data%has_dipole .and. allocated(data%dipole)) then

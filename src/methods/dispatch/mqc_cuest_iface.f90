@@ -8,7 +8,8 @@ module mqc_cuest_iface
    ! from behind an `#ifdef`.
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t, deltascf_options_t
-   use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, properties_config_t
+   use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, &
+                                properties_config_t, excited_config_t
    implicit none
    private
 
@@ -106,6 +107,13 @@ module mqc_cuest_iface
       type(mcscf_config_t) :: mcscf
          !! The active space, when a multiconfigurational method is being run.
          !! Read by the CPU backend only; cuEST has no CI.
+
+      type(excited_config_t) :: excited
+         !! Linear-response excited states, when a deck asked for any. Read by
+         !! the CPU backend only; cuEST has no response solver, and asking for
+         !! one there is refused by name rather than answered with a ground
+         !! state.
+
       character(len=32) :: functional = ""
          !! Exchange-correlation functional; empty means Hartree-Fock
       logical :: spherical = .true.
@@ -255,6 +263,7 @@ contains
       settings%hessian_response_tol = options%hessian_response_tol
       settings%hessian_response_max_iter = options%hessian_response_max_iter
       settings%hessian_response_batch = options%hessian_response_batch
+      settings%excited = options%excited
    end subroutine apply_scf_settings
 
    subroutine parse_backend_name(name, kind, error)

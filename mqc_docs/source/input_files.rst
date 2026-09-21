@@ -1459,6 +1459,56 @@ methods take which path, and for what ``response_batch`` costs in memory.
 Note that ``keywords.efp`` carries its own ``response_batch``, driving the EFP
 polarization response. They are different keys on different groups.
 
+Excited State Options
+^^^^^^^^^^^^^^^^^^^^^
+
+Linear-response excitation energies -- TDHF and TDDFT -- out of a converged
+reference:
+
+.. code-block:: json
+
+   "excited_states": {
+     "n_states": 5,
+     "method": "rpa",
+     "spin": "singlet",
+     "tolerance": 1e-6,
+     "max_iter": 100,
+     "max_subspace": 0,
+     "batch": 12
+   }
+
+- ``n_states`` (default: 0): roots to converge. Zero, or the block absent
+  altogether, is a plain ground-state calculation -- nothing else here is read.
+- ``method`` (default: ``"rpa"``): ``"tda"`` for the Tamm-Dancoff
+  approximation, the Hermitian problem over the **A** block alone, or
+  ``"rpa"`` for the full Casida problem. Two different approximations with
+  different energies; anything else is refused by name.
+- ``spin`` (default: ``"singlet"``): ``"singlet"``, ``"triplet"`` or
+  ``"both"``. Out of a closed shell the two spins are separate eigenproblems,
+  so ``"both"`` is two solves rather than one.
+- ``tolerance`` (default: 1e-6): residual at which a root is accepted.
+  **Refused below 1e-8**: the exchange-correlation quadrature underneath
+  carries more error than that on any grid a production run uses, so a tighter
+  request buys iterations rather than accuracy. Refused rather than clamped, so
+  a deck is never told it converged to a threshold it did not ask for.
+- ``max_iter`` (default: 100): cycles that solve may take.
+- ``max_subspace`` (default: 0): trial vectors the Davidson subspace may hold
+  before it collapses. Zero leaves the rule to the solver, which derives it
+  from the number of roots; set it only to bound memory.
+- ``batch`` (default: 12): trial vectors contracted against one pass over the
+  integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
+  a different solve.
+
+**The physics behind this block is not implemented yet.** Everything above
+parses, validates and reaches the CPU backend, which then stops with a message
+saying so; the linear-response solver arrives in a later change. Until then, a
+deck naming ``n_states`` greater than zero will not produce a number. A
+calculation that cannot have these states at all -- an unrestricted reference,
+a correlated method, a density-fitted reference, continuum solvation, a
+hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or the cuEST
+backend -- is refused by name instead, rather than answered from an operator
+missing a term.
+
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
 

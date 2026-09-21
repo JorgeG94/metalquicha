@@ -131,6 +131,10 @@ contains
       m%accuracy = real(config%xtb%accuracy, wp)
       m%max_iter = config%scf%max_iter
       m%allow_crap_scf = config%scf%allow_crap_scf
+      ! Carried only so it can be refused: `xtb_method_t` is not an
+      ! `scf_options_t`, so the block would otherwise never arrive and a deck
+      ! asking for roots would get a ground-state energy and no complaint.
+      m%excited_n_states = config%excited%n_states
 
       ! Electronic temperature, Kelvin to Hartree: kt = T * k_B.
       ! TODO(mqc): a second, different Boltzmann constant. `KB_HARTREE` in
@@ -202,6 +206,7 @@ contains
       options%convergence_metric = config%scf%convergence_metric
       options%pcm = config%pcm
       options%properties = config%properties
+      options%excited = config%excited
    end subroutine configure_scf
 
    subroutine configure_hf(m, config, with_mp2, with_cc)
