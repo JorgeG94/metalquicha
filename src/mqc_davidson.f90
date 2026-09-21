@@ -241,9 +241,18 @@ contains
          !! vectors. Defaults to `max(2*n_roots + 8, 16)`, bounded by the size of
          !! the determinant space.
       real(dp), intent(in), optional :: guess(:, :)
-         !! (n_determinants, n_roots) starting vectors. Absent takes unit
-         !! vectors on the lowest diagonal elements, which for a CI is the
-         !! reference determinant and its nearest neighbours in energy.
+         !! (n_determinants, n_start) starting vectors, `n_start >= n_roots`.
+         !! Absent takes `n_roots` unit vectors on the lowest diagonal
+         !! elements, which for a CI is the reference determinant and its
+         !! nearest neighbours in energy.
+         !!
+         !! More columns than roots widens the **starting subspace** and does
+         !! not ask for more roots: `n_roots` eigenpairs still come back. A
+         !! root the `n_roots` lowest diagonal elements cannot reach -- one
+         !! the off-diagonal pushes below others whose diagonal sits lower --
+         !! is otherwise missed silently, the solver converging cleanly onto
+         !! whatever its subspace does span. Columns past `max_subspace` are
+         !! dropped.
       logical, intent(in), optional :: verbose
          !! Print a line per iteration, off by default
       real(dp), intent(in), optional :: energy_offset
@@ -268,7 +277,7 @@ contains
       logical :: loud
       real(dp), allocatable :: ritz(:, :), hritz(:, :), residual(:), correction(:)
       real(dp) :: tol, norm, denominator, overlap
-      integer :: ndet, nsub, nmax, iterations, iroot, i, j, info, added
+      integer :: ndet, nsub, nmax, nstart, iterations, iroot, i, j, info, added
       integer :: iteration, pass
       logical, allocatable :: root_converged(:)
 
@@ -299,6 +308,11 @@ contains
          return
       end if
 
+      ! A guess wider than the roots asked for is a wider starting subspace,
+      ! bounded by what the subspace can hold.
+      nstart = n_roots
+      if (present(guess)) nstart = min(max(size(guess, 2), n_roots), nmax)
+
       allocate (basis(ndet, nmax), sigma(ndet, nmax))
       allocate (ritz(ndet, n_roots), hritz(ndet, n_roots))
       allocate (residual(ndet), correction(ndet))
@@ -323,9 +337,9 @@ contains
       end if
 
       call system_clock(last, rate)
-      call initial_basis(diagonal, n_roots, ndet, basis, error, guess)
+      call initial_basis(diagonal, nstart, ndet, basis, error, guess)
       if (error%has_error()) return
-      nsub = n_roots
+      nsub = nstart
 
       ! Sigma for the starting vectors, as one block.
       call operator%apply_many(basis(:, 1:nsub), sigma(:, 1:nsub), error)
@@ -453,7 +467,7 @@ contains
       deallocate (root_converged)
    end subroutine davidson_flat
 
-   subroutine initial_basis(diagonal, n_roots, ndet, basis, error, guess)
+   subroutine initial_basis(diagonal, n_start, ndet, basis, error, guess)
       !! Starting vectors: the supplied ones, or the lowest determinants
       !!
       !! The linear-dependence test here is on the *fraction* of a guess
@@ -465,10 +479,15 @@ contains
       !! of the degenerate ones.
       !!
       !! Without a guess, `lowest_free` cannot come back empty: this branch
-      !! takes `n_roots` determinants out of `ndet`, and `davidson_flat`
-      !! refuses `n_roots > ndet` before calling here.
+      !! takes `n_start` determinants out of `ndet`, `davidson_flat` refuses
+      !! `n_roots > ndet` before calling here, and the widening it does after
+      !! that is bounded by a subspace already capped at `ndet`.
       real(dp), intent(in) :: diagonal(:)
-      integer, intent(in) :: n_roots, ndet
+      integer, intent(in) :: n_start
+         !! Columns of `basis` to fill. More than the roots asked for is a
+         !! wider starting subspace; a guess narrower than this is topped up
+         !! from the lowest free diagonal elements, as an absent one is.
+      integer, intent(in) :: ndet
       real(dp), intent(inout) :: basis(:, :)
       type(error_t), intent(inout) :: error
          !! Set when a guess column cannot be replaced by any determinant
@@ -482,8 +501,15 @@ contains
       taken = .false.
 
       if (present(guess)) then
-         do iroot = 1, n_roots
-            basis(:, iroot) = guess(:, iroot)
+         do iroot = 1, n_start
+            if (iroot <= size(guess, 2)) then
+               basis(:, iroot) = guess(:, iroot)
+            else
+               ! Past the end of the guess. A zero column has zero length, so
+               ! the fallback below takes it as dependent and fills it from the
+               ! determinants, which is what an absent guess would have done.
+               basis(:, iroot) = 0.0_dp
+            end if
             length = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
             norm = project_out_earlier(basis, iroot)
             ! A supplied vector the earlier ones already span leaves nothing
@@ -517,8 +543,8 @@ contains
          return
       end if
 
-      basis(:, 1:n_roots) = 0.0_dp
-      do iroot = 1, n_roots
+      basis(:, 1:n_start) = 0.0_dp
+      do iroot = 1, n_start
          ! Never zero here; see the note on the routine.
          pick = lowest_free(diagonal, taken)
          taken(pick) = .true.

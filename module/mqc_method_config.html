@@ -217,8 +217,8 @@ Re-exported from mqc_config_types</p>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1383,18 +1383,18 @@ large graphs.</div>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1464.14,-729.22C1418.48,-724.74 1328.25,-715.89 1273.36,-710.5"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1273.5,-707 1263.2,-709.5 1272.82,-713.96 1273.5,-707"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_method_config~~UsedByGraph_node52" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_method_config~~UsedByGraph_node52"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_method_config~~UsedByGraph_node52"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1532.5,-702 1454.5,-702 1454.5,-678 1532.5,-678 1532.5,-702"/>
 <text text-anchor="middle" x="1493.5" y="-687.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_config~~UsedByGraph_edge36" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1454.25,-692.31C1406.38,-695.2 1324.47,-700.14 1273.31,-703.23"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1272.96,-699.75 1263.19,-703.84 1273.39,-706.74 1272.96,-699.75"/>
 </g>
@@ -1850,7 +1850,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2101,7 +2101,7 @@ See mqc_config_types for why this is the default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~2"></span>
+              <span class="anchor" id="variable-angular_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -2135,7 +2135,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-block_size~2"></span>
+              <span class="anchor" id="variable-block_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -2152,7 +2152,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dispersion_type~2"></span>
+              <span class="anchor" id="variable-dispersion_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2170,7 +2170,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2187,7 +2187,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~2"></span>
+              <span class="anchor" id="variable-grid_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -2204,7 +2204,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_type~2"></span>
+              <span class="anchor" id="variable-grid_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2221,7 +2221,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlc_grid_level~2"></span>
+              <span class="anchor" id="variable-nlc_grid_level"></span>
               integer,
             </td>
               <td>public</td>
@@ -2241,7 +2241,7 @@ Negative means the backend&rsquo;s own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~2"></span>
+              <span class="anchor" id="variable-radial_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -2258,7 +2258,7 @@ Negative means the backend&rsquo;s own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-screening_tolerance~2"></span>
+              <span class="anchor" id="variable-screening_tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2292,7 +2292,7 @@ Negative means the backend&rsquo;s own default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_dispersion~2"></span>
+              <span class="anchor" id="variable-use_dispersion"></span>
               logical,
             </td>
               <td>public</td>
@@ -2664,7 +2664,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~8"></span>
+              <span class="anchor" id="variable-method~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2681,7 +2681,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~2"></span>
+              <span class="anchor" id="variable-n_states"></span>
               integer,
             </td>
               <td>public</td>
@@ -2898,7 +2898,7 @@ there is no second way to turn the block on and off.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_orbitals~2"></span>
+              <span class="anchor" id="variable-avas_orbitals"></span>
               character(len=MAX_ORBITAL_LABEL_LEN),
             </td>
               <td>public,</td>
@@ -2916,7 +2916,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-avas_threshold~2"></span>
+              <span class="anchor" id="variable-avas_threshold"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2950,7 +2950,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_valence~2"></span>
+              <span class="anchor" id="variable-full_valence"></span>
               logical,
             </td>
               <td>public</td>
@@ -2967,7 +2967,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-imaginary_shift~2"></span>
+              <span class="anchor" id="variable-imaginary_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2984,7 +2984,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ipea_shift~2"></span>
+              <span class="anchor" id="variable-ipea_shift"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3001,7 +3001,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_macro_iter~2"></span>
+              <span class="anchor" id="variable-max_macro_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -3018,7 +3018,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_micro_iter~2"></span>
+              <span class="anchor" id="variable-max_micro_iter"></span>
               integer,
             </td>
               <td>public</td>
@@ -3035,7 +3035,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_electrons~2"></span>
+              <span class="anchor" id="variable-n_active_electrons"></span>
               integer,
             </td>
               <td>public</td>
@@ -3052,7 +3052,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~2"></span>
+              <span class="anchor" id="variable-n_active_orbitals"></span>
               integer,
             </td>
               <td>public</td>
@@ -3069,7 +3069,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_inactive_orbitals~2"></span>
+              <span class="anchor" id="variable-n_inactive_orbitals"></span>
               integer,
             </td>
               <td>public</td>
@@ -3086,7 +3086,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~3"></span>
+              <span class="anchor" id="variable-n_states~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3103,7 +3103,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-optimize_orbitals~2"></span>
+              <span class="anchor" id="variable-optimize_orbitals"></span>
               logical,
             </td>
               <td>public</td>
@@ -3115,7 +3115,7 @@ there is no second way to turn the block on and off.</p>
 <td> =</td>
                 <td>.true.</td>
             <td>
-<p>Move the orbitals as well as the CI coefficients.</p><a href="../type/mcscf_config_t.html#variable-optimize_orbitals~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Move the orbitals as well as the CI coefficients.</p><a href="../type/mcscf_config_t.html#variable-optimize_orbitals" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -3137,7 +3137,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_max_electrons~2"></span>
+              <span class="anchor" id="variable-ormas_max_electrons"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3154,7 +3154,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_min_electrons~2"></span>
+              <span class="anchor" id="variable-ormas_min_electrons"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3171,7 +3171,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ormas_subspaces~2"></span>
+              <span class="anchor" id="variable-ormas_subspaces"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3189,7 +3189,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pt2_type~2"></span>
+              <span class="anchor" id="variable-pt2_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -3206,7 +3206,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-state_weights~2"></span>
+              <span class="anchor" id="variable-state_weights"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3223,7 +3223,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_pt2~2"></span>
+              <span class="anchor" id="variable-use_pt2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3427,7 +3427,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-excited~2"></span>
+              <span class="anchor" id="variable-excited~3"></span>
               type(<a href='../type/excited_config_t.html'>excited_config_t</a>),
             </td>
               <td>public</td>
@@ -3614,7 +3614,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~2"></span>
+              <span class="anchor" id="variable-scf"></span>
               type(<a href='../type/scf_config_t.html'>scf_config_t</a>),
             </td>
               <td>public</td>
@@ -3736,7 +3736,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -3936,7 +3936,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~3"></span>
+              <span class="anchor" id="variable-angular_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -4005,7 +4005,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~7"></span>
+              <span class="anchor" id="variable-method"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -4743,7 +4743,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~2"></span>
+              <span class="anchor" id="variable-use_diis"></span>
               logical,
             </td>
               <td>public</td>
@@ -4811,7 +4811,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -5034,7 +5034,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-excited"></span>
+              <span class="anchor" id="variable-excited~2"></span>
               type(<a href='../type/excited_config_t.html'>excited_config_t</a>),
             </td>
               <td>public</td>
@@ -5092,7 +5092,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -5105,12 +5105,12 @@ test or a new call path.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;sap&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~8" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~4"></span>
+              <span class="anchor" id="variable-guess_steps~3"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -5252,7 +5252,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~7"></span>
+              <span class="anchor" id="variable-max_iter~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -5446,7 +5446,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -5463,7 +5463,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~2"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -5717,7 +5717,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~13"></span>
+              <span class="anchor" id="variable-this~21"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5767,7 +5767,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~17"></span>
+              <span class="anchor" id="variable-this~25"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5807,7 +5807,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~16"></span>
+              <span class="anchor" id="variable-this~24"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5848,7 +5848,7 @@ a solvent or dielectric was given without one</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~14"></span>
+              <span class="anchor" id="variable-this~22"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5993,7 +5993,7 @@ a solvent or dielectric was given without one</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~15"></span>
+              <span class="anchor" id="variable-this~23"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -6066,7 +6066,7 @@ a solvent or dielectric was given without one</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 20:20 +0000             </p>
+ on 2026-09-21 21:29 +0000             </p>
           </div>
         </div>
         <br>

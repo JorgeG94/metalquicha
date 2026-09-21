@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">42 statements</a>
+                 title=" 0.2% of total for procedures.">47 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,10 +137,10 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/initial_basis.html#variable-iroot~3">iroot</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-length~2">length</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-norm~2">norm</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-pick">pick</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-taken~2">taken</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-length">length</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-norm~3">norm</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-pick~2">pick</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-taken">taken</a>
         </div>
       </div>
     </div>
@@ -176,7 +176,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine initial_basis(diagonal, n_roots, ndet, basis, error, guess)  
+    <h2>private  subroutine initial_basis(diagonal, n_start, ndet, basis, error, guess)  
 </h2>
     
 
@@ -189,8 +189,9 @@ against the column&rsquo;s own length is scale-free without rescaling the
 column, which would round every well-conditioned guess for the sake
 of the degenerate ones.</p>
 <p>Without a guess, <code>lowest_free</code> cannot come back empty: this branch
-takes <code>n_roots</code> determinants out of <code>ndet</code>, and <code>davidson_flat</code>
-refuses <code>n_roots &gt; ndet</code> before calling here.</p>
+takes <code>n_start</code> determinants out of <code>ndet</code>, <code>davidson_flat</code> refuses
+<code>n_roots &gt; ndet</code> before calling here, and the widening it does after
+that is bounded by a subspace already capped at <code>ndet</code>.</p>
 
 
     <h3>Arguments</h3>
@@ -206,7 +207,7 @@ refuses <code>n_roots &gt; ndet</code> before calling here.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~3"></span>
+              <span class="anchor" id="variable-diagonal~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -221,7 +222,7 @@ refuses <code>n_roots &gt; ndet</code> before calling here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~3"></span>
+              <span class="anchor" id="variable-n_start"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -229,14 +230,16 @@ refuses <code>n_roots &gt; ndet</code> before calling here.</p>
               
             </td>
             <td>::</td>
-            <td><strong>n_roots</strong></td>
+            <td><strong>n_start</strong></td>
             <td>
-                
+                <p>Columns of <code>basis</code> to fill. More than the roots asked for is a
+wider starting subspace; a guess narrower than this is topped up
+from the lowest free diagonal elements, as an absent one is.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~4"></span>
+              <span class="anchor" id="variable-ndet~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -266,7 +269,7 @@ refuses <code>n_roots &gt; ndet</code> before calling here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~42"></span>
+              <span class="anchor" id="variable-error~105"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -281,7 +284,7 @@ refuses <code>n_roots &gt; ndet</code> before calling here.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~4"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -644,7 +647,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-length~2"></span>
+              <span class="anchor" id="variable-length"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -661,7 +664,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norm~2"></span>
+              <span class="anchor" id="variable-norm~3"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -678,7 +681,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pick"></span>
+              <span class="anchor" id="variable-pick~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -695,7 +698,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-taken~2"></span>
+              <span class="anchor" id="variable-taken"></span>
               logical,
             </td>
               <td>private,</td>
@@ -726,7 +729,7 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_start</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Starting vectors: the supplied ones, or the lowest determinants</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The linear-dependence test here is on the *fraction* of a guess</span>
@@ -738,10 +741,15 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! of the degenerate ones.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Without a guess, `lowest_free` cannot come back empty: this branch</span>
-<span class="w">      </span><span class="c">!! takes `n_roots` determinants out of `ndet`, and `davidson_flat`</span>
-<span class="w">      </span><span class="c">!! refuses `n_roots &gt; ndet` before calling here.</span>
+<span class="w">      </span><span class="c">!! takes `n_start` determinants out of `ndet`, `davidson_flat` refuses</span>
+<span class="w">      </span><span class="c">!! `n_roots &gt; ndet` before calling here, and the widening it does after</span>
+<span class="w">      </span><span class="c">!! that is bounded by a subspace already capped at `ndet`.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_start</span>
+<span class="w">         </span><span class="c">!! Columns of `basis` to fill. More than the roots asked for is a</span>
+<span class="w">         </span><span class="c">!! wider starting subspace; a guess narrower than this is topped up</span>
+<span class="w">         </span><span class="c">!! from the lowest free diagonal elements, as an absent one is.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ndet</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
 <span class="w">         </span><span class="c">!! Set when a guess column cannot be replaced by any determinant</span>
@@ -755,9 +763,16 @@ large graphs.</div>
 <span class="w">      </span><span class="n">taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">            </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
-<span class="w">            </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)))</span>
+<span class="k">         do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_start</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iroot</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">guess</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">               </span><span class="c">! Past the end of the guess. A zero column has zero length, so</span>
+<span class="w">               </span><span class="c">! the fallback below takes it as dependent and fills it from the</span>
+<span class="w">               </span><span class="c">! determinants, which is what an absent guess would have done.</span>
+<span class="w">               </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">            </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)))</span>
 <span class="w">            </span><span class="n">norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">project_out_earlier</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
 <span class="w">            </span><span class="c">! A supplied vector the earlier ones already span leaves nothing</span>
 <span class="w">            </span><span class="c">! behind to normalise, and a near-null column makes every Ritz</span>
@@ -790,8 +805,8 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
-<span class="w">      </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
+<span class="k">      </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_start</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_start</span>
 <span class="w">         </span><span class="c">! Never zero here; see the note on the routine.</span>
 <span class="w">         </span><span class="n">pick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lowest_free</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">taken</span><span class="p">)</span>
 <span class="w">         </span><span class="n">taken</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
@@ -822,7 +837,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 20:20 +0000             </p>
+ on 2026-09-21 21:29 +0000             </p>
           </div>
         </div>
         <br>
