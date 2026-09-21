@@ -292,7 +292,8 @@ module mqc_config_types
          !! Whether `keywords.dft.dispersion` asked for an empirical dispersion
          !! correction. Absent, or `false`, leaves it off.
       character(len=16) :: dft_dispersion_type = "d3bj"
-         !! Which correction, when `dft_dispersion` is true. Only meaningful
+         !! Which correction, when `dft_dispersion` is true: "d3bj" or "d4".
+         !! Only meaningful
          !! then: a deck that switched dispersion off leaves this at its default
          !! and nothing downstream reads it.
 
