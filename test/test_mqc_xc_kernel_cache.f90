@@ -181,12 +181,11 @@ contains
       real(dp) :: worst, manifold_gap
       logical :: ok
 
-      ! As every other case here does, and for a reason this one makes sharp:
-      ! `triplet_case` reports a libxc-less build as `ok = .true.` -- nothing
-      ! went wrong -- while leaving `manifold_gap` at zero. Read as "the
-      ! outputs are meaningful" that is a failure of the second assertion
-      ! below, which is what turned three of the eleven CI jobs red: the three
-      ! built with MQC_ENABLE_LIBXC=OFF.
+      ! Redundant now that the helpers report a libxc-less build as `.not. ok`,
+      ! and kept because it states at the point of use what the whole file
+      ! depends on: no assertion below runs on a build with no kernel to
+      ! evaluate. Reading those zeros as measurements is what turned three of
+      ! the eleven CI jobs red -- the three built with MQC_ENABLE_LIBXC=OFF.
       if (.not. xc_available()) return
 
       call triplet_case("pbe", worst, manifold_gap, error, ok)
@@ -371,10 +370,7 @@ contains
       ok = .false.
       worst = 0.0_dp
       manifold_gap = 0.0_dp
-      if (.not. xc_available()) then
-         ok = .true.
-         return
-      end if
+      if (.not. xc_available()) return
 
       threads = 1
 !$    threads = omp_get_max_threads()
@@ -450,11 +446,12 @@ contains
       worst = 0.0_dp
       worst_one = 0.0_dp
       ! A build without libxc has no kernel to cache, and the suite treats that
-      ! as nothing to check rather than as a failure.
-      if (.not. xc_available()) then
-         ok = .true.
-         return
-      end if
+      ! as nothing to check rather than as a failure. `ok` stays false: it says
+      ! the outputs are measurements, and here there was nothing to measure.
+      ! The zeros happen to pass this helper's assertions, which are all
+      ! "the difference is zero" -- that made the skip look harmless here and
+      ! cost three CI jobs where the assertion was instead "the gap is large".
+      if (.not. xc_available()) return
 
       threads = 1
 !$    threads = omp_get_max_threads()
@@ -662,6 +659,9 @@ contains
          !! comparisons above are two statements and not one
       type(error_type), allocatable, intent(out) :: error
       logical, intent(out) :: ok
+         !! Whether the four outputs above are measurements rather than the
+         !! zeros they start as. False both when libxc is absent and when the
+         !! setup below failed; the callers return on it either way.
 
       type(czt_molecule_t) :: mol
       type(xc_context_t) :: ctx, pol
@@ -680,10 +680,14 @@ contains
       triplet = 0.0_dp
       cached = 0.0_dp
       spread = 0.0_dp
-      if (.not. xc_available()) then
-         ok = .true.
-         return
-      end if
+
+      ! Saying `.true.` here told the callers that four zeros were a result.
+      ! They return on `.not. ok` and were right to; what they got instead was
+      ! a `spread` of zero, which fails "the two kernels are far enough apart
+      ! for this comparison to say anything" on every job built without libxc.
+      ! The flag means the outputs are real, so with nothing to measure it is
+      ! false -- the same answer as a setup that failed, and the same handling.
+      if (.not. xc_available()) return
 
       threads = 1
 !$    threads = omp_get_max_threads()
