@@ -40,11 +40,9 @@ module mqc_czt_cphf
    use mqc_czt_gemm_threads, only: gemm_over_columns, gemm_over_inner, getrf_threaded
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_localize, only: boys_localize
-   use mqc_czt_rhf, only: build_fock
-   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply
-   use mqc_czt_direct, only: build_fock_direct, build_fock_direct_nosym, &
-                             build_fock_direct_many, &
-                             schwarz_bounds, direct_stats_t
+   use mqc_czt_xc, only: xc_context_t
+   use mqc_czt_direct, only: schwarz_bounds
+   use mqc_czt_response_product, only: response_product
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_calculation_defaults, only: DEFAULT_DYNAMIC_TOL, DEFAULT_DYNAMIC_MAXITER, &
@@ -67,11 +65,16 @@ module mqc_czt_cphf
    public :: dynamic_response_iterative
    public :: static_response_dense
    public :: fitted_potential_general
-   ! TODO(mqc): only `cphf_solve` and `static_polarizability` accept an `xc`
-   ! context. Every frequency-dependent route -- `dynamic_polarizability`,
-   ! `dynamic_response_iterative`, `response_operator_minus` and all three
-   ! Hessian builds -- has no kernel at all, so a Kohn-Sham reference gets its
-   ! Hartree-Fock response there with nothing in the output to say so.
+   ! TODO(mqc): `build_hessian_mo` and `build_hessian_df` still assemble
+   ! `(A+B)` and `(A-B)` from transformed or fitted integrals alone, so they
+   ! carry no exchange-correlation kernel and no long-range exchange. Both
+   ! form the matrix in the MO or auxiliary basis and never see an AO response
+   ! density, which is where a kernel would have to be evaluated, so giving
+   ! them one means an AO pass per column rather than an extra argument. A
+   ! Kohn-Sham reference taken through either gets its Hartree-Fock response
+   ! with nothing in the output to say so. Everything else -- `cphf_solve`,
+   ! `static_polarizability`, `build_hessian`, `dynamic_polarizability` and
+   ! `dynamic_response_iterative` -- takes an `xc` context and honours it.
 
    type :: fitted_response_t
       !! The three fitted MO blocks the response operator is applied through
@@ -369,20 +372,11 @@ contains
 
          iter = 0
          do iter = 1, limit
-            if (present(bmat) .and. present(xc)) then
-               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                      gaps, p, ap, error, bmat=bmat, xc=xc, &
-                                      density=density)
-            else if (present(bmat)) then
-               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                      gaps, p, ap, error, bmat=bmat)
-            else if (present(xc)) then
-               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                      gaps, p, ap, error, xc=xc, density=density)
-            else
-               call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                      gaps, p, ap, error)
-            end if
+            ! An absent optional passes straight through as absent, so the
+            ! four cases the operator used to be dispatched by are one call.
+            call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                   gaps, p, ap, error, bmat=bmat, xc=xc, &
+                                   density=density)
             if (error%has_error()) return
             pap = sum(p*ap)
             if (pap <= 0.0_dp) then
@@ -421,6 +415,12 @@ contains
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                 gaps, u, au, error, bmat, xc, density)
       !! Apply the coupled-perturbed operator to a trial rotation
+      !!
+      !! `(A+B)` on one vector, which is what a conjugate-gradient iteration
+      !! wants. A batch of one through the shared product: the symmetrised
+      !! response density, the two-electron build at the reference's own
+      !! exchange fraction, a range-separated functional's attenuated second
+      !! pass, and the exchange-correlation kernel where there is one.
       type(czt_molecule_t), intent(in) :: mol
       logical, intent(in) :: direct          !! Recompute integrals rather than store them
       real(dp), intent(in) :: eri(:, :, :, :)   !! Zero-sized when `direct`
@@ -433,143 +433,33 @@ contains
       type(error_t), intent(inout) :: error
       type(xc_context_t), intent(inout), optional :: xc
          !! Present, the exchange-correlation kernel is added on top of the
-         !! two-electron part, whichever integral source built it.
+         !! two-electron part, whichever integral source built it, and the
+         !! exchange coefficients come from the context.
       real(dp), intent(in), optional :: density(:, :)
          !! The reference density the kernel is evaluated at. Required with `xc`.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`. Present, the operator is built from
          !! it and neither `eri` nor the direct build is touched.
 
-      real(dp), allocatable :: dtilde(:, :), g(:, :), half(:, :), work(:, :)
-      type(direct_stats_t) :: stats
-      integer :: n_ao, n_occ
-      real(dp) :: kf
+      real(dp), allocatable :: one_u(:, :, :), one_au(:, :, :)
+      integer :: one_idx(1)
 
-      ! The exchange fraction the *reference* kept. Building full exchange for a
-      ! pure functional makes the operator indefinite, and the solver then
-      ! reports a saddle point that is not there.
-      kf = 1.0_dp
-      if (present(xc)) kf = xc%exx_fraction
-
-      n_ao = size(c_occ, 1)
-      n_occ = size(c_occ, 2)
-      allocate (dtilde(n_ao, n_ao), g(n_ao, n_ao), half(n_ao, n_occ), work(n_ao, n_occ))
-
-      ! Dt = C_vir U C_occ^T + transpose. Symmetrized because `build_fock`
-      ! contracts a symmetric density, and because the physical first-order
-      ! density is symmetric.
-      call pic_gemm(c_vir, u, half)
-      call pic_gemm(half, c_occ, dtilde, transb="T")
-      dtilde = dtilde + transpose(dtilde)
-
-      if (present(bmat)) then
-         ! `half` is C_vir U, which is exactly the factor the fitted build
-         ! wants: it never assembles Dt at all.
-         call response_operator_df(bmat, half, c_occ, dtilde, g, k_scale=kf)
-      else if (direct) then
-         ! density_screen=.false. is not optional here. `dtilde` is the trial
-         ! rotation the CG solver drives towards zero, so a density-weighted
-         ! screen would tighten as the solve converges and the operator would
-         ! stop being the fixed linear map the solver assumes. The plain Schwarz
-         ! screen depends on the basis alone and keeps it constant.
-         call build_fock_direct(mol, zero_h, dtilde, bounds, g, stats, error, &
-                                density_screen=.false., k_scale=kf)
-         if (error%has_error()) return
-      else
-         call build_fock(zero_h, eri, dtilde, g, k_scale=kf)
-      end if
-
-      ! The kernel, on top of whatever built `g` above.
-      if (present(xc)) then
-         if (.not. present(density)) then
-            call error%set(ERROR_VALIDATION, "the response operator was given an "// &
-                           "exchange-correlation context but no reference density to "// &
-                           "evaluate its kernel at")
-            return
-         end if
-         call xc_kernel_apply(xc, mol, density, dtilde, g, error)
-         if (error%has_error()) return
-      end if
-
-      call pic_gemm(g, c_occ, work)
-      call pic_gemm(c_vir, work, au, transa="T")
-      au = gaps*u + 2.0_dp*au
-
-      deallocate (dtilde, g, half, work)
+      allocate (one_u(size(u, 1), size(u, 2), 1), one_au(size(au, 1), size(au, 2), 1))
+      one_u(:, :, 1) = u
+      one_au = 0.0_dp
+      one_idx = 1
+      call response_product(mol, c_occ, c_vir, gaps, zero_h, one_u, one_idx, 1, &
+                            .false., one_au, error, direct=direct, eri=eri, &
+                            bounds=bounds, xc=xc, reference=density, bmat=bmat)
+      if (.not. error%has_error()) au = one_au(:, :, 1)
+      deallocate (one_u, one_au)
    end subroutine response_operator
-
-   subroutine response_operator_df(b, x, c_occ, dtilde, g, k_scale)
-      !! `J - K/2` for a response density, from the fitted tensor
-      !!
-      !! Not `build_fock_df`: that one assumes an idempotent SCF density to get
-      !! its occupied orbitals from, and a response density is symmetric but
-      !! *indefinite*, so it has none. It arrives already factored instead,
-      !!
-      !!     Dt = X C_occ^T + C_occ X^T,     X = C_vir U
-      !!
-      !! which turns exchange into
-      !!
-      !!     K = sum_P [ (B_P X)(B_P C_occ)^T + (B_P C_occ)(B_P X)^T ]
-      !!
-      !! two n^2 n_occ products per auxiliary function. `Dt` is still passed,
-      !! but only for the Coulomb term, where any density will do.
-      real(dp), intent(in) :: b(:, :)        !! `B(mu nu, P)`, (n_ao^2, naux)
-      real(dp), intent(in) :: x(:, :)        !! `C_vir U`, (n_ao, n_occ)
-      real(dp), intent(in) :: c_occ(:, :)    !! (n_ao, n_occ)
-      real(dp), intent(in) :: dtilde(:, :)   !! The assembled response density, for J
-      real(dp), intent(out) :: g(:, :)
-      real(dp), intent(in), optional :: k_scale
-         !! The exchange fraction the reference kept. Absent is all of it.
-
-      real(dp), allocatable :: coul(:, :), exch(:, :), bx(:, :), bc(:, :), b_p(:, :)
-      real(dp), allocatable :: coul_t(:, :), exch_t(:, :)
-      real(dp) :: c_p, kf
-      integer :: n, n_occ, naux, p
-
-      kf = 1.0_dp
-      if (present(k_scale)) kf = k_scale
-
-      n = size(c_occ, 1)
-      n_occ = size(c_occ, 2)
-      naux = size(b, 2)
-      allocate (coul(n, n), exch(n, n))
-
-      coul = 0.0_dp
-      exch = 0.0_dp
-      ! Threaded over the auxiliary functions, each thread with its own pair of
-      ! `n^2` accumulators, because the BLAS is sequential: the Z-vector
-      ! iterations of a fitted-reference gradient ran on one core for 36 s here.
-      !$omp parallel default(none) shared(b, x, c_occ, dtilde, coul, exch, n, n_occ, naux) &
-      !$omp    private(p, c_p, b_p, bx, bc, coul_t, exch_t)
-      allocate (b_p(n, n), bx(n, n_occ), bc(n, n_occ), coul_t(n, n), exch_t(n, n))
-      coul_t = 0.0_dp
-      exch_t = 0.0_dp
-      !$omp do schedule(static)
-      do p = 1, naux
-         b_p = reshape(b(:, p), [n, n])
-         c_p = sum(b_p*dtilde)
-         coul_t = coul_t + c_p*b_p
-         call pic_gemm(b_p, x, bx)
-         call pic_gemm(b_p, c_occ, bc)
-         call pic_gemm(bx, bc, exch_t, transb="T", alpha=1.0_dp, beta=1.0_dp)
-         call pic_gemm(bc, bx, exch_t, transb="T", alpha=1.0_dp, beta=1.0_dp)
-      end do
-      !$omp end do
-      !$omp critical
-      coul = coul + coul_t
-      exch = exch + exch_t
-      !$omp end critical
-      deallocate (b_p, bx, bc, coul_t, exch_t)
-      !$omp end parallel
-
-      g = coul - 0.5_dp*kf*exch
-   end subroutine response_operator_df
 
    subroutine fitted_potential_general(b, dens, g, k_scale)
       !! `J - k K/2` from the fitted tensor, for a density with no structure
       !!
       !! The third of the three fitted builds, and the one that assumes nothing:
-      !! `build_fock_df` needs an idempotent density and `response_operator_df`
+      !! `build_fock_df` needs an idempotent density and `response_mean_field_df`
       !! one that arrives already factored. An MP2 relaxed density is neither.
       !! Exchange goes through the general form, per auxiliary function,
       !!
@@ -624,65 +514,6 @@ contains
       g = coul - 0.5_dp*kf*exch
    end subroutine fitted_potential_general
 
-   subroutine response_operator_minus(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                      gaps, u, au, error)
-      !! Apply `A - B`, the other half of a frequency-dependent response
-      !!
-      !! Same shape as `response_operator` and the same Fock build, on the
-      !! *antisymmetrized* response density instead of the symmetrized one:
-      !!
-      !!     A + B   from   Dt = C_vir U C_occ^T + transpose
-      !!     A - B   from   Dt = C_vir U C_occ^T - transpose
-      !!
-      !! The Coulomb term vanishes identically on the second, so `A - B` carries
-      !! only exchange -- `delta (eps_a - eps_i) - (ab|ij) + (aj|ib)`.
-      !!
-      !! **Must go through `build_fock_direct_nosym`, not the fast build.** That
-      !! one folds three of the eightfold permutations into a multiplicity
-      !! factor, which doubles them where an antisymmetric density needs them to
-      !! cancel.
-      type(czt_molecule_t), intent(in) :: mol
-      logical, intent(in) :: direct              !! Recompute integrals rather than store them
-      real(dp), intent(in) :: eri(:, :, :, :)    !! Zero-sized when `direct`
-      real(dp), intent(in) :: bounds(:, :)
-      real(dp), intent(in) :: zero_h(:, :)
-      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
-      real(dp), intent(in) :: gaps(:, :)
-      real(dp), intent(in) :: u(:, :)
-      real(dp), intent(out) :: au(:, :)
-      type(error_t), intent(inout) :: error
-
-      real(dp), allocatable :: dtilde(:, :, :), g(:, :, :), half(:, :), work(:, :)
-      type(direct_stats_t) :: stats
-      integer :: n_ao, n_occ
-
-      n_ao = size(c_occ, 1)
-      n_occ = size(c_occ, 2)
-      allocate (dtilde(n_ao, n_ao, 1), half(n_ao, n_occ), work(n_ao, n_occ))
-
-      call pic_gemm(c_vir, u, half)
-      call pic_gemm(half, c_occ, dtilde(:, :, 1), transb="T")
-      dtilde(:, :, 1) = dtilde(:, :, 1) - transpose(dtilde(:, :, 1))
-
-      ! In core the plain four-index contraction is already right for an
-      ! antisymmetric density -- the Coulomb term vanishes on its own, since the
-      ! integral is symmetric in the contracted pair -- so no `nosym` variant is
-      ! needed on this path.
-      if (direct) then
-         call build_fock_direct_nosym(mol, zero_h, dtilde, bounds, g, stats, error)
-         if (error%has_error()) return
-      else
-         allocate (g(size(dtilde, 1), size(dtilde, 2), 1))
-         call build_fock(zero_h, eri, dtilde(:, :, 1), g(:, :, 1))
-      end if
-
-      call pic_gemm(g(:, :, 1), c_occ, work)
-      call pic_gemm(c_vir, work, au, transa="T")
-      au = gaps*u + 2.0_dp*au
-
-      deallocate (dtilde, g, half, work)
-   end subroutine response_operator_minus
-
    function casimir_polder_frequencies() result(nu)
       !! The twelve imaginary frequencies a potential is tabulated at, a.u.
       !!
@@ -708,7 +539,8 @@ contains
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
                                      response, perturbations, in_core, hessian, &
-                                     progress, aux, route, allow_unconverged, batch, b_ao)
+                                     progress, aux, route, allow_unconverged, batch, &
+                                     b_ao, xc, reference)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! On the imaginary axis the time-dependent equations are real and positive
@@ -780,6 +612,15 @@ contains
          !! already built, so the fitted routes here transform it instead of
          !! building it again. Consumed: deallocated once the MO blocks are
          !! formed. Absent or unallocated, the tensor is built here.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham reference's exchange-correlation kernel and its
+         !! exchange coefficients, long-range term included. Omitting it for a
+         !! Kohn-Sham reference answers the Hartree-Fock response of its
+         !! orbitals. It also narrows the routes: the transformed-integral and
+         !! fitted builds carry no kernel, so the first is passed over and the
+         !! second refused.
+      real(dp), intent(in), optional :: reference(:, :)
+         !! The converged density the kernel is evaluated at. Required with `xc`.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
@@ -828,6 +669,16 @@ contains
       if (size(operators, 1) /= n_ao .or. size(operators, 2) /= n_ao) then
          call error%set(ERROR_VALIDATION, "dynamic response: the perturbations are "// &
                         "not n_ao square")
+         return
+      end if
+      if (present(aux) .and. present(xc)) then
+         ! `build_hessian_df` assembles `(A+B)` from the fitted MO blocks and
+         ! never forms an AO response density, so there is nowhere to evaluate
+         ! a kernel. Refusing beats answering the Hartree-Fock response of
+         ! Kohn-Sham orbitals.
+         call error%set(ERROR_VALIDATION, "a Kohn-Sham dynamic response cannot go "// &
+                        "through the fitted Hessian: it carries no "// &
+                        "exchange-correlation kernel")
          return
       end if
       direct = .true.
@@ -938,14 +789,15 @@ contains
                                             max_iter=max_iter, tol=tol, &
                                             response=response, progress=talk, &
                                             allow_unconverged=allow_unconverged, &
-                                            batch=batch, fit=fit)
+                                            batch=batch, fit=fit, xc=xc, &
+                                            reference=reference)
          else
             call dynamic_response_iterative(mol, direct, eri0, bounds, zero_h, c_occ, &
                                             c_vir, gaps, h, frequencies, alpha, error, &
                                             max_iter=max_iter, tol=tol, &
                                             response=response, progress=talk, &
                                             allow_unconverged=allow_unconverged, &
-                                            batch=batch)
+                                            batch=batch, xc=xc, reference=reference)
          end if
          return
       end if
@@ -968,14 +820,17 @@ contains
          call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
                                progress=talk, b_ao_in=b_ao)
          if (present(hessian)) hessian%fitted = .true.
-      else if (mo_transform_fits(mol%nao, n_occ, n_vir, direct)) then
+      else if (mo_transform_fits(mol%nao, n_occ, n_vir, direct) .and. .not. present(xc)) then
          ! Exact integrals, assembled the way the fitted build assembles them.
-         ! The column build is kept for the systems whose AO tensor will not fit.
+         ! The column build is kept for the systems whose AO tensor will not
+         ! fit -- and for a Kohn-Sham reference, whose kernel this route has no
+         ! AO response density to evaluate.
          call build_hessian_mo(mol, eri0, c_occ, c_vir, gaps, aplus, aminus, error, &
                                progress=talk)
       else
          call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
-                            aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
+                            aplus, aminus, HESSIAN_CHUNK, error, progress=talk, &
+                            xc=xc, reference=reference)
       end if
       if (error%has_error()) return
 
@@ -1113,7 +968,7 @@ contains
    end subroutine dynamic_polarizability
 
    subroutine build_hessian(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            aplus, aminus, chunk, error, progress)
+                            aplus, aminus, chunk, error, progress, xc, reference)
       !! `(A+B)` and `(A-B)` as explicit matrices over the occupied-virtual space
       !!
       !! Column `j` is the operator applied to the unit vector `e_j`, so the
@@ -1133,6 +988,13 @@ contains
       integer, intent(in) :: chunk
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: progress
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham reference's exchange-correlation kernel and its
+         !! exchange coefficients, long-range term included. Omitting it for a
+         !! Kohn-Sham reference answers the Hartree-Fock response of its
+         !! orbitals.
+      real(dp), intent(in), optional :: reference(:, :)
+         !! The converged density the kernel is evaluated at. Required with `xc`.
 
       real(dp), allocatable :: u(:, :, :), au(:, :, :)
       integer, allocatable :: idx(:)
@@ -1170,14 +1032,16 @@ contains
          end do
 
          call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, idx, nthis, .false., au, error)
+                             u, idx, nthis, .false., au, error, xc=xc, &
+                             reference=reference)
          if (error%has_error()) return
          do m = 1, nthis
             aplus(:, first + m - 1) = reshape(au(:, :, m), [n_ov])
          end do
 
          call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, idx, nthis, .true., au, error)
+                             u, idx, nthis, .true., au, error, xc=xc, &
+                             reference=reference)
          if (error%has_error()) return
          do m = 1, nthis
             aminus(:, first + m - 1) = reshape(au(:, :, m), [n_ov])
@@ -1545,7 +1409,7 @@ contains
    subroutine dynamic_response_iterative(mol, direct, eri, bounds, zero_h, c_occ, &
                                          c_vir, gaps, h, frequencies, alpha, error, &
                                          max_iter, tol, response, progress, &
-                                         allow_unconverged, batch, fit)
+                                         allow_unconverged, batch, fit, xc, reference)
       !! The frequency-dependent response without ever forming its operator
       !!
       !! For the sizes where `2 n_ov^2` of storage and an `n_ov^3` factorisation
@@ -1603,6 +1467,15 @@ contains
       type(fitted_response_t), intent(in), optional :: fit
          !! Apply the operator through these fitted blocks instead of through
          !! integral passes. `eri`, `bounds` and `zero_h` go unread then.
+         !! Refused together with `xc`: the blocks carry the two-electron terms
+         !! alone and no kernel can be added to them here.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham reference's exchange-correlation kernel and its
+         !! exchange coefficients, long-range term included. Omitting it for a
+         !! Kohn-Sham reference answers the Hartree-Fock response of its
+         !! orbitals.
+      real(dp), intent(in), optional :: reference(:, :)
+         !! The converged density the kernel is evaluated at. Required with `xc`.
 
       real(dp), allocatable :: x(:, :, :), r(:, :, :), r0(:, :, :), p(:, :, :)
       real(dp), allocatable :: v(:, :, :), s(:, :, :), t(:, :, :), rhs(:, :, :)
@@ -1729,7 +1602,8 @@ contains
          ! Chunked like every other pass: handing all the systems to one call is a
          ! density block and a per-thread `n_ao^2` accumulator of tens of gigabytes.
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                h, each_pert, n_pert, .true., amh, error, eff_batch, fit)
+                                h, each_pert, n_pert, .true., amh, error, eff_batch, &
+                                fit, xc=xc, reference=reference)
          if (error%has_error()) return
          do m = 1, nnz
             rhs(:, :, nonzero(m)) = amh(:, :, pert_of(nonzero(m)))
@@ -1798,7 +1672,8 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            ph, live, nlive, nu2, v, error, eff_batch, fit)
+                            ph, live, nlive, nu2, v, error, eff_batch, fit, &
+                            xc=xc, reference=reference)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1814,7 +1689,8 @@ contains
          end do
 
          call apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            sh, live, nlive, nu2, t, error, eff_batch, fit)
+                            sh, live, nlive, nu2, t, error, eff_batch, fit, &
+                            xc=xc, reference=reference)
          if (error%has_error()) return
 
          do m = 1, nlive
@@ -1895,7 +1771,7 @@ contains
    end subroutine dynamic_response_iterative
 
    subroutine apply_dynamic(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                            u, live, nlive, nu2, au, error, width, fit)
+                            u, live, nlive, nu2, au, error, width, fit, xc, reference)
       !! `[(A-B)(A+B) + nu^2] u`, or `(A+B) u` where the frequency is zero
       !!
       !! Two passes over the integrals for the whole batch, which is the point.
@@ -1915,6 +1791,13 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: width
       type(fitted_response_t), intent(in), optional :: fit
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham reference's exchange-correlation kernel and its
+         !! exchange coefficients, long-range term included. Omitting it for a
+         !! Kohn-Sham reference answers the Hartree-Fock response of its
+         !! orbitals.
+      real(dp), intent(in), optional :: reference(:, :)
+         !! The converged density the kernel is evaluated at. Required with `xc`.
 
       real(dp), allocatable :: q1(:, :, :)
       integer, allocatable :: shifted(:)
@@ -1925,7 +1808,8 @@ contains
       q1 = 0.0_dp
 
       call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, live, nlive, .false., q1, error, width, fit)
+                             u, live, nlive, .false., q1, error, width, fit, &
+                             xc=xc, reference=reference)
       if (error%has_error()) return
 
       allocate (shifted(nlive))
@@ -1942,7 +1826,8 @@ contains
 
       if (nshift > 0) then
          call batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                q1, shifted, nshift, .true., au, error, width, fit)
+                                q1, shifted, nshift, .true., au, error, width, fit, &
+                                xc=xc, reference=reference)
          if (error%has_error()) return
          do m = 1, nshift
             k = shifted(m)
@@ -1952,7 +1837,8 @@ contains
    end subroutine apply_dynamic
 
    subroutine batched_in_chunks(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                u, idx, nact, minus, au, error, width, fit)
+                                u, idx, nact, minus, au, error, width, fit, xc, &
+                                reference)
       !! `response_batch`, a dozen densities at a time rather than all of them
       !!
       !! **More is not better past about twelve, and it is worse.** The batched
@@ -1979,11 +1865,32 @@ contains
       type(fitted_response_t), intent(in), optional :: fit
          !! Apply through the fitted blocks rather than an integral pass. The
          !! chunking is kept: the per-thread accumulators of the fitted
-         !! application are `n_ov` per vector too.
+         !! application are `n_ov` per vector too. Refused together with `xc`.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham reference's exchange-correlation kernel and its
+         !! exchange coefficients, long-range term included. Omitting it for a
+         !! Kohn-Sham reference answers the Hartree-Fock response of its
+         !! orbitals.
+      real(dp), intent(in), optional :: reference(:, :)
+         !! The converged density the kernel is evaluated at. Required with `xc`.
 
       integer :: max_batch
 
       integer :: first, last
+
+      ! `apply_fitted_batch` takes neither `xc` nor `reference`: its blocks are
+      ! the bare two-electron ones, so it would answer the Hartree-Fock
+      ! response of Kohn-Sham orbitals and say nothing. That silence is the bug
+      ! this route was rewritten to remove, so the combination is refused
+      ! rather than served. `dynamic_polarizability` never asks for it;
+      ! `dynamic_response_iterative` is public and could.
+      if (present(fit) .and. present(xc)) then
+         call error%set(ERROR_VALIDATION, "the frequency-dependent response cannot "// &
+                        "apply an exchange-correlation kernel through the fitted "// &
+                        "blocks: they carry the two-electron terms alone, and the "// &
+                        "answer would silently be the Hartree-Fock one")
+         return
+      end if
 
       max_batch = DEFAULT_RESPONSE_BATCH
       if (present(width)) then
@@ -1996,7 +1903,8 @@ contains
             call apply_fitted_batch(fit, gaps, u, idx(first:last), last - first + 1, minus, au)
          else
             call response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                                u, idx(first:last), last - first + 1, minus, au, error)
+                                u, idx(first:last), last - first + 1, minus, au, &
+                                error, xc=xc, reference=reference)
             if (error%has_error()) return
          end if
          first = last + 1
@@ -2208,20 +2116,20 @@ contains
    end subroutine apply_fitted_batch
 
    subroutine response_batch(mol, direct, eri, bounds, zero_h, c_occ, c_vir, gaps, &
-                             u, idx, nact, minus, au, error)
+                             u, idx, nact, minus, au, error, xc, reference)
       !! `(A+B)u` or `(A-B)u` for many vectors in **one** integral pass
       !!
       !! Every right-hand side of the dynamic response shares one operator and
       !! differs only in the frequency shift, so a direct build recomputes the
-      !! same integrals for all of them and one pass over the quartets serves the
-      !! whole batch.
+      !! same integrals for all of them and one pass over the quartets serves
+      !! the whole batch.
       !!
       !! `idx(1:nact)` selects which vectors are still wanted, so a converged
-      !! system stops costing anything rather than riding along.
+      !! system stops costing anything rather than riding along. `minus` picks
+      !! the antisymmetric combination, which is `A - B`.
       !!
-      !! `minus` picks the antisymmetric combination and the build that does not
-      !! fold permutations, which is what `A - B` needs; otherwise the symmetric
-      !! one.
+      !! The product itself is `response_product`; what is here is the
+      !! profiling the matrix-free solve reports.
       type(czt_molecule_t), intent(in) :: mol
       logical, intent(in) :: direct
       real(dp), intent(in) :: eri(:, :, :, :)
@@ -2233,62 +2141,18 @@ contains
       logical, intent(in) :: minus
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
-
-      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), work(:, :)
-      real(dp) :: t0, t1
-      type(direct_stats_t) :: stats
-      integer :: n_ao, n_occ, m, j
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham reference's kernel and exchange coefficients. Omitting
+         !! it for one answers the Hartree-Fock response of its orbitals.
+      real(dp), intent(in), optional :: reference(:, :)
+         !! The converged density the kernel is evaluated at. Required with `xc`.
 
       if (nact <= 0) return
-      n_ao = size(c_occ, 1)
-      n_occ = size(c_occ, 2)
-      allocate (dens(n_ao, n_ao, nact), half(n_ao, n_occ), work(n_ao, n_occ))
-      call cpu_time(t0)
-
-      do m = 1, nact
-         j = idx(m)
-         call pic_gemm(c_vir, u(:, :, j), half)
-         call pic_gemm(half, c_occ, dens(:, :, m), transb="T")
-         if (minus) then
-            dens(:, :, m) = dens(:, :, m) - transpose(dens(:, :, m))
-         else
-            dens(:, :, m) = dens(:, :, m) + transpose(dens(:, :, m))
-         end if
-      end do
-
-      call cpu_time(t1)
-      prof_dens = prof_dens + (t1 - t0)
-      t0 = t1
-
-      if (direct) then
-         ! Both symmetries through the fast build: announced antisymmetric, its
-         ! folded accumulation is exact. The routine that writes the
-         ! permutations out cost several times more per pass and was most of
-         ! a matrix-free iteration.
-         call build_fock_direct_many(mol, zero_h, dens, bounds, g, stats, error, &
-                                     antisymmetric=minus)
-         if (error%has_error()) return
-      else
-         allocate (g(n_ao, n_ao, nact))
-         do m = 1, nact
-            call build_fock(zero_h, eri, dens(:, :, m), g(:, :, m))
-         end do
-      end if
-
-      call cpu_time(t1)
-      prof_fock = prof_fock + (t1 - t0)
-      t0 = t1
-      do m = 1, nact
-         j = idx(m)
-         call pic_gemm(g(:, :, m), c_occ, work)
-         call pic_gemm(c_vir, work, au(:, :, j), transa="T")
-         au(:, :, j) = gaps*u(:, :, j) + 2.0_dp*au(:, :, j)
-      end do
-
-      call cpu_time(t1)
-      prof_back = prof_back + (t1 - t0)
+      call response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, nact, minus, &
+                            au, error, direct=direct, eri=eri, bounds=bounds, &
+                            xc=xc, reference=reference, t_dens=prof_dens, &
+                            t_fock=prof_fock, t_back=prof_back)
       prof_calls = prof_calls + 1
-      deallocate (dens, g, half, work)
    end subroutine response_batch
 
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &

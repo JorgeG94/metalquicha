@@ -18,8 +18,11 @@ module mqc_czt_rhf
                              build_density_spin, spin_contamination, GWH_K
    use mqc_diis, only: diis_state_t, ACCEL_DIIS, ACCEL_SWITCH
    use mqc_fock_projector, only: fock_projector_t
+   ! `build_fock` lives in `mqc_czt_direct` and is re-exported below: this
+   ! module cannot own it any more, because the shared response product
+   ! needs it and this module uses `mqc_czt_hessian`, which uses that.
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
-                             direct_stats_t
+                             direct_stats_t, build_fock
    use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_czt_pcm, only: pcm_context_t
@@ -2610,72 +2613,6 @@ contains
       allocate (coeff(n_ao, n_mo))
       call pic_gemm(x, f_ortho, coeff)                   ! C = X C'
    end subroutine diagonalize
-
-   subroutine build_fock(h, eri, density, fock, k_scale)
-      !! `F = H + J - K/2` from a stored two-electron tensor
-      !!
-      !! **Correct for an antisymmetric density as well as a symmetric one.**
-      !! Nothing here assumes either, and the Coulomb term vanishes of its own
-      !! accord for an antisymmetric density because the integral is symmetric
-      !! in the contracted pair.
-      !!
-      !! **Blocked over the ket pair, not over the target element.** For a fixed
-      !! `(c, d)` the slice `eri(:, :, c, d)` is contiguous and carries both
-      !! terms: Coulomb is `J += D(c,d) * eri(:,:,c,d)`, an axpy over the block,
-      !! and exchange is `K(:,c) += eri(:,:,c,d) . D(:,d)`, a matrix-vector
-      !! product on the same block. The tensor is walked once, in order, and
-      !! each block used twice while it is still in cache.
-      real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
-      real(dp), intent(out) :: fock(:, :)
-      real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
-
-      integer :: a, b, c, d, n
-      real(dp) :: kf, dcd
-      real(dp), allocatable :: j_mat(:, :), k_mat(:, :), j_local(:, :)
-
-      n = size(h, 1)
-      kf = 0.5_dp
-      if (present(k_scale)) kf = 0.5_dp*k_scale
-
-      allocate (j_mat(n, n), k_mat(n, n))
-      j_mat = 0.0_dp
-      k_mat = 0.0_dp
-
-      ! Threaded over `c`, which makes the exchange update safe without a
-      ! reduction: `K(:, c)` belongs to exactly one thread. Coulomb accumulates
-      ! over every `(c, d)` and does need one, as a single n*n array per thread
-      ! merged once.
-      !
-      ! The `if` keeps genuinely tiny systems serial: the response solver enters
-      ! this region tens of thousands of times, and for a handful of basis
-      ! functions the barriers cost more than the arithmetic.
-      !$omp parallel default(none) private(a, b, c, d, dcd, j_local) &
-      !$omp shared(n, eri, density, j_mat, k_mat) if(n >= 16)
-      allocate (j_local(n, n))
-      j_local = 0.0_dp
-      !$omp do schedule(static)
-      do c = 1, n
-         do d = 1, n
-            dcd = density(c, d)
-            do b = 1, n
-               do a = 1, n
-                  j_local(a, b) = j_local(a, b) + dcd*eri(a, b, c, d)
-               end do
-            end do
-            ! beta = 1 to accumulate over d rather than overwrite.
-            call pic_gemv(eri(:, :, c, d), density(:, d), k_mat(:, c), beta=1.0_dp)
-         end do
-      end do
-      !$omp end do
-      !$omp critical(mqc_build_fock_coulomb)
-      j_mat = j_mat + j_local
-      !$omp end critical(mqc_build_fock_coulomb)
-      deallocate (j_local)
-      !$omp end parallel
-
-      fock = h + j_mat - kf*k_mat
-      deallocate (j_mat, k_mat)
-   end subroutine build_fock
 
    subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale, j_scale)
       !! F = H + J - K/2 from the fitted tensor rather than the exact ERIs
