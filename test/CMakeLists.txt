@@ -357,6 +357,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_cphf)
   target_link_libraries(test_mqc_czt_cphf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Tamm-Dancoff excitation energies, against the explicit matrices and the
+  # H2O/cc-pVDZ tables PySCF and Psi4 agree on.
+  addtest(mqc_czt_tddft)
+  target_link_libraries(test_mqc_czt_tddft PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Quantum protons: NEO-HF against the energies PySCF-NEO pins for HCN.
   addtest(mqc_czt_neo)
   target_link_libraries(test_mqc_czt_neo PRIVATE ${MQC_INTEGRALS_LIBS})

@@ -528,6 +528,11 @@ contains
       ! rule carries `bmat=bref_arg` through the MP2 gradient. Writing the two
       ! cases out instead is how the kernel came to be applied on one route and
       ! not another in the first place.
+      !
+      ! The kernel cache goes with the context: filled by `solve_mo1_batch`
+      ! before the solve, it spares every one of these hundreds of calls the
+      ! libxc pass over the grid. Unfilled -- which is what a Hartree-Fock
+      ! operator carries -- it is ignored, so it passes unconditionally too.
       call response_mean_field(this%mol, dens, this%zero_h, g, error, &
                                direct=.true., bounds=this%bounds, &
                                k_scale=this%k_scale, xc=this%xc, &

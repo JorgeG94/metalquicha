@@ -670,6 +670,10 @@ rest available.
        means every ``f_minus`` describes a state that does not exist.
    * - ``pie_terms``
      - The GMBE inclusion-exclusion terms, overlapping-fragment runs only.
+   * - ``excited_states``
+     - The linear-response spectrum: ``method``, ``spin`` and one object per
+       root under ``states``. Unfragmented energy runs only -- every other
+       driver is refused when the deck is read.
 
 .. code-block:: python
 
