@@ -25,7 +25,7 @@ module mqc_method_dft
    use mqc_cuest_bridge, only: run_cuest_scf
    use mqc_terco_bridge, only: run_terco_scf
    use mqc_czt_bridge, only: run_czt_hf
-   use mqc_dispersion, only: dispersion_correction
+   use mqc_dispersion_apply, only: dispersion_apply
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -53,8 +53,8 @@ module mqc_method_dft
       logical :: use_dispersion = .false.
          !! Add empirical dispersion correction
       character(len=16) :: dispersion_type = "d3bj"
-         !! Which correction, in the spelling `keywords.dft.dispersion` uses.
-         !! Only "d3bj" today; see `DISPERSION_KINDS` in `mqc_dispersion_names`.
+         !! Which correction, in the spelling `keywords.dft.dispersion` uses:
+         !! "d3bj" or "d4". See `DISPERSION_KINDS` in `mqc_dispersion_names`.
    end type dft_options_t
 
    type, extends(qc_method_t) :: dft_method_t
@@ -108,15 +108,24 @@ contains
       ! code and could each get it subtly differently.
       e_dispersion = 0.0_dp
       if (this%options%use_dispersion) then
+         ! `fragment%charge` and not zero. D4 equilibrates atomic partial
+         ! charges from the total before it interpolates a single dispersion
+         ! coefficient, so an ion run at neutrality returns a number that is
+         ! wrong and plausible at once. D3 has no charge dependence and
+         ! `dispersion_apply` drops it there. The fragment's own charge is the
+         ! right one on a fragmented run too: it is the charge of the system
+         ! whose nuclei are being handed over.
          if (want_gradient) then
             allocate (g_dispersion(3, fragment%n_atoms), source=0.0_dp)
-            call dispersion_correction(this%options%dispersion_type, this%options%functional, &
-                                       fragment%element_numbers, fragment%coordinates, &
-                                       e_dispersion, g_dispersion, dispersion_error)
+            call dispersion_apply(this%options%dispersion_type, this%options%functional, &
+                                  real(fragment%charge, dp), &
+                                  fragment%element_numbers, fragment%coordinates, &
+                                  e_dispersion, g_dispersion, dispersion_error)
          else
-            call dispersion_correction(this%options%dispersion_type, this%options%functional, &
-                                       fragment%element_numbers, fragment%coordinates, &
-                                       e_dispersion, error=dispersion_error)
+            call dispersion_apply(this%options%dispersion_type, this%options%functional, &
+                                  real(fragment%charge, dp), &
+                                  fragment%element_numbers, fragment%coordinates, &
+                                  e_dispersion, error=dispersion_error)
          end if
          if (dispersion_error%has_error()) then
             call result%error%set(ERROR_VALIDATION, dispersion_error%get_message())
@@ -243,8 +252,8 @@ contains
       !! number or with the same geometry run without it. `energy%total()` adds
       !! it, so every consumer of the total already has it.
       !!
-      !! The gradient sign is the library's, unchanged: s-dftd3 returns dE/dR in
-      !! Hartree per Bohr, which is what `result%gradient` holds, so the two
+      !! The gradient sign is the library's, unchanged: s-dftd3 and dftd4 both
+      !! return dE/dR in Hartree per Bohr, which is what `result%gradient` holds, so the two
       !! simply add. Over the fragment's own atoms, H-caps included -- the same
       !! atoms the SCF gradient covers, so the cap redistribution downstream
       !! sees one consistent gradient rather than two conventions.
@@ -292,8 +301,10 @@ contains
       type(calculation_result_t), intent(out) :: result
 
       ! Dispersion goes straight to finite differences, without asking the
-      ! backend whether it has an analytic Hessian. s-dftd3's C API returns an
-      ! energy, a gradient and a virial and no second derivative, so an analytic
+      ! backend whether it has an analytic Hessian. Neither library's C API
+      ! offers a second derivative this code could add -- s-dftd3 returns an
+      ! energy, a gradient and a virial, and dftd4's only Hessian is its own
+      ! numerical one -- so an analytic
       ! Kohn-Sham Hessian plus this correction would be a Hessian missing one of
       ! its terms with nothing to say so. Differencing `calc_gradient`, which
       ! does carry the correction, gives the whole thing.
