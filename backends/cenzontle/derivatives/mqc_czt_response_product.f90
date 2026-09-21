@@ -248,6 +248,20 @@ contains
          ! The non-local kernel, once for the batch rather than per set:
          ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
          ! trial density or a dozen. It accumulates, hence the zeroed buffer.
+         !
+         ! TODO(mqc): this one is not cached, so on a VV10 reference the kernel
+         ! cache removes the smaller of the two grid costs an application pays
+         ! and leaves the larger. What is reusable is the reference half --
+         ! `vv10_nlc`'s U..C pair sums and the omega and kappa derivatives,
+         ! plus `rho`, `sigma` and `rho_grad` -- thirteen more grid-sized
+         ! arrays over the NLC grid, which is not the grid `xc_kernel_cache_t`
+         ! is filled over, so it would be a second cache with its own budget
+         ! rather than four more components on that one. The trial half,
+         ! `vv10_hessian_kernel`, cannot be cached at all: it is
+         ! O(npts^2 n_set) and moves with the densities. So the saving is one
+         ! pair sweep out of two at `n_set = 1` and one out of `n_set + 1` as
+         ! the batch widens -- most to a coupled-perturbed solve, least to the
+         ! Hessian's wide batches.
          if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
             allocate (vnl(n_ao, n_ao, n_set))
             vnl = 0.0_dp
@@ -318,7 +332,7 @@ contains
 
    subroutine response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, nact, minus, &
                                au, error, direct, eri, bounds, k_scale, xc, reference, &
-                               rs_k_lr, rs_omega, bmat, density_screen, &
+                               rs_k_lr, rs_omega, cache, bmat, density_screen, &
                                t_dens, t_fock, t_back)
       !! `(A+B)u` or `(A-B)u` for many trial rotations in one integral pass
       !!
@@ -356,6 +370,10 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(in), optional :: reference(:, :)
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients, filled once and reused. See
+         !! `response_mean_field`, which is where it ends up on the exact
+         !! route; the fitted one below reads it too.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`, in place of any four-index
          !! integrals. Not a storage choice: it makes the operator the fitted
@@ -369,9 +387,13 @@ contains
       real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :, :), work(:, :)
       real(dp) :: t0, t1, kf
       integer :: n_ao, n_occ, m, j
+      logical :: use_cache
 
       if (error%has_error()) return
       if (nact <= 0) return
+
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
 
       ! Only the fitted branch needs this here; the others let
       ! `response_mean_field` resolve it the same way.
@@ -434,14 +456,18 @@ contains
             ! fitted route, only on the two exact ones, so a fitted reference
             ! with VV10 gets a response missing that term. It was missing
             ! before this routine existed too.
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            if (use_cache) then
+               call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache)
+            else
+               call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            end if
             if (error%has_error()) return
          end if
       else
          call response_mean_field(mol, dens, zero_h, g, error, minus=minus, &
                                   direct=direct, eri=eri, bounds=bounds, &
                                   k_scale=k_scale, xc=xc, reference=reference, &
-                                  rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
+                                  rs_k_lr=rs_k_lr, rs_omega=rs_omega, cache=cache, &
                                   density_screen=density_screen)
          if (error%has_error()) return
       end if

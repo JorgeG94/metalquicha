@@ -40,7 +40,7 @@ module mqc_czt_cphf
    use mqc_czt_gemm_threads, only: gemm_over_columns, gemm_over_inner, getrf_threaded
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_localize, only: boys_localize
-   use mqc_czt_xc, only: xc_context_t
+   use mqc_czt_xc, only: xc_context_t, xc_kernel_cache_t, xc_kernel_cache_fill
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_response_product, only: response_product
    use pic_logger, only: logger => global_logger
@@ -240,6 +240,7 @@ contains
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), bounds(:, :)
       real(dp), allocatable :: gaps(:, :), rhs(:, :), x(:, :), r(:, :), z(:, :)
       real(dp), allocatable :: p(:, :), ap(:, :), work(:, :), zero_h(:, :)
+      type(xc_kernel_cache_t) :: kernel_cache
       real(dp) :: rz, rz_new, pap, target_norm, step, use_tol
       integer :: n_ao, n_mo, n_vir, n_pert, ipert, a, i, iter, worst, limit
       logical :: direct
@@ -343,6 +344,16 @@ contains
       allocate (work(n_ao, n_occ))
       worst = 0
 
+      ! The kernel's coefficients over the grid, once for every application
+      ! this solve makes -- three perturbations times their conjugate-gradient
+      ! iterations, each of which would otherwise re-evaluate the reference
+      ! density per grid block and run libxc over it again. They depend on the
+      ! reference alone, which does not move here.
+      if (present(xc) .and. present(density)) then
+         call xc_kernel_cache_fill(xc, mol, density, kernel_cache, error)
+         if (error%has_error()) return
+      end if
+
       do ipert = 1, n_pert
          ! h_ai, the perturbation in the occupied-virtual block -- or that
          ! block itself, when the caller assembled it there.
@@ -376,7 +387,7 @@ contains
             ! four cases the operator used to be dispatched by are one call.
             call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                    gaps, p, ap, error, bmat=bmat, xc=xc, &
-                                   density=density)
+                                   density=density, cache=kernel_cache)
             if (error%has_error()) return
             pap = sum(p*ap)
             if (pap <= 0.0_dp) then
@@ -409,11 +420,12 @@ contains
       if (present(iterations)) iterations = worst
       nullify (eri)
       if (allocated(eri_own)) deallocate (eri_own)
+      call kernel_cache%destroy()
       deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
    end subroutine cphf_solve
 
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                gaps, u, au, error, bmat, xc, density)
+                                gaps, u, au, error, bmat, xc, density, cache)
       !! Apply the coupled-perturbed operator to a trial rotation
       !!
       !! `(A+B)` on one vector, which is what a conjugate-gradient iteration
@@ -440,6 +452,9 @@ contains
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`. Present, the operator is built from
          !! it and neither `eri` nor the direct build is touched.
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients, filled once by the caller.
+         !! An unfilled one is ignored, so it may be passed unconditionally.
 
       real(dp), allocatable :: one_u(:, :, :), one_au(:, :, :)
       integer :: one_idx(1)
@@ -450,7 +465,8 @@ contains
       one_idx = 1
       call response_product(mol, c_occ, c_vir, gaps, zero_h, one_u, one_idx, 1, &
                             .false., one_au, error, direct=direct, eri=eri, &
-                            bounds=bounds, xc=xc, reference=density, bmat=bmat)
+                            bounds=bounds, xc=xc, reference=density, cache=cache, &
+                            bmat=bmat)
       if (.not. error%has_error()) au = one_au(:, :, 1)
       deallocate (one_u, one_au)
    end subroutine response_operator

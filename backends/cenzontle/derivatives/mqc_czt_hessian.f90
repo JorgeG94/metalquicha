@@ -1541,6 +1541,11 @@ contains
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands it
       !! to the many-density build in the same chunks, and for the same reason,
       !! as `solve_mo1_batch`.
+      !!
+      !! The exchange-correlation kernel is cached here too, over the whole
+      !! call rather than per chunk. The solve above filled one against this
+      !! same reference density, but it belonged to the operator and went with
+      !! it, so this fills its own.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: d1(:, :, :, :)
       real(dp), intent(in) :: bounds(:, :)
@@ -1562,6 +1567,7 @@ contains
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
       integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
       integer :: n_chunks, per_chunk
+      type(xc_kernel_cache_t) :: kernel_cache
 
       if (error%has_error()) return
 
@@ -1585,6 +1591,17 @@ contains
       n_chunks = (n_pert + max_batch - 1)/max_batch
       per_chunk = (n_pert + n_chunks - 1)/n_chunks
 
+      ! The kernel's coefficients over the grid, once rather than once per
+      ! chunk. Same object and same reason as `solve_mo1_batch`, which filled
+      ! one for the solve that produced these very densities -- that one went
+      ! out of scope with its operator, so this fills its own. Declined over
+      ! budget, it comes back unfilled and the build below re-evaluates the
+      ! kernel per chunk, as it did before.
+      if (present(xc)) then
+         call xc_kernel_cache_fill(xc, mol, reference, kernel_cache, error)
+         if (error%has_error()) return
+      end if
+
       first = 1
       do while (first <= n_pert)
          last = min(first + per_chunk - 1, n_pert)
@@ -1602,12 +1619,15 @@ contains
          call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
                                   bounds=bounds, k_scale=k_scale, &
                                   xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
-                                  rs_omega=rs_omega, density_screen=.true.)
+                                  rs_omega=rs_omega, cache=kernel_cache, &
+                                  density_screen=.true.)
          if (error%has_error()) return
          g1(:, :, first:last) = out
          deallocate (chunk, out)
          first = last + 1
       end do
+
+      call kernel_cache%destroy()
    end subroutine mean_field_batch
 
    subroutine assemble_dipole_derivatives(mol, density, d1, ddip_dr, error)
