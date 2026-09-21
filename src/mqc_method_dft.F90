@@ -193,6 +193,15 @@ contains
             result%has_error = .true.
             return
          end if
+         if (settings%excited%enabled) then
+            call result%error%set(ERROR_VALIDATION, "backend 'cuest' was asked for, but "// &
+                                  "keywords.excited_states has no GPU implementation "// &
+                                  "here -- the linear-response solver lives on the CPU "// &
+                                  "backend. Ask for 'auto' or 'libcint', or drop the "// &
+                                  "excited states.")
+            result%has_error = .true.
+            return
+         end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
       case (BACKEND_TERCO)
          ! Every refusal terco needs -- gradients, correlated methods,
@@ -210,6 +219,18 @@ contains
                                   "builds its AO shells spherical whatever the basis "// &
                                   "says. Ask for backend 'libcint', or drop "// &
                                   "'model.cartesian'.")
+            result%has_error = .true.
+            return
+         end if
+         ! The same refusal as the explicit request above. Asking for
+         ! excited states on a build that resolves 'auto' to the GPU would
+         ! otherwise reach `run_cuest_scf`, which knows nothing about the
+         ! block and would answer with a ground state and no complaint.
+         if (settings%excited%enabled) then
+            call result%error%set(ERROR_VALIDATION, "this build resolves 'auto' to the "// &
+                                  "GPU backend, which has no linear-response solver, "// &
+                                  "and keywords.excited_states asked for roots. Ask "// &
+                                  "for backend 'libcint', or drop the excited states.")
             result%has_error = .true.
             return
          end if

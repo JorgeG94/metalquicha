@@ -1943,6 +1943,20 @@ Resets the stack trace</p></td>
                  <td><p><code>E_pq |c&gt;</code> for every orbital pair, over one range of beta strings</p><a href="../proc/excitations_block.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/excited_states_keys.html'>excited_states_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p><code>keywords.excited_states</code>: how many roots, of what kind, and how the
+eigensolver stops. Seven keys and no synonyms &ndash; the block is new, so
+there is no older spelling to keep working.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/excited_states_refused.html'>excited_states_refused</a></td>
+                 <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
+                 <td>Function</td>
+                 <td><p>Fail the calculation when a deck asked xTB for excited states</p><a href="../proc/excited_states_refused.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/expand_orbit.html'>expand_orbit</a></td>
                  <td><a href='../module/mqc_lebedev.html'>mqc_lebedev</a></td>
                  <td>Subroutine</td>
@@ -4152,6 +4166,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><p><code>keywords.efp.response</code>, as a code, or a refusal</p><a href="../proc/read_efp_response.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_excited_states.html'>read_excited_states</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.excited_states</code>: how many roots, of what kind, or a refusal</p><a href="../proc/read_excited_states.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_fixed_string.html'>read_fixed_string</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -4964,6 +4984,12 @@ Example: &ldquo;water.json&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
 Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/state_spin_label.html'>state_spin_label</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Function</td>
+                 <td><p>The <code>STATE_SPIN_*</code> code of state <code>i</code> as the word a reader expects</p><a href="../proc/state_spin_label.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/step_label.html'>step_label</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Function</td>
@@ -5013,15 +5039,15 @@ Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
+                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
+                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/string_terms~2.html'>string_terms</a></td>
-                 <td><a href='../module/mqc_ormas_ci.html'>mqc_ormas_ci</a></td>
+                 <td><a href='../module/mqc_ci.html'>mqc_ci</a></td>
                  <td>Subroutine</td>
-                 <td><p>Everything about a diagonal element that one spin decides alone</p><a href="../proc/string_terms~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>The part of a diagonal element that depends on one spin alone</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strings_of_one_spin.html'>strings_of_one_spin</a></td>
@@ -5260,6 +5286,12 @@ guess would be read, validated and then silently ignored.</p></td>
                  <td><p>The EFMO breakdown, under <code>efmo</code>, when there is one</p><a href="../proc/write_efmo_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/write_excited_states_section.html'>write_excited_states_section</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The linear-response spectrum, one object per root</p><a href="../proc/write_excited_states_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/write_final_single_point.html'>write_final_single_point</a></td>
                  <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
@@ -5448,7 +5480,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>

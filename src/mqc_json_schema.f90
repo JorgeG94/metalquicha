@@ -137,6 +137,9 @@ contains
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "excited_states", &
+                                   excited_states_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "aimd", aimd_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "optimization", &
@@ -224,6 +227,7 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "scf")
       call allow(keys, "hessian")
+      call allow(keys, "excited_states")
       call allow(keys, "aimd")
       call allow(keys, "optimization")
       call allow(keys, "fragmentation")
@@ -572,6 +576,20 @@ contains
       call allow(keys, "response_max_iter")
       call allow(keys, "response_batch")
    end function hessian_keys
+
+   function excited_states_keys() result(keys)
+      !! `keywords.excited_states`: how many roots, of what kind, and how the
+      !! eigensolver stops. Seven keys and no synonyms -- the block is new, so
+      !! there is no older spelling to keep working.
+      type(key_set_t) :: keys
+      call allow(keys, "n_states")
+      call allow(keys, "method")
+      call allow(keys, "spin")
+      call allow(keys, "tolerance")
+      call allow(keys, "max_iter")
+      call allow(keys, "max_subspace")
+      call allow(keys, "batch")
+   end function excited_states_keys
 
    function aimd_keys() result(keys)
       type(key_set_t) :: keys

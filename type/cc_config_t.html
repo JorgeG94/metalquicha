@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 0.8% of total for derived types.</p>Including implementation: 11 statements,  0.3% of total for derived types.">11 statements</a>
+                 title="<p> 0.6% of total for derived types.</p>Including implementation: 9 statements,  0.2% of total for derived types.">9 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,10 +138,8 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/cc_config_t.html#variable-amplitude_convergence">amplitude_convergence</a>
             <a class="list-group-item" href="../type/cc_config_t.html#variable-diis_size~4">diis_size</a>
-            <a class="list-group-item" href="../type/cc_config_t.html#variable-eom_type">eom_type</a>
             <a class="list-group-item" href="../type/cc_config_t.html#variable-include_triples">include_triples</a>
-            <a class="list-group-item" href="../type/cc_config_t.html#variable-max_iter~7">max_iter</a>
-            <a class="list-group-item" href="../type/cc_config_t.html#variable-n_roots~6">n_roots</a>
+            <a class="list-group-item" href="../type/cc_config_t.html#variable-max_iter~8">max_iter</a>
             <a class="list-group-item" href="../type/cc_config_t.html#variable-perturbative_triples">perturbative_triples</a>
             <a class="list-group-item" href="../type/cc_config_t.html#variable-spin_adapted">spin_adapted</a>
             <a class="list-group-item" href="../type/cc_config_t.html#variable-use_diis~5">use_diis</a>
@@ -270,7 +268,7 @@
 </g>
 </g>
 <!-- type~fmo_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~cc_config_t~~InheritedByGraph_edge6" class="edge">
+<g id="type~~cc_config_t~~InheritedByGraph_edge5" class="edge">
 <title>type~fmo_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M709.74,-83.84C704.59,-81.29 699.49,-78.33 695,-75 685.13,-67.67 689.29,-54 677,-54"/>
 </g>
@@ -284,7 +282,7 @@
 </g>
 </g>
 <!-- type~gmbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~cc_config_t~~InheritedByGraph_edge5" class="edge">
+<g id="type~~cc_config_t~~InheritedByGraph_edge7" class="edge">
 <title>type~gmbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M694.92,-54C688.89,-54 682.8,-54 677,-54"/>
 </g>
@@ -298,7 +296,7 @@
 </g>
 </g>
 <!-- type~mbe_context_t&#45;&gt;type~many_body_expansion_t -->
-<g id="type~~cc_config_t~~InheritedByGraph_edge7" class="edge">
+<g id="type~~cc_config_t~~InheritedByGraph_edge6" class="edge">
 <title>type~mbe_context_t&#45;&gt;type~many_body_expansion_t</title>
 <path fill="none" stroke="#00ffff" d="M709.74,-24.16C704.59,-26.71 699.49,-29.67 695,-33 685.13,-40.33 689.29,-54 677,-54"/>
 <path fill="none" stroke="#00ffff" d="M676,-54C673.46,-54 670.88,-54 668.27,-54"/>
@@ -411,23 +409,6 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-eom_type"></span>
-              character(len=8),
-            </td>
-              <td>public</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>eom_type</strong></td>
-<td> =</td>
-                <td>&#34;ee&#34;</td>
-            <td>
-                <p>EOM type: &ldquo;ee&rdquo; (excitation), &ldquo;ip&rdquo; (ionization), &ldquo;ea&rdquo; (attachment)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
               <span class="anchor" id="variable-include_triples"></span>
               logical,
             </td>
@@ -445,7 +426,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~7"></span>
+              <span class="anchor" id="variable-max_iter~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -458,23 +439,6 @@ large graphs.</div>
                 <td>100</td>
             <td>
                 <p>Maximum CC iterations</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_roots~6"></span>
-              integer,
-            </td>
-              <td>public</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_roots</strong></td>
-<td> =</td>
-                <td>0</td>
-            <td>
-                <p>Number of EOM-CC roots (0 = ground state only)</p>
             </td>
         </tr>
         <tr>
@@ -562,11 +526,6 @@ See mqc_config_types for why this is the default.</p>
 <span class="w">         </span><span class="c">!! Spatial-orbital (spin-adapted) formulation rather than spin orbitals.</span>
 <span class="w">         </span><span class="c">!! See mqc_config_types for why this is the default.</span>
 
-<span class="w">      </span><span class="c">! EOM-CC for excited states</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_roots</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="c">!! Number of EOM-CC roots (0 = ground state only)</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">eom_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ee"</span>
-<span class="w">         </span><span class="c">!! EOM type: "ee" (excitation), "ip" (ionization), "ea" (attachment)</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">cc_config_t</span>
 </pre></div>
 
@@ -590,7 +549,7 @@ See mqc_config_types for why this is the default.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>

@@ -14,6 +14,9 @@ module mqc_method_config
                                        DEFAULT_RESPONSE_MAX_ITER, &
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
+                                       DEFAULT_EXCITED_TOL, &
+                                       DEFAULT_EXCITED_MAX_ITER, &
+                                       DEFAULT_EXCITED_BATCH, &
                                        DEFAULT_SOSCF_START
    implicit none
    private
@@ -23,6 +26,7 @@ module mqc_method_config
    public :: scf_options_t
    public :: scf_numerics_t, deltascf_options_t  !! Re-exported from mqc_config_types
    public :: correlation_config_t, cc_config_t, f12_config_t
+   public :: excited_config_t
    public :: efp_config_t
    public :: efmo_config_t
    public :: neo_config_t
@@ -363,6 +367,37 @@ module mqc_method_config
       real(dp) :: bonding_threshold = 1.0_dp
    end type properties_config_t
 
+   !============================================================================
+   ! Excited-state (linear response) Configuration
+   !============================================================================
+   type :: excited_config_t
+      !! Linear-response excited states: how many, of what kind, how they solve
+      !!
+      !! Backend-neutral in shape, and separate from `cc_config_t` on purpose:
+      !! these are the TDHF/TDDFT roots of the reference itself, not an EOM
+      !! treatment on top of a coupled-cluster wave function. Nothing is
+      !! computed from this yet -- see `excited_decline_reason` in
+      !! `mqc_czt_bridge` for what is refused and why.
+      logical :: enabled = .false.
+         !! Whether any excited state was asked for. Derived from
+         !! `n_states > 0` by the adapter rather than read from a deck, so
+         !! there is no second way to turn the block on and off.
+      integer :: n_states = 0
+         !! Roots to converge. Zero leaves the calculation exactly as it was.
+      character(len=16) :: method = "rpa"
+         !! "tda" or "rpa"; see `mqc_config_types` for what each one is.
+      character(len=16) :: spin = "singlet"
+         !! "singlet", "triplet" or "both".
+      real(dp) :: tolerance = DEFAULT_EXCITED_TOL
+         !! Residual at which a root is accepted.
+      integer :: max_iter = DEFAULT_EXCITED_MAX_ITER
+         !! Cycles the solver may take.
+      integer :: max_subspace = 0
+         !! Trial vectors the subspace may hold; zero is the solver's own rule.
+      integer :: batch = DEFAULT_EXCITED_BATCH
+         !! Trial vectors sharing one pass over the integrals.
+   end type excited_config_t
+
    type, extends(scf_numerics_t) :: scf_options_t
       !! What every self-consistent-field method carries, defined once
       !!
@@ -439,6 +474,12 @@ module mqc_method_config
          !! functional, so every extending type inherits it.
       type(properties_config_t) :: properties
          !! Population analysis and other post-SCF properties
+      type(excited_config_t) :: excited
+         !! Linear-response excited states, when a deck asked for any. Carried
+         !! as one component rather than as seven flat fields for the reason
+         !! `pcm` is: the whole block copies in one assignment at each of the
+         !! three layers below, so a field added to it cannot be dropped on the
+         !! way to the backend.
    end type scf_options_t
 
    type :: mcscf_config_t
@@ -558,11 +599,6 @@ module mqc_method_config
          !! Spatial-orbital (spin-adapted) formulation rather than spin orbitals.
          !! See mqc_config_types for why this is the default.
 
-      ! EOM-CC for excited states
-      integer :: n_roots = 0
-         !! Number of EOM-CC roots (0 = ground state only)
-      character(len=8) :: eom_type = "ee"
-         !! EOM type: "ee" (excitation), "ip" (ionization), "ea" (attachment)
    end type cc_config_t
 
    !============================================================================
@@ -657,6 +693,8 @@ module mqc_method_config
          !! EFMO settings: the dimer cutoff and the charge-transfer switch
       type(neo_config_t) :: neo
          !! Quantum nuclei, from `keywords.neo`
+      type(excited_config_t) :: excited
+         !! Linear-response excited states, from `keywords.excited_states`
 
    contains
       procedure :: reset => config_reset
@@ -831,8 +869,16 @@ contains
       this%cc%perturbative_triples = .true.
       this%cc%use_diis = .true.
       this%cc%diis_size = 8
-      this%cc%n_roots = 0
-      this%cc%eom_type = "ee"
+
+      ! Excited-state defaults
+      this%excited%enabled = .false.
+      this%excited%n_states = 0
+      this%excited%method = "rpa"
+      this%excited%spin = "singlet"
+      this%excited%tolerance = DEFAULT_EXCITED_TOL
+      this%excited%max_iter = DEFAULT_EXCITED_MAX_ITER
+      this%excited%max_subspace = 0
+      this%excited%batch = DEFAULT_EXCITED_BATCH
 
       ! F12 defaults
       this%f12%geminal_exponent = 1.0_dp
@@ -897,6 +943,20 @@ contains
                      this%dft%grid_level
                end if
                call logger%info(trim(grid_line))
+            end block
+         end if
+
+         ! Only when roots were actually asked for. The block has defaults
+         ! whatever a deck says, so printing them unconditionally would read
+         ! as "this run computes excited states" on every SCF.
+         if (this%excited%enabled) then
+            block
+               character(len=96) :: excited_line
+
+               write (excited_line, "(a,i0,a,a,a,a)") "  Excited states:  ", &
+                  this%excited%n_states, " ", trim(this%excited%spin), " root(s), ", &
+                  trim(this%excited%method)
+               call logger%info(trim(excited_line))
             end block
          end if
 

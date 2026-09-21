@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">246 statements</a>
+                 title=" 1.1% of total for procedures.">254 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1262,6 +1262,18 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">soscf_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_soscf_start</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_temperature</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">pressure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">hessian_pressure</span>
+
+<span class="w">      </span><span class="c">! Linear-response excited states. `enabled` is derived here and nowhere</span>
+<span class="w">      </span><span class="c">! else: a root count and a switch that could disagree would be two ways</span>
+<span class="w">      </span><span class="c">! to ask the same question, and the deck has only one.</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">n_states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_n_states</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_n_states</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_method</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">spin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_spin</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_tolerance</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_max_iter</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">max_subspace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_max_subspace</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">excited_batch</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">aimd</span><span class="p">%</span><span class="n">dt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">aimd_dt</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">aimd</span><span class="p">%</span><span class="n">nsteps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">aimd_nsteps</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">aimd</span><span class="p">%</span><span class="n">initial_temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">aimd_initial_temperature</span>
@@ -1502,7 +1514,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>

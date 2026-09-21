@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for procedures.">259 statements</a>
+                 title=" 1.2% of total for procedures.">289 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error~104">error</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error">error</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-full_system">full_system</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~122">i</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result~43">result</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms~4">total_atoms</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i">i</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result">result</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms">total_atoms</a>
         </div>
       </div>
     </div>
@@ -185,10 +185,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_physical_constants.html'>mqc_physical_constants</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
@@ -573,7 +573,7 @@ If json_data is present, populates it for centralized JSON output</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~62"></span>
+              <span class="anchor" id="variable-sys_geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -588,7 +588,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -603,7 +603,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out~11"></span>
+              <span class="anchor" id="variable-result_out"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out),</td>
@@ -618,7 +618,7 @@ If json_data is present, populates it for centralized JSON output</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~27"></span>
+              <span class="anchor" id="variable-json_data"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2223,7 +2223,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~104"></span>
+              <span class="anchor" id="variable-error"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2257,7 +2257,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~122"></span>
+              <span class="anchor" id="variable-i"></span>
               integer,
             </td>
               <td>private</td>
@@ -2274,7 +2274,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~43"></span>
+              <span class="anchor" id="variable-result"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -2291,7 +2291,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~4"></span>
+              <span class="anchor" id="variable-total_atoms"></span>
               integer,
             </td>
               <td>private</td>
@@ -2543,6 +2543,28 @@ large graphs.</div>
 <span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_dispersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">                        </span><span class="k">end if</span>
 
+<span class="w">                        </span><span class="c">! The excited-state spectrum, when</span>
+<span class="w">                        </span><span class="c">! `keywords.excited_states` asked for one. The request</span>
+<span class="w">                        </span><span class="c">! itself travels beside the roots: which response</span>
+<span class="w">                        </span><span class="c">! problem produced them is not recoverable from the</span>
+<span class="w">                        </span><span class="c">! numbers, and a consumer comparing a TDA energy with</span>
+<span class="w">                        </span><span class="c">! an RPA one has no way to notice.</span>
+<span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_excited_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">excitation_energies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">excitation_energies</span>
+<span class="w">                           </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                              </span><span class="n">json_data</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths</span>
+<span class="w">                           </span><span class="k">end if</span>
+<span class="k">                           if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                              </span><span class="n">json_data</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipoles</span>
+<span class="w">                           </span><span class="k">end if</span>
+<span class="k">                           if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">state_spin</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                              </span><span class="n">json_data</span><span class="p">%</span><span class="n">state_spin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">state_spin</span>
+<span class="w">                           </span><span class="k">end if</span>
+<span class="k">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">excited_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">method</span>
+<span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">excited_spin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">spin</span>
+<span class="w">                           </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_excited_states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">                        </span><span class="k">end if</span>
+
 <span class="w">                        </span><span class="c">! Whether the reference the whole calculation rests on</span>
 <span class="w">                        </span><span class="c">! is a minimum, when `keywords.scf.stability` asked.</span>
 <span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_stability</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -2702,6 +2724,27 @@ large graphs.</div>
 <span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_dispersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">end if</span>
 
+<span class="w">            </span><span class="c">! The excited-state spectrum, when `keywords.excited_states` asked</span>
+<span class="w">            </span><span class="c">! for one. The request itself travels beside the roots: which</span>
+<span class="w">            </span><span class="c">! response problem produced them is not recoverable from the</span>
+<span class="w">            </span><span class="c">! numbers, and a consumer comparing a TDA energy with an RPA one</span>
+<span class="w">            </span><span class="c">! has no way to notice.</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_excited_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">excitation_energies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">excitation_energies</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  </span><span class="n">json_data</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  </span><span class="n">json_data</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipoles</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">state_spin</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  </span><span class="n">json_data</span><span class="p">%</span><span class="n">state_spin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">state_spin</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">excited_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">method</span>
+<span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">excited_spin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">spin</span>
+<span class="w">               </span><span class="n">json_data</span><span class="p">%</span><span class="n">has_excited_states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">            </span><span class="k">end if</span>
+
 <span class="w">            </span><span class="c">! Whether the reference the whole calculation rests on</span>
 <span class="w">            </span><span class="c">! is a minimum, when `keywords.scf.stability` asked.</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_stability</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -2740,7 +2783,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>

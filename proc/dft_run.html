@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">67 statements</a>
+                 title=" 0.3% of total for procedures.">72 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -140,7 +140,7 @@
             <a class="list-group-item" href="../proc/dft_run.html#variable-dispersion_error">dispersion_error</a>
             <a class="list-group-item" href="../proc/dft_run.html#variable-e_dispersion">e_dispersion</a>
             <a class="list-group-item" href="../proc/dft_run.html#variable-g_dispersion">g_dispersion</a>
-            <a class="list-group-item" href="../proc/dft_run.html#variable-settings~5">settings</a>
+            <a class="list-group-item" href="../proc/dft_run.html#variable-settings~14">settings</a>
         </div>
       </div>
     </div>
@@ -196,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~70"></span>
+              <span class="anchor" id="variable-this~154"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -211,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~20"></span>
+              <span class="anchor" id="variable-fragment~37"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -226,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~20"></span>
+              <span class="anchor" id="variable-result~56"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -241,7 +241,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~3"></span>
+              <span class="anchor" id="variable-want_gradient~7"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -256,7 +256,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_hessian~2"></span>
+              <span class="anchor" id="variable-want_hessian~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -893,7 +893,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~5"></span>
+              <span class="anchor" id="variable-settings~14"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
               <td>private</td>
@@ -1040,6 +1040,15 @@ large graphs.</div>
 <span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">enabled</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"backend 'cuest' was asked for, but "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"keywords.excited_states has no GPU implementation "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"here -- the linear-response solver lives on the CPU "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"backend. Ask for 'auto' or 'libcint', or drop the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"excited states."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
 <span class="k">         call </span><span class="n">run_cuest_scf</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">want_gradient</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">BACKEND_TERCO</span><span class="p">)</span>
 <span class="w">         </span><span class="c">! Every refusal terco needs -- gradients, correlated methods,</span>
@@ -1057,6 +1066,18 @@ large graphs.</div>
 <span class="w">                                  </span><span class="s2">"builds its AO shells spherical whatever the basis "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="s2">"says. Ask for backend 'libcint', or drop "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="s2">"'model.cartesian'."</span><span class="p">)</span>
+<span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
+<span class="w">         </span><span class="c">! The same refusal as the explicit request above. Asking for</span>
+<span class="w">         </span><span class="c">! excited states on a build that resolves 'auto' to the GPU would</span>
+<span class="w">         </span><span class="c">! otherwise reach `run_cuest_scf`, which knows nothing about the</span>
+<span class="w">         </span><span class="c">! block and would answer with a ground state and no complaint.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">settings</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">enabled</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"this build resolves 'auto' to the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"GPU backend, which has no linear-response solver, "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"and keywords.excited_states asked for roots. Ask "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="s2">"for backend 'libcint', or drop the excited states."</span><span class="p">)</span>
 <span class="w">            </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -1091,7 +1112,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>

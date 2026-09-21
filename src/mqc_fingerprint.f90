@@ -125,7 +125,9 @@ contains
       !! Only the branch that will actually run is hashed. A deck carrying
       !! stale `dft` settings while running xTB would otherwise fingerprint
       !! differently from the same xTB calculation written cleanly, and the two
-      !! compute the same thing.
+      !! compute the same thing. The excited-state block is the exception and
+      !! sits outside the branches, because it is a question every method is
+      !! asked and no method may answer by ignoring it.
       type(hasher_t), intent(inout) :: h
       type(method_config_t), intent(in) :: config
 
@@ -192,6 +194,27 @@ contains
             call h%real(config%pcm%zeta)
          end if
       end select
+
+      ! The excitations, when any were asked for, outside the select because
+      ! every method type is asked the same question. A backend that cannot
+      ! answer it refuses -- xTB does, in `mqc_method_xtb` -- and hashing it
+      ! only under the branch that can compute it left a hole: a zero-root and
+      ! a five-root xTB deck shared a fingerprint, so the wrong checkpoint
+      ! would have been reused had the refusal ever been lifted quietly.
+      ! Without these a checkpoint holding three roots would satisfy a deck
+      ! asking for ten, and a TDA run would satisfy an RPA one -- same
+      ! reference, same total energy, different answer to the question the
+      ! deck asked. `max_iter`, `max_subspace` and `batch` are deliberately
+      ! absent: they say how the same roots are reached, not which roots they
+      ! are. Guarded on `enabled`, so a deck that asks for none hashes exactly
+      ! as it did before the block existed.
+      if (config%excited%enabled) then
+         call h%text("excited")
+         call h%int(config%excited%n_states)
+         call h%text(trim(config%excited%method))
+         call h%text(trim(config%excited%spin))
+         call h%real(config%excited%tolerance)
+      end if
    end subroutine add_method
 
    ! ==========================================================================

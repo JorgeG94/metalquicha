@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for modules and submodules.">45 statements</a>
+                 title=" 0.2% of total for modules and submodules.">49 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -144,6 +144,9 @@
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_displacement">DEFAULT_DISPLACEMENT</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_dynamic_maxiter">DEFAULT_DYNAMIC_MAXITER</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_dynamic_tol">DEFAULT_DYNAMIC_TOL</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_excited_batch">DEFAULT_EXCITED_BATCH</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_excited_max_iter">DEFAULT_EXCITED_MAX_ITER</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_excited_tol">DEFAULT_EXCITED_TOL</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_frag_level">DEFAULT_FRAG_LEVEL</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_max_intersection">DEFAULT_MAX_INTERSECTION</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-default_opt_energy_tolerance">DEFAULT_OPT_ENERGY_TOLERANCE</a>
@@ -175,6 +178,7 @@
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-efp_response_matrix_free">EFP_RESPONSE_MATRIX_FREE</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-fragment_type_atoms">FRAGMENT_TYPE_ATOMS</a>
             <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-fragment_type_monomers">FRAGMENT_TYPE_MONOMERS</a>
+            <a class="list-group-item" href="../module/mqc_calculation_defaults.html#variable-min_excited_tol">MIN_EXCITED_TOL</a>
         </div>
       </div>
     </div>
@@ -2534,6 +2538,66 @@ they are arrived at.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-default_excited_batch"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_EXCITED_BATCH</strong></td>
+<td> =</td>
+                <td>12</td>
+            <td>
+                <p>Trial vectors contracted against one pass over the integrals.</p>
+<p>The same machine trade-off <code>DEFAULT_RESPONSE_BATCH</code> describes, and the
+same number today, but its own constant: the two solves batch different
+objects over different iteration counts, so retuning the
+frequency-dependent response for a machine must not silently retune the
+excitation solver with it.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_excited_max_iter"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_EXCITED_MAX_ITER</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+                <p>Davidson cycles the excitation solver may take before it gives up.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_excited_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_EXCITED_TOL</strong></td>
+<td> =</td>
+                <td>1.0e-6_dp</td>
+            <td>
+                <p>Residual at which the linear-response eigensolver accepts an excitation.</p>
+<p>Looser than the Hessian&rsquo;s response solve because the answer is an
+eigenvalue rather than a quantity the response propagates linearly into,
+and because the exchange-correlation quadrature underneath it carries its
+own error well above this for any grid a production run uses.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-default_frag_level"></span>
               integer,
             </td>
@@ -3113,6 +3177,28 @@ parameter
                 <p>Fragment specified by monomer indices (MBE)</p>
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min_excited_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MIN_EXCITED_TOL</strong></td>
+<td> =</td>
+                <td>1.0e-8_dp</td>
+            <td>
+                <p>The tightest residual a deck may ask of that solver.</p>
+<p>Below roughly 1e-7 the reference implementations stop converging at all
+on a real grid, so a tighter request does not buy accuracy &ndash; it buys
+iterations that never terminate. Refused in the reader by name rather
+than silently clamped, so a deck that asked for 1e-12 is told the number
+it asked for does not exist.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -3145,7 +3231,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>

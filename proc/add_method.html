@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">47 statements</a>
+                 title=" 0.2% of total for procedures.">54 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -169,7 +169,9 @@
 <p>Only the branch that will actually run is hashed. A deck carrying
 stale <code>dft</code> settings while running xTB would otherwise fingerprint
 differently from the same xTB calculation written cleanly, and the two
-compute the same thing.</p>
+compute the same thing. The excited-state block is the exception and
+sits outside the branches, because it is a question every method is
+asked and no method may answer by ignoring it.</p>
 
 
     <h3>Arguments</h3>
@@ -185,7 +187,7 @@ compute the same thing.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-h~27"></span>
+              <span class="anchor" id="variable-h~3"></span>
               type(<a href='../type/hasher_t.html'>hasher_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -200,7 +202,7 @@ compute the same thing.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~53"></span>
+              <span class="anchor" id="variable-config~17"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -805,7 +807,9 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Only the branch that will actually run is hashed. A deck carrying</span>
 <span class="w">      </span><span class="c">!! stale `dft` settings while running xTB would otherwise fingerprint</span>
 <span class="w">      </span><span class="c">!! differently from the same xTB calculation written cleanly, and the two</span>
-<span class="w">      </span><span class="c">!! compute the same thing.</span>
+<span class="w">      </span><span class="c">!! compute the same thing. The excited-state block is the exception and</span>
+<span class="w">      </span><span class="c">!! sits outside the branches, because it is a question every method is</span>
+<span class="w">      </span><span class="c">!! asked and no method may answer by ignoring it.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">hasher_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">h</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">method_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
 
@@ -872,6 +876,27 @@ large graphs.</div>
 <span class="w">            </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="kt">real</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">pcm</span><span class="p">%</span><span class="n">zeta</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end select</span>
+
+<span class="w">      </span><span class="c">! The excitations, when any were asked for, outside the select because</span>
+<span class="w">      </span><span class="c">! every method type is asked the same question. A backend that cannot</span>
+<span class="w">      </span><span class="c">! answer it refuses -- xTB does, in `mqc_method_xtb` -- and hashing it</span>
+<span class="w">      </span><span class="c">! only under the branch that can compute it left a hole: a zero-root and</span>
+<span class="w">      </span><span class="c">! a five-root xTB deck shared a fingerprint, so the wrong checkpoint</span>
+<span class="w">      </span><span class="c">! would have been reused had the refusal ever been lifted quietly.</span>
+<span class="w">      </span><span class="c">! Without these a checkpoint holding three roots would satisfy a deck</span>
+<span class="w">      </span><span class="c">! asking for ten, and a TDA run would satisfy an RPA one -- same</span>
+<span class="w">      </span><span class="c">! reference, same total energy, different answer to the question the</span>
+<span class="w">      </span><span class="c">! deck asked. `max_iter`, `max_subspace` and `batch` are deliberately</span>
+<span class="w">      </span><span class="c">! absent: they say how the same roots are reached, not which roots they</span>
+<span class="w">      </span><span class="c">! are. Guarded on `enabled`, so a deck that asks for none hashes exactly</span>
+<span class="w">      </span><span class="c">! as it did before the block existed.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">enabled</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">h</span><span class="p">%</span><span class="n">text</span><span class="p">(</span><span class="s2">"excited"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">n_states</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="n">text</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">method</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="n">text</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">spin</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">h</span><span class="p">%</span><span class="kt">real</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">excited</span><span class="p">%</span><span class="n">tolerance</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
 <span class="k">   end subroutine </span><span class="n">add_method</span>
 </pre></div>
 
@@ -896,7 +921,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:48 +0000             </p>
+ on 2026-09-21 15:55 +0000             </p>
           </div>
         </div>
         <br>
