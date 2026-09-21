@@ -318,7 +318,7 @@ contains
 
    subroutine response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, nact, minus, &
                                au, error, direct, eri, bounds, k_scale, xc, reference, &
-                               rs_k_lr, rs_omega, bmat, density_screen, &
+                               rs_k_lr, rs_omega, cache, bmat, density_screen, &
                                t_dens, t_fock, t_back)
       !! `(A+B)u` or `(A-B)u` for many trial rotations in one integral pass
       !!
@@ -356,6 +356,10 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
       real(dp), intent(in), optional :: reference(:, :)
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+         !! The reference's kernel coefficients, filled once and reused. See
+         !! `response_mean_field`, which is where it ends up on the exact
+         !! route; the fitted one below reads it too.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`, in place of any four-index
          !! integrals. Not a storage choice: it makes the operator the fitted
@@ -369,9 +373,13 @@ contains
       real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :, :), work(:, :)
       real(dp) :: t0, t1, kf
       integer :: n_ao, n_occ, m, j
+      logical :: use_cache
 
       if (error%has_error()) return
       if (nact <= 0) return
+
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
 
       ! Only the fitted branch needs this here; the others let
       ! `response_mean_field` resolve it the same way.
@@ -434,14 +442,18 @@ contains
             ! fitted route, only on the two exact ones, so a fitted reference
             ! with VV10 gets a response missing that term. It was missing
             ! before this routine existed too.
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            if (use_cache) then
+               call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache)
+            else
+               call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            end if
             if (error%has_error()) return
          end if
       else
          call response_mean_field(mol, dens, zero_h, g, error, minus=minus, &
                                   direct=direct, eri=eri, bounds=bounds, &
                                   k_scale=k_scale, xc=xc, reference=reference, &
-                                  rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
+                                  rs_k_lr=rs_k_lr, rs_omega=rs_omega, cache=cache, &
                                   density_screen=density_screen)
          if (error%has_error()) return
       end if
