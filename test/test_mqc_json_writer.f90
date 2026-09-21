@@ -21,7 +21,8 @@ module test_mqc_json_writer
    use mqc_json_writer, only: write_json_output
    use mqc_io_helpers, only: set_output_json_filename, get_output_json_filename
    use json_module, only: json_file
-   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                               STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN
    implicit none
    private
 
@@ -40,7 +41,9 @@ contains
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
-                  new_unittest("excited_states_round_trip", test_excited_states) &
+                  new_unittest("excited_states_round_trip", test_excited_states), &
+                  new_unittest("unrestricted_roots_carry_their_own_spin_word", &
+                               test_unrestricted_spin) &
                   ]
    end subroutine collect_mqc_json_writer_tests
 
@@ -518,6 +521,51 @@ contains
       call json%destroy()
       call data%destroy()
    end subroutine test_excited_states
+
+   subroutine test_unrestricted_spin(error)
+      !! `STATE_SPIN_UNRESTRICTED` comes back as the word, and so does the gap
+      !!
+      !! The third spin label, and the one a deck can never ask for: it says
+      !! the reference was unrestricted and its roots are not spin
+      !! eigenstates. Like the other two it exists only in the writer -- the
+      !! container carries an integer -- so a round trip is the only place it
+      !! is checked. `STATE_SPIN_UNKNOWN` is here for the same reason: the
+      !! `select case` has a default arm whose job is to invent nothing, and
+      !! a label silently replaced by a guess would be believed.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      character(len=:), allocatable :: text
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = -75.939126000634_dp
+      data%has_energy = .true.
+      data%excitation_energies = [0.088470327358_dp, 0.234583947377_dp]
+      data%state_spin = [STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN]
+      data%excited_method = "tda"
+      data%excited_spin = "singlet"
+      data%has_excited_states = .true.
+
+      call written_document(data, json, "jw_unrestricted.json")
+
+      call json%get("jw_unrestricted.excited_states.states(1).spin", text, found)
+      call check(error, found, "the unrestricted state spin label is missing")
+      if (allocated(error)) return
+      call check(error, text == "unrestricted", "an unrestricted root should be "// &
+                 "labelled unrestricted, not with a multiplicity it does not have")
+      if (allocated(error)) return
+
+      call json%get("jw_unrestricted.excited_states.states(2).spin", text, found)
+      call check(error, found, "the unassigned state spin label is missing")
+      if (allocated(error)) return
+      call check(error, text == "unknown", "a state nothing assigned a spin to "// &
+                 "should say so rather than be given one")
+
+      call json%destroy()
+      call data%destroy()
+   end subroutine test_unrestricted_spin
 
 end module test_mqc_json_writer
 

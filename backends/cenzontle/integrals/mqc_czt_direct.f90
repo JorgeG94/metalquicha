@@ -51,6 +51,7 @@ module mqc_czt_direct
    public :: build_fock_direct_many
    public :: build_fock_direct_nosym
    public :: build_fock_direct_uhf
+   public :: build_fock_direct_uhf_many
    public :: direct_stats_t
    public :: DEFAULT_SCREEN_TOL
 
@@ -2174,5 +2175,328 @@ contains
 
       deallocate (ga, gb, d_coul, dims, offs, pair_i, pair_j, env_local)
    end subroutine build_fock_direct_uhf
+
+   subroutine build_fock_direct_uhf_many(mol, h, d_alpha, d_beta, bounds, focks_a, &
+                                         focks_b, stats, error, screen_tol, k_scale, &
+                                         j_scale, omega, antisymmetric, density_screen)
+      !! F_sigma = H + j J(D_a + D_b) - k K(D_sigma) for many spin-density pairs
+      !!
+      !! `build_fock_direct_uhf` for a whole batch, over one pass of the
+      !! integrals. **The spin densities are the true ones**, `C_sigma
+      !! C_sigma^T` and not the doubled closed-shell matrix, so what comes back
+      !! for set `p` is
+      !!
+      !!     F_a(p) = H + j J[D_a(p) + D_b(p)] - k K[D_a(p)]
+      !!     F_b(p) = H + j J[D_a(p) + D_b(p)] - k K[D_b(p)]
+      !!
+      !! -- **full** exchange of the same spin, not the half the closed-shell
+      !! build carries, which is the one place a restricted routine cannot
+      !! stand in for this one. Feeding it `D_a = D_b = D/2` reproduces
+      !! `build_fock_direct_many` on `D` exactly, and the test says so.
+      !!
+      !! **Screening is shared and density-independent by default**, as in the
+      !! closed-shell batch: every set sees the same quartets, so a batch is
+      !! bit-for-bit what the same pairs give one at a time, and an excitation
+      !! solver's trial vectors -- which shrink towards zero as it converges --
+      !! keep meeting the same linear map between applications.
+      !!
+      !! **Symmetric pairs, or antisymmetric ones if said so.** The six updates
+      !! per spin fold three of the eight permutations into a multiplicity
+      !! factor and stand in for the rest by symmetrising at the end, which
+      !! assumes each density is symmetric. Announced through `antisymmetric`
+      !! the same accumulation is exact for antisymmetric ones instead: the
+      !! Coulomb term is dropped, since it vanishes, and the output is
+      !! antisymmetrised rather than symmetrised. Both spins of every set carry
+      !! the one symmetry.
+      !!
+      !! The accumulator is a copy per thread, `2 n_set n^2` doubles of it, as
+      !! on the single-density path this is a copy of. That is what caps the
+      !! batch: `DEFAULT_RESPONSE_BATCH` vectors of a few hundred functions is
+      !! tens of megabytes a thread, and a few thousand functions would not be.
+      ! TODO(mqc): the accumulator is a copy per thread reduced under one
+      ! `critical`, which is what `build_fock_direct_many` abandoned for the
+      ! tile-lock scheme above it: the copies cost `2 n_set n^2` doubles a
+      ! thread and the reduction over them grows with the batch width, so a
+      ! wide unrestricted batch is capped by memory long before the integrals
+      ! run out. Port the tile locks here once this path is worth measuring.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :)             !! Core Hamiltonian, added to every set
+      real(dp), intent(in) :: d_alpha(:, :, :)    !! (n_ao, n_ao, n_set)
+      real(dp), intent(in) :: d_beta(:, :, :)     !! (n_ao, n_ao, n_set)
+      real(dp), intent(in) :: bounds(:, :)        !! From `schwarz_bounds`
+      real(dp), allocatable, intent(out) :: focks_a(:, :, :), focks_b(:, :, :)
+      type(direct_stats_t), intent(out) :: stats
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange, one by default.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of Coulomb, one by default. Zero is the attenuated pass of
+         !! a range-separated build, whose full-range pass already supplied it.
+      real(dp), intent(in), optional :: omega
+         !! Range separation, through `env(PTR_RANGE_OMEGA)`.
+      logical, intent(in), optional :: antisymmetric
+         !! Every density in the batch is antisymmetric. Off by default.
+      logical, intent(in), optional :: density_screen
+         !! Also skip a quartet whose largest contribution over every set and
+         !! both spins is negligible. Off by default, which is what keeps a
+         !! batch equal to the same pairs one at a time.
+
+      real(dp), allocatable :: buf(:), ga(:, :, :), gb(:, :, :)
+      real(dp), allocatable :: ga_local(:, :, :), gb_local(:, :, :)
+      real(dp), allocatable :: d_coul(:, :, :), da(:, :, :), db(:, :, :)
+      real(dp), allocatable :: dsh(:, :), dsh_set(:, :)
+      real(dp), allocatable :: env_local(:), bq(:, :)
+      type(eri_shell_table_t) :: tab
+      real(dp) :: kq, jf, fold
+      type(c_ptr) :: opt
+      integer :: s1, s2, s3, s4
+      integer :: d1, d2, d3, d4, o1, o2, o3, o4
+      integer :: shls(4)
+      integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n
+      integer :: ij, kl, npair, ipair, iset, n_set
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:), order(:)
+      integer :: itask
+      integer(int64) :: n_total, n_computed, n_screened, n_schwarz, n_density
+      real(dp) :: schwarz
+      real(dp) :: tol, deg, value, scaled
+      logical :: anti, weight_density
+
+      n = mol%nao
+      n_set = size(d_alpha, 3)
+      if (size(h, 1) /= n .or. size(h, 2) /= n &
+          .or. size(d_alpha, 1) /= n .or. size(d_alpha, 2) /= n &
+          .or. size(d_beta, 1) /= n .or. size(d_beta, 2) /= n &
+          .or. size(d_beta, 3) /= n_set) then
+         call error%set(ERROR_VALIDATION, "direct UHF Fock batch: matrix dimensions "// &
+                        "do not match the basis, or the two spins are different batches")
+         return
+      end if
+      if (n_set < 1) then
+         call error%set(ERROR_VALIDATION, "direct UHF Fock batch: no densities to "// &
+                        "contract against")
+         return
+      end if
+      allocate (focks_a(n, n, n_set), focks_b(n, n, n_set))
+
+      tol = DEFAULT_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+
+      ! The fused-sp view where the molecule carries one, as everywhere here.
+      call eri_shell_table(mol, tab)
+      call eri_schwarz_collapse(mol, bounds, bq)
+      dims = tab%dims
+      offs = tab%offs(1:tab%nbas)
+      block_max = tab%block_max
+
+      npair = tab%nbas*(tab%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do s1 = 1, tab%nbas
+         do s2 = 1, s1
+            ipair = ipair + 1
+            pair_i(ipair) = s1
+            pair_j(ipair) = s2
+         end do
+      end do
+      call pair_work_order(pair_i, pair_j, dims, order)
+
+      kq = 0.25_dp
+      if (present(k_scale)) kq = 0.25_dp*k_scale
+      jf = 1.0_dp
+      if (present(j_scale)) jf = j_scale
+      anti = .false.
+      if (present(antisymmetric)) anti = antisymmetric
+      fold = 1.0_dp
+      if (anti) then
+         jf = 0.0_dp
+         fold = -1.0_dp
+      end if
+
+      ! **Set index fastest**, in the densities and in the accumulators both:
+      ! the six updates land on six matrix elements, and with the set slowest
+      ! each is `n_set` scattered read-modify-writes a stride of `n^2` apart.
+      ! The closed-shell batch measured that layout costing almost linearly in
+      ! the batch width; this one is its twin.
+      allocate (d_coul(n_set, n, n), da(n_set, n, n), db(n_set, n, n))
+      do iset = 1, n_set
+         ! Coulomb sees half the total density, exchange the same-spin one,
+         ! which in the closed-shell case are the one matrix `D/2`. `j_scale`
+         ! rides on this matrix rather than on the Coulomb updates, which is
+         ! the same arithmetic one level out.
+         d_coul(iset, :, :) = jf*0.5_dp*(d_alpha(:, :, iset) + d_beta(:, :, iset))
+         da(iset, :, :) = d_alpha(:, :, iset)
+         db(iset, :, :) = d_beta(:, :, iset)
+      end do
+
+      ! The largest element per shell pair over every set and both spins, which
+      ! is what the density screen multiplies the Schwarz bound by. One for the
+      ! batch: the quartets kept have to be the same for every set.
+      weight_density = .false.
+      if (present(density_screen)) weight_density = density_screen
+      if (weight_density) then
+         allocate (dsh(tab%nbas, tab%nbas))
+         dsh = 0.0_dp
+         do iset = 1, n_set
+            call block_density_max(max(abs(jf*0.5_dp*(d_alpha(:, :, iset) &
+                                                      + d_beta(:, :, iset))), &
+                                       abs(d_alpha(:, :, iset)), &
+                                       abs(d_beta(:, :, iset))), &
+                                   tab%nbas, offs, dims, dsh_set)
+            dsh = max(dsh, dsh_set)
+            deallocate (dsh_set)
+         end do
+      else
+         allocate (dsh(0, 0))
+      end if
+
+      ! A copy, because the range-separation parameter lives in `env` and the
+      ! molecule is read-only here.
+      env_local = tab%env
+      if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
+
+      opt = c_null_ptr
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
+                                  tab%nbas, env_local)
+
+      allocate (ga(n_set, n, n), gb(n_set, n, n))
+      ga = 0.0_dp
+      gb = 0.0_dp
+
+      n_total = 0_int64
+      n_computed = 0_int64
+      n_screened = 0_int64
+      n_schwarz = 0_int64
+      n_density = 0_int64
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, tab, bq, dsh, weight_density, d_coul, da, db, ga, gb, &
+      !$omp           dims, offs, pair_i, pair_j, order, npair, tol, opt, n, &
+      !$omp           block_max, kq, jf, env_local, n_set) &
+      !$omp    private(itask, ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, &
+      !$omp            scaled, schwarz, buf, ga_local, gb_local) &
+      !$omp    reduction(+:n_total, n_computed, n_screened, n_schwarz, n_density)
+      allocate (buf(block_max**4))
+      allocate (ga_local(n_set, n, n), gb_local(n_set, n, n))
+      ga_local = 0.0_dp
+      gb_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
+      do itask = 1, npair
+         ij = order(itask)
+         s1 = pair_i(ij)
+         s2 = pair_j(ij)
+         d1 = dims(s1)
+         o1 = offs(s1)
+         d2 = dims(s2)
+         o2 = offs(s2)
+
+         do kl = 1, ij
+            s3 = pair_i(kl)
+            s4 = pair_j(kl)
+            d3 = dims(s3)
+            o3 = offs(s3)
+            d4 = dims(s4)
+            o4 = offs(s4)
+
+            n_total = n_total + 1_int64
+
+            deg = pair_degeneracy(s1, s2, s3, s4)
+            schwarz = bq(s1, s2)*bq(s3, s4)
+            if (weight_density) then
+               ! One for the Coulomb weight: `jf` is already inside `dsh`.
+               if (schwarz*density_weight(dsh, s1, s2, s3, s4, 1.0_dp, kq, deg) < tol) then
+                  n_screened = n_screened + 1_int64
+                  if (schwarz < tol) then
+                     n_schwarz = n_schwarz + 1_int64
+                  else
+                     n_density = n_density + 1_int64
+                  end if
+                  cycle
+               end if
+            else if (schwarz < tol) then
+               n_screened = n_screened + 1_int64
+               n_schwarz = n_schwarz + 1_int64
+               cycle
+            end if
+
+            shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     tab%bas, tab%nbas, env_local, opt)
+            if (ret == 0) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+            n_computed = n_computed + 1_int64
+
+            do f4 = 1, d4
+               b4 = o4 + f4
+               do f3 = 1, d3
+                  b3 = o3 + f3
+                  do f2 = 1, d2
+                     b2 = o2 + f2
+                     do f1 = 1, d1
+                        b1 = o1 + f1
+
+                        idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                        value = buf(idx)
+                        scaled = value*deg
+
+                        ! Two Coulomb and four exchange contributions per spin,
+                        ! each a contiguous vector over the batch. `ga` and `gb`
+                        ! are not symmetric as they stand; folding at the end is
+                        ! what stands in for the remaining permutations.
+                        if (jf /= 0.0_dp) then
+                           ga_local(:, b1, b2) = ga_local(:, b1, b2) + scaled*d_coul(:, b3, b4)
+                           ga_local(:, b3, b4) = ga_local(:, b3, b4) + scaled*d_coul(:, b1, b2)
+                           gb_local(:, b1, b2) = gb_local(:, b1, b2) + scaled*d_coul(:, b3, b4)
+                           gb_local(:, b3, b4) = gb_local(:, b3, b4) + scaled*d_coul(:, b1, b2)
+                        end if
+                        ga_local(:, b1, b3) = ga_local(:, b1, b3) - kq*scaled*da(:, b2, b4)
+                        ga_local(:, b2, b4) = ga_local(:, b2, b4) - kq*scaled*da(:, b1, b3)
+                        ga_local(:, b1, b4) = ga_local(:, b1, b4) - kq*scaled*da(:, b2, b3)
+                        ga_local(:, b2, b3) = ga_local(:, b2, b3) - kq*scaled*da(:, b1, b4)
+                        gb_local(:, b1, b3) = gb_local(:, b1, b3) - kq*scaled*db(:, b2, b4)
+                        gb_local(:, b2, b4) = gb_local(:, b2, b4) - kq*scaled*db(:, b1, b3)
+                        gb_local(:, b1, b4) = gb_local(:, b1, b4) - kq*scaled*db(:, b2, b3)
+                        gb_local(:, b2, b3) = gb_local(:, b2, b3) - kq*scaled*db(:, b1, b4)
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+
+      !$omp critical(mqc_direct_fock_uhf_many_accumulate)
+      ga = ga + ga_local
+      gb = gb + gb_local
+      !$omp end critical(mqc_direct_fock_uhf_many_accumulate)
+
+      deallocate (buf, ga_local, gb_local)
+      !$omp end parallel
+
+      stats%quartets_total = n_total
+      stats%quartets_computed = n_computed
+      stats%quartets_screened = n_screened
+      stats%screened_schwarz = n_schwarz
+      stats%screened_density = n_density
+
+      call libcint_del_optimizer(opt)
+
+      do iset = 1, n_set
+         do b2 = 1, n
+            do b1 = 1, n
+               focks_a(b1, b2, iset) = h(b1, b2) &
+                                       + 0.5_dp*(ga(iset, b1, b2) + fold*ga(iset, b2, b1))
+               focks_b(b1, b2, iset) = h(b1, b2) &
+                                       + 0.5_dp*(gb(iset, b1, b2) + fold*gb(iset, b2, b1))
+            end do
+         end do
+      end do
+
+      deallocate (ga, gb, d_coul, da, db, dsh, dims, offs, pair_i, pair_j, env_local)
+   end subroutine build_fock_direct_uhf_many
 
 end module mqc_czt_direct

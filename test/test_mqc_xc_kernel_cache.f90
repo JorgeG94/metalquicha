@@ -28,7 +28,9 @@ module test_mqc_xc_kernel_cache
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
                          xc_kernel_apply, xc_kernel_apply_many, &
-                         xc_kernel_cache_t, xc_kernel_cache_fill
+                         xc_kernel_cache_t, xc_kernel_cache_fill, &
+                         xc_kernel_apply_uks_many, xc_kernel_cache_uks_t, &
+                         xc_kernel_cache_uks_fill
    implicit none
    private
 
@@ -42,6 +44,15 @@ module test_mqc_xc_kernel_cache
                                                 0.0000_dp, 0.0000_dp, 0.0000_dp, &
                                                 0.0000_dp, 1.4300_dp, 1.1075_dp, &
                                                 0.0000_dp, -1.4300_dp, 1.1075_dp], [3, 3])
+
+   real(dp), parameter :: TOL_POLARISED = 1.0e-13_dp
+      !! The polarised kernel against the two restricted ones it contains.
+      !!
+      !! Not zero, unlike the cache comparisons: the restricted side asks
+      !! libxc for the unpolarised functional's second derivative and this
+      !! side asks for the polarised one at `rho_a = rho_b`, which are two
+      !! evaluations of the same analytic quantity and agree to the last few
+      !! bits rather than to all of them.
 
    integer, parameter :: N_TRIAL = 3
       !! Response densities per batch. More than one, because the batch loop
@@ -61,7 +72,13 @@ contains
                   new_unittest("a_cache_from_another_rung_is_refused", test_wrong_rung), &
                   new_unittest("an_over_budget_cache_is_declined", test_over_budget), &
                   new_unittest("cached_triplet_kernel_is_bit_identical", test_triplet), &
-                  new_unittest("a_singlet_only_cache_refuses_a_triplet", test_triplet_refused) &
+                  new_unittest("a_singlet_only_cache_refuses_a_triplet", test_triplet_refused), &
+                  new_unittest("the_polarised_gga_kernel_is_the_two_restricted_ones", &
+                               test_uks_pbe), &
+                  new_unittest("the_polarised_hybrid_kernel_is_the_two_restricted_ones", &
+                               test_uks_b3lyp), &
+                  new_unittest("the_polarised_lda_kernel_is_the_two_restricted_ones", &
+                               test_uks_lda) &
                   ]
    end subroutine collect_mqc_xc_kernel_cache
 
@@ -164,12 +181,11 @@ contains
       real(dp) :: worst, manifold_gap
       logical :: ok
 
-      ! As every other case here does, and for a reason this one makes sharp:
-      ! `triplet_case` reports a libxc-less build as `ok = .true.` -- nothing
-      ! went wrong -- while leaving `manifold_gap` at zero. Read as "the
-      ! outputs are meaningful" that is a failure of the second assertion
-      ! below, which is what turned three of the eleven CI jobs red: the three
-      ! built with MQC_ENABLE_LIBXC=OFF.
+      ! Redundant now that the helpers report a libxc-less build as `.not. ok`,
+      ! and kept because it states at the point of use what the whole file
+      ! depends on: no assertion below runs on a build with no kernel to
+      ! evaluate. Reading those zeros as measurements is what turned three of
+      ! the eleven CI jobs red -- the three built with MQC_ENABLE_LIBXC=OFF.
       if (.not. xc_available()) return
 
       call triplet_case("pbe", worst, manifold_gap, error, ok)
@@ -354,10 +370,7 @@ contains
       ok = .false.
       worst = 0.0_dp
       manifold_gap = 0.0_dp
-      if (.not. xc_available()) then
-         ok = .true.
-         return
-      end if
+      if (.not. xc_available()) return
 
       threads = 1
 !$    threads = omp_get_max_threads()
@@ -433,11 +446,12 @@ contains
       worst = 0.0_dp
       worst_one = 0.0_dp
       ! A build without libxc has no kernel to cache, and the suite treats that
-      ! as nothing to check rather than as a failure.
-      if (.not. xc_available()) then
-         ok = .true.
-         return
-      end if
+      ! as nothing to check rather than as a failure. `ok` stays false: it says
+      ! the outputs are measurements, and here there was nothing to measure.
+      ! The zeros happen to pass this helper's assertions, which are all
+      ! "the difference is zero" -- that made the skip look harmless here and
+      ! cost three CI jobs where the assertion was instead "the gap is large".
+      if (.not. xc_available()) return
 
       threads = 1
 !$    threads = omp_get_max_threads()
@@ -547,6 +561,219 @@ contains
          trials(:, :, i) = 0.5_dp*(trials(:, :, i) + transpose(trials(:, :, i)))
       end do
    end subroutine kernel_trials
+
+   subroutine test_uks_pbe(error)
+      !! PBE: the rung an unrestricted response solve actually runs on
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: singlet, triplet, cached, spread
+      logical :: ok
+
+      call uks_case("pbe", singlet, triplet, cached, spread, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, singlet < TOL_POLARISED, "the polarised kernel on an equal "// &
+                 "spin perturbation is not the restricted singlet kernel")
+      if (allocated(error)) return
+      call check(error, triplet < TOL_POLARISED, "the polarised kernel on an opposite "// &
+                 "spin perturbation is not the restricted triplet kernel")
+      if (allocated(error)) return
+      call check(error, cached == 0.0_dp, "the cached polarised kernel differs from "// &
+                 "the evaluated one")
+      if (allocated(error)) return
+      ! The two restricted kernels have to be far apart for the two checks
+      ! above to mean anything: agreeing with both would otherwise be one
+      ! statement, not two.
+      call check(error, spread > 1.0e-3_dp, "the singlet and triplet kernels are "// &
+                 "too close together for this comparison to say anything")
+   end subroutine test_uks_pbe
+
+   subroutine test_uks_b3lyp(error)
+      !! B3LYP: five libxc components, summed with weights, twice over
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: singlet, triplet, cached, spread
+      logical :: ok
+
+      call uks_case("b3lyp", singlet, triplet, cached, spread, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, singlet < TOL_POLARISED, "the polarised B3LYP kernel is not "// &
+                 "the restricted singlet one on an equal spin perturbation")
+      if (allocated(error)) return
+      call check(error, triplet < TOL_POLARISED, "the polarised B3LYP kernel is not "// &
+                 "the restricted triplet one on an opposite spin perturbation")
+      if (allocated(error)) return
+      call check(error, cached == 0.0_dp, "the cached polarised B3LYP kernel differs "// &
+                 "from the evaluated one")
+      if (allocated(error)) return
+      call check(error, spread > 1.0e-3_dp, "the singlet and triplet B3LYP kernels "// &
+                 "are too close together for this comparison to say anything")
+   end subroutine test_uks_b3lyp
+
+   subroutine test_uks_lda(error)
+      !! LDA: only `v2rho2` survives, so this is the rung where a wrong
+      !! `v2rhosigma` or `v2sigma2` index cannot hide the answer
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: singlet, triplet, cached, spread
+      logical :: ok
+
+      call uks_case("svwn", singlet, triplet, cached, spread, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, singlet < TOL_POLARISED, "the polarised LDA kernel is not "// &
+                 "the restricted singlet one")
+      if (allocated(error)) return
+      call check(error, triplet < TOL_POLARISED, "the polarised LDA kernel is not "// &
+                 "the restricted triplet one")
+      if (allocated(error)) return
+      call check(error, cached == 0.0_dp, "the cached polarised LDA kernel differs "// &
+                 "from the evaluated one")
+      if (allocated(error)) return
+      call check(error, spread > 1.0e-3_dp, "the singlet and triplet LDA kernels are "// &
+                 "too close together for this comparison to say anything")
+   end subroutine test_uks_lda
+
+   subroutine uks_case(functional, singlet, triplet, cached, spread, error, ok)
+      !! The polarised kernel against the two restricted ones it contains
+      !!
+      !! On a **closed shell**, where all three are defined and related
+      !! exactly. Perturb the two spins together, `drho_a = drho_b = drho/2`,
+      !! and the polarised kernel's alpha response is the restricted singlet
+      !! one; perturb them oppositely and it is the triplet one. Those are the
+      !! two combinations the restricted code computes directly, out of the
+      !! unpolarised functional and out of `triplet_component`; this routine
+      !! computes them out of the full spin-resolved second derivative, and
+      !! nothing but the physics makes the three agree.
+      !!
+      !! The disagreement that survives is libxc's own: the restricted side
+      !! evaluates the unpolarised functional and this side the polarised one
+      !! at `rho_a = rho_b`. The same number by two routes, to `TOL_POLARISED`.
+      character(len=*), intent(in) :: functional
+      real(dp), intent(out) :: singlet
+         !! Largest disagreement with the restricted singlet kernel
+      real(dp), intent(out) :: triplet
+         !! The same against the restricted triplet kernel
+      real(dp), intent(out) :: cached
+         !! Cached against uncached, which is expected to be zero
+      real(dp), intent(out) :: spread
+         !! How far apart the two restricted kernels are, so the two
+         !! comparisons above are two statements and not one
+      type(error_type), allocatable, intent(out) :: error
+      logical, intent(out) :: ok
+         !! Whether the four outputs above are measurements rather than the
+         !! zeros they start as. False both when libxc is absent and when the
+         !! setup below failed; the callers return on it either way.
+
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx, pol
+      type(xc_kernel_cache_uks_t) :: cache
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), trials(:, :, :), half(:, :)
+      real(dp), allocatable :: sing_r(:, :, :), trip_r(:, :, :)
+      real(dp), allocatable :: pa(:, :, :), pb(:, :, :), qa(:, :, :), qb(:, :, :)
+      real(dp), allocatable :: ca(:, :, :), cb(:, :, :)
+      real(dp), allocatable :: plus_a(:, :, :), plus_b(:, :, :)
+      real(dp), allocatable :: minus_a(:, :, :), minus_b(:, :, :)
+      integer :: nao, iset, threads
+
+      ok = .false.
+      singlet = 0.0_dp
+      triplet = 0.0_dp
+      cached = 0.0_dp
+      spread = 0.0_dp
+
+      ! Saying `.true.` here told the callers that four zeros were a result.
+      ! They return on `.not. ok` and were right to; what they got instead was
+      ! a `spread` of zero, which fails "the two kernels are far enough apart
+      ! for this comparison to say anything" on every job built without libxc.
+      ! The flag means the outputs are real, so with nothing to measure it is
+      ! false -- the same answer as a setup that failed, and the same handling.
+      if (.not. xc_available()) return
+
+      threads = 1
+!$    threads = omp_get_max_threads()
+!$    call omp_set_num_threads(1)
+
+      call reference_state(functional, mol, ctx, dens, err, ok)
+      if (.not. ok) then
+         call check(error, .false., "the reference Kohn-Sham state failed")
+!$       call omp_set_num_threads(threads)
+         return
+      end if
+      ok = .false.
+      ! The same functional and the same grid level, spin-polarised: libxc
+      ! fixes the channel at initialisation, so the unrestricted kernel needs
+      ! its own handles rather than the restricted context's.
+      call xc_context_create(mol, functional, pol, err, level=3, allow_half=.true., &
+                             polarized=.true.)
+      if (err%has_error()) then
+         call check(error, .false., "the polarised context failed: "//err%get_message())
+!$       call omp_set_num_threads(threads)
+         call ctx%destroy()
+         call mol%destroy()
+         return
+      end if
+
+      nao = size(dens, 1)
+      call kernel_trials(dens, trials)
+      half = 0.5_dp*dens
+      allocate (sing_r(nao, nao, N_TRIAL), trip_r(nao, nao, N_TRIAL))
+      allocate (plus_a(nao, nao, N_TRIAL), plus_b(nao, nao, N_TRIAL))
+      allocate (minus_a(nao, nao, N_TRIAL), minus_b(nao, nao, N_TRIAL))
+      allocate (pa(nao, nao, N_TRIAL), pb(nao, nao, N_TRIAL))
+      allocate (qa(nao, nao, N_TRIAL), qb(nao, nao, N_TRIAL))
+      allocate (ca(nao, nao, N_TRIAL), cb(nao, nao, N_TRIAL))
+      sing_r = 0.0_dp
+      trip_r = 0.0_dp
+      plus_a = 0.0_dp
+      plus_b = 0.0_dp
+      minus_a = 0.0_dp
+      minus_b = 0.0_dp
+      ca = 0.0_dp
+      cb = 0.0_dp
+      ! `drho_a = drho_b = drho/2` for the singlet combination, and
+      ! `drho_a = -drho_b = drho/2` for the triplet one.
+      pa = 0.5_dp*trials
+      pb = pa
+      qa = pa
+      qb = -pa
+
+      call xc_kernel_apply_many(ctx, mol, dens, trials, sing_r, err)
+      call xc_kernel_apply_many(ctx, mol, dens, trials, trip_r, err, triplet=.true.)
+      call xc_kernel_apply_uks_many(pol, mol, half, half, pa, pb, plus_a, plus_b, err)
+      call xc_kernel_apply_uks_many(pol, mol, half, half, qa, qb, minus_a, minus_b, err)
+      call xc_kernel_cache_uks_fill(pol, mol, half, half, cache, err)
+      call xc_kernel_apply_uks_many(pol, mol, half, half, pa, pb, ca, cb, err, &
+                                    cache=cache)
+
+!$    call omp_set_num_threads(threads)
+
+      call check(error,.not. err%has_error(), "a kernel apply or cache fill failed: "// &
+                 err%get_message())
+      if (allocated(error)) then
+         call pol%destroy()
+         call ctx%destroy()
+         call mol%destroy()
+         return
+      end if
+
+      do iset = 1, N_TRIAL
+         singlet = max(singlet, maxval(abs(plus_a(:, :, iset) - sing_r(:, :, iset))))
+         ! And the beta half, which a routine that filled only alpha would
+         ! leave at zero.
+         singlet = max(singlet, maxval(abs(plus_b(:, :, iset) - sing_r(:, :, iset))))
+         triplet = max(triplet, maxval(abs(minus_a(:, :, iset) - trip_r(:, :, iset))))
+         triplet = max(triplet, maxval(abs(minus_b(:, :, iset) + trip_r(:, :, iset))))
+         cached = max(cached, maxval(abs(ca(:, :, iset) - plus_a(:, :, iset))))
+         cached = max(cached, maxval(abs(cb(:, :, iset) - plus_b(:, :, iset))))
+         spread = max(spread, maxval(abs(sing_r(:, :, iset) - trip_r(:, :, iset))))
+      end do
+
+      call cache%destroy()
+      call pol%destroy()
+      call ctx%destroy()
+      call mol%destroy()
+      ok = .not. allocated(error)
+   end subroutine uks_case
 
 end module test_mqc_xc_kernel_cache
 

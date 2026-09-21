@@ -35,6 +35,7 @@ module test_mqc_json_reader
                               BACKEND_CZT, method_runs_on_cuest
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_dispersion, only: dispersion_available
+   use mqc_dispersion_d4, only: dispersion_d4_available
    use pic_types, only: dp
    implicit none
    private
@@ -1391,6 +1392,28 @@ contains
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
                  "an unwired correction must be refused, not silently accepted")
+      if (allocated(error)) return
+
+      ! "d4" is a second correction from a second library behind a second
+      ! option, so the same deck is accepted or refused by a different fact
+      ! about the build than "d3bj" is -- and the refusal has to name the D4
+      ! option, not the D3 one.
+      call write_deck('"method": "dft", "functional": "b3lyp", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"dispersion": "d4"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      if (dispersion_d4_available()) then
+         call check(error,.not. parse_error%has_error(), parse_error%get_message())
+         if (allocated(error)) return
+         call check(error, config%dft_dispersion, "naming a correction must switch it on")
+         if (allocated(error)) return
+         call check(error, trim(config%dft_dispersion_type), "d4")
+      else
+         call check(error, parse_error%has_error(), &
+                    "a build without dftd4 must refuse the keyword, not ignore it")
+         if (allocated(error)) return
+         call check(error, index(parse_error%get_message(), "MQC_ENABLE_DFTD4") > 0, &
+                    "a refused D4 deck must name MQC_ENABLE_DFTD4 and not MQC_ENABLE_DFTD3")
+      end if
    end subroutine test_dft_dispersion
 
    subroutine test_cc_spin_adapted(error)
@@ -1508,6 +1531,9 @@ contains
       call check(error, trim(config%excited_spin) == "both", &
                  "excited_states.spin must be stored lowercased")
       if (allocated(error)) return
+      call check(error, config%excited_spin_set, "a deck that wrote the spin key "// &
+                 "must be recorded as having written it")
+      if (allocated(error)) return
       call check(error, close_enough(config%excited_tolerance, 1.0e-7_dp))
       if (allocated(error)) return
       call check(error, config%excited_max_iter, 40)
@@ -1531,6 +1557,13 @@ contains
       if (allocated(error)) return
       call check(error, trim(config%excited_spin) == "singlet", &
                  "singlets are the default")
+      if (allocated(error)) return
+      ! The default and an explicit `"spin": "singlet"` are the same word and
+      ! not the same request: an unrestricted reference refuses the second and
+      ! answers the first, and this flag is the only thing that tells them
+      ! apart once the reader has run.
+      call check(error,.not. config%excited_spin_set, "a deck that named no spin "// &
+                 "must not be recorded as having named one")
       if (allocated(error)) return
       call check(error, close_enough(config%excited_tolerance, DEFAULT_EXCITED_TOL))
       if (allocated(error)) return

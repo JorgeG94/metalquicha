@@ -5,7 +5,7 @@ module mqc_result_types
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
    use mqc_error, only: error_t
    use mqc_calculation_defaults, only: STATE_SPIN_UNKNOWN, STATE_SPIN_SINGLET, &
-                                       STATE_SPIN_TRIPLET
+                                       STATE_SPIN_TRIPLET, STATE_SPIN_UNRESTRICTED
    implicit none
    private
 
@@ -15,6 +15,7 @@ module mqc_result_types
    public :: calculation_result_t  !! Main result container type
    public :: SCF_UNKNOWN, SCF_CONVERGED, SCF_NOT_CONVERGED
    public :: STATE_SPIN_UNKNOWN, STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
+   public :: STATE_SPIN_UNRESTRICTED
    public :: frontier_orbitals
    public :: scf_not_converged_message
    public :: scf_status_label
@@ -32,9 +33,10 @@ module mqc_result_types
    public :: result_recv, result_irecv  !! Receive result over MPI
 
    ! `STATE_SPIN_*` are defined in `mqc_calculation_defaults` and re-exported
-   ! above. They are declared beside the excitation solver's other constants
-   ! so that a backend can write the label without importing this module,
-   ! which carries `pic_mpi_lib` for the result transfer below.
+   ! above, `STATE_SPIN_UNRESTRICTED` among them. They are declared beside the
+   ! excitation solver's other constants so that a backend can write the label
+   ! without importing this module, which carries `pic_mpi_lib` for the result
+   ! transfer below.
 
    ! SCS-MP2 scaling parameters
    real(dp), parameter :: SCS_SS_SCALE = 1.0_dp/3.0_dp  !! SCS same-spin scaling factor

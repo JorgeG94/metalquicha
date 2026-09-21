@@ -113,12 +113,22 @@ jobs:
           # libxc is on so the CPU validation step below runs: twelve of those
           # cases name a functional, and it is the validation, not the build,
           # that catches an integral going subtly wrong.
+          # It also carries the dispersion libraries, and this is the right job
+          # for them rather than one of their own: `tblite` is OFF here, which
+          # is the configuration that made s-dftd3 and dftd4 first-class
+          # dependencies in the first place -- they arrive transitively through
+          # tblite, so a build without it is exactly where a Kohn-Sham
+          # correction would silently vanish. libxc is on, so the CPU validation
+          # step below runs and the dispersion cases in the manifest stop being
+          # skipped. No new matrix entry and no new job: the existing unit-test
+          # and validation steps cover them once the options are on.
           - name: "with libcint (instead of libfint)"
             backend: libcint
             tblite: false
             legacy_mpi: false
             libcint: true
             libxc: true
+            dftd: true
           # HDF5, which until this job existed was built by nothing in CI: the
           # hand-written C bindings and the checkpoint backend are ~1200 lines
           # that no workflow had ever compiled, and the option defaults to off
@@ -226,6 +236,8 @@ jobs:
                   -DMQC_ENABLE_HDF5=${{ matrix.hdf5 && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_DLFIND=${{ matrix.dlfind && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_CREST=${{ matrix.crest && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_DFTD3=${{ matrix.dftd && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_DFTD4=${{ matrix.dftd && 'ON' || 'OFF' }} \
                   ${{ matrix.crest && '-DWITH_GFN0=ON -DWITH_TBLITE=ON' || '' }} \
                   -B build
           fi

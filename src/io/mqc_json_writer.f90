@@ -11,7 +11,8 @@ module mqc_json_writer
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
    use mqc_fragment_table_writer, only: write_fragment_table
-   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                               STATE_SPIN_UNRESTRICTED
    use json_module, only: json_core, json_value
    implicit none
    private
@@ -588,9 +589,9 @@ contains
    pure function state_spin_label(data, i) result(label)
       !! The `STATE_SPIN_*` code of state `i` as the word a reader expects
       !!
-      !! "unknown" rather than a guess where the reference is unrestricted and
-      !! its roots are not spin eigenstates: there is no singlet or triplet to
-      !! report, and a label invented here would be believed.
+      !! "unrestricted" where the reference is one and its roots are not spin
+      !! eigenstates, and "unknown" where nothing assigned a spin at all. Never
+      !! a guess: a label invented here would be believed.
       type(json_output_data_t), intent(in) :: data
       integer, intent(in) :: i
       character(len=:), allocatable :: label
@@ -603,6 +604,8 @@ contains
          label = "singlet"
       case (STATE_SPIN_TRIPLET)
          label = "triplet"
+      case (STATE_SPIN_UNRESTRICTED)
+         label = "unrestricted"
       case default
          ! STATE_SPIN_UNKNOWN, and anything a later spin treatment adds
          ! without teaching this routine about it. The initialiser above

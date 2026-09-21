@@ -655,22 +655,37 @@ The integration grid, and how the quadrature walks it:
 - ``dispersion``: an empirical dispersion correction on top of the Kohn-Sham
   energy and gradient. ``"d3bj"`` is D3 with Becke-Johnson rational damping and
   no three-body term, which is what ``-D3(BJ)`` names in the literature.
+  ``"d4"`` is D4 with rational damping **and** the Axilrod-Teller-Muto
+  three-body term, which is what ``-D4`` names: the two flags are not the same
+  choice made twice, because D4's two-body-only and ATM parameter sets are
+  separately fitted tables and ATM is the library's own default.
   ``false``, or leaving the key out, is no correction; a bare ``true`` is
-  refused, because D3(BJ) and D3(0) are different numbers for the same
+  refused, because D3(BJ), D3(0) and D4 are different numbers for the same
   functional and nothing downstream could say which was meant.
 
-  The correction comes from `simple-dftd3 <https://github.com/dftd3/simple-dftd3>`_,
-  which is LGPL against this program's MIT, so it is **off at build time unless
-  asked for**: configure with ``-DMQC_ENABLE_DFTD3=ON``. A build without it
-  refuses a deck that names the key rather than quietly returning an undispersed
-  energy. The correction is reported on its own line and kept in its own slot,
-  not folded into the SCF energy.
+  **D4 depends on the total molecular charge.** It equilibrates atomic partial
+  charges before interpolating any dispersion coefficient, so
+  ``molecular_charge`` from the deck reaches it, and the same geometry run as a
+  cation and as a neutral gives two different D4 energies. D3 has no such
+  dependence.
 
-  A functional with no published D3 damping parameters is refused with the list
-  of those that have them, and so is a ``-V`` functional -- wB97X-V, wB97M-V,
-  B97M-V -- whose own non-local correlation already accounts for dispersion.
-  Asking for a Hessian with dispersion on takes the finite-difference path,
-  since the library supplies no second derivatives.
+  The corrections come from `simple-dftd3
+  <https://github.com/dftd3/simple-dftd3>`_ and `dftd4
+  <https://github.com/dftd4/dftd4>`_, both LGPL against this program's MIT, so
+  each is **off at build time unless asked for**: configure with
+  ``-DMQC_ENABLE_DFTD3=ON``, ``-DMQC_ENABLE_DFTD4=ON``, or both. The two are
+  independent, and a build without the library a deck asks for refuses the deck
+  -- naming the option that would have supplied it -- rather than quietly
+  returning an undispersed energy. The correction is reported on its own line
+  and kept in its own slot, not folded into the SCF energy.
+
+  A functional with no published damping parameters for the requested
+  correction is refused with the list of those that have them -- the two
+  libraries are asked separately, since a D3 parametrisation does not imply a
+  D4 one -- and so is a ``-V`` functional -- wB97X-V, wB97M-V, B97M-V -- whose
+  own non-local correlation already accounts for dispersion. Asking for a
+  Hessian with dispersion on takes the finite-difference path, since neither
+  library supplies second derivatives this code could add.
 
 .. note::
 
@@ -1470,7 +1485,14 @@ reference:
   different energies; anything else is refused by name.
 - ``spin`` (default: ``"singlet"``): ``"singlet"``, ``"triplet"`` or
   ``"both"``. Out of a closed shell the two spins are separate eigenproblems,
-  so ``"both"`` is two solves rather than one.
+  so ``"both"`` is two solves rather than one. **Over an unrestricted
+  reference this key is refused whichever of the three words it names**, and
+  naming none of them is how an unrestricted spectrum is asked for: such a
+  reference is not a spin eigenfunction, so neither are its roots, and
+  labelling them singlet or triplet would be labelling a mixture. Those roots
+  are reported with ``"spin": "unrestricted"`` in the output document -- a
+  fourth word that no deck may write, because it is a statement about what
+  came back rather than a request.
 - ``tolerance`` (default: 1e-6): residual at which a root is accepted.
   **Refused below 1e-8**: the exchange-correlation quadrature underneath
   carries more error than that on any grid a production run uses, so a tighter
@@ -1488,13 +1510,10 @@ reference:
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.
 
-**What is implemented is the Tamm-Dancoff approximation, singlets, over a
-restricted reference** -- Hartree-Fock or Kohn-Sham, on the CPU backend. Note
-that ``method`` still **defaults to** ``"rpa"``, which is not implemented: a
-deck setting only ``n_states`` is refused by name, and has to say
-``"method": "tda"`` until the full Casida solver lands. ``spin`` likewise
-defaults to the one value that works, so ``"triplet"`` and ``"both"`` are
-refused rather than approximated by the singlet operator.
+**What is implemented is the Tamm-Dancoff approximation and the full Casida
+problem, singlets and triplets over a restricted reference and the
+spin-blocked spectrum of an unrestricted one** -- Hartree-Fock or Kohn-Sham,
+on the CPU backend.
 
 **Only an unfragmented energy run may ask for a spectrum.** The solve happens
 on the converged orbitals of an SCF, and every driver reaches the same SCF --
@@ -1506,11 +1525,12 @@ rather than computed and discarded. Excited-state gradients are a separate
 piece of work -- a Z-vector solve for the relaxed density, not this solve run
 more often.
 
-A calculation that cannot have these states at all -- an unrestricted
-reference, a correlated method, a density-fitted reference, continuum
-solvation, a hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or
-the cuEST backend -- is refused by name too, rather than answered from an
-operator missing a term.
+A calculation that cannot have these states at all -- a correlated method, a
+density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
+meta-GGA functional, a VV10 term, or the cuEST backend -- is refused by name
+too, rather than answered from an operator missing a term. An
+**unrestricted** reference is not among them: it has its own spin-blocked
+response operator, subject to the ``spin`` rule above.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^

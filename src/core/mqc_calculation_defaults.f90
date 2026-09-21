@@ -53,16 +53,25 @@ module mqc_calculation_defaults
    !! excitation solver with it.
 
    integer, parameter, public :: STATE_SPIN_UNKNOWN = 0
-   !! The spin of an excited state was not assigned. What an unrestricted
-   !! reference gives: its roots are not spin eigenstates, so there is no
-   !! singlet or triplet label to attach and claiming one would be wrong.
+   !! The spin of an excited state was not assigned, by whatever produced it.
+   !! Not a claim about the state.
    integer, parameter, public :: STATE_SPIN_SINGLET = 1
    !! Spin-conserving excitation out of a closed shell.
    integer, parameter, public :: STATE_SPIN_TRIPLET = 3
    !! Spin-flipped excitation out of a closed shell. Numbered as the spin
    !! multiplicity 2S+1, so the code reads as the thing it names.
+   integer, parameter, public :: STATE_SPIN_UNRESTRICTED = -1
+   !! An excitation of an unrestricted reference, which is not a spin
+   !! eigenstate and so has no multiplicity to report.
    !!
-   !! These three live here, beside the excitation solver's other constants,
+   !! **Negative on purpose.** The two codes above are the multiplicities
+   !! they name, and this one is not a multiplicity at all -- a root of an
+   !! unrestricted response operator is a mixture, and any positive number
+   !! here would be read as the spin it was not. It is distinct from
+   !! `STATE_SPIN_UNKNOWN`, which says nothing was assigned; this says the
+   !! assignment does not exist.
+   !!
+   !! These four live here, beside the excitation solver's other constants,
    !! rather than in `mqc_result_types` where the container that carries them
    !! is: a backend has to write the label, and `mqc_result_types` pulls in
    !! `pic_mpi_lib` for the transfer of a result. Only the bridge should be
