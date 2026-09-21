@@ -41,7 +41,7 @@ module test_mqc_czt_tddft
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
    use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix, &
                             rpa_operator_t, build_rpa_operator, rpa_dense_matrices, &
                             response_excitations, excitation_spectrum_t, &
@@ -57,7 +57,7 @@ module test_mqc_czt_tddft
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, STATE_SPIN_SINGLET, &
-                               STATE_SPIN_TRIPLET
+                               STATE_SPIN_TRIPLET, STATE_SPIN_UNRESTRICTED
    implicit none
    private
 
@@ -652,6 +652,60 @@ module test_mqc_czt_tddft
    !! reference. Two solvers, two operators and one spectrum; measured
    !! 9.0e-14 on the worst of five, and 3.3e-14 in the triplet manifold.
    real(dp), parameter :: TOL_CASIDA = 1.0e-9_dp
+
+   integer, parameter :: OH_N_OV = 130
+      !! Spin-blocked rotations of the OH radical in cc-pVDZ: nineteen
+      !! functions, five alpha and four beta electrons, so `5*14 + 4*15`.
+
+   real(dp), parameter :: OH_BOHR(3, 2) = reshape([ &
+                                                  0.0_dp, 0.0_dp, 0.0_dp, &
+                                                  0.0_dp, 0.0_dp, 1.832467423856456_dp], &
+                                                  [3, 2])
+
+   real(dp), parameter :: OH_UHF_ENERGY = -75.393846033464_dp
+
+   real(dp), parameter :: OH_UHF_TRACE = 852.525539816128_dp
+
+   real(dp), parameter :: OH_UHF_FROBENIUS = 119.939597984151_dp
+
+   real(dp), parameter :: OH_UHF_TDA(5) = [ &
+                          0.006697638062_dp, 0.173272241494_dp, 0.326244801914_dp, &
+                          0.372883427182_dp, 0.431442526350_dp]
+
+   real(dp), parameter :: OH_UHF_RPA(5) = [ &
+                          0.169746047579_dp, 0.321231703197_dp, 0.370114042055_dp, &
+                          0.415769391408_dp, 0.453280297821_dp]
+
+   real(dp), parameter :: CATION_PBE_TDA(5) = [ &
+                          0.097595783031_dp, 0.240744153231_dp, 0.473433123899_dp, &
+                          0.508215741547_dp, 0.515707923119_dp]
+
+   real(dp), parameter :: CATION_B3LYP_TDA(5) = [ &
+                          0.091902458748_dp, 0.237603694194_dp, 0.484648424585_dp, &
+                          0.518092069836_dp, 0.529036148197_dp]
+
+   real(dp), parameter :: CATION_B3LYP_RPA(5) = [ &
+                          0.089312820588_dp, 0.236158714407_dp, 0.482329524466_dp, &
+                          0.517089540365_dp, 0.527087149050_dp]
+
+   real(dp), parameter :: CATION_CAM_TDA(3) = [ &
+                          0.088470327358_dp, 0.234583947377_dp, 0.487459262577_dp]
+
+   real(dp), parameter :: H2_TRIPLET_BOHR(3, 2) = reshape([ &
+                                                          0.0_dp, 0.0_dp, 0.0_dp, &
+                                                          0.0_dp, 0.0_dp, 1.4_dp], &
+                                                          [3, 2])
+
+   real(dp), parameter :: H2_TRIPLET_TDA(5) = [ &
+                          0.251093280011_dp, 0.598938222312_dp, 0.870154715086_dp, &
+                          0.870154715086_dp, 0.875564711106_dp]
+
+   real(dp), parameter :: EXCITED_FLOOR = 1.0e-3_dp
+      !! What the solver calls a rotation rather than an excitation, repeated
+      !! here so the paired test can assert that the near-zero root fell below
+      !! it rather than assume so.
+
+   real(dp), parameter :: TOL_UKS_MANIFOLD = 1.0e-9_dp
 
 contains
 
@@ -3455,6 +3509,29 @@ contains
       call check(error, worst < TOL_PAIRED_NORM, "an unrestricted amplitude is not "// &
                  "normalised to sum_spin(|X|^2 - |Y|^2) = 1")
    end subroutine test_uhf_amplitude_norm
+
+   function invariants_of(a) result(pair)
+      !! `trace(A)` and `||A||_F`, the two summaries a phase cannot move
+      !!
+      !! Two codes converging the same open shell agree on the orbitals only
+      !! up to a sign per orbital, and on a degenerate block only up to an
+      !! orthogonal mixing inside it. `A` is covariant under both -- it
+      !! carries one occupied and one virtual index on each side -- so its
+      !! trace and its Frobenius norm are the same numbers in either code
+      !! while almost no individual element is. A 130 by 130 matrix is too
+      !! large to pin element by element in a test file; these two are what
+      !! can be pinned, and between them they see every element.
+      real(dp), intent(in) :: a(:, :)
+      real(dp) :: pair(2)
+
+      integer :: i
+
+      pair = 0.0_dp
+      do i = 1, size(a, 1)
+         pair(1) = pair(1) + a(i, i)
+      end do
+      pair(2) = sqrt(sum(a*a))
+   end function invariants_of
 
 end module test_mqc_czt_tddft
 
