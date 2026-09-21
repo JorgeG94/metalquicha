@@ -170,6 +170,13 @@ MOLECULES = {
     "ch3": _mol("CH3", "C", planar_ah3("C", "H", 1.0790)),
     # Two of prism's waters, for the fragmented cases below.
     "w2dimer": Molecule(label="(H2O)2", element="O", xyz="sample_inputs/w2_dimer.xyz"),
+    # Hydronium, for the one charged case in the file. D4 equilibrates atomic
+    # charges from the *total* before it interpolates a dispersion coefficient,
+    # so a cation is the only kind of deck that can tell whether
+    # `molecular_charge` reached the library at all: this geometry's B3LYP-D4
+    # energy is -3.232e-4 at +1 and -6.180e-4 at 0. Held out of ALL -- it is
+    # here for that one question, not for a sweep.
+    "h3op": Molecule(label="H3O+", element="O", xyz="sample_inputs/h3op.xyz"),
     "o2": Molecule(label="O2", element="O", xyz="sample_inputs/o2.xyz"),
     "ar": _mol("Ar", "Ar", atom("Ar")),
     # --- species carrying an effective core potential --------------------
@@ -204,7 +211,8 @@ ECP_MOLECULES = ["rbh", "agh", "snh4", "teh2", "hi", "i2", "sr", "csh",
                  "auh", "hgcl2", "pbh4", "iatom"]
 
 ALL = [m for m in MOLECULES
-       if m not in ("oh", "o2", "ch3", "w2dimer", "hcn") and m not in ECP_MOLECULES]
+       if m not in ("oh", "o2", "ch3", "w2dimer", "hcn", "h3op")
+       and m not in ECP_MOLECULES]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -580,6 +588,36 @@ DFT_CASES = [
 DFTD3_CASES = [
     ("w2dimer", "cc-pvdz", "b3lyp", 3, -0.002331057328572),
     ("w2dimer", "cc-pvdz", "pbe", 3, -0.001475011597663),
+]
+
+#: Kohn-Sham plus -D4, as (molecule, basis, functional, level, charge, e_disp).
+#:
+#: Built the same way as DFTD3_CASES above and read the same way, with one
+#: addition that is the whole reason D4 is a separate entry and not a second
+#: spelling: **charge**. D4 equilibrates atomic partial charges from the total
+#: molecular charge before it interpolates a single dispersion coefficient, so
+#: the charge has to travel from the deck through to the library, and the only
+#: deck that can tell whether it did is a charged one. Hydronium is here for
+#: that: its B3LYP-D4 energy is -3.23e-4 at +1 and -6.18e-4 at 0, three
+#: hundred microhartree apart, so a build that dropped the charge fails this
+#: case by four orders of magnitude more than the tolerance.
+#:
+#: `expected_energy` is again a sum -- PySCF's Kohn-Sham total plus the
+#: dispersion energy below -- because PySCF has no D4 either. The dispersion
+#: half comes from dftd4's own Python bindings (4.2.0, the pin) on the same
+#: geometry in Bohr, with the same functional and the same total charge:
+#:
+#:     from dftd4.interface import DispersionModel, DampingParam
+#:     DispersionModel(numbers, coords_bohr, charge=q).get_dispersion(
+#:         DampingParam(method="b3lyp"), grad=False)["energy"]
+#:
+#: `DampingParam` leaves `atm=True`, which is the library's own default and
+#: what "-D4" names; this program asks for the same. Gated on `dftd4`, so a
+#: build without it skips these rather than failing them.
+DFTD4_CASES = [
+    ("w2dimer", "cc-pvdz", "b3lyp", 3, 0, -0.001687830169263),
+    ("w2dimer", "cc-pvdz", "pbe", 3, 0, -0.001076124703971),
+    ("h3op", "cc-pvdz", "b3lyp", 3, 1, -0.000323177738513),
 ]
 
 # Unrestricted Kohn-Sham, as (molecule, basis, functional, level, multiplicity).
@@ -1985,7 +2023,7 @@ def pyscf_uks(atoms, basis, functional, level, multiplicity):
     return mf.kernel(), mol.nao_nr()
 
 
-def pyscf_rks(atoms, basis, functional, level, aux="", ecp=""):
+def pyscf_rks(atoms, basis, functional, level, aux="", ecp="", charge=0):
     """Reference Kohn-Sham total energy, on the same grid level.
 
     `dft.RKS` builds its own grid from the same tables ours does, which is what
@@ -2006,7 +2044,10 @@ def pyscf_rks(atoms, basis, functional, level, aux="", ecp=""):
     table = ecp_for(ecp, symbols)
     if table:
         mol.ecp = table
-    mol.charge = 0
+    # Closed shell at whatever charge is asked for -- `spin` stays 0, so a
+    # charge that left an odd electron count would fail in `build` rather than
+    # quietly become a different state.
+    mol.charge = charge
     mol.spin = 0
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
     mol.verbose = 0
@@ -4000,6 +4041,28 @@ def main():
             "requires": "dftd3",
         })
         print(f"{mol.label:6s} {basis:12s} {functional:8s} D3(BJ) grid={level}  "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, level, charge, e_disp in DFTD4_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rks(mol.atoms, basis, functional, level, charge=charge)
+        energy += e_disp
+        tag = functional.replace("-", "") + "_d4"
+        deck = deck_for(f"{CPU_MQC}/dft", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft", charge=charge)
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": level, "dispersion": "d4"}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"KS {functional.upper()}-D4 {mol.label} {basis} grid {level} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+            "requires": "dftd4",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:8s} D4 q={charge:+d} grid={level}  "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, quantum, functional, epc, level, energy in NEO_CASES:
