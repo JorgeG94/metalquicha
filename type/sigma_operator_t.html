@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 0.3% of total for derived types.</p>Including implementation: 4 statements,  0.1% of total for derived types.">4 statements</a>
+                 title="<p> 0.3% of total for derived types.</p>Including implementation: 16 statements,  0.4% of total for derived types.">5 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -152,7 +152,8 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/sigma_operator_t.html#boundprocedure-apply~3">apply</a>
+            <a class="list-group-item" href="../type/sigma_operator_t.html#boundprocedure-apply~2">apply</a>
+            <a class="list-group-item" href="../type/sigma_operator_t.html#boundprocedure-apply_many">apply_many</a>
         </div>
       </div>
     </div>
@@ -179,6 +180,12 @@
 with, neither of which needs the vector shaped &ndash; and a restricted
 active space cannot shape it, its determinants not being a rectangle.
 Hence a flat vector and this type.</p>
+<p>The solver never applies a single vector on its own: it collects the
+vectors it wants and hands them over as a block through <code>apply_many</code>,
+whose default is a loop over <code>apply</code>. An operator whose cost is
+dominated by something a block can share &ndash; a Fock build over several
+densities, a quadrature grid walked once &ndash; overrides <code>apply_many</code> and
+gets that sharing without the solver knowing.</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherited by</h3>
@@ -211,7 +218,7 @@ Hence a flat vector and this type.</p>
 </g>
 </g>
 <!-- type~cas_operator_t&#45;&gt;type~sigma_operator_t -->
-<g id="type~~sigma_operator_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~sigma_operator_t~~InheritedByGraph_edge1" class="edge">
 <title>type~cas_operator_t&#45;&gt;type~sigma_operator_t</title>
 <path fill="none" stroke="#ff0000" d="M149.66,-47.3C139.08,-45.72 127.62,-44 116.42,-42.33"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="116.66,-38.83 106.25,-40.81 115.62,-45.75 116.66,-38.83"/>
@@ -226,7 +233,7 @@ Hence a flat vector and this type.</p>
 </g>
 </g>
 <!-- type~ormas_operator_t&#45;&gt;type~sigma_operator_t -->
-<g id="type~~sigma_operator_t~~InheritedByGraph_edge1" class="edge">
+<g id="type~~sigma_operator_t~~InheritedByGraph_edge2" class="edge">
 <title>type~ormas_operator_t&#45;&gt;type~sigma_operator_t</title>
 <path fill="none" stroke="#ff0000" d="M141.78,-19.88C133.39,-21.13 124.64,-22.44 116.05,-23.73"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="115.45,-20.28 106.08,-25.22 116.49,-27.2 115.45,-20.28"/>
@@ -294,7 +301,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-apply~3"></span>
+      <span class="anchor" id="boundprocedure-apply~2"></span>
       <h3>
           procedure(<a href='../interface/apply_sigma.html'>apply_sigma</a>), public, deferred ::
   <strong>apply</strong>
@@ -389,6 +396,105 @@ large graphs.</div>
   </div>
 
           </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-apply_many"></span>
+      <h3>
+          procedure, public ::
+  <strong>apply_many</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/apply_many_default.html'>apply_many_default</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/apply_many_default.html'>apply_many_default</a>(this, vectors, images, error)  
+</h3>
+    
+
+  <p><code>sigma = H c</code> for a block of vectors, one column at a time</p><a href="../proc/apply_many_default.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='sigma_operator_t.html'>sigma_operator_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>vectors</strong>(:,:)</td>
+            <td>
+<p>(n_determinants, n_vectors)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>images</strong>(:,:)</td>
+            <td>
+<p>(n_determinants, n_vectors)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              type(<a href='error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
       </section>
 
     <section>
@@ -400,8 +506,16 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! with, neither of which needs the vector shaped -- and a restricted</span>
 <span class="w">      </span><span class="c">!! active space cannot shape it, its determinants not being a rectangle.</span>
 <span class="w">      </span><span class="c">!! Hence a flat vector and this type.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The solver never applies a single vector on its own: it collects the</span>
+<span class="w">      </span><span class="c">!! vectors it wants and hands them over as a block through `apply_many`,</span>
+<span class="w">      </span><span class="c">!! whose default is a loop over `apply`. An operator whose cost is</span>
+<span class="w">      </span><span class="c">!! dominated by something a block can share -- a Fock build over several</span>
+<span class="w">      </span><span class="c">!! densities, a quadrature grid walked once -- overrides `apply_many` and</span>
+<span class="w">      </span><span class="c">!! gets that sharing without the solver knowing.</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="p">(</span><span class="n">apply_sigma</span><span class="p">),</span><span class="w"> </span><span class="k">deferred</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">apply</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">apply_many</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">apply_many_default</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">sigma_operator_t</span>
 </pre></div>
 
@@ -425,7 +539,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 14:23 +0000             </p>
+ on 2026-09-21 15:28 +0000             </p>
           </div>
         </div>
         <br>

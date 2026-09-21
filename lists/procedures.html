@@ -361,6 +361,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Set the logger verbosity the settings asked for</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/apply_many_default.html'>apply_many_default</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>sigma = H c</code> for a block of vectors, one column at a time</p><a href="../proc/apply_many_default.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/apply_partition.html'>apply_partition</a></td>
                  <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
                  <td>Subroutine</td>
@@ -2736,7 +2742,7 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                  <td><a href='../proc/initial_basis.html'>initial_basis</a></td>
                  <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
                  <td>Subroutine</td>
-                 <td><p>Starting vectors: the supplied ones, or the lowest determinants</p></td>
+                 <td><p>Starting vectors: the supplied ones, or the lowest determinants</p><a href="../proc/initial_basis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/initialize_fragmented_system.html'>initialize_fragmented_system</a></td>
@@ -2948,6 +2954,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td><p>ASCII lowercase, so a method name matches however a deck spells it</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/lowest_free.html'>lowest_free</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Function</td>
+                 <td><p>The determinant of lowest diagonal energy not already spoken for</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mass_weight_hessian.html'>mass_weight_hessian</a></td>
@@ -4012,6 +4024,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
                  <td><p>Process derivatives for a single intersection fragment</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/project_out_earlier.html'>project_out_earlier</a></td>
+                 <td><a href='../module/mqc_davidson.html'>mqc_davidson</a></td>
+                 <td>Function</td>
+                 <td><p>Project columns 1 to <code>iroot - 1</code> out of column <code>iroot</code>, in place</p><a href="../proc/project_out_earlier.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/project_translation_rotation.html'>project_translation_rotation</a></td>
@@ -5207,15 +5225,15 @@ guess would be read, validated and then silently ignored.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -5430,7 +5448,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 14:23 +0000             </p>
+ on 2026-09-21 15:28 +0000             </p>
           </div>
         </div>
         <br>

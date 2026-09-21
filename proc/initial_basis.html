@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">38 statements</a>
+                 title=" 0.2% of total for procedures.">42 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,14 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-best">best</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-i~153">i</a>
             <a class="list-group-item" href="../proc/initial_basis.html#variable-iroot~3">iroot</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-j~39">j</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-norm~5">norm</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-overlap~10">overlap</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-pick~2">pick</a>
-            <a class="list-group-item" href="../proc/initial_basis.html#variable-taken~2">taken</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-length">length</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-norm~2">norm</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-pick">pick</a>
+            <a class="list-group-item" href="../proc/initial_basis.html#variable-taken">taken</a>
         </div>
       </div>
     </div>
@@ -179,11 +176,21 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine initial_basis(diagonal, n_roots, ndet, basis, guess)  
+    <h2>private  subroutine initial_basis(diagonal, n_roots, ndet, basis, error, guess)  
 </h2>
     
 
     <p>Starting vectors: the supplied ones, or the lowest determinants</p>
+<p>The linear-dependence test here is on the <em>fraction</em> of a guess
+column that survives projection, for the reason <code>LINEAR_DEPENDENCE</code>
+gives: a test against an absolute length is a test of how long the
+caller happened to make its vectors. Comparing the surviving length
+against the column&rsquo;s own length is scale-free without rescaling the
+column, which would round every well-conditioned guess for the sake
+of the degenerate ones.</p>
+<p>Without a guess, <code>lowest_free</code> cannot come back empty: this branch
+takes <code>n_roots</code> determinants out of <code>ndet</code>, and <code>davidson_flat</code>
+refuses <code>n_roots &gt; ndet</code> before calling here.</p>
 
 
     <h3>Arguments</h3>
@@ -199,7 +206,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~6"></span>
+              <span class="anchor" id="variable-diagonal~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -214,7 +221,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~6"></span>
+              <span class="anchor" id="variable-n_roots~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -229,7 +236,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~7"></span>
+              <span class="anchor" id="variable-ndet~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -244,7 +251,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~9"></span>
+              <span class="anchor" id="variable-basis~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -259,7 +266,22 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~10"></span>
+              <span class="anchor" id="variable-error~61"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                <p>Set when a guess column cannot be replaced by any determinant</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -276,6 +298,168 @@
   </table>
 
     <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~initial_basis~~CallsGraph Pages: 1 -->
+<svg id="procinitial_basisCallsGraph" width="230pt" height="158pt"
+ viewBox="0.00 0.00 230.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~initial_basis~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<title>proc~~initial_basis~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 226,-154 226,4 -4,4"/>
+<!-- proc~initial_basis -->
+<g id="proc~~initial_basis~~CallsGraph_node1" class="node">
+<title>proc~initial_basis</title>
+<polygon fill="none" stroke="black" points="74,-87 0,-87 0,-63 74,-63 74,-87"/>
+<text text-anchor="middle" x="37" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">initial_basis</text>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~initial_basis~~CallsGraph_node2" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~initial_basis~~CallsGraph_node2"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="218.5,-150 113.5,-150 113.5,-126 218.5,-126 218.5,-150"/>
+<text text-anchor="middle" x="166" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~initial_basis&#45;&gt;proc~error_set -->
+<g id="proc~~initial_basis~~CallsGraph_edge1" class="edge">
+<title>proc~initial_basis&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M56.79,-87.1C71.06,-96.01 91.33,-108.07 110,-117 113.63,-118.74 117.44,-120.44 121.3,-122.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="120.31,-125.45 130.89,-125.97 122.95,-118.96 120.31,-125.45"/>
+</g>
+<!-- proc~lowest_free -->
+<g id="proc~~initial_basis~~CallsGraph_node3" class="node">
+<title>proc~lowest_free</title>
+<g id="a_proc~~initial_basis~~CallsGraph_node3"><a xlink:href="../proc/lowest_free.html" xlink:title="lowest_free">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="202.5,-108 129.5,-108 129.5,-84 202.5,-84 202.5,-108"/>
+<text text-anchor="middle" x="166" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">lowest_free</text>
+</a>
+</g>
+</g>
+<!-- proc~initial_basis&#45;&gt;proc~lowest_free -->
+<g id="proc~~initial_basis~~CallsGraph_edge2" class="edge">
+<title>proc~initial_basis&#45;&gt;proc~lowest_free</title>
+<path fill="none" stroke="#ff0000" d="M74.05,-80.96C88.12,-83.29 104.4,-85.98 119.27,-88.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="118.86,-91.92 129.3,-90.1 120,-85.01 118.86,-91.92"/>
+</g>
+<!-- proc~project_out_earlier -->
+<g id="proc~~initial_basis~~CallsGraph_node4" class="node">
+<title>proc~project_out_earlier</title>
+<g id="a_proc~~initial_basis~~CallsGraph_node4"><a xlink:href="../proc/project_out_earlier.html" xlink:title="project_out_earlier">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="222,-66 110,-66 110,-42 222,-42 222,-66"/>
+<text text-anchor="middle" x="166" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">project_out_earlier</text>
+</a>
+</g>
+</g>
+<!-- proc~initial_basis&#45;&gt;proc~project_out_earlier -->
+<g id="proc~~initial_basis~~CallsGraph_edge3" class="edge">
+<title>proc~initial_basis&#45;&gt;proc~project_out_earlier</title>
+<path fill="none" stroke="#ff0000" d="M74.05,-69.04C82.15,-67.7 90.99,-66.24 99.87,-64.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="100.58,-68.2 109.87,-63.12 99.44,-61.29 100.58,-68.2"/>
+</g>
+<!-- to_char -->
+<g id="proc~~initial_basis~~CallsGraph_node5" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="193,-24 139,-24 139,0 193,0 193,-24"/>
+<text text-anchor="middle" x="166" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~initial_basis&#45;&gt;to_char -->
+<g id="proc~~initial_basis~~CallsGraph_edge4" class="edge">
+<title>proc~initial_basis&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M56.79,-62.9C71.06,-53.99 91.33,-41.93 110,-33 116.19,-30.04 122.93,-27.18 129.49,-24.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="130.81,-27.82 138.89,-20.97 128.3,-21.29 130.81,-27.82"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-header">
   <h3 class="card-title">Called by</h3>
@@ -443,40 +627,6 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-best"></span>
-              real(kind=dp),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>best</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-i~153"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>i</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
               <span class="anchor" id="variable-iroot~3"></span>
               integer,
             </td>
@@ -494,15 +644,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~39"></span>
-              integer,
+              <span class="anchor" id="variable-length"></span>
+              real(kind=dp),
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>j</strong></td>
+            <td><strong>length</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -511,7 +661,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-norm~5"></span>
+              <span class="anchor" id="variable-norm~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -528,24 +678,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~10"></span>
-              real(kind=dp),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>overlap</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-pick~2"></span>
+              <span class="anchor" id="variable-pick"></span>
               integer,
             </td>
               <td>private</td>
@@ -562,7 +695,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-taken~2"></span>
+              <span class="anchor" id="variable-taken"></span>
               logical,
             </td>
               <td>private,</td>
@@ -593,47 +726,75 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">initial_basis</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span><span class="p">,</span><span class="w"> </span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">guess</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Starting vectors: the supplied ones, or the lowest determinants</span>
-<span class="w">      </span><span class="c">! TODO(mqc): a supplied vector that is linearly dependent on an earlier</span>
-<span class="w">      </span><span class="c">! one is left unnormalised rather than replaced, so the subspace starts</span>
-<span class="w">      </span><span class="c">! with a near-null column and the Ritz vectors built on it are meaningless.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The linear-dependence test here is on the *fraction* of a guess</span>
+<span class="w">      </span><span class="c">!! column that survives projection, for the reason `LINEAR_DEPENDENCE`</span>
+<span class="w">      </span><span class="c">!! gives: a test against an absolute length is a test of how long the</span>
+<span class="w">      </span><span class="c">!! caller happened to make its vectors. Comparing the surviving length</span>
+<span class="w">      </span><span class="c">!! against the column's own length is scale-free without rescaling the</span>
+<span class="w">      </span><span class="c">!! column, which would round every well-conditioned guess for the sake</span>
+<span class="w">      </span><span class="c">!! of the degenerate ones.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Without a guess, `lowest_free` cannot come back empty: this branch</span>
+<span class="w">      </span><span class="c">!! takes `n_roots` determinants out of `ndet`, and `davidson_flat`</span>
+<span class="w">      </span><span class="c">!! refuses `n_roots &gt; ndet` before calling here.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_roots</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<span class="w">         </span><span class="c">!! Set when a guess column cannot be replaced by any determinant</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">taken</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">best</span><span class="p">,</span><span class="w"> </span><span class="n">norm</span><span class="p">,</span><span class="w"> </span><span class="n">overlap</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iroot</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">pick</span><span class="p">,</span><span class="w"> </span><span class="n">j</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">norm</span><span class="p">,</span><span class="w"> </span><span class="n">length</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iroot</span><span class="p">,</span><span class="w"> </span><span class="n">pick</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">taken</span><span class="p">(</span><span class="n">ndet</span><span class="p">))</span>
+<span class="w">      </span><span class="n">taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
 <span class="w">            </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guess</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
-<span class="w">            </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">overlap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">dot_product</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">j</span><span class="p">),</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">))</span>
-<span class="w">               </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">overlap</span><span class="o">*</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
+<span class="w">            </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)))</span>
+<span class="w">            </span><span class="n">norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">project_out_earlier</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! A supplied vector the earlier ones already span leaves nothing</span>
+<span class="w">            </span><span class="c">! behind to normalise, and a near-null column makes every Ritz</span>
+<span class="w">            </span><span class="c">! vector built on it meaningless. Fall back to the lowest</span>
+<span class="w">            </span><span class="c">! determinant still free, which is where an absent guess would</span>
+<span class="w">            </span><span class="c">! have started, and keep falling back until something survives.</span>
+<span class="w">            </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">norm</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">LINEAR_DEPENDENCE</span><span class="o">*</span><span class="n">length</span><span class="p">)</span>
+<span class="w">               </span><span class="n">pick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lowest_free</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">taken</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pick</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">                  </span><span class="c">! Every determinant has been spent and the column is still</span>
+<span class="w">                  </span><span class="c">! null. Keeping it would seed the subspace with noise and</span>
+<span class="w">                  </span><span class="c">! report the resulting Ritz values as eigenvalues, so the</span>
+<span class="w">                  </span><span class="c">! solve stops instead.</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting vector "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">iroot</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">" is spanned by the ones before it, and all "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">to_char</span><span class="p">(</span><span class="n">ndet</span><span class="p">)</span><span class="o">//</span><span class="s2">" determinants have already been "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">"used to replace one."</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">taken</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">return</span>
+<span class="k">               end if</span>
+<span class="k">               </span><span class="n">taken</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">               </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">               </span><span class="n">basis</span><span class="p">(</span><span class="n">pick</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">               </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">               </span><span class="n">norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">project_out_earlier</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span>
 <span class="w">            </span><span class="k">end do</span>
-<span class="k">            </span><span class="n">norm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">dot_product</span><span class="p">(</span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">),</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)))</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">norm</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">LINEAR_DEPENDENCE</span><span class="p">)</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="o">/</span><span class="n">norm</span>
+<span class="k">            </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="o">/</span><span class="n">norm</span>
 <span class="w">         </span><span class="k">end do</span>
-<span class="k">         return</span>
+<span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">taken</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">taken</span><span class="p">(</span><span class="n">ndet</span><span class="p">))</span>
-<span class="w">      </span><span class="n">taken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<span class="w">      </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="k">      </span><span class="n">basis</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_roots</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">      </span><span class="k">do </span><span class="n">iroot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_roots</span>
-<span class="w">         </span><span class="n">pick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="n">best</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">)</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ndet</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">taken</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
-<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">diagonal</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">best</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               </span><span class="n">best</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">diagonal</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">               </span><span class="n">pick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span>
-<span class="w">            </span><span class="k">end if</span>
-<span class="k">         end do</span>
-<span class="k">         </span><span class="n">taken</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="c">! Never zero here; see the note on the routine.</span>
+<span class="w">         </span><span class="n">pick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lowest_free</span><span class="p">(</span><span class="n">diagonal</span><span class="p">,</span><span class="w"> </span><span class="n">taken</span><span class="p">)</span>
+<span class="w">         </span><span class="n">taken</span><span class="p">(</span><span class="n">pick</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="n">basis</span><span class="p">(</span><span class="n">pick</span><span class="p">,</span><span class="w"> </span><span class="n">iroot</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
 <span class="w">      </span><span class="k">end do</span>
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">taken</span><span class="p">)</span>
@@ -661,7 +822,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 14:23 +0000             </p>
+ on 2026-09-21 15:28 +0000             </p>
           </div>
         </div>
         <br>

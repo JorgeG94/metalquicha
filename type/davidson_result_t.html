@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/davidson_result_t.html#variable-converged~4">converged</a>
-            <a class="list-group-item" href="../type/davidson_result_t.html#variable-iterations~3">iterations</a>
+            <a class="list-group-item" href="../type/davidson_result_t.html#variable-converged~2">converged</a>
+            <a class="list-group-item" href="../type/davidson_result_t.html#variable-iterations">iterations</a>
             <a class="list-group-item" href="../type/davidson_result_t.html#variable-residuals~2">residuals</a>
             <a class="list-group-item" href="../type/davidson_result_t.html#variable-sigma_products~2">sigma_products</a>
-            <a class="list-group-item" href="../type/davidson_result_t.html#variable-values~8">values</a>
-            <a class="list-group-item" href="../type/davidson_result_t.html#variable-vectors~3">vectors</a>
+            <a class="list-group-item" href="../type/davidson_result_t.html#variable-values~5">values</a>
+            <a class="list-group-item" href="../type/davidson_result_t.html#variable-vectors~2">vectors</a>
         </div>
       </div>
     </div>
@@ -196,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~4"></span>
+              <span class="anchor" id="variable-converged~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -213,7 +213,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterations~3"></span>
+              <span class="anchor" id="variable-iterations"></span>
               integer,
             </td>
               <td>public</td>
@@ -259,12 +259,18 @@
 <td> =</td>
                 <td>0</td>
             <td>
-                <p>What the cost is actually made of</p>
+                <p>Columns handed to the operator, summed over the block calls</p>
+<p>That is the cost only for an operator that inherits the default
+<code>apply_many</code>, which is a loop over single-vector products. An
+operator that overrides it pays once per call for whatever the
+block shares, so <code>iterations</code> is the count to read there: the
+solver makes one block call before the loop and one more per
+iteration that expands the subspace.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~8"></span>
+              <span class="anchor" id="variable-values~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -281,7 +287,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-vectors~3"></span>
+              <span class="anchor" id="variable-vectors~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -313,7 +319,15 @@
 <span class="w">         </span><span class="c">!! (n_alpha, n_beta, n_roots), each normalised</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">residuals</span><span class="p">(:)</span><span class="w">    </span><span class="c">!! (n_roots), final norms</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sigma_products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">            </span><span class="c">!! What the cost is actually made of</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sigma_products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="c">!! Columns handed to the operator, summed over the block calls</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! That is the cost only for an operator that inherits the default</span>
+<span class="w">         </span><span class="c">!! `apply_many`, which is a loop over single-vector products. An</span>
+<span class="w">         </span><span class="c">!! operator that overrides it pays once per call for whatever the</span>
+<span class="w">         </span><span class="c">!! block shares, so `iterations` is the count to read there: the</span>
+<span class="w">         </span><span class="c">!! solver makes one block call before the loop and one more per</span>
+<span class="w">         </span><span class="c">!! iteration that expands the subspace.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">converged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">davidson_result_t</span>
 </pre></div>
@@ -338,7 +352,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 14:23 +0000             </p>
+ on 2026-09-21 15:28 +0000             </p>
           </div>
         </div>
         <br>

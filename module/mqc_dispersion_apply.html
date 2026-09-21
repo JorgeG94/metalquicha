@@ -194,11 +194,11 @@ forms; this one calls whichever pair was built and reports what it found.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_dispersion.html'>mqc_dispersion</a></li>
-                  <li class="list-inline-item"><a href='mqc_dispersion_d4.html'>mqc_dispersion_d4</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_dispersion.html'>mqc_dispersion</a></li>
                   <li class="list-inline-item"><a href='mqc_dispersion_names.html'>mqc_dispersion_names</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_d4.html'>mqc_dispersion_d4</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -812,18 +812,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1090.2,-294.96C1067.51,-291.98 1035.09,-286.47 1008,-276.98 990.92,-271 989.11,-263.85 972,-257.98 948.61,-249.96 921.51,-244.86 899.14,-241.71"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="899.6,-238.24 889.22,-240.39 898.67,-245.17 899.6,-238.24"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_dispersion_apply~~UsedByGraph_node26" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node26"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_dispersion_apply~~UsedByGraph_node26"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1158.5,-267.98 1080.5,-267.98 1080.5,-243.98 1158.5,-243.98 1158.5,-267.98"/>
 <text text-anchor="middle" x="1119.5" y="-253.58" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_dispersion_apply~~UsedByGraph_edge27" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1080.25,-253.24C1032.38,-249.81 950.47,-243.93 899.31,-240.27"/>
 <polygon fill="#ffaa00" stroke="#ffaa00" points="899.42,-236.77 889.19,-239.54 898.92,-243.75 899.42,-236.77"/>
 </g>
@@ -955,7 +955,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~10"></span>
+              <span class="anchor" id="variable-kind~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1000,7 +1000,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~11"></span>
+              <span class="anchor" id="variable-kind~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1050,7 +1050,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-kind~12"></span>
+              <span class="anchor" id="variable-kind~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1065,7 +1065,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~9"></span>
+              <span class="anchor" id="variable-functional~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1080,7 +1080,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~14"></span>
+              <span class="anchor" id="variable-charge~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1095,7 +1095,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~20"></span>
+              <span class="anchor" id="variable-atomic_numbers~16"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1110,7 +1110,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~23"></span>
+              <span class="anchor" id="variable-coordinates~18"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1125,7 +1125,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~26"></span>
+              <span class="anchor" id="variable-energy~17"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1140,7 +1140,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~15"></span>
+              <span class="anchor" id="variable-gradient~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1155,7 +1155,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~176"></span>
+              <span class="anchor" id="variable-error~116"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1198,7 +1198,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 14:23 +0000             </p>
+ on 2026-09-21 15:28 +0000             </p>
           </div>
         </div>
         <br>

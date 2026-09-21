@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for modules and submodules.">292 statements</a>
+                 title=" 1.2% of total for modules and submodules.">338 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -176,7 +176,19 @@
       </div>
     </div>
 
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_davidson.html#proc-lowest_free">lowest_free</a>
+            <a class="list-group-item" href="../module/mqc_davidson.html#proc-project_out_earlier">project_out_earlier</a>
+        </div>
+      </div>
+    </div>
+
       <div class="card mb-4">
       <a data-bs-toggle="collapse" href="#subs-0"
          aria-expanded="false" aria-controls="subs-0">
@@ -186,6 +198,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_davidson.html#proc-davidson_flat">davidson_flat</a>
             <a class="list-group-item" href="../module/mqc_davidson.html#proc-davidson_lowest">davidson_lowest</a>
+            <a class="list-group-item" href="../module/mqc_davidson.html#proc-apply_many_default">apply_many_default</a>
             <a class="list-group-item" href="../module/mqc_davidson.html#proc-cas_apply">cas_apply</a>
             <a class="list-group-item" href="../module/mqc_davidson.html#proc-initial_basis">initial_basis</a>
         </div>
@@ -223,16 +236,16 @@ checked separately rather than trusted because the solver seems to work.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
-                  <li class="list-inline-item">pic_lapack_interfaces</li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
+                  <li class="list-inline-item">pic_lapack_interfaces</li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
+                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -749,7 +762,10 @@ subspace for it to be worth adding, as a fraction of its own length.</p>
 <p><strong>The fraction is the point.</strong> Tested against the raw correction the
 threshold scales with the residual, so near convergence every
 correction looks tiny, the subspace stops growing, and the solve stalls
-short of its tolerance. Normalising first makes the test scale-free.</p>
+short of its tolerance. Normalising first makes the test scale-free.
+<code>initial_basis</code> reaches the same property from the other side, by
+measuring what survives against the column&rsquo;s own length, so that a
+guess it means to keep is handed on with its arithmetic untouched.</p>
             </td>
         </tr>
         <tr>
@@ -806,7 +822,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~97"></span>
+              <span class="anchor" id="variable-this~23"></span>
               class(<a href='../type/sigma_operator_t.html'>sigma_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -851,7 +867,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~160"></span>
+              <span class="anchor" id="variable-error~56"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -902,7 +918,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~4"></span>
+              <span class="anchor" id="variable-converged~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -919,7 +935,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterations~3"></span>
+              <span class="anchor" id="variable-iterations"></span>
               integer,
             </td>
               <td>public</td>
@@ -965,12 +981,12 @@ diagonal approaches the ground state energy as the expansion converges.</p>
 <td> =</td>
                 <td>0</td>
             <td>
-<p>What the cost is actually made of</p>
+<p>Columns handed to the operator, summed over the block calls</p><a href="../type/davidson_result_t.html#variable-sigma_products~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~8"></span>
+              <span class="anchor" id="variable-values~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -987,7 +1003,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-vectors~3"></span>
+              <span class="anchor" id="variable-vectors~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1031,7 +1047,12 @@ diagonal approaches the ground state energy as the expansion converges.</p>
           <tbody>
               <tr>
                 <td>  procedure(<a href='../interface/apply_sigma.html'>apply_sigma</a>), public, deferred ::
-  <strong><a href='../type/sigma_operator_t.html#boundprocedure-apply~3'>apply</a></strong></td>
+  <strong><a href='../type/sigma_operator_t.html#boundprocedure-apply~2'>apply</a></strong></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/sigma_operator_t.html#boundprocedure-apply_many'>apply_many</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/apply_many_default.html'>apply_many_default</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1064,7 +1085,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~12"></span>
+              <span class="anchor" id="variable-alpha~6"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
               <td>public,</td>
@@ -1081,7 +1102,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~12"></span>
+              <span class="anchor" id="variable-beta~6"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
               <td>public,</td>
@@ -1098,7 +1119,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~9"></span>
+              <span class="anchor" id="variable-folded~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1115,7 +1136,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~12"></span>
+              <span class="anchor" id="variable-na~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1132,7 +1153,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nb~9"></span>
+              <span class="anchor" id="variable-nb~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1158,7 +1179,12 @@ diagonal approaches the ground state energy as the expansion converges.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/cas_operator_t.html#boundprocedure-apply~4'>apply</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cas_apply.html'>cas_apply</a></td>
+  <strong><a href='../type/cas_operator_t.html#boundprocedure-apply~3'>apply</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cas_apply.html'>cas_apply</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/sigma_operator_t.html#boundprocedure-apply_many'>apply_many</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/apply_many_default.html'>apply_many_default</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1169,6 +1195,130 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </section>
         <br>
 
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-lowest_free"></span> <h3>private  function <a href='../proc/lowest_free.html'>lowest_free</a>(diagonal, taken) result(pick)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The determinant of lowest diagonal energy not already spoken for</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-diagonal~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>diagonal</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-taken~2"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>taken</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer</small>
+    </h4>
+    <p>Zero when every determinant has been taken</p>
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-project_out_earlier"></span> <h3>private  function <a href='../proc/project_out_earlier.html'>project_out_earlier</a>(basis, iroot) result(norm)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Project columns 1 to <code>iroot - 1</code> out of column <code>iroot</code>, in place</p><a href="../proc/project_out_earlier.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basis</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iroot~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iroot</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
+    </h4>
+    <p>What is left of the column&rsquo;s length, before it is normalised</p>
+
+    </div>
+  </div>
+
+        </section>
+        <br>
 
         <section>
           <h2>Subroutines</h2>
@@ -1207,7 +1357,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~5"></span>
+              <span class="anchor" id="variable-diagonal~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1222,7 +1372,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~5"></span>
+              <span class="anchor" id="variable-n_roots~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1237,7 +1387,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~9"></span>
+              <span class="anchor" id="variable-values~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1307,12 +1457,14 @@ diagonal approaches the ground state energy as the expansion converges.</p>
             <td>::</td>
             <td><strong>sigma_products</strong></td>
             <td>
-
+<p>Columns handed to the operator, not calls made to it. The two
+differ for an operator that overrides <code>apply_many</code>; see
+<code>davidson_result_t</code>.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~5"></span>
+              <span class="anchor" id="variable-converged~3"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1327,7 +1479,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~163"></span>
+              <span class="anchor" id="variable-error~60"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1342,7 +1494,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~9"></span>
+              <span class="anchor" id="variable-tolerance~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1357,7 +1509,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations~4"></span>
+              <span class="anchor" id="variable-max_iterations~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1389,7 +1541,7 @@ the determinant space.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~9"></span>
+              <span class="anchor" id="variable-guess~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1406,7 +1558,7 @@ reference determinant and its nearest neighbours in energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~13"></span>
+              <span class="anchor" id="variable-verbose~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1439,7 +1591,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-label~6"></span>
+              <span class="anchor" id="variable-label~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -1499,7 +1651,7 @@ curvature, not an energy.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-folded~10"></span>
+              <span class="anchor" id="variable-folded~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1514,7 +1666,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~4"></span>
+              <span class="anchor" id="variable-diagonal~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1529,7 +1681,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-alpha~13"></span>
+              <span class="anchor" id="variable-alpha~7"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1544,7 +1696,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-beta~13"></span>
+              <span class="anchor" id="variable-beta~7"></span>
               type(<a href='../type/link_table_t.html'>link_table_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1559,7 +1711,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~4"></span>
+              <span class="anchor" id="variable-n_roots~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1574,7 +1726,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~51"></span>
+              <span class="anchor" id="variable-result~6"></span>
               type(<a href='../type/davidson_result_t.html'>davidson_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1589,7 +1741,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~162"></span>
+              <span class="anchor" id="variable-error~59"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1604,7 +1756,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~8"></span>
+              <span class="anchor" id="variable-tolerance~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1619,7 +1771,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations~3"></span>
+              <span class="anchor" id="variable-max_iterations~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1649,7 +1801,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~8"></span>
+              <span class="anchor" id="variable-guess~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1664,7 +1816,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~12"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1703,6 +1855,91 @@ constant this adds back.</p>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-apply_many_default"></span> <h3>private  subroutine <a href='../proc/apply_many_default.html'>apply_many_default</a>(this, vectors, images, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>sigma = H c</code> for a block of vectors, one column at a time</p><a href="../proc/apply_many_default.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~24"></span>
+              class(<a href='../type/sigma_operator_t.html'>sigma_operator_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-vectors~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>vectors</strong>(:,:)</td>
+            <td>
+<p>(n_determinants, n_vectors)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-images"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>images</strong>(:,:)</td>
+            <td>
+<p>(n_determinants, n_vectors)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~57"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-cas_apply"></span> <h3>private  subroutine <a href='../proc/cas_apply.html'>cas_apply</a>(this, vector, image, error)  
 </h3></div>
     <div class="card-body">
@@ -1722,7 +1959,7 @@ constant this adds back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~98"></span>
+              <span class="anchor" id="variable-this~25"></span>
               class(<a href='../type/cas_operator_t.html'>cas_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1767,7 +2004,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~161"></span>
+              <span class="anchor" id="variable-error~58"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1788,11 +2025,11 @@ constant this adds back.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-initial_basis"></span> <h3>private  subroutine <a href='../proc/initial_basis.html'>initial_basis</a>(diagonal, n_roots, ndet, basis, guess)  
+    <div class="card-header codesum"><span class="anchor" id="proc-initial_basis"></span> <h3>private  subroutine <a href='../proc/initial_basis.html'>initial_basis</a>(diagonal, n_roots, ndet, basis, error, guess)  
 </h3></div>
     <div class="card-body">
           
-  <p>Starting vectors: the supplied ones, or the lowest determinants</p>
+  <p>Starting vectors: the supplied ones, or the lowest determinants</p><a href="../proc/initial_basis.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1807,7 +2044,7 @@ constant this adds back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-diagonal~6"></span>
+              <span class="anchor" id="variable-diagonal~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1822,7 +2059,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_roots~6"></span>
+              <span class="anchor" id="variable-n_roots~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1837,7 +2074,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~7"></span>
+              <span class="anchor" id="variable-ndet~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1852,7 +2089,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~9"></span>
+              <span class="anchor" id="variable-basis~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1867,7 +2104,22 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~10"></span>
+              <span class="anchor" id="variable-error~61"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+<p>Set when a guess column cannot be replaced by any determinant</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-guess~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1910,7 +2162,7 @@ constant this adds back.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-20 14:23 +0000             </p>
+ on 2026-09-21 15:28 +0000             </p>
           </div>
         </div>
         <br>
