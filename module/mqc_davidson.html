@@ -236,16 +236,16 @@ checked separately rather than trusted because the solver seems to work.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_determinants.html'>mqc_determinants</a></li>
-                  <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_convergence_report.html'>mqc_convergence_report</a></li>
                   <li class="list-inline-item">pic_lapack_interfaces</li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_ci.html'>mqc_ci</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -822,7 +822,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~42"></span>
+              <span class="anchor" id="variable-this~27"></span>
               class(<a href='../type/sigma_operator_t.html'>sigma_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -867,7 +867,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~65"></span>
+              <span class="anchor" id="variable-error~37"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -918,7 +918,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~6"></span>
+              <span class="anchor" id="variable-converged~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -935,7 +935,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iterations~2"></span>
+              <span class="anchor" id="variable-iterations"></span>
               integer,
             </td>
               <td>public</td>
@@ -986,7 +986,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~5"></span>
+              <span class="anchor" id="variable-values~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1136,7 +1136,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-na~5"></span>
+              <span class="anchor" id="variable-na~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1232,7 +1232,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-taken~2"></span>
+              <span class="anchor" id="variable-taken~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1277,7 +1277,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~7"></span>
+              <span class="anchor" id="variable-basis~6"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1387,7 +1387,7 @@ diagonal approaches the ground state energy as the expansion converges.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-values~6"></span>
+              <span class="anchor" id="variable-values~7"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1464,7 +1464,7 @@ differ for an operator that overrides <code>apply_many</code>; see
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-converged~7"></span>
+              <span class="anchor" id="variable-converged~3"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1479,7 +1479,7 @@ differ for an operator that overrides <code>apply_many</code>; see
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~69"></span>
+              <span class="anchor" id="variable-error~41"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1494,7 +1494,7 @@ differ for an operator that overrides <code>apply_many</code>; see
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~12"></span>
+              <span class="anchor" id="variable-tolerance~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1509,7 +1509,7 @@ differ for an operator that overrides <code>apply_many</code>; see
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations~2"></span>
+              <span class="anchor" id="variable-max_iterations~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1524,7 +1524,7 @@ differ for an operator that overrides <code>apply_many</code>; see
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_subspace~2"></span>
+              <span class="anchor" id="variable-max_subspace~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1541,7 +1541,7 @@ the determinant space.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~4"></span>
+              <span class="anchor" id="variable-guess~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1558,7 +1558,7 @@ reference determinant and its nearest neighbours in energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~10"></span>
+              <span class="anchor" id="variable-verbose~5"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1726,7 +1726,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~33"></span>
+              <span class="anchor" id="variable-result~13"></span>
               type(<a href='../type/davidson_result_t.html'>davidson_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1741,7 +1741,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~68"></span>
+              <span class="anchor" id="variable-error~40"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1756,7 +1756,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~11"></span>
+              <span class="anchor" id="variable-tolerance~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1771,7 +1771,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iterations"></span>
+              <span class="anchor" id="variable-max_iterations~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1786,7 +1786,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_subspace"></span>
+              <span class="anchor" id="variable-max_subspace~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1801,7 +1801,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~3"></span>
+              <span class="anchor" id="variable-guess~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1816,7 +1816,7 @@ curvature, not an energy.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~9"></span>
+              <span class="anchor" id="variable-verbose~4"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1874,7 +1874,7 @@ constant this adds back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~43"></span>
+              <span class="anchor" id="variable-this~28"></span>
               class(<a href='../type/sigma_operator_t.html'>sigma_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1919,7 +1919,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~66"></span>
+              <span class="anchor" id="variable-error~38"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1959,7 +1959,7 @@ constant this adds back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~44"></span>
+              <span class="anchor" id="variable-this~29"></span>
               class(<a href='../type/cas_operator_t.html'>cas_operator_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2004,7 +2004,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~67"></span>
+              <span class="anchor" id="variable-error~39"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2074,7 +2074,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndet~3"></span>
+              <span class="anchor" id="variable-ndet~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2089,7 +2089,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~6"></span>
+              <span class="anchor" id="variable-basis~5"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -2104,7 +2104,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~70"></span>
+              <span class="anchor" id="variable-error~42"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2119,7 +2119,7 @@ constant this adds back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~5"></span>
+              <span class="anchor" id="variable-guess~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2162,7 +2162,7 @@ constant this adds back.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 18:40 +0000             </p>
+ on 2026-09-21 20:20 +0000             </p>
           </div>
         </div>
         <br>
