@@ -197,20 +197,20 @@ hybrid cannot end up with mismatched Coulomb and XC definitions.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_apply.html'>mqc_dispersion_apply</a></li>
+                  <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></li>
+                  <li class="list-inline-item"><a href='mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_dispersion_apply.html'>mqc_dispersion_apply</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1608,7 +1608,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-options~2"></span>
+              <span class="anchor" id="variable-options~3"></span>
               type(<a href='../type/dft_options_t.html'>dft_options_t</a>),
             </td>
               <td>public</td>
@@ -1634,17 +1634,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_energy.html'>dft_calc_energy</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_energy.html'>dft_calc_energy</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
                   <td></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
+  <strong><a href='../type/dft_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1677,7 +1677,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-accelerator"></span>
+              <span class="anchor" id="variable-accelerator~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1696,7 +1696,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf"></span>
+              <span class="anchor" id="variable-allow_crap_scf~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1713,7 +1713,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~3"></span>
+              <span class="anchor" id="variable-angular_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1730,7 +1730,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_named~2"></span>
+              <span class="anchor" id="variable-aux_basis_named~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1747,7 +1747,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~3"></span>
+              <span class="anchor" id="variable-aux_basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1764,7 +1764,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-backend~3"></span>
+              <span class="anchor" id="variable-backend~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1781,7 +1781,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set"></span>
+              <span class="anchor" id="variable-basis_set~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1815,7 +1815,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cartesian~2"></span>
+              <span class="anchor" id="variable-cartesian~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -1832,7 +1832,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-convergence_metric"></span>
+              <span class="anchor" id="variable-convergence_metric~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1851,7 +1851,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~2"></span>
+              <span class="anchor" id="variable-density_fitting~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1868,7 +1868,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1885,7 +1885,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank"></span>
+              <span class="anchor" id="variable-device_rank~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1902,7 +1902,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size"></span>
+              <span class="anchor" id="variable-diis_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1919,7 +1919,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dispersion_type~2"></span>
+              <span class="anchor" id="variable-dispersion_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1937,7 +1937,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp_set"></span>
+              <span class="anchor" id="variable-ecp_set~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1954,7 +1954,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1971,7 +1971,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core"></span>
+              <span class="anchor" id="variable-freeze_core~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -1991,7 +1991,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~8"></span>
+              <span class="anchor" id="variable-functional~6"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2008,7 +2008,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2025,7 +2025,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~3"></span>
+              <span class="anchor" id="variable-grid_level~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2042,7 +2042,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_type~2"></span>
+              <span class="anchor" id="variable-grid_type"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2059,7 +2059,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~6"></span>
+              <span class="anchor" id="variable-guess~5"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2072,12 +2072,12 @@ test or a new call path.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;sap&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~6" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~5" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps"></span>
+              <span class="anchor" id="variable-guess_steps~2"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -2095,7 +2095,7 @@ preliminary SCF in order.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_displacement"></span>
+              <span class="anchor" id="variable-hessian_displacement~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2107,12 +2107,12 @@ preliminary SCF in order.</p>
 <td> =</td>
                 <td>DEFAULT_DISPLACEMENT</td>
             <td>
-<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Step for a finite-difference Hessian, in Bohr.</p><a href="../type/scf_options_t.html#variable-hessian_displacement~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_response_batch"></span>
+              <span class="anchor" id="variable-hessian_response_batch~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2130,7 +2130,7 @@ long it may take, and how many perturbations share a pass.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_response_max_iter"></span>
+              <span class="anchor" id="variable-hessian_response_max_iter~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2147,7 +2147,7 @@ long it may take, and how many perturbations share a pass.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian_response_tol"></span>
+              <span class="anchor" id="variable-hessian_response_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2164,7 +2164,7 @@ long it may take, and how many perturbations share a pass.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-incremental_fock"></span>
+              <span class="anchor" id="variable-incremental_fock~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2184,7 +2184,7 @@ which is the first thing to rule out when a run stalls.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_shift"></span>
+              <span class="anchor" id="variable-level_shift~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2202,7 +2202,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-linear_dependence"></span>
+              <span class="anchor" id="variable-linear_dependence~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2219,7 +2219,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter"></span>
+              <span class="anchor" id="variable-max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2236,7 +2236,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core"></span>
+              <span class="anchor" id="variable-n_frozen_core~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2270,7 +2270,7 @@ Zero is off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pcm"></span>
+              <span class="anchor" id="variable-pcm~2"></span>
               type(<a href='../type/pcm_config_t.html'>pcm_config_t</a>),
             </td>
               <td>public</td>
@@ -2288,7 +2288,7 @@ functional, so every extending type inherits it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-properties~5"></span>
+              <span class="anchor" id="variable-properties~6"></span>
               type(<a href='../type/properties_config_t.html'>properties_config_t</a>),
             </td>
               <td>public</td>
@@ -2339,7 +2339,7 @@ functional, so every extending type inherits it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-second_order"></span>
+              <span class="anchor" id="variable-second_order~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2353,12 +2353,12 @@ functional, so every extending type inherits it.</p>
             <td>
 <p><code>keywords.scf.second_order</code>. Converge the closed-shell reference by
 trust-region Newton on the orbital rotations, once DIIS has brought
-it close.</p><a href="../type/scf_numerics_t.html#variable-second_order" class="pull-right"><emph>Read more&hellip;</emph></a>
+it close.</p><a href="../type/scf_numerics_t.html#variable-second_order~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-soscf_start"></span>
+              <span class="anchor" id="variable-soscf_start~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2377,7 +2377,7 @@ above.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical"></span>
+              <span class="anchor" id="variable-spherical~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2394,7 +2394,7 @@ above.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stability"></span>
+              <span class="anchor" id="variable-stability~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2413,7 +2413,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stability_max_iter"></span>
+              <span class="anchor" id="variable-stability_max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2425,12 +2425,12 @@ report whether the solution is a minimum. See
 <td> =</td>
                 <td>DEFAULT_STABILITY_MAX_ITER</td>
             <td>
-<p>Where that diagonalisation stops and how long it may take.</p><a href="../type/scf_options_t.html#variable-stability_max_iter" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Where that diagonalisation stops and how long it may take.</p><a href="../type/scf_options_t.html#variable-stability_max_iter~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stability_tol"></span>
+              <span class="anchor" id="variable-stability_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2447,7 +2447,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~2"></span>
+              <span class="anchor" id="variable-unrestricted~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2464,7 +2464,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis"></span>
+              <span class="anchor" id="variable-use_diis~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2481,7 +2481,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_dispersion~2"></span>
+              <span class="anchor" id="variable-use_dispersion"></span>
               logical,
             </td>
               <td>public</td>
@@ -2498,7 +2498,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~4"></span>
+              <span class="anchor" id="variable-verbose~13"></span>
               logical,
             </td>
               <td>public</td>
@@ -2563,7 +2563,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~29"></span>
+              <span class="anchor" id="variable-energy~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2578,7 +2578,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~16"></span>
+              <span class="anchor" id="variable-gradient~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2593,7 +2593,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~43"></span>
+              <span class="anchor" id="variable-result~21"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2633,7 +2633,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~120"></span>
+              <span class="anchor" id="variable-this~69"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2648,7 +2648,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~30"></span>
+              <span class="anchor" id="variable-fragment~19"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2663,7 +2663,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~41"></span>
+              <span class="anchor" id="variable-result~19"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2703,7 +2703,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~122"></span>
+              <span class="anchor" id="variable-this~71"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2718,7 +2718,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~32"></span>
+              <span class="anchor" id="variable-fragment~21"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2733,7 +2733,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~44"></span>
+              <span class="anchor" id="variable-result~22"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2773,7 +2773,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~123"></span>
+              <span class="anchor" id="variable-this~72"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2788,7 +2788,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~33"></span>
+              <span class="anchor" id="variable-fragment~22"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2803,7 +2803,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~45"></span>
+              <span class="anchor" id="variable-result~23"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2843,7 +2843,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~121"></span>
+              <span class="anchor" id="variable-this~70"></span>
               class(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2858,7 +2858,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~31"></span>
+              <span class="anchor" id="variable-fragment~20"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2873,7 +2873,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~42"></span>
+              <span class="anchor" id="variable-result~20"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2888,7 +2888,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~6"></span>
+              <span class="anchor" id="variable-want_gradient~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2903,7 +2903,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_hessian~3"></span>
+              <span class="anchor" id="variable-want_hessian~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2947,7 +2947,7 @@ what reaches it; the backend decides, not this routine.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 15:28 +0000             </p>
+ on 2026-09-21 15:48 +0000             </p>
           </div>
         </div>
         <br>
