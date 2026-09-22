@@ -40,7 +40,7 @@ contains
 
       testsuite = [ &
                   new_unittest("two_fragments_across_a_cut_bond_are_exact", test_exact), &
-                  new_unittest("afo_is_refused_with_an_embedding_field", test_refuse_esp), &
+                  new_unittest("afo_is_refused_with_an_exact_embedding", test_refuse_esp), &
                   new_unittest("a_ring_cut_is_refused_by_name", test_refuse_ring), &
                   new_unittest("three_fragments_at_full_order_are_exact", test_three_exact), &
                   new_unittest("truncating_at_pairs_costs_the_three_body_term", test_three_pairs), &
@@ -480,7 +480,14 @@ contains
    end subroutine propane_middle_first
 
    subroutine test_refuse_esp(error)
-      !! A frozen orbital and an embedding field both describe the bond
+      !! An exact embedding stays refused, and for a reason that has not moved
+      !!
+      !! Point charges now run alongside a detached bond because the detached
+      !! atom's share of the field is one number per atom there and comes back
+      !! out exactly. The exact embedding builds a Coulomb contraction over the
+      !! neighbour's whole density matrix, which has no per-atom part to remove,
+      !! so there is nothing to subtract that would not be the point-charge
+      !! approximation under another name.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(fmo_options_t) :: opts

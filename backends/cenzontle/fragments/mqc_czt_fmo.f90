@@ -65,8 +65,9 @@ module mqc_czt_fmo
    !!
    !! **Whole molecules by default, and a covalent cut has to be asked for.**
    !! `bond_breaking = "none"` refuses a partition that severs a bond;
-   !! `"afo"` detaches it with an adjusted frozen orbital instead, and is
-   !! restricted to `esp = "none"` for now. The refusal is not a formality: cut
+   !! `"afo"` detaches it with an adjusted frozen orbital instead, and runs
+   !! with `esp = "none"` or `esp = "ptc"` but not with `esp = "exact"`. The
+   !! refusal of a cut is not a formality either: cut
    !! an even number of bonds per fragment -- a ring, a double bond -- and every
    !! electron count stays even, so nothing else objects, and cyclopropane split
    !! into three CH2 comes back 0.28 Hartree low. Connectivity is therefore
@@ -79,6 +80,17 @@ module mqc_czt_fmo
    !! its own members, every time**, because a bond cut between two monomers is
    !! whole again inside the dimer holding both ends. Inheriting that decision
    !! from the members is what made an earlier capped version 11 Hartree wrong.
+   !!
+   !! **A detached atom is described by two fragments**, which is what a field
+   !! on top of a frozen orbital has to account for. Its owner holds its nucleus
+   !! with the hybrid there frozen empty; the fragment across the bond holds the
+   !! same functions as a ghost with the bond pair in that hybrid. So its
+   !! density block and its atomic population both arrive twice and are added
+   !! -- summing is the only apportionment that leaves the charges adding to the
+   !! molecular charge -- and a group is then told not to feel its own share of
+   !! that atom as an external charge. What is left of the term is the *other*
+   !! fragment's share, which is outside and which the bond pair genuinely
+   !! feels; see [[group_own_charge]].
    !!
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
    !! 1140 SCFs against 190 for level two. No level is refused, but the binomial
@@ -160,10 +172,14 @@ module mqc_czt_fmo
          !! bond, occupied in the one that gets all of it. See
          !! [[mqc_czt_afo]].
          !!
-         !! **`"afo"` requires `esp = "none"`.** A frozen orbital and a field
-         !! both describe the bond region, so the detached atom's share would
-         !! have to come out of the field first; that is clean for point charges
-         !! and not defined for an exact density.
+         !! **`"afo"` is refused with `esp = "exact"`.** A frozen orbital and a
+         !! field both describe the bond region, so the detached atom's share
+         !! has to come out of the field first. With `esp = "ptc"` that share is
+         !! one number per atom -- the population that put it there -- and is
+         !! removed exactly, so the two run together. With an exact density the
+         !! neighbour term is a contraction over a whole density matrix and has
+         !! no per-atom part to remove, so there is nothing to subtract that
+         !! would not be the point-charge approximation under another name.
       real(dp) :: cap_scale = 1.0_dp
          !! Where a hydrogen cap sits along the bond it closes, for the
          !! many-body path; see [[mqc_physical_fragment]]. Not used by
@@ -578,17 +594,28 @@ contains
          call refuse_severed_bonds(z, coords, owner, n_atoms, error)
          if (error%has_error()) return
       else if (opts%bond_breaking == "afo") then
-         ! Adjusted frozen orbitals, restricted to the unembedded expansion: a
-         ! frozen orbital and an embedding field both describe the bond region,
-         ! so the detached atom's share has to come out of the field before the
-         ! two can be used together.
-         if (opts%esp /= "none") then
+         ! Adjusted frozen orbitals. A frozen orbital and an embedding field both
+         ! describe the detached bond, so the two can only be used together
+         ! where the detached atom's share of the field can be said exactly.
+         ! With point charges it can: the share is one number per atom, it is
+         ! the population that put it there, and taking it back out is
+         ! `group_own_charge`. With an exact density it cannot: the neighbour
+         ! term is a Coulomb contraction over a whole density matrix with no
+         ! per-atom part in it to remove, and inventing one would be the
+         ! point-charge approximation smuggled into the path defined by not
+         ! making it.
+         if (opts%esp == "exact") then
             call error%set(ERROR_VALIDATION, "fmo: bond_breaking='afo' is implemented "// &
-                           "for esp='none' only. A frozen orbital and an embedding "// &
-                           "field both describe the detached bond, and removing the "// &
-                           "detached atom's share of the field is not built yet -- it "// &
-                           "is clean for point charges and not defined for an exact "// &
-                           "density. Set keywords.fragmentation.embedding to 'none'")
+                           "for esp='none' and esp='ptc'. A frozen orbital and an "// &
+                           "embedding field both describe the detached bond, so the "// &
+                           "detached atom's share of the field has to come out before "// &
+                           "the two can be used together. With point charges that "// &
+                           "share is the population that put it there and is removed "// &
+                           "exactly; with an exact density the neighbour term is a "// &
+                           "contraction over a whole density matrix with no per-atom "// &
+                           "part to remove, and inventing one would make this the "// &
+                           "point-charge method under another name. Set "// &
+                           "keywords.fragmentation.embedding to 'ptc' or 'none'")
             return
          end if
          call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
