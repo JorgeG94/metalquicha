@@ -370,13 +370,17 @@ HAND_MAINTAINED = {
     "cpu/mqc/efmo/efmo_cage_rcut2.json",
     "cpu/mqc/efmo/efmo_w3_rimp2.json",
     "cpu/mqc/efmo/efmo_w3_level3.json",
-    # The two stretched-N2 decks. Hand-maintained because their references come
+    # The three stretched-N2 decks. Hand-maintained because their references come
     # from PySCF rather than from this generator's own driver: the sweep below
     # emits one deck per (molecule, basis) and has no notion of a keyword that
     # changes which stationary point an SCF lands on, which is the entire point
-    # of this pair. See PRESERVED_TESTS.
+    # of these. See PRESERVED_TESTS. The third is the second one under the other
+    # spelling -- `accelerator: "soscf"` in place of `second_order: true` -- so
+    # its reference is deliberately the second one's number rather than a
+    # separately generated value.
     "cpu/mqc/soscf/n2_stretched_saddle.json",
     "cpu/mqc/soscf/n2_stretched_second_order.json",
+    "cpu/mqc/soscf/n2_stretched_soscf_accelerator.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -3045,6 +3049,14 @@ PRESERVED_TESTS = [
         "tolerance": 1.0e-8,
         "type": "unfragmented",
         "reference_note": "reference is PySCF 2.14 with this repository's own basis JSON, as for n2_stretched_saddle: following the unstable mode out of the DIIS solution and reconverging with PySCF's own second-order SCF gives -108.571753302924 against our -108.571753302899, 2.4e-11 apart, and the energy drop 0.020182306449 against our 0.020182306461. PySCF then calls that solution internally stable and so do we, at a curvature of 2e-13. Worth knowing what this case does NOT show: PySCF's newton() started from the same guesses converges to the same saddle this deck escapes -- reaching the minimum there needs its stability analysis and an explicit rotation along the unstable mode -- while keywords.scf.second_order escapes inside the SCF, because the trust-region step it shares with the CASSCF optimizer carries a saddle-escape displacement. It costs 225 integral passes against DIIS's 12 and is the wrong choice on anything well behaved; what it buys is an answer that is a minimum.",
+    },
+    {
+        "name": "RHF N2 6-31G at 1.6 A, second order asked for as the accelerator (CPU)",
+        "input": "inputs/cpu/mqc/soscf/n2_stretched_soscf_accelerator.json",
+        "expected_energy": -108.571753302899,
+        "tolerance": 1.0e-8,
+        "type": "unfragmented",
+        "reference_note": "the same deck as n2_stretched_second_order with keywords.scf.second_order replaced by keywords.scf.accelerator 'soscf'. The two spellings are one request, so the reference is deliberately the other case's number rather than a separately recorded one: this run reproduces it to 6e-13, and any drift between them is the two routes diverging, which is the thing being guarded.",
     },
     {
         "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
