@@ -1066,7 +1066,7 @@ contains
       real(dp), allocatable, intent(out) :: q_all(:)
       type(error_t), intent(inout) :: error
 
-      integer :: f
+      integer :: f, s
 
       allocate (q_all(n_atoms), source=0.0_dp)
       if (opts%esp == "none") return
@@ -1074,13 +1074,31 @@ contains
       ! CHELPG they are not cheap enough to compute on the off chance.
       if (opts%far_field == "ignore") return
       ! Taken from what each fragment recorded while its molecule existed, not
-      ! recomputed.
+      ! recomputed, and scattered through `mol_atom` because a fragment's
+      ! charges are as long as the molecule its SCF saw rather than as long as
+      ! the atoms it owns.
+      !
+      ! **Added, not assigned.** Every atom but a detached one has exactly one
+      ! fragment writing to it. A detached one has two -- its owner, whose
+      ! hybrid there is frozen empty, and the fragment holding it as a ghost
+      ! with the bond pair in that hybrid -- and both shares are real electrons
+      ! of the real system. Assigning would keep whichever came last and lose
+      ! the other, and since these charges are what the field is built from,
+      ! every fragment would then be embedded in a system carrying a charge the
+      ! molecule does not have: one elementary charge per cut bond. Summing is
+      ! the only apportionment that leaves `sum(q_all)` the molecular charge,
+      ! which is why it is not a tunable.
+      !
+      ! The alternative -- give the whole atom to one side, as GAMESS's
+      ! charge-transfer apportionment schemes do for their own quantity -- also
+      ! conserves charge but has to choose a side, and a Mulliken population is
+      ! already an apportionment of exactly this kind. Splitting it again on a
+      ! second rule would be two conventions where one will do.
       do f = 1, n_frag
          if (.not. allocated(frag(f)%charges)) cycle
-         ! Only the real atoms map back. A cap's charge belongs to no atom
-         ! of the system, and `charges` is as long as the molecule the SCF
-         ! saw, which includes them.
-         q_all(frag(f)%atoms) = frag(f)%charges(1:size(frag(f)%atoms))
+         do s = 1, size(frag(f)%mol_atom)
+            q_all(frag(f)%mol_atom(s)) = q_all(frag(f)%mol_atom(s)) + frag(f)%charges(s)
+         end do
       end do
    end subroutine all_charges
 
@@ -1924,7 +1942,7 @@ contains
       ! answer -- independent of how many ranks filled it.
       total = 0
       do f = 1, n_frag
-         total = total + frag(f)%nao_full*frag(f)%nao_full + 2 + size(frag(f)%atoms)
+         total = total + frag(f)%nao_full*frag(f)%nao_full + 2 + size(frag(f)%mol_atom)
       end do
       allocate (buf(total), source=0.0_dp)
 
@@ -1935,17 +1953,14 @@ contains
             if (allocated(frag(f)%density)) buf(at + 1:at + n) = reshape(frag(f)%density, [n])
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
+            ! A charge per atom of the molecule the SCF saw, ghosts included:
+            ! the ghost block is where a detached bond's pair lives, and
+            ! `all_charges` needs its share to make the charges add up.
             if (allocated(frag(f)%charges)) then
-               ! Sliced, as `all_charges` slices: a fragment solved with ghosts
-               ! has a charge per atom of the molecule it saw, which is more
-               ! than the atoms it owns, and the buffer is laid out by the
-               ! latter. Defensive while a detached bond forces `esp = "none"`
-               ! and no charges are computed at all.
-               buf(at + n + 3:at + n + 2 + size(frag(f)%atoms)) = &
-                  frag(f)%charges(1:size(frag(f)%atoms))
+               buf(at + n + 3:at + n + 2 + size(frag(f)%mol_atom)) = frag(f)%charges
             end if
          end if
-         at = at + n + 2 + size(frag(f)%atoms)
+         at = at + n + 2 + size(frag(f)%mol_atom)
       end do
 
       call allreduce(comm, buf, size(buf), MPI_SUM)
@@ -1959,10 +1974,11 @@ contains
          frag(f)%density = reshape(buf(at + 1:at + n), [frag(f)%nao_full, frag(f)%nao_full])
          frag(f)%energy = buf(at + n + 1)
          frag(f)%energy_total = buf(at + n + 2)
-         if (.not. allocated(frag(f)%charges)) allocate (frag(f)%charges(size(frag(f)%atoms)))
-         frag(f)%charges(1:size(frag(f)%atoms)) = &
-            buf(at + n + 3:at + n + 2 + size(frag(f)%atoms))
-         at = at + n + 2 + size(frag(f)%atoms)
+         if (.not. allocated(frag(f)%charges)) then
+            allocate (frag(f)%charges(size(frag(f)%mol_atom)))
+         end if
+         frag(f)%charges = buf(at + n + 3:at + n + 2 + size(frag(f)%mol_atom))
+         at = at + n + 2 + size(frag(f)%mol_atom)
       end do
    end subroutine exchange_monomers
 
@@ -2055,12 +2071,18 @@ contains
       real(dp), allocatable, intent(out) :: charges(:)
       type(error_t), intent(inout) :: error
 
-      integer :: f
+      integer :: f, s
 
+      ! Gathered exactly as `all_charges` gathers the field's, so that what is
+      ! reported is what was used: added through `mol_atom`, which puts both
+      ! shares of a detached atom on that atom and leaves the total equal to the
+      ! molecular charge.
       allocate (charges(n_atoms), source=0.0_dp)
       do f = 1, n_frag
          if (.not. allocated(frag(f)%charges)) cycle
-         charges(frag(f)%atoms) = frag(f)%charges
+         do s = 1, size(frag(f)%mol_atom)
+            charges(frag(f)%mol_atom(s)) = charges(frag(f)%mol_atom(s)) + frag(f)%charges(s)
+         end do
       end do
    end subroutine report_charges
 
