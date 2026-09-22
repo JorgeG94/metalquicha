@@ -1175,6 +1175,24 @@ contains
       !! The four named terms are written only for a pair that has them. A
       !! quantum pair's dimer SCF produces no such split, and writing four
       !! zeros there would be a decomposition that reads as real.
+      !!
+      !! Three things a consumer cannot see from the key names:
+      !!
+      !! * `charge_transfer` is the explicit perturbative term, `ECHTR` of
+      !!   GAMESS's `efchtr.src`, computed from occupied-on-A to virtual-on-B
+      !!   amplitudes. It is **not** a residual left after the other three, so
+      !!   it is not PIEDA's `Ect+mix` and does not carry that quantity's
+      !!   basis-set superposition error.
+      !! * **No per-pair polarization is written.** The induction is solved
+      !!   over the whole system at once and has no per-pair value. A quantum
+      !!   pair's `interaction_energy` does have its own `E_IJ^pol` subtracted,
+      !!   because that is how the EFMO energy expression is written -- but
+      !!   that is a term of this method, not a polarization component of a
+      !!   decomposition.
+      !! * **Every pair here is covalently unconnected.** `efmo_options_t`
+      !!   carries no bond-breaking option, so an EFMO fragment is a whole
+      !!   molecule and no row of this table can be a severed bond reading in
+      !!   Hartree where its neighbours read in kcal/mol.
       use pic_types, only: int_index
       use pic_sorting, only: sort_index
       type(json_core), intent(inout) :: json
