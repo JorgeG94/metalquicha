@@ -14,7 +14,18 @@
 # the dependency most likely to be built this way in earnest.
 name: nvfortran build
 
-on: [push, pull_request]
+# `push` only. With `pull_request` here as well, every push to a branch with an
+# open PR started this job twice over -- once for each event, on the same commit,
+# with no concurrency group to collapse them. The other build jobs here are
+# push-only, so this matches them rather than introducing a second convention.
+# The cost is that a PR from a fork does not build here.
+on: [push]
+
+# One build per branch, superseding the one before it. `github.ref` and not the
+# workflow name, or every branch cancels every other one.
+concurrency:
+  group: nvfortran-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   nvfortran:

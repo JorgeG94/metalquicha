@@ -27,7 +27,13 @@
 # needs beside it.
 name: lfortran build
 
-on: [push, pull_request]
+# `push` only. With `pull_request` here as well, every push to a branch with an
+# open PR started this job twice over -- once for each event, on the same commit.
+# The concurrency group below does not collapse that pair, because `github.ref`
+# is `refs/heads/<branch>` on a push and `refs/pull/<n>/merge` on the PR event,
+# so the two land in different groups. The other build jobs here are push-only,
+# so this matches them; the cost is that a PR from a fork does not build.
+on: [push]
 
 concurrency:
   group: lfortran-${{ github.ref }}
