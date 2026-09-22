@@ -180,7 +180,10 @@ charges the next pass needs, all of them small.
 The answer does not depend on the rank count. That is asserted rather than
 assumed: ``validation/check_fmo_mpi`` runs each method with a communicator and
 again without one and compares, and they agree to about 1e-12 on one, two, three
-and four ranks.
+and four ranks. It runs the three embeddings on a water tetramer and, since a
+detached bond makes the exchanged density wider than the fragment's own basis,
+propane split at both of its carbon-carbon bonds with point charges on top --
+that case is bit-identical on one, two and four ranks.
 
 Example decks are in ``validation/inputs/cpu/mqc/fmo/``.
 
@@ -239,6 +242,44 @@ dimer carries no ghost, no frozen orbital and no electron shift there, while
 still being cut against everything outside itself. This is worked out from each
 group's own members every time.
 
+A detached bond under a field
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A detached atom is described by **two** fragments: its owner holds the nucleus
+with the hybrid there frozen empty, and the fragment across the bond holds the
+same functions as a ghost with the bond pair in that hybrid. Three things follow,
+and all three are what ``embedding = "ptc"`` needed before it could be allowed.
+
+**Its population arrives twice, and the two shares are added.** Summing is the
+only apportionment that leaves the atomic charges adding to the molecular charge,
+and those charges are what the field is built from -- keep one share and every
+fragment is embedded in a system carrying one elementary charge per cut that the
+molecule does not have. Giving the whole atom to one side also conserves charge
+but has to choose a side, and a Mulliken population is already an apportionment
+of that kind.
+
+**A group does not feel its own share.** The field is by definition the rest of
+the system, so a group's members' contributions to a shared atom are taken back
+out. What is left is not zero: the other fragment's share is outside and the
+borrowed bond pair genuinely feels it. Dropping the whole atom from the field
+instead -- the cheaper fix -- would take that term out too and leave every group
+short by roughly an elementary charge per cut.
+
+**Its density block travels with it.** A monomer density is kept at the size its
+SCF produced, ghost block and all, and the members of an n-mer are laid out atom
+by atom rather than as contiguous corners, because inside a group holding both
+ends of a cut the borrowed block belongs in the other member's run.
+
+The fragments themselves are **not neutral** at a cut. The nucleus stays whole
+with its owner and the bond pair goes whole to the other side, so the two carry
+about +1 and -1; the shifts cancel and the system is neutral. GAMESS splits the
+nuclear charge as well -- ``Z-1`` with the owner and a ``+1`` centre at the same
+coordinates carrying the same basis in the neighbour -- which leaves both
+fragments neutral and its point-charge field much shorter ranged. Either
+convention reproduces the supermolecule at full expansion order, so the identity
+below cannot tell them apart; what it changes is a *truncated* expansion, and the
+table says by how much.
+
 What it costs
 ~~~~~~~~~~~~~
 
@@ -251,6 +292,8 @@ Expansion                          Error, Hartree
 Two fragments, one bond, MBE(2)    exact
 Three fragments, MBE(3)            1.3e-13
 Three fragments, MBE(2)            0.180
+Three fragments, FMO(3), ``ptc``   1.3e-13
+Three fragments, FMO(2), ``ptc``   0.489
 =================================  ==================
 
 The middle row is the statement worth reading. An expansion carried to the
@@ -260,19 +303,33 @@ group -- three monomers with boundaries, three dimers, and one of those dimers
 the pair of end fragments, which are not bonded to each other and whose group
 carries a ghost of a carbon belonging to neither.
 
-The last row is the three-body term, and across covalent bonds it is large.
-Expect that: the same quantity is a rounding error for a water cluster and
+The three-body rows are the three-body term, and across covalent bonds it is
+large. Expect that: the same quantity is a rounding error for a water cluster and
 110 kcal/mol here. Truncating at pairs is not advisable across detached bonds.
+
+**And the point charges make the truncated expansion worse, not better** --
+0.489 Hartree against 0.180 with no embedding at all, where on a water cluster
+the embedding is worth a factor of twenty. Two things push the same way and
+neither is a fault in the bookkeeping. ``embedding = "ptc"`` makes *every*
+fragment distant, including the one on the other end of the cut bond, and a
+point-charge field is at its worst at bonding contact, which is why FMO keeps an
+exact term inside ``resppc`` in the first place. On top of that the fragments
+carry about a unit charge each, so those monopoles are the leading term of the
+field rather than a correction to it. Neither affects the full-order row, which
+lands on the supermolecule to 1e-13 either way.
 
 Restrictions
 ~~~~~~~~~~~~
 
-``bond_breaking = "afo"`` requires ``embedding = "none"``. A frozen orbital and
-an embedding field both describe the bond region -- the field already supplies
-the neighbour's nucleus and density where the frozen orbital supplies the bond --
-so the detached atom's share has to be removed from the field before the two can
-be used together. That is clean for point charges and not defined for an exact
-density, and neither is built yet. Asking for both is refused with that reason.
+``bond_breaking = "afo"`` runs with ``embedding = "none"`` and with
+``embedding = "ptc"``. It is refused with ``embedding = "exact"``. A frozen
+orbital and an embedding field both describe the bond region, so the detached
+atom's share has to come out of the field before the two can be used together.
+With point charges that share is one number per atom -- the population that put
+it there -- and is removed exactly. With an exact density the neighbour term is
+a Coulomb contraction over a whole density matrix and has no per-atom part to
+remove; inventing one would be the point-charge approximation smuggled into the
+path defined by not making it.
 
 Refused by name, rather than answered badly:
 
