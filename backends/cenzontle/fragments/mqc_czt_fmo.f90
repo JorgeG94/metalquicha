@@ -1281,17 +1281,23 @@ contains
                         to_char(sum(ao_count(:group%n_real)))//")")
          return
       end if
-      deallocate (ao_off, ao_count)
 
       ! The member densities side by side: what the n-mer's own Coulomb
       ! contribution is removed with, and what dD is measured against.
       allocate (d_split(mol%nao, mol%nao), source=0.0_dp)
-      at = 0
-      do m = 1, size(members)
-         nao_m = frag(members(m))%nao
-         d_split(at + 1:at + nao_m, at + 1:at + nao_m) = frag(members(m))%density
-         at = at + nao_m
-      end do
+      if (afo%active) then
+         call scatter_members(frag, members, group, size(z), ao_off, ao_count, &
+                              d_split, error)
+         if (error%has_error()) return
+      else
+         at = 0
+         do m = 1, size(members)
+            nao_m = frag(members(m))%nao
+            d_split(at + 1:at + nao_m, at + 1:at + nao_m) = frag(members(m))%density
+            at = at + nao_m
+         end do
+      end if
+      deallocate (ao_off, ao_count)
 
       allocate (inside(size(z)), source=.false.)
       do m = 1, size(members)
@@ -1345,6 +1351,70 @@ contains
          end if
       end if
    end subroutine nmer_term
+
+   subroutine scatter_members(frag, members, group, n_atoms, ao_off, ao_count, &
+                              d_split, error)
+      !! The members' densities placed on the group's basis, atom block by atom block
+      !!
+      !! With no detached bond a member's basis is a contiguous run of the
+      !! group's and this is a corner copy, which is what the caller does
+      !! instead. With one it is not: a fragment holding the attached end of a
+      !! cut was solved over an atom it does not own, and inside a group that
+      !! also holds that atom's owner the borrowed block belongs in the *other*
+      !! member's run. So the placement goes by atom rather than by fragment.
+      !!
+      !! **Blocks are added, not assigned**, for the same reason the charges
+      !! are: a detached atom is described by both of the fragments that meet
+      !! there, and the reference the response term is measured against is the
+      !! two of them side by side. A ghost carries the same functions in the
+      !! same order as the atom it stands for -- only the nucleus is dropped --
+      !! so the two blocks are the same shape, which is checked rather than
+      !! assumed.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: members(:)
+      type(group_t), intent(in) :: group
+      integer, intent(in) :: n_atoms
+      integer, intent(in) :: ao_off(:)    !! First AO of each of the group's atoms, 0-based
+      integer, intent(in) :: ao_count(:)  !! How many each of them has
+      real(dp), intent(inout) :: d_split(:, :)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: slot_of(:)
+      integer :: m, k, p, q, gp, gq, np, nq
+
+      allocate (slot_of(n_atoms), source=0)
+      do p = 1, size(group%atom_of)
+         slot_of(group%atom_of(p)) = p
+      end do
+
+      do m = 1, size(members)
+         k = members(m)
+         do p = 1, size(frag(k)%mol_atom)
+            gp = slot_of(frag(k)%mol_atom(p))
+            np = frag(k)%ao_count(p)
+            if (gp == 0) then
+               call error%set(ERROR_VALIDATION, "fmo: a fragment was solved over an "// &
+                              "atom the n-mer holding it does not have, so its density "// &
+                              "has nowhere to go")
+               return
+            end if
+            if (ao_count(gp) /= np) then
+               call error%set(ERROR_VALIDATION, "fmo: one atom has "//to_char(np)// &
+                              " basis functions in a fragment and "// &
+                              to_char(ao_count(gp))//" in the n-mer containing it")
+               return
+            end if
+            do q = 1, size(frag(k)%mol_atom)
+               gq = slot_of(frag(k)%mol_atom(q))
+               nq = frag(k)%ao_count(q)
+               d_split(ao_off(gp) + 1:ao_off(gp) + np, ao_off(gq) + 1:ao_off(gq) + nq) = &
+                  d_split(ao_off(gp) + 1:ao_off(gp) + np, ao_off(gq) + 1:ao_off(gq) + nq) &
+                  + frag(k)%density(frag(k)%ao_off(p) + 1:frag(k)%ao_off(p) + np, &
+                                    frag(k)%ao_off(q) + 1:frag(k)%ao_off(q) + nq)
+            end do
+         end do
+      end do
+   end subroutine scatter_members
 
    subroutine near_fragments(frag, n_frag, group, resppc, near, error)
       !! Which fragments outside `group` are close enough to need the exact term
@@ -1533,17 +1603,11 @@ contains
       call inner_scf(frag(which), mol, opts, error, u, all_converged, proj, held)
       if (error%has_error()) return
 
-      ! A fragment carrying ghosts was solved in a bigger basis than it owns,
-      ! and everything downstream indexes its density by `nao`, which counts
-      ! only its own atoms. Ghosts are appended last, so the owned block is the
-      ! leading corner.
-      ! TODO(mqc): the ghost block is dropped rather than stored. Sound only
-      ! while ghosts imply `esp = "none"`, where nothing reads a monomer
-      ! density; an embedded version has to widen the layout instead.
-      if (size(frag(which)%density, 1) /= frag(which)%nao) then
-         frag(which)%density = frag(which)%density(:frag(which)%nao, :frag(which)%nao)
-      end if
-
+      ! The density stays the size the SCF produced it, ghost block and all.
+      ! It used to be cut back to the owned corner, which was sound only while
+      ! a ghost implied `esp = "none"` and nothing read a monomer density: with
+      ! a field, the ghost block holds the bond pair, and both the charges below
+      ! and the reference the response term is measured against need it.
       if (opts%esp /= "none") then
          call fragment_charges(mol, frag(which)%density, opts%far_field, q, error)
          if (error%has_error()) return
@@ -1854,15 +1918,19 @@ contains
 
       if (.not. spread_over(comm)) return
 
+      ! Sized from `nao_full`, so a fragment carrying somebody else's atom
+      ! sends the block that describes it. Every length here is fixed by the
+      ! geometry and the partition, which is what makes the layout -- and so the
+      ! answer -- independent of how many ranks filled it.
       total = 0
       do f = 1, n_frag
-         total = total + frag(f)%nao*frag(f)%nao + 2 + size(frag(f)%atoms)
+         total = total + frag(f)%nao_full*frag(f)%nao_full + 2 + size(frag(f)%atoms)
       end do
       allocate (buf(total), source=0.0_dp)
 
       at = 0
       do f = 1, n_frag
-         n = frag(f)%nao*frag(f)%nao
+         n = frag(f)%nao_full*frag(f)%nao_full
          if (mine(f, comm)) then
             if (allocated(frag(f)%density)) buf(at + 1:at + n) = reshape(frag(f)%density, [n])
             buf(at + n + 1) = frag(f)%energy
@@ -1884,9 +1952,11 @@ contains
 
       at = 0
       do f = 1, n_frag
-         n = frag(f)%nao*frag(f)%nao
-         if (.not. allocated(frag(f)%density)) allocate (frag(f)%density(frag(f)%nao, frag(f)%nao))
-         frag(f)%density = reshape(buf(at + 1:at + n), [frag(f)%nao, frag(f)%nao])
+         n = frag(f)%nao_full*frag(f)%nao_full
+         if (.not. allocated(frag(f)%density)) then
+            allocate (frag(f)%density(frag(f)%nao_full, frag(f)%nao_full))
+         end if
+         frag(f)%density = reshape(buf(at + 1:at + n), [frag(f)%nao_full, frag(f)%nao_full])
          frag(f)%energy = buf(at + n + 1)
          frag(f)%energy_total = buf(at + n + 2)
          if (.not. allocated(frag(f)%charges)) allocate (frag(f)%charges(size(frag(f)%atoms)))
