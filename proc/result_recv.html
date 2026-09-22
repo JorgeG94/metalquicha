@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">45 statements</a>
+                 title=" 0.3% of total for procedures.">82 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -129,7 +129,26 @@
       <div id="sidebar">
       <h3>Contents</h3>
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_excitation_energies">present_excitation_energies</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_excited_total_energies">present_excited_total_energies</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_nto_leading_weight">present_nto_leading_weight</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_oscillator_strengths">present_oscillator_strengths</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_oscillator_strengths_velocity">present_oscillator_strengths_velocity</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_state_spin">present_state_spin</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_transition_dipole_origin">present_transition_dipole_origin</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_transition_dipoles">present_transition_dipoles</a>
+            <a class="list-group-item" href="../proc/result_recv.html#variable-present_transition_velocities">present_transition_velocities</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -181,7 +200,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~29"></span>
+              <span class="anchor" id="variable-result~44"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -196,7 +215,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~24"></span>
+              <span class="anchor" id="variable-comm~22"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -211,7 +230,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-source~9"></span>
+              <span class="anchor" id="variable-source~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -226,7 +245,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~7"></span>
+              <span class="anchor" id="variable-tag~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -241,7 +260,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~33"></span>
+              <span class="anchor" id="variable-status~37"></span>
               type(MPI_Status),
             </td>
 <td>intent(out)</td>
@@ -499,6 +518,178 @@ large graphs.</div>
     <br>
 
 
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_excitation_energies"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_excitation_energies</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_excited_total_energies"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_excited_total_energies</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_nto_leading_weight"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_nto_leading_weight</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_oscillator_strengths"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_oscillator_strengths</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_oscillator_strengths_velocity"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_oscillator_strengths_velocity</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_state_spin"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_state_spin</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Presence bytes for the excited-state arrays, read off the
+wire ahead of each one. A spectrum can arrive without its
+transition properties; see the note at the send.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_transition_dipole_origin"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_transition_dipole_origin</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_transition_dipoles"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_transition_dipoles</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-present_transition_velocities"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>present_transition_velocities</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
     
     
 
@@ -516,6 +707,14 @@ large graphs.</div>
 <span class="k">      type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">MPI_Status</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">present_excitation_energies</span><span class="p">,</span><span class="w"> </span><span class="n">present_excited_total_energies</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">present_oscillator_strengths</span><span class="p">,</span><span class="w"> </span><span class="n">present_oscillator_strengths_velocity</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">present_transition_dipoles</span><span class="p">,</span><span class="w"> </span><span class="n">present_transition_velocities</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">present_transition_dipole_origin</span><span class="p">,</span><span class="w"> </span><span class="n">present_nto_leading_weight</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">present_state_spin</span>
+<span class="w">         </span><span class="c">!! Presence bytes for the excited-state arrays, read off the</span>
+<span class="w">         </span><span class="c">!! wire ahead of each one. A spectrum can arrive without its</span>
+<span class="w">         </span><span class="c">!! transition properties; see the note at the send.</span>
 
 <span class="w">      </span><span class="c">! Same reuse hazard as result_irecv -- see the note there.</span>
 <span class="w">      </span><span class="k">call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
@@ -566,14 +765,46 @@ large graphs.</div>
 <span class="w">         </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole_derivatives</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Receive excited states, all four arrays under one flag</span>
+<span class="w">      </span><span class="c">! Receive excited states, every array under one flag</span>
 <span class="w">      </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_excited_states</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_excited_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">excitation_energies</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
-<span class="w">         </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">state_spin</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
-<span class="w">      </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_excitation_energies</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_excitation_energies</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">excitation_energies</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_excited_total_energies</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_excited_total_energies</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">excited_total_energies</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_oscillator_strengths</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_oscillator_strengths</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_oscillator_strengths_velocity</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_oscillator_strengths_velocity</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">oscillator_strengths_velocity</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_transition_dipoles</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_transition_dipoles</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_transition_velocities</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_transition_velocities</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">transition_velocities</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_transition_dipole_origin</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_transition_dipole_origin</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">transition_dipole_origin</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_nto_leading_weight</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_nto_leading_weight</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">nto_leading_weight</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">present_state_spin</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">present_state_spin</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">recv</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">state_spin</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
 
 <span class="k">      call </span><span class="n">recv_error_state</span><span class="p">(</span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">result_recv</span>
@@ -600,7 +831,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 21:29 +0000             </p>
+ on 2026-09-22 03:40 +0000             </p>
           </div>
         </div>
         <br>

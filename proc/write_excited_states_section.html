@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">35 statements</a>
+                 title=" 0.2% of total for procedures.">58 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,9 +139,10 @@
             <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-arr~4">arr</a>
             <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-comp">comp</a>
             <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-dip_arr">dip_arr</a>
-            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-entry~13">entry</a>
-            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-i~187">i</a>
-            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-n_states~4">n_states</a>
+            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-entry~11">entry</a>
+            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-i~43">i</a>
+            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-n_states">n_states</a>
+            <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-origin_arr">origin_arr</a>
             <a class="list-group-item" href="../proc/write_excited_states_section.html#variable-section~4">section</a>
         </div>
       </div>
@@ -183,10 +184,20 @@
     
 
     <p>The linear-response spectrum, one object per root</p>
-<p>Per state rather than as four parallel arrays: a consumer picking the
+<p>Per state rather than as parallel arrays: a consumer picking the
 brightest state, or the lowest triplet, needs the energy, the spin and
 the strength of one root together, and parallel arrays make that a
 join the reader has to get right.</p>
+<p><code>oscillator_strength</code> is the length gauge and
+<code>oscillator_strength_velocity</code> the velocity one; the two agree only
+in a complete basis, and both are written because the gap between
+them is a statement about the basis. <code>transition_dipole</code> and
+<code>transition_velocity</code> are the moments those came from, in atomic
+units, the first measured from <code>dipole_origin_bohr</code> on the section.</p>
+<p><code>total_energy_hartree</code> is the state&rsquo;s own total energy rather than
+its excitation: a consumer plotting a state against the ground state
+would otherwise have to find the reference energy elsewhere in the
+document and add it, and for a fragment there is more than one.</p>
 <p>The excitation energy appears twice, in Hartree and in eV. Hartree is
 the internal unit and what a cross-code comparison uses; eV is what a
 spectrum is read in, and a consumer converting it itself is a place
@@ -206,7 +217,7 @@ for the conversion factor to be wrong.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~53"></span>
+              <span class="anchor" id="variable-json~9"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -236,7 +247,7 @@ for the conversion factor to be wrong.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~9"></span>
+              <span class="anchor" id="variable-data~6"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -741,31 +752,31 @@ large graphs.</div>
 <g id="proc~~write_excited_states_section~~CalledByGraph_node20" class="node">
 <title>proc~worker_loop</title>
 <g id="a_proc~~write_excited_states_section~~CalledByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
-<text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~run_step -->
-<g id="proc~~write_excited_states_section~~CalledByGraph_edge24" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#00ff00" d="M115.28,-145.9C151.53,-153.38 205.7,-164.56 242.02,-172.06"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="241.72,-175.57 252.22,-174.16 243.13,-168.71 241.72,-175.57"/>
-</g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~write_excited_states_section~~CalledByGraph_node21" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~write_excited_states_section~~CalledByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
 <text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~write_excited_states_section~~CalledByGraph_edge27" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#0000ff" d="M115.28,-15.95C149.12,-19.44 198.57,-24.55 234.55,-28.26"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="234.48,-31.77 244.78,-29.31 235.19,-24.81 234.48,-31.77"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~write_excited_states_section~~CalledByGraph_node21" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~write_excited_states_section~~CalledByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-150 37,-150 37,-126 115,-126 115,-150"/>
+<text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
+<g id="proc~~write_excited_states_section~~CalledByGraph_edge24" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff00" d="M115.28,-145.9C151.53,-153.38 205.7,-164.56 242.02,-172.06"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="241.72,-175.57 252.22,-174.16 243.13,-168.71 241.72,-175.57"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~write_excited_states_section~~CalledByGraph_node22" class="node">
@@ -937,7 +948,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-entry~13"></span>
+              <span class="anchor" id="variable-entry~11"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -954,7 +965,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~187"></span>
+              <span class="anchor" id="variable-i~43"></span>
               integer,
             </td>
               <td>private</td>
@@ -971,7 +982,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~4"></span>
+              <span class="anchor" id="variable-n_states"></span>
               integer,
             </td>
               <td>private</td>
@@ -980,6 +991,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>n_states</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-origin_arr"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>origin_arr</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -1022,10 +1050,22 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">write_excited_states_section</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The linear-response spectrum, one object per root</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Per state rather than as four parallel arrays: a consumer picking the</span>
+<span class="w">      </span><span class="c">!! Per state rather than as parallel arrays: a consumer picking the</span>
 <span class="w">      </span><span class="c">!! brightest state, or the lowest triplet, needs the energy, the spin and</span>
 <span class="w">      </span><span class="c">!! the strength of one root together, and parallel arrays make that a</span>
 <span class="w">      </span><span class="c">!! join the reader has to get right.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! `oscillator_strength` is the length gauge and</span>
+<span class="w">      </span><span class="c">!! `oscillator_strength_velocity` the velocity one; the two agree only</span>
+<span class="w">      </span><span class="c">!! in a complete basis, and both are written because the gap between</span>
+<span class="w">      </span><span class="c">!! them is a statement about the basis. `transition_dipole` and</span>
+<span class="w">      </span><span class="c">!! `transition_velocity` are the moments those came from, in atomic</span>
+<span class="w">      </span><span class="c">!! units, the first measured from `dipole_origin_bohr` on the section.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! `total_energy_hartree` is the state's own total energy rather than</span>
+<span class="w">      </span><span class="c">!! its excitation: a consumer plotting a state against the ground state</span>
+<span class="w">      </span><span class="c">!! would otherwise have to find the reference energy elsewhere in the</span>
+<span class="w">      </span><span class="c">!! document and add it, and for a fragment there is more than one.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! The excitation energy appears twice, in Hartree and in eV. Hartree is</span>
 <span class="w">      </span><span class="c">!! the internal unit and what a cross-code comparison uses; eV is what a</span>
@@ -1042,7 +1082,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">parent</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">data</span>
 
-<span class="k">      type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="n">dip_arr</span>
+<span class="k">      type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="n">dip_arr</span><span class="p">,</span><span class="w"> </span><span class="n">origin_arr</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">n_states</span><span class="p">,</span><span class="w"> </span><span class="n">comp</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">has_excited_states</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
@@ -1054,8 +1094,15 @@ large graphs.</div>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="s2">"n_states"</span><span class="p">,</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="s2">"method"</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">excited_method</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="s2">"spin"</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">excited_spin</span><span class="p">))</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">transition_dipole_origin</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">origin_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"dipole_origin_bohr"</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="n">origin_arr</span><span class="p">)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">transition_dipole_origin</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">origin_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">transition_dipole_origin</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">      end if</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"states"</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"states"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">section</span><span class="p">,</span><span class="w"> </span><span class="n">arr</span><span class="p">)</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_states</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span>
@@ -1068,12 +1115,22 @@ large graphs.</div>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"excitation_energy_ev"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="k">data</span><span class="p">%</span><span class="n">excitation_energies</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">HARTREE_TO_EV</span><span class="p">)</span>
 <span class="w">         </span><span class="c">! Length as well as allocation, the way `state_spin_label` tests it.</span>
-<span class="w">         </span><span class="c">! The four arrays are filled together by the solver, but they reach</span>
-<span class="w">         </span><span class="c">! this writer through the MPI reducers, and a short one would be read</span>
-<span class="w">         </span><span class="c">! past its end rather than left out.</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="c">! These arrays are filled together by the solver, but they reach this</span>
+<span class="w">         </span><span class="c">! writer through the MPI reducers, and a short one would be read past</span>
+<span class="w">         </span><span class="c">! its end rather than left out.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">excited_total_energies</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">             </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">excited_total_energies</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"total_energy_hartree"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="k">data</span><span class="p">%</span><span class="n">excited_total_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">             </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"oscillator_strength"</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths_velocity</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">             </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths_velocity</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"oscillator_strength_velocity"</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="k">data</span><span class="p">%</span><span class="n">oscillator_strengths_velocity</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">             </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1083,6 +1140,18 @@ large graphs.</div>
 <span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dip_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">transition_dipoles</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span>
 <span class="w">            </span><span class="k">end do</span>
 <span class="k">         end if</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">transition_velocities</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">             </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">transition_velocities</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">dip_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"transition_velocity"</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="n">dip_arr</span><span class="p">)</span>
+<span class="w">            </span><span class="k">do </span><span class="n">comp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dip_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">transition_velocities</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">         end if</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">nto_leading_weight</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">             </span><span class="n">size</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">nto_leading_weight</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">n_states</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="k">entry</span><span class="p">,</span><span class="w"> </span><span class="s2">"nto_leading_weight"</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">nto_leading_weight</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
 <span class="k">      end do</span>
 <span class="k">   end subroutine </span><span class="n">write_excited_states_section</span>
 </pre></div>
@@ -1108,7 +1177,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 21:29 +0000             </p>
+ on 2026-09-22 03:40 +0000             </p>
           </div>
         </div>
         <br>

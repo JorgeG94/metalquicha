@@ -11,7 +11,8 @@ module mqc_json_writer
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
    use mqc_fragment_table_writer, only: write_fragment_table
-   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                               STATE_SPIN_UNRESTRICTED
    use json_module, only: json_core, json_value
    implicit none
    private
@@ -480,10 +481,22 @@ contains
    subroutine write_excited_states_section(json, parent, data)
       !! The linear-response spectrum, one object per root
       !!
-      !! Per state rather than as four parallel arrays: a consumer picking the
+      !! Per state rather than as parallel arrays: a consumer picking the
       !! brightest state, or the lowest triplet, needs the energy, the spin and
       !! the strength of one root together, and parallel arrays make that a
       !! join the reader has to get right.
+      !!
+      !! `oscillator_strength` is the length gauge and
+      !! `oscillator_strength_velocity` the velocity one; the two agree only
+      !! in a complete basis, and both are written because the gap between
+      !! them is a statement about the basis. `transition_dipole` and
+      !! `transition_velocity` are the moments those came from, in atomic
+      !! units, the first measured from `dipole_origin_bohr` on the section.
+      !!
+      !! `total_energy_hartree` is the state's own total energy rather than
+      !! its excitation: a consumer plotting a state against the ground state
+      !! would otherwise have to find the reference energy elsewhere in the
+      !! document and add it, and for a fragment there is more than one.
       !!
       !! The excitation energy appears twice, in Hartree and in eV. Hartree is
       !! the internal unit and what a cross-code comparison uses; eV is what a
@@ -500,7 +513,7 @@ contains
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
 
-      type(json_value), pointer :: section, arr, entry, dip_arr
+      type(json_value), pointer :: section, arr, entry, dip_arr, origin_arr
       integer :: i, n_states, comp
 
       if (.not. data%has_excited_states) return
@@ -512,6 +525,13 @@ contains
       call json%add(section, "n_states", n_states)
       call json%add(section, "method", trim(data%excited_method))
       call json%add(section, "spin", trim(data%excited_spin))
+      if (allocated(data%transition_dipole_origin)) then
+         call json%create_array(origin_arr, "dipole_origin_bohr")
+         call json%add(section, origin_arr)
+         do comp = 1, size(data%transition_dipole_origin)
+            call json%add(origin_arr, "", data%transition_dipole_origin(comp))
+         end do
+      end if
 
       call json%create_array(arr, "states")
       call json%add(section, arr)
@@ -526,12 +546,22 @@ contains
          call json%add(entry, "excitation_energy_ev", &
                        data%excitation_energies(i)*HARTREE_TO_EV)
          ! Length as well as allocation, the way `state_spin_label` tests it.
-         ! The four arrays are filled together by the solver, but they reach
-         ! this writer through the MPI reducers, and a short one would be read
-         ! past its end rather than left out.
+         ! These arrays are filled together by the solver, but they reach this
+         ! writer through the MPI reducers, and a short one would be read past
+         ! its end rather than left out.
+         if (allocated(data%excited_total_energies) .and. &
+             size(data%excited_total_energies) >= n_states) then
+            call json%add(entry, "total_energy_hartree", &
+                          data%excited_total_energies(i))
+         end if
          if (allocated(data%oscillator_strengths) .and. &
              size(data%oscillator_strengths) >= n_states) then
             call json%add(entry, "oscillator_strength", data%oscillator_strengths(i))
+         end if
+         if (allocated(data%oscillator_strengths_velocity) .and. &
+             size(data%oscillator_strengths_velocity) >= n_states) then
+            call json%add(entry, "oscillator_strength_velocity", &
+                          data%oscillator_strengths_velocity(i))
          end if
          if (allocated(data%transition_dipoles) .and. &
              size(data%transition_dipoles, 2) >= n_states) then
@@ -541,15 +571,27 @@ contains
                call json%add(dip_arr, "", data%transition_dipoles(comp, i))
             end do
          end if
+         if (allocated(data%transition_velocities) .and. &
+             size(data%transition_velocities, 2) >= n_states) then
+            call json%create_array(dip_arr, "transition_velocity")
+            call json%add(entry, dip_arr)
+            do comp = 1, 3
+               call json%add(dip_arr, "", data%transition_velocities(comp, i))
+            end do
+         end if
+         if (allocated(data%nto_leading_weight) .and. &
+             size(data%nto_leading_weight) >= n_states) then
+            call json%add(entry, "nto_leading_weight", data%nto_leading_weight(i))
+         end if
       end do
    end subroutine write_excited_states_section
 
    pure function state_spin_label(data, i) result(label)
       !! The `STATE_SPIN_*` code of state `i` as the word a reader expects
       !!
-      !! "unknown" rather than a guess where the reference is unrestricted and
-      !! its roots are not spin eigenstates: there is no singlet or triplet to
-      !! report, and a label invented here would be believed.
+      !! "unrestricted" where the reference is one and its roots are not spin
+      !! eigenstates, and "unknown" where nothing assigned a spin at all. Never
+      !! a guess: a label invented here would be believed.
       type(json_output_data_t), intent(in) :: data
       integer, intent(in) :: i
       character(len=:), allocatable :: label
@@ -562,6 +604,8 @@ contains
          label = "singlet"
       case (STATE_SPIN_TRIPLET)
          label = "triplet"
+      case (STATE_SPIN_UNRESTRICTED)
+         label = "unrestricted"
       case default
          ! STATE_SPIN_UNKNOWN, and anything a later spin treatment adds
          ! without teaching this routine about it. The initialiser above

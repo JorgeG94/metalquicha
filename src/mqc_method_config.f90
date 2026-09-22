@@ -375,9 +375,10 @@ module mqc_method_config
       !!
       !! Backend-neutral in shape, and separate from `cc_config_t` on purpose:
       !! these are the TDHF/TDDFT roots of the reference itself, not an EOM
-      !! treatment on top of a coupled-cluster wave function. Nothing is
-      !! computed from this yet -- see `excited_decline_reason` in
-      !! `mqc_czt_bridge` for what is refused and why.
+      !! treatment on top of a coupled-cluster wave function. The cenzontle
+      !! backend solves it, on an `Energy` driver; see
+      !! `excited_decline_reason` in `mqc_czt_bridge` for the calculations it
+      !! is refused on and why.
       logical :: enabled = .false.
          !! Whether any excited state was asked for. Derived from
          !! `n_states > 0` by the adapter rather than read from a deck, so
@@ -388,6 +389,10 @@ module mqc_method_config
          !! "tda" or "rpa"; see `mqc_config_types` for what each one is.
       character(len=16) :: spin = "singlet"
          !! "singlet", "triplet" or "both".
+      logical :: spin_set = .false.
+         !! Whether `spin` came from the deck rather than from the default
+         !! above. A backend whose reference has no spin-adapted manifolds
+         !! refuses an explicit request and answers a silent one.
       real(dp) :: tolerance = DEFAULT_EXCITED_TOL
          !! Residual at which a root is accepted.
       integer :: max_iter = DEFAULT_EXCITED_MAX_ITER
@@ -875,6 +880,7 @@ contains
       this%excited%n_states = 0
       this%excited%method = "rpa"
       this%excited%spin = "singlet"
+      this%excited%spin_set = .false.
       this%excited%tolerance = DEFAULT_EXCITED_TOL
       this%excited%max_iter = DEFAULT_EXCITED_MAX_ITER
       this%excited%max_subspace = 0

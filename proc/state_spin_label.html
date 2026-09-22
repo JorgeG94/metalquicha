@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">15 statements</a>
+                 title=" 0.1% of total for procedures.">17 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -166,9 +166,9 @@
     
 
     <p>The <code>STATE_SPIN_*</code> code of state <code>i</code> as the word a reader expects</p>
-<p>&ldquo;unknown&rdquo; rather than a guess where the reference is unrestricted and
-its roots are not spin eigenstates: there is no singlet or triplet to
-report, and a label invented here would be believed.</p>
+<p>&ldquo;unrestricted&rdquo; where the reference is one and its roots are not spin
+eigenstates, and &ldquo;unknown&rdquo; where nothing assigned a spin at all. Never
+a guess: a label invented here would be believed.</p>
 
 
     <h3>Arguments</h3>
@@ -184,7 +184,7 @@ report, and a label invented here would be believed.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~10"></span>
+              <span class="anchor" id="variable-data~7"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -199,7 +199,7 @@ report, and a label invented here would be believed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~188"></span>
+              <span class="anchor" id="variable-i~44"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -217,7 +217,7 @@ report, and a label invented here would be believed.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-label~8"></span>
+          <span class="anchor" id="variable-label"></span>
           character(len=:), allocatable
         </small>
       </h3>
@@ -604,9 +604,9 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">state_spin_label</span><span class="p">(</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! The `STATE_SPIN_*` code of state `i` as the word a reader expects</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! "unknown" rather than a guess where the reference is unrestricted and</span>
-<span class="w">      </span><span class="c">!! its roots are not spin eigenstates: there is no singlet or triplet to</span>
-<span class="w">      </span><span class="c">!! report, and a label invented here would be believed.</span>
+<span class="w">      </span><span class="c">!! "unrestricted" where the reference is one and its roots are not spin</span>
+<span class="w">      </span><span class="c">!! eigenstates, and "unknown" where nothing assigned a spin at all. Never</span>
+<span class="w">      </span><span class="c">!! a guess: a label invented here would be believed.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">data</span>
 <span class="k">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">label</span>
@@ -619,6 +619,8 @@ large graphs.</div>
 <span class="w">         </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"singlet"</span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">STATE_SPIN_TRIPLET</span><span class="p">)</span>
 <span class="w">         </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"triplet"</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">STATE_SPIN_UNRESTRICTED</span><span class="p">)</span>
+<span class="w">         </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unrestricted"</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
 <span class="w">         </span><span class="c">! STATE_SPIN_UNKNOWN, and anything a later spin treatment adds</span>
 <span class="w">         </span><span class="c">! without teaching this routine about it. The initialiser above</span>
@@ -648,7 +650,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-21 21:29 +0000             </p>
+ on 2026-09-22 03:40 +0000             </p>
           </div>
         </div>
         <br>
