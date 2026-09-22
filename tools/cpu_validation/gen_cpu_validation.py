@@ -1489,7 +1489,8 @@ def write_xyz(path, mol):
 
 
 def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None,
-              cc=None, aux_only=False, properties=None, ecp="", charge=0):
+              cc=None, aux_only=False, properties=None, ecp="", charge=0,
+              excited_states=None, scf_extra=None):
     model = {"method": method, "basis": basis}
     if ecp:
         # Its own key rather than something the basis implies: def2-SVP is used
@@ -1522,6 +1523,14 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
     # is named, it has to be expressible without implying a fitted SCF.
     if aux and not aux_only:
         deck["keywords"]["scf"]["density_fitting"] = True
+    # Extra SCF settings, for a case whose comparison is not the energy. An
+    # excitation energy is an eigenvalue of an operator built out of the
+    # orbitals, so its error goes as the orbital error rather than as its
+    # square, and the default stopping point is not tight enough for it.
+    if scf_extra:
+        deck["keywords"]["scf"].update(scf_extra)
+    if excited_states:
+        deck["keywords"]["excited_states"] = excited_states
     if correlation:
         deck["keywords"]["correlation"] = correlation
     if cc:
@@ -2214,6 +2223,313 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
     n = mol.natm * 3
     hess = hess.transpose(0, 2, 1, 3).reshape(n, n)
     return float(energy), hess.tolist(), mol.nao
+
+
+# --------------------------------------------------------------------------
+# the linear-response spectrum
+# --------------------------------------------------------------------------
+
+#: PySCF's grid level for the excited-state cases, and ours.
+#:
+#: Five rather than the three the Hessians use. An excitation energy is an
+#: eigenvalue of an operator carrying the exchange-correlation *kernel*, which
+#: is one derivative sharper in the density than the potential the ground state
+#: sees, so it converges with the quadrature more slowly than an energy does.
+#: Five is what `TDDFT_PLAN.md` fixed the unit-test gates at and what both
+#: reference codes were run with there: 90064 points on water against our
+#: 90058, worth 3.4e-10 in a matrix element and nothing at the bound below.
+EXCITED_GRID_LEVEL = 5
+
+#: A Kohn-Sham excitation energy against PySCF's, in Hartree.
+#:
+#: Set by the quadrature rather than by either solver -- see `excited_block`
+#: for why neither solver's stopping residual is what limits this -- and what
+#: is left is the two codes' grids not being the same points, which no
+#: tightening removes. Measured worst on the four density-functional cases
+#: below, all at `EXCITED_GRID_LEVEL`: 1.1e-10 PBE, 6.5e-10 CAM-B3LYP,
+#: 1.6e-09 B3LYP and 6.5e-09 UB3LYP. The bound keeps an order and a half over
+#: the loosest of those, which is the margin a grid mismatch wants: it is a
+#: systematic difference between two quadratures, and another compiler's
+#: summation order moves it.
+#:
+#: The grid-free cases do **not** use this; see `EXCITATION_TOLERANCE_HF`.
+EXCITATION_TOLERANCE = 1.0e-7
+
+#: A Hartree-Fock excitation energy against PySCF's, in Hartree.
+#:
+#: Two orders tighter than the Kohn-Sham bound and for one reason: there is no
+#: grid, so the two codes are solving the same operator and the difference is
+#: the reference SCF's own. Measured on the four cases with no functional:
+#: 2.3e-11, 2.4e-11 and 2.0e-11 on the closed-shell water decks, 1.7e-10 on
+#: the OH doublet, whose half-filled shell is the harder reference to pin.
+#: Run-to-run and one-thread-against-two, these move by less than 2e-14.
+#:
+#: 1e-7 here would let a 5e-8 regression on a Hartree-Fock root through
+#: untouched, three orders above anything this path has ever produced.
+EXCITATION_TOLERANCE_HF = 5.0e-9
+
+#: An oscillator strength against PySCF's, dimensionless.
+#:
+#: Not split by reference the way the energies are: the worst grid-free case
+#: (1.3e-09, the fifth root of the Hartree-Fock TDA deck) and the worst
+#: Kohn-Sham one (4.2e-09, the fifth root of B3LYP TDA) are the same order, so
+#: the quadrature is not what sets this. What sets it is that a strength is
+#: `(2/3) w |mu|^2` with the moment *linear* in the amplitude where an
+#: eigenvalue is quadratic in it, so an amplitude error shows up here first,
+#: and a near-degenerate pair of roots can exchange intensity between them
+#: while both energies stay put. Both of the worst cases are the highest root
+#: asked for, which is the one nearest the roots that were not converged.
+#:
+#: Tighter than `TOL_UHF_OSCILLATOR` in `test/test_mqc_czt_tddft.f90`, which
+#: is 1e-6 on the same quantity, and 24x above the worst measured here.
+OSCILLATOR_TOLERANCE = 1.0e-7
+
+#: Roots below this are not part of the reference spectrum, in Hartree.
+#:
+#: The same number `EXCITATION_FLOOR` in `mqc_czt_tddft.f90` uses, and it has
+#: to be: the deck reports the spectrum with those roots already removed, so a
+#: reference that kept one would be one root out of step all the way down.
+#: Below this a root is a rotation of the reference rather than an excitation.
+EXCITATION_FLOOR = 1.0e-3
+
+#: The SCF the spectrum is built on, tightened past what an energy needs.
+#:
+#: `deck_json`'s default stops the SCF on an energy that is stationary in the
+#: density; an excited-state operator is built from the orbitals themselves and
+#: inherits their error linearly. The gradient threshold is what actually binds
+#: here -- the energy criterion is already met long before the orbitals stop
+#: moving -- and 1e-9 is what the unit-test references were converged to.
+EXCITED_SCF = {"tolerance": 1e-13, "gradient_tolerance": 1e-9, "maxiter": 300}
+
+# Linear-response cases, as (molecule, basis, functional, method, spin,
+# n_states, charge, multiplicity).
+#
+# `n_states` counts roots **per manifold**, so a `both` case reports twice that
+# many, interleaved by energy and told apart by their spin label. That is what
+# `response_excitations` does and the manifest entry says so by carrying a
+# `expected_state_spins` list as long as the energies.
+#
+# What each entry is here for, since water in cc-pVDZ is otherwise the same
+# molecule seven times:
+#
+# * **Both routes over Hartree-Fock.** Tamm-Dancoff drops the de-excitation
+#   block entirely and the paired route keeps it; they are different solvers
+#   over different operators reaching neighbouring answers, and a deck that ran
+#   one when it was asked for the other would still look reasonable.
+# * **`spin: both`, twice.** The interleave is the part with no analogue
+#   anywhere else in this manifest: two manifolds merged into one ascending
+#   list with a label per root. Once over Hartree-Fock, where the triplet
+#   operator is exchange-only, and once over a pure functional, where it is the
+#   spin-polarised kernel at `rho_a = rho_b` -- two different derivations of
+#   the same column.
+# * **Three kinds of functional.** PBE carries no exact exchange, B3LYP a fixed
+#   fraction, CAM-B3LYP a range-separated one whose long-range pass is a second
+#   K build the ground state never makes. The third is the one that would
+#   silently run as the first if the attenuated exchange were dropped.
+# * **Two unrestricted references.** OH is the Hartree-Fock one and the water
+#   cation the Kohn-Sham one, and they are not interchangeable: OH is a 2-Pi
+#   radical whose singly-occupied orbital is one of a degenerate pair, so on a
+#   quadrature grid its two hole orientations are separate stationary points
+#   3.6e-5 apart in the first root and the two codes reach different ones. The
+#   cation's singly-occupied orbital is not degenerate. See the note above
+#   `CATION_PBE_TDA` in `test/test_mqc_czt_tddft.f90`, where the same split is
+#   made for the same measured reason.
+EXCITED_CASES = [
+    ("water", "cc-pvdz", "", "tda", "singlet", 5, 0, 1),
+    ("water", "cc-pvdz", "", "rpa", "singlet", 5, 0, 1),
+    ("water", "cc-pvdz", "", "rpa", "both", 3, 0, 1),
+    ("water", "cc-pvdz", "pbe", "rpa", "both", 3, 0, 1),
+    ("water", "cc-pvdz", "b3lyp", "tda", "singlet", 5, 0, 1),
+    ("water", "cc-pvdz", "camb3lyp", "rpa", "singlet", 5, 0, 1),
+    # `unrestricted` rather than `singlet`: an unrestricted reference is not a
+    # spin eigenfunction and its roots are not singlets, so the deck does not
+    # write `keywords.excited_states.spin` at all rather than naming a manifold
+    # the solver has no way to select. The word is this list's own, and it is
+    # also what the JSON writer labels every root of such a run with.
+    ("oh", "cc-pvdz", "", "rpa", "unrestricted", 5, 0, 2),
+    ("water", "cc-pvdz", "b3lyp", "tda", "unrestricted", 5, 1, 2),
+]
+
+
+def pyscf_tddft(atoms, basis, method, spin, n_states, functional="",
+                charge=0, multiplicity=1, level=EXCITED_GRID_LEVEL):
+    """Reference spectrum: excitation energies, strengths and spin labels.
+
+    Returns `(energy, omegas, strengths, spins, nao)` with the roots ascending
+    in Hartree above the reference, the strengths in the length gauge and the
+    spins as the words the JSON writer emits -- "singlet", "triplet" or
+    "unrestricted".
+
+    Three things here are not the obvious choice and all three are measured.
+
+    **The SCF is driven to 1e-15 for Hartree-Fock**, not the 1e-12 every other
+    driver in this file uses. The core elements of a response operator are near
+    20 Hartree and move 7e-11 between `conv_tol` 1e-13 and 1e-15 -- inside this
+    manifest's own tolerance, but not inside the margin a 1e-7 gate wants when
+    the same reference has to hold for both codes.
+
+    **A triplet root's oscillator strength is written as an exact zero** rather
+    than as whatever the contraction returns. It is spin-forbidden: the spatial
+    integral is multiplied by an overlap of orthogonal spin functions, and both
+    codes short-circuit it. Comparing two independently accumulated 1e-17s
+    would be comparing round-off.
+
+    **`spin = "both"` is two solves merged by energy**, which is what
+    `response_excitations` does with that keyword. PySCF has no such mode --
+    `td.singlet` picks one manifold -- so the merge is done here, and doing it
+    here is also what makes the ordering a thing the reference asserts rather
+    than a thing it inherits.
+
+    **An unrestricted solve asks for two extra roots and throws away anything
+    below `EXCITATION_FLOOR`.** A doublet's paired problem has the rotation of
+    its half-filled shell in it at `omega^2 = 0`; our solver drops that root
+    and PySCF's Davidson returns it or not depending on how many states it was
+    asked for -- 3e-8 as the first of five on the OH radical, absent from the
+    first six. Padding and filtering makes the reference the physical spectrum
+    either way, which is what the deck reports.
+    """
+    from pyscf import dft, gto, scf, tdscf
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = charge
+    mol.spin = multiplicity - 1
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+
+    unrestricted = mol.spin != 0
+    if functional:
+        mf = (dft.UKS if unrestricted else dft.RKS)(mol)
+        mf.xc = functional
+        mf.grids.level = level
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-9
+    else:
+        mf = (scf.UHF if unrestricted else scf.RHF)(mol)
+        mf.conv_tol = 1e-15
+        mf.conv_tol_grad = 1e-11
+    mf.max_cycle = 300
+    energy = mf.kernel()
+    assert mf.converged, f"the {basis} reference for a spectrum did not converge"
+
+    def solve(singlet):
+        td = tdscf.TDA(mf) if method == "tda" else tdscf.TDDFT(mf)
+        if not unrestricted:
+            td.singlet = singlet
+        td.nstates = n_states + (2 if unrestricted else 0)
+        td.conv_tol = 1e-10
+        td.max_cycle = 400
+        td.kernel()
+        strengths = td.oscillator_strength(gauge="length")
+        if unrestricted:
+            label = "unrestricted"
+        elif singlet:
+            label = "singlet"
+        else:
+            label = "triplet"
+        rows = [(float(td.e[k]),
+                 0.0 if label == "triplet" else float(strengths[k]),
+                 label)
+                for k in range(len(td.e))
+                if float(td.e[k]) > EXCITATION_FLOOR]
+        assert len(rows) >= n_states, "PySCF converged fewer roots than were asked for"
+        return rows[:n_states]
+
+    if spin == "both":
+        roots = solve(True) + solve(False)
+    else:
+        roots = solve(spin == "singlet")
+    roots.sort(key=lambda row: row[0])
+    return (float(energy), [r[0] for r in roots], [r[1] for r in roots],
+            [r[2] for r in roots], mol.nao)
+
+
+def excited_block(method, spin, n_states):
+    """`keywords.excited_states` for one case.
+
+    `spin` is omitted for an unrestricted reference. There is no manifold to
+    choose there -- the roots are not spin eigenstates and
+    `response_excitations_uhf` takes no such argument -- so naming one would
+    put a word in the deck that nothing reads and that a reader would believe.
+    """
+    # 1e-8 is the reader's floor, `MIN_EXCITED_TOL`, and it is refused below
+    # rather than clamped: a residual tighter than that would be iterating on
+    # quadrature noise. It is not the eigenvalue's error -- a Hermitian
+    # eigenvalue converges as the square of the residual over the gap, so a
+    # 1e-8 residual on a gap of tenths of a Hartree leaves a root good to far
+    # more figures than either comparison bound below asks for. The measured
+    # errors say so: 2e-11 on the grid-free cases, where nothing but the
+    # reference SCF separates the two codes.
+    block = {"n_states": n_states, "method": method,
+             "tolerance": 1e-8, "max_iter": 200}
+    if spin != "unrestricted":
+        block["spin"] = spin
+    return block
+
+
+def excited_entries(written, dry_run):
+    """Write the linear-response decks and return their manifest entries.
+
+    A function rather than another loop inside `main` because it is also what
+    splices these cases into an existing manifest without regenerating the
+    other three hundred: regenerating them moves ~300 references by 1e-12 for
+    no reason, and a second copy of this loop living outside the file would
+    drift from it. `written` is added to in place, so the stale-deck sweep
+    still sees what this produced.
+    """
+    entries = []
+    for (name, basis, functional, method, spin, n_states, charge,
+         multiplicity) in EXCITED_CASES:
+        mol = MOLECULES[name]
+        energy, omegas, strengths, spins, nao = pyscf_tddft(
+            mol.atoms, basis, method, spin, n_states, functional=functional,
+            charge=charge, multiplicity=multiplicity)
+        tag = normalize_basis_name(basis)
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        # The charge is in the stem because the water cation shares its
+        # molecule, basis and functional with a neutral case above it and would
+        # otherwise overwrite that deck.
+        if charge:
+            tag += "_cation"
+        tag += f"_{method}_{spin}"
+        deck = deck_for(f"{CPU_MQC}/tddft", f"cpu_{name}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis,
+                          method="dft" if functional else "hf",
+                          charge=charge, multiplicity=multiplicity,
+                          scf_extra=EXCITED_SCF,
+                          excited_states=excited_block(method, spin, n_states))
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": EXCITED_GRID_LEVEL}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        theory = functional.upper() if functional else "RHF"
+        if multiplicity > 1:
+            theory = ("U" + theory) if functional else "UHF"
+        label = mol.label + ("+" if charge else "")
+        entry = {
+            "name": f"{theory} {method.upper()} {spin} {label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_excitation_energies": [round(w, 12) for w in omegas],
+            "expected_oscillator_strengths": [round(f, 12) for f in strengths],
+            "expected_state_spins": spins,
+            "excitation_tolerance": (EXCITATION_TOLERANCE if functional
+                                     else EXCITATION_TOLERANCE_HF),
+            "oscillator_tolerance": OSCILLATOR_TOLERANCE,
+            "type": "unfragmented",
+        }
+        entries.append(entry)
+        print(f"{label:6s} {basis:12s} {theory:8s} {method}/{spin} "
+              f"{len(omegas)} root(s) w1={omegas[0]:.9f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
 
 
 # Analytic double-hybrid Hessian cases, as (molecule, basis, functional).
@@ -3954,6 +4270,15 @@ def main():
             tests.append(dict(entry))
             print(f"{entry['name']}: transcribed reference "
                   f"E={entry['expected_energy']:.10f}", flush=True)
+
+    # Last, and that is load-bearing rather than arbitrary. These eight were
+    # spliced onto the end of an existing manifest rather than produced by a
+    # full regeneration -- regenerating the other three hundred moves their
+    # references by ~1e-12 for no reason -- so this is where they sit in the
+    # committed file. Called anywhere earlier and a regeneration that changes
+    # nothing still rewrites several hundred lines, which is a diff nobody can
+    # read and a manifest nobody can check.
+    tests.extend(excited_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

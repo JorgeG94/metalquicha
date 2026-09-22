@@ -1,7 +1,8 @@
-!! Tamm-Dancoff singlet excitation energies, against PySCF
+!! Singlet excitation energies, Tamm-Dancoff and full RPA, against PySCF
 module test_mqc_czt_tddft
-   !! The Layer 2 gates of `TDDFT_PLAN.md`: the TDA operator `A` itself, and
-   !! the excitation energies a Davidson finds in it.
+   !! The Layer 2 and Layer 4 gates of `TDDFT_PLAN.md`: the TDA operator `A`
+   !! itself, the paired `(A+B)`/`(A-B)` operator behind it, and the
+   !! excitation energies each solver finds.
    !!
    !! ## Why the matrix is checked before the spectrum
    !!
@@ -36,16 +37,27 @@ module test_mqc_czt_tddft
    !! live here.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
-   use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
+   use mqc_czt_tddft, only: tda_operator_t, build_tda_operator, tda_dense_matrix, &
+                            rpa_operator_t, build_rpa_operator, rpa_dense_matrices, &
+                            response_excitations, excitation_spectrum_t, &
+                            tda_operator_uhf_t, build_tda_operator_uhf, &
+                            tda_dense_matrix_uhf, rpa_operator_uhf_t, &
+                            build_rpa_operator_uhf, rpa_dense_matrices_uhf, &
+                            response_excitations_uhf
+   use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
+                                       natural_transition_orbitals, &
+                                       nuclear_charge_centroid
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_bridge, only: run_czt_hf
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_physical_fragment, only: physical_fragment_t
-   use mqc_result_types, only: calculation_result_t, STATE_SPIN_SINGLET
+   use mqc_result_types, only: calculation_result_t, STATE_SPIN_SINGLET, &
+                               STATE_SPIN_TRIPLET, STATE_SPIN_UNRESTRICTED
    implicit none
    private
 
@@ -155,6 +167,89 @@ module test_mqc_czt_tddft
                           1.336370051014_dp, 1.382776200364_dp, 18.798006687739_dp, &
                           18.886782913103_dp]
 
+   !! ------------------------------------------------------------------
+   !! Layer 3: triplets
+   !! ------------------------------------------------------------------
+
+   !! The **triplet** TDA matrix of H2O/STO-3G, and the same for PBE.
+   !!
+   !! Regenerated from PySCF 2.14 through `bse_to_pyscf` exactly as the singlet
+   !! matrices above were -- `td = tdscf.TDA(mf); td.singlet = False`, then
+   !! `td.gen_vind` on the ten unit vectors. `TDDFT_PLAN.md`'s own triplet
+   !! eigenvalues are 2.3e-8 away from these, which is the size of the
+   !! internal-basis-table error Layer 2 found and not a disagreement about
+   !! the physics; the plan's numbers are not usable at this bound. PySCF's
+   !! own SCF is driven to `conv_tol = 1e-15` for these, not the 1e-12 the
+   !! plan records: the two core-excited elements near 20 hartree move by
+   !! 7e-11 between 1e-13 and 1e-15, which is most of `TOL_EXACT`.
+   !!
+   !! What separates these from the singlet matrices is the whole of Layer 3:
+   !! no Coulomb term at all, and `(f_aa - f_ab)/2` in place of the singlet
+   !! kernel. Either one left as it was moves the diagonal by tenths of a
+   !! Hartree, so this comparison has no way to pass on half the change.
+   real(dp), parameter :: RHF_TRIPLET_A(N_OV, N_OV) = reshape([ &
+                                           20.044631057292_dp, 0.000000000000_dp, 0.006981609406_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, -0.009192048725_dp, 0.021190548711_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 20.114461669827_dp, &
+                                          -0.000000000000_dp, 0.009377471331_dp, -0.009192048725_dp, -0.000000000000_dp, &
+                                           0.000000000000_dp, 0.004183310061_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                            0.006981609406_dp, -0.000000000000_dp, 1.259675258537_dp, 0.000000000000_dp, &
+                                            0.000000000000_dp, -0.098427312376_dp, 0.058471503998_dp, 0.000000000000_dp, &
+                                           -0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, 0.009377471331_dp, &
+                                           0.000000000000_dp, 1.384804093184_dp, -0.098427312376_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, -0.013700945330_dp, 0.000000000000_dp, 0.000000000000_dp, &
+                                           0.000000000000_dp, -0.009192048725_dp, 0.000000000000_dp, -0.098427312376_dp, &
+                                            0.650988069850_dp, 0.000000000000_dp, -0.000000000000_dp, 0.047690906689_dp, &
+                                         -0.000000000000_dp, -0.000000000000_dp, -0.009192048725_dp, -0.000000000000_dp, &
+                                           -0.098427312376_dp, -0.000000000000_dp, 0.000000000000_dp, 0.746582265512_dp, &
+                                           0.047690906689_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                             0.021190548711_dp, 0.000000000000_dp, 0.058471503998_dp, 0.000000000000_dp, &
+                                            -0.000000000000_dp, 0.047690906689_dp, 0.510245234739_dp, 0.000000000000_dp, &
+                                           -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 0.004183310061_dp, &
+                                            0.000000000000_dp, -0.013700945330_dp, 0.047690906689_dp, 0.000000000000_dp, &
+                                           0.000000000000_dp, 0.586343429340_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                         -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                           0.407929748035_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                           0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                              -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 0.507159756493_dp], [N_OV, N_OV])
+   real(dp), parameter :: RHF_TRIPLET_A_EIG(N_OV) = [ &
+                          0.407929748035_dp, 0.493107875364_dp, 0.507159756493_dp, &
+                          0.559509762430_dp, 0.664359533721_dp, 0.742346594321_dp, &
+                          1.281018295514_dp, 1.398256329686_dp, 20.044661050881_dp, &
+                          20.114471636364_dp]
+   real(dp), parameter :: PBE_TRIPLET_A(N_OV, N_OV) = reshape([ &
+                                           18.735778954125_dp, 0.000000000000_dp, -0.005198341883_dp, 0.000000000000_dp, &
+                                            0.000000000000_dp, -0.002468429366_dp, 0.002911017825_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 18.843978547526_dp, &
+                                          0.000000000000_dp, -0.005849745439_dp, -0.002523027196_dp, -0.000000000000_dp, &
+                                           0.000000000000_dp, -0.003704306619_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                           -0.005198341883_dp, 0.000000000000_dp, 1.099749195038_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, -0.031716282447_dp, 0.027507647096_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, -0.005849745439_dp, &
+                                          -0.000000000000_dp, 1.220043699155_dp, -0.034630603385_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, 0.000256133849_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                           0.000000000000_dp, -0.002523027196_dp, 0.000000000000_dp, -0.034630603385_dp, &
+                                            0.646403184515_dp, 0.000000000000_dp, -0.000000000000_dp, 0.027066308972_dp, &
+                                           0.000000000000_dp, 0.000000000000_dp, -0.002468429366_dp, -0.000000000000_dp, &
+                                           -0.031716282447_dp, -0.000000000000_dp, 0.000000000000_dp, 0.732062077467_dp, &
+                                            0.022740831929_dp, 0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, &
+                                             0.002911017825_dp, 0.000000000000_dp, 0.027507647096_dp, 0.000000000000_dp, &
+                                            -0.000000000000_dp, 0.022740831929_dp, 0.438243244281_dp, 0.000000000000_dp, &
+                                          -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, -0.003704306619_dp, &
+                                             0.000000000000_dp, 0.000256133849_dp, 0.027066308972_dp, 0.000000000000_dp, &
+                                            0.000000000000_dp, 0.537318019557_dp, 0.000000000000_dp, -0.000000000000_dp, &
+                                         -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                            0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, &
+                                           0.346438094487_dp, 0.000000000000_dp, -0.000000000000_dp, -0.000000000000_dp, &
+                                           -0.000000000000_dp, 0.000000000000_dp, 0.000000000000_dp, -0.000000000000_dp, &
+                              -0.000000000000_dp, -0.000000000000_dp, 0.000000000000_dp, 0.455508915464_dp], [N_OV, N_OV])
+   real(dp), parameter :: PBE_TRIPLET_A_EIG(N_OV) = [ &
+                          0.346438094487_dp, 0.435145512444_dp, 0.455508915464_dp, &
+                          0.530873240438_dp, 0.650760930701_dp, 0.731465596452_dp, &
+                          1.103441080196_dp, 1.222127692703_dp, 18.735781281819_dp, &
+                          18.843981586911_dp]
+
    integer, parameter :: N_CCPVDZ_STATES = 5
       !! Roots asked for in the cc-pVDZ cases, which is how many the plan's
       !! tables carry.
@@ -231,6 +326,71 @@ module test_mqc_czt_tddft
    real(dp), parameter :: F2_CCPVDZ_TDA(N_F2_STATES) = [ &
                           0.183610964095_dp, 0.183610964095_dp, 0.332986263273_dp]
 
+   integer, parameter :: N_CCPVDZ_TRIPLETS = 3
+      !! Triplets asked for in the cc-pVDZ cases, which is how many the plan's
+      !! tables carry.
+
+   !! H2O/cc-pVDZ, the triplet roots, in Hartree, to twelve decimals, for the
+   !! Tamm-Dancoff and the full problem.
+   !!
+   !! Regenerated rather than transcribed, as the singlets were. `get_ab`
+   !! returns the singlet `A` and `B` whatever `td.singlet` says, so the RPA
+   !! references are probed out of the paired `gen_vind`, which respects it,
+   !! and reduced densely; for a pure functional PySCF routes that through
+   !! `TDDFTNoHybrid`, whose `gen_vind` is the Casida matrix on one vector and
+   !! whose eigenvalues are `w^2` outright. Reading the wrong one of those two
+   !! shapes is silent and gives PBE roots four times too small.
+   !!
+   !! The plan's ten-digit triplet tables agree with these to 1.3e-9 except
+   !! for B3LYP, whose whole column sits 2.3e-8 away in the plan -- singlets
+   !! and triplets, TDA and RPA alike, so it is the plan's B3LYP reference and
+   !! not anything about spin.
+   real(dp), parameter :: RHF_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.304752995712_dp, 0.382448306917_dp, 0.383738345685_dp]
+   real(dp), parameter :: PBE_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.245640585460_dp, 0.321365211218_dp, 0.322245501451_dp]
+   real(dp), parameter :: B3LYP_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.254376470706_dp, 0.331305647032_dp, 0.331912037086_dp]
+   real(dp), parameter :: CAM_CCPVDZ_TRIPLET(N_CCPVDZ_TRIPLETS) = [ &
+                          0.256574750592_dp, 0.335035697057_dp, 0.336081588546_dp]
+   real(dp), parameter :: RHF_CCPVDZ_TRIPLET_RPA(N_CCPVDZ_TRIPLETS) = [ &
+                          0.299715458168_dp, 0.373956218363_dp, 0.376953572951_dp]
+   real(dp), parameter :: PBE_CCPVDZ_TRIPLET_RPA(N_CCPVDZ_TRIPLETS) = [ &
+                          0.244650838105_dp, 0.319741652798_dp, 0.321478892159_dp]
+   real(dp), parameter :: B3LYP_CCPVDZ_TRIPLET_RPA(N_CCPVDZ_TRIPLETS) = [ &
+                          0.253105574522_dp, 0.329819908019_dp, 0.330198597791_dp]
+   real(dp), parameter :: CAM_CCPVDZ_TRIPLET_RPA(N_CCPVDZ_TRIPLETS) = [ &
+                          0.255374444156_dp, 0.332919878823_dp, 0.335011282187_dp]
+
+   !! Every root of the H2O/STO-3G Hartree-Fock **triplet** TDHF problem, the
+   !! partner of `RHF_STO3G_RPA` below. Each sits under its Tamm-Dancoff
+   !! partner in `RHF_TRIPLET_A_EIG`, as each singlet RPA root sits under its
+   !! own, and the whole triplet spectrum sits under the singlet one.
+   real(dp), parameter :: RHF_STO3G_TRIPLET_RPA(N_OV) = [ &
+                          0.406101746192_dp, 0.474511202342_dp, 0.506576117767_dp, &
+                          0.539432613518_dp, 0.659721221505_dp, 0.726963786914_dp, &
+                          1.276436161205_dp, 1.394618237824_dp, 20.044633687193_dp, &
+                          20.114433933272_dp]
+
+   integer, parameter :: N_BOTH_STATES = 3
+      !! Roots **per manifold** asked for by the `spin = "both"` case, so six
+      !! come back.
+
+   !! The union of the two H2O/STO-3G Tamm-Dancoff manifolds, as
+   !! `spin = "both"` reports it: the three lowest of each, sorted together.
+   !!
+   !! The interleaving is the point. Concatenating the manifolds, or sorting
+   !! within them and not across, gives a list in a different order that is
+   !! made of the same numbers -- so the spins have to be checked alongside
+   !! the energies, and both against a hand-merged reference rather than
+   !! against whatever the code produced.
+   real(dp), parameter :: BOTH_STO3G(2*N_BOTH_STATES) = [ &
+                          0.407929748035_dp, 0.485080278078_dp, 0.493107875364_dp, &
+                          0.507159756493_dp, 0.555807696384_dp, 0.617580730515_dp]
+   integer, parameter :: BOTH_STO3G_SPIN(2*N_BOTH_STATES) = [ &
+                         STATE_SPIN_TRIPLET, STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                         STATE_SPIN_TRIPLET, STATE_SPIN_SINGLET, STATE_SPIN_SINGLET]
+
    !! Hartree-Fock carries no quadrature, so nothing but the integrals and the
    !! two SCF thresholds sits between the codes, and both are converged far
    !! below this. Measured on the STO-3G matrix: 7.7e-13 on the worst diagonal
@@ -239,7 +399,8 @@ module test_mqc_czt_tddft
    !! the compiler-to-compiler spread and still sits eight orders under the
    !! smallest fault it has to catch: halving the kernel, dropping one
    !! exchange term or symmetrising the wrong way each move elements by 1e-2
-   !! and up.
+   !! and up. The triplet matrix lands in the same place, 6.1e-13 on the
+   !! diagonal and 3.8e-13 off it.
    real(dp), parameter :: TOL_EXACT = 1.0e-10_dp
 
    !! A Kohn-Sham comparison is limited by the grid, not by either solver.
@@ -253,11 +414,20 @@ module test_mqc_czt_tddft
    !! under the same grid. On cc-pVDZ, where the roots come through the
    !! solver rather than off a dense matrix, the worst of the five is 1.9e-10
    !! for PBE, 1.6e-9 for B3LYP and 6.4e-10 for CAM-B3LYP -- B3LYP being the
-   !! one to watch, at a sixtieth of this bound. 1e-7 clears the worst of them
+   !! one to watch, at a sixtieth of this bound. The RPA column lands in the
+   !! same places, 1.8e-10, 1.5e-9 and 6.3e-10, so the paired solver adds
+   !! nothing to what the quadrature already costs. 1e-7 clears the worst of them
    !! by that margin and leaves the compiler spread room, which the
    !! double-hybrid Hessian shows can reach 2e-9 on a quadrature of this kind.
    !! Tightening it to the measured numbers would be re-recording a pin to
    !! make it pass on one compiler.
+   !!
+   !! The triplet cases land in the same band: 3.5e-10 on the STO-3G PBE
+   !! matrix and its spectrum, and on cc-pVDZ 1.8e-10 for PBE, 5.6e-10 for
+   !! B3LYP and 1.9e-10 for CAM-B3LYP in the Tamm-Dancoff column, 1.9e-10,
+   !! 6.6e-10 and 2.0e-10 in the RPA one. The polarised kernel is evaluated
+   !! on the same points as the unpolarised one, so it adds no quadrature
+   !! error of its own.
    real(dp), parameter :: TOL_GRID = 1.0e-7_dp
 
    !! The Davidson's own floor, against a dense diagonalisation of the same
@@ -265,14 +435,407 @@ module test_mqc_czt_tddft
    !! eigenvalue error near an eigenvector is second order in the vector
    !! error, so this is a bound the solver clears by construction rather than
    !! one fitted to it -- measured 1.5e-11 on the worst of the five STO-3G
-   !! roots, against both the dense spectrum and PySCF's.
+   !! roots, against both the dense spectrum and PySCF's, and 1.7e-11 on the
+   !! worst of the six a `spin = "both"` solve merges.
    real(dp), parameter :: TOL_DAVIDSON = 1.0e-9_dp
 
    !! The cc-pVDZ Hartree-Fock roots. Looser than `TOL_EXACT` because these
    !! come out of the Davidson rather than off a dense diagonalisation, so the
    !! solver's own floor is in them as well as the integrals'. Measured
-   !! 3.1e-12 on the worst of the five, so the margin is four orders.
+   !! 3.1e-12 on the worst of the five for TDA and 9.2e-11 for RPA, whose
+   !! reduction amplifies the same disagreement the way it does at STO-3G.
+   !! The triplets are 2.2e-12 and 2.4e-12 on the same two -- better than
+   !! the singlet RPA because their reference was taken at `conv_tol = 1e-15`
+   !! rather than 1e-13, which is what that 9.2e-11 mostly is.
    real(dp), parameter :: TOL_CCPVDZ_HF = 1.0e-8_dp
+
+   !! ------------------------------------------------------------------
+   !! Layer 4: the full RPA
+   !! ------------------------------------------------------------------
+
+   !! Every root of the H2O/STO-3G Hartree-Fock TDHF problem, in Hartree.
+   !!
+   !! From `pyscf.tdscf.rhf.get_ab` on the same reference the matrices above
+   !! were taken from, reduced as `(A-B)^{1/2}(A+B)(A-B)^{1/2}` and
+   !! diagonalised whole, so there is no solver tolerance in them. The
+   !! non-Hermitian `2n` problem was diagonalised as well and agrees to
+   !! 4.6e-14, and PySCF's own iterative `TDHF` to 1.0e-13 -- three routes to
+   !! the same ten numbers, which is what makes them a reference rather than
+   !! one code's output.
+   !!
+   !! Every one of them sits below its Tamm-Dancoff partner in `RHF_A_EIG`,
+   !! which is the whole physical content of the approximation and is worth
+   !! seeing in the table: 0.4851 against 0.4835, 0.5558 against 0.5553.
+   real(dp), parameter :: RHF_STO3G_RPA(N_OV) = [ &
+                          0.483544026053_dp, 0.555275192922_dp, 0.613540106713_dp, &
+                          0.702292095334_dp, 0.806409059989_dp, 1.045220958387_dp, &
+                          1.462314417289_dp, 1.508625576304_dp, 20.107306379835_dp, &
+                          20.157271711632_dp]
+
+   !! H2O/cc-pVDZ, the five singlet RPA roots, in Hartree, for the four
+   !! functionals. Regenerated to twelve decimals the same way -- our own
+   !! basis JSON through `bse_to_pyscf`, the geometry handed over in Bohr --
+   !! and they reproduce the plan's ten-decimal table to 1.3e-9 at worst,
+   !! which is where a table written to ten decimals stops saying anything.
+   real(dp), parameter :: RHF_CCPVDZ_RPA(N_CCPVDZ_STATES) = [ &
+                          0.336535689992_dp, 0.401350367586_dp, 0.432987560701_dp, &
+                          0.497799802347_dp, 0.551224557096_dp]
+   real(dp), parameter :: PBE_CCPVDZ_RPA(N_CCPVDZ_STATES) = [ &
+                          0.269685669408_dp, 0.339275987762_dp, 0.354437859012_dp, &
+                          0.428784470826_dp, 0.509472350901_dp]
+   real(dp), parameter :: B3LYP_CCPVDZ_RPA(N_CCPVDZ_STATES) = [ &
+                          0.279639965109_dp, 0.348189899392_dp, 0.365848830007_dp, &
+                          0.438303579652_dp, 0.514775708061_dp]
+   real(dp), parameter :: CAM_CCPVDZ_RPA(N_CCPVDZ_STATES) = [ &
+                          0.282337416507_dp, 0.353035871122_dp, 0.368974575576_dp, &
+                          0.443809832697_dp, 0.515659298412_dp]
+
+   !! ---- Layer 5: transition properties, PySCF 2.14 ------------------------
+   !!
+   !! Regenerated through `bse_to_pyscf` with the geometry in Bohr, Hartree-Fock
+   !! at `conv_tol = 1e-15` and Kohn-Sham at 1e-13 on a level-5 grid, the same
+   !! way every reference above was taken. The transition dipoles are about the
+   !! nuclear charge centroid and the amplitudes behind them are at
+   !! `|X|^2 - |Y|^2 = 1/2` on both sides.
+   !!
+   !! **Two entries of the plan's own table are wrong and these replace them.**
+   !! `TDDFT_PLAN.md` gives the S1 Hartree-Fock TDA dipole as 0.5022552059 and
+   !! its velocity partner as 0.3627445611; both are larger than what PySCF
+   !! returns by exactly the square root of two, which is the unit-normalised
+   !! amplitude convention leaking into one row. S3, S4 and S5 in the plan
+   !! agree with what is written here to ten decimals.
+   real(dp), parameter :: RHF_TDA_DIPOLE(3, N_CCPVDZ_STATES) = reshape([ &
+                                                                       0.355148062389_dp, 0.0_dp, 0.0_dp, &
+                                                                       0.0_dp, 0.0_dp, 0.0_dp, &
+                                                                       0.0_dp, 0.0_dp, -0.610780180021_dp, &
+                                                                       0.0_dp, -0.532604359555_dp, 0.0_dp, &
+                                                                 0.0_dp, 0.921447176688_dp, 0.0_dp], [3, N_CCPVDZ_STATES])
+   real(dp), parameter :: RHF_TDA_VELOCITY(3, N_CCPVDZ_STATES) = reshape([ &
+                                                                         0.256499138474_dp, 0.0_dp, 0.0_dp, &
+                                                                         0.0_dp, 0.0_dp, 0.0_dp, &
+                                                                         0.0_dp, 0.0_dp, -0.315446153131_dp, &
+                                                                         0.0_dp, -0.197135741212_dp, 0.0_dp, &
+                                                                 0.0_dp, 0.480419606174_dp, 0.0_dp], [3, N_CCPVDZ_STATES])
+
+   !! `mu . v`, the one scalar here that survives the phase.
+   !!
+   !! Each state's amplitudes are defined up to an overall sign, so neither
+   !! `mu` nor `v` has a code-independent sign and the comparisons above are
+   !! in absolute value per component. Their dot product is not: flipping the
+   !! amplitude flips both factors. So this is what pins the **relative** sign
+   !! of the two gauges, which is the whole content of the velocity-gauge sign
+   !! convention -- `int1e_ipovlp` carries the gradient on the bra, and a code
+   !! that failed to negate it would reproduce every `f` in this file and get
+   !! all five of these numbers backwards.
+   real(dp), parameter :: RHF_TDA_MU_DOT_V(N_CCPVDZ_STATES) = [ &
+                          0.091095172034_dp, 0.0_dp, 0.192668258197_dp, &
+                          0.104995355194_dp, 0.442681289735_dp]
+
+   real(dp), parameter :: RHF_TDA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.028479546015_dp, 0.0_dp, 0.108302713416_dp, &
+                          0.094795565262_dp, 0.312952516616_dp]
+   real(dp), parameter :: RHF_TDA_F_VELOCITY(N_CCPVDZ_STATES) = [ &
+                          0.129501601893_dp, 0.0_dp, 0.152334575503_dp, &
+                          0.051685608718_dp, 0.278305229319_dp]
+
+   !! The plan's `f(RPA)` column, and Psi4's velocity-gauge row beside it:
+   !! 0.100832, 0, 0.176908, 0.087266, 0.307805, which these reproduce to the
+   !! six decimals Psi4 was quoted at.
+   real(dp), parameter :: RHF_RPA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.029232003675_dp, 0.0_dp, 0.101773949809_dp, &
+                          0.083885168197_dp, 0.297522971467_dp]
+   real(dp), parameter :: RHF_RPA_F_VELOCITY(N_CCPVDZ_STATES) = [ &
+                          0.100832151883_dp, 0.0_dp, 0.176907810509_dp, &
+                          0.087266119111_dp, 0.307804610642_dp]
+   real(dp), parameter :: PBE_RPA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.023155131277_dp, 0.0_dp, 0.080097317902_dp, &
+                          0.055632508818_dp, 0.270187360757_dp]
+   real(dp), parameter :: CAM_RPA_F_LENGTH(N_CCPVDZ_STATES) = [ &
+                          0.023234175403_dp, 0.0_dp, 0.079772938174_dp, &
+                          0.055101644044_dp, 0.279185406544_dp]
+
+   !! The four leading natural transition orbital weights of the first
+   !! Hartree-Fock TDA root, from PySCF's `get_nto`. The fifth is 1.2e-7 and
+   !! the whole column sums to one by construction.
+   real(dp), parameter :: RHF_TDA_NTO_S1(4) = [ &
+                          0.999774184326_dp, 0.000116293097_dp, &
+                          0.000090607184_dp, 0.000018795566_dp]
+
+   !! Hydrogen at 3.0 Angstrom in 6-31G, written out in Bohr for the reason
+   !! the water geometry is.
+   !!
+   !! A stretched closed-shell H2 is the standard place to look for a broken
+   !! reference, and the singlet channel is not where it breaks: `(A-B)` here
+   !! has eigenvalues 0.0305, 0.9295 and 1.0355, all positive, and PySCF
+   !! converges the spectrum without complaint. So this case gates the
+   !! agreement, not the refusal -- the instability path is exercised in
+   !! `test_mqc_czt_rpa_solver`, where an indefinite difference can be
+   !! constructed rather than hoped for. What the case is still worth: the
+   !! smallest of those eigenvalues is thirty times below the others, which
+   !! is the near-singular `(A-B)` its square root has to survive.
+   real(dp), parameter :: H2_BOHR(3, 2) = reshape([ &
+                                                  0.0_dp, 0.0_dp, 0.0_dp, &
+                                                  0.0_dp, 0.0_dp, 5.66917837637348399_dp], [3, 2])
+   real(dp), parameter :: H2_631G_ENERGY = -0.815591795493_dp
+   real(dp), parameter :: H2_631G_RPA(3) = [ &
+                          0.112116666867_dp, 0.999987235658_dp, 1.099106035658_dp]
+
+   !! The dense reduction against PySCF's, and why this is not `TOL_EXACT`.
+   !!
+   !! Hartree-Fock carries no quadrature, so the two codes' `(A+B)` and
+   !! `(A-B)` agree to 7.7e-13 element by element -- and their *reduction*
+   !! agrees three decimals worse than that. `(A-B)^{1/2}(A+B)(A-B)^{1/2}`
+   !! has a norm near 800 on this system, so a part in 1e12 of the matrices
+   !! is a part in 1e11 of `w^2`, and `w = sqrt(w^2)` halves nothing that
+   !! matters at these magnitudes. The measured per-root disagreement is
+   !! 2.3e-11, 2.5e-11, 1.6e-11, 1.9e-11, 3.8e-12, 5.0e-12, 3.1e-12,
+   !! 1.2e-11, 7.5e-11 and 6.7e-11 -- the two worst being the 20-hartree core
+   !! excitations, which carry the norm. A bound of 1e-10 would pass with a
+   !! margin of 1.3, which is a pin fitted to one compiler rather than a
+   !! gate; this one clears the worst by thirteen and still sits eight orders
+   !! under the smallest fault it has to catch, a sign error or a dropped
+   !! term in either half moving roots by 1e-2 and up.
+   !!
+   !! The triplet spectrum of the same system is 6.8e-13 against the same
+   !! bound, for the reason the cc-pVDZ note below gives: its reference was
+   !! taken at a tighter SCF.
+   real(dp), parameter :: TOL_RPA_DENSE = 1.0e-9_dp
+
+   !! The paired solver against a dense reduction of the operator it was
+   !! given. Measured 7.0e-14 on the worst of the five STO-3G roots against
+   !! the dense spectrum and 2.5e-11 against PySCF's, and 1.9e-12 on
+   !! stretched H2. The bound is the Davidson's, for the same reason -- roots
+   !! are accepted on a residual and the eigenvalue error near an
+   !! eigenvector is second order in the vector error.
+   real(dp), parameter :: TOL_RPA_SOLVER = 1.0e-9_dp
+
+   !! `sum(X^2) - sum(Y^2)` against the half the routine documents. An
+   !! algebraic identity the solver imposes by division rather than a
+   !! converged quantity, so it holds to round-off however far the roots got:
+   !! measured 2.2e-16.
+   real(dp), parameter :: TOL_PAIRED_NORM = 1.0e-10_dp
+
+   !! A transition moment component against PySCF's, in absolute value, and
+   !! `mu . v` with its sign. Hartree-Fock, so no quadrature enters either
+   !! side and what is left is the amplitudes: measured 2.3e-10 on the worst
+   !! of fifteen length-gauge components, 1.5e-10 on the worst velocity-gauge
+   !! one and 2.3e-11 on the worst dot product. A moment is linear in the
+   !! amplitude where an eigenvalue is quadratic in it, so these sit two or
+   !! three decimals above the excitation energies above and the bound is the
+   !! plan's 1e-7 rather than their 1e-9.
+   real(dp), parameter :: TOL_DIPOLE = 1.0e-7_dp
+
+   !! An oscillator strength against PySCF's. Measured, over both gauges and
+   !! all five roots: 6.0e-11 for Hartree-Fock TDA, 5.3e-11 for its RPA,
+   !! 1.9e-10 for PBE RPA and 1.3e-09 for CAM-B3LYP RPA, the last two
+   !! carrying the grid. The bound is the plan's 1e-6 for the length gauge
+   !! and 1e-5 for the velocity one, whose reference is Psi4 quoted to six
+   !! decimals rather than PySCF quoted to twelve.
+   real(dp), parameter :: TOL_OSCILLATOR = 1.0e-6_dp
+   real(dp), parameter :: TOL_OSCILLATOR_VELOCITY = 1.0e-5_dp
+
+   !! A natural transition orbital weight against PySCF's, and the sum of a
+   !! column against one. The first is a squared singular value of a matrix
+   !! the two codes agree on to 1e-11, measured 3.4e-13; the second is an
+   !! identity of the decomposition and came out exactly zero.
+   real(dp), parameter :: TOL_NTO = 1.0e-8_dp
+   real(dp), parameter :: TOL_NTO_SUM = 1.0e-12_dp
+
+   !! The iterative spectrum's summed oscillator strength against a dense
+   !! evaluation of the same sum. Both sides use the same integrals and the
+   !! same contraction, so what is being compared is the amplitudes; measured
+   !! 8.3e-14 in the length gauge and 4.2e-14 in the velocity one, over all
+   !! ten roots of the space.
+   real(dp), parameter :: TOL_SUM_RULE = 1.0e-8_dp
+
+   !! The Casida reduction against the paired solver, on the same PBE
+   !! reference. Two solvers, two operators and one spectrum; measured
+   !! 9.0e-14 on the worst of five, and 3.3e-14 in the triplet manifold.
+   real(dp), parameter :: TOL_CASIDA = 1.0e-9_dp
+
+   ! --- Layer 6: the unrestricted gates -------------------------------------
+
+   integer, parameter :: OH_N_OV = 130
+      !! Spin-blocked rotations of the OH radical in cc-pVDZ: nineteen
+      !! functions, five alpha and four beta electrons, so `5*14 + 4*15`.
+
+   !! The OH radical, **in Bohr**: O at the origin, H at 0.9697 Angstrom on z.
+   !!
+   !! The plan's Angstrom distance times 1.8897261254578281, written out and
+   !! handed to PySCF as Bohr, for the reason `WATER_BOHR` above is: the two
+   !! codes carry different CODATA Bohr radii and converting on each side
+   !! moves every orbital energy by 5e-10.
+   real(dp), parameter :: OH_BOHR(3, 2) = reshape([ &
+                                                  0.0_dp, 0.0_dp, 0.0_dp, &
+                                                  0.0_dp, 0.0_dp, 1.832467423856456_dp], &
+                                                  [3, 2])
+
+   real(dp), parameter :: OH_UHF_ENERGY = -75.393846033464_dp
+
+   !! `trace(A)` and `||A||_F` of the 130 by 130 unrestricted Tamm-Dancoff
+   !! matrix.
+   !!
+   !! The matrix itself is too large to pin element by element, and its
+   !! individual elements are not code-independent anyway -- OH is a 2-Pi
+   !! radical, so its degenerate pi pair can be mixed arbitrarily between two
+   !! codes. These two summaries are invariant under both the phase and that
+   !! mixing, and between them every element contributes to one or the other.
+   !! Their own run-to-run scatter from the threaded accumulation is 1e-11.
+   real(dp), parameter :: OH_UHF_TRACE = 852.525539816128_dp
+   real(dp), parameter :: OH_UHF_FROBENIUS = 119.939597984151_dp
+
+   !! The five lowest unrestricted Tamm-Dancoff roots of OH / cc-pVDZ.
+   !!
+   !! **The first is not an excitation and is reported anyway.** 6.7e-3
+   !! hartree is the rotation of the singly-occupied pi shell, which `A`
+   !! alone is not singular along and the Tamm-Dancoff spectrum therefore
+   !! keeps; the paired problem puts the same rotation at `w^2 = 0` and drops
+   !! it, which is why the RPA list below starts one root higher. Neither is
+   !! a fault in the solver, and `TDDFT_PLAN.md` says so.
+   real(dp), parameter :: OH_UHF_TDA(5) = [ &
+                          0.006697638062_dp, 0.173272241494_dp, 0.326244801914_dp, &
+                          0.372883427182_dp, 0.431442526350_dp]
+
+   !! The five lowest unrestricted RPA roots, the zero already dropped.
+   real(dp), parameter :: OH_UHF_RPA(5) = [ &
+                          0.169746047579_dp, 0.321231703197_dp, 0.370114042055_dp, &
+                          0.415769391408_dp, 0.453280297821_dp]
+
+   ! --- the Kohn-Sham gates, on a different doublet --------------------------
+   !
+   !! **Why the unrestricted Kohn-Sham cases are not the OH radical.**
+   !!
+   !! `TDDFT_PLAN.md` puts them there too, and they cannot go there. OH is a
+   !! 2-Pi radical: the singly-occupied pi orbital is one of a degenerate
+   !! pair, and a quadrature is not cylindrically symmetric, so the two
+   !! orientations of that hole are **two distinct stationary points** of the
+   !! Kohn-Sham energy, 6e-7 hartree apart. Both codes land on one or the
+   !! other depending on the initial guess and, because the valley between
+   !! them is nearly flat, on the order the threads finished the grid in:
+   !! PySCF's `minao` and `atom` guesses reach one and its `1e` guess the
+   !! other, and this program's own SCF was measured on both across two runs
+   !! of the same test. The first root moves by 4.4e-5 between them, which is
+   !! the rotation itself, and the next two by 3e-6.
+   !!
+   !! That is a property of the molecule, not of either code, and no
+   !! tolerance makes it a gate. The water **cation** is the same
+   !! unrestricted physics with a non-degenerate singly-occupied orbital, at
+   !! the geometry this file already carries: PySCF converges it to
+   !! |g| = 3e-10 from either guess, onto the same solution to twelve
+   !! decimals. The Hartree-Fock gates stay on OH, where there is no
+   !! quadrature to break the degeneracy and the two orientations are exactly
+   !! degenerate.
+
+   !! The water cation's five lowest roots, 175 spin-blocked rotations
+   !! (`5*19 + 4*20`), from a dense diagonalisation of PySCF's own operator.
+   !! `E(UKS PBE) = -75.881628961747`, `E(UKS B3LYP) = -75.967356416634`,
+   !! both converged to `|g| < 5e-10` from either initial guess.
+   real(dp), parameter :: CATION_PBE_TDA(5) = [ &
+                          0.097595783031_dp, 0.240744153231_dp, 0.473433123899_dp, &
+                          0.508215741547_dp, 0.515707923119_dp]
+
+   real(dp), parameter :: CATION_B3LYP_TDA(5) = [ &
+                          0.091902458748_dp, 0.237603694194_dp, 0.484648424585_dp, &
+                          0.518092069836_dp, 0.529036148197_dp]
+
+   real(dp), parameter :: CATION_B3LYP_RPA(5) = [ &
+                          0.089312820588_dp, 0.236158714407_dp, 0.482329524466_dp, &
+                          0.517089540365_dp, 0.527087149050_dp]
+
+   !! The water cation's first three CAM-B3LYP roots, the same 175 spin-blocked
+   !! rotations dense-diagonalised out of PySCF's own operator.
+   !! `E(UKS CAM-B3LYP) = -75.939126000634`, converged to `|g| < 5e-10` from
+   !! the `minao`, `1e` and `atom` guesses, which agree with each other to
+   !! twelve decimals in the energy and to 1.2e-10 in the worst of these three
+   !! roots. **This is the only gate on the range-separated unrestricted
+   !! product**: CAM-B3LYP is the one functional here that makes
+   !! `response_mean_field_uhf` take its second integral pass, at `j_scale = 0`
+   !! and the attenuated `omega`, so a missing or misscaled long-range
+   !! exchange shows up nowhere else on the unrestricted path.
+   real(dp), parameter :: CATION_CAM_TDA(3) = [ &
+                          0.088470327358_dp, 0.234583947377_dp, 0.487459262577_dp]
+
+   !! Triplet H2 at 1.4 Bohr, a reference with two alpha electrons and **no
+   !! beta electrons at all**: the beta spin contributes no rotations, so the
+   !! trial vector is the alpha block alone and every beta half is empty.
+   !! `E(UHF) = -0.766770390234`, `|g| = 1.8e-13`, 16 alpha excitations, and
+   !! the Fock matrix is diagonal in both sets of orbitals to 1.2e-13, so
+   !! these are canonical.
+   !!
+   !! Roots 3 and 4 are the two perpendicular pi components and are exactly
+   !! degenerate. **Five roots, not three**: asked for three, the Davidson
+   !! converges 1, 2 and 5 and reports the last as root 3 -- its guess is the
+   !! three lowest diagonal gaps and `roots_to_solve` extends that over a
+   !! degenerate *diagonal*, which this pair is not. That is the solver's
+   !! guess, not the unrestricted operator, and it happens on a closed shell
+   !! the same way; it is recorded here because a three-root gate on this
+   !! molecule would pin the wrong spectrum.
+   real(dp), parameter :: H2_TRIPLET_BOHR(3, 2) = reshape([ &
+                                                          0.0_dp, 0.0_dp, 0.0_dp, &
+                                                          0.0_dp, 0.0_dp, 1.4_dp], &
+                                                          [3, 2])
+
+   real(dp), parameter :: H2_TRIPLET_TDA(5) = [ &
+                          0.251093280011_dp, 0.598938222312_dp, 0.870154715086_dp, &
+                          0.870154715086_dp, 0.875564711106_dp]
+
+   real(dp), parameter :: EXCITED_FLOOR = 1.0e-3_dp
+      !! What the solver calls a rotation rather than an excitation, repeated
+      !! here so the paired test can assert that the near-zero root fell below
+      !! it rather than assume so.
+
+   !! The unrestricted operator's spin sum and difference against the two
+   !! restricted manifolds, for a Kohn-Sham reference.
+   !!
+   !! Looser than `TOL_EXACT` by an order because the two sides ask libxc for
+   !! the same analytic quantity two ways: the restricted kernel out of the
+   !! unpolarised functional, this one out of the polarised functional at
+   !! `rho_a = rho_b`. Hartree-Fock has no such split and is held at
+   !! `TOL_EXACT`.
+   real(dp), parameter :: TOL_UKS_MANIFOLD = 1.0e-9_dp
+
+   !! ---- unrestricted transition properties, PySCF 2.14 ---------------------
+   !!
+   !! From `pyscf/tdscf/uhf.py`'s `_contract_multipole`, which sums the two
+   !! spin blocks and carries **no** factor of two: the unrestricted
+   !! amplitudes are at `sum_sigma (|X|^2 - |Y|^2) = 1` and the spin sum the
+   !! restricted factor stands for is written out instead. Taking the
+   !! restricted route here would double every number below, which is why
+   !! these are gated at all -- the energies are indifferent to it.
+   !!
+   !! Regenerated through `tools/tddft_validation/gen_tddft_refs.py`, so the
+   !! basis comes out of this repository's own JSON and the geometry is in
+   !! Bohr.
+
+   !! OH / cc-pVDZ Tamm-Dancoff, length gauge. The first entry is the
+   !! rotation of the half-filled shell, whose strength is an exact zero
+   !! rather than a small number; the four gated roots are 2 through 5.
+   real(dp), parameter :: OH_UHF_TDA_F(5) = [ &
+                          0.000000000000_dp, 0.002907286382_dp, 0.002890450224_dp, &
+                          0.017955105059_dp, 0.005689301472_dp]
+
+   !! OH / cc-pVDZ RPA, length gauge. No rotation root here -- the paired
+   !! problem dropped it -- so all five are physical and the four the plan
+   !! names are 1 through 4.
+   real(dp), parameter :: OH_UHF_RPA_F(5) = [ &
+                          0.002813257372_dp, 0.002835697679_dp, 0.018691764517_dp, &
+                          0.004312164576_dp, 0.019019968724_dp]
+
+   !! The water cation, UKS B3LYP Tamm-Dancoff, length gauge. The second root
+   !! is dark by symmetry and comes back as an exact zero on both sides.
+   real(dp), parameter :: CATION_B3LYP_TDA_F(5) = [ &
+                          0.001469503610_dp, 0.000000000000_dp, 0.004206399943_dp, &
+                          0.019383726738_dp, 0.080883930436_dp]
+
+   !! An unrestricted oscillator strength against PySCF's.
+   !!
+   !! The plan asks for 1e-6 and these are held at it. Measured: 2.3e-11 on
+   !! the worst OH Hartree-Fock root over both routes, and 1.2e-9 on the
+   !! worst cation B3LYP one, the latter carrying the quadrature through the
+   !! orbitals it was converged with. The two dark roots come back at 2e-33
+   !! and 8e-31 -- an exact cancellation of the moment rather than a small
+   !! number, which is what a symmetry-forbidden transition should give.
+   real(dp), parameter :: TOL_UHF_OSCILLATOR = 1.0e-6_dp
 
 contains
 
@@ -290,7 +853,96 @@ contains
                   new_unittest("cc_pvdz_cam_b3lyp_singlets_match_the_table", test_ccpvdz_cam), &
                   new_unittest("three_roots_of_f2_are_the_lowest_three", test_f2_lowest_three), &
                   new_unittest("no_states_asked_for_means_no_spectrum", test_no_states), &
-                  new_unittest("rpa_and_triplets_are_refused_by_name", test_later_layers) &
+                  new_unittest("an_unknown_method_or_spin_is_refused", &
+                               test_later_layers), &
+                  new_unittest("the_rhf_rpa_spectrum_matches_pyscf", test_rhf_rpa_matrix), &
+                  new_unittest("the_paired_solver_matches_the_dense_reduction", &
+                               test_rpa_solver), &
+                  new_unittest("cc_pvdz_rhf_rpa_matches_the_table", test_ccpvdz_rhf_rpa), &
+                  new_unittest("cc_pvdz_pbe_rpa_matches_the_table", test_ccpvdz_pbe_rpa), &
+                  new_unittest("cc_pvdz_b3lyp_rpa_matches_the_table", &
+                               test_ccpvdz_b3lyp_rpa), &
+                  new_unittest("cc_pvdz_cam_b3lyp_rpa_matches_the_table", &
+                               test_ccpvdz_cam_rpa), &
+                  new_unittest("the_casida_reduction_matches_the_paired_solver", &
+                               test_casida), &
+                  new_unittest("stretched_h2_rpa_matches_pyscf", test_stretched_h2), &
+                  new_unittest("the_rhf_triplet_tda_matrix_matches_pyscf", &
+                               test_rhf_triplet_matrix), &
+                  new_unittest("the_pbe_triplet_tda_matrix_matches_pyscf", &
+                               test_pbe_triplet_matrix), &
+                  new_unittest("the_rhf_triplet_rpa_spectrum_matches_pyscf", &
+                               test_rhf_triplet_rpa), &
+                  new_unittest("cc_pvdz_rhf_triplets_match_pyscf", test_ccpvdz_rhf_t), &
+                  new_unittest("cc_pvdz_pbe_triplets_match_pyscf", test_ccpvdz_pbe_t), &
+                  new_unittest("cc_pvdz_b3lyp_triplets_match_pyscf", &
+                               test_ccpvdz_b3lyp_t), &
+                  new_unittest("cc_pvdz_cam_b3lyp_triplets_match_pyscf", &
+                               test_ccpvdz_cam_t), &
+                  new_unittest("cc_pvdz_rhf_triplet_rpa_matches_pyscf", &
+                               test_ccpvdz_rhf_t_rpa), &
+                  new_unittest("cc_pvdz_pbe_triplet_rpa_matches_pyscf", &
+                               test_ccpvdz_pbe_t_rpa), &
+                  new_unittest("cc_pvdz_b3lyp_triplet_rpa_matches_pyscf", &
+                               test_ccpvdz_b3lyp_t_rpa), &
+                  new_unittest("cc_pvdz_cam_b3lyp_triplet_rpa_matches_pyscf", &
+                               test_ccpvdz_cam_t_rpa), &
+                  new_unittest("the_casida_reduction_matches_the_triplet_solver", &
+                               test_casida_triplet), &
+                  new_unittest("both_manifolds_interleave_by_energy", test_both_spins), &
+                  new_unittest("a_triplet_unstable_reference_is_named", test_instability), &
+                  new_unittest("every_route_returns_the_same_amplitude_norm", &
+                               test_amplitude_norm), &
+                  new_unittest("cc_pvdz_rhf_tda_transition_moments_match_pyscf", &
+                               test_tda_moments), &
+                  new_unittest("cc_pvdz_rhf_rpa_strengths_match_pyscf", &
+                               test_rpa_strengths), &
+                  new_unittest("cc_pvdz_pbe_rpa_strengths_match_pyscf", &
+                               test_pbe_rpa_strengths), &
+                  new_unittest("cc_pvdz_cam_b3lyp_rpa_strengths_match_pyscf", &
+                               test_cam_rpa_strengths), &
+                  new_unittest("the_nto_weights_of_the_first_root_match_pyscf", &
+                               test_nto_weights), &
+                  new_unittest("a_triplet_carries_no_transition_moment_at_all", &
+                               test_triplet_moments), &
+                  new_unittest("the_iterative_properties_match_a_dense_evaluation", &
+                               test_property_sum_rule), &
+                  new_unittest("a_run_through_the_bridge_reports_its_strengths", &
+                               test_bridge_properties), &
+                  new_unittest("an_unreachable_tolerance_stops_and_says_so", &
+                               test_unreachable_tolerance), &
+                  new_unittest("the_oh_uhf_tda_matrix_matches_pyscf", &
+                               test_oh_uhf_matrix), &
+                  new_unittest("the_oh_uhf_rpa_spectrum_matches_pyscf", &
+                               test_oh_uhf_rpa_matrix), &
+                  new_unittest("oh_uhf_tda_roots_match_pyscf", &
+                               test_oh_uhf_tda_solver), &
+                  new_unittest("oh_uhf_rpa_roots_match_pyscf", &
+                               test_oh_uhf_rpa_solver), &
+                  new_unittest("cation_uks_pbe_tda_roots_match_pyscf", &
+                               test_cation_uks_pbe), &
+                  new_unittest("cation_uks_b3lyp_tda_roots_match_pyscf", &
+                               test_cation_uks_b3lyp), &
+                  new_unittest("cation_uks_b3lyp_rpa_roots_match_pyscf", &
+                               test_cation_uks_b3lyp_rpa), &
+                  new_unittest("cation_uks_cam_b3lyp_tda_roots_match_pyscf", &
+                               test_cation_uks_cam), &
+                  new_unittest("a_reference_with_no_beta_electrons_has_a_spectrum", &
+                               test_no_beta_electrons), &
+                  new_unittest("unrestricted_amplitudes_carry_unit_norm", &
+                               test_uhf_amplitude_norm), &
+                  new_unittest("the_unrestricted_hf_operator_holds_both_manifolds", &
+                               test_restricted_from_unrestricted_hf), &
+                  new_unittest("the_unrestricted_pbe_operator_holds_both_manifolds", &
+                               test_restricted_from_unrestricted_pbe), &
+                  new_unittest("oh_uhf_tda_strengths_match_pyscf", &
+                               test_oh_uhf_tda_strengths), &
+                  new_unittest("oh_uhf_rpa_strengths_match_pyscf", &
+                               test_oh_uhf_rpa_strengths), &
+                  new_unittest("cation_uks_b3lyp_tda_strengths_match_pyscf", &
+                               test_cation_b3lyp_strengths), &
+                  new_unittest("an_unrestricted_moment_carries_no_closed_shell_factor", &
+                               test_unrestricted_spin_sum) &
                   ]
    end subroutine collect_mqc_czt_tddft_tests
 
@@ -324,7 +976,7 @@ contains
       end if
    end subroutine water_sto3g
 
-   subroutine dense_tda(mol, scf, ctx, kohn_sham, a, err)
+   subroutine dense_tda(mol, scf, ctx, kohn_sham, a, err, spin)
       !! The explicit TDA matrix, through the operator the solver uses
       !!
       !! `tda_dense_matrix` applies the shipped operator to the ten unit
@@ -344,18 +996,24 @@ contains
       logical, intent(in) :: kohn_sham
       real(dp), allocatable, intent(out) :: a(:, :)
       type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: spin
+         !! Which manifold, `singlet` when absent -- so every Layer 2 case
+         !! below reaches exactly the operator it always did.
 
       type(tda_operator_t) :: operator
+      character(len=16) :: manifold
 
       if (err%has_error()) return
+      manifold = "singlet"
+      if (present(spin)) manifold = spin
 
       if (kohn_sham) then
          call build_tda_operator(mol, scf%orbitals, scf%orbital_energies, &
                                  scf%n_occupied, operator, err, xc=ctx, &
-                                 reference=scf%density)
+                                 reference=scf%density, spin=trim(manifold))
       else
          call build_tda_operator(mol, scf%orbitals, scf%orbital_energies, &
-                                 scf%n_occupied, operator, err)
+                                 scf%n_occupied, operator, err, spin=trim(manifold))
       end if
       if (err%has_error()) return
 
@@ -556,7 +1214,8 @@ contains
       fragment%coordinates = F2_BOHR
    end subroutine difluorine_fragment
 
-   subroutine excited_run(basis, functional, n_states, method, spin, result, molecule)
+   subroutine excited_run(basis, functional, n_states, method, spin, result, &
+                          tolerance, molecule)
       !! One whole calculation through the bridge, with an excited-state block
       !!
       !! Through `run_czt_hf` rather than the solver directly, because what
@@ -565,6 +1224,9 @@ contains
       character(len=*), intent(in) :: basis, functional, method, spin
       integer, intent(in) :: n_states
       type(calculation_result_t), intent(out) :: result
+      real(dp), intent(in), optional :: tolerance
+         !! What a root is accepted at. Absent is 1e-8, which every case here
+         !! but the deliberately unreachable one is compared at.
       type(physical_fragment_t), intent(in), optional :: molecule
          !! What to run it on. Absent is the water every other case here uses.
 
@@ -591,19 +1253,25 @@ contains
       settings%excited%method = method
       settings%excited%spin = spin
       settings%excited%tolerance = 1.0e-8_dp
+      if (present(tolerance)) settings%excited%tolerance = tolerance
       settings%excited%max_iter = 200
 
       call run_czt_hf(settings, fragment, result)
    end subroutine excited_run
 
-   subroutine compare_roots(error, result, reference, tol, what)
+   subroutine compare_roots(error, result, reference, tol, what, spin_code)
       !! Every root of the table, against what the run reported
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), intent(in) :: result
       real(dp), intent(in) :: reference(:), tol
       character(len=*), intent(in) :: what
+      integer, intent(in), optional :: spin_code
+         !! What every root should be labelled; `STATE_SPIN_SINGLET` absent.
 
-      integer :: i
+      integer :: i, want_spin
+
+      want_spin = STATE_SPIN_SINGLET
+      if (present(spin_code)) want_spin = spin_code
 
       call check(error,.not. result%has_error, "the "//what//" run failed: "// &
                  result%error%get_message())
@@ -621,15 +1289,16 @@ contains
 
       do i = 1, size(reference)
          call check(error, abs(result%excitation_energies(i) - reference(i)) < tol, &
-                    "a "//what//" TDA excitation energy disagrees with the table")
+                    "a "//what//" excitation energy disagrees with the table")
          if (allocated(error)) return
       end do
 
       call check(error, allocated(result%state_spin), "the "//what//" run labelled "// &
                  "no spins")
       if (allocated(error)) return
-      call check(error, all(result%state_spin == STATE_SPIN_SINGLET), &
-                 "a singlet solve reported a root that is not labelled a singlet")
+      call check(error, all(result%state_spin == want_spin), &
+                 "a single-manifold solve reported a root labelled with the other "// &
+                 "spin")
    end subroutine compare_roots
 
    subroutine test_davidson(error)
@@ -757,7 +1426,8 @@ contains
       type(physical_fragment_t) :: fragment
 
       call difluorine_fragment(fragment)
-      call excited_run("cc-pvdz", "", N_F2_STATES, "tda", "singlet", result, fragment)
+      call excited_run("cc-pvdz", "", N_F2_STATES, "tda", "singlet", result, &
+                       molecule=fragment)
       call check(error, abs(result%energy%scf - F2_CCPVDZ_ENERGY) < 1.0e-8_dp, &
                  "the F2/cc-pVDZ Hartree-Fock energy is not the one the reference "// &
                  "spectrum was taken at")
@@ -796,30 +1466,2445 @@ contains
                  "a run that asked for no roots allocated excitation energies")
    end subroutine test_no_states
 
-   subroutine test_later_layers(error)
-      !! What Layer 2 does not do is refused by name, not approximated
+   subroutine test_rhf_triplet_matrix(error)
+      !! The ten-by-ten triplet TDA matrix of H2O/STO-3G, element by element
       !!
-      !! A TDA number handed back for an RPA deck is the failure worth
-      !! guarding against: it converges, it is of the right magnitude, and
-      !! nothing in the output says which problem was solved.
+      !! Two independent changes separate this matrix from the singlet one:
+      !! the Coulomb term is gone, and the kernel -- absent here, since this
+      !! is Hartree-Fock -- would be the spin difference. So for Hartree-Fock
+      !! this case is the `j_scale = 0` half of Layer 3 isolated from the
+      !! kernel, and the PBE case below is the other half.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: a(:, :), values(:)
+      logical :: ok
+
+      call water_sto3g(mol, scf, ctx, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the Hartree-Fock reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda(mol, scf, ctx, .false., a, err, spin="triplet")
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the triplet TDA operator failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call compare_matrix(error, a, RHF_TRIPLET_A, TOL_EXACT, "Hartree-Fock triplet")
+      if (allocated(error)) return
+
+      values = eigenvalues_of(a, ok)
+      call check(error, ok, "the dense diagonalisation of the triplet matrix failed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values - RHF_TRIPLET_A_EIG)) < TOL_EXACT, &
+                 "the Hartree-Fock triplet TDA spectrum disagrees with PySCF")
+      if (allocated(error)) return
+
+      ! Every triplet below its singlet partner, which is Hund's rule and a
+      ! check no tolerance would catch if the two spectra had been
+      ! transcribed into each other's places.
+      call check(error, all(RHF_TRIPLET_A_EIG < RHF_A_EIG), "a triplet root came "// &
+                 "out above its singlet partner")
+   end subroutine test_rhf_triplet_matrix
+
+   subroutine test_pbe_triplet_matrix(error)
+      !! The same, for a pure functional, where the triplet kernel is the
+      !! whole of the coupling
+      !!
+      !! PBE carries no exact exchange and a triplet has no Coulomb term, so
+      !! every element off the orbital-energy diagonal here comes from
+      !! `(f_aa - f_ab)/2` and nothing else. A kernel evaluated unpolarised --
+      !! that is, the singlet one left in place -- moves the first root by
+      !! 0.07 hartree, and the four GGA combinations mis-weighted against each
+      !! other move it by less but never by less than this bound.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: a(:, :), values(:)
+      logical :: ok
+
+      if (.not. xc_available()) return
+
+      call water_sto3g(mol, scf, ctx, err, functional="pbe")
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the PBE reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda(mol, scf, ctx, .true., a, err, spin="triplet")
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the PBE triplet TDA operator failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call compare_matrix(error, a, PBE_TRIPLET_A, TOL_GRID, "PBE triplet")
+      if (allocated(error)) return
+
+      values = eigenvalues_of(a, ok)
+      call check(error, ok, "the dense diagonalisation of the PBE triplet matrix "// &
+                 "failed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values - PBE_TRIPLET_A_EIG)) < TOL_GRID, &
+                 "the PBE triplet TDA spectrum disagrees with PySCF")
+   end subroutine test_pbe_triplet_matrix
+
+   subroutine test_rhf_triplet_rpa(error)
+      !! Every triplet RPA root of H2O/STO-3G, from the two explicit halves
+      !!
+      !! `(A-B)` is exchange only and so is the same operator for both spins;
+      !! the whole of the difference is in `(A+B)`. This case reads the two
+      !! apart, which the Tamm-Dancoff half sum above cannot, so an error
+      !! that moved them oppositely would survive that gate and fail here.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :)
+      real(dp), allocatable :: splus(:, :), sminus(:, :), values(:)
+      logical :: ok
+
+      call water_sto3g(mol, scf, ctx, err)
+      if (.not. err%has_error()) &
+         call dense_rpa(mol, scf, ctx, .false., aplus, aminus, err, spin="triplet")
+      if (.not. err%has_error()) &
+         call dense_rpa(mol, scf, ctx, .false., splus, sminus, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the triplet RPA matrices failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      ! The two halves average to the triplet `A` already pinned above.
+      call compare_matrix(error, 0.5_dp*(aplus + aminus), RHF_TRIPLET_A, TOL_EXACT, &
+                          "triplet half-sum")
+      if (allocated(error)) return
+
+      ! `(A-B)` is exchange only, so it does not know which manifold it is
+      ! in. Not a tolerance on a physical quantity: the two builds are the
+      ! same arithmetic on the same densities, so they agree exactly.
+      call check(error, maxval(abs(aminus - sminus)) == 0.0_dp, &
+                 "the triplet (A-B) differs from the singlet one, which an "// &
+                 "exchange-only operator cannot")
+      if (allocated(error)) return
+
+      values = paired_spectrum(aplus, aminus, ok)
+      call check(error, ok, "(A-B) of a converged closed shell was not positive "// &
+                 "definite, so the triplet reduction could not be formed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values - RHF_STO3G_TRIPLET_RPA)) < TOL_RPA_DENSE, &
+                 "the triplet RPA spectrum disagrees with PySCF")
+      if (allocated(error)) return
+      call check(error, all(RHF_STO3G_TRIPLET_RPA < RHF_TRIPLET_A_EIG), &
+                 "a triplet RPA root came out above its Tamm-Dancoff partner")
+   end subroutine test_rhf_triplet_rpa
+
+   subroutine test_ccpvdz_rhf_t(error)
+      !! The three Hartree-Fock triplets of H2O/cc-pVDZ
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t) :: result
 
-      call excited_run("sto-3g", "", 2, "rpa", "singlet", result)
-      call check(error, result%has_error, "an RPA deck was answered rather than "// &
-                 "refused")
+      call excited_run("cc-pvdz", "", N_CCPVDZ_TRIPLETS, "tda", "triplet", result)
+      call compare_roots(error, result, RHF_CCPVDZ_TRIPLET, TOL_CCPVDZ_HF, &
+                         "cc-pVDZ RHF triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_rhf_t
+
+   subroutine test_ccpvdz_pbe_t(error)
+      !! The three PBE triplets
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "pbe", N_CCPVDZ_TRIPLETS, "tda", "triplet", result)
+      call compare_roots(error, result, PBE_CCPVDZ_TRIPLET, TOL_GRID, &
+                         "cc-pVDZ PBE triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_pbe_t
+
+   subroutine test_ccpvdz_b3lyp_t(error)
+      !! The three B3LYP triplets, libxc 402 on both sides
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "b3lyp", N_CCPVDZ_TRIPLETS, "tda", "triplet", result)
+      call compare_roots(error, result, B3LYP_CCPVDZ_TRIPLET, TOL_GRID, &
+                         "cc-pVDZ B3LYP triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_b3lyp_t
+
+   subroutine test_ccpvdz_cam_t(error)
+      !! The three CAM-B3LYP triplets, where both exchange passes and the
+      !! triplet kernel have to be right at once
+      !!
+      !! The only Tamm-Dancoff case here exercising the attenuated exchange
+      !! build and the polarised kernel together. Each is separately visible
+      !! in an earlier case, so a failure that appears only here is the
+      !! combination -- most likely the long-range pass being dropped when the
+      !! Coulomb term is.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "cam-b3lyp", N_CCPVDZ_TRIPLETS, "tda", "triplet", &
+                       result)
+      call compare_roots(error, result, CAM_CCPVDZ_TRIPLET, TOL_GRID, &
+                         "cc-pVDZ CAM-B3LYP triplet", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_cam_t
+
+   subroutine test_ccpvdz_rhf_t_rpa(error)
+      !! The three Hartree-Fock triplets of the full problem
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      call excited_run("cc-pvdz", "", N_CCPVDZ_TRIPLETS, "rpa", "triplet", result)
+      call compare_roots(error, result, RHF_CCPVDZ_TRIPLET_RPA, TOL_CCPVDZ_HF, &
+                         "cc-pVDZ RHF triplet RPA", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_rhf_t_rpa
+
+   subroutine test_ccpvdz_pbe_t_rpa(error)
+      !! The three PBE triplets of the full problem
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "pbe", N_CCPVDZ_TRIPLETS, "rpa", "triplet", result)
+      call compare_roots(error, result, PBE_CCPVDZ_TRIPLET_RPA, TOL_GRID, &
+                         "cc-pVDZ PBE triplet RPA", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_pbe_t_rpa
+
+   subroutine test_ccpvdz_b3lyp_t_rpa(error)
+      !! The three B3LYP triplets of the full problem
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "b3lyp", N_CCPVDZ_TRIPLETS, "rpa", "triplet", result)
+      call compare_roots(error, result, B3LYP_CCPVDZ_TRIPLET_RPA, TOL_GRID, &
+                         "cc-pVDZ B3LYP triplet RPA", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_b3lyp_t_rpa
+
+   subroutine test_ccpvdz_cam_t_rpa(error)
+      !! The three CAM-B3LYP triplets of the full problem
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "cam-b3lyp", N_CCPVDZ_TRIPLETS, "rpa", "triplet", &
+                       result)
+      call compare_roots(error, result, CAM_CCPVDZ_TRIPLET_RPA, TOL_GRID, &
+                         "cc-pVDZ CAM-B3LYP triplet RPA", spin_code=STATE_SPIN_TRIPLET)
+   end subroutine test_ccpvdz_cam_t_rpa
+
+   subroutine test_casida_triplet(error)
+      !! The Casida reduction and the paired solver agree on a triplet too
+      !!
+      !! The reduction's assumption is about `(A-B)`, which for a triplet is
+      !! the same exchange-only operator it is for a singlet -- so on a pure
+      !! functional it is `diag(dEps)` in both manifolds and the cross-check
+      !! carries over unchanged. Worth running rather than asserting: the two
+      !! routes share only the `(A+B)` product, and only one of them applies
+      !! the triplet kernel through a square root.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: paired(:), casida(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+
+      if (.not. xc_available()) return
+
+      call water_sto3g(mol, scf, ctx, err, functional="pbe")
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the PBE reference failed: "//err%get_message())
+         return
+      end if
+
+      call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, 5, "rpa", "triplet", paired, spins, &
+                                x, y, err, xc=ctx, reference=scf%density, &
+                                tolerance=1.0e-10_dp, max_iter=100)
+      if (.not. err%has_error()) &
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, 5, "casida", "triplet", casida, &
+                                   spins, x, y, err, xc=ctx, reference=scf%density, &
+                                   tolerance=1.0e-12_dp, max_iter=200)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "a PBE triplet solve failed: "// &
+                 err%get_message())
       if (allocated(error)) return
-      call check(error,.not. result%has_excited_states, "a refused RPA deck still "// &
+      call check(error, size(paired) == 5 .and. size(casida) == 5, &
+                 "the two routes converged different numbers of triplet roots")
+      if (allocated(error)) return
+      call check(error, maxval(abs(paired - casida)) < TOL_CASIDA, &
+                 "the Casida reduction and the paired solver disagree on the PBE "// &
+                 "triplet spectrum")
+      if (allocated(error)) return
+      call check(error, all(spins == STATE_SPIN_TRIPLET), &
+                 "a triplet solve labelled a root a singlet")
+   end subroutine test_casida_triplet
+
+   subroutine test_both_spins(error)
+      !! `spin = "both"` returns one spectrum, sorted across the manifolds
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+      integer :: i
+
+      call excited_run("sto-3g", "", N_BOTH_STATES, "tda", "both", result)
+      call check(error,.not. result%has_error, "the both-manifolds run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, result%has_excited_states, "the both-manifolds run reported "// &
+                 "no excited states")
+      if (allocated(error)) return
+      call check(error, size(result%excitation_energies) == 2*N_BOTH_STATES, &
+                 "asking for both manifolds did not return both manifolds' roots")
+      if (allocated(error)) return
+      call check(error, allocated(result%state_spin), "the both-manifolds run "// &
+                 "labelled no spins")
+      if (allocated(error)) return
+      call check(error, size(result%state_spin) == 2*N_BOTH_STATES, &
+                 "the spin labels are not one per root")
+      if (allocated(error)) return
+
+      do i = 1, 2*N_BOTH_STATES
+         call check(error, abs(result%excitation_energies(i) - BOTH_STO3G(i)) < &
+                    TOL_DAVIDSON, "a root of the merged spectrum is not the one "// &
+                    "that belongs at its position")
+         if (allocated(error)) return
+         call check(error, result%state_spin(i) == BOTH_STO3G_SPIN(i), &
+                    "a root of the merged spectrum carries the wrong spin label")
+         if (allocated(error)) return
+      end do
+   end subroutine test_both_spins
+
+   subroutine h2_stretched_run(n_states, method, spin, result)
+      !! H2 at 3.0 Angstrom through the bridge, restricted Hartree-Fock
+      integer, intent(in) :: n_states
+      character(len=*), intent(in) :: method, spin
+      type(calculation_result_t), intent(out) :: result
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      fragment%nelec = 2
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [1, 1]
+      fragment%coordinates = H2_BOHR
+
+      settings%basis_set = "6-31g"
+      settings%functional = ""
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-9_dp
+      settings%density_tol = 1.0e-9_dp
+      settings%max_iter = 200
+      settings%excited%enabled = n_states > 0
+      settings%excited%n_states = n_states
+      settings%excited%method = method
+      settings%excited%spin = spin
+      settings%excited%tolerance = 1.0e-8_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+   end subroutine h2_stretched_run
+
+   subroutine test_instability(error)
+      !! A triplet-unstable reference is named, not reported as a number
+      !!
+      !! Stretched H2 is where the restricted solution stops being a minimum
+      !! against spin polarisation: the lowest triplet `A` eigenvalue is
+      !! -0.172 hartree and one squared RPA frequency is -0.0118. Its
+      !! *singlet* channel is perfectly well behaved -- `(A-B)` is positive
+      !! definite in both manifolds, because it does not depend on the spin --
+      !! which is the second half of this case: the diagnosis has to be about
+      !! the triplet operator and not about the molecule being awkward.
+      !!
+      !! Two wrong answers are possible and both look plausible from outside.
+      !! The Tamm-Dancoff route can report the negative root as an excitation
+      !! or drop it under the floor and hand back the ones above it as though
+      !! a state were merely missing. The paired route used to skip an
+      !! imaginary frequency and complain only when it ran out of real ones,
+      !! so asking for one root succeeded and said nothing; `rpa_solve`
+      !! refuses a negative squared frequency now, and what this case adds is
+      !! that the refusal reaching the user names the *triplet* manifold
+      !! rather than passing the solver's spin-agnostic wording through.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+      character(len=:), allocatable :: message
+
+      call h2_stretched_run(1, "tda", "triplet", result)
+      call check(error, result%has_error, "a triplet-unstable reference produced a "// &
+                 "Tamm-Dancoff spectrum rather than a diagnosis")
+      if (allocated(error)) return
+      message = result%error%get_message()
+      call check(error, index(message, "triplet-unstable") > 0, &
+                 "the failure of a triplet-unstable reference was reported as "// &
+                 "something else: "//message)
+      if (allocated(error)) return
+      call check(error,.not. result%has_excited_states, "a refused triplet-unstable "// &
+                 "run still reported excited states")
+      if (allocated(error)) return
+
+      ! One root, which the paired solver would once have answered happily
+      ! out of the two real frequencies above the imaginary one.
+      call h2_stretched_run(1, "rpa", "triplet", result)
+      call check(error, result%has_error, "a triplet-unstable reference produced an "// &
+                 "RPA spectrum rather than a diagnosis")
+      if (allocated(error)) return
+      message = result%error%get_message()
+      call check(error, index(message, "triplet-unstable") > 0, &
+                 "the failure of a triplet-unstable paired solve was reported as "// &
+                 "something else: "//message)
+      if (allocated(error)) return
+
+      ! The same molecule, same reference, singlet manifold: an ordinary
+      ! answer. Without this the case would pass just as well for a build
+      ! that refused every excited-state run on stretched H2.
+      call h2_stretched_run(1, "tda", "singlet", result)
+      call check(error,.not. result%has_error, "the singlet manifold of the same "// &
+                 "reference failed too: "//result%error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(result%energy%scf - H2_631G_ENERGY) < TOL_CCPVDZ_HF, &
+                 "the stretched-H2 Hartree-Fock energy is not PySCF's")
+      if (allocated(error)) return
+      call check(error, result%has_excited_states, "the singlet manifold of a "// &
+                 "triplet-unstable reference reported no excited states")
+   end subroutine test_instability
+
+   subroutine test_later_layers(error)
+      !! What is still not implemented is refused by name, not approximated
+      !!
+      !! Both of this case's original halves are gone: Layer 4 answers an RPA
+      !! deck and Layer 3 answers a triplet one. What is left is the check
+      !! that a method string naming neither is refused rather than resolved
+      !! to whichever is nearer -- the two are different eigenproblems and
+      !! both converge. The spin string has the same guard, one line below.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      call excited_run("sto-3g", "", 2, "cis", "singlet", result)
+      call check(error, result%has_error, "an unknown excited-state method was "// &
+                 "resolved to something rather than refused")
+      if (allocated(error)) return
+      call check(error,.not. result%has_excited_states, "a refused deck still "// &
                  "reported excited states")
       if (allocated(error)) return
 
-      call excited_run("sto-3g", "", 2, "tda", "triplet", result)
-      call check(error, result%has_error, "a triplet deck was answered rather than "// &
-                 "refused")
-      if (allocated(error)) return
-      call check(error,.not. result%has_excited_states, "a refused triplet deck "// &
-                 "still reported excited states")
+      call excited_run("sto-3g", "", 2, "tda", "quintet", result)
+      call check(error, result%has_error, "an unknown excited-state spin was "// &
+                 "resolved to something rather than refused")
    end subroutine test_later_layers
+
+   subroutine dense_rpa(mol, scf, ctx, kohn_sham, aplus, aminus, err, spin)
+      !! The explicit `(A+B)` and `(A-B)`, through the operator the solver uses
+      !!
+      !! The same argument as `dense_tda`: probing the shipped operator with
+      !! unit vectors is what makes the comparison a comparison. Assembling
+      !! the two halves here out of `build_hessian` would check one
+      !! construction of the physics against another construction of the same
+      !! physics, and both could be wrong together.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: spin
+         !! Which manifold, `singlet` when absent.
+
+      type(rpa_operator_t) :: operator
+      character(len=16) :: manifold
+
+      if (err%has_error()) return
+      manifold = "singlet"
+      if (present(spin)) manifold = spin
+
+      if (kohn_sham) then
+         call build_rpa_operator(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, operator, err, xc=ctx, &
+                                 reference=scf%density, spin=trim(manifold))
+      else
+         call build_rpa_operator(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, operator, err, spin=trim(manifold))
+      end if
+      if (err%has_error()) return
+
+      call rpa_dense_matrices(operator, aplus, aminus, err)
+   end subroutine dense_rpa
+
+   function paired_spectrum(aplus, aminus, ok) result(values)
+      !! Every `w` of `[A B; B A]`, from the explicit reduction
+      !!
+      !! `(A-B)^{1/2}(A+B)(A-B)^{1/2}`, built with LAPACK and diagonalised
+      !! whole -- no iteration, so this is the answer the iterative solver is
+      !! measured against rather than a second approximation to it. It is
+      !! also the arithmetic PySCF's side of `RHF_STO3G_RPA` performed, which
+      !! is why the two can be compared to 1e-10.
+      real(dp), intent(in) :: aplus(:, :), aminus(:, :)
+      logical, intent(out) :: ok
+      real(dp), allocatable :: values(:)
+
+      real(dp), allocatable :: vectors(:, :), w(:), half(:, :), scaled(:, :)
+      real(dp), allocatable :: work(:, :), reduced(:, :)
+      integer :: n, info, k
+
+      n = size(aplus, 1)
+      ok = .false.
+      allocate (values(n), w(n))
+      vectors = 0.5_dp*(aminus + transpose(aminus))
+      call pic_syev(vectors, w, jobz="V", uplo="U", info=info)
+      if (info /= 0) return
+      if (minval(w) <= 0.0_dp) return
+
+      allocate (scaled(n, n), half(n, n), work(n, n), reduced(n, n))
+      do k = 1, n
+         scaled(:, k) = vectors(:, k)*sqrt(w(k))
+      end do
+      call pic_gemm(scaled, vectors, half, transb="T")
+      call pic_gemm(0.5_dp*(aplus + transpose(aplus)), half, work)
+      call pic_gemm(half, work, reduced)
+      reduced = 0.5_dp*(reduced + transpose(reduced))
+      call pic_syev(reduced, values, jobz="N", uplo="U", info=info)
+      if (info /= 0) return
+      values = sqrt(values)
+      ok = .true.
+   end function paired_spectrum
+
+   subroutine test_rhf_rpa_matrix(error)
+      !! Every RPA root of H2O/STO-3G, from the two explicit halves
+      !!
+      !! The matrix-level gate of Layer 4. `RHF_A` already says `(A+B)` and
+      !! `(A-B)` are right in the combination the Tamm-Dancoff operator reads
+      !! them in -- their half sum -- and that combination cannot see an
+      !! error that moves the two halves oppositely. The reduction below
+      !! reads them separately, so it can.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), values(:)
+      logical :: ok
+
+      call water_sto3g(mol, scf, ctx, err)
+      if (.not. err%has_error()) call dense_rpa(mol, scf, ctx, .false., aplus, aminus, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the Hartree-Fock RPA matrices failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      ! The two halves average to the matrix Layer 2 already pinned, which is
+      ! what says the split itself is right before its spectrum is read.
+      call compare_matrix(error, 0.5_dp*(aplus + aminus), RHF_A, TOL_EXACT, &
+                          "Hartree-Fock half-sum")
+      if (allocated(error)) return
+
+      values = paired_spectrum(aplus, aminus, ok)
+      call check(error, ok, "(A-B) of a converged closed shell was not positive "// &
+                 "definite, so the reduction could not be formed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values - RHF_STO3G_RPA)) < TOL_RPA_DENSE, &
+                 "the Hartree-Fock RPA spectrum disagrees with PySCF")
+      if (allocated(error)) return
+
+      ! Every RPA root below its Tamm-Dancoff partner: the physical content
+      ! of dropping `B`, and a sanity check no tolerance would catch if the
+      ! two spectra had been transcribed into each other's places.
+      call check(error, all(RHF_STO3G_RPA < RHF_A_EIG), "an RPA root came out above "// &
+                 "its Tamm-Dancoff partner, which the de-excitation coupling "// &
+                 "cannot do")
+   end subroutine test_rhf_rpa_matrix
+
+   subroutine test_rpa_solver(error)
+      !! The paired solver's roots are the dense reduction's, and its
+      !! amplitudes carry the normalisation the routine documents
+      !!
+      !! Both sides are this program's: the matrices from applying the
+      !! operator to unit vectors, the roots from the solver. What this
+      !! measures is the solver, with the operator held fixed -- the PySCF
+      !! comparison above is what says the operator is right.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), dense(:, :)
+      real(dp), allocatable :: values(:), omega(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+      real(dp) :: weight
+      logical :: ok
+      integer :: k
+
+      call water_sto3g(mol, scf, ctx, err)
+      if (.not. err%has_error()) call dense_rpa(mol, scf, ctx, .false., aplus, aminus, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the Hartree-Fock RPA matrices failed: "// &
+                    err%get_message())
+         return
+      end if
+      values = paired_spectrum(aplus, aminus, ok)
+
+      call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, 5, "rpa", "singlet", omega, spins, &
+                                x, y, err, tolerance=1.0e-10_dp, max_iter=100)
+      call mol%destroy()
+      call check(error, ok .and. .not. err%has_error(), "the paired solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, size(omega) == 5, "the paired solve returned a different "// &
+                 "number of roots than were asked for")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(omega - values(1:5))) < TOL_RPA_SOLVER, &
+                 "a paired root disagrees with the dense reduction of the same "// &
+                 "two matrices")
+      if (allocated(error)) return
+      call check(error, maxval(abs(omega - RHF_STO3G_RPA(1:5))) < TOL_RPA_SOLVER, &
+                 "a converged paired root disagrees with PySCF")
+      if (allocated(error)) return
+
+      ! The normalisation, which is documented rather than derivable and is
+      ! the one thing Layer 5 has to be able to rely on.
+      do k = 1, 5
+         weight = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+         call check(error, abs(weight - 0.5_dp) < TOL_PAIRED_NORM, &
+                    "a paired root's amplitudes are not at the |X|^2-|Y|^2 = 1/2 "// &
+                    "the routine documents")
+         if (allocated(error)) return
+      end do
+
+      ! `Y` is not zero here, which is the only difference between this and
+      ! the Tamm-Dancoff answer: a solver that quietly dropped the
+      ! de-excitation block would pass every energy check above on a system
+      ! this small and fail here.
+      dense = y
+      call check(error, maxval(abs(dense)) > 1.0e-3_dp, "the paired solve returned "// &
+                 "de-excitation amplitudes of zero, which is the Tamm-Dancoff "// &
+                 "answer and not this one")
+   end subroutine test_rpa_solver
+
+   subroutine test_ccpvdz_rhf_rpa(error)
+      !! The five Hartree-Fock RPA roots of the plan's table
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      call excited_run("cc-pvdz", "", N_CCPVDZ_STATES, "rpa", "singlet", result)
+      call check(error, abs(result%energy%scf - RHF_CCPVDZ_ENERGY) < 1.0e-8_dp, &
+                 "the cc-pVDZ Hartree-Fock energy is not the table's")
+      if (allocated(error)) return
+      call compare_roots(error, result, RHF_CCPVDZ_RPA, TOL_CCPVDZ_HF, "cc-pVDZ RHF RPA")
+   end subroutine test_ccpvdz_rhf_rpa
+
+   subroutine test_ccpvdz_pbe_rpa(error)
+      !! The five PBE RPA roots, where `(A-B)` is the bare diagonal
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "pbe", N_CCPVDZ_STATES, "rpa", "singlet", result)
+      call check(error, abs(result%energy%scf - PBE_CCPVDZ_ENERGY) < TOL_GRID, &
+                 "the cc-pVDZ PBE energy is not the table's")
+      if (allocated(error)) return
+      call compare_roots(error, result, PBE_CCPVDZ_RPA, TOL_GRID, "cc-pVDZ PBE RPA")
+   end subroutine test_ccpvdz_pbe_rpa
+
+   subroutine test_ccpvdz_b3lyp_rpa(error)
+      !! The five B3LYP RPA roots, libxc 402 on both sides
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "b3lyp", N_CCPVDZ_STATES, "rpa", "singlet", result)
+      call check(error, abs(result%energy%scf - B3LYP_CCPVDZ_ENERGY) < TOL_GRID, &
+                 "the cc-pVDZ B3LYP energy is not the table's")
+      if (allocated(error)) return
+      call compare_roots(error, result, B3LYP_CCPVDZ_RPA, TOL_GRID, "cc-pVDZ B3LYP RPA")
+   end subroutine test_ccpvdz_b3lyp_rpa
+
+   subroutine test_ccpvdz_cam_rpa(error)
+      !! The five CAM-B3LYP RPA roots, which need the attenuated exchange
+      !! pass in both halves
+      !!
+      !! `(A-B)` is exchange only, so this is the one case here where the
+      !! long-range pass is the whole of a product rather than a correction
+      !! to one. Dropping it moves the difference operator wholesale, which
+      !! moves `w` in a direction no tolerance hides.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) return
+
+      call excited_run("cc-pvdz", "cam-b3lyp", N_CCPVDZ_STATES, "rpa", "singlet", result)
+      call check(error, abs(result%energy%scf - CAM_CCPVDZ_ENERGY) < TOL_GRID, &
+                 "the cc-pVDZ CAM-B3LYP energy is not the table's")
+      if (allocated(error)) return
+      call compare_roots(error, result, CAM_CCPVDZ_RPA, TOL_GRID, "cc-pVDZ CAM-B3LYP RPA")
+   end subroutine test_ccpvdz_cam_rpa
+
+   subroutine test_casida(error)
+      !! The Casida reduction and the paired solver agree on a pure functional
+      !!
+      !! Two solvers on two different operators -- a Hermitian Davidson on
+      !! `dEps^{1/2}(A+B)dEps^{1/2}`, and the paired subspace method on
+      !! `(A+B)` and `(A-B)` kept apart -- reaching one spectrum. They share
+      !! the `(A+B)` product and nothing else, so an error in the paired
+      !! solver's square root, its biorthonormalisation or its residuals
+      !! shows up here and an error in the shared product does not. PBE, so
+      !! that `(A-B)` really is the diagonal the reduction assumes.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: paired(:), casida(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+
+      if (.not. xc_available()) return
+
+      call water_sto3g(mol, scf, ctx, err, functional="pbe")
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the PBE reference failed: "//err%get_message())
+         return
+      end if
+
+      call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, 5, "rpa", "singlet", paired, spins, &
+                                x, y, err, xc=ctx, reference=scf%density, &
+                                tolerance=1.0e-10_dp, max_iter=100)
+      if (.not. err%has_error()) &
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, 5, "casida", "singlet", casida, &
+                                   spins, x, y, err, xc=ctx, reference=scf%density, &
+                                   tolerance=1.0e-12_dp, max_iter=200)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "a PBE excitation solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, size(paired) == 5 .and. size(casida) == 5, &
+                 "the two routes converged different numbers of roots")
+      if (allocated(error)) return
+      call check(error, maxval(abs(paired - casida)) < TOL_CASIDA, &
+                 "the Casida reduction and the paired solver disagree on the PBE "// &
+                 "spectrum")
+   end subroutine test_casida
+
+   subroutine test_stretched_h2(error)
+      !! A near-singular `(A-B)`: stretched H2, against PySCF
+      !!
+      !! The lowest eigenvalue of `(A-B)` here is 0.0305 against 1.0 for the
+      !! others, which is where a subspace square root is most likely to lose
+      !! digits. PySCF converges this without complaint and so must this; the
+      !! refusal path lives in `test_mqc_czt_rpa_solver`, where an indefinite
+      !! difference can be built rather than waited for.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+
+      call build_czt_molecule([1, 1], ["H ", "H "], H2_BOHR, "6-31g", mol, err)
+      if (.not. err%has_error()) &
+         call run_czt_rhf(mol, 2, 200, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err, &
+                          in_core=.true., grad_tol=1.0e-12_dp)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the stretched H2 reference failed: "// &
+                    err%get_message())
+         return
+      end if
+      call check(error, abs(scf%energy - H2_631G_ENERGY) < TOL_EXACT, &
+                 "the stretched H2 energy is not the one the reference was taken at")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, 3, "rpa", "singlet", omega, spins, &
+                                x, y, err, tolerance=1.0e-10_dp, max_iter=100)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the stretched H2 paired solve "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, size(omega) == 3, "stretched H2 in 6-31G has three single "// &
+                 "excitations and the solve did not return three")
+      if (allocated(error)) return
+      call check(error, maxval(abs(omega - H2_631G_RPA)) < TOL_RPA_SOLVER, &
+                 "a stretched H2 RPA root disagrees with PySCF")
+   end subroutine test_stretched_h2
+
+   subroutine test_unreachable_tolerance(error)
+      !! A tolerance nothing can reach comes back with a message, not a hang
+      !!
+      !! The failure this guards against is a solve that spends its whole
+      !! iteration budget adding vectors that project to nothing, and then
+      !! reports a spectrum with no indication of how good it is. Ten
+      !! occupied-virtual rotations and a tolerance below round-off is the
+      !! cheapest way to reach that state deliberately: the subspace becomes
+      !! the whole space, every residual direction is already in it, and
+      !! there is nothing left to add.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      call excited_run("sto-3g", "", 3, "rpa", "singlet", result, tolerance=1.0e-30_dp)
+      call check(error, result%has_error, "a tolerance below round-off was reported "// &
+                 "as met")
+      if (allocated(error)) return
+      call check(error,.not. result%has_excited_states, "a solve that could not "// &
+                 "reach its tolerance still reported excited states")
+      if (allocated(error)) return
+      call check(error, index(result%error%get_message(), "residual") > 0, &
+                 "a stalled solve did not report the residual it reached: "// &
+                 result%error%get_message())
+   end subroutine test_unreachable_tolerance
+
+   subroutine test_amplitude_norm(error)
+      !! Tamm-Dancoff, RPA and Casida all hand back `|X|^2 - |Y|^2 = 1/2`
+      !!
+      !! One convention across the three routes, which is what lets anything
+      !! downstream contract the amplitudes without first asking which solver
+      !! produced them. The Tamm-Dancoff row is the one that moved: its
+      !! Davidson returns a unit eigenvector and the route now scales it, so
+      !! a regression would show up here as a half of two rather than as a
+      !! wrong excitation energy -- the energies do not move at all.
+      !!
+      !! `Y` is separately required to be exactly zero for Tamm-Dancoff. The
+      !! approximation has no de-excitation block, and a `Y` that had picked
+      !! up the scaling factor would satisfy the norm above and be wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+      real(dp) :: weight
+      integer :: k
+
+      call water_sto3g(mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, 3, "tda", "singlet", omega, &
+                                   spins, x, y, err, tolerance=1.0e-10_dp, &
+                                   max_iter=100)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the Tamm-Dancoff solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(omega)
+         weight = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+         call check(error, abs(weight - 0.5_dp) < TOL_PAIRED_NORM, &
+                    "a Tamm-Dancoff root's amplitudes are not at the "// &
+                    "|X|^2 - |Y|^2 = 1/2 every route now shares")
+         if (allocated(error)) return
+      end do
+      call check(error, all(y == 0.0_dp), "a Tamm-Dancoff solve returned "// &
+                 "de-excitation amplitudes, which its approximation does not have")
+   end subroutine test_amplitude_norm
+
+   ! ---- Layer 5: transition properties ------------------------------------
+
+   subroutine water_reference(basis, functional, mol, scf, ctx, err)
+      !! Converge the plan's water in one basis, Hartree-Fock or Kohn-Sham
+      !!
+      !! `water_sto3g` next door with the basis lifted out. The thresholds are
+      !! its, and for the same reason: what is compared here is built from the
+      !! orbitals rather than from the energy, so the SCF has to be converged
+      !! well past where the energy stopped moving.
+      character(len=*), intent(in) :: basis
+      character(len=*), intent(in) :: functional
+         !! Empty is Hartree-Fock, and leaves `ctx` untouched.
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(xc_context_t), intent(out) :: ctx
+      type(error_t), intent(inout) :: err
+
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], WATER_BOHR, basis, &
+                              mol, err)
+      if (err%has_error()) return
+
+      if (len_trim(functional) > 0) then
+         call xc_context_create(mol, functional, ctx, err, level=5)
+         if (err%has_error()) return
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-10_dp, .false., scf, err, &
+                          xc=ctx, grad_tol=1.0e-9_dp)
+      else
+         call run_czt_rhf(mol, 10, 200, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err, &
+                          grad_tol=1.0e-12_dp)
+      end if
+   end subroutine water_reference
+
+   subroutine solve_with_properties(mol, scf, ctx, kohn_sham, method, spin, &
+                                    n_states, omega, spins, props, err, amplitudes)
+      !! A spectrum and its transition moments, over one converged reference
+      !!
+      !! The two calls the bridge makes, in the order it makes them, so what
+      !! the properties are built from is exactly what a run would hand them.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      character(len=*), intent(in) :: method, spin
+      integer, intent(in) :: n_states
+      real(dp), allocatable, intent(out) :: omega(:)
+      integer, allocatable, intent(out) :: spins(:)
+      type(excited_properties_t), intent(out) :: props
+      type(error_t), intent(inout) :: err
+      real(dp), allocatable, intent(out), optional :: amplitudes(:, :)
+         !! The `X` the properties were built from, for a test that wants to
+         !! decompose the same vector the stored weights came from rather
+         !! than a second converged copy of it.
+
+      real(dp), allocatable :: x(:, :), y(:, :)
+      type(excitation_spectrum_t) :: spectrum
+
+      if (err%has_error()) return
+
+      if (kohn_sham) then
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, n_states, method, spin, omega, &
+                                   spins, x, y, err, xc=ctx, reference=scf%density, &
+                                   tolerance=1.0e-10_dp, max_iter=200)
+      else
+         call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, n_states, method, spin, omega, &
+                                   spins, x, y, err, tolerance=1.0e-10_dp, &
+                                   max_iter=200)
+      end if
+      if (err%has_error()) return
+
+      spectrum%excitations = omega
+      spectrum%state_spin = spins
+      spectrum%x_amplitudes = x
+      spectrum%y_amplitudes = y
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, spectrum, &
+                              scf%energy, props, err)
+      if (present(amplitudes)) amplitudes = x
+   end subroutine solve_with_properties
+
+   subroutine test_tda_moments(error)
+      !! The Hartree-Fock TDA transition moments of H2O/cc-pVDZ, both gauges
+      !!
+      !! Componentwise in absolute value, because a state's amplitudes are
+      !! defined only up to an overall sign and two codes need not choose the
+      !! same one. What is not sign-free is `mu . v`, which is checked with
+      !! its sign: it is the only thing in this file that can tell a correct
+      !! velocity gauge from one negated, and negating it moves nothing else
+      !! here by so much as a bit.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:)
+      integer, allocatable :: spins(:)
+      real(dp) :: centroid(3), mu_dot_v
+      integer :: k, comp
+
+      call water_reference("cc-pvdz", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "tda", "singlet", &
+                                    N_CCPVDZ_STATES, omega, spins, props, err)
+      end if
+      centroid = nuclear_charge_centroid(mol%charges, mol%coords)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the Hartree-Fock TDA properties "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      ! The origin, before anything measured from it. A transition dipole is
+      ! origin independent, so a centroid off by a Bohr would pass every
+      ! comparison below and quietly be wrong for a charged system later.
+      call check(error, abs(centroid(1)) < 1.0e-12_dp .and. &
+                 abs(centroid(2)) < 1.0e-12_dp, "the nuclear charge centroid of a "// &
+                 "C2v water is not on its symmetry axis")
+      if (allocated(error)) return
+
+      call check(error, size(omega) == N_CCPVDZ_STATES, "the Hartree-Fock TDA solve "// &
+                 "returned a different number of roots than were asked for")
+      if (allocated(error)) return
+
+      do k = 1, N_CCPVDZ_STATES
+         do comp = 1, 3
+            call check(error, abs(abs(props%transition_dipole(comp, k)) - &
+                                  abs(RHF_TDA_DIPOLE(comp, k))) < TOL_DIPOLE, &
+                       "a length-gauge transition dipole component disagrees "// &
+                       "with PySCF")
+            if (allocated(error)) return
+            call check(error, abs(abs(props%velocity_moment(comp, k)) - &
+                                  abs(RHF_TDA_VELOCITY(comp, k))) < TOL_DIPOLE, &
+                       "a velocity-gauge transition moment component disagrees "// &
+                       "with PySCF")
+            if (allocated(error)) return
+         end do
+
+         mu_dot_v = dot_product(props%transition_dipole(:, k), &
+                                props%velocity_moment(:, k))
+         call check(error, abs(mu_dot_v - RHF_TDA_MU_DOT_V(k)) < TOL_DIPOLE, &
+                    "mu . v disagrees with PySCF in sign or magnitude, which is "// &
+                    "the velocity gauge carrying the wrong sign")
+         if (allocated(error)) return
+
+         call check(error, abs(props%f_length(k) - RHF_TDA_F_LENGTH(k)) < &
+                    TOL_OSCILLATOR, "a length-gauge oscillator strength disagrees "// &
+                    "with PySCF")
+         if (allocated(error)) return
+         call check(error, abs(props%f_velocity(k) - RHF_TDA_F_VELOCITY(k)) < &
+                    TOL_OSCILLATOR, "a velocity-gauge oscillator strength "// &
+                    "disagrees with PySCF")
+         if (allocated(error)) return
+
+         ! The excited state's own total energy, which is the one number here
+         ! that is not a moment.
+         call check(error, abs(props%total_energy(k) - (scf%energy + omega(k))) < &
+                    1.0e-12_dp, "an excited-state total energy is not the "// &
+                    "reference plus the excitation")
+         if (allocated(error)) return
+      end do
+      call props%destroy()
+   end subroutine test_tda_moments
+
+   subroutine strengths_match(error, functional, method, f_length, f_velocity, &
+                              tol_length, what)
+      !! Both gauges' oscillator strengths of one water run, against a table
+      type(error_type), allocatable, intent(out) :: error
+      character(len=*), intent(in) :: functional, method
+      real(dp), intent(in) :: f_length(:)
+      real(dp), intent(in) :: f_velocity(:)
+         !! Empty to compare the length gauge alone: the plan carries a
+         !! velocity-gauge row for Hartree-Fock and none for a functional.
+      real(dp), intent(in) :: tol_length
+      character(len=*), intent(in) :: what
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:)
+      integer, allocatable :: spins(:)
+      integer :: k
+
+      call water_reference("cc-pvdz", functional, mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, len_trim(functional) > 0, method, &
+                                    "singlet", N_CCPVDZ_STATES, omega, spins, &
+                                    props, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the "//what//" properties failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(f_length)
+         call check(error, abs(props%f_length(k) - f_length(k)) < tol_length, &
+                    "a "//what//" length-gauge oscillator strength disagrees "// &
+                    "with PySCF")
+         if (allocated(error)) return
+         if (size(f_velocity) >= k) then
+            call check(error, abs(props%f_velocity(k) - f_velocity(k)) < &
+                       TOL_OSCILLATOR_VELOCITY, "a "//what//" velocity-gauge "// &
+                       "oscillator strength disagrees with PySCF")
+            if (allocated(error)) return
+         end if
+      end do
+      call props%destroy()
+   end subroutine strengths_match
+
+   subroutine test_rpa_strengths(error)
+      !! The Hartree-Fock RPA strengths, length gauge against PySCF and
+      !! velocity gauge against the plan's Psi4 row
+      type(error_type), allocatable, intent(out) :: error
+
+      call strengths_match(error, "", "rpa", RHF_RPA_F_LENGTH, RHF_RPA_F_VELOCITY, &
+                           TOL_OSCILLATOR, "cc-pVDZ RHF RPA")
+   end subroutine test_rpa_strengths
+
+   subroutine test_pbe_rpa_strengths(error)
+      !! The PBE RPA length-gauge strengths
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: no_velocity(0)
+
+      if (.not. xc_available()) return
+      call strengths_match(error, "pbe", "rpa", PBE_RPA_F_LENGTH, no_velocity, &
+                           TOL_OSCILLATOR, "cc-pVDZ PBE RPA")
+   end subroutine test_pbe_rpa_strengths
+
+   subroutine test_cam_rpa_strengths(error)
+      !! The CAM-B3LYP RPA length-gauge strengths, attenuated pass and all
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: no_velocity(0)
+
+      if (.not. xc_available()) return
+      call strengths_match(error, "cam-b3lyp", "rpa", CAM_RPA_F_LENGTH, no_velocity, &
+                           TOL_OSCILLATOR, "cc-pVDZ CAM-B3LYP RPA")
+   end subroutine test_cam_rpa_strengths
+
+   subroutine test_nto_weights(error)
+      !! The natural transition orbital weights of the first Hartree-Fock root
+      !!
+      !! Four weights against PySCF and the whole column against one. The
+      !! second is the check that matters for the renormalisation: the stored
+      !! amplitude is at `|X|^2 = 1/2`, and a decomposition that forgot to
+      !! rescale would hand back weights summing to a half and still look
+      !! plausible one at a time.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), weights(:), nto_occ(:, :), nto_vir(:, :)
+      real(dp), allocatable :: x(:, :), overlap(:, :), metric(:, :), half(:, :)
+      real(dp), allocatable :: flipped_occ(:, :), flipped_vir(:, :)
+      integer, allocatable :: spins(:)
+      integer :: k
+
+      call water_reference("cc-pvdz", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "tda", "singlet", &
+                                    N_CCPVDZ_STATES, omega, spins, props, err, &
+                                    amplitudes=x)
+      end if
+      call check(error,.not. err%has_error(), "the Hartree-Fock TDA properties "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      do k = 1, size(RHF_TDA_NTO_S1)
+         call check(error, abs(props%nto_weights(k, 1) - RHF_TDA_NTO_S1(k)) < TOL_NTO, &
+                    "a natural transition orbital weight of the first root "// &
+                    "disagrees with PySCF")
+         if (allocated(error)) then
+            call mol%destroy()
+            return
+         end if
+      end do
+      call check(error, abs(sum(props%nto_weights(:, 1)) - 1.0_dp) < TOL_NTO_SUM, &
+                 "the natural transition orbital weights of a root do not sum to one")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, all(props%nto_weights(1:size(props%nto_weights, 1) - 1, 1) >= &
+                            props%nto_weights(2:, 1)), "the natural transition "// &
+                 "orbital weights are not in descending order")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! The orbitals themselves, through the routine the properties use. Each
+      ! set is orthonormal **in the AO overlap metric** by construction -- a
+      ! unitary rotation of orbitals that already were -- so `U^T S U = 1` is
+      ! what says the decomposition was assembled with its factors the right
+      ! way round. `U^T U` is not the identity and never was: the AO basis is
+      ! not orthogonal, which is the whole reason `S` exists.
+      call natural_transition_orbitals(x(:, 1), &
+                                       scf%orbitals(:, 1:scf%n_occupied), &
+                                       scf%orbitals(:, scf%n_occupied + 1:), &
+                                       weights, nto_occ, nto_vir, err)
+      call mol%overlap(metric)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the natural transition orbitals "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(weights - props%nto_weights(:, 1))) < 1.0e-12_dp, &
+                 "the per-state decomposition and the one the properties stored "// &
+                 "disagree")
+      if (allocated(error)) return
+
+      allocate (overlap(size(nto_occ, 2), size(nto_occ, 2)))
+      allocate (half(size(metric, 1), size(nto_occ, 2)))
+      call pic_gemm(metric, nto_occ, half)
+      call pic_gemm(nto_occ, half, overlap, transa="T")
+      call check(error, orthonormal(overlap), "the occupied natural transition "// &
+                 "orbitals are not orthonormal in the overlap metric")
+      if (allocated(error)) return
+      call pic_gemm(metric, nto_vir, half)
+      call pic_gemm(nto_vir, half, overlap, transa="T")
+      call check(error, orthonormal(overlap), "the virtual natural transition "// &
+                 "orbitals are not orthonormal in the overlap metric")
+      if (allocated(error)) return
+
+      ! The phase convention, which is what makes two runs comparable. It is
+      ! fixed on the rotation matrices rather than on the orbitals they
+      ! produce -- the largest component of `C_occ U` is not the largest
+      ! component of `U` -- so what it promises is that the *same* excitation
+      ! gives the *same* orbitals however the solver signed its amplitude.
+      ! Negating `X` is exactly that: `-T = (-U) S V^T`, and canonicalising
+      ! the columns has to undo the minus.
+      call natural_transition_orbitals(-x(:, 1), &
+                                       scf%orbitals(:, 1:scf%n_occupied), &
+                                       scf%orbitals(:, scf%n_occupied + 1:), &
+                                       weights, flipped_occ, flipped_vir, err)
+      call check(error,.not. err%has_error(), "the natural transition orbitals of "// &
+                 "a negated amplitude failed: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, maxval(abs(flipped_occ - nto_occ)) == 0.0_dp .and. &
+                 maxval(abs(flipped_vir - nto_vir)) == 0.0_dp, "negating a root's "// &
+                 "amplitude changed its natural transition orbitals, so the phase "// &
+                 "convention does not hold")
+      call props%destroy()
+   end subroutine test_nto_weights
+
+   pure function orthonormal(overlap) result(yes)
+      !! Whether a small Gram matrix is the identity to 1e-10
+      real(dp), intent(in) :: overlap(:, :)
+      logical :: yes
+
+      real(dp) :: worst
+      integer :: i, j
+
+      worst = 0.0_dp
+      do j = 1, size(overlap, 2)
+         do i = 1, size(overlap, 1)
+            if (i == j) then
+               worst = max(worst, abs(overlap(i, j) - 1.0_dp))
+            else
+               worst = max(worst, abs(overlap(i, j)))
+            end if
+         end do
+      end do
+      yes = worst < 1.0e-10_dp
+   end function orthonormal
+
+   subroutine test_triplet_moments(error)
+      !! A triplet root's moments are exact zeros, not small numbers
+      !!
+      !! Exact, and the test says exact: a spin-forbidden transition has no
+      !! dipole because an overlap of orthogonal spin functions multiplies
+      !! the spatial integral, and an implementation that contracted the
+      !! spatial part anyway would leave 1e-16 dust that a loose bound would
+      !! accept and a reader would mistake for a very dark state.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: props
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:)
+      integer, allocatable :: spins(:)
+
+      call water_reference("sto-3g", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "tda", "triplet", 3, &
+                                    omega, spins, props, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the triplet properties failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call check(error, all(spins == STATE_SPIN_TRIPLET), "a triplet solve did not "// &
+                 "label its roots as triplets")
+      if (allocated(error)) return
+      call check(error, all(props%transition_dipole == 0.0_dp), "a triplet root "// &
+                 "carries a nonzero length-gauge transition dipole")
+      if (allocated(error)) return
+      call check(error, all(props%velocity_moment == 0.0_dp), "a triplet root "// &
+                 "carries a nonzero velocity-gauge transition moment")
+      if (allocated(error)) return
+      call check(error, all(props%f_length == 0.0_dp) .and. &
+                 all(props%f_velocity == 0.0_dp), "a triplet root carries a "// &
+                 "nonzero oscillator strength")
+      if (allocated(error)) return
+
+      ! The orbital content of a spin-forbidden excitation is perfectly well
+      ! defined, so this is the one thing that must *not* be zeroed.
+      call check(error, abs(sum(props%nto_weights(:, 1)) - 1.0_dp) < TOL_NTO_SUM, &
+                 "a triplet root was left without natural transition orbital "// &
+                 "weights")
+      call props%destroy()
+   end subroutine test_triplet_moments
+
+   subroutine paired_amplitudes(aplus, aminus, values, x, y, ok)
+      !! Every root of `[A B; B A]` with its amplitudes, from the reduction
+      !!
+      !! `paired_spectrum` next door with the eigenvectors kept. From
+      !! `S (A+B) S z = w^2 z` with `S = (A-B)^{1/2}`, the pair is
+      !! `X+Y = S z / sqrt(w)` and `X-Y = S^{-1} z sqrt(w)`, whose inner
+      !! product is `z . z = 1`; the closed-shell half is taken exactly as
+      !! `solve_manifold` takes it, so what comes back here is on the same
+      !! footing as what the solver returns and the two can be contracted
+      !! against the same integrals.
+      real(dp), intent(in) :: aplus(:, :), aminus(:, :)
+      real(dp), allocatable, intent(out) :: values(:)
+      real(dp), allocatable, intent(out) :: x(:, :), y(:, :)
+      logical, intent(out) :: ok
+
+      real(dp), parameter :: HALF_NORM = 0.5_dp
+      real(dp), allocatable :: vectors(:, :), w(:), half(:, :), inverse_half(:, :)
+      real(dp), allocatable :: scaled(:, :), work(:, :), reduced(:, :)
+      real(dp), allocatable :: xpy(:, :), xmy(:, :)
+      integer :: n, info, k
+
+      n = size(aplus, 1)
+      ok = .false.
+      allocate (values(n), w(n), x(n, n), y(n, n))
+      vectors = 0.5_dp*(aminus + transpose(aminus))
+      call pic_syev(vectors, w, jobz="V", uplo="U", info=info)
+      if (info /= 0) return
+      if (minval(w) <= 0.0_dp) return
+
+      allocate (scaled(n, n), half(n, n), inverse_half(n, n))
+      allocate (work(n, n), reduced(n, n), xpy(n, n), xmy(n, n))
+      do k = 1, n
+         scaled(:, k) = vectors(:, k)*sqrt(w(k))
+      end do
+      call pic_gemm(scaled, vectors, half, transb="T")
+      do k = 1, n
+         scaled(:, k) = vectors(:, k)/sqrt(w(k))
+      end do
+      call pic_gemm(scaled, vectors, inverse_half, transb="T")
+
+      call pic_gemm(0.5_dp*(aplus + transpose(aplus)), half, work)
+      call pic_gemm(half, work, reduced)
+      reduced = 0.5_dp*(reduced + transpose(reduced))
+      call pic_syev(reduced, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) return
+      if (minval(values) <= 0.0_dp) return
+      values = sqrt(values)
+
+      call pic_gemm(half, reduced, xpy)
+      call pic_gemm(inverse_half, reduced, xmy)
+      do k = 1, n
+         xpy(:, k) = xpy(:, k)/sqrt(values(k))
+         xmy(:, k) = xmy(:, k)*sqrt(values(k))
+         x(:, k) = sqrt(HALF_NORM)*0.5_dp*(xpy(:, k) + xmy(:, k))
+         y(:, k) = sqrt(HALF_NORM)*0.5_dp*(xpy(:, k) - xmy(:, k))
+      end do
+      ok = .true.
+   end subroutine paired_amplitudes
+
+   subroutine test_property_sum_rule(error)
+      !! The whole RPA spectrum's summed oscillator strength, two ways
+      !!
+      !! ## Why the target is not ten
+      !!
+      !! The Thomas-Reiche-Kuhn sum rule says the oscillator strengths of a
+      !! complete spectrum sum to the electron count, which here would be ten.
+      !! It holds for RPA in a **complete** one-electron basis and nowhere
+      !! short of one: STO-3G has ten occupied-virtual rotations to represent
+      !! the entire continuum with, and the measured sum is 1.9459711 --
+      !! which is PySCF's 1.9459710921 for the same spectrum, to 5.2e-11.
+      !! Pinning 10 as a gate would be pinning a statement about the basis
+      !! set, and loosening the bound until STO-3G passed would leave a test
+      !! that no longer detects anything.
+      !!
+      !! ## What does hold exactly
+      !!
+      !! `sum_k f_k` computed from the iterative solver's amplitudes equals
+      !! the same sum computed from a dense diagonalisation of the same two
+      !! matrices, contracted against the same dipole integrals. Both sides
+      !! are the full ten-root spectrum, so nothing is left out of either, and
+      !! the only thing that differs is where the amplitudes came from. That
+      !! is a gate on the properties and the amplitudes together, and it is
+      !! exact rather than asymptotic.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(excited_properties_t) :: iterative, dense
+      type(excitation_spectrum_t) :: dense_spectrum
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), values(:)
+      real(dp), allocatable :: x(:, :), y(:, :), omega(:)
+      integer, allocatable :: spins(:), all_singlet(:)
+      logical :: ok
+
+      call water_reference("sto-3g", "", mol, scf, ctx, err)
+      if (.not. err%has_error()) call dense_rpa(mol, scf, ctx, .false., aplus, aminus, err)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the Hartree-Fock RPA matrices failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      call paired_amplitudes(aplus, aminus, values, x, y, ok)
+      call check(error, ok, "the dense paired reduction failed")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      allocate (all_singlet(size(values)))
+      all_singlet = STATE_SPIN_SINGLET
+      dense_spectrum%excitations = values
+      dense_spectrum%state_spin = all_singlet
+      dense_spectrum%x_amplitudes = x
+      dense_spectrum%y_amplitudes = y
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, dense_spectrum, &
+                              scf%energy, dense, err)
+
+      ! Every root of the space, iteratively. Ten of ten, so nothing is left
+      ! out of the sum on this side either.
+      if (.not. err%has_error()) then
+         call solve_with_properties(mol, scf, ctx, .false., "rpa", "singlet", N_OV, &
+                                    omega, spins, iterative, err)
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the full-space RPA properties "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, size(omega) == N_OV, "the full-space RPA solve did not "// &
+                 "return every root of the space")
+      if (allocated(error)) return
+      call check(error, maxval(abs(omega - values)) < TOL_RPA_SOLVER, &
+                 "the iterative and dense full spectra disagree")
+      if (allocated(error)) return
+
+      call check(error, abs(sum(iterative%f_length) - sum(dense%f_length)) < &
+                 TOL_SUM_RULE, "the summed length-gauge oscillator strength of the "// &
+                 "iterative amplitudes disagrees with a dense evaluation of the same "// &
+                 "sum")
+      if (allocated(error)) return
+      call check(error, abs(sum(iterative%f_velocity) - sum(dense%f_velocity)) < &
+                 TOL_SUM_RULE, "the summed velocity-gauge oscillator strength of "// &
+                 "the iterative amplitudes disagrees with a dense evaluation")
+      if (allocated(error)) return
+
+      ! Said out loud rather than left implied: the sum is nowhere near the
+      ! electron count, and that is the basis rather than a fault.
+      call check(error, abs(sum(iterative%f_length) - 10.0_dp) > 1.0_dp, &
+                 "the STO-3G length-gauge sum came out near the electron count, "// &
+                 "which a minimal basis cannot do; the reference or the "// &
+                 "contraction has changed")
+      call iterative%destroy()
+      call dense%destroy()
+   end subroutine test_property_sum_rule
+
+   subroutine test_bridge_properties(error)
+      !! A whole run reports its strengths, dipoles and leading NTO weight
+      !!
+      !! The solver path above is checked against PySCF; this is the wiring.
+      !! A spectrum whose properties never reach `calculation_result_t` is
+      !! not a feature, and the writer only writes what it is handed.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t) :: result
+
+      integer :: k
+
+      call excited_run("cc-pvdz", "", N_CCPVDZ_STATES, "tda", "singlet", result)
+      call check(error,.not. result%has_error, "the cc-pVDZ run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(result%oscillator_strengths) .and. &
+                 allocated(result%oscillator_strengths_velocity) .and. &
+                 allocated(result%transition_dipoles) .and. &
+                 allocated(result%transition_velocities) .and. &
+                 allocated(result%excited_total_energies) .and. &
+                 allocated(result%transition_dipole_origin) .and. &
+                 allocated(result%nto_leading_weight), "a run with excited states "// &
+                 "did not report their transition properties")
+      if (allocated(error)) return
+
+      ! The origin the dipoles were measured from, which is the one thing here
+      ! that is not per state. Against the charge centroid of this geometry
+      ! worked out here rather than against a pinned vector: what the check
+      ! is for is that the bridge carried the origin it actually used, and a
+      ! zero vector would otherwise pass on a molecule sitting near one.
+      call check(error, size(result%transition_dipole_origin) == 3, "the transition "// &
+                 "dipole origin off the bridge is not a three-vector")
+      if (allocated(error)) return
+      call check(error, maxval(abs(result%transition_dipole_origin - &
+                                   matmul(WATER_BOHR, [8.0_dp, 1.0_dp, 1.0_dp])/ &
+                                   10.0_dp)) < 1.0e-14_dp, "the transition dipole "// &
+                 "origin off the bridge is not this geometry's nuclear charge centroid")
+      if (allocated(error)) return
+
+      do k = 1, N_CCPVDZ_STATES
+         call check(error, abs(result%oscillator_strengths(k) - &
+                               RHF_TDA_F_LENGTH(k)) < TOL_OSCILLATOR, &
+                    "an oscillator strength off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         call check(error, abs(result%oscillator_strengths_velocity(k) - &
+                               RHF_TDA_F_VELOCITY(k)) < TOL_OSCILLATOR, &
+                    "a velocity-gauge strength off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         call check(error, maxval(abs(abs(result%transition_dipoles(:, k)) - &
+                                      abs(RHF_TDA_DIPOLE(:, k)))) < TOL_DIPOLE, &
+                    "a transition dipole off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         ! The velocity gauge as well as the length one: the two are the
+         ! diagnostic this module reports both for, and the length half
+         ! reaching the container while the velocity half did not is exactly
+         ! the asymmetry this case exists to refuse.
+         call check(error, maxval(abs(abs(result%transition_velocities(:, k)) - &
+                                      abs(RHF_TDA_VELOCITY(:, k)))) < TOL_DIPOLE, &
+                    "a velocity-gauge moment off the bridge disagrees with PySCF")
+         if (allocated(error)) return
+         call check(error, abs(result%excited_total_energies(k) - &
+                               (result%energy%scf + result%excitation_energies(k))) < &
+                    1.0e-12_dp, "an excited-state total energy off the bridge is "// &
+                    "not the reference plus the excitation")
+         if (allocated(error)) return
+      end do
+
+      call check(error, abs(result%nto_leading_weight(1) - RHF_TDA_NTO_S1(1)) < &
+                 TOL_NTO, "the leading natural transition orbital weight off the "// &
+                 "bridge disagrees with PySCF")
+   end subroutine test_bridge_properties
+
+   subroutine oh_reference(mol, scf, ctx, err, functional)
+      !! Converge the OH radical in cc-pVDZ, unrestricted, at the plan geometry
+      !!
+      !! A doublet with a small beta gap -- 0.8 eV between the beta HOMO and
+      !! LUMO -- so the SCF is driven hard: what is compared is an operator
+      !! built from the orbitals, and the orbital error goes as the commutator
+      !! rather than its square.
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(xc_context_t), intent(out) :: ctx
+      type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: functional
+         !! Absent is Hartree-Fock, and leaves `ctx` untouched.
+
+      call build_czt_molecule([8, 1], ["O ", "H "], OH_BOHR, "cc-pvdz", mol, err)
+      if (err%has_error()) return
+
+      if (present(functional)) then
+         call xc_context_create(mol, functional, ctx, err, level=5, polarized=.true.)
+         if (err%has_error()) return
+         call run_czt_uhf(mol, 9, 2, 400, 1.0e-13_dp, 1.0e-10_dp, .false., scf, err, &
+                          xc=ctx, grad_tol=1.0e-9_dp)
+      else
+         ! 1e-11 on the commutator was reachable on most runs and not on all:
+         ! the doublet's beta gap is small and the last decade of the DIIS
+         ! wanders with the thread schedule. 1e-10 is reached every time and
+         ! is two decades below what the 1e-10 eigenvalue gate needs.
+         call run_czt_uhf(mol, 9, 2, 500, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                          grad_tol=1.0e-10_dp)
+      end if
+   end subroutine oh_reference
+
+   subroutine dense_tda_uhf(mol, scf, ctx, kohn_sham, a, err)
+      !! The explicit unrestricted TDA matrix, through the shipped operator
+      !!
+      !! Both spin blocks at once, so `a` is the `(n_ov_a + n_ov_b)` square
+      !! with the coupling blocks in it. Probed with unit vectors, which is
+      !! the construction PySCF's `gen_vind` side of the reference used too.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      real(dp), allocatable, intent(out) :: a(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(tda_operator_uhf_t) :: operator
+
+      if (err%has_error()) return
+      if (kohn_sham) then
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err, xc=ctx, ref_a=scf%density, &
+                                     ref_b=scf%density_beta)
+      else
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err)
+      end if
+      if (err%has_error()) return
+
+      call tda_dense_matrix_uhf(operator, a, err)
+   end subroutine dense_tda_uhf
+
+   subroutine dense_rpa_uhf(mol, scf, ctx, kohn_sham, aplus, aminus, err)
+      !! The explicit unrestricted `(A+B)` and `(A-B)`, through the same operator
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_result_t), intent(in) :: scf
+      type(xc_context_t), intent(inout), target :: ctx
+      logical, intent(in) :: kohn_sham
+      real(dp), allocatable, intent(out) :: aplus(:, :), aminus(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(rpa_operator_uhf_t) :: operator
+
+      if (err%has_error()) return
+      if (kohn_sham) then
+         call build_rpa_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err, xc=ctx, ref_a=scf%density, &
+                                     ref_b=scf%density_beta)
+      else
+         call build_rpa_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals_beta, &
+                                     scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                     operator, err)
+      end if
+      if (err%has_error()) return
+
+      call rpa_dense_matrices_uhf(operator, aplus, aminus, err)
+   end subroutine dense_rpa_uhf
+
+   subroutine oh_fragment(fragment)
+      !! The OH radical as the bridge wants it: element numbers, Bohr, doublet
+      type(physical_fragment_t), intent(out) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 2
+      fragment%nelec = 9
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [8, 1]
+      fragment%coordinates = OH_BOHR
+   end subroutine oh_fragment
+
+   subroutine cation_excited_run(functional, n_states, method, result)
+      !! The water cation through the bridge, unrestricted, with a spectrum
+      !!
+      !! The same geometry as every restricted case in this file, one electron
+      !! short: a doublet whose singly-occupied orbital is not degenerate, so
+      !! the Kohn-Sham solution is unique and a 1e-7 comparison means
+      !! something. See the note above `CATION_PBE_TDA`.
+      character(len=*), intent(in) :: functional, method
+      integer, intent(in) :: n_states
+      type(calculation_result_t), intent(out) :: result
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      call water_fragment(fragment)
+      fragment%charge = 1
+      fragment%multiplicity = 2
+      fragment%nelec = 9
+      settings%basis_set = "cc-pvdz"
+      settings%functional = functional
+      settings%grid_level = 5
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-9_dp
+      settings%density_tol = 1.0e-9_dp
+      settings%max_iter = 300
+      settings%excited%enabled = n_states > 0
+      settings%excited%n_states = n_states
+      settings%excited%method = method
+      settings%excited%spin = "singlet"
+      settings%excited%tolerance = 1.0e-9_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+   end subroutine cation_excited_run
+
+   subroutine oh_excited_run(functional, n_states, method, result)
+      !! One whole unrestricted calculation through the bridge
+      character(len=*), intent(in) :: functional, method
+      integer, intent(in) :: n_states
+      type(calculation_result_t), intent(out) :: result
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      call oh_fragment(fragment)
+      settings%basis_set = "cc-pvdz"
+      settings%functional = functional
+      settings%grid_level = 5
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-9_dp
+      settings%density_tol = 1.0e-9_dp
+      settings%max_iter = 400
+      settings%excited%enabled = n_states > 0
+      settings%excited%n_states = n_states
+      settings%excited%method = method
+      settings%excited%spin = "singlet"
+      settings%excited%tolerance = 1.0e-9_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+   end subroutine oh_excited_run
+
+   function invariants_of(a) result(pair)
+      !! `trace(A)` and `||A||_F`, the two summaries a phase cannot move
+      !!
+      !! Two codes converging the same open shell agree on the orbitals only
+      !! up to a sign per orbital, and on a degenerate block only up to an
+      !! orthogonal mixing inside it. `A` is covariant under both -- it
+      !! carries one occupied and one virtual index on each side -- so its
+      !! trace and its Frobenius norm are the same numbers in either code
+      !! while almost no individual element is. A 130 by 130 matrix is too
+      !! large to pin element by element in a test file; these two are what
+      !! can be pinned, and between them they see every element.
+      real(dp), intent(in) :: a(:, :)
+      real(dp) :: pair(2)
+
+      integer :: i
+
+      pair = 0.0_dp
+      do i = 1, size(a, 1)
+         pair(1) = pair(1) + a(i, i)
+      end do
+      pair(2) = sqrt(sum(a*a))
+   end function invariants_of
+
+   subroutine test_oh_uhf_matrix(error)
+      !! The unrestricted TDA operator of the OH radical, against PySCF
+      !!
+      !! The whole 130 by 130 matrix is built by probing the shipped operator
+      !! with every unit vector, which is what PySCF's `gen_vind` side of the
+      !! reference did as well. What is compared is its symmetry, its two
+      !! phase-independent invariants and its five lowest eigenvalues.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: a(:, :), values(:)
+      real(dp) :: pair(2)
+      logical :: ok
+
+      call oh_reference(mol, scf, ctx, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the unrestricted Hartree-Fock reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, abs(scf%energy - OH_UHF_ENERGY) < TOL_EXACT, &
+                 "the OH unrestricted Hartree-Fock energy is not PySCF's")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda_uhf(mol, scf, ctx, .false., a, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the dense unrestricted TDA matrix "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      call check(error, size(a, 1) == OH_N_OV, "the unrestricted operator is not the "// &
+                 "length of the two occupied-virtual blocks together")
+      if (allocated(error)) return
+      ! `A` is symmetric for a real reference, and nothing in the build
+      ! enforces it: the two spin blocks come from separate transforms and the
+      ! coupling blocks from the Coulomb term of one against the other.
+      call check(error, maxval(abs(a - transpose(a))) < TOL_EXACT, &
+                 "the unrestricted TDA matrix is not symmetric")
+      if (allocated(error)) return
+
+      pair = invariants_of(a)
+      call check(error, abs(pair(1) - OH_UHF_TRACE) < 1.0e-8_dp, &
+                 "the trace of the unrestricted TDA matrix is not PySCF's")
+      if (allocated(error)) return
+      call check(error, abs(pair(2) - OH_UHF_FROBENIUS) < 1.0e-8_dp, &
+                 "the Frobenius norm of the unrestricted TDA matrix is not PySCF's")
+      if (allocated(error)) return
+
+      values = eigenvalues_of(a, ok)
+      call check(error, ok, "the dense diagonalisation failed")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values(1:5) - OH_UHF_TDA)) < TOL_EXACT, &
+                 "an OH unrestricted TDA root disagrees with PySCF")
+   end subroutine test_oh_uhf_matrix
+
+   subroutine test_oh_uhf_rpa_matrix(error)
+      !! The paired unrestricted problem of OH, from the two explicit halves
+      !!
+      !! The lowest `w` here is the numerical zero the Tamm-Dancoff spectrum
+      !! keeps as 6.7e-3: the half-filled shell's own rotation, which the
+      !! paired problem puts at `w^2 = 0` because `(A+B)` is singular along
+      !! it. It is skipped rather than compared, and skipping it is the
+      !! statement that it is not an excitation.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), values(:)
+      logical :: ok
+
+      call oh_reference(mol, scf, ctx, err)
+      if (.not. err%has_error()) call dense_rpa_uhf(mol, scf, ctx, .false., aplus, &
+                                                    aminus, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the dense unrestricted paired halves "// &
+                 "failed: "//err%get_message())
+      if (allocated(error)) return
+
+      values = paired_spectrum(aplus, aminus, ok)
+      call check(error, ok, "the dense paired reduction failed; (A-B) should be "// &
+                 "positive definite on this doublet")
+      if (allocated(error)) return
+      ! `paired_spectrum` takes the square root of every `w^2`, and this one
+      ! is a numerical zero that lands on either side of it -- PySCF's own
+      ! comes out at +4e-15 on one run and -1e-15 on the next -- so what comes
+      ! back here is either a number far below the floor or a NaN. Both say
+      ! the same thing, and a comparison a NaN fails is how that is written.
+      call check(error,.not. (values(1) >= EXCITED_FLOOR), "the rotation of the "// &
+                 "half-filled shell did not come back at the numerical zero")
+      if (allocated(error)) return
+      call check(error, maxval(abs(values(2:6) - OH_UHF_RPA)) < TOL_RPA_DENSE, &
+                 "an OH unrestricted RPA root disagrees with PySCF")
+   end subroutine test_oh_uhf_rpa_matrix
+
+   subroutine compare_uhf_roots(error, result, reference, tol, what)
+      !! Every root of the reference, against what an unrestricted run reported
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t), intent(in) :: result
+      real(dp), intent(in) :: reference(:), tol
+      character(len=*), intent(in) :: what
+
+      integer :: i
+
+      call check(error,.not. result%has_error, "the "//what//" run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, result%has_excited_states, "the "//what//" run reported no "// &
+                 "excited states")
+      if (allocated(error)) return
+      call check(error, size(result%excitation_energies) == size(reference), &
+                 "the "//what//" run converged a different number of roots than "// &
+                 "were asked for")
+      if (allocated(error)) return
+      do i = 1, size(reference)
+         call check(error, abs(result%excitation_energies(i) - reference(i)) < tol, &
+                    "a "//what//" excitation energy disagrees with PySCF")
+         if (allocated(error)) return
+      end do
+      call check(error, allocated(result%state_spin), "the "//what//" run labelled "// &
+                 "no spins")
+      if (allocated(error)) return
+      call check(error, all(result%state_spin == STATE_SPIN_UNRESTRICTED), &
+                 "an unrestricted root was labelled with a multiplicity it does "// &
+                 "not have")
+   end subroutine compare_uhf_roots
+
+   subroutine test_oh_uhf_tda_solver(error)
+      !! The five lowest unrestricted TDA roots of OH, through the bridge
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "tda", result)
+      call compare_uhf_roots(error, result, OH_UHF_TDA, TOL_CCPVDZ_HF, "OH UHF TDA")
+   end subroutine test_oh_uhf_tda_solver
+
+   subroutine test_oh_uhf_rpa_solver(error)
+      !! The five lowest unrestricted RPA roots of OH, through the bridge
+      !!
+      !! The near-zero root the Tamm-Dancoff spectrum carries is not here:
+      !! the paired solver puts it at `w^2` below its floor and skips it, so
+      !! the five roots asked for are the five physical ones. That is the
+      !! difference the plan records between the two columns, and it is
+      !! gated here rather than worked around.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "rpa", result)
+      call compare_uhf_roots(error, result, OH_UHF_RPA, TOL_CCPVDZ_HF, "OH UHF RPA")
+   end subroutine test_oh_uhf_rpa_solver
+
+   subroutine test_cation_uks_pbe(error)
+      !! The five lowest UKS PBE Tamm-Dancoff roots of the water cation
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("pbe", 5, "tda", result)
+      call compare_uhf_roots(error, result, CATION_PBE_TDA, TOL_GRID, "H2O+ UKS PBE TDA")
+   end subroutine test_cation_uks_pbe
+
+   subroutine test_cation_uks_b3lyp(error)
+      !! The five lowest UKS B3LYP Tamm-Dancoff roots of the water cation
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("b3lyp", 5, "tda", result)
+      call compare_uhf_roots(error, result, CATION_B3LYP_TDA, TOL_GRID, &
+                             "H2O+ UKS B3LYP TDA")
+   end subroutine test_cation_uks_b3lyp
+
+   subroutine test_cation_uks_b3lyp_rpa(error)
+      !! The five lowest UKS B3LYP RPA roots of the water cation
+      !!
+      !! The hybrid's paired route, which is the only case here where the
+      !! attenuated-free exchange pass, the spin-resolved kernel and the
+      !! antisymmetric unrestricted Fock build all run in one product.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("b3lyp", 5, "rpa", result)
+      call compare_uhf_roots(error, result, CATION_B3LYP_RPA, TOL_GRID, &
+                             "H2O+ UKS B3LYP RPA")
+   end subroutine test_cation_uks_b3lyp_rpa
+
+   subroutine test_cation_uks_cam(error)
+      !! The three lowest UKS CAM-B3LYP Tamm-Dancoff roots of the water cation
+      !!
+      !! **The range-separated unrestricted product, which nothing else here
+      !! reaches.** `response_mean_field_uhf` builds the short-range Fock and
+      !! then, only where `omega > 0`, a second unrestricted batch at
+      !! `j_scale = 0` with the attenuated exchange -- and the UKS gates above
+      !! are PBE and B3LYP, neither of which is range separated, so that pass
+      !! ran in no test until this one. Dropping it entirely would still leave
+      !! a converged spectrum, several parts in a hundred wrong.
+      !!
+      !! Held at `TOL_GRID`, the same 1e-7 as the other Kohn-Sham gates and
+      !! for the same reason: the two codes integrate the exchange-correlation
+      !! kernel on grids that are not the same points. Measured 3.0e-11,
+      !! 1.2e-11 and 2.8e-9 on the three roots, against a reference whose own
+      !! three PySCF guesses differ among themselves by 1.2e-10 -- so what
+      !! this tolerance bounds is a missing term, not a quadrature.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("cam-b3lyp", 3, "tda", result)
+      call compare_uhf_roots(error, result, CATION_CAM_TDA, TOL_GRID, &
+                             "H2O+ UKS CAM-B3LYP TDA")
+   end subroutine test_cation_uks_cam
+
+   subroutine test_no_beta_electrons(error)
+      !! Triplet H2: an unrestricted spectrum out of a reference with no beta
+      !!
+      !! A high-spin reference can have an empty beta spin, and its alpha
+      !! excitations are as well defined as any other open shell's. The
+      !! operator used to refuse this outright. What it exercises that nothing
+      !! else does is the empty half of every unrestricted quantity: a
+      !! zero-length beta block in the trial vector and the diagonal, a beta
+      !! response density that is identically zero, a `(n_ao, 0)` orbital
+      !! rectangle, and the guards that keep those out of BLAS rather than
+      !! calling it with a vanishing inner dimension.
+      !!
+      !! Measured 2.7e-11 on the worst of the five roots.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+
+      fragment%n_atoms = 2
+      fragment%charge = 0
+      fragment%multiplicity = 3
+      fragment%nelec = 2
+      fragment%n_caps = 0
+      allocate (fragment%element_numbers(2), fragment%coordinates(3, 2))
+      fragment%element_numbers = [1, 1]
+      fragment%coordinates = H2_TRIPLET_BOHR
+
+      settings%basis_set = "cc-pvdz"
+      settings%functional = ""
+      settings%energy_tol = 1.0e-12_dp
+      settings%grad_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-10_dp
+      settings%max_iter = 300
+      settings%excited%enabled = .true.
+      settings%excited%n_states = 5
+      settings%excited%method = "tda"
+      settings%excited%spin = "singlet"
+      settings%excited%tolerance = 1.0e-9_dp
+      settings%excited%max_iter = 200
+
+      call run_czt_hf(settings, fragment, result)
+      call compare_uhf_roots(error, result, H2_TRIPLET_TDA, TOL_CCPVDZ_HF, &
+                             "triplet H2 UHF TDA")
+   end subroutine test_no_beta_electrons
+
+   subroutine test_uhf_amplitude_norm(error)
+      !! `sum_spin(|X|^2 - |Y|^2) = 1` for every unrestricted root
+      !!
+      !! The unrestricted convention, and the one thing about the amplitudes a
+      !! consumer cannot derive for itself. Checked on the paired route, where
+      !! it is an identity the solver imposes rather than a property of a unit
+      !! vector, and on the Tamm-Dancoff one, where it says the two routes
+      !! agree -- which the restricted pair, at 1 and 1/2, do not.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      integer, allocatable :: spins(:)
+      real(dp) :: worst, norm
+      integer :: k
+
+      call oh_reference(mol, scf, ctx, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the unrestricted reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      worst = 0.0_dp
+      call response_excitations_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                    scf%n_occupied, scf%orbitals_beta, &
+                                    scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                    3, "rpa", omega, spins, x, y, err, &
+                                    tolerance=1.0e-9_dp)
+      if (.not. err%has_error()) then
+         do k = 1, size(omega)
+            norm = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+            worst = max(worst, abs(norm - 1.0_dp))
+         end do
+      end if
+      if (.not. err%has_error()) then
+         deallocate (omega, spins, x, y)
+         call response_excitations_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                       scf%n_occupied, scf%orbitals_beta, &
+                                       scf%orbital_energies_beta, scf%n_occupied_beta, &
+                                       3, "tda", omega, spins, x, y, err, &
+                                       tolerance=1.0e-9_dp)
+         if (.not. err%has_error()) then
+            do k = 1, size(omega)
+               norm = dot_product(x(:, k), x(:, k)) - dot_product(y(:, k), y(:, k))
+               worst = max(worst, abs(norm - 1.0_dp))
+            end do
+         end if
+      end if
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "an unrestricted solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, worst < TOL_PAIRED_NORM, "an unrestricted amplitude is not "// &
+                 "normalised to sum_spin(|X|^2 - |Y|^2) = 1")
+   end subroutine test_uhf_amplitude_norm
+
+   subroutine restricted_manifolds_case(functional, worst_singlet, worst_triplet, &
+                                        error, ok)
+      !! The unrestricted operator on a closed shell, against the two restricted ones
+      !!
+      !! `A_aa + A_ab` is the singlet `A` and `A_aa - A_ab` the triplet one --
+      !! Psi4's `test_RU_TDA_C1`, which is the strongest statement available
+      !! about an unrestricted response operator without a second code, because
+      !! it pins the cross-spin block that no closed-shell test can see.
+      !!
+      !! **One set of orbitals, not two SCFs.** The restricted and the
+      !! unrestricted operator are built from the same converged orbitals, the
+      !! second reading them as both spins and half the density as each. So
+      !! the molecular-orbital phases are identical by construction and the
+      !! two matrices are compared **element by element** rather than through
+      !! their eigenvalues -- which is what makes this see the coupling block
+      !! at all.
+      character(len=*), intent(in) :: functional
+         !! Empty is Hartree-Fock.
+      real(dp), intent(out) :: worst_singlet, worst_triplet
+      type(error_type), allocatable, intent(out) :: error
+      logical, intent(out) :: ok
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t), target :: ctx, ctx_pol
+      type(tda_operator_uhf_t) :: operator
+      type(error_t) :: err
+      real(dp), allocatable :: singlet(:, :), triplet(:, :), both(:, :)
+      real(dp), allocatable :: half(:, :)
+      integer :: n_ov
+      logical :: kohn_sham
+
+      ok = .false.
+      worst_singlet = 0.0_dp
+      worst_triplet = 0.0_dp
+      kohn_sham = len_trim(functional) > 0
+
+      if (kohn_sham) then
+         call water_sto3g(mol, scf, ctx, err, functional=functional)
+      else
+         call water_sto3g(mol, scf, ctx, err)
+      end if
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the closed-shell reference failed: "// &
+                    err%get_message())
+         call mol%destroy()
+         return
+      end if
+
+      call dense_tda(mol, scf, ctx, kohn_sham, singlet, err, spin="singlet")
+      if (.not. err%has_error()) then
+         call dense_tda(mol, scf, ctx, kohn_sham, triplet, err, spin="triplet")
+      end if
+      if (err%has_error()) then
+         call check(error, .false., "a restricted manifold failed: "//err%get_message())
+         call mol%destroy()
+         return
+      end if
+
+      ! The same orbitals as both spins, and half the density as each. A
+      ! second, spin-polarised context because libxc fixes the spin channel
+      ! when a functional is initialised; same functional, same grid level, so
+      ! the quadrature is the same points.
+      half = 0.5_dp*scf%density
+      if (kohn_sham) then
+         call xc_context_create(mol, functional, ctx_pol, err, level=5, &
+                                polarized=.true.)
+         if (err%has_error()) then
+            call check(error, .false., "the polarised context failed: "// &
+                       err%get_message())
+            call mol%destroy()
+            return
+         end if
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals, &
+                                     scf%orbital_energies, scf%n_occupied, operator, &
+                                     err, xc=ctx_pol, ref_a=half, ref_b=half)
+      else
+         call build_tda_operator_uhf(mol, scf%orbitals, scf%orbital_energies, &
+                                     scf%n_occupied, scf%orbitals, &
+                                     scf%orbital_energies, scf%n_occupied, operator, err)
+      end if
+      if (.not. err%has_error()) call tda_dense_matrix_uhf(operator, both, err)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "the unrestricted operator failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      n_ov = size(singlet, 1)
+      worst_singlet = maxval(abs(both(1:n_ov, 1:n_ov) &
+                                 + both(1:n_ov, n_ov + 1:2*n_ov) - singlet))
+      worst_triplet = maxval(abs(both(1:n_ov, 1:n_ov) &
+                                 - both(1:n_ov, n_ov + 1:2*n_ov) - triplet))
+      ok = .true.
+   end subroutine restricted_manifolds_case
+
+   subroutine test_restricted_from_unrestricted_hf(error)
+      !! Hartree-Fock: `A_aa +/- A_ab` is the singlet and triplet `A`
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst_singlet, worst_triplet
+      logical :: ok
+
+      call restricted_manifolds_case("", worst_singlet, worst_triplet, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, worst_singlet < TOL_EXACT, "the unrestricted operator's "// &
+                 "spin sum is not the restricted singlet A")
+      if (allocated(error)) return
+      call check(error, worst_triplet < TOL_EXACT, "the unrestricted operator's "// &
+                 "spin difference is not the restricted triplet A")
+   end subroutine test_restricted_from_unrestricted_hf
+
+   subroutine test_restricted_from_unrestricted_pbe(error)
+      !! PBE: the same, and the statement that the polarised kernel is right
+      !!
+      !! Looser than the Hartree-Fock case by an order, and the reason is
+      !! libxc: the restricted side evaluates the unpolarised functional's
+      !! second derivative and this side evaluates the polarised one at
+      !! `rho_a = rho_b`, which are the same number computed two ways.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: worst_singlet, worst_triplet
+      logical :: ok
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call restricted_manifolds_case("pbe", worst_singlet, worst_triplet, error, ok)
+      if (allocated(error) .or. .not. ok) return
+      call check(error, worst_singlet < TOL_UKS_MANIFOLD, "the unrestricted PBE "// &
+                 "operator's spin sum is not the restricted singlet A")
+      if (allocated(error)) return
+      call check(error, worst_triplet < TOL_UKS_MANIFOLD, "the unrestricted PBE "// &
+                 "operator's spin difference is not the restricted triplet A")
+   end subroutine test_restricted_from_unrestricted_pbe
+
+   subroutine compare_uhf_strengths(error, result, reference, what)
+      !! Every length-gauge oscillator strength of an unrestricted run
+      !!
+      !! The energies are compared elsewhere; what this adds is the moment,
+      !! which is where the normalisation lives. An oscillator strength is
+      !! quadratic in the amplitude, so a route that kept the closed-shell
+      !! factor of two would report exactly four times these numbers while
+      !! every excitation energy stayed right.
+      type(error_type), allocatable, intent(out) :: error
+      type(calculation_result_t), intent(in) :: result
+      real(dp), intent(in) :: reference(:)
+      character(len=*), intent(in) :: what
+
+      integer :: i
+
+      call check(error,.not. result%has_error, "the "//what//" run failed: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(result%oscillator_strengths), "the "//what// &
+                 " run reported no oscillator strengths")
+      if (allocated(error)) return
+      call check(error, size(result%oscillator_strengths) == size(reference), &
+                 "the "//what//" run reported a different number of strengths "// &
+                 "than roots")
+      if (allocated(error)) return
+      do i = 1, size(reference)
+         call check(error, abs(result%oscillator_strengths(i) - reference(i)) < &
+                    TOL_UHF_OSCILLATOR, &
+                    "a "//what//" oscillator strength disagrees with PySCF")
+         if (allocated(error)) return
+      end do
+      ! Every root has a natural transition orbital weight, and the two spin
+      ! blocks' weights sum to one between them rather than to one each.
+      call check(error, allocated(result%nto_leading_weight), "the "//what// &
+                 " run reported no natural transition orbital weight")
+      if (allocated(error)) return
+      call check(error, all(result%nto_leading_weight > 0.0_dp) .and. &
+                 all(result%nto_leading_weight <= 1.0_dp + TOL_EXACT), &
+                 "an unrestricted leading weight is not a weight")
+   end subroutine compare_uhf_strengths
+
+   subroutine test_oh_uhf_tda_strengths(error)
+      !! The OH radical's unrestricted Tamm-Dancoff brightnesses
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "tda", result)
+      call compare_uhf_strengths(error, result, OH_UHF_TDA_F, "OH UHF TDA")
+      if (allocated(error)) return
+      ! The rotation root is dark exactly, not nearly: its transition density
+      ! is a rotation within the half-filled shell and the dipole integral
+      ! over it cancels component by component.
+      call check(error, result%oscillator_strengths(1) < 1.0e-12_dp, &
+                 "the rotation of the half-filled shell was reported as bright")
+   end subroutine test_oh_uhf_tda_strengths
+
+   subroutine test_oh_uhf_rpa_strengths(error)
+      !! The same molecule through the paired route
+      !!
+      !! A separate case rather than a loop because the two routes reach the
+      !! moments differently: Tamm-Dancoff has no `Y`, so `X+Y` and `X-Y` are
+      !! the same vector and the two gauges cannot disagree about which
+      !! amplitude they were handed. RPA can.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      call oh_excited_run("", 5, "rpa", result)
+      call compare_uhf_strengths(error, result, OH_UHF_RPA_F, "OH UHF RPA")
+      if (allocated(error)) return
+      ! Both gauges are reported, and they are not equal in a finite basis;
+      ! what is asserted is that the velocity one was computed at all, since
+      ! an unwired second gauge would leave it allocated and zero.
+      call check(error, allocated(result%oscillator_strengths_velocity), &
+                 "the unrestricted run reported no velocity-gauge strengths")
+      if (allocated(error)) return
+      call check(error, maxval(result%oscillator_strengths_velocity) > 1.0e-6_dp, &
+                 "every unrestricted velocity-gauge strength came back zero")
+   end subroutine test_oh_uhf_rpa_strengths
+
+   subroutine test_cation_b3lyp_strengths(error)
+      !! The water cation's unrestricted Kohn-Sham brightnesses
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t) :: result
+
+      if (.not. xc_available()) then
+         call check(error, .true.)
+         return
+      end if
+      call cation_excited_run("b3lyp", 5, "tda", result)
+      call compare_uhf_strengths(error, result, CATION_B3LYP_TDA_F, &
+                                 "H2O+ UKS B3LYP TDA")
+   end subroutine test_cation_b3lyp_strengths
+
+   subroutine test_unrestricted_spin_sum(error)
+      !! A closed shell's moment is the same whichever route computes it
+      !!
+      !! The one assertion here that needs no reference code, and the one
+      !! that pins the convention rather than a number. The two routes reach
+      !! a transition dipole by different arithmetic -- one spatial amplitude
+      !! times two, against two spin amplitudes times one -- and they agree
+      !! only if the factor and the normalisation were changed together.
+      !!
+      !! A closed shell written in the unrestricted layout has
+      !! `X_alpha = X_beta` over the same orbitals, and the restricted
+      !! amplitude at `|X|^2 = 1/2` is already what each spin block carries
+      !! at `sum_sigma |X|^2 = 1`. So the same vector, duplicated, is the
+      !! same state; the moments have to come out identical, to round-off and
+      !! not to a tolerance. Halving one convention and not the other leaves
+      !! every excitation energy right and every oscillator strength wrong by
+      !! a factor of four, which is what this catches.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      type(excited_properties_t) :: props_r, props_u, props_half
+      type(excitation_spectrum_t) :: one_spin, two_spin
+      type(error_t) :: half_err
+      real(dp), allocatable :: omega(:), x(:, :), y(:, :)
+      real(dp), allocatable :: x_two(:, :), y_two(:, :)
+      integer, allocatable :: spins(:)
+      integer :: n_ov, k
+
+      call water_reference("sto-3g", "", mol, scf, ctx, err)
+      call check(error,.not. err%has_error(), &
+                 "the closed-shell reference failed: "//err%get_message())
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                scf%n_occupied, 3, "rpa", "singlet", omega, spins, &
+                                x, y, err, tolerance=1.0e-10_dp, max_iter=200)
+      if (err%has_error()) then
+         call mol%destroy()
+         call check(error, .false., "the restricted spectrum failed: "// &
+                    err%get_message())
+         return
+      end if
+
+      one_spin%excitations = omega
+      one_spin%state_spin = spins
+      one_spin%x_amplitudes = x
+      one_spin%y_amplitudes = y
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, one_spin, &
+                              scf%energy, props_r, err)
+
+      ! The optional pair is refused half at a time in both directions. The
+      ! direction checked here is the silent one: a beta occupation count with
+      ! no beta orbitals looks restricted, and would be given the closed-shell
+      ! factor of two over an unrestricted spectrum.
+      call excited_properties(mol, scf%orbitals, scf%n_occupied, one_spin, &
+                              scf%energy, props_half, half_err, &
+                              n_occ_beta=scf%n_occupied)
+      call check(error, half_err%has_error(), &
+                 "a beta occupation count with no beta orbitals was accepted, and "// &
+                 "the restricted spin sum used on it")
+      call half_err%clear()
+      call props_half%destroy()
+      if (allocated(error)) then
+         call mol%destroy()
+         call props_r%destroy()
+         return
+      end if
+
+      ! The same states in the unrestricted layout: the alpha block, then an
+      ! identical beta block over identical orbitals.
+      n_ov = size(x, 1)
+      allocate (x_two(2*n_ov, size(x, 2)), y_two(2*n_ov, size(y, 2)))
+      x_two(1:n_ov, :) = x
+      x_two(n_ov + 1:, :) = x
+      y_two(1:n_ov, :) = y
+      y_two(n_ov + 1:, :) = y
+      ! Relabelled, because a root the restricted route called a singlet the
+      ! unrestricted one has no name for -- and a row still marked a triplet
+      ! would be short-circuited to zero on both sides and assert nothing.
+      spins = STATE_SPIN_UNRESTRICTED
+      two_spin%excitations = omega
+      two_spin%state_spin = spins
+      two_spin%x_amplitudes = x_two
+      two_spin%y_amplitudes = y_two
+
+      if (.not. err%has_error()) &
+         call excited_properties(mol, scf%orbitals, scf%n_occupied, two_spin, &
+                                 scf%energy, props_u, err, &
+                                 orbitals_beta=scf%orbitals, &
+                                 n_occ_beta=scf%n_occupied)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the unrestricted moments failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(omega)
+         call check(error, maxval(abs(props_u%transition_dipole(:, k) - &
+                                      props_r%transition_dipole(:, k))) < TOL_EXACT, &
+                    "the unrestricted route reports a different transition dipole "// &
+                    "for the same closed-shell excitation")
+         if (allocated(error)) exit
+         call check(error, maxval(abs(props_u%velocity_moment(:, k) - &
+                                      props_r%velocity_moment(:, k))) < TOL_EXACT, &
+                    "the unrestricted route reports a different velocity moment "// &
+                    "for the same closed-shell excitation")
+         if (allocated(error)) exit
+         call check(error, abs(props_u%f_length(k) - props_r%f_length(k)) < TOL_EXACT, &
+                    "the unrestricted route reports a different oscillator strength "// &
+                    "for the same closed-shell excitation")
+         if (allocated(error)) exit
+         ! The two spin blocks hold half the weight each, so the merged column
+         ! still sums to one and its leading entry is half the restricted one.
+         call check(error, abs(sum(props_u%nto_weights(:, k)) - 1.0_dp) < TOL_NTO_SUM, &
+                    "the two spin blocks' natural transition orbital weights do "// &
+                    "not sum to one between them")
+         if (allocated(error)) exit
+         call check(error, abs(maxval(props_u%nto_weights(:, k)) - &
+                               0.5_dp*maxval(props_r%nto_weights(:, k))) < TOL_NTO, &
+                    "an unrestricted leading weight is not half its closed-shell "// &
+                    "partner")
+         if (allocated(error)) exit
+         ! Descending, which is what the caller reading only the first entry
+         ! is relying on.
+         call check(error, all(props_u%nto_weights(1:size(props_u%nto_weights, 1) - 1, k) &
+                               >= props_u%nto_weights(2:, k) - TOL_NTO_SUM), &
+                    "the merged natural transition orbital weights are not descending")
+         if (allocated(error)) exit
+      end do
+      call props_r%destroy()
+      call props_u%destroy()
+      deallocate (x_two, y_two)
+   end subroutine test_unrestricted_spin_sum
 
 end module test_mqc_czt_tddft
 

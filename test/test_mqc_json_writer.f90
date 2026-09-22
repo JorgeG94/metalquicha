@@ -21,7 +21,8 @@ module test_mqc_json_writer
    use mqc_json_writer, only: write_json_output
    use mqc_io_helpers, only: set_output_json_filename, get_output_json_filename
    use json_module, only: json_file
-   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET
+   use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
+                               STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN
    implicit none
    private
 
@@ -40,7 +41,9 @@ contains
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
-                  new_unittest("excited_states_round_trip", test_excited_states) &
+                  new_unittest("excited_states_round_trip", test_excited_states), &
+                  new_unittest("unrestricted_roots_carry_their_own_spin_word", &
+                               test_unrestricted_spin) &
                   ]
    end subroutine collect_mqc_json_writer_tests
 
@@ -370,9 +373,15 @@ contains
       data%total_energy = -76.026767997_dp
       data%has_energy = .true.
       data%excitation_energies = [0.3386923781_dp, 0.3047529969_dp]
+      data%excited_total_energies = [-75.6880756189_dp, -75.7220150001_dp]
       data%oscillator_strengths = [0.02847955_dp, 0.0_dp]
-      data%transition_dipoles = reshape([0.5022552059_dp, 0.0_dp, 0.0_dp, &
+      data%oscillator_strengths_velocity = [0.12950160_dp, 0.0_dp]
+      data%transition_dipoles = reshape([0.3551480624_dp, 0.0_dp, 0.0_dp, &
                                          0.0_dp, 0.0_dp, 0.0_dp], [3, 2])
+      data%transition_velocities = reshape([0.2159163096_dp, 0.0_dp, 0.0_dp, &
+                                            0.0_dp, 0.0_dp, 0.0_dp], [3, 2])
+      data%transition_dipole_origin = [0.0_dp, 0.0_dp, 0.1257326_dp]
+      data%nto_leading_weight = [0.9997741843_dp, 0.9812_dp]
       data%state_spin = [STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET]
       data%excited_method = "tda"
       data%excited_spin = "both"
@@ -421,6 +430,17 @@ contains
                  "the eV column is not the Hartree one converted")
       if (allocated(error)) return
 
+      ! The state's own total energy, which is what a spectrum is plotted
+      ! against the ground state with. It is carried rather than derived:
+      ! the reference it sits on is not always the one printed beside it.
+      call json%get("jw_excited.excited_states.states(1).total_energy_hartree", &
+                    value, found)
+      call check(error, found, "total_energy_hartree is missing")
+      if (allocated(error)) return
+      call check(error, abs(value + 75.6880756189_dp) < 1.0e-12_dp, &
+                 "the excited-state total energy came back changed")
+      if (allocated(error)) return
+
       call json%get("jw_excited.excited_states.states(1).spin", text, found)
       call check(error, found, "the state spin label is missing")
       if (allocated(error)) return
@@ -434,11 +454,49 @@ contains
                  "the oscillator strength came back changed")
       if (allocated(error)) return
 
+      ! Both gauges, because they are different numbers and a consumer that
+      ! read one for the other would be wrong by a factor of four here.
+      call json%get("jw_excited.excited_states.states(1).oscillator_strength_velocity", &
+                    value, found)
+      call check(error, found, "oscillator_strength_velocity is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.12950160_dp) < 1.0e-12_dp, &
+                 "the velocity-gauge oscillator strength came back changed")
+      if (allocated(error)) return
+
       call json%get("jw_excited.excited_states.states(1).transition_dipole(1)", value, found)
       call check(error, found, "the transition dipole is missing")
       if (allocated(error)) return
-      call check(error, abs(value - 0.5022552059_dp) < 1.0e-12_dp, &
+      call check(error, abs(value - 0.3551480624_dp) < 1.0e-12_dp, &
                  "the transition dipole x component came back changed")
+      if (allocated(error)) return
+
+      ! The velocity-gauge moment, beside its length-gauge partner. The two
+      ! gauges are the diagnostic the module reports both for, and a document
+      ! carrying only one of them cannot show the gap.
+      call json%get("jw_excited.excited_states.states(1).transition_velocity(1)", &
+                    value, found)
+      call check(error, found, "the velocity-gauge transition moment is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.2159163096_dp) < 1.0e-12_dp, &
+                 "the velocity-gauge moment x component came back changed")
+      if (allocated(error)) return
+
+      ! One origin for the whole spectrum, on the section rather than per
+      ! state: it says which convention the dipoles were measured in.
+      call json%get("jw_excited.excited_states.dipole_origin_bohr(3)", value, found)
+      call check(error, found, "the transition dipole origin is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.1257326_dp) < 1.0e-12_dp, &
+                 "the transition dipole origin came back changed")
+      if (allocated(error)) return
+
+      call json%get("jw_excited.excited_states.states(1).nto_leading_weight", &
+                    value, found)
+      call check(error, found, "nto_leading_weight is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.9997741843_dp) < 1.0e-12_dp, &
+                 "the leading natural transition orbital weight came back changed")
       if (allocated(error)) return
 
       ! The second root is a triplet, whose zero oscillator strength is a real
@@ -463,6 +521,51 @@ contains
       call json%destroy()
       call data%destroy()
    end subroutine test_excited_states
+
+   subroutine test_unrestricted_spin(error)
+      !! `STATE_SPIN_UNRESTRICTED` comes back as the word, and so does the gap
+      !!
+      !! The third spin label, and the one a deck can never ask for: it says
+      !! the reference was unrestricted and its roots are not spin
+      !! eigenstates. Like the other two it exists only in the writer -- the
+      !! container carries an integer -- so a round trip is the only place it
+      !! is checked. `STATE_SPIN_UNKNOWN` is here for the same reason: the
+      !! `select case` has a default arm whose job is to invent nothing, and
+      !! a label silently replaced by a guess would be believed.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      character(len=:), allocatable :: text
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = -75.939126000634_dp
+      data%has_energy = .true.
+      data%excitation_energies = [0.088470327358_dp, 0.234583947377_dp]
+      data%state_spin = [STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN]
+      data%excited_method = "tda"
+      data%excited_spin = "singlet"
+      data%has_excited_states = .true.
+
+      call written_document(data, json, "jw_unrestricted.json")
+
+      call json%get("jw_unrestricted.excited_states.states(1).spin", text, found)
+      call check(error, found, "the unrestricted state spin label is missing")
+      if (allocated(error)) return
+      call check(error, text == "unrestricted", "an unrestricted root should be "// &
+                 "labelled unrestricted, not with a multiplicity it does not have")
+      if (allocated(error)) return
+
+      call json%get("jw_unrestricted.excited_states.states(2).spin", text, found)
+      call check(error, found, "the unassigned state spin label is missing")
+      if (allocated(error)) return
+      call check(error, text == "unknown", "a state nothing assigned a spin to "// &
+                 "should say so rather than be given one")
+
+      call json%destroy()
+      call data%destroy()
+   end subroutine test_unrestricted_spin
 
 end module test_mqc_json_writer
 

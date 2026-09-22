@@ -507,6 +507,31 @@ whose sign a noisy near-zero mode can flip.
 - **Units**: Hartree/Bohr²
 - **Applications**: Vibrational frequencies, reaction path analysis
 
+Excited States
+--------------
+
+Linear-response excitation energies out of a converged reference, asked for
+with ``keywords.excited_states`` on an ordinary energy deck -- an excitation
+is not a derivative order, so the driver does not change.
+
+- **Two methods**: ``tda``, the Tamm-Dancoff approximation over the **A**
+  block alone, and ``rpa``, the full Casida problem through the
+  Stratmann-Scuseria-Frisch subspace reduction. Different approximations, not
+  two routes to one answer
+- **Two manifolds out of a closed shell**: singlets, triplets, or ``both``
+  merged into one list ordered by energy with each root's spin recorded
+- **References**: restricted and unrestricted, Hartree-Fock and Kohn-Sham,
+  from LDA through range-separated hybrid. Range-separated exchange is a
+  second attenuated **K** build, never taken from libxc
+- **Per root**: excitation energy, excited-state total energy, transition
+  dipole and oscillator strength in both the length and the velocity gauge,
+  and the leading natural transition orbital weight
+- **Refused rather than approximated**: meta-GGA, VV10, a density-fitted
+  reference, continuum solvation, a hydrogen-capped fragment, a correlated
+  reference, and the GPU backend. A response operator missing a term still
+  converges and its spectrum still looks like a spectrum
+- See :doc:`excited_states`
+
 Properties
 ==========
 

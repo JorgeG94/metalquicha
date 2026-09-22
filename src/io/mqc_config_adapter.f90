@@ -273,6 +273,7 @@ contains
       driver_config%method_config%excited%enabled = mqc_config%excited_n_states > 0
       driver_config%method_config%excited%method = mqc_config%excited_method
       driver_config%method_config%excited%spin = mqc_config%excited_spin
+      driver_config%method_config%excited%spin_set = mqc_config%excited_spin_set
       driver_config%method_config%excited%tolerance = mqc_config%excited_tolerance
       driver_config%method_config%excited%max_iter = mqc_config%excited_max_iter
       driver_config%method_config%excited%max_subspace = mqc_config%excited_max_subspace

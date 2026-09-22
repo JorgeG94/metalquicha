@@ -259,6 +259,72 @@ def extract_frequencies(json_data: Dict) -> Optional[List[float]]:
     return None
 
 
+def extract_excited_states(json_data: Dict) -> Optional[List[Dict]]:
+    """The per-root objects of the linear-response spectrum, in solver order
+
+    `excited_states.states` is an array of objects rather than four parallel
+    arrays, so this returns them whole and the three extractors below pick a
+    field out of each. Ascending in excitation energy, which is the order the
+    solver converged them in and the order the references are written in.
+    """
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    excited = data.get("excited_states")
+    if not excited or "states" not in excited:
+        return None
+    return list(excited["states"])
+
+
+def extract_excitation_energies(json_data: Dict) -> Optional[List[float]]:
+    """Excitation energies in Hartree above the reference
+
+    Hartree rather than the eV written beside them: the eV is a courtesy for a
+    reader and carries the conversion factor, which the two codes spell to a
+    different number of digits. A reference compared in eV would be comparing
+    that constant as well.
+    """
+    states = extract_excited_states(json_data)
+    if states is None:
+        return None
+    return [float(s["excitation_energy_hartree"]) for s in states
+            if "excitation_energy_hartree" in s]
+
+
+def extract_oscillator_strengths(json_data: Dict) -> Optional[List[float]]:
+    """Length-gauge oscillator strengths, one per root
+
+    The length gauge, because that is the column both reference codes print
+    and the one the plan's tables carry. The velocity gauge is written beside
+    it in the JSON and is not compared here: the two agree only in a complete
+    basis, so a bound tight enough to be worth having on one is meaningless on
+    the other.
+    """
+    states = extract_excited_states(json_data)
+    if states is None:
+        return None
+    return [float(s["oscillator_strength"]) for s in states
+            if "oscillator_strength" in s]
+
+
+def extract_state_spins(json_data: Dict) -> Optional[List[str]]:
+    """The spin label of each root -- "singlet", "triplet" or "unrestricted"
+
+    Compared as labels rather than as numbers because that is what the writer
+    emits and what a reader of the output sees. It matters for a `spin: both`
+    deck, where two manifolds are interleaved by energy and the label is the
+    only thing that says which root came from which: a run that solved the
+    right energies and mislabelled them would otherwise pass.
+    """
+    states = extract_excited_states(json_data)
+    if states is None:
+        return None
+    return [str(s.get("spin", "unknown")) for s in states]
+
+
 def extract_ir_intensities(json_data: Dict) -> Optional[List[float]]:
     """Extract infrared intensities (km/mol) from JSON output"""
     if not json_data:
@@ -800,6 +866,111 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                         worst = max(abs(c - e) for c, e in zip(tail, expected_ir))
                         print(f"    IR intensities: {len(expected_ir)} modes "
                               f"(worst {worst:.2e} km/mol)")
+
+            # Validate the linear-response spectrum if present
+            if "expected_excitation_energies" in test:
+                expected_omegas = test["expected_excitation_energies"]
+                calculated_omegas = extract_excitation_energies(output_data)
+                # Required rather than defaulted, and that is the one place
+                # in this file where a bound is. The manifest's own
+                # `tolerance` is 1e-9 and is for total energies; an excitation
+                # energy carries the exchange-correlation kernel on a grid
+                # that is not the reference code's, and an oscillator strength
+                # is linear in the amplitude where an eigenvalue is quadratic
+                # in it. Both bounds are therefore per case -- a grid-free
+                # Hartree-Fock deck is held two orders tighter than a
+                # Kohn-Sham one -- so a default here would be a second, looser
+                # copy of a number that lives in
+                # `tools/cpu_validation/gen_cpu_validation.py`, and an entry
+                # that lost the key would silently be checked against it.
+                omega_tol = test.get("excitation_tolerance")
+                f_tol = test.get("oscillator_tolerance")
+
+                if omega_tol is None or f_tol is None:
+                    missing = [k for k in ("excitation_tolerance",
+                                           "oscillator_tolerance")
+                               if test.get(k) is None]
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - manifest entry "
+                          f"carries excitation energies but no {', '.join(missing)}")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"manifest entry is missing {', '.join(missing)}")
+                elif calculated_omegas is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract excitation energies from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing excitation energies")
+                elif len(calculated_omegas) != len(expected_omegas):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Excited state count mismatch")
+                    print(f"    Expected:   {len(expected_omegas)} roots")
+                    print(f"    Calculated: {len(calculated_omegas)} roots")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"Excited state count mismatch ({len(calculated_omegas)} vs {len(expected_omegas)})")
+                else:
+                    omega_errors = [(i, c, e, abs(c - e))
+                                    for i, (c, e) in enumerate(zip(calculated_omegas, expected_omegas))
+                                    if abs(c - e) >= omega_tol]
+                    if omega_errors:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Excitation energy mismatch "
+                              f"({len(omega_errors)} roots)")
+                        for i, c, e, d in omega_errors[:3]:
+                            print(f"    State {i + 1}: expected {e:.12f}, got {c:.12f} "
+                                  f"(diff: {d:.2e}, tolerance: {omega_tol:.2e})")
+                        if len(omega_errors) > 3:
+                            print(f"    ... and {len(omega_errors) - 3} more")
+                        test_passed = False
+                        failure_reasons.append(f"Excitation energy mismatch ({len(omega_errors)} roots)")
+                    elif verbose:
+                        worst = max(abs(c - e) for c, e in zip(calculated_omegas, expected_omegas))
+                        print(f"    Excitation energies: {len(expected_omegas)} roots "
+                              f"(worst {worst:.2e} Hartree)")
+
+                    # The strengths and the spins are only meaningful against
+                    # the roots they belong to, so they are checked inside the
+                    # branch where the count already agreed.
+                    if "expected_oscillator_strengths" in test:
+                        expected_f = test["expected_oscillator_strengths"]
+                        calculated_f = extract_oscillator_strengths(output_data)
+                        if calculated_f is None or len(calculated_f) != len(expected_f):
+                            print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract "
+                                  f"oscillator strengths from JSON")
+                            test_passed = False
+                            failure_reasons.append("Missing oscillator strengths")
+                        else:
+                            f_errors = [(i, c, e, abs(c - e))
+                                        for i, (c, e) in enumerate(zip(calculated_f, expected_f))
+                                        if abs(c - e) >= f_tol]
+                            if f_errors:
+                                print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Oscillator strength "
+                                      f"mismatch ({len(f_errors)} roots)")
+                                for i, c, e, d in f_errors[:3]:
+                                    print(f"    State {i + 1}: expected {e:.9f}, got {c:.9f} "
+                                          f"(diff: {d:.2e}, tolerance: {f_tol:.2e})")
+                                test_passed = False
+                                failure_reasons.append(f"Oscillator strength mismatch ({len(f_errors)} roots)")
+                            elif verbose:
+                                worst = max(abs(c - e) for c, e in zip(calculated_f, expected_f))
+                                print(f"    Oscillator strengths: worst {worst:.2e}")
+
+                    if "expected_state_spins" in test:
+                        expected_spins = test["expected_state_spins"]
+                        calculated_spins = extract_state_spins(output_data)
+                        if calculated_spins is None or len(calculated_spins) != len(expected_spins):
+                            print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract "
+                                  f"state spins from JSON")
+                            test_passed = False
+                            failure_reasons.append("Missing state spins")
+                        elif calculated_spins != expected_spins:
+                            wrong = [(i, c, e) for i, (c, e) in
+                                     enumerate(zip(calculated_spins, expected_spins)) if c != e]
+                            print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - State spin mismatch "
+                                  f"({len(wrong)} roots)")
+                            for i, c, e in wrong[:3]:
+                                print(f"    State {i + 1}: expected {e}, got {c}")
+                            test_passed = False
+                            failure_reasons.append(f"State spin mismatch ({len(wrong)} roots)")
+                        elif verbose:
+                            print(f"    State spins: {', '.join(expected_spins)}")
 
             # Validate frequencies if present
             if "expected_frequencies" in test:

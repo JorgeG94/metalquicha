@@ -490,6 +490,12 @@ module mqc_config_types
          !! `keywords.excited_states.spin`: "singlet", "triplet" or "both".
          !! A closed-shell reference has no spin-adapted solution that carries
          !! both in one eigenproblem, so "both" is two solves, not one.
+      logical :: excited_spin_set = .false.
+         !! Whether the deck wrote `keywords.excited_states.spin` at all.
+         !! The default above is a value like any other once it is read, and
+         !! an unrestricted reference has to tell a deck that asked for a
+         !! spin-adapted manifold -- whose roots it cannot produce -- from one
+         !! that asked for nothing and gets the spectrum it does have.
       real(dp) :: excited_tolerance = DEFAULT_EXCITED_TOL
          !! Residual at which the eigensolver accepts a root. Refused below
          !! `MIN_EXCITED_TOL`; see that constant for why.
