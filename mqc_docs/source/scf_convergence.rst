@@ -14,9 +14,21 @@ What is available
 
 DIIS is on by default and does most of the work. Beyond it there are two
 energy-based accelerators, EDIIS and ADIIS, which open an SCF that DIIS opens
-badly and then hand back to it; and there is level shifting. Both are described
-below. There is no damping, no Fermi smearing and no second-order fallback; see
-:doc:`capabilities` for the standing list.
+badly and then hand back to it; there is level shifting; and there is a
+second-order finish, which lets DIIS open and then converges the rest by
+trust-region Newton on the orbital rotations. All three are described below.
+There is no damping and no Fermi smearing; see :doc:`capabilities` for the
+standing list.
+
+They answer different questions, and the three-way split at the top of this page
+is how to choose:
+
+- **Oscillating** -- reach for :ref:`accelerators` (``ediis`` or ``adiis``), or
+  for the second-order finish.
+- **Crawling, with a small gap** -- reach for :ref:`level-shifting`. Neither
+  accelerator helps.
+- **Converged to the wrong thing** -- that is not a convergence problem at all,
+  and it is the case :ref:`second-order-convergence` exists for.
 
 .. _when-is-it-converged:
 
@@ -285,9 +297,14 @@ converges as though it were absent.
 Accelerators
 ------------
 
-``keywords.scf.accelerator`` chooses which accelerator opens the SCF:
-``diis`` (the default), ``ediis`` or ``adiis``. A name outside those three is
+``keywords.scf.accelerator`` chooses the SCF's convergence scheme: ``diis``
+(the default), ``ediis``, ``adiis`` or ``soscf``. A name outside those four is
 refused rather than ignored.
+
+The first three are the subject of this section. ``soscf`` is a different kind
+of thing and has its own section below -- where ``ediis`` and ``adiis`` change
+how the SCF *opens* and hand back to DIIS, ``soscf`` leaves the opening to DIIS
+and changes how it *finishes*. See :ref:`second-order-convergence`.
 
 DIIS extrapolates from the error vectors of previous iterations, and it is very
 good once those iterations are near enough to the answer to be informative. Far
@@ -365,3 +382,246 @@ device-resident and Pulay-only; no energy-based scheme is implemented there. A
 deck naming ``ediis`` or ``adiis`` for a GPU run is refused by name rather than
 answered with a DIIS run that says nothing about it, and a misspelled name is
 refused by the same branch. Use the CPU backend if you want one of them.
+
+.. _second-order-convergence:
+
+Second-order SCF
+----------------
+
+Everything above is a first-order method. DIIS, EDIIS, ADIIS and the level shift
+all work on a sequence of Fock matrices and densities; none of them knows
+anything about the *curvature* of the energy. That is usually enough, and it is
+very cheap.
+
+A second-order SCF does know. It parametrises the orbitals as :math:`C \to C
+\exp(\kappa)` with :math:`\kappa` antisymmetric, takes the gradient and the
+Hessian of the energy with respect to those rotations, and steps by Newton's
+method inside a trust region. Two things follow from that, and the second is
+the one that makes it worth the cost.
+
+**It converges in fewer iterations.** Newton's method converges quadratically
+near a solution where DIIS does not, so an SCF that oscillates or stalls under
+DIIS often simply stops doing so.
+
+**It can tell a minimum from a saddle point, and DIIS cannot.** This is the real
+reason. A first-order SCF stops wherever the gradient vanishes, and a saddle
+point has a vanishing gradient -- so a converged DIIS run that has landed on one
+reports an ordinary energy, ordinary orbital energies, and nothing at all to say
+a lower solution exists a short rotation away. Everything built on top of it --
+a correlation energy, a gradient, a frequency -- then describes the wrong
+reference. The second-order SCF refuses to converge on negative curvature and
+follows it out instead.
+
+N\ :sub:`2` at 1.6 A in 6-31G is the case to keep in mind. DIIS converges from
+the core, GWH and SAD guesses alike onto a saddle. The second-order run reaches
+a genuine minimum between 0.020 and 0.242 hartree lower -- a difference no
+tolerance would have caught, because both runs converged.
+
+Asking for it
+^^^^^^^^^^^^^
+
+Two spellings, one feature. Either turns it on, and neither turns the other off:
+
+.. code-block:: json
+
+   "keywords": { "scf": { "accelerator": "soscf" } }
+
+.. code-block:: json
+
+   "keywords": { "scf": { "second_order": true, "soscf_start": 1e-2 } }
+
+The accelerator spelling exists because this is a choice of convergence scheme,
+made where ``diis`` and ``ediis`` are made. ``second-order`` and
+``second_order`` are accepted as the accelerator name too, and case does not
+matter.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 16 54
+
+   * - Key
+     - Default
+     - What it does
+   * - ``keywords.scf.accelerator``
+     - ``diis``
+     - ``soscf`` selects the second-order finish
+   * - ``keywords.scf.second_order``
+     - ``false``
+     - The same request, as a flag
+   * - ``keywords.scf.soscf_start``
+     - ``1e-2``
+     - The commutator :math:`\max|FDS - SDF|` at which DIIS hands over.
+       Governs **both** spellings
+   * - ``keywords.scf.stability``
+     - ``false``
+     - A separate feature. See below
+
+DIIS always opens, whichever spelling you used
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Naming** ``soscf`` **does not start the SCF second order, and nothing can.**
+
+A Newton step is a step on a quadratic model of the energy, and that model is
+the energy only near the point it was built at. An initial guess is not near the
+solution. A Newton step from one is long, arbitrary in direction and routinely
+uphill, and a second-order SCF started from a guess diverges -- which is why
+every one in practice is preceded by something else. Here that something else is
+the ordinary DIIS SCF, run until :math:`\max|FDS - SDF|` falls below
+``soscf_start``.
+
+So ``soscf_start`` is not a setting the accelerator spelling lets you skip. It
+governs both routes identically, and it is what makes the method robust rather
+than a curiosity:
+
+- **Raising it** hands Newton a worse starting point, and the backtracking
+  search then spends Fock builds recovering from long steps.
+- **Lowering it** spends DIIS iterations doing work the Newton steps would have
+  done in fewer.
+
+The iteration at which the handover happened is logged, and the second-order
+phase prints its own table -- energy, energy change, commutator, gradient, trust
+radius, curvature, and the Fock builds that row cost.
+
+What it costs
+^^^^^^^^^^^^^
+
+**Count Fock builds, not iterations.** One second-order iteration costs one Fock
+build per trial step, accepted or rejected, plus one per Hessian-vector product
+inside the Newton solve -- up to twenty of those, though the residual test
+usually stops well short. On seven well-behaved closed shells all converged to a
+commutator of 1e-9, the second-order path took 5-6 iterations and 7-8 energy
+builds against DIIS's 9-14 and 10-15, but spent 13-18 Hessian-vector products on
+top. That is *fewer iterations and roughly twice the integral passes*.
+
+On a well-behaved molecule, then, this is the wrong choice and DIIS is the right
+one. It earns its cost in exactly two places: where DIIS oscillates or stalls,
+and where the answer has to be a minimum rather than merely a stationary point.
+
+:ref:`second-order-scf` in the input reference carries the step-by-step
+mechanics -- semicanonicalisation, the Krylov solve, the trust-region
+backtracking -- and the full measurement table.
+
+What it will not do
+^^^^^^^^^^^^^^^^^^^
+
+Each of these is refused by name, before the SCF runs, rather than approximated
+or silently demoted to DIIS.
+
+- **An unrestricted reference.** The rotations parametrised here are the
+  closed-shell ones; the open-shell space is larger and is not implemented.
+- **A continuum solvent.** The orbital-rotation Hessian carries no response of
+  the surface charges, so the step would be taken on the curvature of a
+  different energy than the one being minimised. See
+  :doc:`continuum_solvation`.
+- **A Fock projector** -- frozen orbitals, as the AFO bond treatment uses. The
+  rotations the projector forbids are not excluded from the Newton step's
+  parameter space, so the step would break the constraint.
+- **The GPU backend.** There is no orbital-rotation Hessian under cuEST. A GPU
+  deck naming ``soscf``, or setting ``second_order``, is refused rather than
+  answered with a DIIS run that says nothing about it.
+- **The MCSCF reference SCF, the Fukui ions, and the EFP fragment potentials.**
+  The first has its own second-order orbital optimiser; the second is open
+  shell; the third is not implemented.
+
+A restricted Kohn-Sham reference **is** supported -- the exchange-correlation
+kernel enters the Hessian through the same operator the analytic Hessian's
+coupled-perturbed solve uses.
+
+One asymmetry is worth knowing rather than discovering: with a density-fitted
+reference the Hessian is built from exact integrals, so it is the curvature of a
+slightly different surface than the one being minimised. That degrades the
+convergence *rate*, not the answer -- the gradient and the energy a step is
+accepted on are the fitted ones, so the stationary point reached is the fitted
+SCF's.
+
+It is not the stability analysis
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``keywords.scf.stability`` is a **separate feature**, and the two are easy to
+conflate because they diagonalise the same matrix.
+
+``stability`` runs *after* a converged SCF and answers a question: it finds the
+lowest eigenvalue of the electronic Hessian and reports whether the solution is
+a minimum. It changes nothing. The second-order SCF uses the same Hessian
+*during* the iteration, to take steps with.
+
+They also differ in what their curvature numbers are worth, and the difference
+matters. The stability analysis converges an eigenvector, so its number is the
+smallest curvature. The second-order SCF reads its curvature off a small Krylov
+subspace, and a value from a subspace is always an **upper bound** on the true
+smallest eigenvalue. So a negative one is proof of a saddle, and a positive one
+is not proof of a minimum. The second-order SCF can therefore refuse to converge
+at a saddle, and it cannot certify a minimum. ``stability`` is what certifies a
+minimum.
+
+Running both is the belt-and-braces combination, and they are independent
+keywords:
+
+.. code-block:: json
+
+   "keywords": {
+     "scf": {
+       "accelerator": "soscf",
+       "stability": true
+     }
+   }
+
+See :ref:`scf-stability` for what the analysis reports and what its verdict does
+and does not cover.
+
+When it still will not converge
+-------------------------------
+
+In rough order of what to try, and the first step is the one most often skipped.
+
+**1. Find out which problem you have.** Read the iteration table, not the exit
+status. An energy swinging up and down is oscillation; an energy falling
+steadily by ever-smaller amounts with a commutator that will not follow is a
+small gap; a run that converges quickly and cleanly is not a convergence problem
+at all and belongs at step 6.
+
+**2. Start somewhere better.** A convergence problem is often a guess problem,
+and it is far cheaper to fix there. ``keywords.scf.guess`` defaults to ``auto``,
+which is ``sad`` on the CPU path. ``basis_set_projection`` converges a small
+basis first and projects the density up a ladder, which is the answer when the
+large basis is itself the difficulty -- diffuse functions especially -- or when
+the SCF converges to the wrong state. It is not free, and it is the wrong tool
+for an SCF that merely crawls. See :doc:`scf_guess`.
+
+**3. Match the aid to the symptom.** ``ediis`` or ``adiis`` for oscillation,
+``level_shift`` of 0.2 to 1.0 for a small gap. They are independent and can be
+set together. Widening ``diis_size`` to 12-20 is the first thing to try on an
+SCF that converges monotonically but slowly, where a level shift would only make
+it slower.
+
+**4. Turn off what might be hiding the problem.** ``incremental_fock: false``
+forces a full Fock build every iteration. A run that then converges was being
+broken by accumulated increments, which is worth knowing. ``diis: false`` is a
+diagnostic in the same spirit rather than a setting.
+
+**5. Go second order.** ``accelerator: "soscf"``. This is also the point at
+which to suspect that the difficulty is real curvature rather than a bad path
+through it.
+
+**6. Ask whether there is anything to converge to.** Two cases, and no solver
+setting reaches either.
+
+*An unbound anion.* The extra electron is not bound at this basis and level of
+theory: the HOMO comes out at a positive energy, often with another orbital a
+fraction of a millihartree away, and the SCF wanders between near-degenerate
+states that are all equally unbound. The tell is the orbital energies, not the
+iteration count. The fix is physical -- put the system in a continuum, where the
+reaction field stabilises the excess charge and the state becomes bound. See
+:doc:`continuum_solvation`.
+
+*A converged answer that is wrong.* The SCF stopped at a saddle point. Nothing
+in the iteration table says so. Set ``stability: true`` and read the verdict; if
+it is a saddle, ``accelerator: "soscf"`` will follow the negative curvature out
+to the real minimum.
+
+**7. Accept a non-converged result deliberately, if that is the right call.**
+``allow_crap_scf: true`` keeps the last iterate rather than failing. In a
+fragmented run this is often the only way to finish at all -- a handful of
+fragments out of millions will not converge, and stopping on the first wastes
+the other million. The fragments that failed are named in the output, so the run
+can be followed up rather than trusted.

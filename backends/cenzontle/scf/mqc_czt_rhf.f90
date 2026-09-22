@@ -622,7 +622,7 @@ contains
       type(rhf_state_t) :: st
       real(dp) :: e_pcm
       real(dp) :: gtol
-      logical :: accel_ok_grp
+      logical :: accel_ok_grp, accel_second_order
       integer :: metric_kind
       logical :: metric_ok
       integer :: iter
@@ -735,7 +735,9 @@ contains
       ! reading `accel` here while it was still assigned some fifty lines below
       ! took that decision on an undefined value.
       ctrl%accel = ACCEL_DIIS
-      if (present(scf)) call parse_accelerator_name(scf%accelerator, ctrl%accel, accel_ok_grp)
+      accel_second_order = .false.
+      if (present(scf)) call parse_accelerator_name(scf%accelerator, ctrl%accel, &
+                                                    accel_ok_grp, accel_second_order)
       if (present(accelerator)) ctrl%accel = accelerator
       call st%diis%init(diis_size, ops%n_ao*ops%n_ao, ops%n_mo*ops%n_mo, &
                         energy_based=(ctrl%accel /= ACCEL_DIIS))
@@ -854,9 +856,11 @@ contains
       ! reference with no constraint on it, so neither of these would be the
       ! curvature of the energy actually being minimised, and a step taken on
       ! the wrong curvature converges to the wrong place or not at all.
-      ctrl%second_order = .false.
-      if (present(scf)) ctrl%second_order = scf%second_order
-      if (present(second_order)) ctrl%second_order = second_order
+      ! `accelerator: soscf` and `second_order: true` are the same request, so
+      ! either one turns it on and neither can turn the other off.
+      ctrl%second_order = accel_second_order
+      if (present(scf)) ctrl%second_order = ctrl%second_order .or. scf%second_order
+      if (present(second_order)) ctrl%second_order = second_order .or. accel_second_order
       ctrl%soscf_start = DEFAULT_SOSCF_START
       if (present(scf)) then
          if (scf%soscf_start > 0.0_dp) ctrl%soscf_start = scf%soscf_start

@@ -824,11 +824,16 @@ Current Limitations
    1e-8 at STO-3G and loosens to 2e-5 on cc-pVDZ for a functional, which is
    quadrature rather than the derivatives -- worth 0.16 cm-1 at worst. See
    :doc:`analytic_hessians`
-9. **SCF convergence aids**: DIIS and level shifting, and no damping, Fermi
-   smearing or second-order fallback. The shift is tapered off before
-   convergence, so what it costs is iterations and not the orbital energies --
-   see :doc:`scf_convergence`. It is a CPU-path feature; the GPU backend accepts
-   the keyword without applying it
+9. **SCF convergence aids**: DIIS, the energy-based EDIIS and ADIIS, level
+   shifting, and a second-order finish -- trust-region Newton on the orbital
+   rotations, which DIIS hands over to once it has got close. There is no
+   damping and no Fermi smearing. The second-order path is closed-shell
+   restricted only, and refuses a continuum solvent or a frozen-orbital
+   projector rather than approximating either. The level shift is tapered off
+   before convergence, so what it costs is iterations and not the orbital
+   energies -- see :doc:`scf_convergence`. All of it is CPU-path; the GPU
+   backend accepts ``level_shift`` without applying it, and refuses every
+   accelerator but ``diis`` by name
 
 Planned Features
 ----------------

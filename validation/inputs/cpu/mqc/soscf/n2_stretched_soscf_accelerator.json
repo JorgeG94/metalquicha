@@ -1,0 +1,28 @@
+{
+    "schema": {
+        "name": "mqc",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/n2_stretched.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "hf",
+        "basis": "6-31g"
+    },
+    "driver": "Energy",
+    "keywords": {
+        "scf": {
+            "accelerator": "soscf",
+            "soscf_start": 1.0e-2,
+            "guess": "sad",
+            "maxiter": 200,
+            "tolerance": 1.0e-12,
+            "stability": true
+        }
+    }
+}

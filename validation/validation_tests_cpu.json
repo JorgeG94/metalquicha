@@ -4781,6 +4781,14 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF N2 6-31G at 1.6 A, second order asked for as the accelerator (CPU)",
+            "input": "inputs/cpu/mqc/soscf/n2_stretched_soscf_accelerator.json",
+            "expected_energy": -108.571753302899,
+            "tolerance": 1e-08,
+            "type": "unfragmented",
+            "reference_note": "the same deck as n2_stretched_second_order with keywords.scf.second_order replaced by keywords.scf.accelerator 'soscf'. The two spellings are one request, so the reference is deliberately the other case's number rather than a separately recorded one: this run reproduces it to 6e-13, and any drift between them is the two routes diverging, which is the thing being guarded."
+        },
+        {
             "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
             "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1.json",
             "expected_energy": -456.004182668797,

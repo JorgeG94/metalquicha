@@ -371,7 +371,10 @@ contains
          call parse_accelerator_name(scf_in%accelerator, accel_kind, accel_ok)
          if (.not. accel_ok) then
             call error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
-                           trim(scf_in%accelerator)//"' is not one of diis, adiis, ediis")
+                           trim(scf_in%accelerator)//"' is not one of diis, adiis, "// &
+                           "ediis. 'soscf' is not available here: a fragment potential "// &
+                           "is built from many small SCFs and the second-order phase "// &
+                           "is only implemented on the main closed-shell path.")
             return
          end if
       end if

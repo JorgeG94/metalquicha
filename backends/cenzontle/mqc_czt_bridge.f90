@@ -883,7 +883,7 @@ contains
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size, guess_kind, accel_kind
       integer :: nelec        !! Valence electrons: fragment%nelec less any ECP core
-      logical :: accel_ok
+      logical :: accel_ok, accel_second_order, use_second_order
       type(scf_convergence_t) :: scf_conv
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
@@ -1064,6 +1064,18 @@ contains
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
 
+      ! ---- which accelerator, and does it finish second order? --------------
+      !
+      ! Parsed here rather than beside the other SCF settings because the
+      ! refusals below need the answer: `accelerator: soscf` is the same
+      ! request as `second_order: true`, so it has to be visible before
+      ! anything decides whether this reference can take a Newton step. The
+      ! name itself is refused further down, where every other misspelled
+      ! keyword is, so the order the messages come out in does not move.
+      call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok, &
+                                  accel_second_order)
+      use_second_order = settings%second_order .or. accel_second_order
+
       ! ---- can this reference answer the stability question? ----------------
       !
       ! Refused here rather than where the analysis runs, which is after the
@@ -1089,8 +1101,8 @@ contains
       ! Refused before the SCF, for the reason the stability refusals above are:
       ! a deck should not discover at the end of a converged calculation that
       ! the thing it asked for was never possible.
-      if (settings%second_order .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "keywords.scf.second_order "// &
+      if (use_second_order .and. unrestricted) then
+         call result%error%set(ERROR_VALIDATION, "the second-order SCF "// &
                                "parametrises the closed-shell orbital rotations, and "// &
                                "this reference is unrestricted; the open-shell "// &
                                "rotation space is larger and is not implemented. "// &
@@ -1207,7 +1219,6 @@ contains
       end if
 
       ! ---- which initial guess? ---------------------------------------------
-      call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok)
       ! The convergence rule, assembled once per run rather than at each SCF
       ! call. A metric the deck misspells is refused here and named, rather than
       ! silently falling back to the default.
@@ -1239,13 +1250,17 @@ contains
       if (.not. accel_ok) then
          call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
                                trim(settings%accelerator)//"' is not one of diis, "// &
-                               "adiis or ediis.")
+                               "adiis, ediis or soscf.")
          result%has_error = .true.
          return
       end if
       if (accel_kind /= ACCEL_DIIS) then
          call logger%info("    SCF accelerator: "//trim(accelerator_name(accel_kind))// &
                           " while the error is large, then DIIS")
+      end if
+      if (accel_second_order) then
+         call logger%info("    SCF accelerator: SOSCF -- DIIS opens, then "// &
+                          "trust-region Newton on the orbital rotations")
       end if
 
       call parse_guess_name(settings%guess, guess_kind, error)
@@ -1387,7 +1402,7 @@ contains
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
-                             second_order=settings%second_order, &
+                             second_order=use_second_order, &
                              soscf_start=settings%soscf_start, &
                              b_ao_out=scf_b_ao)
          else
@@ -1399,7 +1414,7 @@ contains
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
-                             second_order=settings%second_order, &
+                             second_order=use_second_order, &
                              soscf_start=settings%soscf_start)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
@@ -1431,7 +1446,7 @@ contains
                           linear_dependence=settings%linear_dependence, &
                           incremental_fock=settings%incremental_fock, &
                           grad_tol=settings%grad_tol, convergence=scf_conv, &
-                          second_order=settings%second_order, &
+                          second_order=use_second_order, &
                           soscf_start=settings%soscf_start)
       end if
       if (error%has_error()) then
@@ -1647,7 +1662,10 @@ contains
                call result%error%set(ERROR_VALIDATION, &
                                      "properties.fukui.scf.accelerator '"// &
                                      trim(settings%fukui_scf%accelerator)// &
-                                     "' is not one of diis, adiis, ediis")
+                                     "' is not one of diis, adiis, ediis. "// &
+                                     "'soscf' is not available here: the Fukui ions "// &
+                                     "are open shell and the second-order phase "// &
+                                     "parametrises the closed-shell rotations.")
                result%has_error = .true.
                return
             end if
@@ -3144,7 +3162,10 @@ contains
       if (.not. accel_ok) then
          call result%error%set(ERROR_VALIDATION, "keywords.scf.accelerator '"// &
                                trim(settings%accelerator)//"' is not one of diis, "// &
-                               "adiis or ediis.")
+                               "adiis or ediis. 'soscf' is not available here: the "// &
+                               "reference SCF under an MCSCF is reconverged by the "// &
+                               "orbital optimiser, which takes its own second-order "// &
+                               "step.")
          result%has_error = .true.
          return
       end if
