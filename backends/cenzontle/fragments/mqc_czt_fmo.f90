@@ -295,6 +295,20 @@ module mqc_czt_fmo
       !! must not cross a wire. What stays is small: a density, an energy, a few
       !! indices.
       integer :: nao = 0                         !! size of its basis, for block layout
+      integer :: nao_full = 0
+         !! The basis its SCF actually saw. Larger than `nao` when a detached
+         !! bond made it carry the functions of an atom it does not own, and
+         !! equal to it otherwise. `nao` stays the owned part because everything
+         !! that lays fragments side by side counts in that; `density` and
+         !! `charges` are this size.
+      integer, allocatable :: mol_atom(:)
+         !! The system atom behind each atom of the molecule its SCF saw -- its
+         !! own atoms in `atoms` order, then any ghosts. As long as that
+         !! molecule, so longer than `atoms` when it carries one.
+      integer, allocatable :: ao_off(:)
+         !! First basis function of each of those atoms, 0-based
+      integer, allocatable :: ao_count(:)
+         !! How many basis functions each of them has
       real(dp), allocatable :: density(:, :)
       real(dp), allocatable :: charges(:)        !! computed while its molecule was in hand
       integer, allocatable :: atoms(:)           !! its atoms, as system indices
@@ -337,6 +351,13 @@ module mqc_czt_fmo
       character(len=2), allocatable :: sym(:)
       real(dp), allocatable :: xyz(:, :)
       logical, allocatable :: ghost(:)
+      integer, allocatable :: atom_of(:)
+         !! The system atom behind each slot, ghosts included.
+         !!
+         !! A ghost answers to an atom of the system that this group does not
+         !! own, and both the field and the density layout have to know which
+         !! one: the atom is described by two fragments at once, and neither may
+         !! count the other's share as its own.
       integer :: n_bound = 0   !! Cut bonds this group is still cut across
       integer, allocatable :: bda_slot(:)  !! Where each boundary's BDA sits here
       logical, allocatable :: occupied(:)  !! True when this group gets the bond
@@ -603,16 +624,8 @@ contains
             return
          end if
 
-         ! Built only to learn how many basis functions it has, which the block
-         ! layout needs everywhere, then dropped.
-         block
-            type(czt_molecule_t) :: probe
-            real(dp), allocatable :: probe_bounds(:, :)
-            call open_fragment(frag(f)%z, frag(f)%sym, frag(f)%xyz, opts, probe, &
-                               probe_bounds, error)
-            if (error%has_error()) return
-            frag(f)%nao = probe%nao
-         end block
+         call fragment_layout(frag, f, afo, z, coords, opts, error)
+         if (error%has_error()) return
       end do
 
       ! Geometry fixes the near sets, so they are found once rather than each
@@ -624,6 +637,40 @@ contains
       call logger%verbose("  fmo: fragment 1 treats "//to_char(size(frag(1)%near))// &
                           " of "//to_char(n_frag - 1)//" neighbours exactly")
    end subroutine build_fragments
+
+   subroutine fragment_layout(frag, which, afo, z, coords, opts, error)
+      !! Where a fragment's basis functions are, and whose atoms they sit on
+      !!
+      !! Taken off a molecule built only to be measured and then dropped, which
+      !! is how the basis size has always been learnt here. What changed is that
+      !! the molecule is the *group* of one rather than the fragment's own
+      !! atoms: a fragment holding the attached end of a detached bond is solved
+      !! over an atom it does not own, and its density and its charges are that
+      !! size rather than the owned size.
+      type(fragment_t), intent(inout) :: frag(:)
+      integer, intent(in) :: which
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      type(error_t), intent(inout) :: error
+
+      type(group_t) :: group
+      type(czt_molecule_t) :: probe
+      real(dp), allocatable :: probe_bounds(:, :)
+
+      call assemble_group(frag, [which], afo, z, coords, group, error)
+      if (error%has_error()) return
+      call open_fragment(group%z, group%sym, group%xyz, opts, probe, probe_bounds, &
+                         error, ghost=group%ghost)
+      if (error%has_error()) return
+
+      frag(which)%nao_full = probe%nao
+      allocate (frag(which)%ao_off(probe%natm), frag(which)%ao_count(probe%natm))
+      call atom_ao_blocks(probe, frag(which)%ao_off, frag(which)%ao_count)
+      frag(which)%nao = sum(frag(which)%ao_count(:group%n_real))
+      frag(which)%mol_atom = group%atom_of
+   end subroutine fragment_layout
 
    subroutine build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
       !! Every cut bond's frozen orbital, worked out once for the system
@@ -851,6 +898,7 @@ contains
       n_atoms = group%n_real + n_ghost
       allocate (group%z(n_atoms), group%sym(n_atoms), group%xyz(3, n_atoms))
       allocate (group%ghost(n_atoms), source=.false.)
+      allocate (group%atom_of(n_atoms), source=0)
       allocate (slot_of(size(z)), source=0)
 
       at = 0
@@ -861,6 +909,7 @@ contains
          group%xyz(:, at + 1:at + n_here) = frag(members(m))%xyz
          do i = 1, n_here
             slot_of(frag(members(m))%atoms(i)) = at + i
+            group%atom_of(at + i) = frag(members(m))%atoms(i)
          end do
          at = at + n_here
       end do
@@ -900,6 +949,7 @@ contains
                group%sym(slot) = afo%sym(bda)
                group%xyz(:, slot) = coords(:, bda)
                group%ghost(slot) = .true.
+               group%atom_of(slot) = bda
                ghosted(bda) = .true.
                slot_of(bda) = slot
             end if
@@ -1034,8 +1084,56 @@ contains
       end do
    end subroutine all_charges
 
+   subroutine group_own_charge(frag, members, afo, n_atoms, shared, own_q)
+      !! Which atoms two fragments describe at once, and this group's share of them
+      !!
+      !! The detached end of a cut bond carries population from two fragments:
+      !! its owner, whose hybrid there is frozen empty, and the fragment holding
+      !! it as a ghost with the bond pair in that same hybrid. `all_charges`
+      !! adds both, because the charges have to account for every electron.
+      !!
+      !! A group must not then feel its own share of that atom as an external
+      !! charge -- the field is by definition the rest of the system -- so its
+      !! members' contributions are taken back out here. **What is left is not
+      !! zero, and that is the point.** The other fragment's share is genuinely
+      !! outside and genuinely there: the detached atom's nucleus and its
+      !! owner's electrons attract the bond pair the ghost is holding. Dropping
+      !! the whole atom from the field instead -- marking the ghost inside --
+      !! would take that term out with the self term and leave every group short
+      !! of roughly one elementary charge per cut.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: members(:)
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: n_atoms
+      logical, allocatable, intent(out) :: shared(:)
+         !! Atoms described by two fragments. Only a detached end ever is.
+      real(dp), allocatable, intent(out) :: own_q(:)
+         !! What this group's members already contributed to `q_all`, per system
+         !! atom. Read only at a shared atom; elsewhere the atom is either
+         !! wholly inside, and carries no field term at all, or wholly outside,
+         !! and no member wrote to it.
+
+      integer :: m, k, s, c
+
+      allocate (shared(n_atoms), source=.false.)
+      allocate (own_q(n_atoms), source=0.0_dp)
+      if (.not. afo%active) return
+
+      do c = 1, afo%n_cuts
+         shared(afo%cuts(c)%atom_a) = .true.
+      end do
+      do m = 1, size(members)
+         k = members(m)
+         if (.not. allocated(frag(k)%charges)) cycle
+         do s = 1, size(frag(k)%mol_atom)
+            own_q(frag(k)%mol_atom(s)) = own_q(frag(k)%mol_atom(s)) + frag(k)%charges(s)
+         end do
+      end do
+   end subroutine group_own_charge
+
    subroutine embedding_operator(mol, group_z, group_sym, group_xyz, near, frag, &
-                                 n_frag, inside, z, coords, q_all, opts, u, error)
+                                 n_frag, inside, shared, own_q, z, coords, q_all, &
+                                 opts, u, error)
       !! The field the atoms marked `inside` sit in, over `mol`'s basis
       !!
       !! Works for any n-mer -- `inside` and `near` are what change. **Comes
@@ -1054,6 +1152,13 @@ contains
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag
       logical, intent(in) :: inside(:)
+      logical, intent(in) :: shared(:)
+         !! Atoms whose population is split between two fragments. Such an atom
+         !! carries a field term even where the group owns it, because the other
+         !! fragment's share of it is outside; see [[group_own_charge]].
+      real(dp), intent(in) :: own_q(:)
+         !! This group's own contribution to `q_all`, taken back out so that
+         !! what is left is the charge the rest of the system puts there.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       real(dp), allocatable, intent(in) :: q_all(:)
@@ -1068,6 +1173,8 @@ contains
       if (opts%esp == "none") return
       n_atoms = size(z)
       n_out = count(.not. inside)
+      ! Nothing outside at all means every fragment is a member, so no fragment
+      ! is left to hold a share of a shared atom either.
       if (n_out == 0) return
 
       ! Which outside atoms belong to a fragment being treated exactly.
@@ -1078,17 +1185,23 @@ contains
 
       ! Distant atoms drop out entirely when they are being ignored, so their
       ! integrals are never evaluated rather than evaluated and scaled by zero.
-      allocate (points(3, n_out), weight(n_out))
+      ! Sized over every atom rather than over `n_out`: a shared atom the group
+      ! owns still carries a term, so the count is not the outside count.
+      allocate (points(3, n_atoms), weight(n_atoms))
       g = 0
       do i = 1, n_atoms
-         if (inside(i)) cycle
+         if (inside(i) .and. .not. shared(i)) cycle
          if (.not. is_near(i) .and. opts%far_field == "ignore") cycle
          g = g + 1
          points(:, g) = coords(:, i)
          if (is_near(i)) then
             weight(g) = real(z(i), dp)      !! nucleus only; electrons via J below
          else
-            weight(g) = q_all(i)            !! nucleus and electrons, approximated
+            ! A shared atom keeps only what the fragments outside this group put
+            ! there. Nothing shared ever reaches the near branch above: a
+            ! detached bond and an exact embedding are refused together, so
+            ! `own_q` is zero throughout whenever `near` has anything in it.
+            weight(g) = q_all(i) - own_q(i)  !! nucleus and electrons, approximated
          end if
       end do
 
@@ -1134,8 +1247,8 @@ contains
       integer, allocatable :: deck_guess
       type(group_t) :: group
       type(fock_projector_t) :: proj
-      real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :)
-      logical, allocatable :: inside(:)
+      real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:)
+      logical, allocatable :: inside(:), shared(:)
       integer, allocatable :: near(:), ao_off(:), ao_count(:)
       integer :: m, at, nao_m, expect, nelec
       logical :: held
@@ -1188,8 +1301,9 @@ contains
       call near_fragments(frag, n_frag, members, effective_resppc(opts), near, error)
       if (error%has_error()) return
 
+      call group_own_charge(frag, members, afo, size(z), shared, own_q)
       call embedding_operator(mol, group%z, group%sym, group%xyz, near, frag, n_frag, &
-                              inside, z, coords, q_all, opts, u, error)
+                              inside, shared, own_q, z, coords, q_all, opts, u, error)
       if (error%has_error()) return
 
       call group_projector(group, mol, afo, proj, held, error)
@@ -1387,8 +1501,8 @@ contains
       type(czt_molecule_t) :: mol
       type(group_t) :: group
       type(fock_projector_t) :: proj
-      real(dp), allocatable :: bounds(:, :), u(:, :), q(:)
-      logical, allocatable :: inside(:)
+      real(dp), allocatable :: bounds(:, :), u(:, :), q(:), own_q(:)
+      logical, allocatable :: inside(:), shared(:)
       logical :: isolated, held
 
       isolated = .false.
@@ -1409,9 +1523,10 @@ contains
       if (.not. isolated) then
          allocate (inside(size(z)), source=.false.)
          inside(frag(which)%atoms) = .true.
+         call group_own_charge(frag, [which], afo, size(z), shared, own_q)
          call embedding_operator(mol, frag(which)%z, frag(which)%sym, frag(which)%xyz, &
-                                 frag(which)%near, frag, n_frag, inside, z, coords, &
-                                 q_all, opts, u, error)
+                                 frag(which)%near, frag, n_frag, inside, shared, own_q, &
+                                 z, coords, q_all, opts, u, error)
          if (error%has_error()) return
       end if
 
