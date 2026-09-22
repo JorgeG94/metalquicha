@@ -16,7 +16,6 @@ module mqc_czt_bridge
    use pic_timer, only: timer_type
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
-                               STATE_SPIN_SINGLET, &
                                scf_not_converged_message
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol, core_orbital_count
@@ -46,7 +45,10 @@ module mqc_czt_bridge
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
                               nuclear_repulsion_hessian, response_hessian
-   use mqc_czt_tddft, only: tda_singlet_excitations
+   use mqc_czt_tddft, only: response_excitations, response_excitations_uhf, &
+                            excitation_spectrum_t
+   use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
+                                       log_property_table, leading_weight
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
@@ -1179,23 +1181,13 @@ contains
                                      "this calculation: "//decline//". Refused rather "// &
                                      "than approximated -- a spectrum from the wrong "// &
                                      "operator converges and looks like a spectrum.")
-            else if (trim(settings%excited%method) /= "tda") then
+            else if (trim(settings%excited%method) /= "tda" .and. &
+                     trim(settings%excited%method) /= "rpa") then
                call result%error%set(ERROR_VALIDATION, "keywords.excited_states.method "// &
                                      "is '"//trim(settings%excited%method)//"', and "// &
-                                     "only 'tda' is implemented. The full RPA is "// &
-                                     "Layer 4 of the TDDFT plan: its paired "// &
-                                     "eigenproblem is a different solver, not a "// &
-                                     "different tolerance, and answering it with a "// &
-                                     "Tamm-Dancoff number would be a converged "// &
-                                     "spectrum of the wrong problem.")
-            else if (trim(settings%excited%spin) /= "singlet") then
-               call result%error%set(ERROR_VALIDATION, "keywords.excited_states.spin "// &
-                                     "is '"//trim(settings%excited%spin)//"', and only "// &
-                                     "'singlet' is implemented. Triplets are Layer 3: "// &
-                                     "they need the exchange-only two-electron part "// &
-                                     "and the spin-polarised kernel, neither of which "// &
-                                     "is a rescaling of what the singlet operator "// &
-                                     "already builds.")
+                                     "this backend has 'tda' and 'rpa'. Refused rather "// &
+                                     "than resolved to whichever is nearer: the two are "// &
+                                     "different eigenproblems and both converge.")
             end if
             if (result%error%has_error()) then
                result%has_error = .true.
@@ -1518,9 +1510,10 @@ contains
       ! exchange-correlation context is still alive -- the kernel is evaluated
       ! at this density on this grid, so there is nowhere later this could
       ! run. What this backend cannot do was refused before the SCF; what is
-      ! left is a Tamm-Dancoff singlet solve, and a failure in it is reported
-      ! and propagated rather than dropped: a deck that asked for a spectrum
-      ! and got an energy has not been answered.
+      ! left is a closed-shell manifold or an unrestricted spectrum,
+      ! Tamm-Dancoff or paired, and a failure in it is reported and propagated
+      ! rather than dropped: a deck that asked for a spectrum and got an
+      ! energy has not been answered.
       !
       ! This runs once per SCF and this routine is the SCF every driver takes,
       ! so nothing here can tell a single point from the two hundredth
@@ -1532,32 +1525,72 @@ contains
       if (settings%excited%enabled .and. settings%excited%n_states > 0 &
           .and. .not. result%has_error) then
          block
-            real(dp), allocatable :: omega(:), x_amplitudes(:, :)
+            real(dp), allocatable :: omega(:), x_amplitudes(:, :), y_amplitudes(:, :)
+            integer, allocatable :: omega_spin(:)
             type(error_t) :: td_error
-            ! `x_amplitudes` is taken and dropped. It is what Layer 5's
-            ! transition dipoles and natural transition orbitals are built
-            ! from, and the solve produces it whether or not anything reads
-            ! it, so the argument is here rather than added later.
+            type(excitation_spectrum_t) :: spectrum
+            type(excited_properties_t) :: props
+            integer :: state
 
-            if (kohn_sham) then
-               call tda_singlet_excitations(mol, scf%orbitals, scf%orbital_energies, &
-                                            scf%n_occupied, settings%excited%n_states, &
-                                            omega, x_amplitudes, td_error, xc=xc, &
-                                            reference=scf%density, &
-                                            tolerance=settings%excited%tolerance, &
-                                            max_iter=settings%excited%max_iter, &
-                                            max_subspace=settings%excited%max_subspace, &
-                                            batch=settings%excited%batch, &
-                                            verbose=settings%verbose)
+            ! Four call sites rather than two arguments: the unrestricted
+            ! solver takes the beta orbitals as well and has no `spin`, and
+            ! neither it nor the restricted one may be handed an absent
+            ! optional in place of the exchange-correlation context.
+            if (unrestricted .and. kohn_sham) then
+               call response_excitations_uhf(mol, scf%orbitals, &
+                                             scf%orbital_energies, scf%n_occupied, &
+                                             scf%orbitals_beta, &
+                                             scf%orbital_energies_beta, &
+                                             scf%n_occupied_beta, &
+                                             settings%excited%n_states, &
+                                             trim(settings%excited%method), omega, &
+                                             omega_spin, x_amplitudes, y_amplitudes, &
+                                             td_error, xc=xc, ref_a=scf%density, &
+                                             ref_b=scf%density_beta, &
+                                             tolerance=settings%excited%tolerance, &
+                                             max_iter=settings%excited%max_iter, &
+                                             max_subspace=settings%excited%max_subspace, &
+                                             batch=settings%excited%batch, &
+                                             verbose=settings%verbose)
+            else if (unrestricted) then
+               call response_excitations_uhf(mol, scf%orbitals, &
+                                             scf%orbital_energies, scf%n_occupied, &
+                                             scf%orbitals_beta, &
+                                             scf%orbital_energies_beta, &
+                                             scf%n_occupied_beta, &
+                                             settings%excited%n_states, &
+                                             trim(settings%excited%method), omega, &
+                                             omega_spin, x_amplitudes, y_amplitudes, &
+                                             td_error, &
+                                             tolerance=settings%excited%tolerance, &
+                                             max_iter=settings%excited%max_iter, &
+                                             max_subspace=settings%excited%max_subspace, &
+                                             batch=settings%excited%batch, &
+                                             verbose=settings%verbose)
+            else if (kohn_sham) then
+               call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, settings%excited%n_states, &
+                                         trim(settings%excited%method), &
+                                         trim(settings%excited%spin), omega, &
+                                         omega_spin, x_amplitudes, y_amplitudes, &
+                                         td_error, xc=xc, reference=scf%density, &
+                                         tolerance=settings%excited%tolerance, &
+                                         max_iter=settings%excited%max_iter, &
+                                         max_subspace=settings%excited%max_subspace, &
+                                         batch=settings%excited%batch, &
+                                         verbose=settings%verbose)
             else
-               call tda_singlet_excitations(mol, scf%orbitals, scf%orbital_energies, &
-                                            scf%n_occupied, settings%excited%n_states, &
-                                            omega, x_amplitudes, td_error, &
-                                            tolerance=settings%excited%tolerance, &
-                                            max_iter=settings%excited%max_iter, &
-                                            max_subspace=settings%excited%max_subspace, &
-                                            batch=settings%excited%batch, &
-                                            verbose=settings%verbose)
+               call response_excitations(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, settings%excited%n_states, &
+                                         trim(settings%excited%method), &
+                                         trim(settings%excited%spin), omega, &
+                                         omega_spin, x_amplitudes, y_amplitudes, &
+                                         td_error, &
+                                         tolerance=settings%excited%tolerance, &
+                                         max_iter=settings%excited%max_iter, &
+                                         max_subspace=settings%excited%max_subspace, &
+                                         batch=settings%excited%batch, &
+                                         verbose=settings%verbose)
             end if
             if (td_error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "the excited-state solve "// &
@@ -1568,14 +1601,55 @@ contains
                call mol%destroy()
                return
             end if
-            ! Oscillator strengths and transition dipoles are Layer 5 and are
-            ! deliberately left unallocated: the writer omits what is absent,
-            ! and a column of zeros would read as a dark spectrum rather than
-            ! as a property that was not computed.
             result%excitation_energies = omega
-            allocate (result%state_spin(size(omega)))
-            result%state_spin = STATE_SPIN_SINGLET
+            result%state_spin = omega_spin
             result%has_excited_states = size(omega) > 0
+
+            ! The transition moments, over the same amplitudes and the same
+            ! molecule. A failure here is reported rather than propagated:
+            ! the spectrum is already computed and correct, and refusing to
+            ! report it because a one-electron integral set could not be
+            ! formed would throw away the expensive half of the answer.
+            !
+            ! Two call sites again, and for the same reason the solve has
+            ! four: an unrestricted amplitude vector is two spin blocks over
+            ! two orbital sets, and handing the beta pair across is what tells
+            ! the moments to drop the closed-shell factor of two.
+            if (result%has_excited_states) then
+               ! The solve's four outputs travel on as one spectrum. The
+               ! amplitudes are moved rather than copied: this is their last
+               ! reader, and they are the largest thing in this block.
+               spectrum%excitations = omega
+               spectrum%state_spin = omega_spin
+               call move_alloc(x_amplitudes, spectrum%x_amplitudes)
+               call move_alloc(y_amplitudes, spectrum%y_amplitudes)
+               if (unrestricted) then
+                  call excited_properties(mol, scf%orbitals, scf%n_occupied, spectrum, &
+                                          scf%energy, props, td_error, &
+                                          orbitals_beta=scf%orbitals_beta, &
+                                          n_occ_beta=scf%n_occupied_beta)
+               else
+                  call excited_properties(mol, scf%orbitals, scf%n_occupied, spectrum, &
+                                          scf%energy, props, td_error)
+               end if
+               if (td_error%has_error()) then
+                  call logger%warning("  the transition properties could not be "// &
+                                      "computed: "//td_error%get_message())
+               else
+                  call log_property_table(props, omega, omega_spin)
+                  result%excited_total_energies = props%total_energy
+                  result%oscillator_strengths = props%f_length
+                  result%oscillator_strengths_velocity = props%f_velocity
+                  result%transition_dipoles = props%transition_dipole
+                  result%transition_velocities = props%velocity_moment
+                  result%transition_dipole_origin = props%origin
+                  allocate (result%nto_leading_weight(size(omega)))
+                  do state = 1, size(omega)
+                     result%nto_leading_weight(state) = leading_weight(props, state)
+                  end do
+               end if
+               call props%destroy()
+            end if
          end block
       end if
 
@@ -2796,10 +2870,7 @@ contains
       character(len=:), allocatable :: reason
 
       reason = ""
-      if (unrestricted) then
-         reason = "the reference is unrestricted, and the spin-blocked response "// &
-                  "operator is not written"
-      else if (settings%run_mp2 .or. settings%run_cc) then
+      if (settings%run_mp2 .or. settings%run_cc) then
          reason = "the reference is followed by a correlated method, whose excited "// &
                   "states would be an EOM treatment rather than a linear response of "// &
                   "the SCF"
@@ -2818,6 +2889,18 @@ contains
       else if (kohn_sham .and. (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp)) then
          reason = "a VV10 non-local correlation term, which the reference codes "// &
                   "exclude from the kernel by default"
+      else if (unrestricted .and. settings%excited%spin_set) then
+         ! `spin_set` and not the value: `singlet` is the field's default, so
+         ! comparing the value cannot tell a deck that asked for a restricted
+         ! manifold by name from one that asked for nothing. An unrestricted
+         ! reference is not a spin eigenfunction and neither are its roots, so
+         ! answering any of the three words with the one spectrum it has would
+         ! be labelling a mixture. A deck that named none of them is answered
+         ! with that spectrum, labelled `unrestricted`.
+         reason = "keywords.excited_states.spin = '"//trim(settings%excited%spin)// &
+                  "' over an unrestricted reference, whose roots are not spin "// &
+                  "eigenstates and so are neither singlets nor triplets. Remove "// &
+                  "the key to get the unrestricted spectrum"
       else if (kohn_sham .and. xc%pt2_fraction /= 0.0_dp) then
          ! `run_mp2` above does not stand in for a double hybrid. Its PT2
          ! correlation is driven from `xc%pt2_fraction` and never sets that

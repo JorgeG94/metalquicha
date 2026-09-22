@@ -1,0 +1,40 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/w1.xyz",
+            "molecular_charge": 1,
+            "molecular_multiplicity": 2
+        }
+    ],
+    "model": {
+        "method": "dft",
+        "basis": "cc-pvdz",
+        "functional": "b3lyp"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 300,
+            "tolerance": 1e-13,
+            "gradient_tolerance": 1e-09
+        },
+        "excited_states": {
+            "n_states": 5,
+            "method": "tda",
+            "tolerance": 1e-08,
+            "max_iter": 200
+        },
+        "dft": {
+            "grid_level": 5
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}

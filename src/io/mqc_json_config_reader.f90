@@ -1033,6 +1033,7 @@ contains
          select case (to_lower(trim(adjustl(text))))
          case ("singlet", "triplet", "both")
             config%excited_spin = to_lower(trim(adjustl(text)))
+            config%excited_spin_set = .true.
          case default
             call error%set(ERROR_VALIDATION, "unknown keywords.excited_states.spin '"// &
                            trim(text)//"'. Accepted: singlet, triplet, both")

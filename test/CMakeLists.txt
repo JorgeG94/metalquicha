@@ -357,8 +357,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_cphf)
   target_link_libraries(test_mqc_czt_cphf PRIVATE ${MQC_INTEGRALS_LIBS})
 
-  # Tamm-Dancoff excitation energies, against the explicit matrices and the
-  # H2O/cc-pVDZ tables PySCF and Psi4 agree on.
+  # The paired response solver on its own, against a dense reduction of a small
+  # random problem. No integrals: the operator is two explicit matrices.
+  addtest(mqc_czt_rpa_solver)
+  target_link_libraries(test_mqc_czt_rpa_solver PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Tamm-Dancoff and full-RPA excitation energies, against the explicit matrices
+  # and the H2O/cc-pVDZ tables PySCF and Psi4 agree on.
   addtest(mqc_czt_tddft)
   target_link_libraries(test_mqc_czt_tddft PRIVATE ${MQC_INTEGRALS_LIBS})
 

@@ -27,19 +27,31 @@ module mqc_czt_response_product
    !! exchange-correlation kernel, whose response is to a density change that
    !! an antisymmetric matrix does not make. So `minus` is exchange only, both
    !! passes of it, and the grid is never touched.
+   !!
+   !! **What `triplet` changes.** The Coulomb term goes, and the semilocal
+   !! kernel becomes the spin difference `(f_aa - f_ab)/2`. Exchange does not
+   !! move -- the same integrals at the same coefficients, both ranges of them
+   !! -- because a triplet transition density is alpha minus beta and exchange
+   !! is same-spin, while Coulomb sees only the sum, which a triplet leaves
+   !! unchanged. VV10 goes for that reason too, and is dropped rather than
+   !! computed. `triplet` with `minus` is `(A - B)`, one operator for both
+   !! spins.
    use pic_types, only: dp, int64
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply_many, vv10_kernel_apply, &
-                         xc_kernel_cache_t
+                         xc_kernel_cache_t, xc_kernel_apply_uks_many, &
+                         xc_kernel_cache_uks_t
    use mqc_czt_direct, only: build_fock, build_fock_direct, build_fock_direct_many, &
-                             direct_stats_t
+                             build_fock_direct_uhf_many, direct_stats_t
    implicit none
    private
 
    public :: response_mean_field
    public :: response_product
+   public :: response_mean_field_uhf
+   public :: response_product_uhf
    ! `response_mean_field_df` stays private, as `response_operator_df` was
    ! before it: the fitted build is reached through `response_product`, which
    ! is where the factored form it needs is assembled.
@@ -48,7 +60,7 @@ contains
 
    subroutine response_mean_field(mol, dens, zero_h, g, error, minus, direct, eri, &
                                   bounds, k_scale, xc, reference, rs_k_lr, rs_omega, &
-                                  cache, density_screen, screen_floor, stats)
+                                  cache, triplet, density_screen, screen_floor, stats)
       !! `G(D')` for a batch of response densities, over one pass of the integrals
       !!
       !! The Coulomb and exchange terms come from whichever source the caller
@@ -103,6 +115,14 @@ contains
          !! and a response solve makes hundreds. A cache that was never filled
          !! is ignored, so a caller holding one as a plain component may pass
          !! it unconditionally.
+      logical, intent(in), optional :: triplet
+         !! The **triplet** mean field: no Coulomb term at all, and the
+         !! exchange-correlation kernel taken as `(f_aa - f_ab)/2`. Exchange,
+         !! of both ranges, is untouched -- the two-electron part of `A_T` is
+         !! `-c_x (ab|ij)`, the same integral at the same coefficient as the
+         !! singlet's, with only `J` gone. Off by default, and immaterial when
+         !! `minus`, whose product is exchange only and the same for the two
+         !! spins.
       logical, intent(in), optional :: density_screen
          !! Weight the Schwarz bound by the largest trial-density element a
          !! quartet touches. Off by default, which keeps a batch bit-for-bit
@@ -125,7 +145,7 @@ contains
       type(direct_stats_t) :: pass
       real(dp) :: kf, k_lr, omega, dmax
       integer :: n_ao, n_set, p
-      logical :: anti, is_direct, screen, use_cache
+      logical :: anti, is_direct, screen, use_cache, spin_flip
 
       if (error%has_error()) return
 
@@ -139,6 +159,8 @@ contains
       if (present(density_screen)) screen = density_screen
       use_cache = .false.
       if (present(cache)) use_cache = cache%filled
+      spin_flip = .false.
+      if (present(triplet)) spin_flip = triplet
       ! The context first, an explicit coefficient over it. The analytic
       ! Hessian carries these as scalars on its operator and passes them; the
       ! coupled-perturbed routes pass only the context.
@@ -211,9 +233,14 @@ contains
          ! exact: it drops the Coulomb term, which vanishes, and antisymmetrises
          ! instead of symmetrising. `build_fock_direct_nosym` writes the same
          ! permutations out at several times the cost and is not needed here.
+         !
+         ! `j_scale` is the whole two-electron difference a triplet makes: the
+         ! Coulomb term is the response to a change in the *total* density, and
+         ! the alpha and beta halves of a triplet transition density cancel
+         ! there exactly.
          call direct_pass(mol, zero_h, dens, bounds, g, pass, error, k_scale=kf, &
-                          j_scale=1.0_dp, omega=0.0_dp, antisymmetric=anti, &
-                          density_screen=screen)
+                          j_scale=j_fraction(spin_flip), omega=0.0_dp, &
+                          antisymmetric=anti, density_screen=screen)
          if (error%has_error()) return
          call add_stats(stats, pass)
          if (omega > 0.0_dp) then
@@ -231,7 +258,8 @@ contains
          ! accord on an antisymmetric density.
          allocate (g(n_ao, n_ao, n_set))
          do p = 1, n_set
-            call build_fock(zero_h, eri, dens(:, :, p), g(:, :, p), k_scale=kf)
+            call build_fock(zero_h, eri, dens(:, :, p), g(:, :, p), k_scale=kf, &
+                            j_scale=j_fraction(spin_flip))
          end do
       end if
 
@@ -240,14 +268,21 @@ contains
       ! response. One grid pass serves the whole batch.
       if (present(xc) .and. .not. anti) then
          if (use_cache) then
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache)
+            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache, &
+                                      triplet=spin_flip)
          else
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error)
+            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, &
+                                      triplet=spin_flip)
          end if
          if (error%has_error()) return
          ! The non-local kernel, once for the batch rather than per set:
          ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
          ! trial density or a dozen. It accumulates, hence the zeroed buffer.
+         !
+         ! Not for a triplet. VV10 is a functional of the total density alone,
+         ! and a triplet transition density changes that by nothing, so its
+         ! response is identically zero rather than merely small; applying it
+         ! would contract a spin density against a kernel with no spin channel.
          !
          ! TODO(mqc): this one is not cached, so on a VV10 reference the kernel
          ! cache removes the smaller of the two grid costs an application pays
@@ -262,7 +297,7 @@ contains
          ! pair sweep out of two at `n_set = 1` and one out of `n_set + 1` as
          ! the batch widens -- most to a coupled-perturbed solve, least to the
          ! Hessian's wide batches.
-         if (xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) then
+         if ((xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) .and. .not. spin_flip) then
             allocate (vnl(n_ao, n_ao, n_set))
             vnl = 0.0_dp
             call vv10_kernel_apply(xc, mol, reference, dens, vnl, error)
@@ -278,6 +313,19 @@ contains
 
       deallocate (scale)
    end subroutine response_mean_field
+
+   pure function j_fraction(triplet) result(jf)
+      !! One for the ordinary response, zero for a triplet
+      !!
+      !! Written out because it is the single arithmetic difference between the
+      !! two two-electron builds, and a bare `0.0` at the call site would say
+      !! nothing about which spin it belonged to.
+      logical, intent(in) :: triplet
+      real(dp) :: jf
+
+      jf = 1.0_dp
+      if (triplet) jf = 0.0_dp
+   end function j_fraction
 
    subroutine direct_pass(mol, zero_h, dens, bounds, g, stats, error, k_scale, &
                           j_scale, omega, antisymmetric, density_screen)
@@ -332,7 +380,7 @@ contains
 
    subroutine response_product(mol, c_occ, c_vir, gaps, zero_h, u, idx, nact, minus, &
                                au, error, direct, eri, bounds, k_scale, xc, reference, &
-                               rs_k_lr, rs_omega, cache, bmat, density_screen, &
+                               rs_k_lr, rs_omega, cache, triplet, bmat, density_screen, &
                                t_dens, t_fock, t_back)
       !! `(A+B)u` or `(A-B)u` for many trial rotations in one integral pass
       !!
@@ -374,6 +422,10 @@ contains
          !! The reference's kernel coefficients, filled once and reused. See
          !! `response_mean_field`, which is where it ends up on the exact
          !! route; the fitted one below reads it too.
+      logical, intent(in), optional :: triplet
+         !! The triplet operator: no Coulomb term and the spin-difference
+         !! kernel. Refused on the fitted route, which has no Coulomb-free
+         !! build. See `response_mean_field`.
       real(dp), intent(in), optional :: bmat(:, :)
          !! The fitted tensor `B(mu nu, P)`, in place of any four-index
          !! integrals. Not a storage choice: it makes the operator the fitted
@@ -387,13 +439,15 @@ contains
       real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :, :), work(:, :)
       real(dp) :: t0, t1, kf
       integer :: n_ao, n_occ, m, j
-      logical :: use_cache
+      logical :: use_cache, spin_flip
 
       if (error%has_error()) return
       if (nact <= 0) return
 
       use_cache = .false.
       if (present(cache)) use_cache = cache%filled
+      spin_flip = .false.
+      if (present(triplet)) spin_flip = triplet
 
       ! Only the fitted branch needs this here; the others let
       ! `response_mean_field` resolve it the same way.
@@ -422,6 +476,12 @@ contains
       t0 = t1
 
       if (present(bmat)) then
+         if (spin_flip) then
+            call error%set(ERROR_VALIDATION, "a triplet response cannot be applied "// &
+                           "through the fitted tensor: that build assembles its "// &
+                           "Coulomb term unconditionally, and a triplet has none")
+            return
+         end if
          if (present(xc)) then
             ! TODO(mqc): unreachable today for the same reason the stored-tensor
             ! refusal in `response_mean_field` is -- a fitted reference reaches
@@ -468,7 +528,7 @@ contains
                                   direct=direct, eri=eri, bounds=bounds, &
                                   k_scale=k_scale, xc=xc, reference=reference, &
                                   rs_k_lr=rs_k_lr, rs_omega=rs_omega, cache=cache, &
-                                  density_screen=density_screen)
+                                  triplet=spin_flip, density_screen=density_screen)
          if (error%has_error()) return
       end if
 
@@ -565,5 +625,253 @@ contains
       g = coul - 0.5_dp*kf*exch
       deallocate (coul, exch)
    end subroutine response_mean_field_df
+
+   subroutine response_mean_field_uhf(mol, dens_a, dens_b, zero_h, bounds, g_a, g_b, &
+                                      error, minus, k_scale, xc, ref_a, ref_b, &
+                                      rs_k_lr, rs_omega, cache, stats)
+      !! `G_sigma(D')` for a batch of response density pairs, over one integral pass
+      !!
+      !! The unrestricted counterpart of `response_mean_field`:
+      !!
+      !!     G_a = J[D'_a + D'_b] - c_x K[D'_a] + sum_t f_xc^(a,t) . drho_t
+      !!
+      !! and the same with the spins exchanged. **Full** same-spin exchange,
+      !! not the half a closed-shell build carries, and the Coulomb term
+      !! reading the sum of the two -- which is what makes the two spin blocks
+      !! couple through `J` and through the kernel and through nothing else.
+      !!
+      !! **Integral-direct only.** There is no stored-tensor branch and no
+      !! fitted one: a fitted reference is refused before the SCF runs, and
+      !! the in-core path has no unrestricted batched build to read. A caller
+      !! that wants either has to add it rather than have this silently route
+      !! around the missing term.
+      !!
+      !! **What `minus` changes** is what it changes on the restricted side:
+      !! `A - B` acts on the antisymmetrised pair, where the Coulomb term
+      !! vanishes identically and so does the kernel, whose response is to a
+      !! density change an antisymmetric matrix does not make. So `minus` is
+      !! exchange only, both ranges of it, and the grid is never touched --
+      !! and, cross-spin exchange being nothing, `(A - B)` is block diagonal
+      !! in the spin.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: dens_a(:, :, :), dens_b(:, :, :)
+         !! `(n_ao, n_ao, n_set)` each, already symmetrised or antisymmetrised
+      real(dp), intent(in) :: zero_h(:, :)
+         !! Added to every set, so a zero matrix returns `G` alone
+      real(dp), intent(in) :: bounds(:, :)
+         !! From `schwarz_bounds`. Required, unlike the restricted twin's:
+         !! there is no stored-tensor branch here for an absent one to mean.
+      real(dp), allocatable, intent(out) :: g_a(:, :, :), g_b(:, :, :)
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: minus
+         !! The densities are antisymmetric and this is the `A - B` half.
+         !! Off by default.
+      real(dp), intent(in), optional :: k_scale
+         !! The exact-exchange fraction the reference kept. Absent, it is
+         !! `xc%exx_fraction` when an `xc` context was given and one otherwise.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Present, the spin-resolved kernel is added. Needs `ref_a` and
+         !! `ref_b`, and a **polarised** context. Ignored when `minus`.
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+         !! The converged reference spin densities the kernel is evaluated at
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
+         !! A range-separated functional's attenuated second exchange pass.
+         !! Absent, both come from `xc` where it says it is range separated.
+      type(xc_kernel_cache_uks_t), intent(in), optional :: cache
+         !! The reference's polarised kernel coefficients, from
+         !! `xc_kernel_cache_uks_fill`. A cache that was never filled is
+         !! ignored, so a caller holding one as a plain component may pass it
+         !! unconditionally.
+      type(direct_stats_t), intent(out), optional :: stats
+         !! Quartets computed and skipped, summed over every integral pass made.
+
+      real(dp), allocatable :: ga_lr(:, :, :), gb_lr(:, :, :)
+      type(direct_stats_t) :: pass
+      real(dp) :: kf, k_lr, omega
+      logical :: anti, use_cache
+
+      if (error%has_error()) return
+
+      anti = .false.
+      if (present(minus)) anti = minus
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
+
+      kf = 1.0_dp
+      k_lr = 0.0_dp
+      omega = 0.0_dp
+      if (present(xc)) then
+         kf = xc%exx_fraction
+         if (xc%range_separated) then
+            k_lr = xc%rs_k_lr
+            omega = xc%rs_omega
+         end if
+      end if
+      if (present(k_scale)) kf = k_scale
+      if (present(rs_k_lr)) k_lr = rs_k_lr
+      if (present(rs_omega)) omega = rs_omega
+
+      if (present(xc) .and. .not. (present(ref_a) .and. present(ref_b))) then
+         call error%set(ERROR_VALIDATION, "the unrestricted response operator was "// &
+                        "given an exchange-correlation context but not both spin "// &
+                        "densities to evaluate its kernel at")
+         return
+      end if
+
+      if (present(stats)) then
+         stats%quartets_total = 0_int64
+         stats%quartets_computed = 0_int64
+         stats%quartets_screened = 0_int64
+      end if
+
+      ! Announced antisymmetric, the folded accumulation is exact: it drops
+      ! the Coulomb term, which vanishes, and antisymmetrises the result.
+      call build_fock_direct_uhf_many(mol, zero_h, dens_a, dens_b, bounds, g_a, g_b, &
+                                      pass, error, k_scale=kf, antisymmetric=anti)
+      if (error%has_error()) return
+      call add_stats(stats, pass)
+      if (omega > 0.0_dp) then
+         call build_fock_direct_uhf_many(mol, zero_h, dens_a, dens_b, bounds, ga_lr, &
+                                         gb_lr, pass, error, k_scale=k_lr, &
+                                         j_scale=0.0_dp, omega=omega, antisymmetric=anti)
+         if (error%has_error()) return
+         g_a = g_a + ga_lr
+         g_b = g_b + gb_lr
+         call add_stats(stats, pass)
+         deallocate (ga_lr, gb_lr)
+      end if
+
+      ! The kernel, for a Kohn-Sham reference, on top of whatever built `G`.
+      ! One grid pass serves the whole batch and both spins.
+      !
+      ! No VV10: a non-local reference is refused before the SCF, because its
+      ! kernel here would be a term silently left out rather than one this
+      ! routine could supply.
+      if (present(xc) .and. .not. anti) then
+         if (use_cache) then
+            call xc_kernel_apply_uks_many(xc, mol, ref_a, ref_b, dens_a, dens_b, &
+                                          g_a, g_b, error, cache=cache)
+         else
+            call xc_kernel_apply_uks_many(xc, mol, ref_a, ref_b, dens_a, dens_b, &
+                                          g_a, g_b, error)
+         end if
+         if (error%has_error()) return
+      end if
+   end subroutine response_mean_field_uhf
+
+   subroutine response_product_uhf(mol, c_occ_a, c_vir_a, c_occ_b, c_vir_b, gaps_a, &
+                                   gaps_b, zero_h, bounds, u_a, u_b, minus, au_a, &
+                                   au_b, error, k_scale, xc, ref_a, ref_b, rs_k_lr, &
+                                   rs_omega, cache)
+      !! `(A+B)u` or `(A-B)u` for many spin-blocked trial rotations, one pass
+      !!
+      !! The unrestricted counterpart of `response_product`. Writing each
+      !! spin's trial rotation as a density,
+      !!
+      !!     D'_s = C_vir,s u_s C_occ,s^T  +/-  transpose
+      !!
+      !! the image is
+      !!
+      !!     (A +/- B) u|_s = (eps_a - eps_i)_s u_s + C_vir,s^T G_s(D') C_occ,s
+      !!
+      !! -- **no factor of two** in front of the mean field, where the
+      !! restricted product carries one. That two is the two electrons a
+      !! closed-shell spatial orbital holds; here each spin is its own, and
+      !! the same two appears instead inside `G` as full rather than half
+      !! same-spin exchange. Feed this `u_a = u_b` on a closed shell and the
+      !! restricted `(A+B)` comes back exactly, which is what the cross-check
+      !! test asserts.
+      !!
+      !! **A spin with no rotations is allowed**, which is what a reference
+      !! with no beta electrons has: that spin's trial and image rectangles
+      !! are then empty, its response density is zero, and the other spin
+      !! still sees it through `J`. The transforms are skipped rather than
+      !! run at zero extent, so no BLAS call is made with a vanishing inner
+      !! dimension.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: c_occ_a(:, :), c_vir_a(:, :)   !! (n_ao, n_occ_a), (n_ao, n_vir_a)
+      real(dp), intent(in) :: c_occ_b(:, :), c_vir_b(:, :)
+      real(dp), intent(in) :: gaps_a(:, :), gaps_b(:, :)
+         !! `eps_a - eps_i` per spin, `(n_vir_s, n_occ_s)`
+      real(dp), intent(in) :: zero_h(:, :)
+         !! Zero, so the two-electron build returns `G` alone
+      real(dp), intent(in) :: bounds(:, :)   !! From `schwarz_bounds`
+      real(dp), intent(in) :: u_a(:, :, :), u_b(:, :, :)
+         !! (n_vir_s, n_occ_s, n_set) the trial rotations
+      logical, intent(in) :: minus          !! `A - B` rather than `A + B`
+      real(dp), intent(out) :: au_a(:, :, :), au_b(:, :, :)
+         !! (n_vir_s, n_occ_s, n_set) the images
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: k_scale
+      type(xc_context_t), intent(inout), optional :: xc
+      real(dp), intent(in), optional :: ref_a(:, :), ref_b(:, :)
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      type(xc_kernel_cache_uks_t), intent(in), optional :: cache
+
+      real(dp), allocatable :: da(:, :, :), db(:, :, :), ga(:, :, :), gb(:, :, :)
+      real(dp), allocatable :: half_a(:, :), half_b(:, :), work_a(:, :), work_b(:, :)
+      integer :: n_ao, n_occ_a, n_occ_b, n_set, m
+      logical :: has_alpha, has_beta
+
+      if (error%has_error()) return
+
+      n_ao = size(c_occ_a, 1)
+      n_occ_a = size(c_occ_a, 2)
+      n_occ_b = size(c_occ_b, 2)
+      n_set = size(u_a, 3)
+      if (n_set <= 0) return
+      has_alpha = n_occ_a > 0 .and. size(c_vir_a, 2) > 0
+      has_beta = n_occ_b > 0 .and. size(c_vir_b, 2) > 0
+
+      allocate (da(n_ao, n_ao, n_set), db(n_ao, n_ao, n_set))
+      allocate (half_a(n_ao, n_occ_a), half_b(n_ao, n_occ_b))
+      allocate (work_a(n_ao, n_occ_a), work_b(n_ao, n_occ_b))
+
+      do m = 1, n_set
+         if (has_alpha) then
+            call pic_gemm(c_vir_a, u_a(:, :, m), half_a)
+            call pic_gemm(half_a, c_occ_a, da(:, :, m), transb="T")
+         else
+            da(:, :, m) = 0.0_dp
+         end if
+         if (has_beta) then
+            call pic_gemm(c_vir_b, u_b(:, :, m), half_b)
+            call pic_gemm(half_b, c_occ_b, db(:, :, m), transb="T")
+         else
+            db(:, :, m) = 0.0_dp
+         end if
+         if (minus) then
+            da(:, :, m) = da(:, :, m) - transpose(da(:, :, m))
+            db(:, :, m) = db(:, :, m) - transpose(db(:, :, m))
+         else
+            da(:, :, m) = da(:, :, m) + transpose(da(:, :, m))
+            db(:, :, m) = db(:, :, m) + transpose(db(:, :, m))
+         end if
+      end do
+
+      call response_mean_field_uhf(mol, da, db, zero_h, bounds, ga, gb, error, &
+                                   minus=minus, k_scale=k_scale, xc=xc, &
+                                   ref_a=ref_a, ref_b=ref_b, rs_k_lr=rs_k_lr, &
+                                   rs_omega=rs_omega, cache=cache)
+      if (error%has_error()) then
+         deallocate (da, db, half_a, half_b, work_a, work_b)
+         return
+      end if
+
+      do m = 1, n_set
+         if (has_alpha) then
+            call pic_gemm(ga(:, :, m), c_occ_a, work_a)
+            call pic_gemm(c_vir_a, work_a, au_a(:, :, m), transa="T")
+            au_a(:, :, m) = gaps_a*u_a(:, :, m) + au_a(:, :, m)
+         end if
+         if (has_beta) then
+            call pic_gemm(gb(:, :, m), c_occ_b, work_b)
+            call pic_gemm(c_vir_b, work_b, au_b(:, :, m), transa="T")
+            au_b(:, :, m) = gaps_b*u_b(:, :, m) + au_b(:, :, m)
+         end if
+      end do
+
+      deallocate (da, db, ga, gb, half_a, half_b, work_a, work_b)
+   end subroutine response_product_uhf
 
 end module mqc_czt_response_product

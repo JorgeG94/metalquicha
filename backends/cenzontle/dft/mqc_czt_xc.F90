@@ -74,6 +74,9 @@ module mqc_czt_xc
    public :: xc_kernel_apply_many
    public :: xc_kernel_cache_t
    public :: xc_kernel_cache_fill
+   public :: xc_kernel_apply_uks_many
+   public :: xc_kernel_cache_uks_t
+   public :: xc_kernel_cache_uks_fill
    public :: xc_kernel2_apply
    public :: xc_grid_kernel_quantities
    public :: KERNEL_RHO_FLOOR   !! Where the kernel's divergence is cut off
@@ -177,8 +180,21 @@ module mqc_czt_xc
          !! from `any_gga` because a meta-GGA needs both, and the gradients are the
          !! expensive half.
       real(dp) :: weight(MAX_XC_COMPONENTS) = 0.0_dp
+      integer :: func_id(MAX_XC_COMPONENTS) = 0
+         !! libxc's number for each component, kept because libxc fixes the spin
+         !! channel when a functional is initialised and a handle cannot be
+         !! asked to change it afterwards. The triplet kernel is a *polarised*
+         !! evaluation of the same functional this context holds unpolarised, so
+         !! it needs a second handle, and building one needs the number again.
+      logical :: polarized_twin = .false.
+         !! Whether `func_pol` holds initialised handles.
 #ifdef MQC_WITH_LIBXC
       type(xc_f03_func_t) :: func(MAX_XC_COMPONENTS)
+      type(xc_f03_func_t) :: func_pol(MAX_XC_COMPONENTS)
+         !! The same components again, spin-polarised, for the triplet kernel.
+         !! Uninitialised and unread until `polarized_twin`; created once per
+         !! context by `ensure_polarized_twins` rather than once per grid block,
+         !! which is what Psi4 does and pays for.
 #endif
    contains
       procedure :: destroy => xc_context_destroy
@@ -257,13 +273,18 @@ module mqc_czt_xc
          !! with `vsig`; the contraction does not read it, because tau is
          !! linear in the density and so has no analogue of the `vsigma` term.
          !! Unallocated off the meta-GGA rung, like the three above.
-      ! TODO(mqc): a triplet slot. Layer 3 of the TDDFT plan needs the same
-      ! coefficients from a *polarised* evaluation at `rho_alpha = rho_beta =
-      ! rho/2` and `sigma_aa = sigma/4`, whose `(f_aa - f_ab)/2` is the triplet
-      ! kernel, beside the singlet ones here. It is one more libxc call per
-      ! block inside `xc_kernel_cache_fill` and one more set of arrays; doing it
-      ! there rather than per block is the whole point of the cache, since Psi4
-      ! rebuilds the polarised functional on every block and pays for it.
+      logical :: triplet = .false.
+         !! Whether the four arrays below were filled as well. A cache filled
+         !! for singlets alone and then handed to a triplet contraction is
+         !! refused rather than read as zeros, which would be a kernel silently
+         !! left out of half the spectrum.
+      real(dp), allocatable :: frr_t(:), frs_t(:), fss_t(:), vsig_t(:)
+         !! (n_points) the same four coefficients for the **triplet** kernel:
+         !! a spin-polarised evaluation of the same functional at
+         !! `rho_a = rho_b = rho/2` and `sigma_aa = sigma_ab = sigma_bb =
+         !! sigma/4`, combined as `kernel_block_reference` documents. Allocated
+         !! where `triplet`, and per rung as the singlet channels are: `frr_t`
+         !! always, the other three from the GGA up.
    contains
       procedure :: destroy => xc_kernel_cache_destroy
    end type xc_kernel_cache_t
@@ -300,6 +321,53 @@ module mqc_czt_xc
          !! (n_block) `vtau`, floored with the rest and not read: tau is
          !! linear in the density, so it has no analogue of the `vsigma` term.
    end type xc_kernel_block_t
+
+   type :: xc_kernel_cache_uks_t
+      !! The polarised kernel's coefficients on the whole grid, evaluated once
+      !!
+      !! `xc_kernel_cache_t` for an unrestricted reference. Every channel libxc
+      !! splits by spin is kept split, so where the restricted cache holds four
+      !! GGA coefficients per point this holds eighteen -- three `v2rho2`, six
+      !! `v2rhosigma`, six `v2sigma2` and three `vsigma` -- plus the two
+      !! reference gradients the contraction forms `dsigma` from. Still
+      !! `O(n_points)` scalars, which is the whole argument for caching them:
+      !! an excitation solve applies the kernel hundreds of times at one
+      !! converged pair of spin densities.
+      !!
+      !! Channel order is libxc's own, as `kernel_block_reference_uks`
+      !! documents it, with the point index leading rather than the spin.
+      !!
+      !! A cache belongs to one context, one geometry and one pair of
+      !! densities; nothing here can check the last two, so a consumer that
+      !! moves the nuclei or re-converges has to fill again.
+      logical :: filled = .false.
+         !! Whether the arrays below hold anything. An unfilled cache is
+         !! refused rather than read as zeros.
+      integer :: n_points = 0
+         !! Points the cache was filled over, checked against the grid.
+      logical :: gga = .false.
+         !! What the context was when the fill ran. Meta-GGA is refused
+         !! outright, so there is no `mgga` flag to check against.
+      real(dp), allocatable :: rho_a(:), rho_b(:)
+         !! (n_points) the reference spin densities. Not read by the
+         !! contraction -- the floor they decide was applied at the fill -- and
+         !! kept because they are what any further derivative is built from.
+      real(dp), allocatable :: grad_a(:, :), grad_b(:, :)
+         !! (n_points, 3) their gradients, which the contraction does read:
+         !! they make `dsigma` and multiply the response's gradient
+         !! coefficients. Zero throughout for an LDA.
+      real(dp), allocatable :: frr(:, :)
+         !! (n_points, 3) `v2rho2`, as (aa, ab, bb)
+      real(dp), allocatable :: frs(:, :)
+         !! (n_points, 6) `v2rhosigma`, as (a|aa, a|ab, a|bb, b|aa, b|ab, b|bb)
+      real(dp), allocatable :: fss(:, :)
+         !! (n_points, 6) `v2sigma2`, as (aa|aa, aa|ab, aa|bb, ab|ab, ab|bb, bb|bb)
+      real(dp), allocatable :: vsig(:, :)
+         !! (n_points, 3) `vsigma`, as (aa, ab, bb). A *first* derivative, here
+         !! because the response density's gradient multiplies it.
+   contains
+      procedure :: destroy => xc_kernel_cache_uks_destroy
+   end type xc_kernel_cache_uks_t
 
 contains
 
@@ -428,6 +496,7 @@ contains
                            trim(spec%component(i)%name)//"'")
             return
          end if
+         ctx%func_id(i) = id
          if (ctx%polarized) then
             call xc_f03_func_init(ctx%func(i), id, XC_POLARIZED)
          else
@@ -544,10 +613,13 @@ contains
 #ifdef MQC_WITH_LIBXC
       do i = 1, this%n_func
          call xc_f03_func_end(this%func(i))
+         if (this%polarized_twin) call xc_f03_func_end(this%func_pol(i))
       end do
 #endif
       call this%grid%destroy()
       call this%nlc_grid%destroy()
+      this%polarized_twin = .false.
+      this%func_id = 0
       this%n_func = 0
       this%active = .false.
       this%exx_fraction = 0.0_dp
@@ -570,13 +642,35 @@ contains
       if (allocated(this%fst)) deallocate (this%fst)
       if (allocated(this%ftt)) deallocate (this%ftt)
       if (allocated(this%vtau)) deallocate (this%vtau)
+      if (allocated(this%frr_t)) deallocate (this%frr_t)
+      if (allocated(this%frs_t)) deallocate (this%frs_t)
+      if (allocated(this%fss_t)) deallocate (this%fss_t)
+      if (allocated(this%vsig_t)) deallocate (this%vsig_t)
       this%filled = .false.
       this%n_points = 0
       this%gga = .false.
       this%mgga = .false.
+      this%triplet = .false.
       this%point_block = 0
       this%screen_tol = 0.0_dp
    end subroutine xc_kernel_cache_destroy
+
+   subroutine xc_kernel_cache_uks_destroy(this)
+      !! Release the grid-sized arrays and mark the cache unfilled
+      class(xc_kernel_cache_uks_t), intent(inout) :: this
+
+      if (allocated(this%rho_a)) deallocate (this%rho_a)
+      if (allocated(this%rho_b)) deallocate (this%rho_b)
+      if (allocated(this%grad_a)) deallocate (this%grad_a)
+      if (allocated(this%grad_b)) deallocate (this%grad_b)
+      if (allocated(this%frr)) deallocate (this%frr)
+      if (allocated(this%frs)) deallocate (this%frs)
+      if (allocated(this%fss)) deallocate (this%fss)
+      if (allocated(this%vsig)) deallocate (this%vsig)
+      this%filled = .false.
+      this%n_points = 0
+      this%gga = .false.
+   end subroutine xc_kernel_cache_uks_destroy
 
    subroutine xc_grid_lda_quantities(ctx, mol, density, rho, exc, vrho, error, &
                                      density_beta, rho_beta, vrho_beta)
@@ -1913,8 +2007,57 @@ contains
 #endif
    end subroutine xc_add_potential_uks
 
+   subroutine ensure_polarized_twins(ctx, error)
+      !! Initialise a spin-polarised handle beside each of the context's own
+      !!
+      !! libxc decides at initialisation whether a functional is polarised, so
+      !! the triplet kernel -- which is a polarised evaluation at
+      !! `rho_a = rho_b = rho/2` -- cannot reuse the handles a restricted
+      !! calculation built. It gets its own, once per context: the handles cost
+      !! nothing to keep and `xc_context_destroy` ends them with the rest.
+      !!
+      !! **Not callable from inside a parallel region.** It writes to `ctx`, and
+      !! every caller invokes it before the block loop rather than in it.
+      type(xc_context_t), intent(inout) :: ctx
+      type(error_t), intent(inout) :: error
+
+      integer :: i
+
+      if (ctx%polarized_twin) return
+      if (ctx%polarized) then
+         ! The twins exist to be polarised beside unpolarised ones. A context
+         ! that is already polarised has no restricted kernel to be the triplet
+         ! partner of, and the unrestricted response is Layer 6.
+         call error%set(ERROR_VALIDATION, "a spin-polarised exchange-correlation "// &
+                        "context was asked for the triplet kernel of a closed shell")
+         return
+      end if
 #ifdef MQC_WITH_LIBXC
-   subroutine kernel_block_reference(ctx, ao, ao_grad, d_sig, blk)
+      ! Every number is checked before any handle is created. `polarized_twin`
+      ! is the only record that `func_pol` holds anything, and
+      ! `xc_context_destroy` ends the twins all-or-nothing on the strength of
+      ! it -- so a run that created some and then refused would leak exactly
+      ! the ones it had made.
+      do i = 1, ctx%n_func
+         if (ctx%func_id(i) <= 0) then
+            call error%set(ERROR_VALIDATION, "this exchange-correlation context does "// &
+                           "not carry the libxc numbers of its components, so no "// &
+                           "polarised twin of them can be built for the triplet kernel")
+            return
+         end if
+      end do
+      do i = 1, ctx%n_func
+         call xc_f03_func_init(ctx%func_pol(i), ctx%func_id(i), XC_POLARIZED)
+      end do
+      ctx%polarized_twin = .true.
+#else
+      call error%set(ERROR_VALIDATION, "no libxc in this build")
+      i = 0
+#endif
+   end subroutine ensure_polarized_twins
+
+#ifdef MQC_WITH_LIBXC
+   subroutine kernel_block_reference(ctx, ao, ao_grad, d_sig, blk, error, triplet)
       !! The reference density and the kernel's coefficients on one grid block
       !!
       !! Everything the kernel contraction needs that does not depend on the
@@ -1931,6 +2074,13 @@ contains
       !!
       !! The rung is read off `ctx` rather than passed, so the two callers
       !! cannot disagree about it either.
+      !!
+      !! ## The triplet coefficients
+      !!
+      !! With `triplet`, the four GGA coefficients come out of a *polarised*
+      !! evaluation of the same functional at the closed-shell point instead.
+      !! They go in the same slots of the same block and are consumed by the
+      !! same contraction, so the caller changes nothing but this flag.
       type(xc_context_t), intent(inout) :: ctx
       real(dp), intent(in) :: ao(:, :)   !! (n_block, n_sig), the kept functions
       real(dp), allocatable, intent(in) :: ao_grad(:, :, :)
@@ -1940,6 +2090,15 @@ contains
       type(xc_kernel_block_t), intent(out) :: blk
          !! Every channel allocated over the block, and zero on a rung that
          !! does not define it
+      type(error_t), intent(inout) :: error
+         !! Set only by the triplet precondition below. Every caller is inside
+         !! a parallel region, so this is a thread's own `error_t` that the
+         !! region's usual critical section promotes.
+      logical, intent(in), optional :: triplet
+         !! Return the triplet kernel's coefficients rather than the singlet's.
+         !! Needs `ensure_polarized_twins` to have run on `ctx`, which is the
+         !! caller's job because this is called from inside a parallel region.
+         !! Refused rather than trusted, in `triplet_component`. Off by default.
 
       logical :: gga, mgga
       real(dp), allocatable :: rho(:), rho_grad(:, :)
@@ -1954,11 +2113,14 @@ contains
       real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
       real(dp), allocatable :: frt_i(:), fst_i(:), ftt_i(:), vtau_i(:)
       integer :: nb, i, ig
+      logical :: want_triplet
 
       nb = size(ao, 1)
       mgga = ctx%any_mgga
       ! A meta-GGA needs the density gradients a GGA needs, and tau on top.
       gga = ctx%any_gga .or. mgga
+      want_triplet = .false.
+      if (present(triplet)) want_triplet = triplet
 
       ! The reference density, once for the block: what `f_xc` is evaluated
       ! at. Its tau only where a meta-GGA asks.
@@ -2005,6 +2167,13 @@ contains
       ! correlation beside a GGA exchange, and `any_gga` only says that at
       ! least one of them needs sigma.
       do i = 1, ctx%n_func
+         if (want_triplet) then
+            ! A different functional derivative in the same four slots. The
+            ! callers refuse a meta-GGA triplet, so no tau channel reaches here.
+            call triplet_component(ctx, i, nb, rho, sigma, frr, frs, fss, vsig, error)
+            if (error%has_error()) return
+            cycle
+         end if
          select case (ctx%family(i))
          case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
             call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
@@ -2069,6 +2238,127 @@ contains
       call move_alloc(ftt, blk%ftt)
       call move_alloc(vtau, blk%vtau)
    end subroutine kernel_block_reference
+
+   subroutine triplet_component(ctx, i, nb, rho, sigma, frr, frs, fss, vsig, error)
+      !! One component's contribution to the triplet kernel, accumulated
+      !!
+      !! The polarised twin of component `i` evaluated at the closed-shell
+      !! point -- `rho_a = rho_b = rho/2`, `sigma_aa = sigma_ab = sigma_bb =
+      !! sigma/4` -- and its derivatives combined into the four coefficients
+      !! the restricted contraction already consumes, times `ctx%weight(i)`.
+      !!
+      !! `ctx%polarized_twin` has to be set, and the caller runs
+      !! `ensure_polarized_twins` outside its parallel region to do it. That
+      !! is checked here rather than assumed: libxc leaves `func_pol` as
+      !! uninitialised storage until then, and handing one of those to
+      !! `xc_f03_gga_fxc` is a segmentation fault, not an error return.
+      type(xc_context_t), intent(in) :: ctx
+      integer, intent(in) :: i     !! Which component
+      integer, intent(in) :: nb    !! Points in the block
+      real(dp), intent(in) :: rho(:)      !! (nb) the total reference density
+      real(dp), intent(in) :: sigma(:)    !! (nb) `|grad rho|^2`, zero for an LDA
+      real(dp), intent(inout) :: frr(:), frs(:), fss(:), vsig(:)
+         !! (nb) accumulated into, in the singlet coefficients' own slots
+      type(error_t), intent(inout) :: error
+
+      ! ## Where the four combinations come from
+      !
+      ! The restricted contraction reads a response density `dn` and forms
+      !
+      !     c_rho  = F_rr dn + F_rs dsigma,          dsigma = 2 grad rho . grad dn
+      !     c_grad = 2 (F_rs dn + F_ss dsigma) grad rho + 2 V_sig grad dn
+      !
+      ! and `c_rho`, `c_grad` are the response of the *alpha* potential. A
+      ! singlet perturbation is `drho_a = drho_b = dn/2` and a triplet one is
+      ! `drho_a = -drho_b = dn/2`; nothing else about the contraction differs,
+      ! so the triplet kernel is the same four slots filled from the polarised
+      ! derivatives of the second perturbation.
+      !
+      ! At the closed-shell point that perturbation gives, with
+      ! `s = grad rho . grad dn`,
+      !
+      !     dsigma_aa = s/2,   dsigma_ab = 0,   dsigma_bb = -s/2
+      !
+      ! -- the cross term vanishes because `grad rho_a = grad rho_b` while the
+      ! two perturbations are opposite, which is the whole reason the triplet
+      ! kernel is a *difference* of derivatives. Then
+      !
+      !     dv_a^rho  = (f_ra,ra - f_ra,rb) dn/2 + (f_ra,saa - f_ra,sbb) s/2
+      !     dv_a^grad = de_saa grad rho + (e_saa - e_sab/2) grad dn
+      !     de_saa    = (f_saa,ra - f_saa,rb) dn/2 + (f_saa,saa - f_saa,sbb) s/2
+      !
+      ! using `de_sab = 0`: `sigma_ab` is symmetric under a spin swap, so
+      ! `f_sab,ra = f_sab,rb` and `f_sab,saa = f_sab,sbb`, and both differences
+      ! are zero. Matching term by term against the two lines at the top, and
+      ! remembering that `dsigma = 2s` is what the contraction forms:
+      !
+      !     F_rr  = (f_ra,ra  - f_ra,rb ) / 2
+      !     F_rs  = (f_ra,saa - f_ra,sbb) / 4
+      !     F_ss  = (f_saa,saa - f_saa,sbb) / 8
+      !     V_sig = e_saa / 2 - e_sab / 4
+      !
+      ! which is the list Psi4 builds in `libfock/v.cc`, in `RV::compute_Vx`,
+      ! derived here in this code's own `(rho, sigma)` representation rather
+      ! than ported from PySCF's transformed one. For an LDA only the first survives, and there
+      ! it equals the singlet coefficient whenever the functional carries no
+      ! opposite-spin correlation -- pure exchange has `f_ra,rb = 0`.
+      !
+      ! TODO(mqc): no tau channels. A meta-GGA triplet kernel needs
+      ! `f_ra,ta - f_ra,tb`, `f_saa,ta - f_saa,tb` and `f_ta,ta - f_ta,tb`
+      ! alongside these; every caller refuses a meta-GGA triplet rather than
+      ! returning these four and calling it the kernel.
+
+      real(dp), allocatable :: rho_pol(:), sigma_pol(:)
+      real(dp), allocatable :: frr_p(:), frs_p(:), fss_p(:)
+      real(dp), allocatable :: exc_p(:), vrho_p(:), vsigma_p(:)
+      real(dp) :: w
+      integer :: ig
+
+      if (.not. ctx%polarized_twin) then
+         call error%set(ERROR_VALIDATION, "the triplet exchange-correlation kernel "// &
+                        "was asked for against a context whose polarised libxc "// &
+                        "handles were never built; ensure_polarized_twins has to "// &
+                        "run on it first, outside any parallel region")
+         return
+      end if
+
+      w = ctx%weight(i)
+      allocate (rho_pol(2*nb), sigma_pol(3*nb), frr_p(3*nb))
+      do ig = 1, nb
+         rho_pol(2*ig - 1) = 0.5_dp*rho(ig)
+         rho_pol(2*ig) = 0.5_dp*rho(ig)
+         sigma_pol(3*ig - 2) = 0.25_dp*sigma(ig)
+         sigma_pol(3*ig - 1) = 0.25_dp*sigma(ig)
+         sigma_pol(3*ig) = 0.25_dp*sigma(ig)
+      end do
+
+      select case (ctx%family(i))
+      case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+         allocate (frs_p(6*nb), fss_p(6*nb), exc_p(nb), vrho_p(2*nb), vsigma_p(3*nb))
+         call xc_f03_gga_fxc(ctx%func_pol(i), int(nb, 8), rho_pol, sigma_pol, &
+                             frr_p, frs_p, fss_p)
+         call xc_f03_gga_exc_vxc(ctx%func_pol(i), int(nb, 8), rho_pol, sigma_pol, &
+                                 exc_p, vrho_p, vsigma_p)
+         ! libxc's polarised layout, spin fastest: `v2rho2` is (aa, ab, bb),
+         ! `v2rhosigma` is (a|aa, a|ab, a|bb, b|aa, b|ab, b|bb) and `v2sigma2`
+         ! is (aa|aa, aa|ab, aa|bb, ab|ab, ab|bb, bb|bb).
+         do ig = 1, nb
+            frr(ig) = frr(ig) + w*0.5_dp*(frr_p(3*ig - 2) - frr_p(3*ig - 1))
+            frs(ig) = frs(ig) + w*0.25_dp*(frs_p(6*ig - 5) - frs_p(6*ig - 3))
+            fss(ig) = fss(ig) + w*0.125_dp*(fss_p(6*ig - 5) - fss_p(6*ig - 3))
+            vsig(ig) = vsig(ig) + w*(0.5_dp*vsigma_p(3*ig - 2) &
+                                     - 0.25_dp*vsigma_p(3*ig - 1))
+         end do
+      case default
+         ! An LDA component, and a meta-GGA one only because the caller has
+         ! already refused that combination: its sigma and tau channels would
+         ! be missing rather than wrong.
+         call xc_f03_lda_fxc(ctx%func_pol(i), int(nb, 8), rho_pol, frr_p)
+         do ig = 1, nb
+            frr(ig) = frr(ig) + w*0.5_dp*(frr_p(3*ig - 2) - frr_p(3*ig - 1))
+         end do
+      end select
+   end subroutine triplet_component
 #endif
 
    subroutine xc_kernel_apply(ctx, mol, density, dtilde, v_kernel, error, cache)
@@ -2134,7 +2424,8 @@ contains
       v_kernel = v_kernel + many_out(:, :, 1)
    end subroutine xc_kernel_apply
 
-   subroutine xc_kernel_apply_many(ctx, mol, density, dtildes, v_kernels, error, cache)
+   subroutine xc_kernel_apply_many(ctx, mol, density, dtildes, v_kernels, error, cache, &
+                                   triplet)
       !! The exchange-correlation kernel applied to a batch of response densities
       !!
       !! `xc_kernel_apply` for `n_set` densities in one pass over the grid. The
@@ -2184,20 +2475,30 @@ contains
          !! `xc_kernel_cache_fill`. Present, the per-block evaluation of the
          !! reference density and of libxc's derivatives is skipped and these
          !! are read instead; absent, nothing changes.
+      logical, intent(in), optional :: triplet
+         !! Contract with the **triplet** kernel `(f_aa - f_ab)/2` rather than
+         !! the singlet one. Off by default. With a cache, the cache has to have
+         !! been filled for triplets too; without one, the polarised evaluation
+         !! is made per block.
 
       type(xc_kernel_cache_t) :: unfilled
          !! Stands in for an absent `cache`, so the worker's argument is never
          !! optional. Holds no arrays, and `have_cache` keeps it unread.
+      logical :: want_triplet
 
+      want_triplet = .false.
+      if (present(triplet)) want_triplet = triplet
       if (present(cache)) then
-         call kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, cache, .true.)
+         call kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, cache, &
+                                 .true., want_triplet)
       else
-         call kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, unfilled, .false.)
+         call kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, unfilled, &
+                                 .false., want_triplet)
       end if
    end subroutine xc_kernel_apply_many
 
    subroutine kernel_apply_batch(ctx, mol, density, dtildes, v_kernels, error, &
-                                 cache, have_cache)
+                                 cache, have_cache, want_triplet)
       !! The batched kernel contraction, with the cache made unconditional
       !!
       !! The body of `xc_kernel_apply_many`, whose docstring carries the
@@ -2222,6 +2523,8 @@ contains
       type(xc_kernel_cache_t), intent(in) :: cache
          !! Read only where `have_cache`, and unfilled otherwise.
       logical, intent(in) :: have_cache
+      logical, intent(in) :: want_triplet
+         !! The triplet kernel rather than the singlet one, in the same slots.
 
 #ifdef MQC_WITH_LIBXC
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
@@ -2291,6 +2594,26 @@ contains
                            "context it was handed with")
             return
          end if
+         if (want_triplet .and. .not. cache%triplet) then
+            call error%set(ERROR_VALIDATION, "the triplet exchange-correlation kernel "// &
+                           "was asked for against a cache filled for singlets only: "// &
+                           "call xc_kernel_cache_fill with triplet = .true.")
+            return
+         end if
+      end if
+      if (want_triplet) then
+         if (mgga) then
+            call error%set(ERROR_VALIDATION, "the triplet exchange-correlation "// &
+                           "kernel of a meta-GGA is not implemented: its tau "// &
+                           "channels have no spin-difference form here")
+            return
+         end if
+         ! Outside the parallel region, and once: the polarised handles are a
+         ! property of the functional, not of a grid block.
+         if (.not. have_cache) then
+            call ensure_polarized_twins(ctx, error)
+            if (error%has_error()) return
+         end if
       end if
 
       call shell_extents(mol, ctx%screen_tol, extents)
@@ -2309,7 +2632,7 @@ contains
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, dtildes, v_kernels, error, failed, &
       !$omp           gga, mgga, npts, extents, n_set, dmax, locks, &
-      !$omp           cache, have_cache) &
+      !$omp           cache, have_cache, want_triplet) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, blk, drho, &
       !$omp            drho_grad, dsigma, c_rho, c_grad, &
       !$omp            c_tau, no_tau, dtau) &
@@ -2372,9 +2695,19 @@ contains
          ! there is not. The evaluation is one routine shared with the fill,
          ! so the two paths cannot drift -- including where the floor falls.
          if (have_cache) then
-            call kernel_block_from_cache(cache, g0, g1, blk)
+            call kernel_block_from_cache(cache, g0, g1, blk, want_triplet)
          else
-            call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), blk)
+            call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
+                                        blk, local_error, triplet=want_triplet)
+            if (local_error%has_error()) then
+               !$omp critical (xc_kernel_many_failure)
+               if (.not. failed) then
+                  failed = .true.
+                  error = local_error
+               end if
+               !$omp end critical (xc_kernel_many_failure)
+               cycle
+            end if
          end if
 
          ! The response side's own scratch, which no cache can hold: it is the
@@ -2653,10 +2986,11 @@ contains
       if (mol%nao < 0) return
       if (ctx%n_func < 0) return
       if (have_cache .and. cache%n_points < 0) return
+      if (want_triplet) return
 #endif
    end subroutine kernel_apply_batch
 
-   subroutine kernel_block_from_cache(cache, g0, g1, blk)
+   subroutine kernel_block_from_cache(cache, g0, g1, blk, triplet)
       !! One block's worth of cached coefficients, in the shapes the block wants
       !!
       !! What `kernel_block_reference` would have evaluated for this block,
@@ -2674,6 +3008,9 @@ contains
       type(xc_kernel_cache_t), intent(in) :: cache
       integer, intent(in) :: g0, g1   !! First and last grid point of the block
       type(xc_kernel_block_t), intent(out) :: blk
+      logical, intent(in) :: triplet
+         !! Read the triplet coefficients into the same four slots. The caller
+         !! has checked that the cache carries them.
 
       integer :: nb, id
 
@@ -2688,10 +3025,20 @@ contains
       end if
       allocate (blk%frr(nb), blk%frs(nb), blk%fss(nb), blk%vsig(nb), &
                 blk%frt(nb), blk%fst(nb), blk%ftt(nb), blk%vtau(nb))
-      blk%frr = cache%frr(g0:g1)
-      call cached_channel(cache%frs, g0, g1, blk%frs)
-      call cached_channel(cache%fss, g0, g1, blk%fss)
-      call cached_channel(cache%vsig, g0, g1, blk%vsig)
+      ! The triplet coefficients go in the singlet slots: the contraction that
+      ! reads them is the same one, and which manifold the four numbers belong
+      ! to is the caller's to know.
+      if (triplet) then
+         call cached_channel(cache%frr_t, g0, g1, blk%frr)
+         call cached_channel(cache%frs_t, g0, g1, blk%frs)
+         call cached_channel(cache%fss_t, g0, g1, blk%fss)
+         call cached_channel(cache%vsig_t, g0, g1, blk%vsig)
+      else
+         blk%frr = cache%frr(g0:g1)
+         call cached_channel(cache%frs, g0, g1, blk%frs)
+         call cached_channel(cache%fss, g0, g1, blk%fss)
+         call cached_channel(cache%vsig, g0, g1, blk%vsig)
+      end if
       call cached_channel(cache%frt, g0, g1, blk%frt)
       call cached_channel(cache%fst, g0, g1, blk%fst)
       call cached_channel(cache%ftt, g0, g1, blk%ftt)
@@ -2712,7 +3059,7 @@ contains
       end if
    end subroutine cached_channel
 
-   subroutine xc_kernel_cache_fill(ctx, mol, density, cache, error)
+   subroutine xc_kernel_cache_fill(ctx, mol, density, cache, error, triplet)
       !! Evaluate the kernel's coefficients over the whole grid, once
       !!
       !! The grid pass `xc_kernel_apply_many` makes on every call, made here
@@ -2749,7 +3096,13 @@ contains
       real(dp), intent(in) :: density(:, :)   !! The converged SCF density
       type(xc_kernel_cache_t), intent(out) :: cache
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: triplet
+         !! Fill the triplet coefficients beside the singlet ones, so a solve
+         !! over both manifolds walks the grid once rather than twice. Off by
+         !! default. Refused for a meta-GGA, whose triplet kernel is missing
+         !! its tau channels.
 
+      logical :: want_triplet
 #ifdef MQC_WITH_LIBXC
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: d_sig(:, :), extents(:)
@@ -2762,6 +3115,9 @@ contains
       type(error_t) :: local_error
 #endif
 
+      want_triplet = .false.
+      if (present(triplet)) want_triplet = triplet
+
       if (.not. ctx%active) return
       if (.not. xc_available()) then
          call error%set(ERROR_VALIDATION, "no libxc in this build")
@@ -2771,6 +3127,18 @@ contains
          call error%set(ERROR_VALIDATION, "the exchange-correlation kernel is "// &
                         "implemented for a restricted reference only")
          return
+      end if
+      if (want_triplet) then
+         if (ctx%any_mgga) then
+            call error%set(ERROR_VALIDATION, "the triplet exchange-correlation "// &
+                           "kernel of a meta-GGA is not implemented: its tau "// &
+                           "channels have no spin-difference form here, and "// &
+                           "filling the three that do exist would be a kernel "// &
+                           "missing a term rather than a meta-GGA one")
+            return
+         end if
+         call ensure_polarized_twins(ctx, error)
+         if (error%has_error()) return
       end if
 
 #ifdef MQC_WITH_LIBXC
@@ -2784,6 +3152,13 @@ contains
       n_channels = 1
       if (gga) n_channels = n_channels + 6
       if (mgga) n_channels = n_channels + 4
+      ! The triplet twins of `frr` and, from the GGA up, of `frs`, `fss` and
+      ! `vsig`. Weighed with the rest, so a cache that only just fits for one
+      ! manifold is not silently taken for two.
+      if (want_triplet) then
+         n_channels = n_channels + 1
+         if (gga) n_channels = n_channels + 3
+      end if
       wanted = real(npts, dp)*real(n_channels, dp)*8.0_dp
       budget = memory_budget(KERNEL_CACHE_BLIND_LIMIT, KERNEL_CACHE_BUDGET_SHARE)
       if (wanted > budget) then
@@ -2818,6 +3193,20 @@ contains
       cache%mgga = mgga
       cache%point_block = ctx%point_block
       cache%screen_tol = ctx%screen_tol
+      cache%triplet = want_triplet
+      if (want_triplet) then
+         ! Per rung, as the singlet channels above are: `frr_t` on every rung,
+         ! the other three from the GGA up. A meta-GGA triplet is refused
+         ! before it gets here, so there is no tau twin to hold.
+         allocate (cache%frr_t(npts))
+         cache%frr_t = 0.0_dp
+         if (gga) then
+            allocate (cache%frs_t(npts), cache%fss_t(npts), cache%vsig_t(npts))
+            cache%frs_t = 0.0_dp
+            cache%fss_t = 0.0_dp
+            cache%vsig_t = 0.0_dp
+         end if
+      end if
 
       call shell_extents(mol, ctx%screen_tol, extents)
       failed = .false.
@@ -2825,7 +3214,8 @@ contains
       ! Threaded over blocks and nothing reduced: every point belongs to one
       ! block, so the threads write disjoint slices of each array.
       !$omp parallel default(none) &
-      !$omp    shared(ctx, mol, density, cache, error, failed, gga, mgga, npts, extents) &
+      !$omp    shared(ctx, mol, density, cache, error, failed, gga, mgga, npts, &
+      !$omp           extents, want_triplet) &
       !$omp    private(g0, g1, ia, ja, id, n_sig, ao, ao_grad, blk, d_sig, &
       !$omp            shell_mask, ao_list, ao_offset) &
       !$omp    firstprivate(local_error)
@@ -2866,7 +3256,17 @@ contains
             cycle
          end if
 
-         call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), blk)
+         call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
+                                     blk, local_error)
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_cache_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_cache_failure)
+            cycle
+         end if
 
          cache%frr(g0:g1) = blk%frr
          if (gga) then
@@ -2883,6 +3283,31 @@ contains
             cache%ftt(g0:g1) = blk%ftt
             cache%vtau(g0:g1) = blk%vtau
          end if
+
+         ! The second, polarised evaluation on the same block. It re-enters
+         ! `kernel_block_reference` rather than extending it, so the two
+         ! coefficient sets are produced by one routine under one floor; what
+         ! is repeated is `eval_rho` and the libxc calls, not the basis
+         ! functions, which are the expensive part and are passed back in.
+         if (want_triplet) then
+            call kernel_block_reference(ctx, ao, ao_grad, d_sig(1:n_sig, 1:n_sig), &
+                                        blk, local_error, triplet=.true.)
+            if (local_error%has_error()) then
+               !$omp critical (xc_kernel_cache_failure)
+               if (.not. failed) then
+                  failed = .true.
+                  error = local_error
+               end if
+               !$omp end critical (xc_kernel_cache_failure)
+               cycle
+            end if
+            cache%frr_t(g0:g1) = blk%frr
+            if (gga) then
+               cache%frs_t(g0:g1) = blk%frs
+               cache%fss_t(g0:g1) = blk%fss
+               cache%vsig_t(g0:g1) = blk%vsig
+            end if
+         end if
       end do
       !$omp end do
       deallocate (d_sig, shell_mask, ao_offset, ao_list)
@@ -2894,7 +3319,7 @@ contains
       end if
       cache%filled = .true.
 #else
-      if (size(density) < 0 .or. mol%nao < 0) return
+      if (size(density) < 0 .or. mol%nao < 0 .or. want_triplet) return
 #endif
    end subroutine xc_kernel_cache_fill
 
@@ -3507,6 +3932,724 @@ contains
                           level=ctx%nlc_grid_level)
       deallocate (numbers)
    end subroutine ensure_nlc_grid
+
+#ifdef MQC_WITH_LIBXC
+   subroutine kernel_block_reference_uks(ctx, ao, ao_grad, da_sig, db_sig, gga, &
+                                         rho_a, rho_b, grad_a, grad_b, frr, frs, &
+                                         fss, vsig)
+      !! The two reference spin densities and the polarised kernel on one block
+      !!
+      !! `kernel_block_reference` for an unrestricted reference: the same
+      !! quantities, with every channel libxc splits by spin kept split.
+      !! Summed over the functional's components with their weights and
+      !! floored at `KERNEL_RHO_FLOOR` on the **total** density, which is where
+      !! the restricted path floors too, so a closed shell evaluated either way
+      !! keeps the same points.
+      !!
+      !! LDA and GGA. A meta-GGA is refused by the callers rather than
+      !! returning the channels that do exist.
+      type(xc_context_t), intent(in) :: ctx
+         !! Spin-polarised, which the callers check.
+      real(dp), intent(in) :: ao(:, :)   !! (n_block, n_sig), the kept functions
+      real(dp), allocatable, intent(in) :: ao_grad(:, :, :)
+         !! (n_block, n_sig, 3), unallocated where the context is an LDA
+      real(dp), intent(in) :: da_sig(:, :), db_sig(:, :)
+         !! (n_sig, n_sig), the reference spin densities over the kept functions
+      logical, intent(in) :: gga
+      real(dp), allocatable, intent(out) :: rho_a(:), rho_b(:)        !! (n_block)
+      real(dp), allocatable, intent(out) :: grad_a(:, :), grad_b(:, :)
+         !! (n_block, 3), zero for an LDA
+      real(dp), allocatable, intent(out) :: frr(:, :)
+         !! (n_block, 3) `v2rho2`, as (aa, ab, bb)
+      real(dp), allocatable, intent(out) :: frs(:, :)
+         !! (n_block, 6) `v2rhosigma`, as (a|aa, a|ab, a|bb, b|aa, b|ab, b|bb)
+      real(dp), allocatable, intent(out) :: fss(:, :)
+         !! (n_block, 6) `v2sigma2`, as (aa|aa, aa|ab, aa|bb, ab|ab, ab|bb, bb|bb)
+      real(dp), allocatable, intent(out) :: vsig(:, :)
+         !! (n_block, 3) `vsigma`, as (aa, ab, bb) -- a *first* derivative, here
+         !! because the response density's gradient multiplies it
+
+      real(dp), allocatable :: rho(:), sigma(:)
+      real(dp), allocatable :: exc_i(:), vrho_i(:), vsigma_i(:)
+      real(dp), allocatable :: frr_i(:), frs_i(:), fss_i(:)
+      real(dp) :: w
+      integer :: nb, i, ig, ic
+
+      nb = size(ao, 1)
+
+      if (gga) then
+         call eval_rho(ao, da_sig, rho_a, ao_grad=ao_grad, rho_grad=grad_a)
+         call eval_rho(ao, db_sig, rho_b, ao_grad=ao_grad, rho_grad=grad_b)
+      else
+         call eval_rho(ao, da_sig, rho_a)
+         call eval_rho(ao, db_sig, rho_b)
+      end if
+      ! Allocated and zero rather than absent on the rung that does not define
+      ! them: the coefficients multiplying them are zero there, and zero times
+      ! uninitialised is a NaN rather than nothing.
+      if (.not. allocated(grad_a)) then
+         allocate (grad_a(nb, 3))
+         grad_a = 0.0_dp
+      end if
+      if (.not. allocated(grad_b)) then
+         allocate (grad_b(nb, 3))
+         grad_b = 0.0_dp
+      end if
+
+      allocate (frr(nb, 3), frs(nb, 6), fss(nb, 6), vsig(nb, 3))
+      frr = 0.0_dp
+      frs = 0.0_dp
+      fss = 0.0_dp
+      vsig = 0.0_dp
+
+      ! libxc's polarised layout is spin fastest, so the interleaved buffers
+      ! here are what it takes and returns, and the transposed `(point,
+      ! channel)` arrays above are what the contraction and the cache want.
+      allocate (rho(2*nb), sigma(3*nb), exc_i(nb), vrho_i(2*nb), vsigma_i(3*nb), &
+                frr_i(3*nb), frs_i(6*nb), fss_i(6*nb))
+      do ig = 1, nb
+         rho(2*ig - 1) = rho_a(ig)
+         rho(2*ig) = rho_b(ig)
+      end do
+      sigma = 0.0_dp
+      if (gga) then
+         do ig = 1, nb
+            sigma(3*ig - 2) = dot_product(grad_a(ig, :), grad_a(ig, :))
+            sigma(3*ig - 1) = dot_product(grad_a(ig, :), grad_b(ig, :))
+            sigma(3*ig) = dot_product(grad_b(ig, :), grad_b(ig, :))
+         end do
+      end if
+
+      ! Per component, as everywhere here: a composition may put an LDA
+      ! correlation beside a GGA exchange.
+      do i = 1, ctx%n_func
+         w = ctx%weight(i)
+         select case (ctx%family(i))
+         case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+            call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                frr_i, frs_i, fss_i)
+            call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                    exc_i, vrho_i, vsigma_i)
+            do ic = 1, 3
+               do ig = 1, nb
+                  frr(ig, ic) = frr(ig, ic) + w*frr_i(3*ig - 3 + ic)
+                  vsig(ig, ic) = vsig(ig, ic) + w*vsigma_i(3*ig - 3 + ic)
+               end do
+            end do
+            do ic = 1, 6
+               do ig = 1, nb
+                  frs(ig, ic) = frs(ig, ic) + w*frs_i(6*ig - 6 + ic)
+                  fss(ig, ic) = fss(ig, ic) + w*fss_i(6*ig - 6 + ic)
+               end do
+            end do
+         case default
+            ! An LDA component. A meta-GGA one cannot reach here: every caller
+            ! refuses that rung, whose tau channels would be missing rather
+            ! than wrong.
+            call xc_f03_lda_fxc(ctx%func(i), int(nb, 8), rho, frr_i)
+            do ic = 1, 3
+               do ig = 1, nb
+                  frr(ig, ic) = frr(ig, ic) + w*frr_i(3*ig - 3 + ic)
+               end do
+            end do
+         end select
+      end do
+
+      ! The floor, on the total density and for the reason the restricted
+      ! path has one: the exchange kernel diverges as rho^(-2/3) in the grid
+      ! tails and makes the response operator indefinite there.
+      do ig = 1, nb
+         if (rho_a(ig) + rho_b(ig) < KERNEL_RHO_FLOOR) then
+            frr(ig, :) = 0.0_dp
+            frs(ig, :) = 0.0_dp
+            fss(ig, :) = 0.0_dp
+            vsig(ig, :) = 0.0_dp
+         end if
+      end do
+   end subroutine kernel_block_reference_uks
+#endif
+
+   subroutine xc_kernel_cache_uks_fill(ctx, mol, d_alpha, d_beta, cache, error)
+      !! Evaluate the polarised kernel's coefficients over the whole grid, once
+      !!
+      !! `xc_kernel_cache_fill` for an unrestricted reference. The grid pass
+      !! `xc_kernel_apply_uks_many` would make on every call, made here instead
+      !! and kept: an excitation solve applies the kernel hundreds of times at
+      !! one converged pair of spin densities.
+      !!
+      !! **The same blocks, the same screen, the same routine** as the
+      !! contraction's own prologue, so a cached application reproduces an
+      !! uncached one bit for bit rather than to within a tolerance.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: d_alpha(:, :), d_beta(:, :)
+         !! The converged spin densities, `C_sigma C_sigma^T` and not doubled
+      type(xc_kernel_cache_uks_t), intent(out) :: cache
+      type(error_t), intent(inout) :: error
+
+#ifdef MQC_WITH_LIBXC
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho_a(:), rho_b(:), grad_a(:, :), grad_b(:, :)
+      real(dp), allocatable :: frr(:, :), frs(:, :), fss(:, :), vsig(:, :)
+      real(dp), allocatable :: da_sig(:, :), db_sig(:, :), extents(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: g0, g1, ia, ja, ic, n_sig, npts
+      logical :: gga, failed
+      type(error_t) :: local_error
+#endif
+
+      if (.not. ctx%active) return
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "no libxc in this build")
+         return
+      end if
+      if (.not. ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "the unrestricted exchange-correlation "// &
+                        "kernel was given a spin-restricted context, whose libxc "// &
+                        "handles return the wrong number of components; build it "// &
+                        "with polarized = .true.")
+         return
+      end if
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the unrestricted exchange-correlation "// &
+                        "kernel of a meta-GGA is not implemented: its tau channels "// &
+                        "are not carried here, and filling the ones that are would "// &
+                        "be a kernel missing a term rather than a meta-GGA one")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      gga = ctx%any_gga
+      npts = ctx%grid%n_points
+
+      allocate (cache%rho_a(npts), cache%rho_b(npts), cache%grad_a(npts, 3), &
+                cache%grad_b(npts, 3), cache%frr(npts, 3), cache%frs(npts, 6), &
+                cache%fss(npts, 6), cache%vsig(npts, 3))
+      ! Zero where no basis function reaches, which is where the contraction
+      ! skips the block outright and never reads these.
+      cache%rho_a = 0.0_dp
+      cache%rho_b = 0.0_dp
+      cache%grad_a = 0.0_dp
+      cache%grad_b = 0.0_dp
+      cache%frr = 0.0_dp
+      cache%frs = 0.0_dp
+      cache%fss = 0.0_dp
+      cache%vsig = 0.0_dp
+      cache%n_points = npts
+      cache%gga = gga
+
+      call shell_extents(mol, ctx%screen_tol, extents)
+      failed = .false.
+
+      ! Threaded over blocks and nothing reduced: every point belongs to one
+      ! block, so the threads write disjoint slices of each array.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, d_alpha, d_beta, cache, error, failed, gga, npts, &
+      !$omp           extents) &
+      !$omp    private(g0, g1, ia, ja, ic, n_sig, ao, ao_grad, rho_a, rho_b, &
+      !$omp            grad_a, grad_b, frr, frs, fss, vsig, da_sig, db_sig, &
+      !$omp            shell_mask, ao_list, ao_offset) &
+      !$omp    firstprivate(local_error)
+      allocate (da_sig(mol%nao, mol%nao), db_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+
+      !$omp do schedule(dynamic)
+      do g0 = 1, npts, ctx%point_block
+         if (failed) cycle
+         g1 = min(g0 + ctx%point_block - 1, npts)
+
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               da_sig(ia, ja) = d_alpha(ao_list(ia), ao_list(ja))
+               db_sig(ia, ja) = d_beta(ao_list(ia), ao_list(ja))
+            end do
+         end do
+
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+         end if
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_cache_uks_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_cache_uks_failure)
+            cycle
+         end if
+
+         call kernel_block_reference_uks(ctx, ao, ao_grad, da_sig(1:n_sig, 1:n_sig), &
+                                         db_sig(1:n_sig, 1:n_sig), gga, rho_a, rho_b, &
+                                         grad_a, grad_b, frr, frs, fss, vsig)
+
+         cache%rho_a(g0:g1) = rho_a
+         cache%rho_b(g0:g1) = rho_b
+         do ic = 1, 3
+            cache%grad_a(g0:g1, ic) = grad_a(:, ic)
+            cache%grad_b(g0:g1, ic) = grad_b(:, ic)
+            cache%frr(g0:g1, ic) = frr(:, ic)
+            cache%vsig(g0:g1, ic) = vsig(:, ic)
+         end do
+         do ic = 1, 6
+            cache%frs(g0:g1, ic) = frs(:, ic)
+            cache%fss(g0:g1, ic) = fss(:, ic)
+         end do
+      end do
+      !$omp end do
+      deallocate (da_sig, db_sig, shell_mask, ao_offset, ao_list)
+      !$omp end parallel
+
+      if (failed) then
+         call cache%destroy()
+         return
+      end if
+      cache%filled = .true.
+#else
+      if (size(d_alpha) < 0 .or. size(d_beta) < 0 .or. mol%nao < 0) return
+#endif
+   end subroutine xc_kernel_cache_uks_fill
+
+   subroutine xc_kernel_apply_uks_many(ctx, mol, d_alpha, d_beta, dt_alpha, dt_beta, &
+                                       v_alpha, v_beta, error, cache)
+      !! The spin-resolved kernel applied to a batch of response density pairs
+      !!
+      !! The unrestricted counterpart of `xc_kernel_apply_many`. Where that one
+      !! contracts one response density against `f_xc` and returns one matrix,
+      !! this contracts a pair against the full spin-resolved second derivative
+      !! and returns a pair:
+      !!
+      !!     dv_a = f_(a,a) drho_a + f_(a,b) drho_b   (+ the sigma channels)
+      !!
+      !! There is **no singlet or triplet flag**: an unrestricted reference has
+      !! no spin-adapted manifolds, and the two restricted kernels are the two
+      !! combinations `drho_a = +/- drho_b` of this one. A closed shell run
+      !! through here with those two perturbations reproduces them, which is
+      !! what the test checks.
+      !!
+      !! ## The terms
+      !!
+      !! With `s_xy = grad rho_x . grad drho_y`,
+      !!
+      !!     dsigma_aa = 2 s_aa,  dsigma_ab = s_ab + s_ba,  dsigma_bb = 2 s_bb
+      !!
+      !! and, for each spin `t`,
+      !!
+      !!     c_rho^t   = sum_u f_(rho_t, rho_u) drho_u
+      !!                 + sum_x f_(rho_t, sigma_x) dsigma_x
+      !!     dv_saa    = sum_u f_(sigma_aa, rho_u) drho_u
+      !!                 + sum_x f_(sigma_aa, sigma_x) dsigma_x        (and sab, sbb)
+      !!     c_grad^a  = 2 dv_saa grad rho_a + dv_sab grad rho_b
+      !!                 + 2 v_saa grad drho_a + v_sab grad drho_b
+      !!     c_grad^b  = 2 dv_sbb grad rho_b + dv_sab grad rho_a
+      !!                 + 2 v_sbb grad drho_b + v_sab grad drho_a
+      !!
+      !! -- the same shape as the ground-state potential in
+      !! `xc_add_potential_uks`, differentiated once more, and assembled by the
+      !! same `accumulate_xc_matrix`. The cross-spin `sigma_ab` term is the one
+      !! a spin-resolved kernel is usually missing: dropping it leaves a GGA
+      !! response that converges and is wrong.
+      !!
+      !! Accumulates into `v_alpha` and `v_beta`, as the restricted routine
+      !! does into its one output.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: d_alpha(:, :), d_beta(:, :)
+         !! The converged reference spin densities, not doubled
+      real(dp), intent(in) :: dt_alpha(:, :, :), dt_beta(:, :, :)
+         !! (n_ao, n_ao, n_set), the response densities, one pair per set
+      real(dp), intent(inout) :: v_alpha(:, :, :), v_beta(:, :, :)
+         !! (n_ao, n_ao, n_set), accumulated into
+      type(error_t), intent(inout) :: error
+      type(xc_kernel_cache_uks_t), intent(in), optional :: cache
+         !! The reference's coefficients over the whole grid, from
+         !! `xc_kernel_cache_uks_fill`. Present, the per-block evaluation of
+         !! the reference and of libxc's derivatives is skipped and these are
+         !! read instead; absent, nothing changes.
+
+      type(xc_kernel_cache_uks_t) :: unfilled
+         !! Stands in for an absent `cache`, so the worker's argument is never
+         !! optional -- an absent optional dummy cannot portably be named in an
+         !! OpenMP data-sharing clause, and the worker's region is
+         !! `default(none)`.
+
+      if (present(cache)) then
+         call kernel_apply_uks_batch(ctx, mol, d_alpha, d_beta, dt_alpha, dt_beta, &
+                                     v_alpha, v_beta, error, cache, .true.)
+      else
+         call kernel_apply_uks_batch(ctx, mol, d_alpha, d_beta, dt_alpha, dt_beta, &
+                                     v_alpha, v_beta, error, unfilled, .false.)
+      end if
+   end subroutine xc_kernel_apply_uks_many
+
+   subroutine kernel_apply_uks_batch(ctx, mol, d_alpha, d_beta, dt_alpha, dt_beta, &
+                                     v_alpha, v_beta, error, cache, have_cache)
+      !! The batched spin-resolved contraction, with the cache made unconditional
+      !!
+      !! One pass over the grid for the whole batch: the basis functions and
+      !! the reference's coefficients are evaluated once per block and every
+      !! set is contracted against them. Set by set within a block, unlike the
+      !! restricted contraction's stacked gemms -- an unrestricted response
+      !! carries twice the channels and half the batch, and the stacking is an
+      !! optimisation to make once this path has a cost worth measuring.
+      ! TODO(mqc): the sets are not stacked into one gemm as `kernel_apply_batch`
+      ! stacks them, so a wide unrestricted batch streams its densities through
+      ! gemms too small to hide the memory traffic. Measured on the restricted
+      ! path at a hundred cores, that cost a factor of three.
+!$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: d_alpha(:, :), d_beta(:, :)
+      real(dp), intent(in) :: dt_alpha(:, :, :), dt_beta(:, :, :)
+      real(dp), intent(inout) :: v_alpha(:, :, :), v_beta(:, :, :)
+      type(error_t), intent(inout) :: error
+      type(xc_kernel_cache_uks_t), intent(in) :: cache
+         !! Read only where `have_cache`, and unfilled otherwise.
+      logical, intent(in) :: have_cache
+
+#ifdef MQC_WITH_LIBXC
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
+      real(dp), allocatable :: rho_a(:), rho_b(:), grad_a(:, :), grad_b(:, :)
+      real(dp), allocatable :: frr(:, :), frs(:, :), fss(:, :), vsig(:, :)
+      real(dp), allocatable :: drho_a(:), drho_b(:), dgrad_a(:, :), dgrad_b(:, :)
+      real(dp), allocatable :: dsig(:, :)
+      real(dp), allocatable :: c_rho(:), c_grad(:, :), no_tau(:)
+      real(dp), allocatable :: v_sig(:, :), da_sig(:, :), db_sig(:, :)
+      real(dp), allocatable :: dta_sig(:, :), dtb_sig(:, :)
+      real(dp), allocatable :: extents(:), dmax(:)
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: n_sig, ia, ja, iset, n_set, npts
+      integer :: g0, g1, nb, ig, id
+      real(dp) :: amax, agmax, dmax_blk, s, dv_saa, dv_sab, dv_sbb
+      logical :: gga
+      type(error_t) :: local_error
+      logical :: failed
+!$    integer(omp_lock_kind), allocatable :: locks(:)
+#endif
+
+      if (.not. ctx%active) return
+      if (.not. ctx%polarized) then
+         call error%set(ERROR_VALIDATION, "the unrestricted exchange-correlation "// &
+                        "kernel was given a spin-restricted context; build it with "// &
+                        "polarized = .true.")
+         return
+      end if
+      if (ctx%any_mgga) then
+         call error%set(ERROR_VALIDATION, "the unrestricted exchange-correlation "// &
+                        "kernel of a meta-GGA is not implemented: its tau channels "// &
+                        "are not carried here")
+         return
+      end if
+      if (size(dt_beta, 3) /= size(dt_alpha, 3) .or. size(v_alpha, 3) /= size(dt_alpha, 3) &
+          .or. size(v_beta, 3) /= size(dt_alpha, 3)) then
+         call error%set(ERROR_VALIDATION, "xc_kernel_apply_uks_many: as many outputs "// &
+                        "as response densities, and as many beta as alpha")
+         return
+      end if
+
+#ifdef MQC_WITH_LIBXC
+      n_set = size(dt_alpha, 3)
+      if (n_set == 0) return
+      gga = ctx%any_gga
+      npts = ctx%grid%n_points
+      failed = .false.
+
+      if (have_cache) then
+         if (.not. cache%filled) then
+            call error%set(ERROR_VALIDATION, "the unrestricted exchange-correlation "// &
+                           "kernel was given a cache that was never filled: call "// &
+                           "xc_kernel_cache_uks_fill on the reference densities first")
+            return
+         end if
+         if (cache%n_points /= npts .or. (cache%gga .neqv. gga)) then
+            call error%set(ERROR_VALIDATION, "the unrestricted exchange-correlation "// &
+                           "kernel cache was filled for a different grid or a "// &
+                           "different functional rung than the context it was "// &
+                           "handed with")
+            return
+         end if
+      end if
+
+      call shell_extents(mol, ctx%screen_tol, extents)
+
+      ! The largest element of each set over both spins, which its screen is
+      ! relative to. One number per set, not per spin: the two spins share the
+      ! assembly and skipping one of them alone would leave a half-contracted
+      ! pair.
+      allocate (dmax(n_set))
+      do iset = 1, n_set
+         dmax(iset) = max(maxval(abs(dt_alpha(:, :, iset))), &
+                          maxval(abs(dt_beta(:, :, iset))))
+      end do
+
+!$    allocate (locks(n_set))
+!$    do iset = 1, n_set
+!$       call omp_init_lock(locks(iset))
+!$    end do
+
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, d_alpha, d_beta, dt_alpha, dt_beta, v_alpha, v_beta, &
+      !$omp           error, failed, gga, npts, extents, n_set, dmax, locks, &
+      !$omp           cache, have_cache) &
+      !$omp    private(g0, g1, nb, ig, id, ao, ao_grad, rho_a, rho_b, grad_a, grad_b, &
+      !$omp            frr, frs, fss, vsig, drho_a, drho_b, dgrad_a, dgrad_b, dsig, &
+      !$omp            c_rho, c_grad, no_tau, v_sig, da_sig, db_sig, dta_sig, &
+      !$omp            dtb_sig, shell_mask, ao_list, ao_offset, n_sig, ia, ja, iset, &
+      !$omp            amax, agmax, dmax_blk, s, dv_saa, dv_sab, dv_sbb) &
+      !$omp    firstprivate(local_error)
+      allocate (v_sig(mol%nao, mol%nao), da_sig(mol%nao, mol%nao), &
+                db_sig(mol%nao, mol%nao), dta_sig(mol%nao, mol%nao), &
+                dtb_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+
+      !$omp do schedule(dynamic)
+      do g0 = 1, npts, ctx%point_block
+         ! A thread that has failed stops working, but the loop still has to
+         ! run out so every thread reaches the barrier.
+         if (failed) cycle
+
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+
+         if (.not. have_cache) then
+            do ja = 1, n_sig
+               do ia = 1, n_sig
+                  da_sig(ia, ja) = d_alpha(ao_list(ia), ao_list(ja))
+                  db_sig(ia, ja) = d_beta(ao_list(ia), ao_list(ja))
+               end do
+            end do
+         end if
+
+         if (gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               grad=ao_grad, shell_mask=shell_mask, &
+                               ao_offset=ao_offset, n_ao_out=n_sig)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                               shell_mask=shell_mask, ao_offset=ao_offset, &
+                               n_ao_out=n_sig)
+         end if
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_uks_many_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_uks_many_failure)
+            cycle
+         end if
+
+         if (have_cache) then
+            call kernel_block_uks_from_cache(cache, g0, g1, grad_a, grad_b, frr, &
+                                             frs, fss, vsig)
+         else
+            call kernel_block_reference_uks(ctx, ao, ao_grad, da_sig(1:n_sig, 1:n_sig), &
+                                            db_sig(1:n_sig, 1:n_sig), gga, rho_a, &
+                                            rho_b, grad_a, grad_b, frr, frs, fss, vsig)
+         end if
+
+         if (allocated(c_rho)) deallocate (c_rho, dsig)
+         allocate (c_rho(nb), dsig(nb, 3))
+         if (gga) then
+            if (allocated(c_grad)) deallocate (c_grad)
+            allocate (c_grad(nb, 3))
+         end if
+
+         ! How large the basis is on this block, for the per-set screen.
+         amax = 0.0_dp
+         do ig = 1, nb
+            s = 0.0_dp
+            do ia = 1, n_sig
+               s = s + abs(ao(ig, ia))
+            end do
+            amax = max(amax, s)
+         end do
+         agmax = 0.0_dp
+         if (gga) then
+            do ig = 1, nb
+               s = 0.0_dp
+               do id = 1, 3
+                  do ia = 1, n_sig
+                     s = s + abs(ao_grad(ig, ia, id))
+                  end do
+               end do
+               agmax = max(agmax, s)
+            end do
+         end if
+
+         do iset = 1, n_set
+            if (dmax(iset) == 0.0_dp) cycle
+            dmax_blk = 0.0_dp
+            do ja = 1, n_sig
+               do ia = 1, n_sig
+                  dta_sig(ia, ja) = dt_alpha(ao_list(ia), ao_list(ja), iset)
+                  dtb_sig(ia, ja) = dt_beta(ao_list(ia), ao_list(ja), iset)
+                  dmax_blk = max(dmax_blk, abs(dta_sig(ia, ja)), abs(dtb_sig(ia, ja)))
+               end do
+            end do
+            ! `|drho| <= max|D| (sum |chi|)^2` and `|grad drho| <= 2 max|D|
+            ! (sum |chi|)(sum |grad chi|)`, both against the set's own scale.
+            if (dmax_blk*amax*max(amax, 2.0_dp*agmax) < ctx%screen_tol*dmax(iset)) cycle
+
+            if (gga) then
+               call eval_rho(ao, dta_sig(1:n_sig, 1:n_sig), drho_a, ao_grad=ao_grad, &
+                             rho_grad=dgrad_a)
+               call eval_rho(ao, dtb_sig(1:n_sig, 1:n_sig), drho_b, ao_grad=ao_grad, &
+                             rho_grad=dgrad_b)
+            else
+               call eval_rho(ao, dta_sig(1:n_sig, 1:n_sig), drho_a)
+               call eval_rho(ao, dtb_sig(1:n_sig, 1:n_sig), drho_b)
+            end if
+
+            dsig = 0.0_dp
+            if (gga) then
+               do ig = 1, nb
+                  dsig(ig, 1) = 2.0_dp*dot_product(grad_a(ig, :), dgrad_a(ig, :))
+                  dsig(ig, 2) = dot_product(grad_a(ig, :), dgrad_b(ig, :)) &
+                                + dot_product(grad_b(ig, :), dgrad_a(ig, :))
+                  dsig(ig, 3) = 2.0_dp*dot_product(grad_b(ig, :), dgrad_b(ig, :))
+               end do
+            end if
+
+            ! ---- alpha -------------------------------------------------------
+            do ig = 1, nb
+               c_rho(ig) = frr(ig, 1)*drho_a(ig) + frr(ig, 2)*drho_b(ig) &
+                           + frs(ig, 1)*dsig(ig, 1) + frs(ig, 2)*dsig(ig, 2) &
+                           + frs(ig, 3)*dsig(ig, 3)
+            end do
+            if (gga) then
+               do ig = 1, nb
+                  ! `v2sigma2` is upper triangular in its six entries, so the
+                  ! rows for sigma_ab and sigma_bb pick up the transposed ones.
+                  dv_saa = frs(ig, 1)*drho_a(ig) + frs(ig, 4)*drho_b(ig) &
+                           + fss(ig, 1)*dsig(ig, 1) + fss(ig, 2)*dsig(ig, 2) &
+                           + fss(ig, 3)*dsig(ig, 3)
+                  dv_sab = frs(ig, 2)*drho_a(ig) + frs(ig, 5)*drho_b(ig) &
+                           + fss(ig, 2)*dsig(ig, 1) + fss(ig, 4)*dsig(ig, 2) &
+                           + fss(ig, 5)*dsig(ig, 3)
+                  do id = 1, 3
+                     c_grad(ig, id) = 2.0_dp*dv_saa*grad_a(ig, id) &
+                                      + dv_sab*grad_b(ig, id) &
+                                      + 2.0_dp*vsig(ig, 1)*dgrad_a(ig, id) &
+                                      + vsig(ig, 2)*dgrad_b(ig, id)
+                  end do
+               end do
+            end if
+            v_sig(1:n_sig, 1:n_sig) = 0.0_dp
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                      v_sig(1:n_sig, 1:n_sig), ao_grad=ao_grad, &
+                                      grad_coeff=c_grad, vtau=no_tau, &
+                                      any_gga=gga, any_mgga=.false.)
+!$          call omp_set_lock(locks(iset))
+            do ja = 1, n_sig
+               do ia = 1, n_sig
+                  v_alpha(ao_list(ia), ao_list(ja), iset) = &
+                     v_alpha(ao_list(ia), ao_list(ja), iset) + v_sig(ia, ja)
+               end do
+            end do
+!$          call omp_unset_lock(locks(iset))
+
+            ! ---- beta --------------------------------------------------------
+            do ig = 1, nb
+               c_rho(ig) = frr(ig, 2)*drho_a(ig) + frr(ig, 3)*drho_b(ig) &
+                           + frs(ig, 4)*dsig(ig, 1) + frs(ig, 5)*dsig(ig, 2) &
+                           + frs(ig, 6)*dsig(ig, 3)
+            end do
+            if (gga) then
+               do ig = 1, nb
+                  dv_sbb = frs(ig, 3)*drho_a(ig) + frs(ig, 6)*drho_b(ig) &
+                           + fss(ig, 3)*dsig(ig, 1) + fss(ig, 5)*dsig(ig, 2) &
+                           + fss(ig, 6)*dsig(ig, 3)
+                  dv_sab = frs(ig, 2)*drho_a(ig) + frs(ig, 5)*drho_b(ig) &
+                           + fss(ig, 2)*dsig(ig, 1) + fss(ig, 4)*dsig(ig, 2) &
+                           + fss(ig, 5)*dsig(ig, 3)
+                  do id = 1, 3
+                     c_grad(ig, id) = 2.0_dp*dv_sbb*grad_b(ig, id) &
+                                      + dv_sab*grad_a(ig, id) &
+                                      + 2.0_dp*vsig(ig, 3)*dgrad_b(ig, id) &
+                                      + vsig(ig, 2)*dgrad_a(ig, id)
+                  end do
+               end do
+            end if
+            v_sig(1:n_sig, 1:n_sig) = 0.0_dp
+            call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                      v_sig(1:n_sig, 1:n_sig), ao_grad=ao_grad, &
+                                      grad_coeff=c_grad, vtau=no_tau, &
+                                      any_gga=gga, any_mgga=.false.)
+!$          call omp_set_lock(locks(iset))
+            do ja = 1, n_sig
+               do ia = 1, n_sig
+                  v_beta(ao_list(ia), ao_list(ja), iset) = &
+                     v_beta(ao_list(ia), ao_list(ja), iset) + v_sig(ia, ja)
+               end do
+            end do
+!$          call omp_unset_lock(locks(iset))
+         end do
+      end do
+      !$omp end do
+      deallocate (v_sig, da_sig, db_sig, dta_sig, dtb_sig, shell_mask, ao_offset, &
+                  ao_list)
+      !$omp end parallel
+
+!$    do iset = 1, n_set
+!$       call omp_destroy_lock(locks(iset))
+!$    end do
+!$    deallocate (locks)
+#else
+      call error%set(ERROR_VALIDATION, "no libxc in this build")
+      if (size(d_alpha) < 0 .or. size(d_beta) < 0) return
+      if (size(dt_alpha) < 0 .or. size(dt_beta) < 0) return
+      if (size(v_alpha) < 0 .or. size(v_beta) < 0) return
+      if (mol%nao < 0 .or. (have_cache .and. cache%n_points < 0)) return
+#endif
+   end subroutine kernel_apply_uks_batch
+
+   subroutine kernel_block_uks_from_cache(cache, g0, g1, grad_a, grad_b, frr, frs, &
+                                          fss, vsig)
+      !! One block's worth of cached polarised coefficients, in the block's shapes
+      !!
+      !! A copy rather than a slice, because the contraction indexes everything
+      !! from one and a pointer into the middle of a cache array would have to
+      !! be rebased anyway.
+      type(xc_kernel_cache_uks_t), intent(in) :: cache
+      integer, intent(in) :: g0, g1   !! First and last grid point of the block
+      real(dp), allocatable, intent(out) :: grad_a(:, :), grad_b(:, :)  !! (n_block, 3)
+      real(dp), allocatable, intent(out) :: frr(:, :)   !! (n_block, 3)
+      real(dp), allocatable, intent(out) :: frs(:, :)   !! (n_block, 6)
+      real(dp), allocatable, intent(out) :: fss(:, :)   !! (n_block, 6)
+      real(dp), allocatable, intent(out) :: vsig(:, :)  !! (n_block, 3)
+
+      integer :: nb, ic
+
+      nb = g1 - g0 + 1
+      allocate (grad_a(nb, 3), grad_b(nb, 3), frr(nb, 3), frs(nb, 6), fss(nb, 6), &
+                vsig(nb, 3))
+      do ic = 1, 3
+         grad_a(:, ic) = cache%grad_a(g0:g1, ic)
+         grad_b(:, ic) = cache%grad_b(g0:g1, ic)
+         frr(:, ic) = cache%frr(g0:g1, ic)
+         vsig(:, ic) = cache%vsig(g0:g1, ic)
+      end do
+      do ic = 1, 6
+         frs(:, ic) = cache%frs(g0:g1, ic)
+         fss(:, ic) = cache%fss(g0:g1, ic)
+      end do
+   end subroutine kernel_block_uks_from_cache
 
    subroutine accumulate_xc_matrix(weights, ao, vrho, v, ao_grad, grad_coeff, vtau, &
                                    any_gga, any_mgga)

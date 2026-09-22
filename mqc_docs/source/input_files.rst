@@ -1485,7 +1485,16 @@ reference:
   different energies; anything else is refused by name.
 - ``spin`` (default: ``"singlet"``): ``"singlet"``, ``"triplet"`` or
   ``"both"``. Out of a closed shell the two spins are separate eigenproblems,
-  so ``"both"`` is two solves rather than one.
+  so ``"both"`` is two solves rather than one, merged into one list ordered by
+  energy with each root's spin recorded beside it -- and ``n_states`` then
+  counts roots **per manifold**, so the run reports up to twice that many.
+  **Over an unrestricted reference the key is refused whichever of the three
+  words it names**, and naming none of them is how an unrestricted spectrum
+  is asked for: such a reference is not a spin eigenfunction, so neither are
+  its roots, and labelling them singlet or triplet would be labelling a
+  mixture. Those roots are reported with ``"spin": "unrestricted"`` in the
+  output document -- a fourth word that no deck may write, because it is a
+  statement about what came back rather than a request.
 - ``tolerance`` (default: 1e-6): residual at which a root is accepted.
   **Refused below 1e-8**: the exchange-correlation quadrature underneath
   carries more error than that on any grid a production run uses, so a tighter
@@ -1503,13 +1512,11 @@ reference:
   integrals -- the same trade-off ``keywords.hessian.response_batch`` makes, on
   a different solve.
 
-**What is implemented is the Tamm-Dancoff approximation, singlets, over a
-restricted reference** -- Hartree-Fock or Kohn-Sham, on the CPU backend. Note
-that ``method`` still **defaults to** ``"rpa"``, which is not implemented: a
-deck setting only ``n_states`` is refused by name, and has to say
-``"method": "tda"`` until the full Casida solver lands. ``spin`` likewise
-defaults to the one value that works, so ``"triplet"`` and ``"both"`` are
-refused rather than approximated by the singlet operator.
+Each root comes back with its excitation energy, its spin, the excited
+state's own total energy, its transition dipole and oscillator strength in
+both the length and the velocity gauge, and its leading natural transition
+orbital weight. Restricted and unrestricted references are both supported, as
+are Hartree-Fock and Kohn-Sham up to and including range-separated hybrids.
 
 **Only an unfragmented energy run may ask for a spectrum.** The solve happens
 on the converged orbitals of an SCF, and every driver reaches the same SCF --
@@ -1521,11 +1528,17 @@ rather than computed and discarded. Excited-state gradients are a separate
 piece of work -- a Z-vector solve for the relaxed density, not this solve run
 more often.
 
-A calculation that cannot have these states at all -- an unrestricted
-reference, a correlated method, a density-fitted reference, continuum
-solvation, a hydrogen-capped fragment, a meta-GGA functional, a VV10 term, or
-the cuEST backend -- is refused by name too, rather than answered from an
-operator missing a term.
+A calculation that cannot have these states at all -- MP2 or coupled cluster,
+a density-fitted reference, continuum solvation, a hydrogen-capped fragment, a
+meta-GGA functional, a VV10 term, or the cuEST backend -- is refused by name,
+rather than answered from an operator missing a term.
+
+Two cases are **not** refused and should be: an MCSCF deck and a
+``backend: "terco"`` deck both carry this block through to a driver that never
+reads it, so the run reports its ground state and says nothing about the roots
+it was asked for. That is a defect with a fix in flight, not a design. See
+:doc:`excited_states` for the whole table, for the two amplitude
+normalisations and for the transition-dipole origin.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
