@@ -202,6 +202,24 @@ module mqc_json_output_types
          !! `keywords.fragmentation.level` actually enumerated.
       logical :: has_efmo = .false.
 
+      integer, allocatable :: efmo_pair_fragments(:, :)
+         !! (2, n_pairs), the two fragments of each pair, **numbered from one**
+         !! as the MBE fragment lists are. Atom indices elsewhere in this file
+         !! are 0-based; fragment numbers are not, and these are fragments.
+      real(dp), allocatable :: efmo_pair_distance(:)
+         !! `R_IJ`, the vdW-scaled closest approach that decided the split.
+         !! Unitless, so a reader can see which side of `R_cut` a pair fell.
+      logical, allocatable :: efmo_pair_qm(:)
+         !! True where a dimer SCF ran, false where four effective-fragment
+         !! terms stood in for one.
+      real(dp), allocatable :: efmo_pair_energy(:)
+         !! What each pair contributed to the total, in Hartree. This is the
+         !! interaction map the analysis wants; the aggregate sums beside it
+         !! say only what the halves came to.
+      real(dp), allocatable :: efmo_pair_terms(:, :)
+         !! (4, n_pairs): electrostatics, dispersion, exchange repulsion and
+         !! charge transfer. Meaningful only where `efmo_pair_qm` is false.
+
    contains
       procedure :: destroy => json_output_data_destroy
       procedure :: reset => json_output_data_reset
@@ -244,6 +262,11 @@ contains
       if (allocated(this%pie_energies)) deallocate (this%pie_energies)
       if (allocated(this%sapt_terms)) deallocate (this%sapt_terms)
       if (allocated(this%efmo_terms)) deallocate (this%efmo_terms)
+      if (allocated(this%efmo_pair_fragments)) deallocate (this%efmo_pair_fragments)
+      if (allocated(this%efmo_pair_distance)) deallocate (this%efmo_pair_distance)
+      if (allocated(this%efmo_pair_qm)) deallocate (this%efmo_pair_qm)
+      if (allocated(this%efmo_pair_energy)) deallocate (this%efmo_pair_energy)
+      if (allocated(this%efmo_pair_terms)) deallocate (this%efmo_pair_terms)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
