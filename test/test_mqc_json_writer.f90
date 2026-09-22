@@ -21,6 +21,7 @@ module test_mqc_json_writer
    use mqc_json_writer, only: write_json_output
    use mqc_io_helpers, only: set_output_json_filename, get_output_json_filename
    use json_module, only: json_file
+   use mqc_program_limits, only: N_EFMO_TERMS
    use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
                                STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN
    implicit none
@@ -42,6 +43,8 @@ contains
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
                   new_unittest("excited_states_round_trip", test_excited_states), &
+                  new_unittest("efmo_pair_map_round_trips_strongest_first", &
+                               test_efmo_pairs), &
                   new_unittest("unrestricted_roots_carry_their_own_spin_word", &
                                test_unrestricted_spin) &
                   ]
@@ -521,6 +524,96 @@ contains
       call json%destroy()
       call data%destroy()
    end subroutine test_excited_states
+
+   subroutine test_efmo_pairs(error)
+      !! The per-pair interaction map, written and read back
+      !!
+      !! Three things exist only in the writer and so are checked rather than
+      !! assumed: the ordering, which is by descending magnitude and not the
+      !! order the pairs arrive in; the treatment word, which is produced from
+      !! a logical; and the suppression of the four named terms on a quantum
+      !! pair, which has no such decomposition to report.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      real(dp) :: value
+      character(len=:), allocatable :: text
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = -228.1_dp
+      data%has_energy = .true.
+      allocate (data%efmo_terms(N_EFMO_TERMS), source=0.0_dp)
+      data%has_efmo = .true.
+
+      ! Deliberately not in magnitude order, and with the largest last, so a
+      ! writer that simply echoed the array would fail the first check.
+      data%efmo_pair_fragments = reshape([1, 2, 1, 3, 2, 3], [2, 3])
+      data%efmo_pair_distance = [0.91_dp, 2.60_dp, 1.75_dp]
+      data%efmo_pair_qm = [.true., .false., .false.]
+      data%efmo_pair_energy = [-0.0012_dp, -0.0004_dp, -0.0250_dp]
+      data%efmo_pair_terms = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, &
+                                      -0.0003_dp, -0.0001_dp, 0.0002_dp, -0.0002_dp, &
+                                      -0.0200_dp, -0.0030_dp, 0.0010_dp, -0.0030_dp], &
+                                     [4, 3])
+
+      call written_document(data, json, "jw_efmo_pairs.json")
+
+      ! Strongest first: the 2-3 pair, written third, has to come back first.
+      call json%get("jw_efmo_pairs.efmo.pairs(1).interaction_energy", value, found)
+      call check(error, found, "the first pair object is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.0250_dp, thr=1.0e-12_dp, &
+                 message="the pairs did not come back strongest first")
+      if (allocated(error)) return
+
+      call json%get("jw_efmo_pairs.efmo.pairs(1).fragments(1)", value, found)
+      call check(error, found, "the fragment list is missing")
+      if (allocated(error)) return
+      call check(error, nint(value) == 2, "the fragment numbers do not follow the sort")
+      if (allocated(error)) return
+
+      call json%get("jw_efmo_pairs.efmo.pairs(1).treatment", text, found)
+      call check(error, found, "the treatment word is missing")
+      if (allocated(error)) return
+      call check(error, text == "classical", "a far pair is not called classical")
+      if (allocated(error)) return
+
+      call json%get("jw_efmo_pairs.efmo.pairs(1).electrostatics", value, found)
+      call check(error, found, "a far pair did not carry its named terms")
+      if (allocated(error)) return
+      call check(error, value, -0.0200_dp, thr=1.0e-12_dp, &
+                 message="the electrostatics term came back changed")
+      if (allocated(error)) return
+
+      ! By magnitude the order is 2-3, then the quantum 1-2, then 1-3, so the
+      ! quantum pair lands in the middle rather than where it was written.
+      call json%get("jw_efmo_pairs.efmo.pairs(2).treatment", text, found)
+      call check(error, found, "the middle pair object is missing")
+      if (allocated(error)) return
+      call check(error, text == "quantum", "the dimer-SCF pair is not called quantum")
+      if (allocated(error)) return
+
+      call json%get("jw_efmo_pairs.efmo.pairs(2).electrostatics", value, found)
+      call check(error,.not. found, &
+                 "a quantum pair reported an electrostatics term it does not have")
+      if (allocated(error)) return
+
+      ! And its own distance travelled with it through the sort.
+      call json%get("jw_efmo_pairs.efmo.pairs(2).distance", value, found)
+      call check(error, found, "the distance is missing")
+      if (allocated(error)) return
+      call check(error, value, 0.91_dp, thr=1.0e-12_dp, &
+                 message="the distance did not travel with its own pair")
+      if (allocated(error)) return
+
+      call json%get("jw_efmo_pairs.efmo.pairs(3).interaction_energy", value, found)
+      call check(error, found, "the last pair object is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.0004_dp, thr=1.0e-12_dp, &
+                 message="the weakest pair is not last")
+   end subroutine test_efmo_pairs
 
    subroutine test_unrestricted_spin(error)
       !! `STATE_SPIN_UNRESTRICTED` comes back as the word, and so does the gap

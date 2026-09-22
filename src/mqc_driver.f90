@@ -1354,6 +1354,9 @@ contains
       type(scf_numerics_t) :: efmo_scf
       integer :: correlation
       integer :: i, n_frag, n_qm, n_efp, n_groups, level
+      integer, allocatable :: pair_fragments(:, :)
+      real(dp), allocatable :: pair_distance(:), pair_energy(:), pair_terms(:, :)
+      logical, allocatable :: pair_qm(:)
 
       integer, parameter :: EFMO_DEFAULT_LEVEL = 2
          !! What `keywords.fragmentation.level` means when the deck omits it.
@@ -1503,6 +1506,9 @@ contains
                         corr_aux_basis=trim(config%method_config%scf%aux_basis_set), &
                         freeze_core=config%method_config%corr%freeze_core, &
                         n_frozen_core=config%method_config%corr%n_frozen_core, &
+                        pair_fragments=pair_fragments, pair_distance=pair_distance, &
+                        pair_qm=pair_qm, pair_energy=pair_energy, &
+                        pair_terms=pair_terms, &
                         comm=comm)
       if (err%has_error()) then
          call refuse(result_out, "EFMO: "//err%get_message())
@@ -1530,6 +1536,17 @@ contains
          json_data%efmo_qm_dimers = n_qm
          json_data%efmo_efp_dimers = n_efp
          json_data%efmo_qm_groups = n_groups
+         ! The per-pair map, which the aggregate sums above cannot stand in
+         ! for: two systems with the same totals can have entirely different
+         ! pairs carrying them, and it is the pairs an interaction analysis
+         ! reads. Moved rather than copied -- nothing here needs them again.
+         if (allocated(pair_energy)) then
+            call move_alloc(pair_fragments, json_data%efmo_pair_fragments)
+            call move_alloc(pair_distance, json_data%efmo_pair_distance)
+            call move_alloc(pair_qm, json_data%efmo_pair_qm)
+            call move_alloc(pair_energy, json_data%efmo_pair_energy)
+            call move_alloc(pair_terms, json_data%efmo_pair_terms)
+         end if
          json_data%has_efmo = .true.
          json_data%fragment_breakdown = config%fragment_breakdown
          call write_json_output(json_data)
