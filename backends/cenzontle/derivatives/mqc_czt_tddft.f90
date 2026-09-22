@@ -816,6 +816,12 @@ contains
          core%reference = reference
          core%k_scale = xc%exx_fraction
          if (xc%range_separated) then
+            ! TODO(mqc): the CAM-B3LYP RPA deck, cpu_water_cc-pvdz_camb3lyp_rpa_singlet,
+            ! failed once on CI and then passed on a re-run of the identical commit. It is
+            ! not a timeout -- the surrounding decks are logged 41 s apart -- and it does not
+            ! reproduce locally. That deck is the only range-separated one in the TDDFT set,
+            ! so an intermittent red build there implicates the attenuated second pass this
+            ! branch turns on, and no other deck would catch it.
             core%rs_k_lr = xc%rs_k_lr
             core%rs_omega = xc%rs_omega
          end if
