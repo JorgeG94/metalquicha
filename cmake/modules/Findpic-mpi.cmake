@@ -2,7 +2,13 @@
 # of its own to translate.
 include("${CMAKE_CURRENT_LIST_DIR}/MqcFetch.cmake")
 
-set(_rev "v0.6.5")
+# TEMPORARY: the branch, not a release. v0.6.5 predates the 1-D `irecv` fix
+# (pic-mpi#26) and the removal of the distributed-arrays module (pic-mpi#27),
+# and this build exists to put both in front of this project's CI before they
+# are tagged. Put a `vX.Y.Z` back the moment there is one -- `MqcFetch.cmake`
+# documents GIT_TAG as a tag or a SHA precisely so a build is reproducible, and
+# a branch is not.
+set(_rev "main")
 
 # The first pic-mpi release carrying the single-rank backend, i.e. the first one
 # that understands PIC_ENABLE_MPI.

@@ -28,7 +28,9 @@ source-form = "free"
 
 [dependencies]
 pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.6.1"}
-pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.6.1"}
+# TEMPORARY, with cmake/modules/Findpic-mpi.cmake: the branch, to reach the
+# 1-D irecv fix and the darrays removal before they are tagged.
+pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "main"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", tag = "v0.3.2"}
 tblite = { git = "https://github.com/tblite/tblite", tag = "v0.6.0"}
 
