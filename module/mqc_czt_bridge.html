@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for modules and submodules.">306 statements</a>
+                 title=" 1.1% of total for modules and submodules.">314 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -198,10 +198,10 @@ refusal can name the build option.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1487,7 +1487,7 @@ whatever libxc itself was configured to do.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~14"></span>
+              <span class="anchor" id="variable-name~31"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1502,7 +1502,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~81"></span>
+              <span class="anchor" id="variable-error~110"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1528,151 +1528,6 @@ whatever libxc itself was configured to do.</p>
     <div class="card-body">
           
   <p>No-op stand-in: atomic charges need the CPU integral backend</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atomic_numbers~2"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atomic_numbers</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-element_symbols"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>element_symbols</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-coordinates~2"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>coordinates</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-basis_name~5"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>basis_name</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-scheme~2"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>scheme</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-total_charge"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>total_charge</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-charges~2"></span>
-              real(kind=dp),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>charges</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-error~84"></span>
-              type(<a href='../type/error_t.html'>error_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>error</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-run_czt_efmo"></span> <h3>public  subroutine <a href='../proc/run_czt_efmo.html'>run_czt_efmo</a>(atomic_numbers, element_symbols, coordinates, owner, fragment_charges, basis_name, rcut, level, charge_transfer, induction_damping, scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, n_qm_groups, error, verbose, aux_basis, vdwscl, quadrupole_blocks, dynamic_tol, dynamic_maxiter, response, allow_crap_response, response_batch, correlation, corr_aux_basis, freeze_core, n_frozen_core, comm)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>No-op stand-in: EFMO needs the CPU integral backend</p><a href="../proc/run_czt_efmo.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1717,7 +1572,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~6"></span>
+              <span class="anchor" id="variable-coordinates~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1732,7 +1587,152 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~10"></span>
+              <span class="anchor" id="variable-basis_name~7"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basis_name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scheme~6"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scheme</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_charge~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_charge</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-charges~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>charges</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~113"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-run_czt_efmo"></span> <h3>public  subroutine <a href='../proc/run_czt_efmo.html'>run_czt_efmo</a>(atomic_numbers, element_symbols, coordinates, owner, fragment_charges, basis_name, rcut, level, charge_transfer, induction_damping, scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, n_qm_groups, error, verbose, aux_basis, vdwscl, quadrupole_blocks, dynamic_tol, dynamic_maxiter, response, allow_crap_response, response_batch, correlation, corr_aux_basis, freeze_core, n_frozen_core, pair_fragments, pair_distance, pair_qm, pair_energy, pair_terms, comm)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>No-op stand-in: EFMO needs the CPU integral backend</p><a href="../proc/run_czt_efmo.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atomic_numbers~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atomic_numbers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_symbols~7"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>element_symbols</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coordinates~17"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coordinates</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-owner~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1747,7 +1747,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges~2"></span>
+              <span class="anchor" id="variable-fragment_charges~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1762,7 +1762,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~8"></span>
+              <span class="anchor" id="variable-basis_name~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1792,7 +1792,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~9"></span>
+              <span class="anchor" id="variable-level~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1838,7 +1838,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive~2"></span>
+              <span class="anchor" id="variable-scf_drive~3"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1853,7 +1853,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter~2"></span>
+              <span class="anchor" id="variable-scf_max_iter~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1868,7 +1868,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol~2"></span>
+              <span class="anchor" id="variable-scf_energy_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1883,7 +1883,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol~2"></span>
+              <span class="anchor" id="variable-scf_density_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1913,7 +1913,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~2"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1928,7 +1928,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~9"></span>
+              <span class="anchor" id="variable-energy~18"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1943,7 +1943,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~9"></span>
+              <span class="anchor" id="variable-terms~15"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2003,7 +2003,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~88"></span>
+              <span class="anchor" id="variable-error~117"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2018,7 +2018,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~5"></span>
+              <span class="anchor" id="variable-verbose~9"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2215,6 +2215,82 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-pair_fragments"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_fragments</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_distance"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_distance</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_qm"></span>
+              logical,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_qm</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_energy"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_energy</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_terms"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_terms</strong>(:,:)</td>
+            <td>
+<p>Left unallocated, as the rest of this routine&rsquo;s results are left
+zero: there is no backend here to have produced any pairs.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-comm~9"></span>
               type(comm_t),
             </td>
@@ -2271,7 +2347,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_sizes"></span>
+              <span class="anchor" id="variable-fragment_sizes~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2286,7 +2362,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_atoms"></span>
+              <span class="anchor" id="variable-fragment_atoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2301,7 +2377,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~4"></span>
+              <span class="anchor" id="variable-coordinates~15"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2316,7 +2392,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~8"></span>
+              <span class="anchor" id="variable-terms~14"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2331,7 +2407,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~86"></span>
+              <span class="anchor" id="variable-error~115"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2371,7 +2447,7 @@ communicator. Every rank gets the same total back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~4"></span>
+              <span class="anchor" id="variable-atomic_numbers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2386,7 +2462,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~3"></span>
+              <span class="anchor" id="variable-element_symbols~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2401,7 +2477,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~5"></span>
+              <span class="anchor" id="variable-coordinates~16"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2416,7 +2492,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~9"></span>
+              <span class="anchor" id="variable-owner~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2431,7 +2507,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~7"></span>
+              <span class="anchor" id="variable-basis_name~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2446,7 +2522,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp"></span>
+              <span class="anchor" id="variable-esp~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2461,7 +2537,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion"></span>
+              <span class="anchor" id="variable-expansion~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2476,7 +2552,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field"></span>
+              <span class="anchor" id="variable-far_field~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2491,7 +2567,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc"></span>
+              <span class="anchor" id="variable-resppc~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2506,7 +2582,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~8"></span>
+              <span class="anchor" id="variable-level~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2521,7 +2597,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer"></span>
+              <span class="anchor" id="variable-max_outer~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2536,7 +2612,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol"></span>
+              <span class="anchor" id="variable-outer_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2551,7 +2627,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter"></span>
+              <span class="anchor" id="variable-scf_max_iter~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2566,7 +2642,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol"></span>
+              <span class="anchor" id="variable-scf_energy_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2581,7 +2657,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol"></span>
+              <span class="anchor" id="variable-scf_density_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2596,7 +2672,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive"></span>
+              <span class="anchor" id="variable-scf_drive~2"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2611,7 +2687,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~2"></span>
+              <span class="anchor" id="variable-bond_breaking~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2626,7 +2702,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~2"></span>
+              <span class="anchor" id="variable-cap_scale~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2641,7 +2717,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~8"></span>
+              <span class="anchor" id="variable-energy~17"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2656,7 +2732,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~87"></span>
+              <span class="anchor" id="variable-error~116"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2712,7 +2788,7 @@ Absent means one rank does all of it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~5"></span>
+              <span class="anchor" id="variable-settings~7"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2727,7 +2803,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~29"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2742,7 +2818,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~27"></span>
+              <span class="anchor" id="variable-result~32"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2757,7 +2833,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~2"></span>
+              <span class="anchor" id="variable-want_gradient~4"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2772,7 +2848,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_hessian"></span>
+              <span class="anchor" id="variable-want_hessian~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2812,7 +2888,7 @@ Absent means one rank does all of it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~6"></span>
+              <span class="anchor" id="variable-atomic_numbers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2827,7 +2903,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~5"></span>
+              <span class="anchor" id="variable-element_symbols~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2842,7 +2918,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~7"></span>
+              <span class="anchor" id="variable-coordinates~18"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2857,7 +2933,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~9"></span>
+              <span class="anchor" id="variable-basis_name~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2872,7 +2948,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~15"></span>
+              <span class="anchor" id="variable-name~32"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2887,7 +2963,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~13"></span>
+              <span class="anchor" id="variable-path~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2902,7 +2978,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~89"></span>
+              <span class="anchor" id="variable-error~118"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2917,7 +2993,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~5"></span>
+              <span class="anchor" id="variable-charge~8"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2932,7 +3008,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~6"></span>
+              <span class="anchor" id="variable-verbose~10"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2962,7 +3038,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~3"></span>
+              <span class="anchor" id="variable-guess~8"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -2977,7 +3053,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol"></span>
+              <span class="anchor" id="variable-energy_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -2992,7 +3068,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol"></span>
+              <span class="anchor" id="variable-density_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -3007,7 +3083,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grad_tol"></span>
+              <span class="anchor" id="variable-grad_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -3182,7 +3258,7 @@ Absent means one rank does all of it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~3"></span>
+              <span class="anchor" id="variable-atomic_numbers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3197,7 +3273,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~2"></span>
+              <span class="anchor" id="variable-element_symbols~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3212,7 +3288,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~3"></span>
+              <span class="anchor" id="variable-coordinates~14"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3227,7 +3303,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~6"></span>
+              <span class="anchor" id="variable-basis_name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3242,7 +3318,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_charge~2"></span>
+              <span class="anchor" id="variable-total_charge~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3257,7 +3333,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-orders~5"></span>
+              <span class="anchor" id="variable-orders~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -3287,7 +3363,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~85"></span>
+              <span class="anchor" id="variable-error~114"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3327,7 +3403,7 @@ Absent means one rank does all of it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~6"></span>
+              <span class="anchor" id="variable-settings~8"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3342,7 +3418,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~30"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3357,7 +3433,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~28"></span>
+              <span class="anchor" id="variable-result~33"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3372,7 +3448,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~3"></span>
+              <span class="anchor" id="variable-want_gradient~5"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3412,7 +3488,7 @@ Absent means one rank does all of it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~7"></span>
+              <span class="anchor" id="variable-atomic_numbers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3427,7 +3503,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~6"></span>
+              <span class="anchor" id="variable-element_symbols~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3442,7 +3518,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~8"></span>
+              <span class="anchor" id="variable-coordinates~19"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3457,7 +3533,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~10"></span>
+              <span class="anchor" id="variable-basis_name~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3502,7 +3578,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~6"></span>
+              <span class="anchor" id="variable-charge~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3517,7 +3593,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~10"></span>
+              <span class="anchor" id="variable-energy~19"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -3532,7 +3608,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~90"></span>
+              <span class="anchor" id="variable-error~119"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3547,7 +3623,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~7"></span>
+              <span class="anchor" id="variable-verbose~11"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3562,7 +3638,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~2"></span>
+              <span class="anchor" id="variable-energy_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -3577,7 +3653,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~2"></span>
+              <span class="anchor" id="variable-density_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -3592,7 +3668,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -3782,7 +3858,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~3"></span>
+              <span class="anchor" id="variable-basis_name~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3827,7 +3903,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~6"></span>
+              <span class="anchor" id="variable-terms~12"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -3842,7 +3918,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~82"></span>
+              <span class="anchor" id="variable-error~111"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3972,7 +4048,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~4"></span>
+              <span class="anchor" id="variable-basis_name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4017,7 +4093,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~7"></span>
+              <span class="anchor" id="variable-terms~13"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -4032,7 +4108,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~83"></span>
+              <span class="anchor" id="variable-error~112"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4075,7 +4151,7 @@ Absent means one rank does all of it.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 15:27 +0000             </p>
+ on 2026-09-23 18:40 +0000             </p>
           </div>
         </div>
         <br>

@@ -247,13 +247,13 @@ general use: nothing outside <code>src/interface</code> should hold one.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_capi_status.html'>mqc_capi_status</a></li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -931,7 +931,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_order_scheme~4"></span>
+              <span class="anchor" id="variable-bond_order_scheme~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1025,7 +1025,7 @@ well-defined number without it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~5"></span>
+              <span class="anchor" id="variable-charges~7"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1044,7 +1044,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~6"></span>
+              <span class="anchor" id="variable-geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public</td>
@@ -1108,7 +1108,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~12"></span>
+              <span class="anchor" id="variable-tolerance~14"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1213,7 +1213,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~14"></span>
+              <span class="anchor" id="variable-tolerance~16"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1426,7 +1426,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~13"></span>
+              <span class="anchor" id="variable-tolerance~15"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1501,7 +1501,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i~2"></span>
+              <span class="anchor" id="variable-atom_i~5"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1516,7 +1516,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_j~2"></span>
+              <span class="anchor" id="variable-atom_j~5"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1531,7 +1531,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-order~6"></span>
+              <span class="anchor" id="variable-order~8"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1546,7 +1546,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_broken"></span>
+              <span class="anchor" id="variable-is_broken~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1696,7 +1696,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~27"></span>
+              <span class="anchor" id="variable-n_atoms~51"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1711,7 +1711,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~17"></span>
+              <span class="anchor" id="variable-atomic_numbers~20"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1726,7 +1726,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~15"></span>
+              <span class="anchor" id="variable-coordinates~23"></span>
               real(kind=c_double),
             </td>
 <td>intent(in)</td>
@@ -1741,7 +1741,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~8"></span>
+              <span class="anchor" id="variable-charge~14"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1756,7 +1756,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~5"></span>
+              <span class="anchor" id="variable-multiplicity~10"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1816,7 +1816,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~3"></span>
+              <span class="anchor" id="variable-n_monomers~12"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1861,7 +1861,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms~2"></span>
+              <span class="anchor" id="variable-atoms~3"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1876,7 +1876,7 @@ rather than an xTB single point.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~6"></span>
+              <span class="anchor" id="variable-charges~8"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -2036,7 +2036,7 @@ rather than an xTB single point.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys"></span>
+              <span class="anchor" id="variable-sys~2"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2079,7 +2079,7 @@ rather than an xTB single point.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 15:27 +0000             </p>
+ on 2026-09-23 18:40 +0000             </p>
           </div>
         </div>
         <br>

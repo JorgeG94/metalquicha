@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">62 statements</a>
+                 title=" 0.3% of total for procedures.">70 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, fragment_charges, basis_name, rcut, level, charge_transfer, induction_damping, scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, n_qm_groups, error, verbose, aux_basis, vdwscl, quadrupole_blocks, dynamic_tol, dynamic_maxiter, response, allow_crap_response, response_batch, correlation, corr_aux_basis, freeze_core, n_frozen_core, comm)  
+    <h2>public  subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, fragment_charges, basis_name, rcut, level, charge_transfer, induction_damping, scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, n_qm_groups, error, verbose, aux_basis, vdwscl, quadrupole_blocks, dynamic_tol, dynamic_maxiter, response, allow_crap_response, response_batch, correlation, corr_aux_basis, freeze_core, n_frozen_core, pair_fragments, pair_distance, pair_qm, pair_energy, pair_terms, comm)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -169,11 +169,11 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -373,7 +373,7 @@ one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~5"></span>
+              <span class="anchor" id="variable-atomic_numbers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -388,7 +388,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~4"></span>
+              <span class="anchor" id="variable-element_symbols~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -403,7 +403,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~6"></span>
+              <span class="anchor" id="variable-coordinates~17"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -418,7 +418,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~10"></span>
+              <span class="anchor" id="variable-owner~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -433,7 +433,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges~2"></span>
+              <span class="anchor" id="variable-fragment_charges~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -448,7 +448,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~8"></span>
+              <span class="anchor" id="variable-basis_name~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -478,7 +478,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~9"></span>
+              <span class="anchor" id="variable-level~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -524,7 +524,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive~2"></span>
+              <span class="anchor" id="variable-scf_drive~3"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -539,7 +539,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter~2"></span>
+              <span class="anchor" id="variable-scf_max_iter~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -554,7 +554,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol~2"></span>
+              <span class="anchor" id="variable-scf_energy_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -569,7 +569,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol~2"></span>
+              <span class="anchor" id="variable-scf_density_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -599,7 +599,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~2"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -614,7 +614,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~9"></span>
+              <span class="anchor" id="variable-energy~18"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -629,7 +629,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~9"></span>
+              <span class="anchor" id="variable-terms~15"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -689,7 +689,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~88"></span>
+              <span class="anchor" id="variable-error~117"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -704,7 +704,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~5"></span>
+              <span class="anchor" id="variable-verbose~9"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -897,6 +897,82 @@ Absent is none, which is the Phase 3 energy exactly.</p>
             <td><strong>n_frozen_core</strong></td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_fragments"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_fragments</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_distance"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_distance</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_qm"></span>
+              logical,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_qm</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_energy"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_energy</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_terms"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_terms</strong>(:,:)</td>
+            <td>
+                <p>Left unallocated, as the rest of this routine&rsquo;s results are left
+zero: there is no backend here to have produced any pairs.</p>
             </td>
         </tr>
         <tr>
@@ -1460,7 +1536,8 @@ large graphs.</div>
 <span class="w">                           </span><span class="n">dynamic_tol</span><span class="p">,</span><span class="w"> </span><span class="n">dynamic_maxiter</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">allow_crap_response</span><span class="p">,</span><span class="w"> </span><span class="n">response_batch</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                           </span><span class="n">correlation</span><span class="p">,</span><span class="w"> </span><span class="n">corr_aux_basis</span><span class="p">,</span><span class="w"> </span><span class="n">freeze_core</span><span class="p">,</span><span class="w"> </span><span class="n">n_frozen_core</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="n">comm</span><span class="p">)</span>
+<span class="w">                           </span><span class="n">pair_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">pair_distance</span><span class="p">,</span><span class="w"> </span><span class="n">pair_qm</span><span class="p">,</span><span class="w"> </span><span class="n">pair_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">pair_terms</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! No-op stand-in: EFMO needs the CPU integral backend</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from</span>
@@ -1508,6 +1585,13 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">freeze_core</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_frozen_core</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_fragments</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_distance</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_qm</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_energy</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_terms</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! Left unallocated, as the rest of this routine's results are left</span>
+<span class="w">         </span><span class="c">!! zero: there is no backend here to have produced any pairs.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">         </span><span class="c">!! Present means spread the monomers and the quantum dimers over this</span>
 <span class="w">         </span><span class="c">!! communicator. Every rank gets the same total back.</span>
@@ -1535,6 +1619,9 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">allow_crap_response</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">response_batch</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">correlation</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">freeze_core</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">corr_aux_basis</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">n_frozen_core</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_fragments</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_distance</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_qm</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_energy</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_terms</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_czt_efmo</span>
 </pre></div>
@@ -1560,7 +1647,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 15:27 +0000             </p>
+ on 2026-09-23 18:40 +0000             </p>
           </div>
         </div>
         <br>
