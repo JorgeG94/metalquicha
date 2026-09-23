@@ -180,7 +180,10 @@ charges the next pass needs, all of them small.
 The answer does not depend on the rank count. That is asserted rather than
 assumed: ``validation/check_fmo_mpi`` runs each method with a communicator and
 again without one and compares, and they agree to about 1e-12 on one, two, three
-and four ranks.
+and four ranks. It runs the three embeddings on a water tetramer and, since a
+detached bond makes the exchanged density wider than the fragment's own basis,
+propane split at both of its carbon-carbon bonds with point charges on top --
+that case is bit-identical on one, two and four ranks.
 
 Example decks are in ``validation/inputs/cpu/mqc/fmo/``.
 
@@ -220,12 +223,34 @@ pair, one atom is the *detached* end and one the *attached* end:
 ============================  =========================  =========================
                               fragment of the detached   fragment of the attached
 ============================  =========================  =========================
-nucleus                       owns it                    not owned
+nucleus                       ``Z - 1`` of it            ``+1`` of it, on a ghost
 its basis functions           owns them                  carries them, ghosted
 the bond's electron pair      none of it                 all of it
 the hybrid on that atom       frozen empty               frozen occupied
 electron count                ``sum(Z) - 1``             ``sum(Z) + 1``
+net charge                    ``0``                      ``0``
 ============================  =========================  =========================
+
+The nucleus is split because the electron pair is. One unit of charge crosses
+the bond with the pair, so both fragments come out neutral closed shells and
+the two halves add back to ``Z`` inside any n-mer holding the whole bond. That
+is GAMESS's convention, and it is what a fragment *potential* needs: a fragment
+carrying a unit charge puts a monopole term of order ``1/R`` on every
+adjacent-residue pair of a protein.
+
+**It happens only where there is a field**, because a split nucleus is only
+defined when something supplies the other half. With ``embedding = "ptc"`` the
+fragment across the bond supplies it -- it holds the ``+1`` and the bond pair,
+and the group on this side feels both -- so the split is free, and the table
+above is what runs. With ``embedding = "none"`` nothing supplies it, so the
+nucleus stays whole with its owner and the two sides come out at about ``+1``
+and ``-1``: the electron still moves, only the proton does not. Solving a
+methyl group around a nucleus short by one proton is a worse model than the
+cation, and the table under `What it costs`_ says by how much.
+
+GAMESS splits unconditionally and that does not settle the question, because
+GAMESS never runs this without a field at all -- its field-free reference state
+is built with methyl caps, which is a third construction again.
 
 Frozen means the Fock matrix is forced block diagonal in a basis holding those
 orbitals: the couplings between them and the variational space are zeroed and the
@@ -239,6 +264,57 @@ dimer carries no ghost, no frozen orbital and no electron shift there, while
 still being cut against everything outside itself. This is worked out from each
 group's own members every time.
 
+A detached bond under a field
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A detached atom is described by **two** fragments: its owner holds ``Z-1`` of
+the nucleus with the hybrid there frozen empty, and the fragment across the bond
+holds the same functions as a ghost carrying ``+1`` with the bond pair in that
+hybrid. Three things follow, and all three are what ``embedding = "ptc"`` needed
+before it could be allowed.
+
+**Its population arrives twice, and the two shares are added.** Summing is the
+only apportionment that leaves the atomic charges adding to the molecular charge,
+and those charges are what the field is built from -- keep one share and every
+fragment is embedded in a system carrying one elementary charge per cut that the
+molecule does not have. Giving the whole atom to one side also conserves charge
+but has to choose a side, and a Mulliken population is already an apportionment
+of that kind.
+
+**A group does not feel its own share.** The field is by definition the rest of
+the system, so a group's members' contributions to a shared atom are taken back
+out. What is left is not zero: the other fragment's share is outside and the
+borrowed bond pair genuinely feels it. Dropping the whole atom from the field
+instead -- the cheaper fix -- would take that term out too and leave every group
+short by roughly an elementary charge per cut.
+
+**Its density block travels with it.** A monomer density is kept at the size its
+SCF produced, ghost block and all, and the members of an n-mer are laid out atom
+by atom rather than as contiguous corners, because inside a group holding both
+ends of a cut the borrowed block belongs in the other member's run.
+
+**And the split nucleus makes no difference to any of this.** The charge a
+group feels at an atom is ``q_all - own_q``, its own share taken back out, so a
+unit of charge moved out of a group's own nucleus and into the field it sees
+arrives at the same point with the same magnitude: the total one-electron
+potential there is ``-(Z - pop_outside)/r`` either way. ``q_all`` does not move
+either, because both Mulliken shares of a detached atom are summed into it. And
+nuclear repulsion with per-atom charges that add up over the fragments is
+pairwise-additive *in the fragments*, so an expansion reproduces it exactly at
+level two whatever the assignment. **The embedded energy is therefore invariant
+to the charge convention, exactly**, and measured that way -- propane's FMO(2)
+error is 0.48908757203956554 with whole nuclei and 0.48908757203680864 with
+split ones, which is convergence noise. The two runs are in the unit suite side
+by side, as ``the_charge_convention_does_not_move_an_embedded_total``.
+
+So the reason to split the nucleus is not the FMO energy at all. It is that a
+fragment *potential* -- an EFMO far pair, an effective fragment -- is an
+expansion about the fragment's own charge distribution, with no own-share
+subtraction anywhere to undo a net charge. A unit charge per fragment is then a
+monopole term of order ``1/R`` on every adjacent-residue pair of a protein,
+about ninety kcal/mol where the interaction of interest is single digits, and
+it lands in the electrostatics column.
+
 What it costs
 ~~~~~~~~~~~~~
 
@@ -251,6 +327,8 @@ Expansion                          Error, Hartree
 Two fragments, one bond, MBE(2)    exact
 Three fragments, MBE(3)            1.3e-13
 Three fragments, MBE(2)            0.180
+Three fragments, FMO(3), ``ptc``   1.3e-13
+Three fragments, FMO(2), ``ptc``   0.489
 =================================  ==================
 
 The middle row is the statement worth reading. An expansion carried to the
@@ -260,19 +338,42 @@ group -- three monomers with boundaries, three dimers, and one of those dimers
 the pair of end fragments, which are not bonded to each other and whose group
 carries a ghost of a carbon belonging to neither.
 
-The last row is the three-body term, and across covalent bonds it is large.
-Expect that: the same quantity is a rounding error for a water cluster and
+The three-body rows are the three-body term, and across covalent bonds it is
+large. Expect that: the same quantity is a rounding error for a water cluster and
 110 kcal/mol here. Truncating at pairs is not advisable across detached bonds.
+
+**And the point charges make the truncated expansion worse, not better** --
+0.489 Hartree against 0.180 with no embedding at all, where on a water cluster
+the embedding is worth a factor of twenty. That is not a fault in the
+bookkeeping, and it is not the fragments' charges either, which was the
+standing explanation here until the two conventions were run side by side.
+``embedding = "ptc"`` makes *every* fragment distant, including the one on the
+other end of the cut bond, and a point-charge field is at its worst at bonding
+contact, which is why FMO keeps an exact term inside ``resppc`` in the first
+place. That is the whole of it. None of these rows moves with the charge
+convention except the unembedded one, and the full-order rows land on the
+supermolecule to 1e-13 regardless.
+
+The unembedded row is why the split is not unconditional. Splitting the nucleus
+there takes it from 0.180 to 0.304 Hartree, and on the same molecule numbered so
+that one carbon is the detached end of *both* bonds -- and so presents ``Z-2``
+-- from 0.125 to 1.549. With no field there is nothing holding the other half,
+so each monomer is solved around a nucleus short by a proton. The embedded rows
+do not move at all. So the convention is chosen per embedding, and nothing is
+given up by doing so.
 
 Restrictions
 ~~~~~~~~~~~~
 
-``bond_breaking = "afo"`` requires ``embedding = "none"``. A frozen orbital and
-an embedding field both describe the bond region -- the field already supplies
-the neighbour's nucleus and density where the frozen orbital supplies the bond --
-so the detached atom's share has to be removed from the field before the two can
-be used together. That is clean for point charges and not defined for an exact
-density, and neither is built yet. Asking for both is refused with that reason.
+``bond_breaking = "afo"`` runs with ``embedding = "none"`` and with
+``embedding = "ptc"``. It is refused with ``embedding = "exact"``. A frozen
+orbital and an embedding field both describe the bond region, so the detached
+atom's share has to come out of the field before the two can be used together.
+With point charges that share is one number per atom -- the population that put
+it there -- and is removed exactly. With an exact density the neighbour term is
+a Coulomb contraction over a whole density matrix and has no per-atom part to
+remove; inventing one would be the point-charge approximation smuggled into the
+path defined by not making it.
 
 Refused by name, rather than answered badly:
 
