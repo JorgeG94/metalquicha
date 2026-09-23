@@ -690,8 +690,29 @@ rest available.
 
 A ``Term`` carries ``monomers`` (1-based), ``energy``, ``delta`` -- the n-body
 contribution, which is what a threshold is on -- ``distance``, ``converged``,
-and ``homo``/``lumo``. ``converged`` is a tri-state: ``None`` means the method
-did not report, which is not a claim that it converged.
+``homo``/``lumo``, and ``connected``. ``converged`` is a tri-state: ``None``
+means the method did not report, which is not a claim that it converged.
+
+``connected`` is a tri-state too, and it is the one to check before quoting a
+pair energy. ``True`` means the two monomers are joined by a covalent bond the
+partition cut, so ``delta`` carries the energy of re-forming that bond and **is
+not an interaction energy** -- on a peptide fragmented by residue those rows are
+three orders of magnitude larger than the real interactions beside them.
+``False`` means an ordinary two-body term. ``None`` means the question does not
+arise: every level but two, where the many-body subtraction removes the bond
+along with the pair terms.
+
+One fragment's interactions -- the ligand's, say, as fragment 7 -- are the
+unjoined two-body terms that contain it:
+
+.. code-block:: python
+
+   ligand = [t for t in result.breakdown()
+             if len(t.monomers) == 2 and 7 in t.monomers and not t.connected]
+
+``breakdown()`` returns the terms in the order the sidecar holds them, which is
+strongest first within each level with joined pairs placed last; see
+:doc:`json_output` for the rule.
 
 Per-fragment gaps are worth more than they look. Gaps are not additive, so no
 sum of them is a molecular property, but the tail of that column is where an

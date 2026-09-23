@@ -39,6 +39,8 @@ contains
                   new_unittest("gradient_and_hessian_norms_are_written", test_derivatives), &
                   new_unittest("dipole_is_written_with_its_magnitude", test_dipole), &
                   new_unittest("mbe_document_carries_its_levels", test_mbe), &
+                  new_unittest("connected_pairs_are_flagged_noted_and_sorted_last", &
+                               test_connected_pairs), &
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
@@ -236,6 +238,92 @@ contains
       call json%destroy()
       call data%destroy()
    end subroutine test_mbe
+
+   subroutine test_connected_pairs(error)
+      !! A peptide-shaped table: the bonded pair is flagged, noted, and last
+      !!
+      !! Three monomers in a chain, as a backbone fragmented by residue is.
+      !! Pairs 1-2 and 2-3 are joined by a bond the partition cut; 1-3 is a
+      !! genuine through-space interaction. The joined rows carry the energy of
+      !! re-forming a bond and are three orders of magnitude larger, so sorting
+      !! by strength alone would put the two rows a reader must not trust at
+      !! the top of the table. They go last instead, and the real interaction
+      !! leads.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      real(dp) :: value
+      character(len=:), allocatable :: text
+      logical :: found, flag
+
+      data%output_mode = OUTPUT_MODE_MBE
+      data%total_energy = -100.0_dp
+      data%has_energy = .true.
+      data%fragment_count = 6_int64
+      data%max_level = 2
+      data%fragment_breakdown = "json"
+      allocate (data%polymers(6, 2))
+      data%polymers = 0
+      data%polymers(1, 1) = 1
+      data%polymers(2, 1) = 2
+      data%polymers(3, 1) = 3
+      data%polymers(4, :) = [1, 2]
+      data%polymers(5, :) = [2, 3]
+      data%polymers(6, :) = [1, 3]
+      allocate (data%fragment_energies(6), source=-30.0_dp)
+      allocate (data%delta_energies(6))
+      ! The two bonded pairs dwarf the real one, which is the whole problem.
+      data%delta_energies = [0.0_dp, 0.0_dp, 0.0_dp, -0.42_dp, -0.31_dp, -0.0007_dp]
+      allocate (data%fragment_connected(6))
+      data%fragment_connected = [.false., .false., .false., .true., .true., .false.]
+      allocate (data%sum_by_level(2))
+      data%sum_by_level = [-90.0_dp, -0.7307_dp]
+
+      call written_document(data, json, "jw_connected.json")
+
+      ! The note is written once, above the levels, so a reader who never opens
+      ! a per-row key still meets it.
+      call json%get("jw_connected.connected_pair_note", text, found)
+      call check(error, found, "the connected-pair note is missing")
+      if (allocated(error)) return
+      call check(error, index(text, "not an interaction energy") > 0, &
+                 "the note does not say the plain thing it exists to say")
+      if (allocated(error)) return
+
+      ! Strongest *real* interaction first: the 1-3 pair, smallest in
+      ! magnitude, leads because the two larger rows are bonded.
+      call json%get("jw_connected.levels(2).fragments(1).delta_energy", value, found)
+      call check(error, found, "the first dimer object is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.0007_dp, thr=1.0e-12_dp, &
+                 message="a bonded pair led the table by magnitude")
+      if (allocated(error)) return
+
+      call json%get("jw_connected.levels(2).fragments(1).connected", flag, found)
+      call check(error, found, "the connected flag is missing from a dimer")
+      if (allocated(error)) return
+      call check(error,.not. flag, "the through-space pair was marked connected")
+      if (allocated(error)) return
+
+      ! And the bonded rows follow, still strongest first among themselves.
+      call json%get("jw_connected.levels(2).fragments(2).delta_energy", value, found)
+      call check(error, found, "the second dimer object is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.42_dp, thr=1.0e-12_dp, &
+                 message="the bonded rows are not ordered among themselves")
+      if (allocated(error)) return
+
+      call json%get("jw_connected.levels(2).fragments(2).connected", flag, found)
+      call check(error, found, "the connected flag is missing from the bonded row")
+      if (allocated(error)) return
+      call check(error, flag, "a bonded pair was not flagged")
+      if (allocated(error)) return
+
+      ! A monomer has no such question, so it carries no such key.
+      call json%get("jw_connected.levels(1).fragments(1).connected", flag, found)
+      call check(error,.not. found, "a monomer carried a connected flag")
+   end subroutine test_connected_pairs
 
    subroutine test_pie(error)
       type(error_type), allocatable, intent(out) :: error

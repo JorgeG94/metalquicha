@@ -3,7 +3,7 @@
 module mqc_json_writer
    use pic_types, only: int64, dp
    use pic_logger, only: logger => global_logger
-   use mqc_json_output_types, only: json_output_data_t, &
+   use mqc_json_output_types, only: json_output_data_t, ordered_rows_for_level, &
                                     OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
    use mqc_io_helpers, only: get_output_json_filename, get_basename
    use mqc_physical_constants, only: HARTREE_TO_EV
@@ -212,6 +212,8 @@ contains
       type(json_value), pointer :: root, main_obj, levels_arr, level_obj, frags_arr, frag_obj
       type(json_value), pointer :: dipole_obj
       integer(int64) :: i, count_by_level
+      integer(int64), allocatable :: row_order(:)
+      integer :: k
       ! TODO(mqc): `j` is dead here.
       integer :: fragment_size, j, frag_level, iunit, io_stat
       integer, allocatable :: indices(:)
@@ -237,6 +239,18 @@ contains
       call json%add(main_obj, "total_energy", data%total_energy)
 
       call write_unconverged_section(json, main_obj, data)
+
+      ! Said once, above the levels, rather than on each row it applies to: a
+      ! reader who scans the table and never reads a per-row key still meets
+      ! it, and a row that is fine carries no disclaimer.
+      if (allocated(data%fragment_connected)) then
+         if (any(data%fragment_connected)) then
+            call json%add(main_obj, "connected_pair_note", &
+                          "Two-body terms marked connected join monomers across a severed "// &
+                          "covalent bond. Their delta_energy includes the energy of re-forming "// &
+                          "that bond and is not an interaction energy. They are sorted last.")
+         end if
+      end if
 
       ! Build levels array
       call json%create_array(levels_arr, "levels")
@@ -267,30 +281,36 @@ contains
             call json%create_array(frags_arr, "fragments")
             call json%add(level_obj, frags_arr)
 
-            do i = 1_int64, data%fragment_count
+            call ordered_rows_for_level(data, frag_level, row_order)
+            do k = 1, size(row_order)
+               i = row_order(k)
                fragment_size = count(data%polymers(i, :) > 0)
-               if (fragment_size == frag_level) then
-                  call json%create_object(frag_obj, "")
-                  call json%add(frags_arr, frag_obj)
+               call json%create_object(frag_obj, "")
+               call json%add(frags_arr, frag_obj)
 
-                  allocate (indices(fragment_size))
-                  indices = data%polymers(i, 1:fragment_size)
-                  call json%add(frag_obj, "indices", indices)
-                  deallocate (indices)
+               allocate (indices(fragment_size))
+               indices = data%polymers(i, 1:fragment_size)
+               call json%add(frag_obj, "indices", indices)
+               deallocate (indices)
 
-                  if (allocated(data%fragment_energies)) then
-                     call json%add(frag_obj, "energy", data%fragment_energies(i))
-                  end if
+               if (allocated(data%fragment_energies)) then
+                  call json%add(frag_obj, "energy", data%fragment_energies(i))
+               end if
 
-                  if (allocated(data%fragment_distances)) then
-                     call json%add(frag_obj, "distance", data%fragment_distances(i))
-                  end if
+               if (allocated(data%fragment_distances)) then
+                  call json%add(frag_obj, "distance", data%fragment_distances(i))
+               end if
 
-                  if (frag_level > 1 .and. allocated(data%delta_energies)) then
-                     call json%add(frag_obj, "delta_energy", data%delta_energies(i))
-                  end if
+               if (frag_level > 1 .and. allocated(data%delta_energies)) then
+                  call json%add(frag_obj, "delta_energy", data%delta_energies(i))
+               end if
+
+               ! Only on a two-body term, where the question means something.
+               if (frag_level == 2 .and. allocated(data%fragment_connected)) then
+                  call json%add(frag_obj, "connected", data%fragment_connected(i))
                end if
             end do
+            deallocate (row_order)
          end if
       end do
 
