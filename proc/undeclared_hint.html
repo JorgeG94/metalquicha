@@ -1,0 +1,634 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>undeclared_hint &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>undeclared_hint
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for procedures.">9 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_validate.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_validate.f90.html'>mqc_validate.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_validate.html'>mqc_validate</a></li>
+            <li class="breadcrumb-item active" aria-current="page">undeclared_hint</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/undeclared_hint.html#src">undeclared_hint</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private pure function undeclared_hint(n_declared) result(hint)  
+</h2>
+    
+
+    <p>What to add to the uncapped-valence message when nothing was declared</p>
+<p>Empty when the caller declared a list and merely left a bond out of
+it: the message above already says which bond, and the fix is to add
+it. A caller who declared nothing needs to be told the key exists.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_declared~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_declared</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-hint"></span>
+          character(len=:), allocatable
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~undeclared_hint~~CalledByGraph Pages: 1 -->
+<svg id="procundeclared_hintCalledByGraph" width="641pt" height="226pt"
+ viewBox="0.00 0.00 641.00 226.31" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~undeclared_hint~~CalledByGraph" class="graph" transform="scale(0.65 0.65) rotate(0) translate(4 342)">
+<title>proc~~undeclared_hint~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-342 976,-342 976,4 -4,4"/>
+<!-- proc~undeclared_hint -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node1" class="node">
+<title>proc~undeclared_hint</title>
+<polygon fill="none" stroke="black" points="972,-297 874,-297 874,-273 972,-273 972,-297"/>
+<text text-anchor="middle" x="923" y="-282.6" font-family="Helvetica,sans-Serif" font-size="10.50">undeclared_hint</text>
+</g>
+<!-- proc~validate_system -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node2" class="node">
+<title>proc~validate_system</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node2"><a xlink:href="../proc/validate_system.html" xlink:title="validate_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="838,-297 740,-297 740,-273 838,-273 838,-297"/>
+<text text-anchor="middle" x="789" y="-282.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_system</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_system&#45;&gt;proc~undeclared_hint -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge1" class="edge">
+<title>proc~validate_system&#45;&gt;proc~undeclared_hint</title>
+<path fill="none" stroke="#ff0000" d="M838.03,-285C846.31,-285 855,-285 863.52,-285"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="863.79,-288.5 873.79,-285 863.79,-281.5 863.79,-288.5"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node3" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node3"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="704,-277 541,-277 541,-253 704,-253 704,-277"/>
+<text text-anchor="middle" x="622.5" y="-262.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_system -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge2" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#ff0000" d="M704.3,-274.82C712.97,-275.88 721.66,-276.93 729.98,-277.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="729.57,-281.42 739.92,-279.15 730.42,-274.47 729.57,-281.42"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node4" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node4"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="362,-338 201,-338 201,-314 362,-314 362,-338"/>
+<text text-anchor="middle" x="281.5" y="-323.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~validate_system -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge3" class="edge">
+<title>proc~session_run&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#ff0000" d="M362.04,-319.55C464.18,-311.26 639.02,-297.08 729.67,-289.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="730.08,-293.21 739.76,-288.91 729.51,-286.23 730.08,-293.21"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node6" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node6"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="505,-256 411,-256 411,-232 505,-232 505,-256"/>
+<text text-anchor="middle" x="458" y="-241.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge9" class="edge">
+<title>proc~session_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M350.77,-313.92C359.11,-311.46 367.37,-308.51 375,-305 398.2,-294.32 421.23,-276.37 436.95,-262.7"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="439.33,-265.27 444.46,-256 434.67,-260.04 439.33,-265.27"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node5" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node5"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="105.5,-338 46.5,-338 46.5,-314 105.5,-314 105.5,-338"/>
+<text text-anchor="middle" x="76" y="-323.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge5" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#00ffff" d="M105.72,-326C127.97,-326 160.06,-326 190.69,-326"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="191,-329.5 201,-326 191,-322.5 191,-329.5"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge4" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M505.13,-249.96C513.24,-251.01 521.94,-252.13 530.78,-253.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="530.44,-256.76 540.8,-254.57 531.34,-249.82 530.44,-256.76"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node7" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node7"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="364.5,-296 198.5,-296 198.5,-272 364.5,-272 364.5,-296"/>
+<text text-anchor="middle" x="281.5" y="-281.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge6" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M334.86,-272C355.74,-267.21 379.82,-261.69 401.05,-256.82"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="401.94,-260.21 410.9,-254.57 400.37,-253.39 401.94,-260.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node8" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node8"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="375,-216 188,-216 188,-192 375,-192 375,-216"/>
+<text text-anchor="middle" x="281.5" y="-201.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge7" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M334.86,-216C355.74,-220.79 379.82,-226.31 401.05,-231.18"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="400.37,-234.61 410.9,-233.43 401.94,-227.79 400.37,-234.61"/>
+</g>
+<!-- proc~run_step -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node9" class="node">
+<title>proc~run_step</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node9"><a xlink:href="../proc/run_step.html" xlink:title="run_step">
+<polygon fill="#d9534f" stroke="#d9534f" points="310.5,-172 252.5,-172 252.5,-148 310.5,-148 310.5,-172"/>
+<text text-anchor="middle" x="281.5" y="-157.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_step</text>
+</a>
+</g>
+</g>
+<!-- proc~run_step&#45;&gt;proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge8" class="edge">
+<title>proc~run_step&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M310.59,-164.01C329.45,-167.4 354.5,-173.31 375,-183 397.95,-193.85 420.86,-211.62 436.6,-225.19"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="434.33,-227.86 444.15,-231.85 438.96,-222.61 434.33,-227.86"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node10" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node10"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="318,-86 245,-86 245,-62 318,-62 318,-86"/>
+<text text-anchor="middle" x="281.5" y="-71.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge10" class="edge">
+<title>proc~worker_run&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M303.28,-86.12C322.94,-98.13 352.67,-117.77 375,-139 402.55,-165.19 428.52,-201.03 443.59,-223.34"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="440.72,-225.34 449.17,-231.72 446.55,-221.46 440.72,-225.34"/>
+</g>
+<!-- program~main -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node11" class="node">
+<title>program~main</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node11"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="103,-276 49,-276 49,-252 103,-252 103,-276"/>
+<text text-anchor="middle" x="76" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge11" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ffff" d="M103.12,-262.63C164.21,-259.41 317.53,-251.34 400.9,-246.95"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="401.15,-250.44 410.95,-246.42 400.78,-243.45 401.15,-250.44"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge12" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#cbff00" d="M103.17,-257.18C117.64,-253.28 135.9,-248.15 152,-243 168.2,-237.81 171.8,-235.19 188,-230 200.03,-226.14 213.04,-222.29 225.4,-218.78"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="226.46,-222.12 235.14,-216.04 224.56,-215.38 226.46,-222.12"/>
+</g>
+<!-- proc~evaluate_energy_gradient -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node12" class="node">
+<title>proc~evaluate_energy_gradient</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node12"><a xlink:href="../proc/evaluate_energy_gradient.html" xlink:title="evaluate_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="152,-234 0,-234 0,-210 152,-210 152,-234"/>
+<text text-anchor="middle" x="76" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_energy_gradient&#45;&gt;proc~run_step -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge13" class="edge">
+<title>proc~evaluate_energy_gradient&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff66" d="M125.46,-209.9C134.38,-207.25 143.55,-204.26 152,-201 168.69,-194.56 171.22,-189.2 188,-183 205.48,-176.55 225.49,-171.32 242.41,-167.49"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="243.47,-170.84 252.5,-165.29 241.98,-164 243.47,-170.84"/>
+</g>
+<!-- proc~evaluate_hessian -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node13" class="node">
+<title>proc~evaluate_hessian</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node13"><a xlink:href="../proc/evaluate_hessian.html" xlink:title="evaluate_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="128.5,-192 23.5,-192 23.5,-168 128.5,-168 128.5,-192"/>
+<text text-anchor="middle" x="76" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">evaluate_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~evaluate_hessian&#45;&gt;proc~run_step -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge14" class="edge">
+<title>proc~evaluate_hessian&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff66" d="M128.61,-174.93C163.95,-171.45 210.04,-166.92 242.14,-163.77"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="242.84,-167.22 252.45,-162.76 242.16,-160.25 242.84,-167.22"/>
+</g>
+<!-- proc~run_final_hessian -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node14" class="node">
+<title>proc~run_final_hessian</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node14"><a xlink:href="../proc/run_final_hessian.html" xlink:title="run_final_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="128.5,-150 23.5,-150 23.5,-126 128.5,-126 128.5,-150"/>
+<text text-anchor="middle" x="76" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_final_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~run_final_hessian&#45;&gt;proc~run_step -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge15" class="edge">
+<title>proc~run_final_hessian&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff66" d="M128.61,-143.58C163.95,-147.4 210.04,-152.38 242.14,-155.85"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="242.13,-159.37 252.45,-156.97 242.89,-152.41 242.13,-159.37"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node15" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node15"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-108 37,-108 37,-84 115,-84 115,-108"/>
+<text text-anchor="middle" x="76" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge16" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff66" d="M115.26,-106.32C127.08,-109.61 140.11,-113.35 152,-117 182.67,-126.42 217.14,-138.01 242.65,-146.78"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="241.71,-150.16 252.3,-150.11 243.99,-143.54 241.71,-150.16"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node16" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node16"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="115,-24 37,-24 37,0 115,0 115,-24"/>
+<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge18" class="edge">
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#0066ff" d="M115.23,-22.42C127.04,-25.72 140.08,-29.43 152,-33 179.7,-41.29 210.58,-51.13 235.12,-59.08"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="234.29,-62.49 244.88,-62.26 236.45,-55.84 234.29,-62.49"/>
+</g>
+<!-- proc~write_final_single_point -->
+<g id="proc~~undeclared_hint~~CalledByGraph_node17" class="node">
+<title>proc~write_final_single_point</title>
+<g id="a_proc~~undeclared_hint~~CalledByGraph_node17"><a xlink:href="../proc/write_final_single_point.html" xlink:title="write_final_single_point">
+<polygon fill="#d9534f" stroke="#d9534f" points="144,-66 8,-66 8,-42 144,-42 144,-66"/>
+<text text-anchor="middle" x="76" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_final_single_point</text>
+</a>
+</g>
+</g>
+<!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
+<g id="proc~~undeclared_hint~~CalledByGraph_edge17" class="edge">
+<title>proc~write_final_single_point&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#00ff66" d="M128.2,-66.02C136.31,-68.58 144.5,-71.57 152,-75 173.01,-84.6 224.19,-119.96 255.24,-141.93"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="253.25,-144.8 263.43,-147.74 257.3,-139.1 253.25,-144.8"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocundeclared_hintCalledByGraph = svgPanZoom('#procundeclared_hintCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">undeclared_hint</span><span class="p">(</span><span class="n">n_declared</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">hint</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! What to add to the uncapped-valence message when nothing was declared</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Empty when the caller declared a list and merely left a bond out of</span>
+<span class="w">      </span><span class="c">!! it: the message above already says which bond, and the fix is to add</span>
+<span class="w">      </span><span class="c">!! it. A caller who declared nothing needs to be told the key exists.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_declared</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hint</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_declared</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">hint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         </span><span class="n">hint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">". No connectivity was declared at all, so no bond is marked "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                </span><span class="s2">"broken and no fragment is capped; list the bonds in the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                </span><span class="s2">"molecule's connectivity, or set system.unchecked_input if "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                </span><span class="s2">"the partition is deliberate"</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">   end function </span><span class="n">undeclared_hint</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-23 19:18 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

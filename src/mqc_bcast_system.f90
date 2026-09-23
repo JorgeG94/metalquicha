@@ -30,10 +30,9 @@ contains
       !!
       !! Collective: every rank calls it. On `root` the argument is read; on
       !! every other rank it is overwritten, whatever it held before.
-      ! TODO(mqc): `cap_scale` and `fragment_potentials` are the two components
-      ! of `system_geometry_t` that never travel. A worker therefore caps broken
-      ! bonds at the default scale of 1 whatever the deck asked for, and an EFP
-      ! system arrives with no potentials at all.
+      ! TODO(mqc): `fragment_potentials` is the one component of
+      ! `system_geometry_t` that still never travels, so an EFP system arrives
+      ! on a worker with no potentials at all.
       type(comm_t), intent(in) :: comm
       type(system_geometry_t), intent(inout) :: sys_geom
       integer(int32), intent(in) :: root
@@ -64,6 +63,12 @@ contains
          sys_geom%charge = scalars(4)
          sys_geom%multiplicity = scalars(5)
       end if
+
+      ! Where a hydrogen cap sits on a cut bond. A worker builds its own
+      ! fragments from this copy, so a rank that keeps the default 1 caps
+      ! somewhere else than rank 0 does and reports a different energy for the
+      ! same deck.
+      call bcast(comm, sys_geom%cap_scale, 1_int32, root)
 
       call bcast_int_1d(comm, sys_geom%element_numbers, root, is_root)
       call bcast_real_2d(comm, sys_geom%coordinates, root, is_root)

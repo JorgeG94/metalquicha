@@ -3202,26 +3202,31 @@ large graphs.</div>
 <a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="k">end if</span>
 <a id="ln-186" name="ln-186" href="#ln-186"></a><span class="k">      else</span>
-<a id="ln-187" name="ln-187" href="#ln-187"></a><span class="k">         call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
-<a id="ln-188" name="ln-188" href="#ln-188"></a><span class="w">      </span><span class="k">end if</span>
-<a id="ln-189" name="ln-189" href="#ln-189"></a><span class="k">      call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
-<a id="ln-190" name="ln-190" href="#ln-190"></a><span class="w">   </span><span class="k">else</span>
-<a id="ln-191" name="ln-191" href="#ln-191"></a><span class="w">      </span><span class="c">! Multi-molecule mode: loop over all molecules</span>
-<a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">      </span><span class="k">call </span><span class="n">run_multi_molecule_calculations</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">)</span>
-<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">   </span><span class="k">end if</span>
-<a id="ln-194" name="ln-194" href="#ln-194"></a>
-<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="k">   if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-196" name="ln-196" href="#ln-196"></a><span class="k">      call </span><span class="n">get_knowledge</span><span class="p">()</span>
-<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">      </span><span class="k">call </span><span class="n">my_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
-<a id="ln-198" name="ln-198" href="#ln-198"></a><span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Total processing time: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">" s"</span><span class="p">)</span>
-<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">   </span><span class="k">end if</span>
-<a id="ln-200" name="ln-200" href="#ln-200"></a>
-<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="k">   call </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
-<a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">   </span><span class="k">call </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">finalize</span><span class="p">()</span>
-<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">   </span><span class="k">call </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">%</span><span class="n">finalize</span><span class="p">()</span>
-<a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">   </span><span class="k">call </span><span class="n">pic_mpi_finalize</span><span class="p">()</span>
+<a id="ln-187" name="ln-187" href="#ln-187"></a><span class="w">         </span><span class="c">! TODO(mqc): `run_calculation` hands back no status, so a refusal</span>
+<a id="ln-188" name="ln-188" href="#ln-188"></a><span class="w">         </span><span class="c">! inside it -- an unsupported method, a partition the backend will not</span>
+<a id="ln-189" name="ln-189" href="#ln-189"></a><span class="w">         </span><span class="c">! answer for -- is logged and then exits 0. A script driving mqc</span>
+<a id="ln-190" name="ln-190" href="#ln-190"></a><span class="w">         </span><span class="c">! cannot tell a refusal from a converged run by exit code alone; the</span>
+<a id="ln-191" name="ln-191" href="#ln-191"></a><span class="w">         </span><span class="c">! optimizer and conformer branches above do abort non-zero.</span>
+<a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">         </span><span class="k">call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
+<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">      </span><span class="k">end if</span>
+<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="k">      call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">   </span><span class="k">else</span>
+<a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">      </span><span class="c">! Multi-molecule mode: loop over all molecules</span>
+<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">      </span><span class="k">call </span><span class="n">run_multi_molecule_calculations</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">)</span>
+<a id="ln-198" name="ln-198" href="#ln-198"></a><span class="w">   </span><span class="k">end if</span>
+<a id="ln-199" name="ln-199" href="#ln-199"></a>
+<a id="ln-200" name="ln-200" href="#ln-200"></a><span class="k">   if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="k">      call </span><span class="n">get_knowledge</span><span class="p">()</span>
+<a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">      </span><span class="k">call </span><span class="n">my_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
+<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"Total processing time: "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">" s"</span><span class="p">)</span>
+<a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">   </span><span class="k">end if</span>
 <a id="ln-205" name="ln-205" href="#ln-205"></a>
-<a id="ln-206" name="ln-206" href="#ln-206"></a><span class="k">end program </span><span class="n">main</span>
+<a id="ln-206" name="ln-206" href="#ln-206"></a><span class="k">   call </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<a id="ln-207" name="ln-207" href="#ln-207"></a><span class="w">   </span><span class="k">call </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">finalize</span><span class="p">()</span>
+<a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">   </span><span class="k">call </span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">%</span><span class="n">finalize</span><span class="p">()</span>
+<a id="ln-209" name="ln-209" href="#ln-209"></a><span class="w">   </span><span class="k">call </span><span class="n">pic_mpi_finalize</span><span class="p">()</span>
+<a id="ln-210" name="ln-210" href="#ln-210"></a>
+<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="k">end program </span><span class="n">main</span>
 </pre></div>
 
       </section>
@@ -3243,7 +3248,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 18:44 +0000             </p>
+ on 2026-09-23 19:18 +0000             </p>
           </div>
         </div>
         <br>
