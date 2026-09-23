@@ -221,12 +221,16 @@ It is better here for a concrete reason: this ligand hydrogen-bonds to a **carbo
 oxygen**, and the one-residue partition puts a cap hydrogen on the nitrogen right next to
 that carbonyl, distorting the very group the ligand is binding. The Cα–C cut puts the caps
 a bond further away. It is also the convention the protein FMO literature uses, and — not
-a coincidence — **the only partition the FMO route will accept** (§10).
+a coincidence — **the amide partition is the one the FMO route refuses** (§10), because a
+conjugated amide C–N is not a plain single bond.
+
+The example above is all glycine, so it has no side chains. In a real protein **a side
+chain goes with its own Cα**, into the same fragment; only the backbone Cα–C bond is cut.
 
 So: if your ligand binds a backbone carbonyl or amide, prefer the Cα–C partition. If it
 binds a side chain, either works and the one-residue partition is easier to read. Note
-that "residue 3" then means the third *fragment*, not the third residue; keep a note of
-which is which.
+that "fragment 3" then no longer means "residue 3" — each fragment straddles two residues —
+so keep a note of which is which before you report anything.
 
 ---
 
@@ -493,9 +497,10 @@ the protein* — polarized by everything around it — rather than in vacuum.
 
 Four differences from the plain deck, all of them mandatory:
 
-1. **The partition must be the Cα–C one.** An amide cut is refused (§13), because a frozen
-   orbital stands in for one electron pair and a conjugated amide C–N is not a plain single
-   bond. The refusal names the bond to cut instead.
+1. **Every cut must fall on a plain single bond**, which on a protein backbone means the
+   Cα–C one. A frozen orbital stands in for exactly one electron pair, so a conjugated
+   amide C–N does not qualify and an amide cut is refused (§13) — helpfully: the refusal
+   names the bond to cut instead.
 2. **No `connectivity`.** Cut bonds are perceived from the geometry on this path. Declaring
    them is harmless and does nothing.
 3. **`"embedding": "ptc"` is required.** This keyword used to be silently ignored; on this
@@ -504,8 +509,9 @@ Four differences from the plain deck, all of them mandatory:
    exact density both describe the bond region, and only a per-atom field can have the
    detached atom's share taken back out. `"none"` runs but is worse than useless here, as
    each side of a cut then carries about ±1 elementary charge.
-4. **`"level": "verbose"`.** There is no CSV on this path; the pair energies are printed to
-   the log and nowhere else.
+4. **`"system": {"logger": {"level": "verbose"}}`.** There is no CSV on this path; the pair
+   energies are printed to the log and nowhere else, and only at verbose. Redirect the run's
+   output to a file or you will lose them.
 
 `bond_breaking: "afo"` is the frozen-orbital machinery — "adjusted frozen orbital". It
 replaces the hydrogen cap with an orbital frozen in the shape the real bond has, which is
@@ -707,11 +713,17 @@ the ligand pairs from a deck today. The lever available is distance screening:
 }
 ```
 
-On a ten-residue case that cut 66 terms to 30 and halved the wall time, moving the ligand
-sum by 0.34 kcal/mol. It screens on the same closest-approach distance the CSV reports, so
-it prunes distant residue–residue pairs and distant *ligand* pairs alike — it cannot be
-told "keep everything touching the ligand". Pick the cutoff by looking at the `distance`
-column of a small run first.
+**Use it carefully, because it prunes the rows you came for.** Measured on the ten-residue
+case above: the cutoff took 66 terms to 30 and the wall time from 144 s to 62 s, as
+advertised — but it also **took the ligand's ten rows down to two.** It screens on the same
+closest-approach distance the CSV reports and cannot be told "keep everything touching the
+ligand", so the eight residues beyond 5 Å simply vanish from the table. The ligand sum
+moved by 0.47 kcal/mol and the decay curve of §7 was gone.
+
+If all you want is the dominant residue, that is a fair trade. If you want the profile,
+raise the cutoff until the rows you care about come back, and always check how many ligand
+rows survived before reading anything into them. Pick the cutoff from the `distance` column
+of a small unscreened run first.
 
 ### What the other methods do on a peptide
 
@@ -722,7 +734,7 @@ All of these were run on the example system on this branch.
 | `mbe` | **Works.** Caps the cut backbone. §4–§9. |
 | `fmo` + `afo` + `ptc` | **Works**, on the Cα–C partition. §10–§11. |
 | `gmbe` | Runs, but writes no `_fragments.csv` at all. No pair table. Not usable here. |
-| `ee-mbe` | Runs, and its pair rows are not interaction energies. §12. |
+| `ee-mbe` + `afo` + `ptc` | Runs, on the Cα–C partition, and its pair rows are **not** interaction energies. §12. (Without `afo` it refuses, with the same message `fmo` gives.) |
 | `fmo` with `bond_breaking` left at its default | Refuses, and tells you both ways out: `fmo: the partition cuts a covalent molecule -- atoms 3 and 9 (numbered from one) are covalently connected but were put in fragments 1 and 2. Nothing represents a cut bond here unless it is asked to, so either fragment on whole molecules or set keywords.fragmentation.bond_breaking to 'afo', which detaches the bond with a frozen orbital. Atoms 3 and 9 are a peptide bond -- an amide C(=O)-N, conjugated with the carbonyl and not a plain single bond. The FMO convention for a protein is to leave it whole and cut the C-alpha--C(=O) bond one place along the backbone instead, which here is the bond between atoms 2 and 3.` |
 | `fmo` + `afo` on an **amide** partition | Refuses, naming the bond to cut instead: `fmo: 2 localized orbitals sit on the bond between atoms 3 and 9 (numbered from one), so it is not a single bond. One frozen orbital stands in for one electron pair; cut at a single bond. Atoms 3 and 9 are a peptide bond -- ... The FMO convention for a protein is to leave it whole and cut the C-alpha--C(=O) bond one place along the backbone instead, which here is the bond between atoms 2 and 3.` **This is the message that tells you to switch to the Cα–C partition.** |
 | `efmo` | Refuses: `efmo: the partition cuts a covalent molecule -- atoms 1 and 9 are covalently connected but were put in fragments 1 and 2. A hydrogen cap's multipoles would act on its partner across the cut and no frozen-orbital route is wired in here, so this method cannot answer for that partition; fragment on whole molecules` — **this refusal is new on this branch.** On `main`, EFMO ran this system for three minutes, printed a success banner, and reported a total energy of `NaN`. If you find notes saying EFMO has no covalent-cut check, they describe `main`, not this branch. |
@@ -745,6 +757,7 @@ own numbering.
 - [ ] The run exited 0 and the log has no refusal in it.
 - [ ] Every `scf` column in the CSV says `yes`.
 - [ ] You are reading `delta_energy` from `level == 2` rows containing the ligand.
+- [ ] If you used a distance cutoff, you counted how many ligand rows survived it (trap 6).
 - [ ] You are ignoring the covalently-joined pairs — `distance` at a bond length, energy in
       whole Hartree.
 - [ ] You are not adding the column up and calling it a binding energy.
