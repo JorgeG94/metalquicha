@@ -504,7 +504,7 @@ Two rows to ignore, and the reasons are different:
   including the ligand's. EE-MBE sums total embedded energies, and a monomer's already
   carries its electrostatics with every other fragment, so the pair term takes that back out
   with the opposite sign. Read as interaction energies they are nonsense: the same ligand
-  rows come out `+0.140`, `+0.433`, `+0.374` Hartree — eighty to two hundred kcal/mol from a
+  rows come out `+0.140`, `+0.433`, `+0.374` Hartree — 88, 272 and 235 kcal/mol from one
   water. The header line says which of the two you are looking at. **Use `method: "fmo"` for
   pair analysis.** The two give the same *total* (they agree to 3e-8 Hartree here); they
   disagree about how it is split up, and only one of the splits is an interaction energy.
