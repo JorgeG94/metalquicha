@@ -11,7 +11,9 @@
 !! The system below is deliberately awkward: monomers of unequal size, so
 !! atoms_per_monomer must come across as 0 rather than a size; a non-zero
 !! charge and a non-singlet multiplicity, so neither can be assumed; bonds
-!! both broken and preserved, so the flag is not uniform.
+!! both broken and preserved, so the flag is not uniform; and a `cap_scale`
+!! away from its default of 1, which is a value a rank that never received it
+!! would still hold.
 program check_bcast_system
    use pic_types, only: dp, int32
    use pic_mpi_lib, only: comm_t, comm_world, pic_mpi_init, pic_mpi_finalize
@@ -36,6 +38,9 @@ program check_bcast_system
 
    ! Scalars
    call expect(sys%total_atoms == 7, "total_atoms", fails)
+   ! Exact: 0.71 is representable and a broadcast copies bits, so anything but
+   ! equality here means the component did not travel.
+   call expect(sys%cap_scale == 0.71_dp, "cap_scale", fails)
    call expect(sys%n_monomers == 3, "n_monomers", fails)
    call expect(sys%atoms_per_monomer == 0, "atoms_per_monomer (variable)", fails)
    call expect(sys%charge == -1, "charge", fails)
@@ -120,6 +125,9 @@ contains
       s%atoms_per_monomer = 0
       s%charge = -1
       s%multiplicity = 2
+      ! Not the default, so a rank that received nothing fails rather than
+      ! agreeing by accident.
+      s%cap_scale = 0.71_dp
 
       allocate (s%element_numbers(7))
       s%element_numbers = [8, 1, 1, 8, 1, 1, 17]
