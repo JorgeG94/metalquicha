@@ -122,6 +122,7 @@ module mqc_czt_efmo
    public :: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
    public :: efmo_options_t
    public :: efmo_pair_t
+   public :: efmo_pair_contribution
    public :: efmo_result_t
    public :: run_efmo
 
@@ -294,6 +295,31 @@ module mqc_czt_efmo
    end type efmo_result_t
 
 contains
+
+   pure function efmo_pair_contribution(res, k) result(e)
+      !! Pair `k`'s contribution to the EFMO total, in Hartree
+      !!
+      !! A quantum pair is its dimer energy less both monomers and less its own
+      !! induction, which is `dE_IJ^0 - dE_IJ^pol`; a far pair is the sum of
+      !! its four effective-fragment terms.
+      !!
+      !! Summed over every pair this is the near and far interaction energy
+      !! entire **only at level two** -- above it the near expansion carries
+      !! groups of three and more, which are not pairs and are not in
+      !! `res%pairs` at all, so the sum falls short of `nmer_correction` by
+      !! exactly those groups.
+      type(efmo_result_t), intent(in) :: res
+      integer, intent(in) :: k
+      real(dp) :: e
+
+      if (res%pairs(k)%qm) then
+         e = res%pairs(k)%e_dimer - res%monomer_energy(res%pairs(k)%i) &
+             - res%monomer_energy(res%pairs(k)%j) - res%pairs(k)%e_pair_pol
+      else
+         e = res%pairs(k)%electrostatics + res%pairs(k)%dispersion &
+             + res%pairs(k)%exchange_repulsion + res%pairs(k)%charge_transfer
+      end if
+   end function efmo_pair_contribution
 
    subroutine run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
                        opts, res, error, comm)
@@ -1166,14 +1192,10 @@ contains
       do k = 1, size(res%pairs)
          if (res%pairs(k)%qm) then
             write (line, "(A,I4,A,I4,F8.3,A,F22.10)") "  ", res%pairs(k)%i, "-", &
-               res%pairs(k)%j, res%pairs(k)%r, "  QM  ", &
-               res%pairs(k)%e_dimer - res%monomer_energy(res%pairs(k)%i) &
-               - res%monomer_energy(res%pairs(k)%j) - res%pairs(k)%e_pair_pol
+               res%pairs(k)%j, res%pairs(k)%r, "  QM  ", efmo_pair_contribution(res, k)
          else
             write (line, "(A,I4,A,I4,F8.3,A,F22.10)") "  ", res%pairs(k)%i, "-", &
-               res%pairs(k)%j, res%pairs(k)%r, "  EFP ", &
-               res%pairs(k)%electrostatics + res%pairs(k)%dispersion &
-               + res%pairs(k)%exchange_repulsion + res%pairs(k)%charge_transfer
+               res%pairs(k)%j, res%pairs(k)%r, "  EFP ", efmo_pair_contribution(res, k)
          end if
          call logger%info(trim(line))
       end do
