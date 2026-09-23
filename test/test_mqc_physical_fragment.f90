@@ -4,7 +4,7 @@ module test_mqc_physical_fragment
                                     build_fragment_from_indices, &
                                     redistribute_cap_gradients, &
                                     system_geometry_t, physical_fragment_t, &
-                                    check_system_geometry
+                                    check_system_geometry, severed_bond_pairs
    use mqc_config_types, only: bond_t
    use mqc_error, only: error_t
    use pic_types, only: dp
@@ -46,7 +46,11 @@ contains
                   new_unittest("cap_gradient_splits_when_scaled", test_cap_gradient_scaled), &
                   new_unittest("h_cap_no_broken_bonds", test_h_cap_no_broken), &
                   new_unittest("h_cap_dimer_intact_internal", test_h_cap_dimer_intact), &
-                  new_unittest("h_cap_positions_and_elements", test_h_cap_positions) &
+                  new_unittest("h_cap_positions_and_elements", test_h_cap_positions), &
+                  new_unittest("severed_bonds_join_only_adjacent_links_of_a_chain", &
+                               test_severed_chain_adjacent_only), &
+                  new_unittest("severed_bonds_join_nothing_when_no_bond_was_cut", &
+                               test_severed_none_without_a_cut) &
                   ]
    end subroutine collect_mqc_physical_fragment_tests
 
@@ -546,6 +550,105 @@ contains
       call cleanup_test_files()
       if (allocated(bonds)) deallocate (bonds)
    end subroutine test_h_cap_dimer_intact
+
+   subroutine test_severed_chain_adjacent_only(error)
+      !! A three-residue chain: adjacent pairs joined, the end pair not
+      !!
+      !! This is the shape a peptide fragmented by residue has, and the
+      !! question the flag exists to answer. Monomers 1-2 and 2-3 are linked by
+      !! a bond the partition cut; 1 and 3 are not linked at all. A two-body
+      !! term over a joined pair carries the energy of re-forming that bond and
+      !! is not an interaction energy, so getting 1-3 wrong in either direction
+      !! is what this guards: flagging it would hide a real interaction, and
+      !! missing 1-2 would let a number three orders of magnitude too large
+      !! into a table as though it were one.
+      !!
+      !! The water trimer stands in for the geometry. Only the topology is
+      !! under test -- which monomer owns which atom, and which bonds were cut.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(error_t) :: parse_error
+      logical, allocatable :: joined(:, :)
+      logical :: link_12, link_23, link_13, symmetric, self_bond
+
+      call create_test_water_trimer()
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
+                                      sys_geom, parse_error)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
+         call cleanup_test_files()
+         return
+      end if
+
+      ! Atom 0 is in monomer 1, atom 3 in monomer 2, atom 6 in monomer 3.
+      allocate (sys_geom%bonds(2))
+      sys_geom%bonds(1)%atom_i = 0
+      sys_geom%bonds(1)%atom_j = 3
+      sys_geom%bonds(1)%is_broken = .true.
+      sys_geom%bonds(2)%atom_i = 3
+      sys_geom%bonds(2)%atom_j = 6
+      sys_geom%bonds(2)%is_broken = .true.
+
+      call severed_bond_pairs(sys_geom, joined)
+
+      ! Read out, then tear down, then assert: the checks return early on the
+      ! first failure, and the fixtures must be cleaned up either way.
+      link_12 = joined(1, 2)
+      link_23 = joined(2, 3)
+      link_13 = joined(1, 3)
+      symmetric = joined(2, 1)
+      self_bond = joined(2, 2)
+      call sys_geom%destroy()
+      call cleanup_test_files()
+
+      call check(error, link_12, "the 1-2 link was not marked")
+      if (allocated(error)) return
+      call check(error, link_23, "the 2-3 link was not marked")
+      if (allocated(error)) return
+      ! The one that matters most: an interaction between the chain ends is a
+      ! real number and must not be hidden behind the flag.
+      call check(error,.not. link_13, "the end pair was marked as bonded")
+      if (allocated(error)) return
+      ! Symmetric, and no monomer is bonded to itself.
+      call check(error, symmetric, "the mask is not symmetric")
+      if (allocated(error)) return
+      call check(error,.not. self_bond, "a monomer was marked bonded to itself")
+   end subroutine test_severed_chain_adjacent_only
+
+   subroutine test_severed_none_without_a_cut(error)
+      !! A cluster with nothing cut produces no flagged pair at all
+      !!
+      !! The water-cluster case: every fragment is a whole molecule, so no
+      !! two-body term is contaminated and the table is unchanged. A bond that
+      !! exists but was not cut must not mark anything either, which is why one
+      !! is present and left intact here.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(error_t) :: parse_error
+      logical, allocatable :: joined(:, :)
+      logical :: nothing_joined
+
+      call create_test_water_trimer()
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
+                                      sys_geom, parse_error)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
+         call cleanup_test_files()
+         return
+      end if
+
+      allocate (sys_geom%bonds(1))
+      sys_geom%bonds(1)%atom_i = 0
+      sys_geom%bonds(1)%atom_j = 3
+      sys_geom%bonds(1)%is_broken = .false.
+
+      call severed_bond_pairs(sys_geom, joined)
+      nothing_joined = .not. any(joined)
+      call sys_geom%destroy()
+      call cleanup_test_files()
+
+      call check(error, nothing_joined, "an uncut bond marked a pair as joined")
+   end subroutine test_severed_none_without_a_cut
 
    subroutine test_h_cap_positions(error)
       !! Test that H-cap positions match replaced atom positions

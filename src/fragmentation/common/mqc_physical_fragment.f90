@@ -29,6 +29,7 @@ module mqc_physical_fragment
    public :: redistribute_cap_dipole_derivatives  !! Redistribute hydrogen cap dipole derivatives to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: calculate_monomer_distance  !! Calculate minimal distance between monomers in a fragment
+   public :: severed_bond_pairs  !! Which monomer pairs a cut covalent bond joins
 
    type :: bond_t
       !! A bond between two system atoms, and whether a partition cut it
@@ -115,6 +116,75 @@ module mqc_physical_fragment
    end type system_geometry_t
 
 contains
+
+   subroutine severed_bond_pairs(geom, joined)
+      !! Which pairs of monomers have a severed covalent bond between them
+      !!
+      !! `joined(a, b)` is true when at least one bond marked broken by the
+      !! partition has one end in monomer `a` and the other in monomer `b`.
+      !! Symmetric, with a false diagonal: a bond inside one monomer was never
+      !! cut. Monomers are numbered from one; `geom%bonds` numbers its atoms
+      !! from zero, and the conversion happens here.
+      !!
+      !! This is the test for whether a two-body term is an interaction energy
+      !! at all. A pair whose monomers are joined carries the energy of
+      !! re-forming the bond -- of order 10^-1 Hartree for a carbon-carbon
+      !! single bond, against 10^-4 for the interactions the rest of such a
+      !! table is made of -- because the dimer has the bond and the two capped
+      !! monomers do not. Levels above two are not affected: the many-body
+      !! subtraction removes the pair terms, and with them the bond.
+      !!
+      !! Allocated here, `(n_monomers, n_monomers)`, and left false throughout
+      !! when the system carries no bond list at all.
+      type(system_geometry_t), intent(in) :: geom
+      logical, allocatable, intent(out) :: joined(:, :)
+
+      integer, allocatable :: owner(:)
+      integer :: b, k, m, a1, a2, m1, m2
+
+      allocate (joined(geom%n_monomers, geom%n_monomers), source=.false.)
+      if (.not. allocated(geom%bonds)) return
+
+      ! Atom to monomer, once, rather than a search per bond end. The two
+      ! layouts are the ones `build_fragment_from_indices` branches on: an
+      ! explicit atom list per fragment, or a uniform monomer template where
+      ! monomer `m` owns a contiguous block. Reading only the first would
+      ! return an empty mask for every cluster built from a template, which is
+      ! most of them, and the flag would be silently absent rather than false.
+      allocate (owner(geom%total_atoms), source=0)
+      if (allocated(geom%fragment_atoms)) then
+         do m = 1, geom%n_monomers
+            do k = 1, geom%fragment_sizes(m)
+               a1 = geom%fragment_atoms(k, m) + 1
+               if (a1 >= 1 .and. a1 <= geom%total_atoms) owner(a1) = m
+            end do
+         end do
+      else if (geom%atoms_per_monomer > 0) then
+         do m = 1, geom%n_monomers
+            do k = 1, geom%atoms_per_monomer
+               a1 = (m - 1)*geom%atoms_per_monomer + k
+               if (a1 >= 1 .and. a1 <= geom%total_atoms) owner(a1) = m
+            end do
+         end do
+      else
+         return
+      end if
+
+      do b = 1, size(geom%bonds)
+         if (.not. geom%bonds(b)%is_broken) cycle
+         a1 = geom%bonds(b)%atom_i + 1
+         a2 = geom%bonds(b)%atom_j + 1
+         if (a1 < 1 .or. a1 > geom%total_atoms) cycle
+         if (a2 < 1 .or. a2 > geom%total_atoms) cycle
+         m1 = owner(a1)
+         m2 = owner(a2)
+         ! An unowned atom, or a bond that turned out not to cross after all,
+         ! marks nothing rather than marking the diagonal.
+         if (m1 < 1 .or. m2 < 1 .or. m1 == m2) cycle
+         joined(m1, m2) = .true.
+         joined(m2, m1) = .true.
+      end do
+   end subroutine severed_bond_pairs
 
    pure elemental function to_angstrom(bohr_value) result(angstrom_value)
       !! Convert coordinate from Bohr to Angstrom
