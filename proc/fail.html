@@ -181,7 +181,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~20"></span>
+              <span class="anchor" id="variable-result~58"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -211,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-direction"></span>
+              <span class="anchor" id="variable-direction~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -226,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-index~3"></span>
+              <span class="anchor" id="variable-index~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -326,61 +326,76 @@
 <g id="proc~~fail~~CallsGraph_node6" class="node">
 <title>proc~result_reset</title>
 <g id="a_proc~~fail~~CallsGraph_node6"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
-<polygon fill="#d9534f" stroke="#d9534f" points="509,-66 324,-66 324,-42 509,-42 509,-66"/>
-<text text-anchor="middle" x="416.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="509,-87 324,-87 324,-63 509,-63 509,-87"/>
+<text text-anchor="middle" x="416.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
 </a>
 </g>
 </g>
 <!-- proc~result_destroy&#45;&gt;proc~result_reset -->
 <g id="proc~~fail~~CallsGraph_edge5" class="edge">
 <title>proc~result_destroy&#45;&gt;proc~result_reset</title>
-<path fill="none" stroke="#00ffff" d="M288.25,-54C296.69,-54 305.24,-54 313.7,-54"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="313.97,-57.5 323.97,-54 313.97,-50.5 313.97,-57.5"/>
+<path fill="none" stroke="#00ffff" d="M288.25,-63.15C296.78,-63.94 305.43,-64.75 313.98,-65.55"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="313.69,-69.03 323.97,-66.48 314.34,-62.06 313.69,-69.03"/>
+</g>
+<!-- proc~rows_destroy -->
+<g id="proc~~fail~~CallsGraph_node7" class="node">
+<title>proc~rows_destroy</title>
+<g id="a_proc~~fail~~CallsGraph_node7"><a xlink:href="../proc/rows_destroy.html" xlink:title="quao_rows_t%rows_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="494.5,-45 338.5,-45 338.5,-21 494.5,-21 494.5,-45"/>
+<text text-anchor="middle" x="416.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">quao_rows_t%rows_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~result_destroy&#45;&gt;proc~rows_destroy -->
+<g id="proc~~fail~~CallsGraph_edge6" class="edge">
+<title>proc~result_destroy&#45;&gt;proc~rows_destroy</title>
+<path fill="none" stroke="#00ffff" d="M288.25,-44.85C301.46,-43.62 314.93,-42.37 327.93,-41.15"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="328.62,-44.61 338.25,-40.19 327.97,-37.64 328.62,-44.61"/>
 </g>
 <!-- proc~energy_reset -->
-<g id="proc~~fail~~CallsGraph_node7" class="node">
+<g id="proc~~fail~~CallsGraph_node8" class="node">
 <title>proc~energy_reset</title>
-<g id="a_proc~~fail~~CallsGraph_node7"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
-<polygon fill="#d9534f" stroke="#d9534f" points="683,-87 545,-87 545,-63 683,-63 683,-87"/>
-<text text-anchor="middle" x="614" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
+<g id="a_proc~~fail~~CallsGraph_node8"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="683,-108 545,-108 545,-84 683,-84 683,-108"/>
+<text text-anchor="middle" x="614" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
 </a>
 </g>
 </g>
 <!-- proc~result_reset&#45;&gt;proc~energy_reset -->
-<g id="proc~~fail~~CallsGraph_edge6" class="edge">
+<g id="proc~~fail~~CallsGraph_edge7" class="edge">
 <title>proc~result_reset&#45;&gt;proc~energy_reset</title>
-<path fill="none" stroke="#ff0000" d="M509.24,-63.85C517.77,-64.77 526.37,-65.69 534.76,-66.6"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="534.57,-70.1 544.89,-67.68 535.32,-63.14 534.57,-70.1"/>
+<path fill="none" stroke="#ff0000" d="M509.24,-84.85C517.77,-85.77 526.37,-86.69 534.76,-87.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="534.57,-91.1 544.89,-88.68 535.32,-84.14 534.57,-91.1"/>
 </g>
 <!-- proc~error_clear -->
-<g id="proc~~fail~~CallsGraph_node8" class="node">
+<g id="proc~~fail~~CallsGraph_node9" class="node">
 <title>proc~error_clear</title>
-<g id="a_proc~~fail~~CallsGraph_node8"><a xlink:href="../proc/error_clear.html" xlink:title="error_t%error_clear">
-<polygon fill="#d9534f" stroke="#d9534f" points="672,-45 556,-45 556,-21 672,-21 672,-45"/>
-<text text-anchor="middle" x="614" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_clear</text>
+<g id="a_proc~~fail~~CallsGraph_node9"><a xlink:href="../proc/error_clear.html" xlink:title="error_t%error_clear">
+<polygon fill="#d9534f" stroke="#d9534f" points="672,-66 556,-66 556,-42 672,-42 672,-66"/>
+<text text-anchor="middle" x="614" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_clear</text>
 </a>
 </g>
 </g>
 <!-- proc~result_reset&#45;&gt;proc~error_clear -->
-<g id="proc~~fail~~CallsGraph_edge7" class="edge">
+<g id="proc~~fail~~CallsGraph_edge8" class="edge">
 <title>proc~result_reset&#45;&gt;proc~error_clear</title>
-<path fill="none" stroke="#ff0000" d="M509.24,-44.15C521.52,-42.83 533.92,-41.49 545.67,-40.23"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="546.24,-43.69 555.81,-39.14 545.5,-36.73 546.24,-43.69"/>
+<path fill="none" stroke="#ff0000" d="M509.24,-65.15C521.52,-63.83 533.92,-62.49 545.67,-61.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="546.24,-64.69 555.81,-60.14 545.5,-57.73 546.24,-64.69"/>
 </g>
 <!-- proc~mp2_reset -->
-<g id="proc~~fail~~CallsGraph_node9" class="node">
+<g id="proc~~fail~~CallsGraph_node10" class="node">
 <title>proc~mp2_reset</title>
-<g id="a_proc~~fail~~CallsGraph_node9"><a xlink:href="../proc/mp2_reset.html" xlink:title="mp2_energy_t%mp2_reset">
-<polygon fill="#d9534f" stroke="#d9534f" points="873,-87 719,-87 719,-63 873,-63 873,-87"/>
-<text text-anchor="middle" x="796" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_reset</text>
+<g id="a_proc~~fail~~CallsGraph_node10"><a xlink:href="../proc/mp2_reset.html" xlink:title="mp2_energy_t%mp2_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="873,-108 719,-108 719,-84 873,-84 873,-108"/>
+<text text-anchor="middle" x="796" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_reset</text>
 </a>
 </g>
 </g>
 <!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
-<g id="proc~~fail~~CallsGraph_edge8" class="edge">
+<g id="proc~~fail~~CallsGraph_edge9" class="edge">
 <title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
-<path fill="none" stroke="#ff0000" d="M683.05,-75C691.42,-75 700.06,-75 708.66,-75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="708.71,-78.5 718.71,-75 708.71,-71.5 708.71,-78.5"/>
+<path fill="none" stroke="#ff0000" d="M683.05,-96C691.42,-96 700.06,-96 708.66,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="708.71,-99.5 718.71,-96 708.71,-92.5 708.71,-99.5"/>
 </g>
 </g>
 </svg>
@@ -673,7 +688,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 21:34 +0000             </p>
+ on 2026-09-23 22:38 +0000             </p>
           </div>
         </div>
         <br>

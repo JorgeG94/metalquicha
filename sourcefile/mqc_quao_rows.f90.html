@@ -1,0 +1,1571 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_quao_rows.f90 &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_quao_rows.f90
+      <small>Source File</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.5% of total for source files.">157 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_quao_rows.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+            <li class="breadcrumb-item active" aria-current="page">mqc_quao_rows.f90</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#mods-0"
+         aria-expanded="false" aria-controls="mods-0">
+         <h4 class="card-header bg-primary text-white">Modules</h4>
+      </a>
+      <div id="mods-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_quao_rows.html">mqc_quao_rows</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../sourcefile/mqc_quao_rows.f90.html#src">mqc_quao_rows.f90</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    <div class="col-md-9" id='text'>
+      <p>The quasi-atomic bonding tables as data rather than as printed lines</p>
+      <br>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Files dependent on this one</h3>
+          </div>
+          <div class="card-body">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~mqc_quao_rows.f90~~AfferentGraph Pages: 1 -->
+<svg id="sourcefilemqc_quao_rowsf90AfferentGraph" width="641pt" height="261pt"
+ viewBox="0.00 0.00 641.00 261.15" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph" class="graph" transform="scale(0.23 0.23) rotate(0) translate(4 1119.25)">
+<title>sourcefile~~mqc_quao_rows.f90~~AfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1119.25 2753,-1119.25 2753,4 -4,4"/>
+<!-- sourcefile~mqc_quao_rows.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node1" class="node">
+<title>sourcefile~mqc_quao_rows.f90</title>
+<polygon fill="none" stroke="black" points="118,-668.64 0,-668.64 0,-644.64 118,-644.64 118,-668.64"/>
+<text text-anchor="middle" x="59" y="-654.24" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_quao_rows.f90</text>
+</g>
+<!-- sourcefile~mqc_interaction_bonding.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node2" class="node">
+<title>sourcefile~mqc_interaction_bonding.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node2"><a xlink:href="../sourcefile/mqc_interaction_bonding.f90.html" xlink:title="mqc_interaction_bonding.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="884,-786.64 716,-786.64 716,-762.64 884,-762.64 884,-786.64"/>
+<text text-anchor="middle" x="800" y="-772.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_interaction_bonding.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_interaction_bonding.f90&#45;&gt;sourcefile~mqc_quao_rows.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge1" class="edge">
+<title>sourcefile~mqc_interaction_bonding.f90&#45;&gt;sourcefile~mqc_quao_rows.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M578,-772.64C490.91,-761.65 469.28,-792.64 381.5,-792.64"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M379.5,-792.64C260.39,-792.64 134.83,-711.64 83.72,-674.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="85.75,-671.8 75.61,-668.71 81.6,-677.45 85.75,-671.8"/>
+</g>
+<!-- sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node3" class="node">
+<title>sourcefile~mqc_json_output_types.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node3"><a xlink:href="../sourcefile/mqc_json_output_types.f90.html" xlink:title="mqc_json_output_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="657.5,-824.64 500.5,-824.64 500.5,-800.64 657.5,-800.64 657.5,-824.64"/>
+<text text-anchor="middle" x="579" y="-810.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_interaction_bonding.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge9" class="edge">
+<title>sourcefile~mqc_interaction_bonding.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M729.71,-786.66C707.33,-790.54 682.35,-794.88 659.31,-798.88"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="658.47,-795.47 649.22,-800.63 659.67,-802.37 658.47,-795.47"/>
+</g>
+<!-- sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node5" class="node">
+<title>sourcefile~mqc_result_types.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node5"><a xlink:href="../sourcefile/mqc_result_types.f90.html" xlink:title="mqc_result_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="278,-668.64 154,-668.64 154,-644.64 278,-644.64 278,-668.64"/>
+<text text-anchor="middle" x="216" y="-654.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_interaction_bonding.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge31" class="edge">
+<title>sourcefile~mqc_interaction_bonding.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M715.76,-778.41C674.73,-779.12 624.61,-778.27 580,-772.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M578,-772.64C534.79,-767.19 521.27,-769.41 483,-748.64 428.96,-719.31 442.61,-661.46 381.5,-654.64"/>
+</g>
+<!-- sourcefile~mqc_json_output_types.f90&#45;&gt;sourcefile~mqc_quao_rows.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge2" class="edge">
+<title>sourcefile~mqc_json_output_types.f90&#45;&gt;sourcefile~mqc_quao_rows.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M500.25,-801.06C464.21,-796.64 420.76,-792.64 381.5,-792.64"/>
+</g>
+<!-- sourcefile~mqc_json_writer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node4" class="node">
+<title>sourcefile~mqc_json_writer.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node4"><a xlink:href="../sourcefile/mqc_json_writer.f90.html" xlink:title="mqc_json_writer.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1057,-588.64 939,-588.64 939,-564.64 1057,-564.64 1057,-588.64"/>
+<text text-anchor="middle" x="998" y="-574.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_writer.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_quao_rows.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge3" class="edge">
+<title>sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_quao_rows.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M938.77,-578.15C880.85,-580.11 789.55,-584.44 711,-593.64 652.29,-600.51 637.67,-603.66 580,-616.64"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M578,-616.64C390.62,-638.32 340.99,-610.76 154,-635.64 141.83,-637.26 128.9,-639.68 116.66,-642.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="115.57,-638.96 106.57,-644.54 117.09,-645.79 115.57,-638.96"/>
+</g>
+<!-- sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge10" class="edge">
+<title>sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M978.67,-588.8C957.78,-602.13 922.24,-623.27 889,-635.64 851.5,-649.6 837.73,-638.78 801,-654.64"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M799,-654.64C762.27,-670.5 740.61,-646.73 711,-673.64 671.99,-709.08 713.03,-750.14 675,-786.64 671.41,-790.08 667.41,-793.08 663.14,-795.69"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="661.23,-792.74 654.03,-800.51 664.51,-798.92 661.23,-792.74"/>
+</g>
+<!-- sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge32" class="edge">
+<title>sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M578,-616.64C567.15,-619.08 392.55,-655.84 381.5,-654.64"/>
+</g>
+<!-- sourcefile~mqc_fragment_table_writer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node13" class="node">
+<title>sourcefile~mqc_fragment_table_writer.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node13"><a xlink:href="../sourcefile/mqc_fragment_table_writer.f90.html" xlink:title="mqc_fragment_table_writer.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="889,-626.64 711,-626.64 711,-602.64 889,-602.64 889,-626.64"/>
+<text text-anchor="middle" x="800" y="-612.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_table_writer.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_fragment_table_writer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge66" class="edge">
+<title>sourcefile~mqc_json_writer.f90&#45;&gt;sourcefile~mqc_fragment_table_writer.f90</title>
+<path fill="none" stroke="#71ff00" stroke-dasharray="5,2" d="M938.99,-587.89C918.24,-591.91 894.6,-596.49 872.82,-600.71"/>
+<polygon fill="#71ff00" stroke="#71ff00" points="872.11,-597.29 862.96,-602.63 873.44,-604.16 872.11,-597.29"/>
+</g>
+<!-- sourcefile~mqc_result_types.f90&#45;&gt;sourcefile~mqc_quao_rows.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge4" class="edge">
+<title>sourcefile~mqc_result_types.f90&#45;&gt;sourcefile~mqc_quao_rows.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M153.74,-656.64C145.38,-656.64 136.75,-656.64 128.27,-656.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="128.04,-653.14 118.04,-656.64 128.04,-660.14 128.04,-653.14"/>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node6" class="node">
+<title>sourcefile~mqc_calculation_interface.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node6"><a xlink:href="../sourcefile/mqc_calculation_interface.f90.html" xlink:title="mqc_calculation_interface.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2442,-1057.64 2269,-1057.64 2269,-1033.64 2442,-1033.64 2442,-1057.64"/>
+<text text-anchor="middle" x="2355.5" y="-1043.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_interface.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge19" class="edge">
+<title>sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2268.98,-1051.67C2217.34,-1057.04 2150.75,-1067.07 2094,-1085.64"/>
+</g>
+<!-- sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node12" class="node">
+<title>sourcefile~mqc_driver.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node12"><a xlink:href="../sourcefile/mqc_driver.f90.html" xlink:title="mqc_driver.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2138.5,-670.64 2047.5,-670.64 2047.5,-646.64 2138.5,-646.64 2138.5,-670.64"/>
+<text text-anchor="middle" x="2093" y="-656.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge63" class="edge">
+<title>sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M2350.4,-1033.53C2337.23,-995.73 2293.36,-877.36 2233,-793.64 2199.01,-746.5 2147.6,-701.5 2117.75,-677.22"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="2119.93,-674.48 2109.94,-670.94 2115.54,-679.94 2119.93,-674.48"/>
+</g>
+<!-- sourcefile~mqc_capi_bond_orders.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node7" class="node">
+<title>sourcefile~mqc_capi_bond_orders.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node7"><a xlink:href="../sourcefile/mqc_capi_bond_orders.f90.html" xlink:title="mqc_capi_bond_orders.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="879,-432.64 721,-432.64 721,-408.64 879,-408.64 879,-432.64"/>
+<text text-anchor="middle" x="800" y="-418.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_bond_orders.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_bond_orders.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge20" class="edge">
+<title>sourcefile~mqc_capi_bond_orders.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M756.06,-432.7C702.14,-447.12 612.72,-468.38 580,-460.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M578,-460.64C576.43,-460.27 382.85,-336.75 381.5,-337.64"/>
+</g>
+<!-- sourcefile~mqc_method_xtb.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node27" class="node">
+<title>sourcefile~mqc_method_xtb.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node27"><a xlink:href="../sourcefile/mqc_method_xtb.f90.html" xlink:title="mqc_method_xtb.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="641,-391.64 517,-391.64 517,-367.64 641,-367.64 641,-391.64"/>
+<text text-anchor="middle" x="579" y="-377.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_xtb.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_bond_orders.f90&#45;&gt;sourcefile~mqc_method_xtb.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge95" class="edge">
+<title>sourcefile~mqc_capi_bond_orders.f90&#45;&gt;sourcefile~mqc_method_xtb.f90</title>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M734.77,-408.61C708.58,-403.71 678.2,-398.02 651.33,-392.99"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="651.69,-389.5 641.22,-391.1 650.4,-396.38 651.69,-389.5"/>
+</g>
+<!-- sourcefile~mqc_capi_run.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node8" class="node">
+<title>sourcefile~mqc_capi_run.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node8"><a xlink:href="../sourcefile/mqc_capi_run.f90.html" xlink:title="mqc_capi_run.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2749,-382.64 2642,-382.64 2642,-358.64 2749,-358.64 2749,-382.64"/>
+<text text-anchor="middle" x="2695.5" y="-368.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge21" class="edge">
+<title>sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2694.57,-382.65C2694.32,-459.85 2681.95,-888.49 2442,-1066.64 2317.63,-1158.98 2241.22,-1037.48 2094,-1085.64"/>
+</g>
+<!-- sourcefile~mqc_session.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node30" class="node">
+<title>sourcefile~mqc_session.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node30"><a xlink:href="../sourcefile/mqc_session.f90.html" xlink:title="mqc_session.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2407,-362.64 2304,-362.64 2304,-338.64 2407,-338.64 2407,-362.64"/>
+<text text-anchor="middle" x="2355.5" y="-348.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_session.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge99" class="edge">
+<title>sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_session.f90</title>
+<path fill="none" stroke="#ff00aa" stroke-dasharray="5,2" d="M2652.54,-358.57C2637.94,-354.94 2621.37,-351.44 2606,-349.64 2542,-342.15 2468.14,-343.7 2417.48,-346.32"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="2417.15,-342.83 2407.35,-346.87 2417.53,-349.82 2417.15,-342.83"/>
+</g>
+<!-- sourcefile~mqc_capi_session.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node37" class="node">
+<title>sourcefile~mqc_capi_session.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node37"><a xlink:href="../sourcefile/mqc_capi_session.f90.html" xlink:title="mqc_capi_session.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2606,-382.64 2478,-382.64 2478,-358.64 2606,-358.64 2606,-382.64"/>
+<text text-anchor="middle" x="2542" y="-368.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_capi_session.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge105" class="edge">
+<title>sourcefile~mqc_capi_run.f90&#45;&gt;sourcefile~mqc_capi_session.f90</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M2641.94,-370.64C2633.65,-370.64 2624.94,-370.64 2616.28,-370.64"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="2616.16,-367.14 2606.16,-370.64 2616.16,-374.14 2616.16,-367.14"/>
+</g>
+<!-- sourcefile~mqc_checkpoint.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node9" class="node">
+<title>sourcefile~mqc_checkpoint.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node9"><a xlink:href="../sourcefile/mqc_checkpoint.f90.html" xlink:title="mqc_checkpoint.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1058,-901.64 938,-901.64 938,-877.64 1058,-877.64 1058,-901.64"/>
+<text text-anchor="middle" x="998" y="-887.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_checkpoint.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_checkpoint.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge22" class="edge">
+<title>sourcefile~mqc_checkpoint.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M981.85,-901.67C943.24,-931.78 841.41,-1007.8 801,-1004.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M799,-1004.64C696.29,-996.6 671.77,-975.47 580,-928.64"/>
+</g>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node10" class="node">
+<title>sourcefile~mqc_cuest_bridge_stub.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node10"><a xlink:href="../sourcefile/mqc_cuest_bridge_stub.f90.html" xlink:title="mqc_cuest_bridge_stub.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="657.5,-307.64 500.5,-307.64 500.5,-283.64 657.5,-283.64 657.5,-307.64"/>
+<text text-anchor="middle" x="579" y="-293.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_bridge_stub.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge23" class="edge">
+<title>sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M500.17,-299.14C461.85,-303.99 416.49,-314.65 381.5,-337.64"/>
+</g>
+<!-- sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node11" class="node">
+<title>sourcefile~mqc_czt_bridge_stub.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node11"><a xlink:href="../sourcefile/mqc_czt_bridge_stub.f90.html" xlink:title="mqc_czt_bridge_stub.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="651,-349.64 507,-349.64 507,-325.64 651,-325.64 651,-349.64"/>
+<text text-anchor="middle" x="579" y="-335.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_czt_bridge_stub.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_czt_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge24" class="edge">
+<title>sourcefile~mqc_czt_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M537.44,-325.55C494.93,-315.45 427.97,-307.1 381.5,-337.64"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge6" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1233.5,-692.64C1176.75,-696 1156.74,-684.1 1107,-711.64 1085.49,-723.55 1091.83,-740.58 1071,-753.64 1042.96,-771.22 1031.47,-766.24 999,-772.64"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M997,-772.64C965.01,-778.94 956.82,-779.57 925,-786.64 869.84,-798.89 857.36,-810.7 801,-814.64"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_json_writer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge18" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_json_writer.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1547.5,-656.64C1407.94,-654.05 1374.84,-684.38 1235.5,-692.64"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1233.5,-692.64C1151.09,-697.52 1146.18,-636.77 1071,-602.64 1062.91,-598.97 1054.14,-595.44 1045.59,-592.23"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1046.67,-588.9 1036.08,-588.76 1044.27,-595.48 1046.67,-588.9"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge25" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M997,-498.64C772.85,-434.77 703,-525.67 483,-602.64 435.16,-619.38 431.89,-660.13 381.5,-654.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M379.5,-654.64C349.83,-650.94 316.87,-650.65 288.44,-651.57"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="288.04,-648.08 278.18,-651.96 288.31,-655.08 288.04,-648.08"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_checkpoint.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge45" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_checkpoint.f90</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M2078.57,-670.91C2053.3,-694.17 1997.23,-746.57 1953,-793.64 1936.16,-811.55 1939.06,-824.79 1917,-835.64 1770.23,-907.79 1712.77,-845.12 1549.5,-854.64"/>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge56" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M2047.34,-658.92C1954.58,-659.42 1734.31,-660.07 1549.5,-656.64"/>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M1547.5,-656.64C1455.69,-654.6 1449.19,-594.46 1362,-565.64 1206.23,-514.14 1159.42,-532.98 999,-498.64"/>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M997,-498.64C934.38,-480.8 940.51,-439.48 889,-399.64 852.14,-371.13 845.9,-355.1 801,-342.64"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node18" class="node">
+<title>sourcefile~mqc_many_body_expansion.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node18"><a xlink:href="../sourcefile/mqc_many_body_expansion.f90.html" xlink:title="mqc_many_body_expansion.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1917,-826.64 1735,-826.64 1735,-802.64 1917,-802.64 1917,-826.64"/>
+<text text-anchor="middle" x="1826" y="-812.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_many_body_expansion.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge73" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M2071.21,-670.88C2024.38,-698.45 1910.53,-765.46 1856.46,-797.3"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="1854.54,-794.36 1847.7,-802.45 1858.09,-800.4 1854.54,-794.36"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node19" class="node">
+<title>sourcefile~mqc_mbe.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node19"><a xlink:href="../sourcefile/mqc_mbe.f90.html" xlink:title="mqc_mbe.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1040.5,-744.64 955.5,-744.64 955.5,-720.64 1040.5,-720.64 1040.5,-744.64"/>
+<text text-anchor="middle" x="998" y="-730.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge75" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe.f90</title>
+<path fill="none" stroke="#00ffe2" stroke-dasharray="5,2" d="M1233.5,-692.64C1169.93,-696.41 1097.87,-710.14 1050.61,-720.48"/>
+<polygon fill="#00ffe2" stroke="#00ffe2" points="1049.62,-717.11 1040.62,-722.69 1051.14,-723.94 1049.62,-717.11"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node20" class="node">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node20"><a xlink:href="../sourcefile/mqc_mbe_fragment_distribution_scheme.f90.html" xlink:title="mqc_mbe_fragment_distribution_scheme.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1362,-744.64 1107,-744.64 1107,-720.64 1362,-720.64 1362,-744.64"/>
+<text text-anchor="middle" x="1234.5" y="-730.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge77" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M1547.5,-656.64C1480.22,-655.39 1460.18,-654.91 1398,-680.64 1379.76,-688.18 1380.07,-698.7 1362,-706.64 1351.68,-711.17 1340.54,-714.93 1329.29,-718.04"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1328.19,-714.71 1319.4,-720.61 1329.95,-721.48 1328.19,-714.71"/>
+</g>
+<!-- sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node38" class="node">
+<title>sourcefile~mqc_frag_utils.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node38"><a xlink:href="../sourcefile/mqc_frag_utils.f90.html" xlink:title="mqc_frag_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="855,-706.64 745,-706.64 745,-682.64 855,-682.64 855,-706.64"/>
+<text text-anchor="middle" x="800" y="-692.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge106" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_frag_utils.f90</title>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M1233.5,-692.64C1129.46,-698.8 1103.01,-685.98 999,-692.64"/>
+</g>
+<!-- sourcefile~mqc_fragment_table_writer.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge7" class="edge">
+<title>sourcefile~mqc_fragment_table_writer.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M730.88,-626.65C723.48,-630.2 716.61,-634.76 711,-640.64 664.83,-688.96 721.65,-738.78 675,-786.64 671.76,-789.97 668.13,-792.88 664.24,-795.43"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="662.34,-792.49 655.35,-800.45 665.78,-798.58 662.34,-792.49"/>
+</g>
+<!-- sourcefile~mqc_fragment_table_writer.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge26" class="edge">
+<title>sourcefile~mqc_fragment_table_writer.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M746.54,-626.68C667.36,-643.27 512.64,-669.51 381.5,-654.64"/>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node14" class="node">
+<title>sourcefile~mqc_geometry_optimizer.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node14"><a xlink:href="../sourcefile/mqc_geometry_optimizer.f90.html" xlink:title="mqc_geometry_optimizer.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2439,-650.64 2272,-650.64 2272,-626.64 2439,-626.64 2439,-650.64"/>
+<text text-anchor="middle" x="2355.5" y="-636.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry_optimizer.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge27" class="edge">
+<title>sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2352.96,-651.06C2343.95,-717.46 2291.42,-1029.53 2094,-1085.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2092,-1085.64C1860.08,-1151.56 1790.61,-1085.64 1549.5,-1085.64 1549.5,-1085.64 1549.5,-1085.64 578,-1085.64 363.08,-1085.64 250.35,-766.53 223.41,-678.75"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="226.72,-677.59 220.49,-669.01 220.01,-679.6 226.72,-677.59"/>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge64" class="edge">
+<title>sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M2271.72,-644.99C2231.58,-648.08 2184.48,-651.69 2148.85,-654.43"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="2148.36,-650.95 2138.66,-655.21 2148.9,-657.93 2148.36,-650.95"/>
+</g>
+<!-- sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge107" class="edge">
+<title>sourcefile~mqc_geometry_optimizer.f90&#45;&gt;sourcefile~mqc_frag_utils.f90</title>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M2271.82,-637.87C2258.83,-637.77 2245.55,-637.69 2233,-637.64 2108.56,-637.13 2077.44,-637.08 1953,-637.64 1706.33,-638.75 1644.14,-626.36 1398,-642.64 1267.96,-651.24 1236.29,-662.26 1107,-678.64 1058.98,-684.72 1047.3,-689.54 999,-692.64"/>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M997,-692.64C953.17,-694.29 903.8,-694.79 865.57,-694.87"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="865.09,-691.37 855.09,-694.89 865.1,-698.37 865.09,-691.37"/>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node15" class="node">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node15"><a xlink:href="../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html" xlink:title="mqc_gmbe_fragment_distribution_scheme.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1678,-826.64 1419,-826.64 1419,-802.64 1678,-802.64 1678,-826.64"/>
+<text text-anchor="middle" x="1548.5" y="-812.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge8" class="edge">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1418.78,-818.27C1307.35,-822.51 1142.05,-831.41 999,-849.64"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M997,-849.64C908.95,-858.44 889.27,-808.46 801,-814.64"/>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge28" class="edge">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M997,-849.64C964.07,-852.93 955.7,-856.28 925,-868.64 908.02,-875.47 906.39,-882.92 889,-888.64 757.46,-931.93 702.28,-993.63 580,-928.64"/>
+</g>
+<!-- sourcefile~mqc_group_batching.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node17" class="node">
+<title>sourcefile~mqc_group_batching.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node17"><a xlink:href="../sourcefile/mqc_group_batching.f90.html" xlink:title="mqc_group_batching.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1306.5,-1019.64 1162.5,-1019.64 1162.5,-995.64 1306.5,-995.64 1306.5,-1019.64"/>
+<text text-anchor="middle" x="1234.5" y="-1005.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_group_batching.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_group_batching.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge71" class="edge">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_group_batching.f90</title>
+<path fill="none" stroke="#00ff71" stroke-dasharray="5,2" d="M1506.02,-826.66C1474.95,-836.67 1432.11,-852.67 1398,-873.64 1379.76,-884.85 1378.34,-891.8 1362,-905.64 1326.6,-935.61 1284.49,-969.16 1258.9,-989.32"/>
+<polygon fill="#00ff71" stroke="#00ff71" points="1256.58,-986.69 1250.88,-995.62 1260.91,-992.2 1256.58,-986.69"/>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge78" class="edge">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M1440.77,-802.57C1426.3,-800.08 1411.72,-797.13 1398,-793.64 1353.41,-782.28 1304.19,-762.77 1271.74,-748.87"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1272.8,-745.52 1262.23,-744.75 1270.02,-751.94 1272.8,-745.52"/>
+</g>
+<!-- sourcefile~mqc_gmbe_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node16" class="node">
+<title>sourcefile~mqc_gmbe_utils.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node16"><a xlink:href="../sourcefile/mqc_gmbe_utils.f90.html" xlink:title="mqc_gmbe_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="638.5,-706.64 519.5,-706.64 519.5,-682.64 638.5,-682.64 638.5,-706.64"/>
+<text text-anchor="middle" x="579" y="-692.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_gmbe_utils.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge29" class="edge">
+<title>sourcefile~mqc_gmbe_utils.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M530.73,-682.58C491.15,-673.07 433.04,-660.48 381.5,-654.64"/>
+</g>
+<!-- sourcefile~mqc_group_batching.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge30" class="edge">
+<title>sourcefile~mqc_group_batching.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1171.83,-1019.68C1108.22,-1031.86 1015.97,-1048.74 999,-1047.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M997,-1047.64C908,-1041.87 889.91,-1011.6 801,-1004.64"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge11" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1814.8,-826.98C1795.18,-849.65 1749.6,-897.29 1699,-915.64 1406.46,-1021.71 1309.62,-948.17 999,-929.64"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_checkpoint.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge46" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_checkpoint.f90</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1767.82,-826.68C1712.32,-837.48 1625.58,-852.02 1549.5,-854.64"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1547.5,-854.64C1351.57,-861.38 1302.4,-861.7 1107,-877.64 1094.46,-878.66 1081.13,-879.97 1068.27,-881.33"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="1067.64,-877.88 1058.08,-882.44 1068.4,-884.84 1067.64,-877.88"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge57" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M1805.79,-802.44C1781.79,-787.82 1739.01,-763.8 1699,-751.64 1634.92,-732.16 1614.28,-749.67 1549.5,-732.64"/>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M1547.5,-732.64C1329.01,-675.19 1285.37,-626.93 1071,-555.64 1006.81,-534.29 973.36,-559.94 925,-512.64 887.32,-475.78 920.99,-441.53 889,-399.64 860.72,-362.6 845.88,-355.18 801,-342.64"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_gmbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge68" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_gmbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1734.79,-814.64C1719.99,-814.64 1704.35,-814.64 1688.68,-814.64"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1688.4,-811.14 1678.4,-814.64 1688.4,-818.14 1688.4,-811.14"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge79" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M1547.5,-732.64C1478.65,-714.53 1398.25,-715.02 1336.32,-719.78"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1335.83,-716.31 1326.15,-720.61 1336.4,-723.28 1335.83,-716.31"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_interaction_bonding.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge5" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_interaction_bonding.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M955.43,-741.55C929.8,-747.04 896.35,-754.21 867.15,-760.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="866.05,-757.12 857.01,-762.64 867.52,-763.96 866.05,-757.12"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge12" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M955.5,-744.02C945.1,-747.82 934.27,-752.66 925,-758.64 905.72,-771.07 909.07,-784.52 889,-795.64 854,-815.03 840.91,-811.85 801,-814.64"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M799,-814.64C755.82,-817.66 707.73,-817.6 667.64,-816.6"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="667.72,-813.1 657.63,-816.32 667.53,-820.1 667.72,-813.1"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge33" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M799,-734.64C658.41,-729 617.39,-757.3 483,-715.64 432.73,-700.05 433.81,-660.48 381.5,-654.64"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge70" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90</title>
+<path fill="none" stroke="#00ff38" stroke-dasharray="5,2" d="M955.31,-734.28C915.61,-735.55 854.21,-736.77 801,-734.64"/>
+<path fill="none" stroke="#00ff38" stroke-dasharray="5,2" d="M799,-734.64C742.39,-732.37 678.81,-719.58 634.8,-709.07"/>
+<polygon fill="#00ff38" stroke="#00ff38" points="635.43,-705.62 624.88,-706.66 633.77,-712.42 635.43,-705.62"/>
+</g>
+<!-- sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_frag_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge108" class="edge">
+<title>sourcefile~mqc_mbe.f90&#45;&gt;sourcefile~mqc_frag_utils.f90</title>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M955.43,-724.58C929.18,-719.49 894.74,-712.81 865.04,-707.06"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="865.66,-703.61 855.17,-705.14 864.33,-710.48 865.66,-703.61"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge13" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1158.65,-744.65C1112.54,-752.24 1052.25,-762.49 999,-772.64"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge34" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1198.3,-744.66C1066.6,-789.46 608.88,-943.38 580,-928.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M578,-928.64C525.27,-900.62 519.17,-881.15 483,-833.64 427.61,-760.87 472.42,-664.54 381.5,-654.64"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_checkpoint.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge47" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_checkpoint.f90</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1219.61,-744.84C1186.45,-773.8 1103.06,-845.6 1071,-863.64 1064.16,-867.49 1056.64,-870.94 1049.13,-873.99"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="1047.74,-870.77 1039.66,-877.61 1050.25,-877.3 1047.74,-870.77"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge76" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe.f90</title>
+<path fill="none" stroke="#00ffe2" stroke-dasharray="5,2" d="M1106.98,-732.64C1087.1,-732.64 1067.57,-732.64 1050.71,-732.64"/>
+<polygon fill="#00ffe2" stroke="#00ffe2" points="1050.57,-729.14 1040.57,-732.64 1050.57,-736.14 1050.57,-729.14"/>
+</g>
+<!-- sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node23" class="node">
+<title>sourcefile~mqc_method_base.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node23"><a xlink:href="../sourcefile/mqc_method_base.f90.html" xlink:title="mqc_method_base.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="447,-227.64 314,-227.64 314,-203.64 447,-203.64 447,-227.64"/>
+<text text-anchor="middle" x="380.5" y="-213.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_base.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge84" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M1147.75,-720.58C1133.78,-717.06 1119.73,-712.5 1107,-706.64 1088.59,-698.15 1088.27,-689.26 1071,-678.64 1055.61,-669.17 495.75,-413.44 483,-400.64 456.34,-373.87 464.82,-356.95 447,-323.64 430.33,-292.48 408.69,-257.75 394.95,-236.3"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="397.76,-234.21 389.4,-227.7 391.88,-238 397.76,-234.21"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node40" class="node">
+<title>sourcefile~mqc_method_factory.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node40"><a xlink:href="../sourcefile/mqc_method_factory.f90.html" xlink:title="mqc_method_factory.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1071,-184.64 925,-184.64 925,-160.64 1071,-160.64 1071,-184.64"/>
+<text text-anchor="middle" x="998" y="-170.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_factory.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge111" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_method_factory.f90</title>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M1124.22,-720.6C1117.82,-716.86 1111.98,-712.26 1107,-706.64 1041.67,-632.85 1106.88,-356.42 1071,-264.64 1059.86,-236.14 1036.84,-209.27 1019.81,-192.02"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="1022.06,-189.31 1012.47,-184.79 1017.14,-194.3 1022.06,-189.31"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node21" class="node">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node21"><a xlink:href="../sourcefile/mqc_mbe_fragment_distribution_scheme_hessian.f90.html" xlink:title="mqc_mbe_fragment_distribution_scheme_hessian.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1699,-330.64 1398,-330.64 1398,-306.64 1699,-306.64 1699,-330.64"/>
+<text text-anchor="middle" x="1548.5" y="-316.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme_hessian.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge14" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1531.2,-330.87C1472.49,-374.32 1265.03,-522.63 1071,-597.64 1063.85,-600.4 808.04,-651.6 801,-654.64"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge80" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M1542.12,-330.65C1513.4,-394.7 1378.8,-693.5 1362,-706.64 1357.3,-710.31 1352.22,-713.5 1346.88,-716.27"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1345.27,-713.16 1337.67,-720.54 1348.21,-719.51 1345.27,-713.16"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge85" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M1534.12,-306.46C1504.96,-280.51 1432.6,-219.32 1362,-184.64 1128.62,-69.99 1056.56,-66.58 801,-18.64"/>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M799,-18.64C659.83,13.32 596.69,9.75 483,-76.64 453.88,-98.77 468.28,-120.89 447,-150.64 434.61,-167.96 417.43,-184.81 403.77,-197.02"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="401.43,-194.42 396.2,-203.64 406.03,-199.69 401.43,-194.42"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge112" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_method_factory.f90</title>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M1530.04,-306.38C1498.24,-284.7 1428.05,-239.81 1362,-217.64 1308.1,-199.55 1291.72,-207.09 1235.5,-198.64"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node22" class="node">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node22"><a xlink:href="../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html" xlink:title="mqc_mbe_mpi_fragment_distribution_scheme.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2233,-826.64 1953,-826.64 1953,-802.64 2233,-802.64 2233,-826.64"/>
+<text text-anchor="middle" x="2093" y="-812.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_mpi_fragment_distribution_scheme.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge15" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1547.5,-1047.64C1409.4,-1060.11 1374.06,-1053.19 1235.5,-1047.64"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1233.5,-1047.64C1176.69,-1045.36 1162.39,-1041.46 1107,-1028.64 927.19,-987.03 876.67,-984.98 711,-903.64 669.91,-883.46 627.26,-851.4 602.2,-831.21"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="604.37,-828.46 594.4,-824.85 599.94,-833.89 604.37,-828.46"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge35" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1233.5,-1047.64C1129.39,-1042.81 1103,-1054.38 999,-1047.64"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_group_batching.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge72" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_group_batching.f90</title>
+<path fill="none" stroke="#00ff71" stroke-dasharray="5,2" d="M2077.05,-826.92C2015.71,-875.96 1775.92,-1054.84 1549.5,-1047.64"/>
+<path fill="none" stroke="#00ff71" stroke-dasharray="5,2" d="M1547.5,-1047.64C1503.39,-1051.62 1389.9,-1034.5 1312.68,-1021.41"/>
+<polygon fill="#00ff71" stroke="#00ff71" points="1312.95,-1017.91 1302.5,-1019.68 1311.77,-1024.81 1312.95,-1017.91"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge74" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M1952.9,-814.64C1944.29,-814.64 1935.71,-814.64 1927.31,-814.64"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="1927.17,-811.14 1917.17,-814.64 1927.17,-818.14 1927.17,-811.14"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge81" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M2055.43,-802.57C1986.6,-780.58 1832.71,-734.73 1699,-718.64 1566.18,-702.65 1531.65,-712.89 1398,-718.64 1389.66,-719 1381.09,-719.46 1372.45,-719.99"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1372.04,-716.51 1362.29,-720.66 1372.49,-723.5 1372.04,-716.51"/>
+</g>
+<!-- sourcefile~mqc_method_base.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge36" class="edge">
+<title>sourcefile~mqc_method_base.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M370.73,-227.7C356.97,-247.07 330.24,-286.7 314,-323.64 264.68,-435.8 232.48,-580.04 221.34,-634.51"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="217.89,-633.95 219.34,-644.44 224.75,-635.33 217.89,-633.95"/>
+</g>
+<!-- sourcefile~mqc_method_dft.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node24" class="node">
+<title>sourcefile~mqc_method_dft.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node24"><a xlink:href="../sourcefile/mqc_method_dft.f90.html" xlink:title="mqc_method_dft.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="862,-150.64 738,-150.64 738,-126.64 862,-126.64 862,-150.64"/>
+<text text-anchor="middle" x="800" y="-136.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_dft.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge37" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M743.52,-150.64C699.44,-159.53 636.1,-170.9 580,-175.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M578,-175.64C489.28,-183.13 449.71,-79.41 381.5,-136.64"/>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge51" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M737.68,-144.71C727.88,-147.96 718.51,-152.72 711,-159.64 673.17,-194.49 712.26,-234.17 675,-269.64 671.4,-273.07 667.39,-276.06 663.11,-278.65"/>
+<polygon fill="#ffe200" stroke="#ffe200" points="661.2,-275.7 653.99,-283.46 664.47,-281.89 661.2,-275.7"/>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge58" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M737.59,-144C727.68,-147.31 718.3,-152.28 711,-159.64 660.6,-210.48 725.82,-266.22 675,-316.64 670.7,-320.91 665.74,-324.39 660.38,-327.23"/>
+<polygon fill="#e2ff00" stroke="#e2ff00" points="658.75,-324.13 651.06,-331.41 661.61,-330.51 658.75,-324.13"/>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge86" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M578,-175.64C529.17,-179.76 474.64,-191.44 435.43,-201.12"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="434.4,-197.77 425.56,-203.6 436.11,-204.56 434.4,-197.77"/>
+</g>
+<!-- sourcefile~mqc_semi_numerical_hessian.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node28" class="node">
+<title>sourcefile~mqc_semi_numerical_hessian.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node28"><a xlink:href="../sourcefile/mqc_semi_numerical_hessian.f90.html" xlink:title="mqc_semi_numerical_hessian.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="675,-227.64 483,-227.64 483,-203.64 675,-203.64 675,-227.64"/>
+<text text-anchor="middle" x="579" y="-213.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_semi_numerical_hessian.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_semi_numerical_hessian.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge97" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_semi_numerical_hessian.f90</title>
+<path fill="none" stroke="#e200ff" stroke-dasharray="5,2" d="M737.59,-149.43C728.43,-152.13 719.29,-155.49 711,-159.64 692.38,-168.97 693.46,-180 675,-189.64 666.87,-193.88 657.98,-197.48 649.01,-200.53"/>
+<polygon fill="#e200ff" stroke="#e200ff" points="647.74,-197.26 639.27,-203.63 649.86,-203.94 647.74,-197.26"/>
+</g>
+<!-- sourcefile~mqc_terco_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node31" class="node">
+<title>sourcefile~mqc_terco_bridge_stub.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node31"><a xlink:href="../sourcefile/mqc_terco_bridge_stub.f90.html" xlink:title="mqc_terco_bridge_stub.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="657,-109.64 501,-109.64 501,-85.64 657,-85.64 657,-109.64"/>
+<text text-anchor="middle" x="579" y="-95.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_terco_bridge_stub.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_terco_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge102" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_terco_bridge_stub.f90</title>
+<path fill="none" stroke="#ff0071" stroke-dasharray="5,2" d="M738,-127.22C711.96,-122.34 681.33,-116.61 654.02,-111.5"/>
+<polygon fill="#ff0071" stroke="#ff0071" points="654.59,-108.04 644.11,-109.64 653.3,-114.92 654.59,-108.04"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node25" class="node">
+<title>sourcefile~mqc_method_hf.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node25"><a xlink:href="../sourcefile/mqc_method_hf.f90.html" xlink:title="mqc_method_hf.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="860,-192.64 740,-192.64 740,-168.64 860,-168.64 860,-192.64"/>
+<text text-anchor="middle" x="800" y="-178.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_hf.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge38" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M578,-255.64C535.94,-264.88 523.04,-258.81 483,-274.64 433.62,-294.16 425.87,-308.48 381.5,-337.64"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge52" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M739.61,-191.4C729.39,-195.08 719.37,-200.01 711,-206.64 685.71,-226.65 700.49,-249.88 675,-269.64 670.03,-273.49 664.53,-276.77 658.76,-279.56"/>
+<polygon fill="#ffe200" stroke="#ffe200" points="657.28,-276.39 649.49,-283.57 660.06,-282.81 657.28,-276.39"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge59" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M773.9,-192.66C754.64,-202.93 728.48,-219.25 711,-239.64 686.41,-268.32 704.48,-293.02 675,-316.64 670.63,-320.14 665.81,-323.08 660.71,-325.56"/>
+<polygon fill="#e2ff00" stroke="#e2ff00" points="659.15,-322.42 651.29,-329.53 661.87,-328.87 659.15,-322.42"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge88" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M745.5,-192.66C733.77,-196.32 721.68,-200.93 711,-206.64 692.63,-216.46 693.79,-227.65 675,-236.64 636.15,-255.21 622.06,-246.4 580,-255.64"/>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M578,-255.64C521.58,-268.04 455.74,-247.56 416.4,-231.61"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="417.57,-228.3 406.99,-227.68 414.87,-234.76 417.57,-228.3"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_semi_numerical_hessian.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge98" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_semi_numerical_hessian.f90</title>
+<path fill="none" stroke="#e200ff" stroke-dasharray="5,2" d="M739.74,-190.11C716.91,-193.76 690.37,-198 665.55,-201.97"/>
+<polygon fill="#e200ff" stroke="#e200ff" points="664.73,-198.55 655.41,-203.59 665.84,-205.46 664.73,-198.55"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_terco_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge103" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_terco_bridge_stub.f90</title>
+<path fill="none" stroke="#ff0071" stroke-dasharray="5,2" d="M740.75,-168.55C730.72,-165.95 720.48,-162.97 711,-159.64 675.7,-147.22 637.19,-128.31 611.13,-114.63"/>
+<polygon fill="#ff0071" stroke="#ff0071" points="612.59,-111.45 602.12,-109.85 609.31,-117.63 612.59,-111.45"/>
+</g>
+<!-- sourcefile~mqc_method_mcscf.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node26" class="node">
+<title>sourcefile~mqc_method_mcscf.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node26"><a xlink:href="../sourcefile/mqc_method_mcscf.f90.html" xlink:title="mqc_method_mcscf.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="869.5,-108.64 730.5,-108.64 730.5,-84.64 869.5,-84.64 869.5,-108.64"/>
+<text text-anchor="middle" x="800" y="-94.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_mcscf.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_mcscf.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge39" class="edge">
+<title>sourcefile~mqc_method_mcscf.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M736.79,-84.61C717.11,-81.34 695.21,-78.26 675,-76.64 589.94,-69.82 565.31,-54.13 483,-76.64 432.45,-90.46 421.64,-102.95 381.5,-136.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M379.5,-136.64C349.43,-161.29 333.54,-161.02 314,-194.64 226.42,-345.33 217.41,-564.47 216.87,-634.35"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="213.37,-634.59 216.84,-644.6 220.37,-634.61 213.37,-634.59"/>
+</g>
+<!-- sourcefile~mqc_method_mcscf.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge60" class="edge">
+<title>sourcefile~mqc_method_mcscf.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M730.24,-104.47C723.04,-107.66 716.4,-111.93 711,-117.64 649.23,-182.93 737.32,-251.87 675,-316.64 670.8,-321.01 665.91,-324.56 660.61,-327.45"/>
+<polygon fill="#e2ff00" stroke="#e2ff00" points="658.97,-324.34 651.34,-331.69 661.89,-330.71 658.97,-324.34"/>
+</g>
+<!-- sourcefile~mqc_method_mcscf.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge89" class="edge">
+<title>sourcefile~mqc_method_mcscf.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M735.76,-108.64C650.47,-124.98 506.48,-153.18 483,-161.64 456.74,-171.1 428.88,-186.34 409,-198.22"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="406.92,-195.39 400.2,-203.58 410.56,-201.37 406.92,-195.39"/>
+</g>
+<!-- sourcefile~mqc_method_xtb.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge40" class="edge">
+<title>sourcefile~mqc_method_xtb.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M522.76,-367.59C464.9,-355 382.26,-337.14 381.5,-337.64"/>
+</g>
+<!-- sourcefile~mqc_method_xtb.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge90" class="edge">
+<title>sourcefile~mqc_method_xtb.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M516.53,-372.97C504.75,-369.83 492.99,-365.27 483,-358.64 459.01,-342.73 415.08,-272.3 393.76,-236.57"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="396.72,-234.71 388.61,-227.89 390.7,-238.28 396.72,-234.71"/>
+</g>
+<!-- sourcefile~mqc_semi_numerical_hessian.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge41" class="edge">
+<title>sourcefile~mqc_semi_numerical_hessian.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M516.7,-227.65C505.09,-231.23 493.36,-235.81 483,-241.64 428.88,-272.08 433.39,-303.54 381.5,-337.64"/>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M379.5,-337.64C271.43,-408.64 231.69,-574.93 220.59,-634.73"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="217.14,-634.15 218.84,-644.61 224.03,-635.37 217.14,-634.15"/>
+</g>
+<!-- sourcefile~mqc_semi_numerical_hessian.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge91" class="edge">
+<title>sourcefile~mqc_semi_numerical_hessian.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M482.92,-215.64C474.28,-215.64 465.61,-215.64 457.18,-215.64"/>
+<polygon fill="#0038ff" stroke="#0038ff" points="457.02,-212.14 447.02,-215.64 457.02,-219.14 457.02,-212.14"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node29" class="node">
+<title>sourcefile~mqc_serial_fragment_processor.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node29"><a xlink:href="../sourcefile/mqc_serial_fragment_processor.f90.html" xlink:title="mqc_serial_fragment_processor.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1649,-906.64 1448,-906.64 1448,-882.64 1649,-882.64 1649,-906.64"/>
+<text text-anchor="middle" x="1548.5" y="-892.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_serial_fragment_processor.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge16" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1233.5,-891.64C1180.74,-893.39 1051.7,-932.65 999,-929.64"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M997,-929.64C851.81,-921.33 688,-858.8 616.56,-828.71"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="617.68,-825.39 607.11,-824.69 614.94,-831.83 617.68,-825.39"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge42" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M1489.14,-906.68C1337.9,-937.34 935.68,-1015.18 801,-1004.64"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_checkpoint.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge48" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_checkpoint.f90</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1447.71,-891.51C1386.46,-890.12 1306.42,-889.28 1235.5,-891.64"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1233.5,-891.64C1177.96,-893.48 1114.99,-892.79 1068.29,-891.75"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="1068.37,-888.25 1058.29,-891.51 1068.2,-895.24 1068.37,-888.25"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge82" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M1511.33,-882.53C1480.52,-871.72 1435.43,-854.67 1398,-835.64 1347.33,-809.87 1292.2,-772.84 1260.95,-750.91"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1262.6,-747.79 1252.42,-744.88 1258.57,-753.51 1262.6,-747.79"/>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge43" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M2308.65,-362.72C2198.69,-391.3 1922.07,-460.64 1827,-460.64 1827,-460.64 1827,-460.64 997,-460.64 904.33,-460.64 670.18,-481.97 580,-460.64"/>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge65" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M2303.85,-357.82C2291.23,-361.67 2278.59,-367.58 2269,-376.64 2235.27,-408.5 2255.23,-433.91 2233,-474.64 2197.62,-539.48 2141.03,-606.44 2112.19,-638.78"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="2109.24,-636.82 2105.15,-646.59 2114.45,-641.5 2109.24,-636.82"/>
+</g>
+<!-- sourcefile~mqc_json_config_reader.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node39" class="node">
+<title>sourcefile~mqc_json_config_reader.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node39"><a xlink:href="../sourcefile/mqc_json_config_reader.f90.html" xlink:title="mqc_json_config_reader.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1906,-170.64 1746,-170.64 1746,-146.64 1906,-146.64 1906,-170.64"/>
+<text text-anchor="middle" x="1826" y="-156.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_config_reader.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_json_config_reader.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge110" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_json_config_reader.f90</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M2339.53,-338.5C2301.39,-308.36 2196.3,-230.26 2094,-198.64"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M2092,-198.64C2059.98,-188.74 1980.1,-177.32 1916.35,-169.22"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1916.63,-165.73 1906.27,-167.95 1915.75,-172.67 1916.63,-165.73"/>
+</g>
+<!-- sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge113" class="edge">
+<title>sourcefile~mqc_session.f90&#45;&gt;sourcefile~mqc_method_factory.f90</title>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M2092,-198.64C2001.08,-170.53 1329.61,-212.78 1235.5,-198.64"/>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M1233.5,-198.64C1183.02,-191.17 1126.14,-184.82 1081.04,-180.26"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="1081.32,-176.77 1071.02,-179.25 1080.62,-183.73 1081.32,-176.77"/>
+</g>
+<!-- sourcefile~mqc_terco_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge44" class="edge">
+<title>sourcefile~mqc_terco_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M500.53,-96.01C460.91,-99.06 414.27,-109.14 381.5,-136.64"/>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node32" class="node">
+<title>sourcefile~mqc_unfragmented_workflow.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node32"><a xlink:href="../sourcefile/mqc_unfragmented_workflow.f90.html" xlink:title="mqc_unfragmented_workflow.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1643.5,-784.64 1453.5,-784.64 1453.5,-760.64 1643.5,-760.64 1643.5,-784.64"/>
+<text text-anchor="middle" x="1548.5" y="-770.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_unfragmented_workflow.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_json_output_types.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge17" class="edge">
+<title>sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_json_output_types.f90</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M1453.44,-768.4C1320.16,-763.11 1083.19,-756.6 999,-772.64"/>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge83" class="edge">
+<title>sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#00e2ff" stroke-dasharray="5,2" d="M1453.89,-760.64C1417.88,-756.02 1376.55,-750.72 1339.61,-745.99"/>
+<polygon fill="#00e2ff" stroke="#00e2ff" points="1339.68,-742.47 1329.31,-744.67 1338.79,-749.41 1339.68,-742.47"/>
+</g>
+<!-- sourcefile~main.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node33" class="node">
+<title>sourcefile~main.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node33"><a xlink:href="../sourcefile/main.f90.html" xlink:title="main.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="2572,-424.64 2512,-424.64 2512,-400.64 2572,-400.64 2572,-424.64"/>
+<text text-anchor="middle" x="2542" y="-410.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge62" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M2354.5,-390.64C2285.96,-396.65 2152.21,-576.61 2108.33,-638.2"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="2105.45,-636.21 2102.52,-646.4 2111.16,-640.26 2105.45,-636.21"/>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_geometry_optimizer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge67" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_geometry_optimizer.f90</title>
+<path fill="none" stroke="#38ff00" stroke-dasharray="5,2" d="M2531.08,-424.79C2500.98,-461.65 2410.49,-572.51 2373.02,-618.4"/>
+<polygon fill="#38ff00" stroke="#38ff00" points="2370.08,-616.47 2366.47,-626.43 2375.5,-620.89 2370.08,-616.47"/>
+</g>
+<!-- sourcefile~mqc_acknowledgements.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node34" class="node">
+<title>sourcefile~mqc_acknowledgements.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node34"><a xlink:href="../sourcefile/mqc_acknowledgements.f90.html" xlink:title="mqc_acknowledgements.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1909.5,-292.64 1742.5,-292.64 1742.5,-268.64 1909.5,-268.64 1909.5,-292.64"/>
+<text text-anchor="middle" x="1826" y="-278.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_acknowledgements.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_acknowledgements.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge104" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_acknowledgements.f90</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M2092,-280.64C2035.91,-267.16 1971.19,-266.89 1919.75,-270.11"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="1919.38,-266.63 1909.65,-270.8 1919.86,-273.61 1919.38,-266.63"/>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_json_config_reader.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge109" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_json_config_reader.f90</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M2511.86,-407.58C2500.38,-404.46 2487.66,-399.5 2478,-391.64 2453.29,-371.52 2463.61,-353.06 2442,-329.64 2365.34,-246.55 2339.76,-221.83 2233,-184.64 2128.69,-148.3 2000.3,-146.65 1916.19,-150.88"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1915.95,-147.39 1906.15,-151.42 1916.33,-154.38 1915.95,-147.39"/>
+</g>
+<!-- sourcefile~mqc_version.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node41" class="node">
+<title>sourcefile~mqc_version.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node41"><a xlink:href="../sourcefile/mqc_version.f90.html" xlink:title="mqc_version.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1284.5,-250.64 1184.5,-250.64 1184.5,-226.64 1284.5,-226.64 1284.5,-250.64"/>
+<text text-anchor="middle" x="1234.5" y="-236.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_version.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_version.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge115" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_version.f90</title>
+<path fill="none" stroke="#ff00aa" stroke-dasharray="5,2" d="M2511.98,-405.45C2475.68,-397.32 2411.61,-385.81 2356.5,-390.64"/>
+<path fill="none" stroke="#ff00aa" stroke-dasharray="5,2" d="M2354.5,-390.64C2229.3,-401.62 2216.2,-310 2094,-280.64"/>
+<path fill="none" stroke="#ff00aa" stroke-dasharray="5,2" d="M2092,-280.64C1799.67,-210.4 1435.56,-224.84 1294.83,-234.07"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="1294.43,-230.59 1284.69,-234.75 1294.9,-237.57 1294.43,-230.59"/>
+</g>
+<!-- sourcefile~mqc_acknowledgements.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge49" class="edge">
+<title>sourcefile~mqc_acknowledgements.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M1742.37,-285.76C1593.35,-293.82 1269.92,-305.9 999,-278.64"/>
+</g>
+<!-- sourcefile~mqc_capi_charges.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node35" class="node">
+<title>sourcefile~mqc_capi_charges.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node35"><a xlink:href="../sourcefile/mqc_capi_charges.f90.html" xlink:title="mqc_capi_charges.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="866,-314.64 734,-314.64 734,-290.64 866,-290.64 866,-314.64"/>
+<text text-anchor="middle" x="800" y="-300.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_charges.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge54" class="edge">
+<title>sourcefile~mqc_capi_charges.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M733.89,-313.04C711.16,-316.68 685.36,-320.8 661.47,-324.62"/>
+<polygon fill="#e2ff00" stroke="#e2ff00" points="660.69,-321.2 651.37,-326.23 661.79,-328.11 660.69,-321.2"/>
+</g>
+<!-- sourcefile~mqc_capi_mayer.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node36" class="node">
+<title>sourcefile~mqc_capi_mayer.f90</title>
+<g id="a_sourcefile~~mqc_quao_rows.f90~~AfferentGraph_node36"><a xlink:href="../sourcefile/mqc_capi_mayer.f90.html" xlink:title="mqc_capi_mayer.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="861,-272.64 739,-272.64 739,-248.64 861,-248.64 861,-272.64"/>
+<text text-anchor="middle" x="800" y="-258.24" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_mayer.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_capi_mayer.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge55" class="edge">
+<title>sourcefile~mqc_capi_mayer.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M738.69,-270.46C729.09,-273.29 719.53,-276.95 711,-281.64 691.45,-292.39 694.64,-306.05 675,-316.64 670.47,-319.08 665.67,-321.24 660.74,-323.15"/>
+<polygon fill="#e2ff00" stroke="#e2ff00" points="659.39,-319.91 651.1,-326.51 661.7,-326.52 659.39,-319.91"/>
+</g>
+<!-- sourcefile~mqc_capi_session.f90&#45;&gt;sourcefile~mqc_session.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge100" class="edge">
+<title>sourcefile~mqc_capi_session.f90&#45;&gt;sourcefile~mqc_session.f90</title>
+<path fill="none" stroke="#ff00aa" stroke-dasharray="5,2" d="M2477.76,-363.78C2458.13,-361.66 2436.55,-359.32 2417.1,-357.21"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="2417.47,-353.73 2407.15,-356.13 2416.71,-360.69 2417.47,-353.73"/>
+</g>
+<!-- sourcefile~mqc_frag_utils.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge69" class="edge">
+<title>sourcefile~mqc_frag_utils.f90&#45;&gt;sourcefile~mqc_gmbe_utils.f90</title>
+<path fill="none" stroke="#00ff38" stroke-dasharray="5,2" d="M744.87,-694.64C715.85,-694.64 679.79,-694.64 648.8,-694.64"/>
+<polygon fill="#00ff38" stroke="#00ff38" points="648.5,-691.14 638.5,-694.64 648.5,-698.14 648.5,-691.14"/>
+</g>
+<!-- sourcefile~mqc_json_config_reader.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge50" class="edge">
+<title>sourcefile~mqc_json_config_reader.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M1547.5,-132.64C1478.48,-127.65 986.1,-119.15 925,-151.64 900.82,-164.49 911.91,-186.64 889,-201.64 855.52,-223.56 840.2,-212.63 801,-220.64"/>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M799,-220.64C759.71,-228.2 746.96,-222.1 711,-239.64 692.28,-248.77 693.46,-260 675,-269.64 666.87,-273.88 657.98,-277.48 649.01,-280.53"/>
+<polygon fill="#ffe200" stroke="#ffe200" points="647.74,-277.26 639.27,-283.63 649.86,-283.94 647.74,-277.26"/>
+</g>
+<!-- sourcefile~mqc_json_config_reader.f90&#45;&gt;sourcefile~mqc_terco_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge101" class="edge">
+<title>sourcefile~mqc_json_config_reader.f90&#45;&gt;sourcefile~mqc_terco_bridge_stub.f90</title>
+<path fill="none" stroke="#ff0071" stroke-dasharray="5,2" d="M1745.97,-151.72C1690.87,-146.77 1615.66,-139.74 1549.5,-132.64"/>
+<path fill="none" stroke="#ff0071" stroke-dasharray="5,2" d="M1547.5,-132.64C1255.42,-101.29 1182.49,-88.32 889,-75.64 809.96,-72.22 789.84,-69.06 711,-75.64 690.65,-77.34 668.71,-80.49 648.71,-83.89"/>
+<polygon fill="#ff0071" stroke="#ff0071" points="648,-80.46 638.75,-85.63 649.21,-87.36 648,-80.46"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_base.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge87" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_base.f90</title>
+<path fill="none" stroke="#0038ff" stroke-dasharray="5,2" d="M988.24,-160.18C963.57,-126.53 889.47,-35.24 801,-18.64"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_dft.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge92" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_dft.f90</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M927.62,-160.6C909.6,-157.48 890.15,-154.1 872.04,-150.96"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="872.59,-147.5 862.14,-149.24 871.39,-154.4 872.59,-147.5"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_hf.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge93" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_hf.f90</title>
+<path fill="none" stroke="#3800ff" stroke-dasharray="5,2" d="M924.85,-175.58C907.06,-176.31 888.04,-177.09 870.38,-177.81"/>
+<polygon fill="#3800ff" stroke="#3800ff" points="870.01,-174.32 860.16,-178.22 870.3,-181.31 870.01,-174.32"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_mcscf.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge94" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_mcscf.f90</title>
+<path fill="none" stroke="#7100ff" stroke-dasharray="5,2" d="M976.95,-160.6C955.74,-148.31 920.99,-129.41 889,-117.64 883,-115.43 876.69,-113.4 870.31,-111.53"/>
+<polygon fill="#7100ff" stroke="#7100ff" points="870.84,-108.05 860.27,-108.75 868.97,-114.79 870.84,-108.05"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_xtb.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge96" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_xtb.f90</title>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M994.06,-184.83C985.11,-218.97 954.71,-315.7 889,-356.64 817.45,-401.21 717.71,-399.84 651.11,-392.06"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="651.47,-388.58 641.12,-390.82 650.61,-395.53 651.47,-388.58"/>
+</g>
+<!-- sourcefile~mqc_version.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge53" class="edge">
+<title>sourcefile~mqc_version.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M1184.41,-248.45C1121.14,-260.87 1017.08,-280.46 999,-278.64"/>
+<path fill="none" stroke="#ffe200" stroke-dasharray="5,2" d="M997,-278.64C906.61,-269.54 890.01,-202.47 801,-220.64"/>
+</g>
+<!-- sourcefile~mqc_version.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge61" class="edge">
+<title>sourcefile~mqc_version.f90&#45;&gt;sourcefile~mqc_czt_bridge_stub.f90</title>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M1213.52,-250.77C1151.73,-286.74 958.46,-387.5 801,-342.64"/>
+<path fill="none" stroke="#e2ff00" stroke-dasharray="5,2" d="M799,-342.64C754.67,-330.25 703.31,-328.46 661.48,-330.01"/>
+<polygon fill="#e2ff00" stroke="#e2ff00" points="661.17,-326.52 651.33,-330.46 661.48,-333.51 661.17,-326.52"/>
+</g>
+<!-- sourcefile~mqc_version.f90&#45;&gt;sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_quao_rows.f90~~AfferentGraph_edge114" class="edge">
+<title>sourcefile~mqc_version.f90&#45;&gt;sourcefile~mqc_method_factory.f90</title>
+<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M1184.42,-230.35C1160.81,-225.91 1132.22,-219.86 1107,-212.64 1083.54,-205.93 1057.91,-196.52 1037.5,-188.52"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="1038.52,-185.16 1027.94,-184.72 1035.94,-191.67 1038.52,-185.16"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pansourcefilemqc_quao_rowsf90AfferentGraph = svgPanZoom('#sourcefilemqc_quao_rowsf90AfferentGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#AfferentGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="AfferentGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a file to a file which it depends on. A file
+is dependent upon another if the latter must be compiled before the former
+can be.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
+<br>
+      <section>
+        <h2><span class="anchor" id="src"></span>Source Code</h2>
+        <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! The quasi-atomic bonding tables as data rather than as printed lines</span>
+<a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_quao_rows</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! What a quasi-atomic bonding analysis found in one calculation, kept so it</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!! can travel with the result: over MPI to the coordinator, and into the</span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! JSON output. Backend-neutral, because `calculation_result_t` carries it.</span>
+<a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!!</span>
+<a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! Two levels, and they are not equally robust. The **orbital pairs** are</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="c">!! the rows of the report's bonds and delocalization tables, and depend on</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="c">!! the orientation of the orbitals within each atom. The **atom pairs** are</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="c">!! sums over every orbital on one atom against every orbital on another,</span>
+<a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="c">!! which no rotation within an atom can change (Paper I eq (5.4)), so they</span>
+<a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="c">!! hold even where the orientation is slow to settle.</span>
+<a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">   </span><span class="k">use </span><span class="n">pic_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="w">   </span><span class="k">implicit none</span>
+<a id="ln-15" name="ln-15" href="#ln-15"></a><span class="k">   private</span>
+<a id="ln-16" name="ln-16" href="#ln-16"></a>
+<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quao_rows_t</span>
+<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quao_type_name</span>
+<a id="ln-19" name="ln-19" href="#ln-19"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_ROW_BOND</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_ROW_DELOCALIZATION</span>
+<a id="ln-20" name="ln-20" href="#ln-20"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_ROW_INTEGERS</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_ROW_REALS</span>
+<a id="ln-21" name="ln-21" href="#ln-21"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_LPMOD</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_NONE</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_LONE_PAIR</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_RADICAL</span>
+<a id="ln-22" name="ln-22" href="#ln-22"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_SIGMA</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_PI</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_RDLP</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_RDNV</span>
+<a id="ln-23" name="ln-23" href="#ln-23"></a><span class="w">   </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_NVMOD</span><span class="p">,</span><span class="w"> </span><span class="n">QUAO_TYPE_NV</span>
+<a id="ln-24" name="ln-24" href="#ln-24"></a>
+<a id="ln-25" name="ln-25" href="#ln-25"></a><span class="w">   </span><span class="c">! Orbital types, numbered as GAMESS numbers them so the two can be compared</span>
+<a id="ln-26" name="ln-26" href="#ln-26"></a><span class="w">   </span><span class="c">! without a translation table.</span>
+<a id="ln-27" name="ln-27" href="#ln-27"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_LPMOD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+<a id="ln-28" name="ln-28" href="#ln-28"></a><span class="w">      </span><span class="c">!! Lone-pair occupancy, but engaged in a strong bond. A lone pair that is</span>
+<a id="ln-29" name="ln-29" href="#ln-29"></a><span class="w">      </span><span class="c">!! not quite one.</span>
+<a id="ln-30" name="ln-30" href="#ln-30"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_NONE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<a id="ln-31" name="ln-31" href="#ln-31"></a><span class="w">      </span><span class="c">!! Unclassified. Reached only on a transition metal, where the sigma/pi</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">      </span><span class="c">!! test is skipped.</span>
+<a id="ln-33" name="ln-33" href="#ln-33"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_LONE_PAIR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_RADICAL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<a id="ln-35" name="ln-35" href="#ln-35"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_SIGMA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_PI</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+<a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_RDLP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span><span class="w">      </span><span class="c">!! Reduced lone pair</span>
+<a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_RDNV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="w">      </span><span class="c">!! Reduced, and nearly empty</span>
+<a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_NVMOD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="w">     </span><span class="c">!! Empty, but in a strong bond</span>
+<a id="ln-40" name="ln-40" href="#ln-40"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_TYPE_NV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9</span><span class="w">        </span><span class="c">!! Empty</span>
+<a id="ln-41" name="ln-41" href="#ln-41"></a>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_ROW_BOND</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">      </span><span class="c">!! Both ends bonding orbitals naming each other's atom as partner</span>
+<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_ROW_DELOCALIZATION</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">      </span><span class="c">!! Anything else above threshold; end 1 is the donor</span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_ROW_INTEGERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">11</span>
+<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">      </span><span class="c">!! Integers per row in `pack_integers`</span>
+<a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">   </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">QUAO_ROW_REALS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">      </span><span class="c">!! Reals per row in `pack_reals`</span>
+<a id="ln-51" name="ln-51" href="#ln-51"></a>
+<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quao_rows_t</span>
+<a id="ln-53" name="ln-53" href="#ln-53"></a><span class="w">      </span><span class="c">!! Orbital-pair rows and atom-pair sums from one bonding analysis</span>
+<a id="ln-54" name="ln-54" href="#ln-54"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<a id="ln-55" name="ln-55" href="#ln-55"></a><span class="w">         </span><span class="c">!! Orbital-pair rows</span>
+<a id="ln-56" name="ln-56" href="#ln-56"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">kind</span><span class="p">(:)</span>
+<a id="ln-57" name="ln-57" href="#ln-57"></a><span class="w">         </span><span class="c">!! (n), `QUAO_ROW_BOND` or `QUAO_ROW_DELOCALIZATION`</span>
+<a id="ln-58" name="ln-58" href="#ln-58"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-59" name="ln-59" href="#ln-59"></a><span class="w">         </span><span class="c">!! (2, n), numbered as the molecular orbitals are, core included</span>
+<a id="ln-60" name="ln-60" href="#ln-60"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-61" name="ln-61" href="#ln-61"></a><span class="w">         </span><span class="c">!! (2, n), 1-based atom of the calculation the analysis ran on</span>
+<a id="ln-62" name="ln-62" href="#ln-62"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_type</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-63" name="ln-63" href="#ln-63"></a><span class="w">         </span><span class="c">!! (2, n), one of the `QUAO_TYPE_*` codes</span>
+<a id="ln-64" name="ln-64" href="#ln-64"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dominant_l</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-65" name="ln-65" href="#ln-65"></a><span class="w">         </span><span class="c">!! (2, n), 0 to 3</span>
+<a id="ln-66" name="ln-66" href="#ln-66"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">partner_atom</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-67" name="ln-67" href="#ln-67"></a><span class="w">         </span><span class="c">!! (2, n), 1-based atom of the orbital's first strong-bond partner,</span>
+<a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">         </span><span class="c">!! 0 when it has none</span>
+<a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupation</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">         </span><span class="c">!! (2, n), electrons</span>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bond_order</span><span class="p">(:)</span>
+<a id="ln-72" name="ln-72" href="#ln-72"></a><span class="w">         </span><span class="c">!! (n), the population bond order between the two orbitals</span>
+<a id="ln-73" name="ln-73" href="#ln-73"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">kinetic_bond_order</span><span class="p">(:)</span>
+<a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">         </span><span class="c">!! (n), kcal/mol, negative for a bonding interaction</span>
+<a id="ln-75" name="ln-75" href="#ln-75"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_bond_index</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-76" name="ln-76" href="#ln-76"></a><span class="w">         </span><span class="c">!! (n_atoms, n_atoms), sum of squared bond orders over every orbital</span>
+<a id="ln-77" name="ln-77" href="#ln-77"></a><span class="w">         </span><span class="c">!! pair between two atoms; zero on the diagonal</span>
+<a id="ln-78" name="ln-78" href="#ln-78"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_kinetic_bond_order</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<a id="ln-79" name="ln-79" href="#ln-79"></a><span class="w">         </span><span class="c">!! (n_atoms, n_atoms), kcal/mol, sum of kinetic bond orders over every</span>
+<a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">         </span><span class="c">!! orbital pair between two atoms; zero on the diagonal</span>
+<a id="ln-81" name="ln-81" href="#ln-81"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<a id="ln-82" name="ln-82" href="#ln-82"></a><span class="w">         </span><span class="c">!! kcal/mol; delocalization rows weaker than this were not kept</span>
+<a id="ln-83" name="ln-83" href="#ln-83"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orientation_stalled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<a id="ln-84" name="ln-84" href="#ln-84"></a><span class="w">         </span><span class="c">!! The orientation stopped at its sweep limit; the orbital pairs are</span>
+<a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">         </span><span class="c">!! resolved only to the angle it was still turning by</span>
+<a id="ln-86" name="ln-86" href="#ln-86"></a><span class="w">   </span><span class="k">contains</span>
+<a id="ln-87" name="ln-87" href="#ln-87"></a><span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_destroy</span>
+<a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pack_integers</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_pack_integers</span>
+<a id="ln-89" name="ln-89" href="#ln-89"></a><span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pack_reals</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_pack_reals</span>
+<a id="ln-90" name="ln-90" href="#ln-90"></a><span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">unpack</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_unpack</span>
+<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="w">   </span><span class="k">end type </span><span class="n">quao_rows_t</span>
+<a id="ln-92" name="ln-92" href="#ln-92"></a>
+<a id="ln-93" name="ln-93" href="#ln-93"></a><span class="k">contains</span>
+<a id="ln-94" name="ln-94" href="#ln-94"></a>
+<a id="ln-95" name="ln-95" href="#ln-95"></a><span class="k">   pure function </span><span class="n">quao_type_name</span><span class="p">(</span><span class="n">orbital_type</span><span class="p">,</span><span class="w"> </span><span class="n">dominant_l</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<a id="ln-96" name="ln-96" href="#ln-96"></a><span class="w">      </span><span class="c">!! The label a report prints for an orbital type</span>
+<a id="ln-97" name="ln-97" href="#ln-97"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-98" name="ln-98" href="#ln-98"></a><span class="w">      </span><span class="c">!! `dominant_l` only matters for the lone-pair types, where it is the</span>
+<a id="ln-99" name="ln-99" href="#ln-99"></a><span class="w">      </span><span class="c">!! difference between an s lone pair and a p one. Every type has a name,</span>
+<a id="ln-100" name="ln-100" href="#ln-100"></a><span class="w">      </span><span class="c">!! including the ones GAMESS leaves blank.</span>
+<a id="ln-101" name="ln-101" href="#ln-101"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_type</span>
+<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dominant_l</span>
+<a id="ln-103" name="ln-103" href="#ln-103"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span>
+<a id="ln-104" name="ln-104" href="#ln-104"></a>
+<a id="ln-105" name="ln-105" href="#ln-105"></a><span class="w">      </span><span class="c">! Lower case and spelled out rather than GAMESS's `SIGMA`, `PLP`,</span>
+<a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">      </span><span class="c">! `NVMOD`, which are its internal codes: a blank column cannot be told</span>
+<a id="ln-107" name="ln-107" href="#ln-107"></a><span class="w">      </span><span class="c">! from an orbital that genuinely has no type.</span>
+<a id="ln-108" name="ln-108" href="#ln-108"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">orbital_type</span><span class="p">)</span>
+<a id="ln-109" name="ln-109" href="#ln-109"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_LPMOD</span><span class="p">)</span>
+<a id="ln-110" name="ln-110" href="#ln-110"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shell_letter</span><span class="p">(</span><span class="n">dominant_l</span><span class="p">)</span><span class="o">//</span><span class="s2">"-lone/bnd"</span>
+<a id="ln-111" name="ln-111" href="#ln-111"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_LONE_PAIR</span><span class="p">)</span>
+<a id="ln-112" name="ln-112" href="#ln-112"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shell_letter</span><span class="p">(</span><span class="n">dominant_l</span><span class="p">)</span><span class="o">//</span><span class="s2">"-lone"</span>
+<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_RADICAL</span><span class="p">)</span>
+<a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"radical"</span>
+<a id="ln-115" name="ln-115" href="#ln-115"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_SIGMA</span><span class="p">)</span>
+<a id="ln-116" name="ln-116" href="#ln-116"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sigma"</span>
+<a id="ln-117" name="ln-117" href="#ln-117"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_PI</span><span class="p">)</span>
+<a id="ln-118" name="ln-118" href="#ln-118"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"pi"</span>
+<a id="ln-119" name="ln-119" href="#ln-119"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_RDLP</span><span class="p">)</span>
+<a id="ln-120" name="ln-120" href="#ln-120"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"part-lone"</span>
+<a id="ln-121" name="ln-121" href="#ln-121"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_RDNV</span><span class="p">)</span>
+<a id="ln-122" name="ln-122" href="#ln-122"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"part-empty"</span>
+<a id="ln-123" name="ln-123" href="#ln-123"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_NVMOD</span><span class="p">)</span>
+<a id="ln-124" name="ln-124" href="#ln-124"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"empty/bnd"</span>
+<a id="ln-125" name="ln-125" href="#ln-125"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">QUAO_TYPE_NV</span><span class="p">)</span>
+<a id="ln-126" name="ln-126" href="#ln-126"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"empty"</span>
+<a id="ln-127" name="ln-127" href="#ln-127"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
+<a id="ln-128" name="ln-128" href="#ln-128"></a><span class="w">         </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unclassed"</span>
+<a id="ln-129" name="ln-129" href="#ln-129"></a><span class="w">      </span><span class="k">end select</span>
+<a id="ln-130" name="ln-130" href="#ln-130"></a><span class="k">   end function </span><span class="n">quao_type_name</span>
+<a id="ln-131" name="ln-131" href="#ln-131"></a>
+<a id="ln-132" name="ln-132" href="#ln-132"></a><span class="w">   </span><span class="k">pure function </span><span class="n">shell_letter</span><span class="p">(</span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">letter</span><span class="p">)</span>
+<a id="ln-133" name="ln-133" href="#ln-133"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">l</span>
+<a id="ln-134" name="ln-134" href="#ln-134"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">letter</span>
+<a id="ln-135" name="ln-135" href="#ln-135"></a>
+<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+<a id="ln-137" name="ln-137" href="#ln-137"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="ln-138" name="ln-138" href="#ln-138"></a><span class="w">         </span><span class="n">letter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"s"</span>
+<a id="ln-139" name="ln-139" href="#ln-139"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-140" name="ln-140" href="#ln-140"></a><span class="w">         </span><span class="n">letter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"p"</span>
+<a id="ln-141" name="ln-141" href="#ln-141"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<a id="ln-142" name="ln-142" href="#ln-142"></a><span class="w">         </span><span class="n">letter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"d"</span>
+<a id="ln-143" name="ln-143" href="#ln-143"></a><span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<a id="ln-144" name="ln-144" href="#ln-144"></a><span class="w">         </span><span class="n">letter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"f"</span>
+<a id="ln-145" name="ln-145" href="#ln-145"></a><span class="w">      </span><span class="k">case </span><span class="n">default</span>
+<a id="ln-146" name="ln-146" href="#ln-146"></a><span class="w">         </span><span class="n">letter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"?"</span>
+<a id="ln-147" name="ln-147" href="#ln-147"></a><span class="w">      </span><span class="k">end select</span>
+<a id="ln-148" name="ln-148" href="#ln-148"></a><span class="k">   end function </span><span class="n">shell_letter</span>
+<a id="ln-149" name="ln-149" href="#ln-149"></a>
+<a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">rows_destroy</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
+<a id="ln-151" name="ln-151" href="#ln-151"></a><span class="w">      </span><span class="c">!! Release every array and return to the empty state</span>
+<a id="ln-152" name="ln-152" href="#ln-152"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">quao_rows_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<a id="ln-153" name="ln-153" href="#ln-153"></a>
+<a id="ln-154" name="ln-154" href="#ln-154"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="nb">kind</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="nb">kind</span><span class="p">)</span>
+<a id="ln-155" name="ln-155" href="#ln-155"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">orbital</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">orbital</span><span class="p">)</span>
+<a id="ln-156" name="ln-156" href="#ln-156"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">atom</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">atom</span><span class="p">)</span>
+<a id="ln-157" name="ln-157" href="#ln-157"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">orbital_type</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">orbital_type</span><span class="p">)</span>
+<a id="ln-158" name="ln-158" href="#ln-158"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dominant_l</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dominant_l</span><span class="p">)</span>
+<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">partner_atom</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">partner_atom</span><span class="p">)</span>
+<a id="ln-160" name="ln-160" href="#ln-160"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">occupation</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">occupation</span><span class="p">)</span>
+<a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">bond_order</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">bond_order</span><span class="p">)</span>
+<a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">kinetic_bond_order</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">kinetic_bond_order</span><span class="p">)</span>
+<a id="ln-163" name="ln-163" href="#ln-163"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">atom_bond_index</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">atom_bond_index</span><span class="p">)</span>
+<a id="ln-164" name="ln-164" href="#ln-164"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">atom_kinetic_bond_order</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">atom_kinetic_bond_order</span><span class="p">)</span>
+<a id="ln-165" name="ln-165" href="#ln-165"></a><span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<a id="ln-166" name="ln-166" href="#ln-166"></a><span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<a id="ln-167" name="ln-167" href="#ln-167"></a><span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">orientation_stalled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<a id="ln-168" name="ln-168" href="#ln-168"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">rows_destroy</span>
+<a id="ln-169" name="ln-169" href="#ln-169"></a>
+<a id="ln-170" name="ln-170" href="#ln-170"></a><span class="w">   </span><span class="k">function </span><span class="n">rows_pack_integers</span><span class="p">(</span><span class="n">this</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">flat</span><span class="p">)</span>
+<a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">      </span><span class="c">!! Every integer column, `QUAO_ROW_INTEGERS` per row, for one MPI message</span>
+<a id="ln-172" name="ln-172" href="#ln-172"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">quao_rows_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">flat</span><span class="p">(:)</span>
+<a id="ln-174" name="ln-174" href="#ln-174"></a>
+<a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">base</span>
+<a id="ln-176" name="ln-176" href="#ln-176"></a>
+<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">flat</span><span class="p">(</span><span class="n">QUAO_ROW_INTEGERS</span><span class="o">*</span><span class="n">this</span><span class="p">%</span><span class="n">n</span><span class="p">))</span>
+<a id="ln-178" name="ln-178" href="#ln-178"></a><span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n</span>
+<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">         </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QUAO_ROW_INTEGERS</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-180" name="ln-180" href="#ln-180"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="nb">kind</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<a id="ln-181" name="ln-181" href="#ln-181"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">orbital</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-182" name="ln-182" href="#ln-182"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">atom</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-183" name="ln-183" href="#ln-183"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">6</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">7</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">orbital_type</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">8</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dominant_l</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">partner_atom</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-187" name="ln-187" href="#ln-187"></a><span class="k">   end function </span><span class="n">rows_pack_integers</span>
+<a id="ln-188" name="ln-188" href="#ln-188"></a>
+<a id="ln-189" name="ln-189" href="#ln-189"></a><span class="w">   </span><span class="k">function </span><span class="n">rows_pack_reals</span><span class="p">(</span><span class="n">this</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">flat</span><span class="p">)</span>
+<a id="ln-190" name="ln-190" href="#ln-190"></a><span class="w">      </span><span class="c">!! Every per-row real column, `QUAO_ROW_REALS` per row</span>
+<a id="ln-191" name="ln-191" href="#ln-191"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">      </span><span class="c">!! The atom-pair matrices are not included; they go as 2-D arrays.</span>
+<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">quao_rows_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">flat</span><span class="p">(:)</span>
+<a id="ln-195" name="ln-195" href="#ln-195"></a>
+<a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">base</span>
+<a id="ln-197" name="ln-197" href="#ln-197"></a>
+<a id="ln-198" name="ln-198" href="#ln-198"></a><span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">flat</span><span class="p">(</span><span class="n">QUAO_ROW_REALS</span><span class="o">*</span><span class="n">this</span><span class="p">%</span><span class="n">n</span><span class="p">))</span>
+<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n</span>
+<a id="ln-200" name="ln-200" href="#ln-200"></a><span class="w">         </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QUAO_ROW_REALS</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">occupation</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">bond_order</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">         </span><span class="n">flat</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">kinetic_bond_order</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-205" name="ln-205" href="#ln-205"></a><span class="k">   end function </span><span class="n">rows_pack_reals</span>
+<a id="ln-206" name="ln-206" href="#ln-206"></a>
+<a id="ln-207" name="ln-207" href="#ln-207"></a><span class="w">   </span><span class="k">subroutine </span><span class="n">rows_unpack</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">integers</span><span class="p">,</span><span class="w"> </span><span class="n">reals</span><span class="p">)</span>
+<a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">      </span><span class="c">!! The inverse of `pack_integers` and `pack_reals`</span>
+<a id="ln-209" name="ln-209" href="#ln-209"></a><span class="w">      </span><span class="c">!!</span>
+<a id="ln-210" name="ln-210" href="#ln-210"></a><span class="w">      </span><span class="c">!! Sizes the row arrays from `integers`; leaves the atom-pair matrices,</span>
+<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="w">      </span><span class="c">!! the threshold and the stall flag alone.</span>
+<a id="ln-212" name="ln-212" href="#ln-212"></a><span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">quao_rows_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<a id="ln-213" name="ln-213" href="#ln-213"></a><span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">integers</span><span class="p">(:)</span>
+<a id="ln-214" name="ln-214" href="#ln-214"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reals</span><span class="p">(:)</span>
+<a id="ln-215" name="ln-215" href="#ln-215"></a>
+<a id="ln-216" name="ln-216" href="#ln-216"></a><span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-217" name="ln-217" href="#ln-217"></a>
+<a id="ln-218" name="ln-218" href="#ln-218"></a><span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">integers</span><span class="p">)</span><span class="o">/</span><span class="n">QUAO_ROW_INTEGERS</span>
+<a id="ln-219" name="ln-219" href="#ln-219"></a><span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-220" name="ln-220" href="#ln-220"></a><span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="nb">kind</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">orbital</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">atom</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-221" name="ln-221" href="#ln-221"></a><span class="w">                </span><span class="n">this</span><span class="p">%</span><span class="n">orbital_type</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dominant_l</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">partner_atom</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-222" name="ln-222" href="#ln-222"></a><span class="w">                </span><span class="n">this</span><span class="p">%</span><span class="n">occupation</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">bond_order</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">kinetic_bond_order</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+<a id="ln-223" name="ln-223" href="#ln-223"></a><span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<a id="ln-224" name="ln-224" href="#ln-224"></a><span class="w">         </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QUAO_ROW_INTEGERS</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-225" name="ln-225" href="#ln-225"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="nb">kind</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integers</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-226" name="ln-226" href="#ln-226"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">orbital</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integers</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<a id="ln-227" name="ln-227" href="#ln-227"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">atom</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integers</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<a id="ln-228" name="ln-228" href="#ln-228"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">orbital_type</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integers</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">6</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">7</span><span class="p">)</span>
+<a id="ln-229" name="ln-229" href="#ln-229"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">dominant_l</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integers</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">8</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">9</span><span class="p">)</span>
+<a id="ln-230" name="ln-230" href="#ln-230"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">partner_atom</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integers</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">11</span><span class="p">)</span>
+<a id="ln-231" name="ln-231" href="#ln-231"></a><span class="w">         </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">QUAO_ROW_REALS</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="ln-232" name="ln-232" href="#ln-232"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">occupation</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reals</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<a id="ln-233" name="ln-233" href="#ln-233"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">bond_order</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reals</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<a id="ln-234" name="ln-234" href="#ln-234"></a><span class="w">         </span><span class="n">this</span><span class="p">%</span><span class="n">kinetic_bond_order</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reals</span><span class="p">(</span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+<a id="ln-235" name="ln-235" href="#ln-235"></a><span class="w">      </span><span class="k">end do</span>
+<a id="ln-236" name="ln-236" href="#ln-236"></a><span class="k">   end subroutine </span><span class="n">rows_unpack</span>
+<a id="ln-237" name="ln-237" href="#ln-237"></a>
+<a id="ln-238" name="ln-238" href="#ln-238"></a><span class="k">end module </span><span class="n">mqc_quao_rows</span>
+</pre></div>
+
+      </section>
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-23 22:38 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

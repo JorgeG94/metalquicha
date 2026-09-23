@@ -3,11 +3,13 @@
 module mqc_json_output_types
    use pic_types, only: int64, dp
    use mqc_thermochemistry, only: thermochemistry_result_t
+   use mqc_quao_rows, only: quao_rows_t
    implicit none
    private
 
    public :: json_output_data_t
    public :: ordered_rows_for_level
+   public :: interaction_bonding_term_t
    public :: OUTPUT_MODE_NONE, OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
 
    ! Output mode constants
@@ -15,6 +17,35 @@ module mqc_json_output_types
    integer, parameter :: OUTPUT_MODE_UNFRAGMENTED = 1
    integer, parameter :: OUTPUT_MODE_MBE = 2
    integer, parameter :: OUTPUT_MODE_GMBE_PIE = 3
+
+   type :: interaction_bonding_term_t
+      !! What the bonding analysis of one term says about the reference
+      !! fragment's contact with the rest of that term
+      !!
+      !! Only what crosses between the reference and the other monomers: a row
+      !! or pair with both ends on one side is left out, and so is one with an
+      !! end on a hydrogen cap or a ghost atom. Atom indices are the system's,
+      !! 1-based.
+      integer :: term = 0
+         !! Row of the term list this came from, 1-based
+      integer, allocatable :: monomers(:)
+         !! The term's monomers, 1-based
+      integer, allocatable :: monomer_of_atom(:, :)
+         !! (2, rows%n), the monomer each end of each orbital pair belongs to
+      type(quao_rows_t) :: rows
+         !! Orbital pairs, `atom` and `partner_atom` renumbered to the system;
+         !! `partner_atom` is 0 when the partner is a cap. The atom-pair
+         !! matrices are not kept here; see `pair_atoms`.
+      integer, allocatable :: pair_atoms(:, :)
+         !! (2, n_pairs), reference atom first
+      real(dp), allocatable :: pair_bond_index(:)
+         !! (n_pairs), sum of squared bond orders between the two atoms
+      real(dp), allocatable :: pair_kinetic_bond_order(:)
+         !! (n_pairs), kcal/mol
+      integer :: omitted_rows = 0
+         !! Orbital pairs crossing to the environment that were dropped for
+         !! touching a cap or a ghost
+   end type interaction_bonding_term_t
 
    type :: json_output_data_t
       !! Unified container for all JSON output data
@@ -126,6 +157,29 @@ module mqc_json_output_types
          !! sharing one monomer is one problem rather than four hundred.
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
+
+      !----- Interaction energy of one fragment (driver InteractionEnergy) -----
+      ! Written in place of `total_energy`, never beside it: the expansion was
+      ! reduced to the terms these need, so its sum is not the system's energy
+      ! and `has_energy` stays false. See `mbe_result_t`, which these are
+      ! copied from.
+      logical :: has_interaction = .false.
+      integer :: reference_fragment = 0
+         !! The reference as a monomer number, 1-based as `polymers` holds it
+      real(dp) :: reference_energy = 0.0_dp
+      real(dp) :: interaction_energy = 0.0_dp
+      real(dp), allocatable :: interaction_by_level(:)       !! (max_level)
+      integer(int64), allocatable :: interaction_count_by_level(:)  !! (max_level)
+      integer(int64) :: full_expansion_count = 0
+         !! How many terms the ordinary expansion would have computed over the
+         !! same fragments, level and screening. 0 when not known.
+      type(interaction_bonding_term_t), allocatable :: interaction_bonding(:)
+         !! One per term holding the reference and at least one other monomer
+         !! whose calculation returned a bonding analysis
+      logical :: has_interaction_bonding = .false.
+      integer, allocatable :: atomic_numbers(:)
+         !! (total_atoms), the system's; allocated only when a section names
+         !! atoms and wants their elements
       character(len=16) :: fragment_breakdown = "csv"
          !! Where the per-fragment table goes: "csv", "json" or "none"
       character(len=16) :: fingerprint = ""
@@ -339,6 +393,10 @@ contains
       if (allocated(this%fragment_distances)) deallocate (this%fragment_distances)
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)
+      if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
+      if (allocated(this%interaction_count_by_level)) deallocate (this%interaction_count_by_level)
+      if (allocated(this%interaction_bonding)) deallocate (this%interaction_bonding)
+      if (allocated(this%atomic_numbers)) deallocate (this%atomic_numbers)
 
       ! GMBE PIE data
       if (allocated(this%pie_atom_sets)) deallocate (this%pie_atom_sets)
@@ -406,6 +464,12 @@ contains
       this%excited_spin = ""
       this%fragment_count = 0
       this%max_level = 0
+      this%has_interaction = .false.
+      this%has_interaction_bonding = .false.
+      this%reference_fragment = 0
+      this%reference_energy = 0.0_dp
+      this%interaction_energy = 0.0_dp
+      this%full_expansion_count = 0
       this%n_pie_terms = 0
       this%has_sapt = .false.
       this%has_efmo = .false.

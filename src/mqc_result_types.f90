@@ -1,9 +1,10 @@
 !! Quantum chemistry calculation result containers
 module mqc_result_types
    !! Energy, gradient and property containers, and the MPI transfer of one.
-   use pic_types, only: dp, int32
+   use pic_types, only: dp, int32, int64
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
    use mqc_error, only: error_t
+   use mqc_quao_rows, only: quao_rows_t
    use mqc_calculation_defaults, only: STATE_SPIN_UNKNOWN, STATE_SPIN_SINGLET, &
                                        STATE_SPIN_TRIPLET, STATE_SPIN_UNRESTRICTED
    implicit none
@@ -152,6 +153,10 @@ module mqc_result_types
       real(dp) :: ieda_formation = 0.0_dp
          !! The energy of formation: the molecule against its free atoms.
       logical :: has_ieda = .false.
+      type(quao_rows_t) :: quao_rows
+         !! The quasi-atomic bonds and delocalization tables, and atom-pair
+         !! sums, in this calculation's own atom numbering, caps included
+      logical :: has_quao_rows = .false.
       real(dp), allocatable :: fukui_plus(:)
          !! Condensed Fukui index for nucleophilic attack, per atom
       real(dp), allocatable :: fukui_minus(:)   !! ... for electrophilic attack
@@ -275,6 +280,23 @@ module mqc_result_types
       logical :: has_hessian = .false.               !! Hessian has been computed
       logical :: has_dipole = .false.                !! Dipole has been computed
       logical :: has_dipole_derivatives = .false.    !! Dipole derivatives have been computed
+
+      ! The interaction energy of one fragment, when `compute_mbe` was given
+      ! a reference. `total_energy` and `has_energy` are then left unset: the
+      ! expansion was reduced to the terms these need, and what it sums to is
+      ! not the system's energy.
+      integer :: reference_fragment = 0
+         !! The reference as a monomer number, 1-based; 0 when there was none
+      real(dp) :: reference_energy = 0.0_dp
+         !! The reference fragment's own energy, its one-body term (Hartree)
+      real(dp) :: interaction_energy = 0.0_dp
+         !! Sum of every many-body correction, level 2 and up, whose term
+         !! contains the reference (Hartree)
+      real(dp), allocatable :: interaction_by_level(:)
+         !! (max_level) the same sum split by term size; element 1 is zero
+      integer(int64), allocatable :: interaction_count_by_level(:)
+         !! (max_level) how many terms containing the reference each level has
+      logical :: has_interaction = .false.           !! The four above are set
    contains
       procedure :: destroy => mbe_result_destroy            !! Clean up allocated memory
       procedure :: reset => mbe_result_reset                !! Reset all values and flags
@@ -422,6 +444,7 @@ contains
       end if
       if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
+      call this%quao_rows%destroy()
       call this%reset()
    end subroutine result_destroy
 
@@ -446,6 +469,7 @@ contains
       this%lumo = 0.0_dp
       this%has_orbitals = .false.
       this%has_ieda = .false.
+      this%has_quao_rows = .false.
       this%has_fukui = .false.
       this%has_excited_states = .false.
       this%has_stability = .false.
@@ -467,6 +491,8 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
+      if (allocated(this%interaction_count_by_level)) deallocate (this%interaction_count_by_level)
       call this%reset()
    end subroutine mbe_result_destroy
 
@@ -479,6 +505,10 @@ contains
       this%has_hessian = .false.
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
+      this%reference_fragment = 0
+      this%reference_energy = 0.0_dp
+      this%interaction_energy = 0.0_dp
+      this%has_interaction = .false.
    end subroutine mbe_result_reset
 
    subroutine mbe_result_allocate_gradient(this, total_atoms)
@@ -572,6 +602,59 @@ contains
       result%has_energy = .false.
    end subroutine recv_error_state
 
+   subroutine send_quao_rows(result, comm, dest, tag)
+      !! The bonding-analysis rows, flag first; see `recv_quao_rows`
+      type(calculation_result_t), intent(in) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: dest, tag
+
+      call send(comm, result%has_quao_rows, dest, tag)
+      if (.not. result%has_quao_rows) return
+      call send(comm, result%quao_rows%n, dest, tag)
+      call send(comm, result%quao_rows%threshold, dest, tag)
+      call send(comm, result%quao_rows%orientation_stalled, dest, tag)
+      if (result%quao_rows%n > 0) then
+         call send(comm, result%quao_rows%pack_integers(), dest, tag)
+         call send(comm, result%quao_rows%pack_reals(), dest, tag)
+      end if
+      call send(comm, allocated(result%quao_rows%atom_bond_index), dest, tag)
+      if (allocated(result%quao_rows%atom_bond_index)) then
+         call send(comm, result%quao_rows%atom_bond_index, dest, tag)
+         call send(comm, result%quao_rows%atom_kinetic_bond_order, dest, tag)
+      end if
+   end subroutine send_quao_rows
+
+   subroutine recv_quao_rows(result, comm, source, tag)
+      !! The bonding-analysis rows, into a result `destroy` has emptied
+      type(calculation_result_t), intent(inout) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: source, tag
+
+      integer, allocatable :: integers(:)
+      real(dp), allocatable :: reals(:)
+      type(MPI_Status) :: status
+      integer :: n
+      logical :: has_atom_pairs
+
+      call recv(comm, result%has_quao_rows, source, tag, status)
+      if (.not. result%has_quao_rows) return
+      call recv(comm, n, source, tag, status)
+      call recv(comm, result%quao_rows%threshold, source, tag, status)
+      call recv(comm, result%quao_rows%orientation_stalled, source, tag, status)
+      if (n > 0) then
+         call recv(comm, integers, source, tag, status)
+         call recv(comm, reals, source, tag, status)
+      else
+         allocate (integers(0), reals(0))
+      end if
+      call result%quao_rows%unpack(integers, reals)
+      call recv(comm, has_atom_pairs, source, tag, status)
+      if (has_atom_pairs) then
+         call recv(comm, result%quao_rows%atom_bond_index, source, tag, status)
+         call recv(comm, result%quao_rows%atom_kinetic_bond_order, source, tag, status)
+      end if
+   end subroutine recv_quao_rows
+
    subroutine result_send(result, comm, dest, tag)
       !! Send calculation result over MPI (blocking)
       type(calculation_result_t), intent(in) :: result
@@ -662,6 +745,8 @@ contains
             call send(comm, result%state_spin, dest, tag)
          end if
       end if
+
+      call send_quao_rows(result, comm, dest, tag)
 
       ! Failure state last, so the receiver has the whole payload drained
       ! before it decides whether to trust any of it.
@@ -762,6 +847,8 @@ contains
             call send(comm, result%state_spin, dest, tag)
          end if
       end if
+
+      call send_quao_rows(result, comm, dest, tag)
 
       ! Failure state last, so the receiver has the whole payload drained
       ! before it decides whether to trust any of it.
@@ -872,6 +959,8 @@ contains
             call recv(comm, result%state_spin, source, tag, status)
          end if
       end if
+
+      call recv_quao_rows(result, comm, source, tag)
 
       call recv_error_state(result, comm, source, tag)
    end subroutine result_recv
@@ -988,6 +1077,8 @@ contains
             call recv(comm, result%state_spin, source, tag, status)
          end if
       end if
+
+      call recv_quao_rows(result, comm, source, tag)
 
       call recv_error_state(result, comm, source, tag)
    end subroutine result_irecv

@@ -5,7 +5,7 @@ contains
 
    module subroutine serial_fragment_processor(total_fragments, polymers, max_level, &
                                                sys_geom, method_config, calc_type, json_data, &
-                                               checkpoint)
+                                               checkpoint, reference_fragment)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
       !! Bond connectivity is accessed via sys_geom%bonds
@@ -25,6 +25,9 @@ contains
       type(checkpoint_t), intent(inout), optional :: checkpoint
          !! Fragments already done are taken from here and not recomputed;
          !! fragments computed here are appended to it as they finish.
+      integer, intent(in), optional :: reference_fragment
+         !! Report this fragment's interaction energy rather than a total, as
+         !! a monomer number, 1-based. See `compute_mbe`.
 
       integer(int64) :: frag_idx
       integer :: fragment_size, current_log_level, iatom
@@ -73,6 +76,9 @@ contains
                                    hessian=known_hessian, homo=known_homo, &
                                    lumo=known_lumo, has_orbitals=known_orbitals)
             if (known) then
+               ! TODO(mqc): nothing restores `quao_rows`, so a term taken from
+               ! a checkpoint is silently missing from an InteractionEnergy
+               ! run's bonding report. The MPI reuse path has the same gap.
                results(frag_idx)%energy%scf = known_energy
                results(frag_idx)%has_energy = .true.
                results(frag_idx)%scf_status = known_status
@@ -198,7 +204,8 @@ contains
          call mbe_result%allocate_gradient(sys_geom%total_atoms)
       end if
 
-      call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, sys_geom, json_data=json_data)
+      call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, sys_geom, json_data=json_data, &
+                       reference=reference_fragment)
       call mbe_result%destroy()
 
       call coord_timer%stop()

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.3% of total for modules and submodules.">934 statements</a>
+                 title=" 3.4% of total for modules and submodules.">1016 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -163,10 +163,11 @@
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-score_unconverged">score_unconverged</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-accumulate_fragment_derivatives">accumulate_fragment_derivatives</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-accumulate_uncapped">accumulate_uncapped</a>
+            <a class="list-group-item" href="../module/mqc_mbe.html#proc-assemble_interaction">assemble_interaction</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-build_mbe_lookup_table">build_mbe_lookup_table</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-compute_mbe_coefficients">compute_mbe_coefficients</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-compute_mbe_dipole">compute_mbe_dipole</a>
-            <a class="list-group-item" href="../module/mqc_mbe.html#proc-get_monomer_atom_list">get_monomer_atom_list</a>
+            <a class="list-group-item" href="../module/mqc_mbe.html#proc-print_interaction_breakdown">print_interaction_breakdown</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-print_mbe_energy_breakdown">print_mbe_energy_breakdown</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-print_mbe_gradient_info">print_mbe_gradient_info</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-process_intersection_derivatives">process_intersection_derivatives</a>
@@ -200,23 +201,24 @@ The fragments that failed, with what they were built from</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_interaction_bonding.html'>mqc_interaction_bonding</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
                   <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
                   <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -226,808 +228,913 @@ The fragments that failed, with what they were built from</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: module~~mqc_mbe~~UsesGraph Pages: 1 -->
-<svg id="modulemqc_mbeUsesGraph" width="641pt" height="623pt"
- viewBox="0.00 0.00 641.00 622.95" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="module~~mqc_mbe~~UsesGraph" class="graph" transform="scale(0.65 0.65) rotate(0) translate(4 949.37)">
+<svg id="modulemqc_mbeUsesGraph" width="641pt" height="655pt"
+ viewBox="0.00 0.00 641.00 654.94" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_mbe~~UsesGraph" class="graph" transform="scale(0.62 0.62) rotate(0) translate(4 1057.59)">
 <title>module~~mqc_mbe~~UsesGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-949.37 977,-949.37 977,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1057.59 1035,-1057.59 1035,4 -4,4"/>
 <!-- module~mqc_mbe -->
 <g id="module~~mqc_mbe~~UsesGraph_node1" class="node">
 <title>module~mqc_mbe</title>
-<polygon fill="none" stroke="black" points="973,-526.19 908,-526.19 908,-502.19 973,-502.19 973,-526.19"/>
-<text text-anchor="middle" x="940.5" y="-511.79" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_mbe</text>
+<polygon fill="none" stroke="black" points="1031,-572 966,-572 966,-548 1031,-548 1031,-572"/>
+<text text-anchor="middle" x="998.5" y="-557.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_mbe</text>
 </g>
 <!-- module~mqc_combinatorics -->
 <g id="module~~mqc_mbe~~UsesGraph_node2" class="node">
 <title>module~mqc_combinatorics</title>
 <g id="a_module~~mqc_mbe~~UsesGraph_node2"><a xlink:href="../module/mqc_combinatorics.html" xlink:title="mqc_combinatorics">
-<polygon fill="#337ab7" stroke="#337ab7" points="553,-779.19 436,-779.19 436,-755.19 553,-755.19 553,-779.19"/>
-<text text-anchor="middle" x="494.5" y="-764.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_combinatorics</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="553,-766 436,-766 436,-742 553,-742 553,-766"/>
+<text text-anchor="middle" x="494.5" y="-751.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_combinatorics</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_combinatorics -->
 <g id="module~~mqc_mbe~~UsesGraph_edge1" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_combinatorics</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M940,-526.24C941.36,-576.64 939.11,-771.75 828,-852.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-852.19C778.47,-886.61 606.58,-816.86 531.27,-783.55"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="532.29,-780.17 521.73,-779.3 529.44,-786.57 532.29,-780.17"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M995.64,-572.25C985.44,-637.71 933.81,-944.89 857,-992"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-992C798.7,-1026.53 803.46,-923.56 746,-891 717,-874.57 702.58,-887.16 674,-870"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672,-870C645.22,-853.92 590.97,-795.76 564,-780 557.58,-776.25 550.52,-772.86 543.45,-769.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="544.45,-766.48 533.86,-766 541.84,-772.98 544.45,-766.48"/>
 </g>
 <!-- module~mqc_frag_utils -->
 <g id="module~~mqc_mbe~~UsesGraph_node3" class="node">
 <title>module~mqc_frag_utils</title>
 <g id="a_module~~mqc_mbe~~UsesGraph_node3"><a xlink:href="../module/mqc_frag_utils.html" xlink:title="mqc_frag_utils">
-<polygon fill="#337ab7" stroke="#337ab7" points="872,-585.19 782,-585.19 782,-561.19 872,-561.19 872,-585.19"/>
-<text text-anchor="middle" x="827" y="-570.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="901,-768 811,-768 811,-744 901,-744 901,-768"/>
+<text text-anchor="middle" x="856" y="-753.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_frag_utils -->
 <g id="module~~mqc_mbe~~UsesGraph_edge2" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_frag_utils</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M916.67,-526.28C900.28,-534.95 877.99,-546.74 859.85,-556.34"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="858,-553.36 850.8,-561.13 861.28,-559.54 858,-553.36"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M988.71,-572.26C965.25,-604.98 900.97,-694.66 871.77,-735.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="868.77,-733.58 865.79,-743.74 874.46,-737.66 868.77,-733.58"/>
 </g>
 <!-- module~mqc_gmbe_utils -->
 <g id="module~~mqc_mbe~~UsesGraph_node4" class="node">
 <title>module~mqc_gmbe_utils</title>
 <g id="a_module~~mqc_mbe~~UsesGraph_node4"><a xlink:href="../module/mqc_gmbe_utils.html" xlink:title="mqc_gmbe_utils">
-<polygon fill="#337ab7" stroke="#337ab7" points="722.5,-585.19 623.5,-585.19 623.5,-561.19 722.5,-561.19 722.5,-585.19"/>
-<text text-anchor="middle" x="673" y="-570.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="722.5,-728 623.5,-728 623.5,-704 722.5,-704 722.5,-728"/>
+<text text-anchor="middle" x="673" y="-713.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_gmbe_utils -->
 <g id="module~~mqc_mbe~~UsesGraph_edge3" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_gmbe_utils</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C818.4,-452.55 736.1,-520.76 695.88,-554.65"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="693.58,-552 688.2,-561.13 698.1,-557.35 693.58,-552"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-599C819.49,-601.91 736.64,-665.25 696.54,-697.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="694.23,-694.85 688.66,-703.87 698.64,-700.29 694.23,-694.85"/>
+</g>
+<!-- module~mqc_interaction_bonding -->
+<g id="module~~mqc_mbe~~UsesGraph_node5" class="node">
+<title>module~mqc_interaction_bonding</title>
+<g id="a_module~~mqc_mbe~~UsesGraph_node5"><a xlink:href="../module/mqc_interaction_bonding.html" xlink:title="mqc_interaction_bonding">
+<polygon fill="#337ab7" stroke="#337ab7" points="930,-494 782,-494 782,-470 930,-470 930,-494"/>
+<text text-anchor="middle" x="856" y="-479.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_interaction_bonding</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_interaction_bonding -->
+<g id="module~~mqc_mbe~~UsesGraph_edge4" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_interaction_bonding</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M975.85,-547.98C952.31,-534.91 914.46,-513.9 887.82,-499.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="889.34,-495.95 878.9,-494.16 885.95,-502.07 889.34,-495.95"/>
 </g>
 <!-- module~mqc_json_output_types -->
-<g id="module~~mqc_mbe~~UsesGraph_node5" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node6" class="node">
 <title>module~mqc_json_output_types</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node5"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
-<polygon fill="#337ab7" stroke="#337ab7" points="741,-231.19 605,-231.19 605,-207.19 741,-207.19 741,-231.19"/>
-<text text-anchor="middle" x="673" y="-216.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node6"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="741,-146 605,-146 605,-122 741,-122 741,-146"/>
+<text text-anchor="middle" x="673" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_json_output_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge4" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge5" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_json_output_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M920.97,-502.11C899.47,-488.65 862.55,-467.19 828,-455.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C805.88,-448.2 795.31,-452.83 782,-436.19 728.04,-368.74 802,-310.97 746,-245.19 743.19,-241.89 739.93,-239.01 736.37,-236.49"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="738,-233.39 727.62,-231.26 734.41,-239.4 738,-233.39"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996.48,-547.81C991.7,-499.42 966.85,-320.07 857,-250"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-250C826.73,-231.97 808.11,-252.03 782,-231 754.45,-208.81 772.5,-183.44 746,-160 741.89,-156.37 737.24,-153.23 732.32,-150.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="733.77,-147.34 723.25,-146.1 730.71,-153.63 733.77,-147.34"/>
 </g>
 <!-- module~mqc_mbe_io -->
-<g id="module~~mqc_mbe~~UsesGraph_node6" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node7" class="node">
 <title>module~mqc_mbe_io</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node6"><a xlink:href="../module/mqc_mbe_io.html" xlink:title="mqc_mbe_io">
-<polygon fill="#337ab7" stroke="#337ab7" points="713,-467.19 633,-467.19 633,-443.19 713,-443.19 713,-467.19"/>
-<text text-anchor="middle" x="673" y="-452.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_io</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node7"><a xlink:href="../module/mqc_mbe_io.html" xlink:title="mqc_mbe_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="713,-534 633,-534 633,-510 713,-510 713,-534"/>
+<text text-anchor="middle" x="673" y="-519.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_io</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_mbe_io -->
-<g id="module~~mqc_mbe~~UsesGraph_edge5" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge6" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_mbe_io</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C793.08,-443.76 753.67,-444.12 723.23,-447.15"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="722.82,-443.68 713.27,-448.27 723.6,-450.63 722.82,-443.68"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-599C801.69,-603.37 795.43,-568.44 746,-548 737.34,-544.42 727.99,-540.84 718.99,-537.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="720,-534.17 709.4,-534.06 717.61,-540.76 720,-534.17"/>
 </g>
 <!-- module~mqc_mpi_tags -->
-<g id="module~~mqc_mbe~~UsesGraph_node7" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node8" class="node">
 <title>module~mqc_mpi_tags</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node7"><a xlink:href="../module/mqc_mpi_tags.html" xlink:title="mqc_mpi_tags">
-<polygon fill="#337ab7" stroke="#337ab7" points="871.5,-922.19 782.5,-922.19 782.5,-898.19 871.5,-898.19 871.5,-922.19"/>
-<text text-anchor="middle" x="827" y="-907.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mpi_tags</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node8"><a xlink:href="../module/mqc_mpi_tags.html" xlink:title="mqc_mpi_tags">
+<polygon fill="#337ab7" stroke="#337ab7" points="900.5,-1044 811.5,-1044 811.5,-1020 900.5,-1020 900.5,-1044"/>
+<text text-anchor="middle" x="856" y="-1029.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mpi_tags</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_mpi_tags -->
-<g id="module~~mqc_mbe~~UsesGraph_edge6" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge7" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_mpi_tags</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M939.68,-526.26C939.87,-573 935.97,-745.52 872,-866.19 867.1,-875.45 859.6,-884 852.17,-891.06"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="849.41,-888.83 844.27,-898.09 854.06,-894.06 849.41,-888.83"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M997.29,-572.37C995.96,-637.16 986.79,-937.11 930,-1006 924.77,-1012.35 917.86,-1017.15 910.39,-1020.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="908.61,-1017.73 900.7,-1024.78 911.28,-1024.2 908.61,-1017.73"/>
 </g>
 <!-- module~mqc_physical_constants -->
-<g id="module~~mqc_mbe~~UsesGraph_node8" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node9" class="node">
 <title>module~mqc_physical_constants</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node8"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
-<polygon fill="#337ab7" stroke="#337ab7" points="385.5,-313.19 244.5,-313.19 244.5,-289.19 385.5,-289.19 385.5,-313.19"/>
-<text text-anchor="middle" x="315" y="-298.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node9"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="385.5,-386 244.5,-386 244.5,-362 385.5,-362 385.5,-386"/>
+<text text-anchor="middle" x="315" y="-371.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_physical_constants -->
-<g id="module~~mqc_mbe~~UsesGraph_edge7" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge8" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_physical_constants</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C760.08,-432.07 742.69,-427.9 674,-415.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672,-415.19C553.03,-393.19 418.54,-342.78 354.23,-317"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="355.47,-313.73 344.89,-313.23 352.85,-320.22 355.47,-313.73"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-250C800.08,-214.42 806.34,-323.65 746,-349 631.65,-397.04 484.98,-393.32 395.86,-384.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="396.12,-381.26 385.82,-383.74 395.42,-388.23 396.12,-381.26"/>
 </g>
 <!-- module~mqc_physical_fragment -->
-<g id="module~~mqc_mbe~~UsesGraph_node9" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node10" class="node">
 <title>module~mqc_physical_fragment</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node9"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
-<polygon fill="#337ab7" stroke="#337ab7" points="564,-465.19 425,-465.19 425,-441.19 564,-441.19 564,-465.19"/>
-<text text-anchor="middle" x="494.5" y="-450.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node10"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="564,-534 425,-534 425,-510 564,-510 564,-534"/>
+<text text-anchor="middle" x="494.5" y="-519.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_physical_fragment -->
-<g id="module~~mqc_mbe~~UsesGraph_edge8" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge9" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_physical_fragment</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672,-415.19C622.7,-406.08 566.1,-423.19 530.57,-437.31"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="529.05,-434.15 521.13,-441.19 531.71,-440.63 529.05,-434.15"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M967.14,-572.02C939.08,-582.26 895.98,-595.8 857,-599"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-599C790.07,-604.33 806.83,-524.32 746,-501 677.43,-474.71 590.76,-492.05 539.42,-507.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="538.21,-503.74 529.64,-509.98 540.23,-510.44 538.21,-503.74"/>
 </g>
 <!-- module~mqc_program_limits -->
-<g id="module~~mqc_mbe~~UsesGraph_node10" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node11" class="node">
 <title>module~mqc_program_limits</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node10"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
-<polygon fill="#337ab7" stroke="#337ab7" points="375.5,-667.19 254.5,-667.19 254.5,-643.19 375.5,-643.19 375.5,-667.19"/>
-<text text-anchor="middle" x="315" y="-652.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node11"><a xlink:href="../module/mqc_program_limits.html" xlink:title="mqc_program_limits">
+<polygon fill="#337ab7" stroke="#337ab7" points="375.5,-1002 254.5,-1002 254.5,-978 375.5,-978 375.5,-1002"/>
+<text text-anchor="middle" x="315" y="-987.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_program_limits</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_program_limits -->
-<g id="module~~mqc_mbe~~UsesGraph_edge9" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge10" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_program_limits</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C758.82,-431.36 805.04,-554.26 746,-594.19 637,-667.92 476.77,-669.48 385.82,-663"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="385.86,-659.49 375.62,-662.21 385.32,-666.47 385.86,-659.49"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-992C816.08,-1015.87 523.24,-1002.18 386.25,-994.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="386.06,-990.81 375.87,-993.73 385.65,-997.8 386.06,-990.81"/>
 </g>
 <!-- module~mqc_result_types -->
-<g id="module~~mqc_mbe~~UsesGraph_node11" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node12" class="node">
 <title>module~mqc_result_types</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node11"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
-<polygon fill="#337ab7" stroke="#337ab7" points="546.5,-149.19 442.5,-149.19 442.5,-125.19 546.5,-125.19 546.5,-149.19"/>
-<text text-anchor="middle" x="494.5" y="-134.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node12"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="546.5,-104 442.5,-104 442.5,-80 546.5,-80 546.5,-104"/>
+<text text-anchor="middle" x="494.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_result_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge10" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge11" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_result_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C805.88,-448.2 797.11,-451.21 782,-436.19 753.77,-408.13 766.16,-388.51 746,-354.19 719.17,-308.51 717.21,-289.85 674,-259.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672,-259.19C645.01,-240.04 628.75,-256.58 600,-240.19 562.71,-218.94 529.25,-181.05 510.72,-157.63"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="513.26,-155.19 504.37,-149.42 507.72,-159.47 513.26,-155.19"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-250C826.88,-231.74 811.45,-247.02 782,-231 762.93,-220.63 764.9,-208.68 746,-198 687.1,-164.73 661.92,-182.24 600,-155 571.62,-142.52 541.54,-123.72 520.98,-109.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="522.74,-106.87 512.51,-104.13 518.8,-112.66 522.74,-106.87"/>
 </g>
 <!-- module~mqc_thermochemistry -->
-<g id="module~~mqc_mbe~~UsesGraph_node12" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node13" class="node">
 <title>module~mqc_thermochemistry</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node12"><a xlink:href="../module/mqc_thermochemistry.html" xlink:title="mqc_thermochemistry">
-<polygon fill="#337ab7" stroke="#337ab7" points="561,-271.19 428,-271.19 428,-247.19 561,-247.19 561,-271.19"/>
-<text text-anchor="middle" x="494.5" y="-256.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_thermochemistry</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node13"><a xlink:href="../module/mqc_thermochemistry.html" xlink:title="mqc_thermochemistry">
+<polygon fill="#337ab7" stroke="#337ab7" points="561,-264 428,-264 428,-240 561,-240 561,-264"/>
+<text text-anchor="middle" x="494.5" y="-249.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_thermochemistry</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_thermochemistry -->
-<g id="module~~mqc_mbe~~UsesGraph_edge11" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge12" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_thermochemistry</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672,-259.19C655.93,-247.79 611.47,-247.85 571.19,-250.72"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="570.76,-247.25 561.06,-251.51 571.3,-254.22 570.76,-247.25"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-250C809.67,-221.09 662.52,-232 571.14,-242.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="570.64,-238.76 561.1,-243.37 571.43,-245.71 570.64,-238.76"/>
 </g>
 <!-- module~mqc_vibrational_analysis -->
-<g id="module~~mqc_mbe~~UsesGraph_node13" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node14" class="node">
 <title>module~mqc_vibrational_analysis</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node13"><a xlink:href="../module/mqc_vibrational_analysis.html" xlink:title="mqc_vibrational_analysis">
-<polygon fill="#337ab7" stroke="#337ab7" points="746,-387.19 600,-387.19 600,-363.19 746,-363.19 746,-387.19"/>
-<text text-anchor="middle" x="673" y="-372.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_vibrational_analysis</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node14"><a xlink:href="../module/mqc_vibrational_analysis.html" xlink:title="mqc_vibrational_analysis">
+<polygon fill="#337ab7" stroke="#337ab7" points="746,-340 600,-340 600,-316 746,-316 746,-340"/>
+<text text-anchor="middle" x="673" y="-325.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_vibrational_analysis</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_vibrational_analysis -->
-<g id="module~~mqc_mbe~~UsesGraph_edge12" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge13" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_vibrational_analysis</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C805.88,-448.2 799.71,-448.04 782,-436.19 763.45,-423.79 764.92,-413.03 746,-401.19 739.88,-397.37 733.12,-393.99 726.26,-391.05"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="727.48,-387.77 716.9,-387.31 724.88,-394.27 727.48,-387.77"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-250C799.98,-214.91 726.49,-275.39 692.58,-308.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="689.8,-306.35 685.22,-315.9 694.76,-311.29 689.8,-306.35"/>
 </g>
 <!-- pic_io -->
-<g id="module~~mqc_mbe~~UsesGraph_node14" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node15" class="node">
 <title>pic_io</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="342,-747.19 288,-747.19 288,-723.19 342,-723.19 342,-747.19"/>
-<text text-anchor="middle" x="315" y="-732.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="342,-728 288,-728 288,-704 342,-704 342,-728"/>
+<text text-anchor="middle" x="315" y="-713.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
 </g>
 <!-- module~mqc_mbe&#45;&gt;pic_io -->
-<g id="module~~mqc_mbe~~UsesGraph_edge13" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge14" class="edge">
 <title>module~mqc_mbe&#45;&gt;pic_io</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-852.19C776.91,-890.09 643.36,-918.26 495.5,-891.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M493.5,-891.19C461.82,-885.12 447.7,-890.11 425,-867.19 389.99,-831.84 423.92,-796.63 389,-761.19 379.07,-751.11 364.97,-744.93 351.81,-741.14"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="352.57,-737.72 342.02,-738.68 350.87,-744.51 352.57,-737.72"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M672,-870C571.16,-809.46 521.09,-842.83 425,-775 404.91,-760.82 410.02,-745.76 389,-733 377.96,-726.3 364.52,-722.24 352.18,-719.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="352.61,-716.3 342.17,-718.07 351.43,-723.2 352.61,-716.3"/>
 </g>
 <!-- pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_node15" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node16" class="node">
 <title>pic_logger</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="349,-587.19 281,-587.19 281,-563.19 349,-563.19 349,-587.19"/>
-<text text-anchor="middle" x="315" y="-572.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="349,-648 281,-648 281,-624 349,-624 349,-648"/>
+<text text-anchor="middle" x="315" y="-633.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
 </g>
 <!-- module~mqc_mbe&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge14" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge15" class="edge">
 <title>module~mqc_mbe&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M826,-455.19C791.28,-443.13 782.25,-470.11 746,-476.19 635.89,-494.67 600.2,-456.41 495.5,-495.19"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-599C695.45,-617.56 644.74,-502.61 495.5,-562"/>
 </g>
 <!-- pic_mpi_lib -->
-<g id="module~~mqc_mbe~~UsesGraph_node16" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node17" class="node">
 <title>pic_mpi_lib</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="351,-69.19 279,-69.19 279,-45.19 351,-45.19 351,-69.19"/>
-<text text-anchor="middle" x="315" y="-54.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="351,-24 279,-24 279,0 351,0 351,-24"/>
+<text text-anchor="middle" x="315" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
 </g>
 <!-- module~mqc_mbe&#45;&gt;pic_mpi_lib -->
-<g id="module~~mqc_mbe~~UsesGraph_edge15" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge16" class="edge">
 <title>module~mqc_mbe&#45;&gt;pic_mpi_lib</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M934.42,-502.04C915.25,-457.28 843.45,-299.04 746,-198.19 677.63,-127.45 656.98,-104.35 564,-72.19 496.31,-48.78 412.08,-49.43 361.26,-52.78"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="360.97,-49.29 351.24,-53.5 361.47,-56.27 360.97,-49.29"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996.83,-547.9C993.43,-490.55 976.39,-246.42 930,-189 786.67,-11.59 477.58,-4.97 361.39,-9.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="360.93,-5.76 351.08,-9.68 361.22,-12.76 360.93,-5.76"/>
 </g>
 <!-- pic_timer -->
-<g id="module~~mqc_mbe~~UsesGraph_node17" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node18" class="node">
 <title>pic_timer</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="858,-427.19 796,-427.19 796,-403.19 858,-403.19 858,-427.19"/>
-<text text-anchor="middle" x="827" y="-412.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_timer</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="887,-222 825,-222 825,-198 887,-198 887,-222"/>
+<text text-anchor="middle" x="856" y="-207.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_timer</text>
 </g>
 <!-- module~mqc_mbe&#45;&gt;pic_timer -->
-<g id="module~~mqc_mbe~~UsesGraph_edge16" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge17" class="edge">
 <title>module~mqc_mbe&#45;&gt;pic_timer</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M930.14,-502.06C917.89,-486.69 895.24,-459.95 872,-441.19 868.23,-438.15 864.06,-435.22 859.84,-432.5"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="861.57,-429.45 851.22,-427.22 857.92,-435.42 861.57,-429.45"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996.52,-547.64C992.07,-494.3 972.1,-284.29 930,-236 921.57,-226.33 909.3,-220.26 897.22,-216.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="897.77,-212.97 887.2,-213.74 895.94,-219.73 897.77,-212.97"/>
 </g>
 <!-- pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_node18" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node19" class="node">
 <title>pic_types</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="62,-473.19 0,-473.19 0,-449.19 62,-449.19 62,-473.19"/>
-<text text-anchor="middle" x="31" y="-458.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-515 0,-515 0,-491 62,-491 62,-515"/>
+<text text-anchor="middle" x="31" y="-500.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
 </g>
 <!-- module~mqc_mbe&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge17" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge18" class="edge">
 <title>module~mqc_mbe&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M493.5,-891.19C415.53,-876.24 394.95,-902.88 316,-911.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M314,-911.19C218.5,-921.24 170.61,-979.03 98,-916.19 31.93,-859.02 30.6,-566.85 31.59,-483.45"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="35.1,-483.36 31.74,-473.31 28.1,-483.26 35.1,-483.36"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M855,-992C837.6,-1002.93 693.87,-1024.78 674,-1030"/>
 </g>
 <!-- module~mqc_combinatorics&#45;&gt;module~mqc_program_limits -->
-<g id="module~~mqc_mbe~~UsesGraph_edge19" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge20" class="edge">
 <title>module~mqc_combinatorics&#45;&gt;module~mqc_program_limits</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M455.59,-755.16C445.37,-751.29 434.52,-746.59 425,-741.19 415.79,-735.98 367.9,-697.43 338.75,-673.75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="340.68,-670.81 330.72,-667.21 336.27,-676.24 340.68,-670.81"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M475.58,-766.09C459.9,-777.61 437.68,-796.38 425,-818 391.18,-875.64 433.83,-914.43 389,-964 385.92,-967.4 382.37,-970.36 378.52,-972.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="376.65,-969.97 369.7,-977.97 380.12,-976.05 376.65,-969.97"/>
 </g>
 <!-- module~mqc_combinatorics&#45;&gt;pic_io -->
-<g id="module~~mqc_mbe~~UsesGraph_edge20" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge21" class="edge">
 <title>module~mqc_combinatorics&#45;&gt;pic_io</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M435.87,-756.8C408.36,-751.84 376.28,-746.06 352.23,-741.73"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="352.59,-738.23 342.13,-739.9 351.35,-745.12 352.59,-738.23"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M437.34,-741.98C409.43,-736 376.54,-728.96 352.04,-723.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="352.61,-720.26 342.1,-721.59 351.14,-727.1 352.61,-720.26"/>
 </g>
 <!-- module~mqc_combinatorics&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge21" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge22" class="edge">
 <title>module~mqc_combinatorics&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M445.23,-755.15C437.75,-751.62 430.65,-747.06 425,-741.19 390.21,-705.04 417.65,-675.38 389,-634.19 377.49,-617.64 360.05,-603.31 345.11,-592.92"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="346.92,-589.92 336.66,-587.27 343.03,-595.73 346.92,-589.92"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M475.17,-741.82C443.74,-720.92 379.39,-678.14 342.88,-653.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="344.49,-650.74 334.23,-648.12 340.62,-656.57 344.49,-650.74"/>
 </g>
 <!-- module~mqc_combinatorics&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge22" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge23" class="edge">
 <title>module~mqc_combinatorics&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M435.83,-774.03C401.05,-777.09 355.9,-779.22 316,-775.19"/>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M314,-775.19C280.64,-771.83 271.49,-770.14 241,-756.19 197.56,-736.32 192.24,-721.7 152.5,-695.19"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M435.94,-761.54C382.79,-765.93 302.93,-765.85 241,-737 189.57,-713.04 201.53,-673.55 152.5,-645"/>
 </g>
 <!-- module~mqc_math_utils -->
-<g id="module~~mqc_mbe~~UsesGraph_node25" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node26" class="node">
 <title>module~mqc_math_utils</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node25"><a xlink:href="../module/mqc_math_utils.html" xlink:title="mqc_math_utils">
-<polygon fill="#337ab7" stroke="#337ab7" points="199.5,-785.19 103.5,-785.19 103.5,-761.19 199.5,-761.19 199.5,-785.19"/>
-<text text-anchor="middle" x="151.5" y="-770.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_math_utils</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node26"><a xlink:href="../module/mqc_math_utils.html" xlink:title="mqc_math_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="199.5,-830 103.5,-830 103.5,-806 199.5,-806 199.5,-830"/>
+<text text-anchor="middle" x="151.5" y="-815.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_math_utils</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_combinatorics&#45;&gt;module~mqc_math_utils -->
-<g id="module~~mqc_mbe~~UsesGraph_edge18" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge19" class="edge">
 <title>module~mqc_combinatorics&#45;&gt;module~mqc_math_utils</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M314,-775.19C279.54,-771.72 240.73,-771.13 209.79,-771.45"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="209.57,-767.95 199.62,-771.59 209.67,-774.95 209.57,-767.95"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M435.65,-764.86C372.66,-776.68 272.51,-795.48 209.75,-807.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="208.81,-803.87 199.63,-809.15 210.1,-810.75 208.81,-803.87"/>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;module~mqc_combinatorics -->
-<g id="module~~mqc_mbe~~UsesGraph_edge23" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge24" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;module~mqc_combinatorics</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M672,-767.19C637.97,-783.63 595.77,-784.23 561.16,-780.44"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="561.51,-776.95 551.15,-779.2 560.64,-783.9 561.51,-776.95"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M810.73,-763.65C773.85,-770.41 720.09,-781.18 674,-794"/>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;module~mqc_gmbe_utils -->
-<g id="module~~mqc_mbe~~UsesGraph_edge25" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge26" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;module~mqc_gmbe_utils</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M781.63,-573.19C766.46,-573.19 749.25,-573.19 733.11,-573.19"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="732.69,-569.69 722.69,-573.19 732.69,-576.69 732.69,-569.69"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M810.72,-746.21C787.16,-741.01 757.89,-734.54 732.48,-728.92"/>
+<polygon fill="#ff5400" stroke="#ff5400" points="733.11,-725.48 722.59,-726.74 731.6,-732.31 733.11,-725.48"/>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;module~mqc_physical_fragment -->
-<g id="module~~mqc_mbe~~UsesGraph_edge26" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge27" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;module~mqc_physical_fragment</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M792.8,-561.14C732.54,-539.26 605.26,-493.05 538.47,-468.8"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="539.27,-465.36 528.68,-465.24 536.89,-471.94 539.27,-465.36"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M842.12,-743.75C822.25,-725.12 782.6,-689 746,-662 669.19,-605.34 649.48,-590.47 564,-548 556.63,-544.34 548.61,-540.87 540.74,-537.72"/>
+<polygon fill="#ff5400" stroke="#ff5400" points="541.86,-534.4 531.27,-534.06 539.33,-540.93 541.86,-534.4"/>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_io -->
-<g id="module~~mqc_mbe~~UsesGraph_edge27" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge28" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_io</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M672,-767.19C571.66,-812.69 529.52,-823.03 425,-788.19 406.03,-781.87 406.62,-770.66 389,-761.19 377.43,-754.98 364.06,-749.72 351.95,-745.6"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="352.74,-742.17 342.14,-742.4 350.57,-748.83 352.74,-742.17"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M810.74,-753.19C759.84,-749.85 673.82,-743.85 600,-737 583.97,-735.51 580.03,-734.44 564,-733 488.87,-726.25 400.73,-720.8 352.36,-718.01"/>
+<polygon fill="#ff5400" stroke="#ff5400" points="352.28,-714.5 342.09,-717.43 351.88,-721.49 352.28,-714.5"/>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge28" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge29" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M821.1,-585.43C805.84,-621.6 755.3,-727.93 674,-767.19"/>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M672,-767.19C605.3,-799.41 406.75,-648.12 338.97,-593.91"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="341,-591.05 331.01,-587.51 336.61,-596.5 341,-591.05"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M837.74,-743.95C816.95,-730 780.49,-707.39 746,-695 610.77,-646.43 438.42,-637.48 359.28,-636.08"/>
+<polygon fill="#ff5400" stroke="#ff5400" points="359.24,-632.58 349.19,-635.93 359.14,-639.58 359.24,-632.58"/>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge29" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge30" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M825.01,-585.36C821.43,-621 806.05,-726.17 746,-781.19 660.59,-859.45 611.16,-859.62 495.5,-853.19"/>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M493.5,-853.19C446.17,-855.28 435.91,-838.77 389,-832.19 362.89,-828.53 172.98,-829.8 152.5,-813.19"/>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M150.5,-813.19C131.61,-797.11 114.17,-813.02 98,-794.19 57.44,-746.96 38.87,-550.88 33.63,-483.81"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="37.09,-483.22 32.85,-473.52 30.11,-483.75 37.09,-483.22"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M852.61,-768.17C842.21,-817.04 795.86,-997.97 674,-1030"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M672,-1030C596.13,-1049.94 572.95,-1017.53 495.5,-1030"/>
 </g>
 <!-- module~mqc_fragment_lookup -->
-<g id="module~~mqc_mbe~~UsesGraph_node23" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node24" class="node">
 <title>module~mqc_fragment_lookup</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node23"><a xlink:href="../module/mqc_fragment_lookup.html" xlink:title="mqc_fragment_lookup">
-<polygon fill="#337ab7" stroke="#337ab7" points="381,-865.19 249,-865.19 249,-841.19 381,-841.19 381,-865.19"/>
-<text text-anchor="middle" x="315" y="-850.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_lookup</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node24"><a xlink:href="../module/mqc_fragment_lookup.html" xlink:title="mqc_fragment_lookup">
+<polygon fill="#337ab7" stroke="#337ab7" points="739,-924 607,-924 607,-900 739,-900 739,-924"/>
+<text text-anchor="middle" x="673" y="-909.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_lookup</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;module~mqc_fragment_lookup -->
-<g id="module~~mqc_mbe~~UsesGraph_edge24" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge25" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;module~mqc_fragment_lookup</title>
-<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M493.5,-853.19C460.04,-851.34 422.99,-851.06 391.42,-851.35"/>
-<polygon fill="#ff5900" stroke="#ff5900" points="391.34,-847.85 381.38,-851.46 391.42,-854.85 391.34,-847.85"/>
+<path fill="none" stroke="#ff5400" stroke-dasharray="5,2" d="M847.53,-768.33C831.75,-793.43 792.62,-850.85 746,-884 739.54,-888.59 732.24,-892.55 724.81,-895.93"/>
+<polygon fill="#ff5400" stroke="#ff5400" points="723.25,-892.79 715.4,-899.91 725.97,-899.24 723.25,-892.79"/>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;module~mqc_combinatorics -->
-<g id="module~~mqc_mbe~~UsesGraph_edge30" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge31" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;module~mqc_combinatorics</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M662.66,-585.45C644.51,-609.03 602.86,-662 564,-703.19 548.97,-719.13 530.81,-736 516.97,-748.41"/>
-<polygon fill="#ffb300" stroke="#ffb300" points="514.52,-745.91 509.37,-755.17 519.17,-751.14 514.52,-745.91"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M623.3,-726.48C604.19,-730.6 581.95,-735.39 561.43,-739.8"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="560.56,-736.41 551.52,-741.94 562.03,-743.26 560.56,-736.41"/>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;module~mqc_physical_fragment -->
-<g id="module~~mqc_mbe~~UsesGraph_edge32" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge33" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;module~mqc_physical_fragment</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M623.27,-561.08C614.91,-557.53 606.76,-552.99 600,-547.19 574.64,-525.44 588.9,-503.47 564,-481.19 558.98,-476.71 553.15,-472.88 547.04,-469.64"/>
-<polygon fill="#ffb300" stroke="#ffb300" points="548.5,-466.45 537.96,-465.29 545.47,-472.77 548.5,-466.45"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M667.42,-703.98C655.26,-673.56 619.22,-592.76 564,-548 559.44,-544.31 554.3,-541.1 548.94,-538.32"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="550.31,-535.1 539.77,-534.05 547.35,-541.44 550.31,-535.1"/>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;module~mqc_result_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge33" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge34" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;module~mqc_result_types</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M659.74,-560.97C643.22,-543.72 614.26,-510.47 600,-476.19 558.9,-377.42 602.99,-337.82 564,-238.19 551.89,-207.26 528.92,-176.33 512.93,-157"/>
-<polygon fill="#ffb300" stroke="#ffb300" points="515.48,-154.6 506.35,-149.22 510.14,-159.12 515.48,-154.6"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M665.43,-703.85C650.82,-676.21 615.72,-606.14 600,-543 558.69,-377.09 637.04,-314.59 564,-160 554.58,-140.06 536.74,-122.65 521.62,-110.43"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="523.63,-107.56 513.58,-104.2 519.34,-113.09 523.63,-107.56"/>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;pic_io -->
-<g id="module~~mqc_mbe~~UsesGraph_edge34" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge35" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;pic_io</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M660.8,-585.26C642.32,-604.56 603.51,-642.5 564,-665.19 536.03,-681.26 523.6,-673.36 495.5,-689.19"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M493.5,-676C466.41,-673 395.19,-692.22 351.65,-705.07"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="350.59,-701.73 342.01,-707.94 352.59,-708.44 350.59,-701.73"/>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge35" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge36" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M623.26,-572.45C587.79,-572.22 538.63,-572.56 495.5,-575.19"/>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M493.5,-575.19C447.73,-577.99 395.19,-577.54 359.22,-576.67"/>
-<polygon fill="#ffb300" stroke="#ffb300" points="359.17,-573.16 349.08,-576.4 358.98,-580.16 359.17,-573.16"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M631.08,-703.97C595.59,-694.2 542.66,-681.22 495.5,-676"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M493.5,-676C447.06,-670.86 395.04,-658.31 359.38,-648.62"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="359.89,-645.13 349.32,-645.85 358.03,-651.88 359.89,-645.13"/>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge36" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge37" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M644.01,-585.27C548.35,-625.69 235.73,-750.72 152.5,-695.19"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M649.66,-728.2C588.89,-761.39 425.12,-850.84 425,-851 381.12,-909.2 439.67,-958.61 389,-1011 365.69,-1035.1 348.47,-1021.64 316,-1030"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M314,-1030C244.86,-1049.27 211.24,-1071.25 152.5,-1030"/>
 </g>
 <!-- module~mqc_error -->
-<g id="module~~mqc_mbe~~UsesGraph_node22" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node23" class="node">
 <title>module~mqc_error</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node22"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
-<polygon fill="#337ab7" stroke="#337ab7" points="185,-555.19 118,-555.19 118,-531.19 185,-531.19 185,-555.19"/>
-<text text-anchor="middle" x="151.5" y="-540.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node23"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="185,-575 118,-575 118,-551 185,-551 185,-575"/>
+<text text-anchor="middle" x="151.5" y="-560.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_gmbe_utils&#45;&gt;module~mqc_error -->
-<g id="module~~mqc_mbe~~UsesGraph_edge31" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge32" class="edge">
 <title>module~mqc_gmbe_utils&#45;&gt;module~mqc_error</title>
-<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M493.5,-575.19C446.22,-578.09 436.14,-591.5 389,-596.19 323.55,-602.71 304.4,-613.73 241,-596.19 216.6,-589.45 192.16,-573.99 175.17,-561.5"/>
-<polygon fill="#ffb300" stroke="#ffb300" points="177.08,-558.56 167,-555.3 172.85,-564.13 177.08,-558.56"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M493.5,-676C381.64,-663.62 334.27,-719.97 241,-657 211.02,-636.76 231.55,-608.57 205,-584 201.84,-581.07 198.22,-578.54 194.39,-576.34"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="195.71,-573.09 185.2,-571.8 192.61,-579.36 195.71,-573.09"/>
 </g>
-<!-- module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry -->
-<g id="module~~mqc_mbe~~UsesGraph_edge37" class="edge">
-<title>module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry</title>
-<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M619.04,-231.2C600.02,-235.51 578.38,-240.41 558.58,-244.9"/>
-<polygon fill="#f0ff00" stroke="#f0ff00" points="557.7,-241.51 548.72,-247.13 559.25,-248.33 557.7,-241.51"/>
-</g>
-<!-- module~mqc_json_output_types&#45;&gt;pic_types -->
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_combinatorics -->
 <g id="module~~mqc_mbe~~UsesGraph_edge38" class="edge">
-<title>module~mqc_json_output_types&#45;&gt;pic_types</title>
-<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M666.84,-206.84C654.08,-177.94 618.13,-105.81 564,-71.19 442.35,6.59 372.51,23.43 241,-36.19 186.64,-60.84 201.57,-103.22 152.5,-137.19"/>
-<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M150.5,-137.19C47.96,-208 33.82,-377.71 32.12,-438.8"/>
-<polygon fill="#f0ff00" stroke="#f0ff00" points="28.62,-438.83 31.93,-448.9 35.62,-438.97 28.62,-438.83"/>
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_combinatorics</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M844.08,-494.03C828.07,-512.33 798.34,-548.85 782,-585 753.4,-648.26 783.28,-678.43 746,-737 724.08,-771.43 713.32,-783.06 674,-794"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M672,-794C647.59,-800.79 583.87,-783.14 540.07,-769.16"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="541.09,-765.81 530.5,-766.06 538.93,-772.47 541.09,-765.81"/>
 </g>
-<!-- module~mqc_mbe_io&#45;&gt;module~mqc_combinatorics -->
-<g id="module~~mqc_mbe~~UsesGraph_edge39" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;module~mqc_combinatorics</title>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M660.41,-467.3C644.42,-484.68 615.78,-518.36 600,-552.19 570.85,-614.72 598.68,-643.55 564,-703.19 553.47,-721.31 536.21,-737.39 521.65,-748.9"/>
-<polygon fill="#96ff00" stroke="#96ff00" points="519.3,-746.29 513.46,-755.13 523.54,-751.86 519.3,-746.29"/>
-</g>
-<!-- module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment -->
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_json_output_types -->
 <g id="module~~mqc_mbe~~UsesGraph_edge41" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment</title>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M632.83,-454.75C615.54,-454.55 594.57,-454.32 574.27,-454.09"/>
-<polygon fill="#96ff00" stroke="#96ff00" points="574.1,-450.58 564.06,-453.97 574.02,-457.58 574.1,-450.58"/>
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_json_output_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M851.2,-469.89C836.05,-421.97 779.13,-245.88 746,-198 733.67,-180.18 715.38,-164 700.32,-152.37"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="701.99,-149.26 691.89,-146.07 697.8,-154.86 701.99,-149.26"/>
 </g>
-<!-- module~mqc_mbe_io&#45;&gt;pic_io -->
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_physical_fragment -->
 <g id="module~~mqc_mbe~~UsesGraph_edge42" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;pic_io</title>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M662.94,-467.35C627.29,-515.11 498.55,-687.47 495.5,-689.19"/>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M493.5,-689.19C448.63,-714.48 389.58,-726.18 352.19,-731.36"/>
-<polygon fill="#96ff00" stroke="#96ff00" points="351.72,-727.9 342.25,-732.66 352.62,-734.84 351.72,-727.9"/>
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M672,-406C638.27,-406.23 629.24,-413.19 600,-430 581.85,-440.44 540.4,-478.88 515.51,-502.65"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="512.85,-500.35 508.06,-509.79 517.7,-505.4 512.85,-500.35"/>
 </g>
-<!-- module~mqc_mbe_io&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge43" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M632.93,-461C596.59,-467.11 541.31,-478.22 495.5,-495.19"/>
-</g>
-<!-- module~mqc_mbe_io&#45;&gt;pic_types -->
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_result_types -->
 <g id="module~~mqc_mbe~~UsesGraph_edge44" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;pic_types</title>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M632.81,-449.38C620.53,-445.61 608.08,-439.41 600,-429.19 556.56,-374.29 614.44,-164.75 564,-116.19 484.36,-39.53 426.32,-90.07 316,-97.19"/>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M314,-97.19C240.21,-102.06 213.3,-95.1 152.5,-137.19"/>
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M850.5,-469.81C837.74,-436.21 798.75,-340.4 746,-274 719.73,-240.93 706.41,-239.07 674,-212"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M672,-212C646.11,-190.38 629.06,-205.12 600,-188 581.42,-177.05 539.39,-136.19 514.66,-111.44"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="516.83,-108.65 507.3,-104.03 511.86,-113.59 516.83,-108.65"/>
+</g>
+<!-- module~mqc_interaction_bonding&#45;&gt;pic_io -->
+<g id="module~~mqc_mbe~~UsesGraph_edge45" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M837.27,-494.03C816.32,-507.74 780.01,-529.93 746,-543 639.42,-583.97 600.91,-556.12 495.5,-600"/>
+</g>
+<!-- module~mqc_interaction_bonding&#45;&gt;pic_logger -->
+<g id="module~~mqc_mbe~~UsesGraph_edge46" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M781.8,-473.02C728.56,-469.81 656.25,-472.55 600,-501 578.06,-512.1 584.75,-529.81 564,-543 537.34,-559.95 524.83,-550.25 495.5,-562"/>
+</g>
+<!-- module~mqc_interaction_bonding&#45;&gt;pic_types -->
+<g id="module~~mqc_mbe~~UsesGraph_edge48" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M493.5,-174C456.5,-165.84 182.97,-151.48 152.5,-174"/>
 </g>
 <!-- module~mqc_elements -->
-<g id="module~~mqc_mbe~~UsesGraph_node21" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node22" class="node">
 <title>module~mqc_elements</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node21"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
-<polygon fill="#337ab7" stroke="#337ab7" points="360.5,-271.19 269.5,-271.19 269.5,-247.19 360.5,-247.19 360.5,-271.19"/>
-<text text-anchor="middle" x="315" y="-256.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node22"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="360.5,-306 269.5,-306 269.5,-282 360.5,-282 360.5,-306"/>
+<text text-anchor="middle" x="315" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
 </a>
 </g>
 </g>
-<!-- module~mqc_mbe_io&#45;&gt;module~mqc_elements -->
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_mbe~~UsesGraph_edge39" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M851.75,-469.77C842.16,-436.45 810.54,-344.12 746,-307 683.64,-271.13 471.65,-281.88 370.53,-289.4"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="370.22,-285.92 360.52,-290.16 370.75,-292.9 370.22,-285.92"/>
+</g>
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_error -->
 <g id="module~~mqc_mbe~~UsesGraph_edge40" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M838.51,-469.7C807.81,-448.08 739.09,-405.56 674,-406"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M672,-406C537.54,-406.92 517.14,-472.23 389,-513 357.05,-523.16 344.03,-513.61 316,-532"/>
+</g>
+<!-- module~mqc_quao_rows -->
+<g id="module~~mqc_mbe~~UsesGraph_node27" class="node">
+<title>module~mqc_quao_rows</title>
+<g id="a_module~~mqc_mbe~~UsesGraph_node27"><a xlink:href="../module/mqc_quao_rows.html" xlink:title="mqc_quao_rows">
+<polygon fill="#337ab7" stroke="#337ab7" points="363.5,-104 266.5,-104 266.5,-80 363.5,-80 363.5,-104"/>
+<text text-anchor="middle" x="315" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_quao_rows</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_interaction_bonding&#45;&gt;module~mqc_quao_rows -->
+<g id="module~~mqc_mbe~~UsesGraph_edge43" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;module~mqc_quao_rows</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M672,-212C641.21,-186.28 534.68,-182.64 495.5,-174"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M493.5,-174C440.98,-162.41 438.44,-134.15 389,-113 384,-110.86 378.71,-108.87 373.37,-107.02"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="374.31,-103.65 363.72,-103.88 372.14,-110.31 374.31,-103.65"/>
+</g>
+<!-- pic_sorting -->
+<g id="module~~mqc_mbe~~UsesGraph_node30" class="node">
+<title>pic_sorting</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="529.5,-884 459.5,-884 459.5,-860 529.5,-860 529.5,-884"/>
+<text text-anchor="middle" x="494.5" y="-869.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_sorting</text>
+</g>
+<!-- module~mqc_interaction_bonding&#45;&gt;pic_sorting -->
+<g id="module~~mqc_mbe~~UsesGraph_edge47" class="edge">
+<title>module~mqc_interaction_bonding&#45;&gt;pic_sorting</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M843.47,-494.19C826.96,-512.4 796.94,-548.49 782,-585 743.99,-677.92 813.72,-733.89 746,-808 732.03,-823.29 608.05,-849.79 539.91,-863.39"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="539.01,-860.01 529.88,-865.38 540.37,-866.87 539.01,-860.01"/>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry -->
+<g id="module~~mqc_mbe~~UsesGraph_edge50" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M653.78,-146.18C622.52,-167.08 558.54,-209.86 522.22,-234.13"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="519.99,-231.42 513.62,-239.88 523.88,-237.23 519.99,-231.42"/>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;pic_types -->
+<g id="module~~mqc_mbe~~UsesGraph_edge51" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M654.4,-121.81C633.61,-107.88 597.6,-85.18 564,-71 534.89,-58.72 526.69,-57.03 495.5,-52"/>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M493.5,-52C415.62,-39.44 392.13,-31.33 316,-52"/>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M314,-52C281.65,-60.78 269.44,-53.25 241,-71 189.79,-102.95 201.04,-138.13 152.5,-174"/>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M150.5,-174C48.91,-249.06 34.18,-419.41 32.22,-480.6"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="28.72,-480.62 31.99,-490.7 35.72,-480.79 28.72,-480.62"/>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;module~mqc_quao_rows -->
+<g id="module~~mqc_mbe~~UsesGraph_edge49" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;module~mqc_quao_rows</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M493.5,-52C468.93,-48.04 407.35,-64.11 363.64,-77.05"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="362.62,-73.7 354.05,-79.93 364.63,-80.41 362.62,-73.7"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_combinatorics -->
+<g id="module~~mqc_mbe~~UsesGraph_edge52" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_combinatorics</title>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M665.6,-534.09C650.17,-562.71 608.87,-636.22 564,-690 550.14,-706.61 532.21,-723.22 518.17,-735.36"/>
+<polygon fill="#54ff00" stroke="#54ff00" points="515.76,-732.81 510.41,-741.96 520.3,-738.15 515.76,-732.81"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_mbe~~UsesGraph_edge54" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M632.83,-522C615.54,-522 594.57,-522 574.27,-522"/>
+<polygon fill="#54ff00" stroke="#54ff00" points="574.06,-518.5 564.06,-522 574.06,-525.5 574.06,-518.5"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_io -->
+<g id="module~~mqc_mbe~~UsesGraph_edge55" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_io</title>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M650.05,-534.01C628.49,-545.55 594.5,-563.09 564,-576 534.29,-588.57 525.28,-587.6 495.5,-600"/>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M493.5,-600C432.97,-625.19 370.76,-671.47 338.5,-697.31"/>
+<polygon fill="#54ff00" stroke="#54ff00" points="336.16,-694.7 330.59,-703.71 340.56,-700.14 336.16,-694.7"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_logger -->
+<g id="module~~mqc_mbe~~UsesGraph_edge56" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M632.85,-529.37C588.76,-537.94 520.07,-552.15 495.5,-562"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_types -->
+<g id="module~~mqc_mbe~~UsesGraph_edge57" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_types</title>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M636.01,-509.95C525.78,-473.42 197.61,-367.65 152.5,-388"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_mbe~~UsesGraph_edge53" class="edge">
 <title>module~mqc_mbe_io&#45;&gt;module~mqc_elements</title>
-<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M633.17,-443.09C622.22,-439.16 610.45,-434.45 600,-429.19 516.63,-387.27 498.51,-370.67 425,-313.19 407.9,-299.82 407.93,-290.81 389,-280.19 383.13,-276.9 376.69,-274.09 370.15,-271.69"/>
-<polygon fill="#96ff00" stroke="#96ff00" points="371.15,-268.33 360.55,-268.47 368.92,-274.97 371.15,-268.33"/>
+<path fill="none" stroke="#54ff00" stroke-dasharray="5,2" d="M652.86,-509.74C593.56,-471.77 412.76,-355.97 343.44,-311.58"/>
+<polygon fill="#54ff00" stroke="#54ff00" points="345.11,-308.49 334.8,-306.04 341.34,-314.38 345.11,-308.49"/>
 </g>
 <!-- module~mqc_mpi_tags&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge45" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge58" class="edge">
 <title>module~mqc_mpi_tags&#45;&gt;pic_types</title>
-<path fill="none" stroke="#3cff00" stroke-dasharray="5,2" d="M782.12,-909.91C666.94,-909.21 361.69,-907.73 316,-911.19"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M811.42,-1025.14C774.26,-1020.78 719.74,-1017.98 674,-1030"/>
 </g>
 <!-- module~mqc_physical_constants&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge46" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge59" class="edge">
 <title>module~mqc_physical_constants&#45;&gt;pic_types</title>
-<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M250.34,-313.22C212.98,-320.85 169.81,-330.82 152.5,-339.19"/>
-<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M150.5,-339.19C128.16,-350 117.39,-342.71 98,-358.19 70.68,-380.02 51.2,-416.37 40.78,-439.54"/>
-<polygon fill="#00ff1e" stroke="#00ff1e" points="37.5,-438.3 36.75,-448.87 43.93,-441.08 37.5,-438.3"/>
+<path fill="none" stroke="#00ff55" stroke-dasharray="5,2" d="M244.27,-370.04C214.81,-370.86 180.85,-375.21 152.5,-388"/>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
-<g id="module~~mqc_mbe~~UsesGraph_edge51" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge64" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M448.32,-441.09C439.99,-437.51 431.79,-432.96 425,-427.19 400.71,-406.58 409.25,-389.8 389,-365.19 374.81,-347.95 355.76,-331.42 340.68,-319.48"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="342.81,-316.7 332.76,-313.34 338.52,-322.23 342.81,-316.7"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M478.97,-509.89C448.03,-484.09 375.42,-423.55 338.47,-392.73"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="340.65,-389.99 330.73,-386.28 336.17,-395.37 340.65,-389.99"/>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_program_limits -->
-<g id="module~~mqc_mbe~~UsesGraph_edge52" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge65" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_program_limits</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M486.06,-465.49C470.14,-491.29 430.78,-552.33 389,-596.19 374.63,-611.29 356.39,-626.02 341.75,-637"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="339.57,-634.25 333.59,-642.99 343.72,-639.89 339.57,-634.25"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M486.89,-534.11C473.96,-558.06 444.86,-613.41 425,-662 378.92,-774.77 337.38,-914.96 322.15,-968.16"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="318.76,-967.3 319.39,-977.87 325.49,-969.21 318.76,-967.3"/>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge54" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge67" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M424.84,-453.06C355.92,-453.33 246.74,-454.88 152.5,-461.19"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M314,-596C281.29,-603.35 273.12,-605.39 241,-615 201.21,-626.9 188.39,-665.9 152.5,-645"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M150.5,-645C129.06,-632.51 116.77,-642.23 98,-626 66.44,-598.72 47.48,-552.51 38.45,-525.16"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="41.7,-523.85 35.37,-515.36 35.02,-525.95 41.7,-523.85"/>
 </g>
 <!-- module~mqc_cgto -->
-<g id="module~~mqc_mbe~~UsesGraph_node20" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node21" class="node">
 <title>module~mqc_cgto</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node20"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
-<polygon fill="#337ab7" stroke="#337ab7" points="183.5,-513.19 119.5,-513.19 119.5,-489.19 183.5,-489.19 183.5,-513.19"/>
-<text text-anchor="middle" x="151.5" y="-498.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node21"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="183.5,-617 119.5,-617 119.5,-593 183.5,-593 183.5,-617"/>
+<text text-anchor="middle" x="151.5" y="-602.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
-<g id="module~~mqc_mbe~~UsesGraph_edge47" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge60" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M458.01,-465.3C447.08,-469.66 435.24,-475.04 425,-481.19 407.15,-491.93 407.22,-501.1 389,-511.19 359.13,-527.75 349.63,-529.26 316,-535.19"/>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M314,-535.19C291.3,-539.2 233.36,-524.74 193.43,-513.45"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="194.27,-510.05 183.7,-510.66 192.35,-516.78 194.27,-510.05"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M314,-596C273.82,-605.03 226.69,-606.66 193.75,-606.42"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="193.62,-602.92 183.58,-606.28 193.53,-609.91 193.62,-602.92"/>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
-<g id="module~~mqc_mbe~~UsesGraph_edge48" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge61" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M443.76,-441.04C436.72,-437.52 430.14,-433.01 425,-427.19 380.44,-376.81 435.6,-328.7 389,-280.19 383.79,-274.77 377.27,-270.72 370.29,-267.7"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="371.16,-264.29 360.57,-264.19 368.78,-270.88 371.16,-264.29"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M487.66,-509.59C473.5,-480.28 435.07,-405.28 389,-353 375.31,-337.47 357.23,-322.82 342.48,-312"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="344.41,-309.08 334.25,-306.1 340.34,-314.77 344.41,-309.08"/>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
-<g id="module~~mqc_mbe~~UsesGraph_edge49" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge62" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M314,-535.19C274.21,-542.21 228.12,-543.87 195.38,-543.97"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="195.25,-540.47 185.25,-543.96 195.24,-547.47 195.25,-540.47"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M460.61,-534.09C449.28,-538.36 436.54,-543.27 425,-548 376.02,-568.07 367.65,-584.4 316,-596"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M314,-596C291.8,-600.99 234.86,-587.04 194.91,-575.77"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="195.73,-572.36 185.15,-572.97 193.8,-579.09 195.73,-572.36"/>
 </g>
 <!-- module~mqc_geometry -->
-<g id="module~~mqc_mbe~~UsesGraph_node24" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node25" class="node">
 <title>module~mqc_geometry</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node24"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
-<polygon fill="#337ab7" stroke="#337ab7" points="198,-391.19 105,-391.19 105,-367.19 198,-367.19 198,-391.19"/>
-<text text-anchor="middle" x="151.5" y="-376.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node25"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="198,-453 105,-453 105,-429 198,-429 198,-453"/>
+<text text-anchor="middle" x="151.5" y="-438.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
-<g id="module~~mqc_mbe~~UsesGraph_edge50" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge63" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M455.2,-441.09C445.08,-437.24 434.38,-432.57 425,-427.19 407.17,-416.98 408.09,-405.8 389,-398.19 330.59,-374.92 257.75,-372.65 208.46,-374.6"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="208.14,-371.12 198.31,-375.08 208.47,-378.11 208.14,-371.12"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M456.87,-509.98C446.35,-506.03 435.02,-501.28 425,-496 407.77,-486.92 407.19,-477.98 389,-471 330.02,-448.36 257.29,-442.05 208.18,-440.65"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="208.15,-437.15 198.07,-440.42 207.99,-444.15 208.15,-437.15"/>
 </g>
 <!-- module~mqc_xyz_reader -->
-<g id="module~~mqc_mbe~~UsesGraph_node26" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node28" class="node">
 <title>module~mqc_xyz_reader</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node26"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
-<polygon fill="#337ab7" stroke="#337ab7" points="364.5,-431.19 265.5,-431.19 265.5,-407.19 364.5,-407.19 364.5,-431.19"/>
-<text text-anchor="middle" x="315" y="-416.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node28"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="364.5,-504 265.5,-504 265.5,-480 364.5,-480 364.5,-504"/>
+<text text-anchor="middle" x="315" y="-489.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
-<g id="module~~mqc_mbe~~UsesGraph_edge53" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge66" class="edge">
 <title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
-<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M430.42,-441.11C412.34,-437.65 392.71,-433.89 374.9,-430.48"/>
-<polygon fill="#00ff78" stroke="#00ff78" points="375.13,-426.96 364.65,-428.51 373.81,-433.83 375.13,-426.96"/>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M424.87,-510.4C408.39,-507.61 390.93,-504.66 374.93,-501.96"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="375.09,-498.44 364.65,-500.22 373.92,-505.34 375.09,-498.44"/>
 </g>
 <!-- module~mqc_program_limits&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge55" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge68" class="edge">
 <title>module~mqc_program_limits&#45;&gt;pic_types</title>
-<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M277.36,-667.27C232.99,-681.42 162.89,-702.13 152.5,-695.19"/>
-<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M150.5,-695.19C75.12,-644.9 45.33,-531.4 35.8,-483.35"/>
-<polygon fill="#00ffd1" stroke="#00ffd1" points="39.21,-482.56 33.93,-473.37 32.33,-483.85 39.21,-482.56"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M277.69,-1002.03C233.29,-1016.27 162.75,-1037.2 152.5,-1030"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M150.5,-1030C65.4,-970.25 38.82,-618.59 33.23,-525.57"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="36.7,-525.1 32.63,-515.32 29.72,-525.5 36.7,-525.1"/>
 </g>
 <!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
-<g id="module~~mqc_mbe~~UsesGraph_edge58" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge72" class="edge">
 <title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
-<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M472.29,-125.16C451.47,-113.6 418.6,-96.04 389,-83.19 380.02,-79.3 370.26,-75.52 360.87,-72.1"/>
-<polygon fill="#00d1ff" stroke="#00d1ff" points="361.87,-68.74 351.28,-68.68 359.52,-75.33 361.87,-68.74"/>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M455.61,-79.92C445.4,-76.05 434.54,-71.36 425,-66 407.33,-56.07 406.77,-47.75 389,-38 380.15,-33.15 370.22,-28.91 360.61,-25.34"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="361.74,-22.03 351.14,-21.99 359.41,-28.62 361.74,-22.03"/>
 </g>
 <!-- module~mqc_result_types&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge59" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge73" class="edge">
 <title>module~mqc_result_types&#45;&gt;pic_types</title>
-<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M464.08,-125.17C429.21,-112.18 369.12,-93.76 316,-97.19"/>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M458.32,-79.98C414.58,-65.75 342.45,-44.82 316,-52"/>
 </g>
 <!-- module~mqc_calculation_defaults -->
-<g id="module~~mqc_mbe~~UsesGraph_node19" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node20" class="node">
 <title>module~mqc_calculation_defaults</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node19"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
-<polygon fill="#337ab7" stroke="#337ab7" points="389,-149.19 241,-149.19 241,-125.19 389,-125.19 389,-149.19"/>
-<text text-anchor="middle" x="315" y="-134.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node20"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="389,-146 241,-146 241,-122 389,-122 389,-146"/>
+<text text-anchor="middle" x="315" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_result_types&#45;&gt;module~mqc_calculation_defaults -->
-<g id="module~~mqc_mbe~~UsesGraph_edge56" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge69" class="edge">
 <title>module~mqc_result_types&#45;&gt;module~mqc_calculation_defaults</title>
-<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M442.16,-137.19C428.68,-137.19 413.8,-137.19 399.12,-137.19"/>
-<polygon fill="#00d1ff" stroke="#00d1ff" points="399.01,-133.69 389.01,-137.19 399.01,-140.69 399.01,-133.69"/>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M442.64,-104.04C422.12,-108.89 398.28,-114.53 376.85,-119.6"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="375.8,-116.25 366.87,-121.96 377.41,-123.07 375.8,-116.25"/>
 </g>
 <!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
-<g id="module~~mqc_mbe~~UsesGraph_edge57" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge70" class="edge">
 <title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
-<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M482.77,-149.27C467.39,-167.28 439.36,-202.87 425,-238.19 390.65,-322.67 445.2,-368.37 389,-440.19 364.03,-472.1 256.23,-510.35 195.14,-530.05"/>
-<polygon fill="#00d1ff" stroke="#00d1ff" points="193.86,-526.78 185.4,-533.16 195.99,-533.45 193.86,-526.78"/>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M475.46,-104.22C459.23,-116.32 436.26,-136.41 425,-160 391.03,-231.16 440.33,-453.15 389,-513 367.17,-538.45 344.03,-513.61 316,-532"/>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M314,-532C278.63,-555.2 230.1,-561.93 195.49,-563.48"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="195.11,-559.99 185.23,-563.81 195.34,-566.99 195.11,-559.99"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_quao_rows -->
+<g id="module~~mqc_mbe~~UsesGraph_edge71" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_quao_rows</title>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M442.16,-92C420.77,-92 395.83,-92 373.8,-92"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="373.58,-88.5 363.58,-92 373.58,-95.5 373.58,-88.5"/>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants -->
-<g id="module~~mqc_mbe~~UsesGraph_edge62" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge76" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M442.64,-271.23C422.12,-276.08 398.28,-281.73 376.85,-286.8"/>
-<polygon fill="#0078ff" stroke="#0078ff" points="375.8,-283.45 366.87,-289.16 377.41,-290.26 375.8,-283.45"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M475.83,-264.14C444.47,-285.7 378.92,-330.75 342.26,-355.95"/>
+<polygon fill="#0054ff" stroke="#0054ff" points="339.86,-353.36 333.6,-361.91 343.82,-359.13 339.86,-353.36"/>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;pic_io -->
-<g id="module~~mqc_mbe~~UsesGraph_edge63" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge77" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;pic_io</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M441.97,-271.25C435.42,-274.77 429.46,-279.32 425,-285.19 372.2,-354.66 430.18,-599.26 389,-676.19 379.74,-693.49 363.05,-707.56 347.96,-717.62"/>
-<polygon fill="#0078ff" stroke="#0078ff" points="345.92,-714.78 339.33,-723.08 349.66,-720.69 345.92,-714.78"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M474.23,-264.14C458.11,-275.45 436.03,-293.86 425,-316 357.03,-452.4 461.81,-523.12 389,-657 379.63,-674.23 362.93,-688.3 347.87,-698.38"/>
+<polygon fill="#0054ff" stroke="#0054ff" points="345.82,-695.53 339.25,-703.84 349.57,-701.44 345.82,-695.53"/>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge65" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge79" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M442.54,-271.25C435.83,-274.77 429.67,-279.32 425,-285.19 351.3,-377.88 463.65,-457.27 389,-549.19 381.46,-558.48 370.34,-564.46 359.05,-568.3"/>
-<polygon fill="#0078ff" stroke="#0078ff" points="357.8,-565.01 349.17,-571.15 359.74,-571.74 357.8,-565.01"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M474.32,-264.19C458.26,-275.52 436.22,-293.95 425,-316 365.31,-433.33 471.29,-507.25 389,-610 381.52,-619.34 370.43,-625.33 359.13,-629.17"/>
+<polygon fill="#0054ff" stroke="#0054ff" points="357.88,-625.89 349.24,-632.02 359.82,-632.61 357.88,-625.89"/>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge66" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge80" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;pic_types</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M476.95,-247.07C457.02,-232.98 422.07,-209.92 389,-196.19 387.44,-195.54 153.89,-136.23 152.5,-137.19"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M427.79,-256.96C375.69,-258.69 301.78,-256.18 241,-235 195.89,-219.28 191.04,-145.77 152.5,-174"/>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;module~mqc_calculation_defaults -->
-<g id="module~~mqc_mbe~~UsesGraph_edge60" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge74" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;module~mqc_calculation_defaults</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M483.14,-246.89C465.62,-226.81 428.24,-186.85 389,-163.19 382.66,-159.37 375.68,-155.99 368.62,-153.04"/>
-<polygon fill="#0078ff" stroke="#0078ff" points="369.59,-149.66 359,-149.28 367.04,-156.18 369.59,-149.66"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M475.17,-239.82C443.74,-218.92 379.39,-176.14 342.88,-151.87"/>
+<polygon fill="#0054ff" stroke="#0054ff" points="344.49,-148.74 334.23,-146.12 340.62,-154.57 344.49,-148.74"/>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;module~mqc_elements -->
-<g id="module~~mqc_mbe~~UsesGraph_edge61" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge75" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;module~mqc_elements</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M427.91,-259.19C409.08,-259.19 388.76,-259.19 370.67,-259.19"/>
-<polygon fill="#0078ff" stroke="#0078ff" points="370.58,-255.69 360.58,-259.19 370.58,-262.69 370.58,-255.69"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M442.64,-264.04C420.06,-269.38 393.45,-275.67 370.47,-281.11"/>
+<polygon fill="#0054ff" stroke="#0054ff" points="369.46,-277.75 360.53,-283.46 371.07,-284.57 369.46,-277.75"/>
 </g>
 <!-- pic_lapack_interfaces -->
-<g id="module~~mqc_mbe~~UsesGraph_node27" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node29" class="node">
 <title>pic_lapack_interfaces</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="378.5,-229.19 251.5,-229.19 251.5,-205.19 378.5,-205.19 378.5,-229.19"/>
-<text text-anchor="middle" x="315" y="-214.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="378.5,-226 251.5,-226 251.5,-202 378.5,-202 378.5,-226"/>
+<text text-anchor="middle" x="315" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
 </g>
 <!-- module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces -->
-<g id="module~~mqc_mbe~~UsesGraph_edge64" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge78" class="edge">
 <title>module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces</title>
-<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M442.64,-247.16C422.12,-242.3 398.28,-236.66 376.85,-231.59"/>
-<polygon fill="#0078ff" stroke="#0078ff" points="377.41,-228.13 366.87,-229.23 375.8,-234.94 377.41,-228.13"/>
+<path fill="none" stroke="#0054ff" stroke-dasharray="5,2" d="M437.34,-239.98C419.77,-236.22 400.22,-232.03 382.04,-228.14"/>
+<polygon fill="#0054ff" stroke="#0054ff" points="382.61,-224.68 372.1,-226.01 381.15,-231.53 382.61,-224.68"/>
 </g>
 <!-- module~mqc_vibrational_analysis&#45;&gt;module~mqc_physical_constants -->
-<g id="module~~mqc_mbe~~UsesGraph_edge68" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge82" class="edge">
 <title>module~mqc_vibrational_analysis&#45;&gt;module~mqc_physical_constants</title>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M493.5,-299.19C462.66,-289.28 427.22,-287.85 396.15,-289.6"/>
-<polygon fill="#001dff" stroke="#001dff" points="395.54,-286.14 385.8,-290.31 396.02,-293.12 395.54,-286.14"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M493.5,-330C445.19,-330.81 391.59,-346.21 356.06,-358.56"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="354.78,-355.3 346.54,-361.95 357.13,-361.89 354.78,-355.3"/>
 </g>
 <!-- module~mqc_vibrational_analysis&#45;&gt;module~mqc_thermochemistry -->
-<g id="module~~mqc_mbe~~UsesGraph_edge69" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge83" class="edge">
 <title>module~mqc_vibrational_analysis&#45;&gt;module~mqc_thermochemistry</title>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M660.07,-362.91C641.18,-344.03 602.57,-307.73 564,-285.19 557.58,-281.44 550.52,-278.05 543.45,-275.05"/>
-<polygon fill="#001dff" stroke="#001dff" points="544.45,-271.68 533.86,-271.2 541.84,-278.17 544.45,-271.68"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M644.03,-315.96C614.04,-303.04 566.26,-282.47 533.02,-268.15"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="534.2,-264.85 523.63,-264.11 531.43,-271.28 534.2,-264.85"/>
 </g>
 <!-- module~mqc_vibrational_analysis&#45;&gt;pic_logger -->
-<g id="module~~mqc_mbe~~UsesGraph_edge71" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge85" class="edge">
 <title>module~mqc_vibrational_analysis&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M622.69,-387.24C614.49,-390.79 606.54,-395.35 600,-401.19 573.03,-425.31 591.55,-450.75 564,-474.19 539.75,-494.83 525.36,-484.13 495.5,-495.19"/>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M493.5,-495.19C444.48,-513.36 436.96,-528.38 389,-549.19 379.27,-553.42 368.62,-557.5 358.53,-561.14"/>
-<polygon fill="#001dff" stroke="#001dff" points="357.34,-557.84 349.07,-564.47 359.67,-564.45 357.34,-557.84"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M652.79,-340.08C636.29,-351.47 613.14,-370.04 600,-392 564.58,-451.21 611.89,-493.33 564,-543 542.07,-565.74 524.83,-550.25 495.5,-562"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M493.5,-562C463.56,-574 453.87,-571.61 425,-586 407.79,-594.58 406.19,-601.38 389,-610 379.43,-614.8 368.76,-619.13 358.59,-622.82"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="357.34,-619.55 349.05,-626.15 359.65,-626.15 357.34,-619.55"/>
 </g>
 <!-- module~mqc_vibrational_analysis&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge72" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge86" class="edge">
 <title>module~mqc_vibrational_analysis&#45;&gt;pic_types</title>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M609.24,-363.16C489.08,-341.37 231.44,-301 152.5,-339.19"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M493.5,-330C380.83,-331.89 350.62,-326.9 241,-353 199.85,-362.8 191.04,-370.57 152.5,-388"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M150.5,-388C125.51,-399.06 118.49,-401.92 98,-420 76.96,-438.57 57.58,-464.45 45.34,-482.36"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="42.27,-480.65 39.62,-490.91 48.08,-484.54 42.27,-480.65"/>
 </g>
 <!-- module~mqc_vibrational_analysis&#45;&gt;module~mqc_elements -->
-<g id="module~~mqc_mbe~~UsesGraph_edge67" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge81" class="edge">
 <title>module~mqc_vibrational_analysis&#45;&gt;module~mqc_elements</title>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M493.5,-299.19C453.13,-286.22 406.28,-275.85 370.86,-268.93"/>
-<polygon fill="#001dff" stroke="#001dff" points="371.2,-265.43 360.72,-266.98 369.88,-272.3 371.2,-265.43"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M599.86,-328.64C567.89,-328.97 529.82,-329.43 495.5,-330"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M493.5,-330C447.95,-330.76 397.11,-319.13 361.55,-308.89"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="362.53,-305.53 351.94,-306.05 360.54,-312.24 362.53,-305.53"/>
 </g>
 <!-- module~mqc_vibrational_analysis&#45;&gt;pic_lapack_interfaces -->
-<g id="module~~mqc_mbe~~UsesGraph_edge70" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge84" class="edge">
 <title>module~mqc_vibrational_analysis&#45;&gt;pic_lapack_interfaces</title>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M648.75,-363.06C627.1,-352 593.8,-335.54 564,-323.19 534.2,-310.84 526.21,-309.06 495.5,-299.19"/>
-<path fill="none" stroke="#001dff" stroke-dasharray="5,2" d="M493.5,-299.19C463.42,-289.53 451.66,-297.15 425,-280.19 404.25,-267 409.68,-251.48 389,-238.19 386.37,-236.5 383.59,-234.94 380.73,-233.51"/>
-<polygon fill="#001dff" stroke="#001dff" points="381.9,-230.19 371.34,-229.33 379.05,-236.59 381.9,-230.19"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M662.96,-315.7C646.23,-294.05 608.1,-249.65 564,-231 508.59,-207.57 439.99,-204.61 389,-206.78"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="388.53,-203.3 378.72,-207.3 388.88,-210.29 388.53,-203.3"/>
 </g>
 <!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge73" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge87" class="edge">
 <title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M273.04,-125.17C237.89,-117.47 187.53,-112.91 152.5,-137.19"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M240.93,-139.94C211.25,-145.29 178.02,-155.31 152.5,-174"/>
 </g>
 <!-- module~mqc_cgto&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge74" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge88" class="edge">
 <title>module~mqc_cgto&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M119.37,-490.68C104.85,-485.79 87.41,-479.9 71.94,-474.68"/>
-<polygon fill="#ffaa00" stroke="#ffaa00" points="72.7,-471.24 62.11,-471.36 70.46,-477.87 72.7,-471.24"/>
+<path fill="none" stroke="#ff8b00" stroke-dasharray="5,2" d="M119.42,-595.58C112.02,-592.54 104.41,-588.71 98,-584 75.6,-567.53 56.36,-541.75 44.53,-523.7"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="47.36,-521.63 39.04,-515.07 41.45,-525.38 47.36,-521.63"/>
 </g>
 <!-- module~mqc_elements&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge77" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge91" class="edge">
 <title>module~mqc_elements&#45;&gt;pic_types</title>
-<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M269.41,-250.73C259.59,-247.7 249.57,-243.64 241,-238.19 190.61,-206.2 201.55,-103.19 152.5,-137.19"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M269.56,-281.95C259.73,-278.28 249.67,-273.67 241,-268 192.97,-236.61 198.79,-140.09 152.5,-174"/>
 </g>
 <!-- module~mqc_atomic_radii -->
-<g id="module~~mqc_mbe~~UsesGraph_node28" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node31" class="node">
 <title>module~mqc_atomic_radii</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node28"><a xlink:href="../module/mqc_atomic_radii.html" xlink:title="mqc_atomic_radii">
-<polygon fill="#337ab7" stroke="#337ab7" points="205,-311.19 98,-311.19 98,-287.19 205,-287.19 205,-311.19"/>
-<text text-anchor="middle" x="151.5" y="-296.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_atomic_radii</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node31"><a xlink:href="../module/mqc_atomic_radii.html" xlink:title="mqc_atomic_radii">
+<polygon fill="#337ab7" stroke="#337ab7" points="205,-306 98,-306 98,-282 205,-282 205,-306"/>
+<text text-anchor="middle" x="151.5" y="-291.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_atomic_radii</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_elements&#45;&gt;module~mqc_atomic_radii -->
-<g id="module~~mqc_mbe~~UsesGraph_edge75" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge89" class="edge">
 <title>module~mqc_elements&#45;&gt;module~mqc_atomic_radii</title>
-<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M269.44,-270.23C251.39,-274.7 230.3,-279.92 211.04,-284.69"/>
-<polygon fill="#aaff00" stroke="#aaff00" points="210.03,-281.34 201.16,-287.14 211.71,-288.13 210.03,-281.34"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M269.44,-294C252.74,-294 233.43,-294 215.38,-294"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="215.22,-290.5 205.22,-294 215.22,-297.5 215.22,-290.5"/>
 </g>
 <!-- pic_ascii -->
-<g id="module~~mqc_mbe~~UsesGraph_node30" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node33" class="node">
 <title>pic_ascii</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="180.5,-269.19 122.5,-269.19 122.5,-245.19 180.5,-245.19 180.5,-269.19"/>
-<text text-anchor="middle" x="151.5" y="-254.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="180.5,-348 122.5,-348 122.5,-324 180.5,-324 180.5,-348"/>
+<text text-anchor="middle" x="151.5" y="-333.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
 </g>
 <!-- module~mqc_elements&#45;&gt;pic_ascii -->
-<g id="module~~mqc_mbe~~UsesGraph_edge76" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge90" class="edge">
 <title>module~mqc_elements&#45;&gt;pic_ascii</title>
-<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M269.44,-258.64C244.83,-258.34 214.56,-257.96 190.98,-257.67"/>
-<polygon fill="#aaff00" stroke="#aaff00" points="190.71,-254.17 180.67,-257.54 190.62,-261.17 190.71,-254.17"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M269.44,-305.59C244.61,-312.05 214.01,-320 190.35,-326.16"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="189.46,-322.77 180.67,-328.68 191.22,-329.55 189.46,-322.77"/>
 </g>
 <!-- module~mqc_fragment_lookup&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge81" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge95" class="edge">
 <title>module~mqc_fragment_lookup&#45;&gt;pic_types</title>
-<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M255.14,-841.16C212.42,-831.99 160.72,-819.86 152.5,-813.19"/>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M661.19,-924.37C635.74,-952.2 568.65,-1018.22 495.5,-1030"/>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M493.5,-1030C415.61,-1042.54 391.99,-1008.82 316,-1030"/>
 </g>
 <!-- module~mqc_fragment_lookup&#45;&gt;module~mqc_error -->
-<g id="module~~mqc_mbe~~UsesGraph_edge78" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge92" class="edge">
 <title>module~mqc_fragment_lookup&#45;&gt;module~mqc_error</title>
-<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M295.31,-841.11C278.86,-829.58 255.36,-810.81 241,-789.19 213,-747.05 222,-728.85 205,-681.19 190.25,-639.84 171.74,-592.06 161.1,-564.95"/>
-<polygon fill="#00ffa9" stroke="#00ffa9" points="164.23,-563.34 157.31,-555.31 157.71,-565.9 164.23,-563.34"/>
-</g>
-<!-- pic_hash_32bit -->
-<g id="module~~mqc_mbe~~UsesGraph_node31" class="node">
-<title>pic_hash_32bit</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="197,-865.19 106,-865.19 106,-841.19 197,-841.19 197,-865.19"/>
-<text text-anchor="middle" x="151.5" y="-850.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_hash_32bit</text>
-</g>
-<!-- module~mqc_fragment_lookup&#45;&gt;pic_hash_32bit -->
-<g id="module~~mqc_mbe~~UsesGraph_edge79" class="edge">
-<title>module~mqc_fragment_lookup&#45;&gt;pic_hash_32bit</title>
-<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M248.78,-853.19C235.1,-853.19 220.81,-853.19 207.54,-853.19"/>
-<polygon fill="#00ffa9" stroke="#00ffa9" points="207.16,-849.69 197.16,-853.19 207.16,-856.69 207.16,-849.69"/>
-</g>
-<!-- pic_sorting -->
-<g id="module~~mqc_mbe~~UsesGraph_node32" class="node">
-<title>pic_sorting</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="186.5,-907.19 116.5,-907.19 116.5,-883.19 186.5,-883.19 186.5,-907.19"/>
-<text text-anchor="middle" x="151.5" y="-892.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_sorting</text>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M606.81,-917.7C555.5,-919.71 483.18,-916.91 425,-893 325.84,-852.24 296.98,-828.44 241,-737 204.53,-677.42 250.57,-636.95 205,-584 201.96,-580.47 198.25,-577.53 194.22,-575.08"/>
+<polygon fill="#00ff2e" stroke="#00ff2e" points="195.52,-571.82 185.01,-570.46 192.38,-578.07 195.52,-571.82"/>
 </g>
 <!-- module~mqc_fragment_lookup&#45;&gt;pic_sorting -->
-<g id="module~~mqc_mbe~~UsesGraph_edge80" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge94" class="edge">
 <title>module~mqc_fragment_lookup&#45;&gt;pic_sorting</title>
-<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M267.72,-865.23C245.33,-871.05 218.59,-878.01 196.51,-883.75"/>
-<polygon fill="#00ffa9" stroke="#00ffa9" points="195.52,-880.39 186.72,-886.29 197.28,-887.16 195.52,-880.39"/>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M619.04,-900C593.72,-894.26 563.76,-887.47 539.68,-882.01"/>
+<polygon fill="#00ff2e" stroke="#00ff2e" points="540.28,-878.56 529.75,-879.76 538.73,-885.39 540.28,-878.56"/>
+</g>
+<!-- pic_hash_32bit -->
+<g id="module~~mqc_mbe~~UsesGraph_node34" class="node">
+<title>pic_hash_32bit</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="540,-964 449,-964 449,-940 540,-940 540,-964"/>
+<text text-anchor="middle" x="494.5" y="-949.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_hash_32bit</text>
+</g>
+<!-- module~mqc_fragment_lookup&#45;&gt;pic_hash_32bit -->
+<g id="module~~mqc_mbe~~UsesGraph_edge93" class="edge">
+<title>module~mqc_fragment_lookup&#45;&gt;pic_hash_32bit</title>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M619.04,-924C597.21,-928.95 571.92,-934.68 549.93,-939.67"/>
+<polygon fill="#00ff2e" stroke="#00ff2e" points="549.06,-936.27 540.08,-941.9 550.61,-943.1 549.06,-936.27"/>
 </g>
 <!-- module~mqc_geometry&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge82" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge96" class="edge">
 <title>module~mqc_geometry&#45;&gt;pic_types</title>
-<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M115.17,-391.25C109.25,-393.85 103.31,-396.84 98,-400.19 79.86,-411.65 62.17,-428.39 49.68,-441.44"/>
-<polygon fill="#00a9ff" stroke="#00a9ff" points="46.88,-439.31 42.62,-449 52,-444.08 46.88,-439.31"/>
+<path fill="none" stroke="#00ffb9" stroke-dasharray="5,2" d="M117.9,-453.01C111.22,-455.75 104.31,-458.81 98,-462 84.38,-468.89 69.9,-477.7 57.99,-485.38"/>
+<polygon fill="#00ffb9" stroke="#00ffb9" points="55.88,-482.58 49.44,-490.99 59.72,-488.44 55.88,-482.58"/>
 </g>
 <!-- module~mqc_math_utils&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge83" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge97" class="edge">
 <title>module~mqc_math_utils&#45;&gt;pic_types</title>
-<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M137.86,-761.12C125.93,-749.04 108.36,-729.4 98,-709.19 58.29,-631.7 40.74,-527.99 34.67,-483.25"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="38.12,-482.67 33.36,-473.2 31.18,-483.57 38.12,-482.67"/>
+<path fill="none" stroke="#00b9ff" stroke-dasharray="5,2" d="M145.85,-805.65C127.93,-758.02 63.16,-585.83 40.17,-524.71"/>
+<polygon fill="#00b9ff" stroke="#00b9ff" points="43.41,-523.39 36.61,-515.26 36.86,-525.86 43.41,-523.39"/>
+</g>
+<!-- module~mqc_quao_rows&#45;&gt;pic_types -->
+<g id="module~~mqc_mbe~~UsesGraph_edge98" class="edge">
+<title>module~mqc_quao_rows&#45;&gt;pic_types</title>
+<path fill="none" stroke="#002eff" stroke-dasharray="5,2" d="M266.44,-103.26C257.79,-105.98 248.99,-109.22 241,-113 197.82,-133.43 191.04,-145.77 152.5,-174"/>
 </g>
 <!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge87" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge102" class="edge">
 <title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
-<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M282.11,-431.28C249.95,-442.56 198.61,-458.11 152.5,-461.19"/>
-<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M150.5,-461.19C124.51,-462.93 95.24,-462.95 72.3,-462.53"/>
-<polygon fill="#aa00ff" stroke="#aa00ff" points="72.31,-459.03 62.23,-462.31 72.15,-466.03 72.31,-459.03"/>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M265.26,-498.52C246.47,-500.73 224.77,-502.92 205,-504 157.52,-506.61 145.55,-504.36 98,-504 89.69,-503.94 80.79,-503.83 72.31,-503.71"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="72.28,-500.21 62.23,-503.55 72.17,-507.21 72.28,-500.21"/>
 </g>
 <!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
-<g id="module~~mqc_mbe~~UsesGraph_edge84" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge99" class="edge">
 <title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
-<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M299.33,-431.27C284.3,-443.82 260.43,-464.25 241,-483.19 224.11,-499.66 224.43,-508.82 205,-522.19 201.68,-524.48 198.08,-526.57 194.37,-528.47"/>
-<polygon fill="#aa00ff" stroke="#aa00ff" points="192.62,-525.42 185.03,-532.81 195.57,-531.77 192.62,-525.42"/>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M276.83,-504.08C265.22,-508.16 252.46,-512.97 241,-518 224.44,-525.28 221.11,-528.76 205,-537 198.92,-540.11 192.41,-543.38 186.12,-546.51"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="184.54,-543.39 177.14,-550.96 187.65,-549.66 184.54,-543.39"/>
 </g>
 <!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
-<g id="module~~mqc_mbe~~UsesGraph_edge85" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge100" class="edge">
 <title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
-<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M265.54,-407.19C247.43,-402.71 226.72,-397.58 208.02,-392.94"/>
-<polygon fill="#aa00ff" stroke="#aa00ff" points="208.7,-389.51 198.16,-390.5 207.02,-396.3 208.7,-389.51"/>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M275.73,-479.91C253.18,-472.79 224.46,-463.72 200.42,-456.13"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="201.37,-452.76 190.78,-453.09 199.26,-459.44 201.37,-452.76"/>
 </g>
 <!-- module~mqc_string_utils -->
-<g id="module~~mqc_mbe~~UsesGraph_node29" class="node">
+<g id="module~~mqc_mbe~~UsesGraph_node32" class="node">
 <title>module~mqc_string_utils</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node29"><a xlink:href="../module/mqc_string_utils.html" xlink:title="mqc_string_utils">
-<polygon fill="#337ab7" stroke="#337ab7" points="200.5,-433.19 102.5,-433.19 102.5,-409.19 200.5,-409.19 200.5,-433.19"/>
-<text text-anchor="middle" x="151.5" y="-418.79" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_string_utils</text>
+<g id="a_module~~mqc_mbe~~UsesGraph_node32"><a xlink:href="../module/mqc_string_utils.html" xlink:title="mqc_string_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="200.5,-495 102.5,-495 102.5,-471 200.5,-471 200.5,-495"/>
+<text text-anchor="middle" x="151.5" y="-480.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_string_utils</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_xyz_reader&#45;&gt;module~mqc_string_utils -->
-<g id="module~~mqc_mbe~~UsesGraph_edge86" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge101" class="edge">
 <title>module~mqc_xyz_reader&#45;&gt;module~mqc_string_utils</title>
-<path fill="none" stroke="#aa00ff" stroke-dasharray="5,2" d="M265.11,-419.8C248.03,-420.01 228.7,-420.25 210.93,-420.47"/>
-<polygon fill="#aa00ff" stroke="#aa00ff" points="210.63,-416.97 200.67,-420.6 210.71,-423.97 210.63,-416.97"/>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M265.11,-489.28C248.03,-488.32 228.7,-487.25 210.93,-486.26"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="210.85,-482.75 200.67,-485.68 210.46,-489.74 210.85,-482.75"/>
 </g>
 <!-- module~mqc_atomic_radii&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge88" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge103" class="edge">
 <title>module~mqc_atomic_radii&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M117.76,-311.25C110.64,-314.95 103.59,-319.56 98,-325.19 65.41,-358.05 46.4,-410.17 37.73,-439.43"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="34.35,-438.52 34.99,-449.1 41.08,-440.43 34.35,-438.52"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M109.82,-306.02C105.47,-308.49 101.4,-311.46 98,-315 52.92,-362.06 38.44,-441.68 33.94,-480.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="30.44,-480.35 32.88,-490.66 37.4,-481.07 30.44,-480.35"/>
 </g>
 <!-- module~mqc_string_utils&#45;&gt;pic_types -->
-<g id="module~~mqc_mbe~~UsesGraph_edge89" class="edge">
+<g id="module~~mqc_mbe~~UsesGraph_edge104" class="edge">
 <title>module~mqc_string_utils&#45;&gt;pic_types</title>
-<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M114.95,-433.2C101.45,-437.75 85.99,-442.97 72.11,-447.66"/>
-<polygon fill="#cbff00" stroke="#cbff00" points="70.68,-444.44 62.32,-450.96 72.92,-451.08 70.68,-444.44"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M102.3,-491.13C92.33,-492.82 81.92,-494.58 72.26,-496.21"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="71.41,-492.8 62.13,-497.91 72.58,-499.7 71.41,-492.8"/>
 </g>
 </g>
 </svg>
@@ -1567,7 +1674,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~10"></span>
+              <span class="anchor" id="variable-fragment_idx~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1582,7 +1689,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~31"></span>
+              <span class="anchor" id="variable-fragment~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1597,7 +1704,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup"></span>
+              <span class="anchor" id="variable-lookup~3"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1612,7 +1719,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~5"></span>
+              <span class="anchor" id="variable-energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1627,7 +1734,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~3"></span>
+              <span class="anchor" id="variable-delta_energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1642,7 +1749,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~42"></span>
+              <span class="anchor" id="variable-n~37"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1657,7 +1764,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~20"></span>
+              <span class="anchor" id="variable-world_comm~12"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1724,7 +1831,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~2"></span>
+              <span class="anchor" id="variable-scf_status~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1739,7 +1846,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~18"></span>
+              <span class="anchor" id="variable-polymers~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1769,7 +1876,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ids~5"></span>
+              <span class="anchor" id="variable-ids~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -1784,7 +1891,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~9"></span>
+              <span class="anchor" id="variable-monomers~10"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1824,7 +1931,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~11"></span>
+              <span class="anchor" id="variable-monomers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1839,7 +1946,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~10"></span>
+              <span class="anchor" id="variable-n_monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1944,7 +2051,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~74"></span>
+              <span class="anchor" id="variable-sys_geom~54"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1959,7 +2066,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~3"></span>
+              <span class="anchor" id="variable-total_gradient~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1974,7 +2081,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian"></span>
+              <span class="anchor" id="variable-total_hessian~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1989,7 +2096,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~17"></span>
+              <span class="anchor" id="variable-bonds~7"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2004,7 +2111,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~24"></span>
+              <span class="anchor" id="variable-world_comm~17"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2025,7 +2132,7 @@ expansion.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe"></span> <h3>public  subroutine <a href='../proc/compute_mbe.html'>compute_mbe</a>(polymers, fragment_count, max_level, results, mbe_result, sys_geom, world_comm, json_data)  
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe"></span> <h3>public  subroutine <a href='../proc/compute_mbe.html'>compute_mbe</a>(polymers, fragment_count, max_level, results, mbe_result, sys_geom, world_comm, json_data, reference)  
 </h3></div>
     <div class="card-body">
           
@@ -2044,7 +2151,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~19"></span>
+              <span class="anchor" id="variable-polymers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2059,7 +2166,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~7"></span>
+              <span class="anchor" id="variable-fragment_count~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2074,7 +2181,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~19"></span>
+              <span class="anchor" id="variable-max_level~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2089,7 +2196,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2104,7 +2211,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~4"></span>
+              <span class="anchor" id="variable-mbe_result~5"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2119,7 +2226,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~73"></span>
+              <span class="anchor" id="variable-sys_geom~53"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2134,7 +2241,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~23"></span>
+              <span class="anchor" id="variable-world_comm~16"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2149,7 +2256,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~22"></span>
+              <span class="anchor" id="variable-json_data~23"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2160,6 +2267,22 @@ expansion.</p>
             <td><strong>json_data</strong></td>
             <td>
 <p>JSON output data</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference~2"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference</strong></td>
+            <td>
+<p>The fragment whose interaction energy is wanted, as a monomer
+number, 1-based. Absent or 0 is the ordinary expansion.</p>
             </td>
         </tr>
     </tbody>
@@ -2189,7 +2312,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ids~6"></span>
+              <span class="anchor" id="variable-ids~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2204,7 +2327,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~10"></span>
+              <span class="anchor" id="variable-monomers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2219,7 +2342,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~4"></span>
+              <span class="anchor" id="variable-delta_energies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2264,7 +2387,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-counts~2"></span>
+              <span class="anchor" id="variable-counts"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2319,7 +2442,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~7"></span>
+              <span class="anchor" id="variable-monomers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2334,7 +2457,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~70"></span>
+              <span class="anchor" id="variable-sys_geom~50"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2364,7 +2487,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~2"></span>
+              <span class="anchor" id="variable-mbe_result"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2424,7 +2547,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~21"></span>
+              <span class="anchor" id="variable-world_comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2479,7 +2602,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~8"></span>
+              <span class="anchor" id="variable-monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2494,7 +2617,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~71"></span>
+              <span class="anchor" id="variable-sys_geom~51"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2524,7 +2647,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~3"></span>
+              <span class="anchor" id="variable-mbe_result~2"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2590,6 +2713,151 @@ expansion.</p>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-assemble_interaction"></span> <h3>private  subroutine <a href='../proc/assemble_interaction.html'>assemble_interaction</a>(polymers, fragment_count, max_level, reference, energies, delta_energies, mbe_result, world_comm)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The reference fragment&rsquo;s energy, and every correction whose term holds it</p><a href="../proc/assemble_interaction.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~14"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_count~7"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~22"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference</strong></td>
+            <td>
+<p>Monomer number, 1-based</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energies~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energies</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-delta_energies~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>delta_energies</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mbe_result~3"></span>
+              type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mbe_result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~15"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-build_mbe_lookup_table"></span> <h3>private  subroutine <a href='../proc/build_mbe_lookup_table.html'>build_mbe_lookup_table</a>(polymers, fragment_count, max_level, lookup, error)  
 </h3></div>
     <div class="card-body">
@@ -2609,7 +2877,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~17"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2639,7 +2907,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~17"></span>
+              <span class="anchor" id="variable-max_level~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2654,7 +2922,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~4"></span>
+              <span class="anchor" id="variable-lookup~6"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2669,7 +2937,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~119"></span>
+              <span class="anchor" id="variable-error~111"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2709,7 +2977,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~16"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2739,7 +3007,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~16"></span>
+              <span class="anchor" id="variable-max_level~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2754,7 +3022,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~2"></span>
+              <span class="anchor" id="variable-lookup~4"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2809,7 +3077,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~11"></span>
+              <span class="anchor" id="variable-fragment_idx~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2824,7 +3092,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~33"></span>
+              <span class="anchor" id="variable-fragment~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2839,7 +3107,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~3"></span>
+              <span class="anchor" id="variable-lookup~5"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2854,7 +3122,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~6"></span>
+              <span class="anchor" id="variable-results~8"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2884,7 +3152,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~43"></span>
+              <span class="anchor" id="variable-n~38"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2899,7 +3167,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~22"></span>
+              <span class="anchor" id="variable-world_comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2936,11 +3204,11 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-get_monomer_atom_list"></span> <h3>private  subroutine <a href='../proc/get_monomer_atom_list.html'>get_monomer_atom_list</a>(sys_geom, monomer_idx, atom_list, n_atoms)  
+    <div class="card-header codesum"><span class="anchor" id="proc-print_interaction_breakdown"></span> <h3>private  subroutine <a href='../proc/print_interaction_breakdown.html'>print_interaction_breakdown</a>(mbe_result, max_level)  
 </h3></div>
     <div class="card-body">
           
-  <p>Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.</p>
+  <p>Print the reference fragment&rsquo;s interaction energy, level by level</p><a href="../proc/print_interaction_breakdown.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2955,22 +3223,22 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~76"></span>
-              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+              <span class="anchor" id="variable-mbe_result~4"></span>
+              type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>sys_geom</strong></td>
+            <td><strong>mbe_result</strong></td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_idx~2"></span>
+              <span class="anchor" id="variable-max_level~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2978,37 +3246,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
               
             </td>
             <td>::</td>
-            <td><strong>monomer_idx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_list~2"></span>
-              integer,
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>atom_list</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_atoms~42"></span>
-              integer,
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_atoms</strong></td>
+            <td><strong>max_level</strong></td>
             <td>
 
             </td>
@@ -3055,7 +3293,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~18"></span>
+              <span class="anchor" id="variable-max_level~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3110,7 +3348,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~2"></span>
+              <span class="anchor" id="variable-total_gradient~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3125,7 +3363,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~72"></span>
+              <span class="anchor" id="variable-sys_geom~52"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3140,7 +3378,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~4"></span>
+              <span class="anchor" id="variable-current_log_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3195,7 +3433,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~47"></span>
+              <span class="anchor" id="variable-k~45"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3255,7 +3493,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~75"></span>
+              <span class="anchor" id="variable-sys_geom~55"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3270,7 +3508,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~4"></span>
+              <span class="anchor" id="variable-total_gradient~6"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -3285,7 +3523,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~2"></span>
+              <span class="anchor" id="variable-total_hessian~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout),</td>
@@ -3300,7 +3538,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~18"></span>
+              <span class="anchor" id="variable-bonds~8"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3345,7 +3583,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~4"></span>
+              <span class="anchor" id="variable-hess_dim~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3360,7 +3598,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~25"></span>
+              <span class="anchor" id="variable-world_comm~18"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -3400,7 +3638,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~3"></span>
+              <span class="anchor" id="variable-scf_status~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3458,7 +3696,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 21:34 +0000             </p>
+ on 2026-09-23 22:38 +0000             </p>
           </div>
         </div>
         <br>

@@ -748,7 +748,8 @@ contains
          end if
 
          call compute_mbe(ctx%polymers, ctx%total_fragments, ctx%max_level, results, mbe_result, &
-                          ctx%sys_geom, ctx%resources%mpi_comms%world_comm, json_data)
+                          ctx%sys_geom, ctx%resources%mpi_comms%world_comm, json_data, &
+                          reference=ctx%reference_fragment)
          call mbe_result%destroy()
 
          call coord_timer%stop()

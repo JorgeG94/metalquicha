@@ -1,0 +1,658 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>atom_label &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>atom_label
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.0% of total for procedures.">6 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_interaction_bonding.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_interaction_bonding.f90.html'>mqc_interaction_bonding.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></li>
+            <li class="breadcrumb-item active" aria-current="page">atom_label</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/atom_label.html#src">atom_label</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  function atom_label(sys_geom, atom) result(label)  
+</h2>
+    
+
+    <p>&ldquo;O 30&rdquo; for system atom <code>atom</code>, 1-based in and 0-based out</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~94"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-label~8"></span>
+          character(len=:), allocatable
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~atom_label~~CallsGraph Pages: 1 -->
+<svg id="procatom_labelCallsGraph" width="279pt" height="74pt"
+ viewBox="0.00 0.00 279.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~atom_label~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~atom_label~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 275,-70 275,4 -4,4"/>
+<!-- proc~atom_label -->
+<g id="proc~~atom_label~~CallsGraph_node1" class="node">
+<title>proc~atom_label</title>
+<polygon fill="none" stroke="black" points="72,-45 0,-45 0,-21 72,-21 72,-45"/>
+<text text-anchor="middle" x="36" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">atom_label</text>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~atom_label~~CallsGraph_node2" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~atom_label~~CallsGraph_node2"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="271,-66 108,-66 108,-42 271,-42 271,-66"/>
+<text text-anchor="middle" x="189.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~atom_label&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~atom_label~~CallsGraph_edge1" class="edge">
+<title>proc~atom_label&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#ff0000" d="M72.14,-37.87C80.1,-38.97 88.91,-40.2 98.01,-41.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="97.6,-44.93 107.98,-42.84 98.56,-38 97.6,-44.93"/>
+</g>
+<!-- to_char -->
+<g id="proc~~atom_label~~CallsGraph_node3" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="216.5,-24 162.5,-24 162.5,0 216.5,0 216.5,-24"/>
+<text text-anchor="middle" x="189.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~atom_label&#45;&gt;to_char -->
+<g id="proc~~atom_label~~CallsGraph_edge2" class="edge">
+<title>proc~atom_label&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M72.14,-28.13C96.05,-24.82 127.62,-20.44 151.84,-17.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="152.64,-20.5 162.07,-15.66 151.68,-13.57 152.64,-20.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~atom_label~~CalledByGraph Pages: 1 -->
+<svg id="procatom_labelCalledByGraph" width="641pt" height="43pt"
+ viewBox="0.00 0.00 641.00 43.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~atom_label~~CalledByGraph" class="graph" transform="scale(0.58 0.58) rotate(0) translate(4 70)">
+<title>proc~~atom_label~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1098,-70 1098,4 -4,4"/>
+<!-- proc~atom_label -->
+<g id="proc~~atom_label~~CalledByGraph_node1" class="node">
+<title>proc~atom_label</title>
+<polygon fill="none" stroke="black" points="1094,-45 1022,-45 1022,-21 1094,-21 1094,-45"/>
+<text text-anchor="middle" x="1058" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">atom_label</text>
+</g>
+<!-- proc~orbital_label -->
+<g id="proc~~atom_label~~CalledByGraph_node2" class="node">
+<title>proc~orbital_label</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node2"><a xlink:href="../proc/orbital_label.html" xlink:title="orbital_label">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="986,-25 907,-25 907,-1 986,-1 986,-25"/>
+<text text-anchor="middle" x="946.5" y="-10.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">orbital_label</text>
+</a>
+</g>
+</g>
+<!-- proc~orbital_label&#45;&gt;proc~atom_label -->
+<g id="proc~~atom_label~~CalledByGraph_edge1" class="edge">
+<title>proc~orbital_label&#45;&gt;proc~atom_label</title>
+<path fill="none" stroke="#ff0000" d="M986.11,-20.05C994.34,-21.55 1003.1,-23.16 1011.56,-24.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1011.2,-28.19 1021.67,-26.55 1012.46,-21.31 1011.2,-28.19"/>
+</g>
+<!-- proc~print_interaction_bonding -->
+<g id="proc~~atom_label~~CalledByGraph_node3" class="node">
+<title>proc~print_interaction_bonding</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node3"><a xlink:href="../proc/print_interaction_bonding.html" xlink:title="print_interaction_bonding">
+<polygon fill="#d9534f" stroke="#d9534f" points="871,-45 722,-45 722,-21 871,-21 871,-45"/>
+<text text-anchor="middle" x="796.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_interaction_bonding</text>
+</a>
+</g>
+</g>
+<!-- proc~print_interaction_bonding&#45;&gt;proc~atom_label -->
+<g id="proc~~atom_label~~CalledByGraph_edge2" class="edge">
+<title>proc~print_interaction_bonding&#45;&gt;proc~atom_label</title>
+<path fill="none" stroke="#ff0000" d="M871.36,-33.81C906.14,-34.09 948.2,-34.27 986,-34 994.33,-33.94 1003.2,-33.84 1011.75,-33.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1012.02,-37.23 1021.97,-33.59 1011.92,-30.23 1012.02,-37.23"/>
+</g>
+<!-- proc~print_interaction_bonding&#45;&gt;proc~orbital_label -->
+<g id="proc~~atom_label~~CalledByGraph_edge3" class="edge">
+<title>proc~print_interaction_bonding&#45;&gt;proc~orbital_label</title>
+<path fill="none" stroke="#ff0000" d="M871.07,-23.06C879.74,-21.89 888.42,-20.71 896.63,-19.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="897.3,-23.05 906.74,-18.24 896.36,-16.11 897.3,-23.05"/>
+</g>
+<!-- proc~compute_mbe -->
+<g id="proc~~atom_label~~CalledByGraph_node4" class="node">
+<title>proc~compute_mbe</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node4"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="686,-45 597,-45 597,-21 686,-21 686,-45"/>
+<text text-anchor="middle" x="641.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~print_interaction_bonding -->
+<g id="proc~~atom_label~~CalledByGraph_edge4" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~print_interaction_bonding</title>
+<path fill="none" stroke="#00ffff" d="M686.34,-33C694.34,-33 702.92,-33 711.64,-33"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="711.89,-36.5 721.89,-33 711.89,-29.5 711.89,-36.5"/>
+</g>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~atom_label~~CalledByGraph_node5" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node5"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="555,-66 413,-66 413,-42 555,-42 555,-66"/>
+<text text-anchor="middle" x="484" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~compute_mbe -->
+<g id="proc~~atom_label~~CalledByGraph_edge5" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M555.02,-44.54C565.66,-43.11 576.49,-41.64 586.72,-40.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="587.26,-43.72 596.71,-38.91 586.33,-36.78 587.26,-43.72"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~atom_label~~CalledByGraph_node6" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node6"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="561,-24 407,-24 407,0 561,0 561,-24"/>
+<text text-anchor="middle" x="484" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe -->
+<g id="proc~~atom_label~~CalledByGraph_edge6" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M561.38,-22.32C569.92,-23.47 578.47,-24.62 586.64,-25.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="586.36,-29.22 596.74,-27.09 587.3,-22.28 586.36,-29.22"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~atom_label~~CalledByGraph_node7" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node7"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="371,-24 217,-24 217,0 371,0 371,-24"/>
+<text text-anchor="middle" x="294" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~atom_label~~CalledByGraph_edge8" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M371.2,-12C379.52,-12 388.03,-12 396.47,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="396.7,-15.5 406.7,-12 396.7,-8.5 396.7,-15.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~atom_label~~CalledByGraph_node8" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node8"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="350.5,-66 237.5,-66 237.5,-42 350.5,-42 350.5,-66"/>
+<text text-anchor="middle" x="294" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~atom_label~~CalledByGraph_edge7" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M350.64,-54C366.94,-54 385.08,-54 402.59,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="402.8,-57.5 412.8,-54 402.8,-50.5 402.8,-57.5"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~atom_label~~CalledByGraph_node9" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node9"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="147,-66 34,-66 34,-42 147,-42 147,-66"/>
+<text text-anchor="middle" x="90.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~atom_label~~CalledByGraph_edge10" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M147.09,-54C171.88,-54 201.26,-54 227.14,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="227.24,-57.5 237.24,-54 227.24,-50.5 227.24,-57.5"/>
+</g>
+<!-- proc~mbe_run_serial -->
+<g id="proc~~atom_label~~CalledByGraph_node10" class="node">
+<title>proc~mbe_run_serial</title>
+<g id="a_proc~~atom_label~~CalledByGraph_node10"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="181,-24 0,-24 0,0 181,0 181,-24"/>
+<text text-anchor="middle" x="90.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor -->
+<g id="proc~~atom_label~~CalledByGraph_edge9" class="edge">
+<title>proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor</title>
+<path fill="none" stroke="#ff0000" d="M181.05,-12C189.57,-12 198.2,-12 206.69,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.95,-15.5 216.95,-12 206.95,-8.5 206.95,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocatom_labelCalledByGraph = svgPanZoom('#procatom_labelCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">atom_label</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! "O 30" for system atom `atom`, 1-based in and 0-based out</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">label</span>
+
+<span class="w">      </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">element_number_to_symbol</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">atom</span><span class="p">)))</span><span class="o">//</span><span class="s2">" "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">              </span><span class="n">to_char</span><span class="p">(</span><span class="n">atom</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">atom_label</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-23 22:38 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

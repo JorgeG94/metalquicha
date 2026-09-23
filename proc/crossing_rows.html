@@ -1,0 +1,1453 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>crossing_rows &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>crossing_rows
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">82 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_interaction_bonding.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_interaction_bonding.f90.html'>mqc_interaction_bonding.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></li>
+            <li class="breadcrumb-item active" aria-current="page">crossing_rows</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-a~21">a</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-b~18">b</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-cap">cap</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-fragment~39">fragment</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-k~69">k</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-kept~7">kept</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-key~14">key</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-n_atoms~49">n_atoms</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-n_kept~3">n_kept</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-n_pairs">n_pairs</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-n_real~3">n_real</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-order~10">order</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-owner~17">owner</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-p~15">p</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-to_system">to_system</a>
+            <a class="list-group-item" href="../proc/crossing_rows.html#variable-usable">usable</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/crossing_rows.html#src">crossing_rows</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine crossing_rows(row, term, reference, rows, sys_geom, monomer_of, out, error)  
+</h2>
+    
+
+    <p>Keep the orbital and atom pairs of one term that cross between the
+reference and the other monomers, renumbered to the system</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-row~14"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>row</strong>(:)</td>
+            <td>
+                <p>This term&rsquo;s entry in the term list, zero-padded, negative for a ghost</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rows~4"></span>
+              type(<a href='../type/quao_rows_t.html'>quao_rows_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rows</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~92"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_of~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomer_of</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-out~6"></span>
+              type(<a href='../type/interaction_bonding_term_t.html'>interaction_bonding_term_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>out</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~186"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~crossing_rows~~CallsGraph Pages: 1 -->
+<svg id="proccrossing_rowsCallsGraph" width="641pt" height="279pt"
+ viewBox="0.00 0.00 641.00 278.65" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~crossing_rows~~CallsGraph" class="graph" transform="scale(0.57 0.57) rotate(0) translate(4 482)">
+<title>proc~~crossing_rows~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-482 1114,-482 1114,4 -4,4"/>
+<!-- proc~crossing_rows -->
+<g id="proc~~crossing_rows~~CallsGraph_node1" class="node">
+<title>proc~crossing_rows</title>
+<polygon fill="none" stroke="black" points="85,-144 0,-144 0,-120 85,-120 85,-144"/>
+<text text-anchor="middle" x="42.5" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50">crossing_rows</text>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~crossing_rows~~CallsGraph_node2" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node2"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="315.5,-331 149.5,-331 149.5,-307 315.5,-307 315.5,-331"/>
+<text text-anchor="middle" x="232.5" y="-316.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~crossing_rows&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~crossing_rows~~CallsGraph_edge1" class="edge">
+<title>proc~crossing_rows&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#ff0000" d="M51.52,-144C64.75,-163.39 92.57,-202.33 121,-231 147.49,-257.71 181.91,-284.01 205.25,-300.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.43,-303.8 213.61,-306.75 207.49,-298.1 203.43,-303.8"/>
+</g>
+<!-- proc~copy_rows -->
+<g id="proc~~crossing_rows~~CallsGraph_node3" class="node">
+<title>proc~copy_rows</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node3"><a xlink:href="../proc/copy_rows.html" xlink:title="copy_rows">
+<polygon fill="#d9534f" stroke="#d9534f" points="266,-222 199,-222 199,-198 266,-198 266,-222"/>
+<text text-anchor="middle" x="232.5" y="-207.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">copy_rows</text>
+</a>
+</g>
+</g>
+<!-- proc~crossing_rows&#45;&gt;proc~copy_rows -->
+<g id="proc~~crossing_rows~~CallsGraph_edge2" class="edge">
+<title>proc~crossing_rows&#45;&gt;proc~copy_rows</title>
+<path fill="none" stroke="#ff0000" d="M58,-144.08C72.9,-155.92 97.23,-173.64 121,-184 142.43,-193.34 167.71,-199.6 188.69,-203.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="188.14,-207.1 198.6,-205.45 189.39,-200.21 188.14,-207.1"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~crossing_rows~~CallsGraph_node4" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node4"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="847.5,-184 708.5,-184 708.5,-160 847.5,-160 847.5,-184"/>
+<text text-anchor="middle" x="778" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~crossing_rows&#45;&gt;proc~error_has_error -->
+<g id="proc~~crossing_rows~~CallsGraph_edge3" class="edge">
+<title>proc~crossing_rows&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M85.17,-140.63C96.73,-142.72 109.31,-144.72 121,-146 328.45,-168.74 574.74,-172.25 698.18,-172.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="698.3,-175.91 708.3,-172.41 698.3,-168.91 698.3,-175.91"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~crossing_rows~~CallsGraph_node5" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node5"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="1081,-146 976,-146 976,-122 1081,-122 1081,-146"/>
+<text text-anchor="middle" x="1028.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~crossing_rows&#45;&gt;proc~error_set -->
+<g id="proc~~crossing_rows~~CallsGraph_edge4" class="edge">
+<title>proc~crossing_rows&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M85.15,-132.08C239.8,-132.4 781.53,-133.5 965.69,-133.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="965.74,-137.37 975.74,-133.89 965.75,-130.37 965.74,-137.37"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_node6" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node6"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="344,-24 121,-24 121,0 344,0 344,-24"/>
+<text text-anchor="middle" x="232.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~crossing_rows&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_edge5" class="edge">
+<title>proc~crossing_rows&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M49.24,-119.95C60.05,-98.66 85.58,-54.58 121,-33 123.88,-31.25 126.87,-29.64 129.94,-28.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="131.6,-31.25 139.4,-24.09 128.83,-24.82 131.6,-31.25"/>
+</g>
+<!-- sort_index -->
+<g id="proc~~crossing_rows~~CallsGraph_node7" class="node">
+<title>sort_index</title>
+<polygon fill="#777777" stroke="#777777" points="266,-66 199,-66 199,-42 266,-42 266,-66"/>
+<text text-anchor="middle" x="232.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort_index</text>
+</g>
+<!-- proc~crossing_rows&#45;&gt;sort_index -->
+<g id="proc~~crossing_rows~~CallsGraph_edge6" class="edge">
+<title>proc~crossing_rows&#45;&gt;sort_index</title>
+<path fill="none" stroke="#ff0000" d="M58,-119.92C72.9,-108.08 97.23,-90.36 121,-80 142.43,-70.66 167.71,-64.4 188.69,-60.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="189.39,-63.79 198.6,-58.55 188.14,-56.9 189.39,-63.79"/>
+</g>
+<!-- to_char -->
+<g id="proc~~crossing_rows~~CallsGraph_node8" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1055.5,-104 1001.5,-104 1001.5,-80 1055.5,-80 1055.5,-104"/>
+<text text-anchor="middle" x="1028.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~crossing_rows&#45;&gt;to_char -->
+<g id="proc~~crossing_rows~~CallsGraph_edge7" class="edge">
+<title>proc~crossing_rows&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M85.33,-129.75C96.88,-129.15 109.43,-128.53 121,-128 458.91,-112.57 867.86,-97.69 990.83,-93.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="991.3,-96.79 1001.17,-92.93 991.05,-89.79 991.3,-96.79"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~error_has_error -->
+<g id="proc~~crossing_rows~~CallsGraph_edge9" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M267.21,-306.92C336.91,-282.34 502.33,-226.02 645,-193 662.1,-189.04 680.62,-185.59 698.23,-182.69"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="699.16,-186.08 708.48,-181.04 698.05,-179.17 699.16,-186.08"/>
+</g>
+<!-- proc~build_fragment_core -->
+<g id="proc~~crossing_rows~~CallsGraph_node10" class="node">
+<title>proc~build_fragment_core</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node10"><a xlink:href="../proc/build_fragment_core.html" xlink:title="build_fragment_core">
+<polygon fill="#d9534f" stroke="#d9534f" points="555.5,-331 433.5,-331 433.5,-307 555.5,-307 555.5,-331"/>
+<text text-anchor="middle" x="494.5" y="-316.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_core</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~build_fragment_core -->
+<g id="proc~~crossing_rows~~CallsGraph_edge8" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~build_fragment_core</title>
+<path fill="none" stroke="#ff0000" d="M315.77,-319C350.28,-319 390.01,-319 423.14,-319"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="423.2,-322.5 433.2,-319 423.2,-315.5 423.2,-322.5"/>
+</g>
+<!-- proc~fragment_charge_multiplicity -->
+<g id="proc~~crossing_rows~~CallsGraph_node11" class="node">
+<title>proc~fragment_charge_multiplicity</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node11"><a xlink:href="../proc/fragment_charge_multiplicity.html" xlink:title="fragment_charge_multiplicity">
+<polygon fill="#d9534f" stroke="#d9534f" points="862.5,-478 693.5,-478 693.5,-454 862.5,-454 862.5,-478"/>
+<text text-anchor="middle" x="778" y="-463.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_charge_multiplicity</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_charge_multiplicity -->
+<g id="proc~~crossing_rows~~CallsGraph_edge10" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_charge_multiplicity</title>
+<path fill="none" stroke="#ff0000" d="M256.23,-331.22C284.53,-345.99 334.66,-370.77 380,-386 494.38,-424.41 526.47,-422.4 645,-445 658.3,-447.54 672.39,-450.01 686.22,-452.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="685.8,-455.79 696.24,-453.96 686.94,-448.88 685.8,-455.79"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~crossing_rows~~CallsGraph_node12" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node12"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="911,-436 645,-436 645,-412 911,-412 911,-436"/>
+<text text-anchor="middle" x="778" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~crossing_rows~~CallsGraph_edge11" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#ff0000" d="M288.6,-331.04C367.4,-348.09 516.94,-379.75 645,-403 658.69,-405.48 673.2,-407.96 687.41,-410.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="687.25,-413.81 697.68,-411.96 688.37,-406.9 687.25,-413.81"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_node9" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node9"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="609,-24 380,-24 380,0 609,0 609,-24"/>
+<text text-anchor="middle" x="494.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_edge12" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#0091ff" d="M344.14,-12C352.49,-12 360.95,-12 369.38,-12"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="369.64,-15.5 379.64,-12 369.64,-8.5 369.64,-15.5"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_node14" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node14"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="894.5,-24 661.5,-24 661.5,0 894.5,0 894.5,-24"/>
+<text text-anchor="middle" x="778" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_edge13" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ff0000" d="M609.19,-12C622.94,-12 637.05,-12 650.96,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="651.06,-15.5 661.06,-12 651.06,-8.5 651.06,-15.5"/>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~error_has_error -->
+<g id="proc~~crossing_rows~~CallsGraph_edge19" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#7fff00" d="M540.45,-306.93C563.25,-298.95 590.05,-286.48 609,-268 635.47,-242.19 615.35,-215.1 645,-193 660.3,-181.6 679.39,-175.35 698.25,-172.13"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="698.98,-175.56 708.38,-170.67 697.98,-168.63 698.98,-175.56"/>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~fragment_charge_multiplicity -->
+<g id="proc~~crossing_rows~~CallsGraph_edge20" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~fragment_charge_multiplicity</title>
+<path fill="none" stroke="#7fff00" d="M505.63,-331.17C527.87,-356.96 583.88,-417.04 645,-445 656.94,-450.46 670.05,-454.53 683.23,-457.57"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="682.79,-461.05 693.3,-459.69 684.24,-454.2 682.79,-461.05"/>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~crossing_rows~~CallsGraph_edge21" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#7fff00" d="M521.81,-331.03C545.22,-342.07 580.12,-359.33 609,-377 625.84,-387.3 626.76,-395.47 645,-403 650.5,-405.27 656.21,-407.3 662.06,-409.1"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="661.41,-412.56 671.98,-411.94 663.33,-405.83 661.41,-412.56"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~crossing_rows~~CallsGraph_node13" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node13"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="837,-310 719,-310 719,-286 837,-286 837,-310"/>
+<text text-anchor="middle" x="778" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~crossing_rows~~CallsGraph_edge14" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#7fff00" d="M555.54,-314.52C600.52,-311.17 662.11,-306.57 708.92,-303.08"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="709.26,-306.56 718.98,-302.33 708.74,-299.58 709.26,-306.56"/>
+</g>
+<!-- proc~calculate_monomer_distance -->
+<g id="proc~~crossing_rows~~CallsGraph_node15" class="node">
+<title>proc~calculate_monomer_distance</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node15"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="862.5,-268 693.5,-268 693.5,-244 862.5,-244 862.5,-268"/>
+<text text-anchor="middle" x="778" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~calculate_monomer_distance -->
+<g id="proc~~crossing_rows~~CallsGraph_edge15" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~calculate_monomer_distance</title>
+<path fill="none" stroke="#7fff00" d="M533.6,-306.98C563.63,-297.82 606.68,-285.4 645,-277 657.37,-274.29 670.47,-271.78 683.42,-269.51"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="684.02,-272.95 693.28,-267.82 682.83,-266.06 684.02,-272.95"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~crossing_rows~~CallsGraph_node16" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node16"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="846.5,-226 709.5,-226 709.5,-202 846.5,-202 846.5,-226"/>
+<text text-anchor="middle" x="778" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~crossing_rows~~CallsGraph_edge16" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#7fff00" d="M529.74,-306.93C553.06,-297.93 584.1,-284.39 609,-268 627.13,-256.07 625.45,-244.44 645,-235 661.66,-226.95 680.75,-221.88 699.14,-218.71"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="699.91,-222.14 709.26,-217.14 698.84,-215.22 699.91,-222.14"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~crossing_rows~~CallsGraph_node17" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node17"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="842,-394 714,-394 714,-370 842,-370 842,-394"/>
+<text text-anchor="middle" x="778" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~crossing_rows~~CallsGraph_edge17" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#7fff00" d="M533.6,-331.02C563.63,-340.18 606.68,-352.6 645,-361 664.01,-365.17 684.74,-368.86 704.01,-371.94"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="703.52,-375.4 713.94,-373.49 704.6,-368.49 703.52,-375.4"/>
+</g>
+<!-- proc~error_add_context -->
+<g id="proc~~crossing_rows~~CallsGraph_node18" class="node">
+<title>proc~error_add_context</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node18"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="855,-352 701,-352 701,-328 855,-328 855,-352"/>
+<text text-anchor="middle" x="778" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_core&#45;&gt;proc~error_add_context -->
+<g id="proc~~crossing_rows~~CallsGraph_edge18" class="edge">
+<title>proc~build_fragment_core&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#7fff00" d="M555.54,-323.48C594.94,-326.42 647.08,-330.31 690.87,-333.57"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="690.71,-337.07 700.94,-334.33 691.23,-330.09 690.71,-337.07"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_node20" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node20"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1099.5,-24 957.5,-24 957.5,0 1099.5,0 1099.5,-24"/>
+<text text-anchor="middle" x="1028.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~crossing_rows~~CallsGraph_edge22" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#ffff00" d="M894.52,-12C912.26,-12 930.24,-12 947,-12"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="947.26,-15.5 957.26,-12 947.26,-8.5 947.26,-15.5"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~crossing_rows~~CallsGraph_node22" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node22"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1068,-272 989,-272 989,-248 1068,-248 1068,-272"/>
+<text text-anchor="middle" x="1028.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom -->
+<g id="proc~~crossing_rows~~CallsGraph_edge23" class="edge">
+<title>proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#00ff00" d="M862.78,-257.35C901.31,-257.97 945.66,-258.68 978.63,-259.21"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="978.85,-262.72 988.91,-259.38 978.97,-255.72 978.85,-262.72"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
+<g id="proc~~crossing_rows~~CallsGraph_edge26" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ffff" d="M846.82,-211.73C868.29,-208.82 891.5,-203.28 911,-193 931.58,-182.15 926.97,-166.84 947,-155 952.93,-151.49 959.45,-148.57 966.12,-146.12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="967.57,-149.33 975.97,-142.88 965.38,-142.68 967.57,-149.33"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~crossing_rows~~CallsGraph_edge28" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ffff" d="M846.8,-215.7C869.12,-213.19 892.84,-206.88 911,-193 941.97,-169.32 917.22,-138.16 947,-113 959.28,-102.62 976.1,-97.3 991.19,-94.6"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="991.9,-98.03 1001.29,-93.12 990.88,-91.11 991.9,-98.03"/>
+</g>
+<!-- error -->
+<g id="proc~~crossing_rows~~CallsGraph_node19" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1055.5,-230 1001.5,-230 1001.5,-206 1055.5,-206 1055.5,-230"/>
+<text text-anchor="middle" x="1028.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~crossing_rows~~CallsGraph_edge24" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ffff" d="M846.58,-215.09C893.21,-215.84 953.41,-216.81 991.24,-217.42"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="991.23,-220.92 1001.29,-217.58 991.35,-213.92 991.23,-220.92"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~crossing_rows~~CallsGraph_node21" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~crossing_rows~~CallsGraph_node21"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1110,-188 947,-188 947,-164 1110,-164 1110,-188"/>
+<text text-anchor="middle" x="1028.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~crossing_rows~~CallsGraph_edge25" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ffff" d="M846.58,-203.67C874.98,-199.32 908.42,-194.21 938.77,-189.57"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="939.58,-192.99 948.93,-188.01 938.52,-186.07 939.58,-192.99"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~to_angstrom -->
+<g id="proc~~crossing_rows~~CallsGraph_edge27" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#00ffff" d="M846.61,-224.04C867.31,-227.31 890.13,-231.1 911,-235 933.37,-239.18 958.02,-244.38 978.87,-248.96"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="978.25,-252.4 988.77,-251.14 979.76,-245.57 978.25,-252.4"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccrossing_rowsCallsGraph = svgPanZoom('#proccrossing_rowsCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~crossing_rows~~CalledByGraph Pages: 1 -->
+<svg id="proccrossing_rowsCalledByGraph" width="641pt" height="47pt"
+ viewBox="0.00 0.00 641.00 46.92" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~crossing_rows~~CalledByGraph" class="graph" transform="scale(0.63 0.63) rotate(0) translate(4 70)">
+<title>proc~~crossing_rows~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1007,-70 1007,4 -4,4"/>
+<!-- proc~crossing_rows -->
+<g id="proc~~crossing_rows~~CalledByGraph_node1" class="node">
+<title>proc~crossing_rows</title>
+<polygon fill="none" stroke="black" points="1003,-45 918,-45 918,-21 1003,-21 1003,-45"/>
+<text text-anchor="middle" x="960.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">crossing_rows</text>
+</g>
+<!-- proc~collect_interaction_bonding -->
+<g id="proc~~crossing_rows~~CalledByGraph_node2" class="node">
+<title>proc~collect_interaction_bonding</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node2"><a xlink:href="../proc/collect_interaction_bonding.html" xlink:title="collect_interaction_bonding">
+<polygon fill="#d9534f" stroke="#d9534f" points="882,-45 722,-45 722,-21 882,-21 882,-45"/>
+<text text-anchor="middle" x="802" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">collect_interaction_bonding</text>
+</a>
+</g>
+</g>
+<!-- proc~collect_interaction_bonding&#45;&gt;proc~crossing_rows -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge1" class="edge">
+<title>proc~collect_interaction_bonding&#45;&gt;proc~crossing_rows</title>
+<path fill="none" stroke="#ff0000" d="M882.17,-33C890.8,-33 899.42,-33 907.61,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="907.71,-36.5 917.71,-33 907.71,-29.5 907.71,-36.5"/>
+</g>
+<!-- proc~compute_mbe -->
+<g id="proc~~crossing_rows~~CalledByGraph_node3" class="node">
+<title>proc~compute_mbe</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node3"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="686,-45 597,-45 597,-21 686,-21 686,-45"/>
+<text text-anchor="middle" x="641.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~collect_interaction_bonding -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~collect_interaction_bonding</title>
+<path fill="none" stroke="#ff0000" d="M686.23,-33C694.29,-33 702.96,-33 711.8,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="711.83,-36.5 721.83,-33 711.83,-29.5 711.83,-36.5"/>
+</g>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~crossing_rows~~CalledByGraph_node4" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node4"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="555,-66 413,-66 413,-42 555,-42 555,-66"/>
+<text text-anchor="middle" x="484" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~compute_mbe -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge3" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M555.02,-44.54C565.66,-43.11 576.49,-41.64 586.72,-40.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="587.26,-43.72 596.71,-38.91 586.33,-36.78 587.26,-43.72"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~crossing_rows~~CalledByGraph_node5" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node5"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="561,-24 407,-24 407,0 561,0 561,-24"/>
+<text text-anchor="middle" x="484" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge4" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M561.38,-22.32C569.92,-23.47 578.47,-24.62 586.64,-25.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="586.36,-29.22 596.74,-27.09 587.3,-22.28 586.36,-29.22"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~crossing_rows~~CalledByGraph_node6" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node6"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="371,-24 217,-24 217,0 371,0 371,-24"/>
+<text text-anchor="middle" x="294" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge6" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M371.2,-12C379.52,-12 388.03,-12 396.47,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="396.7,-15.5 406.7,-12 396.7,-8.5 396.7,-15.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~crossing_rows~~CalledByGraph_node7" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node7"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="350.5,-66 237.5,-66 237.5,-42 350.5,-42 350.5,-66"/>
+<text text-anchor="middle" x="294" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge5" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M350.64,-54C366.94,-54 385.08,-54 402.59,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="402.8,-57.5 412.8,-54 402.8,-50.5 402.8,-57.5"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~crossing_rows~~CalledByGraph_node8" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node8"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="147,-66 34,-66 34,-42 147,-42 147,-66"/>
+<text text-anchor="middle" x="90.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge8" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M147.09,-54C171.88,-54 201.26,-54 227.14,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="227.24,-57.5 237.24,-54 227.24,-50.5 227.24,-57.5"/>
+</g>
+<!-- proc~mbe_run_serial -->
+<g id="proc~~crossing_rows~~CalledByGraph_node9" class="node">
+<title>proc~mbe_run_serial</title>
+<g id="a_proc~~crossing_rows~~CalledByGraph_node9"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="181,-24 0,-24 0,0 181,0 181,-24"/>
+<text text-anchor="middle" x="90.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor -->
+<g id="proc~~crossing_rows~~CalledByGraph_edge7" class="edge">
+<title>proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor</title>
+<path fill="none" stroke="#ff0000" d="M181.05,-12C189.57,-12 198.2,-12 206.69,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.95,-15.5 216.95,-12 206.95,-8.5 206.95,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccrossing_rowsCalledByGraph = svgPanZoom('#proccrossing_rowsCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~21"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-b~18"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>b</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cap"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cap</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~39"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~69"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kept~7"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>kept</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key~14"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>key</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~49"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_kept~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_kept</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pairs"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pairs</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_real~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_real</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-order~10"></span>
+              integer(kind=int_index),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>order</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-owner~17"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>owner</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-p~15"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>p</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-to_system"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>to_system</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-usable"></span>
+              logical,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>usable</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">crossing_rows</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">term</span><span class="p">,</span><span class="w"> </span><span class="n">reference</span><span class="p">,</span><span class="w"> </span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_of</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Keep the orbital and atom pairs of one term that cross between the</span>
+<span class="w">      </span><span class="c">!! reference and the other monomers, renumbered to the system</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">row</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! This term's entry in the term list, zero-padded, negative for a ghost</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">quao_rows_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">rows</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_of</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">interaction_bonding_term_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">out</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">to_system</span><span class="p">(:),</span><span class="w"> </span><span class="n">owner</span><span class="p">(:),</span><span class="w"> </span><span class="n">kept</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">usable</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">key</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int_index</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">order</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_real</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">n_kept</span><span class="p">,</span><span class="w"> </span><span class="n">n_pairs</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">cap</span>
+
+<span class="w">      </span><span class="n">out</span><span class="p">%</span><span class="n">term</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">term</span>
+<span class="w">      </span><span class="n">out</span><span class="p">%</span><span class="n">monomers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">pack</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="w">      </span><span class="c">! Local atom to system atom, and to the monomer that owns it. A cap</span>
+<span class="w">      </span><span class="c">! takes the owner of the atom it is bonded to, so a row reaching a cap</span>
+<span class="w">      </span><span class="c">! can still be placed on one side; it is then dropped, since a cap is not</span>
+<span class="w">      </span><span class="c">! an atom of the system.</span>
+<span class="w">      </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="n">n_real</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_caps</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">to_system</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">owner</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">),</span><span class="w"> </span><span class="n">usable</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="n">to_system</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">to_system</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_real</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_real</span><span class="p">)</span>
+<span class="w">      </span><span class="n">usable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="n">usable</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_real</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">is_ghost</span><span class="p">))</span><span class="w"> </span><span class="n">usable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">usable</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">is_ghost</span>
+<span class="w">      </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_real</span>
+<span class="w">         </span><span class="n">owner</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_of</span><span class="p">(</span><span class="n">to_system</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">      do </span><span class="n">cap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_caps</span>
+<span class="w">         </span><span class="n">owner</span><span class="p">(</span><span class="n">n_real</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_of</span><span class="p">(</span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_bonded_to</span><span class="p">(</span><span class="n">cap</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">rows</span><span class="p">%</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">rows</span><span class="p">%</span><span class="n">atom</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">"the bonding rows of term "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">term</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">" name an atom past the fragment's "</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! ---- orbital pairs ---------------------------------------------------</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">kept</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">rows</span><span class="p">%</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)))</span>
+<span class="w">      </span><span class="n">n_kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">rows</span><span class="p">%</span><span class="n">n</span>
+<span class="w">         </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rows</span><span class="p">%</span><span class="n">atom</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">         </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rows</span><span class="p">%</span><span class="n">atom</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">owner</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">reference</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="n">eqv</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">owner</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">reference</span><span class="p">))</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">usable</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">usable</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">out</span><span class="p">%</span><span class="n">omitted_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">omitted_rows</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">cycle</span>
+<span class="k">         end if</span>
+<span class="k">         </span><span class="n">n_kept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_kept</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">kept</span><span class="p">(</span><span class="n">n_kept</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">      call </span><span class="n">copy_rows</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="n">kept</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_kept</span><span class="p">),</span><span class="w"> </span><span class="n">to_system</span><span class="p">,</span><span class="w"> </span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="n">usable</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! ---- atom pairs --------------------------------------------------------</span>
+<span class="w">      </span><span class="c">! Every reference atom against every other real atom of the term, kept</span>
+<span class="w">      </span><span class="c">! at the same threshold the orbital pairs were, strongest bonding first.</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">out</span><span class="p">%</span><span class="n">pair_atoms</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">n_real</span><span class="o">*</span><span class="n">n_real</span><span class="p">),</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">pair_bond_index</span><span class="p">(</span><span class="n">n_real</span><span class="o">*</span><span class="n">n_real</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                </span><span class="n">out</span><span class="p">%</span><span class="n">pair_kinetic_bond_order</span><span class="p">(</span><span class="n">n_real</span><span class="o">*</span><span class="n">n_real</span><span class="p">))</span>
+<span class="w">      </span><span class="n">n_pairs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">rows</span><span class="p">%</span><span class="n">atom_kinetic_bond_order</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         do </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_real</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">usable</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">owner</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">reference</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">            do </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_real</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">usable</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">owner</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">reference</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">rows</span><span class="p">%</span><span class="n">atom_kinetic_bond_order</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">rows</span><span class="p">%</span><span class="n">threshold</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">               </span><span class="n">n_pairs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_pairs</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">out</span><span class="p">%</span><span class="n">pair_atoms</span><span class="p">(:,</span><span class="w"> </span><span class="n">n_pairs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">to_system</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">to_system</span><span class="p">(</span><span class="n">b</span><span class="p">)]</span>
+<span class="w">               </span><span class="n">out</span><span class="p">%</span><span class="n">pair_bond_index</span><span class="p">(</span><span class="n">n_pairs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rows</span><span class="p">%</span><span class="n">atom_bond_index</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+<span class="w">               </span><span class="n">out</span><span class="p">%</span><span class="n">pair_kinetic_bond_order</span><span class="p">(</span><span class="n">n_pairs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rows</span><span class="p">%</span><span class="n">atom_kinetic_bond_order</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">         end do</span>
+<span class="k">      end if</span>
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="p">(</span><span class="n">n_pairs</span><span class="p">),</span><span class="w"> </span><span class="n">order</span><span class="p">(</span><span class="n">n_pairs</span><span class="p">))</span>
+<span class="w">      </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">pair_kinetic_bond_order</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_pairs</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_pairs</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">sort_index</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_pairs</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">order</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="n">out</span><span class="p">%</span><span class="n">pair_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">pair_atoms</span><span class="p">(:,</span><span class="w"> </span><span class="p">[(</span><span class="nb">int</span><span class="p">(</span><span class="n">order</span><span class="p">(</span><span class="n">p</span><span class="p">)),</span><span class="w"> </span><span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_pairs</span><span class="p">)])</span>
+<span class="w">      </span><span class="n">out</span><span class="p">%</span><span class="n">pair_bond_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">pair_bond_index</span><span class="p">([(</span><span class="nb">int</span><span class="p">(</span><span class="n">order</span><span class="p">(</span><span class="n">p</span><span class="p">)),</span><span class="w"> </span><span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_pairs</span><span class="p">)])</span>
+<span class="w">      </span><span class="n">out</span><span class="p">%</span><span class="n">pair_kinetic_bond_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out</span><span class="p">%</span><span class="n">pair_kinetic_bond_order</span><span class="p">([(</span><span class="nb">int</span><span class="p">(</span><span class="n">order</span><span class="p">(</span><span class="n">p</span><span class="p">)),</span><span class="w"> </span><span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_pairs</span><span class="p">)])</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">fragment</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">crossing_rows</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-23 22:38 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

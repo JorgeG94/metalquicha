@@ -379,6 +379,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Hand a backend the post-SCF properties the deck asked for</p><a href="../proc/apply_properties_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/apply_reference_closure.html'>apply_reference_closure</a></td>
+                 <td><a href='../module/mqc_frag_utils.html'>mqc_frag_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Keep only the terms the interactions of one fragment need, in place</p><a href="../proc/apply_reference_closure.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/apply_scf_settings.html'>apply_scf_settings</a></td>
                  <td><a href='../module/mqc_cuest_iface.html'>mqc_cuest_iface</a></td>
                  <td>Subroutine</td>
@@ -391,6 +397,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Check if two arrays are equal</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/assemble_interaction.html'>assemble_interaction</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The reference fragment&rsquo;s energy, and every correction whose term holds it</p><a href="../proc/assemble_interaction.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/assemble_one_fragment_hessian.html'>assemble_one_fragment_hessian</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
@@ -401,6 +413,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td><p>Fold one PIE term&rsquo;s displacement results into its Hessian, then release them</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/atom_label.html'>atom_label</a></td>
+                 <td><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></td>
+                 <td>Function</td>
+                 <td><p>&ldquo;O 30&rdquo; for system atom <code>atom</code>, 1-based in and 0-based out</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/atom_sets_equal.html'>atom_sets_equal</a></td>
@@ -957,6 +975,18 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Validate <code>parent_name.name</code> if both levels are there</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_interaction_energy_run.html'>check_interaction_energy_run</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The driver and the keyword that together ask for an interaction energy</p><a href="../proc/check_interaction_energy_run.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_interaction_energy_support.html'>check_interaction_energy_support</a></td>
+                 <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Refuse an interaction-energy run the reduced expansion cannot honour</p><a href="../proc/check_interaction_energy_support.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_method_supported.html'>check_method_supported</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -1105,6 +1135,13 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><a href='../module/mqc_ormas_space.html'>mqc_ormas_space</a></td>
                  <td>Function</td>
                  <td><p>Where a determinant sits in the widened space</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/collect_interaction_bonding.html'>collect_interaction_bonding</a></td>
+                 <td><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One entry per real term holding the reference and another monomer
+whose result carries bonding rows, in term-list order</p><a href="../proc/collect_interaction_bonding.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/collect_unconverged.html'>collect_unconverged</a></td>
@@ -1427,6 +1464,12 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                  <td><p>The per-fragment potential paths, in fragment order</p><a href="../proc/copy_fragment_potentials.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/copy_rows.html'>copy_rows</a></td>
+                 <td><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The kept orbital pairs, renumbered to system atoms</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/core_orbital_count.html'>core_orbital_count</a></td>
                  <td><a href='../module/mqc_elements.html'>mqc_elements</a></td>
                  <td>Function</td>
@@ -1474,6 +1517,13 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><a href='../module/mqc_crest_driver.html'>mqc_crest_driver</a></td>
                  <td>Function</td>
                  <td><p>Whether this build can sample conformers</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/crossing_rows.html'>crossing_rows</a></td>
+                 <td><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Keep the orbital and atom pairs of one term that cross between the
+reference and the other monomers, renumbered to the system</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/cuest_backend_available.html'>cuest_backend_available</a></td>
@@ -1806,6 +1856,12 @@ Uses standard atomic weights from IUPAC</p></td>
                  <td>Function</td>
                  <td><p>Convert atomic number to element symbol
 Covers the complete periodic table (elements 1-118)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/element_of.html'>element_of</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Function</td>
+                 <td><p>Element symbol of system atom <code>atom</code>, 1-based; blank without the table</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/element_period.html'>element_period</a></td>
@@ -2405,7 +2461,7 @@ Example: &ldquo;output_multi_structure_molecule_1.json&rdquo; -&gt; &ldquo;molec
                </tr>
 			   <tr>
                  <td><a href='../proc/get_monomer_atom_list.html'>get_monomer_atom_list</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
                  <td><p>Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.</p></td>
                </tr>
@@ -2562,15 +2618,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -2580,27 +2636,27 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -2610,15 +2666,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -3760,6 +3816,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>The seed point of an orbit, on the unit sphere by construction</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/orbital_label.html'>orbital_label</a></td>
+                 <td><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></td>
+                 <td>Function</td>
+                 <td><p>&ldquo;O 30* p-lone&rdquo; or &ldquo;N 4-H 5 sigma&rdquo; for one end of one orbital pair</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/order_index.html'>order_index</a></td>
                  <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
                  <td>Function</td>
@@ -3992,6 +4054,18 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><p>Print debug information about GMBE intersections</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/print_interaction_bonding.html'>print_interaction_bonding</a></td>
+                 <td><a href='../module/mqc_interaction_bonding.html'>mqc_interaction_bonding</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The crossing rows of every term, as a table per term</p><a href="../proc/print_interaction_bonding.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/print_interaction_breakdown.html'>print_interaction_breakdown</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Print the reference fragment&rsquo;s interaction energy, level by level</p><a href="../proc/print_interaction_breakdown.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/print_logo.html'>print_logo</a></td>
                  <td><a href='../module/mqc_logo.html'>mqc_logo</a></td>
                  <td>Subroutine</td>
@@ -4080,6 +4154,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
                  <td>Function</td>
                  <td><p>Human-readable scheme name</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quao_type_name.html'>quao_type_name</a></td>
+                 <td><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></td>
+                 <td>Function</td>
+                 <td><p>The label a report prints for an orbital type</p><a href="../proc/quao_type_name.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/queue_destroy.html'>queue_destroy</a></td>
@@ -4275,6 +4355,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p><code>keywords.mcscf.ormas</code>, the subspaces and their occupation windows</p><a href="../proc/read_ormas_partition.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_reference_fragment.html'>read_reference_fragment</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>keywords.fragmentation.reference_fragment</code>, a 0-based fragment index</p><a href="../proc/read_reference_fragment.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_scf_eri_path.html'>read_scf_eri_path</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -4333,6 +4419,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Receive the failure flag, code and trace that travel with a result</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/recv_quao_rows.html'>recv_quao_rows</a></td>
+                 <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The bonding-analysis rows, into a result <code>destroy</code> has emptied</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/redistribute_cap_dipole_derivatives.html'>redistribute_cap_dipole_derivatives</a></td>
@@ -4577,6 +4669,30 @@ Sends SCF energy (non-blocking) and other components (blocking)</p></td>
                  <td><p><code>exp(kappa)</code> for antisymmetric <code>kappa</code>, by scaling and squaring</p><a href="../proc/rotation_matrix.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/rows_destroy.html'>rows_destroy</a></td>
+                 <td><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release every array and return to the empty state</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rows_pack_integers.html'>rows_pack_integers</a></td>
+                 <td><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></td>
+                 <td>Function</td>
+                 <td><p>Every integer column, <code>QUAO_ROW_INTEGERS</code> per row, for one MPI message</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rows_pack_reals.html'>rows_pack_reals</a></td>
+                 <td><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></td>
+                 <td>Function</td>
+                 <td><p>Every per-row real column, <code>QUAO_ROW_REALS</code> per row</p><a href="../proc/rows_pack_reals.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rows_unpack.html'>rows_unpack</a></td>
+                 <td><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The inverse of <code>pack_integers</code> and <code>pack_reals</code></p><a href="../proc/rows_unpack.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_calculation.html'>run_calculation</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -4818,6 +4934,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><p>Send PIE term atom list from a row.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/send_quao_rows.html'>send_quao_rows</a></td>
+                 <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The bonding-analysis rows, flag first; see <code>recv_quao_rows</code></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/send_task_payload_from_row.html'>send_task_payload_from_row</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
@@ -4927,6 +5049,12 @@ Example: &ldquo;water.json&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
                  <td><p>How many contracted functions one shell entry defines</p><a href="../proc/shell_contractions.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/shell_letter.html'>shell_letter</a></td>
+                 <td><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/sigma_vector.html'>sigma_vector</a></td>
@@ -5352,6 +5480,19 @@ guess would be read, validated and then silently ignored.</p></td>
                  <td><p>The energy resolved onto atoms and atom pairs, under <code>bonding_energy</code></p><a href="../proc/write_ieda_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/write_interaction_bonding.html'>write_interaction_bonding</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>interaction_energy.bonding</code>: per term, the quasi-atomic atom pairs and
+orbital pairs crossing between the reference fragment and the rest</p><a href="../proc/write_interaction_bonding.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_interaction_section.html'>write_interaction_section</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The <code>interaction_energy</code> object of a <code>driver: "InteractionEnergy"</code> run</p><a href="../proc/write_interaction_section.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/write_json_output.html'>write_json_output</a></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
@@ -5510,7 +5651,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 21:34 +0000             </p>
+ on 2026-09-23 22:38 +0000             </p>
           </div>
         </div>
         <br>

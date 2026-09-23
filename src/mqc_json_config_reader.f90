@@ -33,7 +33,8 @@ module mqc_json_config_reader
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use pic_ascii, only: to_lower
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, &
-                             CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY
+                             CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY, &
+                             CALC_TYPE_INTERACTION_ENERGY
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
@@ -234,6 +235,13 @@ contains
                            config%bonding_no_sharing_ci)
       call optional_logical(json, "properties.bonding_analysis.restrict_localization", &
                             config%bonding_restrict_localization)
+      call optional_int(json, "properties.bonding_analysis.orientation_max_sweeps", &
+                        config%bonding_max_sweeps)
+      if (config%bonding_max_sweeps < 1) then
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.orientation_max_sweeps "// &
+                        "must be at least 1, not "//to_char(config%bonding_max_sweeps)//".")
+         return
+      end if
 
       ! ---- driver ----------------------------------------------------------
       call require_string(json, "driver", text, error)
@@ -242,7 +250,7 @@ contains
       if (config%calc_type == CALC_TYPE_UNKNOWN) then
          call error%set(ERROR_VALIDATION, "unknown driver '"//trim(text)// &
                         "'. Accepted: energy, gradient, hessian, optimize, "// &
-                        "makefp, conformers")
+                        "makefp, conformers, interactionenergy")
          return
       end if
 
@@ -508,6 +516,8 @@ contains
             return
          end if
          call check_excited_states_run(config, error)
+         if (error%has_error()) return
+         call check_interaction_energy_run(config, error)
          return
       end if
       if (.not. found .or. n_mol <= 0) then
@@ -542,10 +552,92 @@ contains
          end do
       end if
 
-      ! Last, because it is the only check that needs the driver, the
+      ! Last, because these are the only checks that need the driver, the
       ! fragmentation block and the molecules together.
       call check_excited_states_run(config, error)
+      if (error%has_error()) return
+      call check_interaction_energy_run(config, error)
    end subroutine populate_config
+
+   subroutine read_reference_fragment(json, config, error)
+      !! `keywords.fragmentation.reference_fragment`, a 0-based fragment index
+      !!
+      !! Presence and type are read before the value, because `optional_int`
+      !! reports a string it could not convert the same way it reports an
+      !! absent key -- and an index spelled `"0"` that silently vanished would
+      !! leave an Energy deck looking as though it never asked.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: PATH = "keywords.fragmentation.reference_fragment"
+      integer :: kind
+      logical :: found
+
+      call json%info(PATH, found=found, var_type=kind)
+      if (.not. found) return
+      config%reference_fragment_set = .true.
+      if (kind /= json_integer) then
+         call error%set(ERROR_VALIDATION, PATH//" must be an integer: the 0-based "// &
+                        "position of a fragment in the molecule's 'fragments' list.")
+         return
+      end if
+      call json%get(PATH, config%reference_fragment, found)
+      if (config%reference_fragment < 0) then
+         call error%set(ERROR_VALIDATION, PATH//" is "// &
+                        int_to_key(config%reference_fragment)//", and it is 0-based -- "// &
+                        "the first fragment in 'fragments' is 0 -- so it cannot be negative.")
+      end if
+   end subroutine read_reference_fragment
+
+   subroutine check_interaction_energy_run(config, error)
+      !! The driver and the keyword that together ask for an interaction energy
+      !!
+      !! `driver: "InteractionEnergy"` says what is computed and
+      !! `keywords.fragmentation.reference_fragment` says which fragment it is
+      !! computed for. Each is meaningless without the other, and each is
+      !! refused alone rather than ignored.
+      !!
+      !! What depends on the partition and the expansion -- the level, the
+      !! index's upper bound, the method -- is `check_interaction_energy_support`
+      !! in the adapter, which the driver calls again for callers that never
+      !! come through a deck.
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(inout) :: error
+
+      logical :: wants_interaction
+
+      wants_interaction = config%calc_type == CALC_TYPE_INTERACTION_ENERGY
+
+      if (wants_interaction .and. .not. config%reference_fragment_set) then
+         call error%set(ERROR_VALIDATION, 'driver "InteractionEnergy" needs '// &
+                        "keywords.fragmentation.reference_fragment: the 0-based index "// &
+                        "of the fragment whose interactions are wanted. Every many-body "// &
+                        "term that contains that fragment is computed and reported; "// &
+                        "without one there is nothing to select them by.")
+         return
+      end if
+
+      ! An Energy deck carrying a reference fragment would otherwise run the
+      ! full expansion and look as though it had honoured it.
+      if (config%reference_fragment_set .and. .not. wants_interaction) then
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.reference_fragment "// &
+                        'is only read by driver "InteractionEnergy", and this deck asks '// &
+                        "for driver '"//calc_type_to_string(config%calc_type)//"'. It "// &
+                        "would be ignored and the full expansion run. Set the driver to "// &
+                        '"InteractionEnergy", or remove reference_fragment.')
+         return
+      end if
+
+      if (wants_interaction .and. config%nmol > 0) then
+         call error%set(ERROR_VALIDATION, 'driver "InteractionEnergy" takes one molecule, '// &
+                        "and this deck has "//int_to_key(config%nmol)//". A reference "// &
+                        "fragment is a position in one molecule's 'fragments' list, so "// &
+                        "it would name a different fragment -- or none -- in each of the "// &
+                        "others. Give each molecule its own deck.")
+         return
+      end if
+   end subroutine check_interaction_energy_run
 
    subroutine check_excited_states_run(config, error)
       !! Refuse `keywords.excited_states` where the spectrum would be discarded
@@ -627,6 +719,8 @@ contains
       call optional_int(json, "keywords.fragmentation.max_intersection_level", &
                         config%max_intersection_level)
       call optional_string(json, "keywords.fragmentation.counterpoise", config%counterpoise)
+      call read_reference_fragment(json, config, error)
+      if (error%has_error()) return
       call optional_string(json, "keywords.fragmentation.far_field", config%fmo_far_field)
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
       call optional_real(json, "keywords.fragmentation.rcut", config%efmo_rcut)

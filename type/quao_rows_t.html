@@ -1,0 +1,923 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>quao_rows_t &ndash; metalquicha </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>quao_rows_t
+      <small>Derived Type</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title="<p> 1.3% of total for derived types.</p>Including implementation: 87 statements,  2.0% of total for derived types.">21 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_quao_rows.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_quao_rows.f90.html'>mqc_quao_rows.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_quao_rows.html'>mqc_quao_rows</a></li>
+            <li class="breadcrumb-item active" aria-current="page">quao_rows_t</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-atom~3">atom</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-atom_bond_index">atom_bond_index</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-atom_kinetic_bond_order">atom_kinetic_bond_order</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-bond_order">bond_order</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-dominant_l">dominant_l</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-kind~10">kind</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-kinetic_bond_order">kinetic_bond_order</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-n~21">n</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-occupation">occupation</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-orbital~3">orbital</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-orbital_type">orbital_type</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-orientation_stalled">orientation_stalled</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-partner_atom">partner_atom</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#variable-threshold">threshold</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#boundprocs-0"
+         aria-expanded="false" aria-controls="boundprocs-0">
+         <h4 class="card-header bg-primary text-white">Type-Bound Procedures</h4>
+      </a>
+      <div id="boundprocs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/quao_rows_t.html#boundprocedure-destroy~14">destroy</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#boundprocedure-pack_integers">pack_integers</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#boundprocedure-pack_reals">pack_reals</a>
+            <a class="list-group-item" href="../type/quao_rows_t.html#boundprocedure-unpack">unpack</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../type/quao_rows_t.html#src">quao_rows_t</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2 id="type-def-statement">
+        type, public :: quao_rows_t</h2>
+    <p>Orbital-pair rows and atom-pair sums from one bonding analysis</p>
+<br>      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherited by</h3>
+        </div>
+        <div class="card-body">
+          <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~quao_rows_t~~InheritedByGraph Pages: 1 -->
+<svg id="typequao_rows_tInheritedByGraph" width="578pt" height="74pt"
+ viewBox="0.00 0.00 578.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~quao_rows_t~~InheritedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>type~~quao_rows_t~~InheritedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 574,-70 574,4 -4,4"/>
+<!-- type~quao_rows_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_node1" class="node">
+<title>type~quao_rows_t</title>
+<polygon fill="none" stroke="black" points="78,-45 0,-45 0,-21 78,-21 78,-45"/>
+<text text-anchor="middle" x="39" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">quao_rows_t</text>
+</g>
+<!-- type~calculation_result_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_node2" class="node">
+<title>type~calculation_result_t</title>
+<g id="a_type~~quao_rows_t~~InheritedByGraph_node2"><a xlink:href="../type/calculation_result_t.html" xlink:title="calculation_result_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="303,-66 188,-66 188,-42 303,-42 303,-66"/>
+<text text-anchor="middle" x="245.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t</text>
+</a>
+</g>
+</g>
+<!-- type~calculation_result_t&#45;&gt;type~quao_rows_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_edge2" class="edge">
+<title>type~calculation_result_t&#45;&gt;type~quao_rows_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M187.81,-48.18C156.51,-44.96 118.05,-41.02 88.21,-37.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="88.35,-34.45 78.04,-36.91 87.63,-41.41 88.35,-34.45"/>
+<text text-anchor="middle" x="122" y="-45.4" font-family="Helvetica,sans-Serif" font-size="9.50">quao_rows</text>
+</g>
+<!-- type~interaction_bonding_term_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_node3" class="node">
+<title>type~interaction_bonding_term_t</title>
+<g id="a_type~~quao_rows_t~~InheritedByGraph_node3"><a xlink:href="../type/interaction_bonding_term_t.html" xlink:title="interaction_bonding_term_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="325,-24 166,-24 166,0 325,0 325,-24"/>
+<text text-anchor="middle" x="245.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">interaction_bonding_term_t</text>
+</a>
+</g>
+</g>
+<!-- type~interaction_bonding_term_t&#45;&gt;type~quao_rows_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_edge1" class="edge">
+<title>type~interaction_bonding_term_t&#45;&gt;type~quao_rows_t</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M165.71,-15.44C143.14,-16.93 118.55,-19.04 96,-22 93.46,-22.33 90.87,-22.71 88.26,-23.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="87.42,-19.71 78.15,-24.84 88.6,-26.61 87.42,-19.71"/>
+<text text-anchor="middle" x="122" y="-24.4" font-family="Helvetica,sans-Serif" font-size="9.50">rows</text>
+</g>
+<!-- type~json_output_data_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_node4" class="node">
+<title>type~json_output_data_t</title>
+<g id="a_type~~quao_rows_t~~InheritedByGraph_node4"><a xlink:href="../type/json_output_data_t.html" xlink:title="json_output_data_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="570,-24 458,-24 458,0 570,0 570,-24"/>
+<text text-anchor="middle" x="514" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">json_output_data_t</text>
+</a>
+</g>
+</g>
+<!-- type~json_output_data_t&#45;&gt;type~interaction_bonding_term_t -->
+<g id="type~~quao_rows_t~~InheritedByGraph_edge3" class="edge">
+<title>type~json_output_data_t&#45;&gt;type~interaction_bonding_term_t</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M457.78,-12C422.43,-12 375.77,-12 335.3,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="335.15,-8.5 325.15,-12 335.15,-15.5 335.15,-8.5"/>
+<text text-anchor="middle" x="391.5" y="-14.4" font-family="Helvetica,sans-Serif" font-size="9.50">interaction_bonding</text>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#InheritedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="InheritedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    <br>
+
+    <section>
+    <h2>Components</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom~3"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(2, n), 1-based atom of the calculation the analysis ran on</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_bond_index"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_bond_index</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n_atoms, n_atoms), sum of squared bond orders over every orbital
+pair between two atoms; zero on the diagonal</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_kinetic_bond_order"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_kinetic_bond_order</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n_atoms, n_atoms), kcal/mol, sum of kinetic bond orders over every
+orbital pair between two atoms; zero on the diagonal</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bond_order"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>bond_order</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n), the population bond order between the two orbitals</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dominant_l"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>dominant_l</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(2, n), 0 to 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kind~10"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>kind</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n), <code>QUAO_ROW_BOND</code> or <code>QUAO_ROW_DELOCALIZATION</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kinetic_bond_order"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>kinetic_bond_order</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(n), kcal/mol, negative for a bonding interaction</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~21"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Orbital-pair rows</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-occupation"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>occupation</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(2, n), electrons</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-orbital~3"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>orbital</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(2, n), numbered as the molecular orbitals are, core included</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-orbital_type"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>orbital_type</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(2, n), one of the <code>QUAO_TYPE_*</code> codes</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-orientation_stalled"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>orientation_stalled</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>The orientation stopped at its sweep limit; the orbital pairs are
+resolved only to the angle it was still turning by</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-partner_atom"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>partner_atom</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(2, n), 1-based atom of the orbital&rsquo;s first strong-bond partner,
+0 when it has none</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-threshold"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>threshold</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>kcal/mol; delocalization rows weaker than this were not kept</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+
+
+      <section>
+        <h2>Type-Bound Procedures</h2>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-destroy~14"></span>
+      <h3>
+          procedure, public ::
+  <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/rows_destroy.html'>rows_destroy</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/rows_destroy.html'>rows_destroy</a>(this)  
+</h3>
+    
+
+  <p>Release every array and return to the empty state</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='quao_rows_t.html'>quao_rows_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-pack_integers"></span>
+      <h3>
+          procedure, public ::
+  <strong>pack_integers</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/rows_pack_integers.html'>rows_pack_integers</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  function <a href='../proc/rows_pack_integers.html'>rows_pack_integers</a>(this) result(flat)  
+</h3>
+    
+
+  <p>Every integer column, <code>QUAO_ROW_INTEGERS</code> per row, for one MPI message</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='quao_rows_t.html'>quao_rows_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer, allocatable, (:)</small>
+    </h4>
+    
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-pack_reals"></span>
+      <h3>
+          procedure, public ::
+  <strong>pack_reals</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/rows_pack_reals.html'>rows_pack_reals</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  function <a href='../proc/rows_pack_reals.html'>rows_pack_reals</a>(this) result(flat)  
+</h3>
+    
+
+  <p>Every per-row real column, <code>QUAO_ROW_REALS</code> per row</p><a href="../proc/rows_pack_reals.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='quao_rows_t.html'>quao_rows_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp), allocatable, (:)</small>
+    </h4>
+    
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-unpack"></span>
+      <h3>
+          procedure, public ::
+  <strong>unpack</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/rows_unpack.html'>rows_unpack</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/rows_unpack.html'>rows_unpack</a>(this, integers, reals)  
+</h3>
+    
+
+  <p>The inverse of <code>pack_integers</code> and <code>pack_reals</code></p><a href="../proc/rows_unpack.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='quao_rows_t.html'>quao_rows_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>integers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reals</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+      </section>
+
+    <section>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">quao_rows_t</span>
+<span class="w">      </span><span class="c">!! Orbital-pair rows and atom-pair sums from one bonding analysis</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="c">!! Orbital-pair rows</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">kind</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n), `QUAO_ROW_BOND` or `QUAO_ROW_DELOCALIZATION`</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n), numbered as the molecular orbitals are, core included</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n), 1-based atom of the calculation the analysis ran on</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_type</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n), one of the `QUAO_TYPE_*` codes</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dominant_l</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n), 0 to 3</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">partner_atom</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n), 1-based atom of the orbital's first strong-bond partner,</span>
+<span class="w">         </span><span class="c">!! 0 when it has none</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupation</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n), electrons</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bond_order</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n), the population bond order between the two orbitals</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">kinetic_bond_order</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n), kcal/mol, negative for a bonding interaction</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_bond_index</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (n_atoms, n_atoms), sum of squared bond orders over every orbital</span>
+<span class="w">         </span><span class="c">!! pair between two atoms; zero on the diagonal</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_kinetic_bond_order</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (n_atoms, n_atoms), kcal/mol, sum of kinetic bond orders over every</span>
+<span class="w">         </span><span class="c">!! orbital pair between two atoms; zero on the diagonal</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! kcal/mol; delocalization rows weaker than this were not kept</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orientation_stalled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! The orientation stopped at its sweep limit; the orbital pairs are</span>
+<span class="w">         </span><span class="c">!! resolved only to the angle it was still turning by</span>
+<span class="w">   </span><span class="k">contains</span>
+<span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_destroy</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pack_integers</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_pack_integers</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pack_reals</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_pack_reals</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">unpack</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">rows_unpack</span>
+<span class="w">   </span><span class="k">end type </span><span class="n">quao_rows_t</span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-09-23 22:38 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

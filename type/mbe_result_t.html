@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.2% of total for derived types.</p>Including implementation: 57 statements,  1.4% of total for derived types.">18 statements</a>
+                 title="<p> 1.5% of total for derived types.</p>Including implementation: 69 statements,  1.6% of total for derived types.">24 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,16 +136,22 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-dipole~2">dipole</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-dipole_derivatives~2">dipole_derivatives</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-gradient~3">gradient</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_dipole~2">has_dipole</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-dipole~3">dipole</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-dipole_derivatives~4">dipole_derivatives</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-gradient~17">gradient</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_dipole~3">has_dipole</a>
             <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_dipole_derivatives~2">has_dipole_derivatives</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_energy~2">has_energy</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_gradient~2">has_gradient</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_hessian~2">has_hessian</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-hessian~3">hessian</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#variable-total_energy">total_energy</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_energy~3">has_energy</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_gradient~3">has_gradient</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_hessian~3">has_hessian</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-has_interaction~2">has_interaction</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-hessian~14">hessian</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-interaction_by_level~2">interaction_by_level</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-interaction_count_by_level~2">interaction_count_by_level</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-interaction_energy~2">interaction_energy</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-reference_energy~2">reference_energy</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-reference_fragment~5">reference_fragment</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#variable-total_energy~7">total_energy</a>
         </div>
       </div>
     </div>
@@ -175,8 +181,8 @@
             <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-allocate_dipole">allocate_dipole</a>
             <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-allocate_gradient">allocate_gradient</a>
             <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-allocate_hessian">allocate_hessian</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-destroy~2">destroy</a>
-            <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-reset~5">reset</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-destroy~22">destroy</a>
+            <a class="list-group-item" href="../type/mbe_result_t.html#boundprocedure-reset~7">reset</a>
         </div>
       </div>
     </div>
@@ -218,7 +224,7 @@ matching <code>has_*</code> flag on success.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole~2"></span>
+              <span class="anchor" id="variable-dipole~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -235,7 +241,7 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~2"></span>
+              <span class="anchor" id="variable-dipole_derivatives~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -252,7 +258,7 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~3"></span>
+              <span class="anchor" id="variable-gradient~17"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -269,7 +275,7 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_dipole~2"></span>
+              <span class="anchor" id="variable-has_dipole~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -303,7 +309,7 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_energy~2"></span>
+              <span class="anchor" id="variable-has_energy~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -320,7 +326,7 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_gradient~2"></span>
+              <span class="anchor" id="variable-has_gradient~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -337,7 +343,7 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_hessian~2"></span>
+              <span class="anchor" id="variable-has_hessian~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -354,7 +360,24 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~3"></span>
+              <span class="anchor" id="variable-has_interaction~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_interaction</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>The four above are set</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hessian~14"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -371,7 +394,93 @@ matching <code>has_*</code> flag on success.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy"></span>
+              <span class="anchor" id="variable-interaction_by_level~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>interaction_by_level</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(max_level) the same sum split by term size; element 1 is zero</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-interaction_count_by_level~2"></span>
+              integer(kind=int64),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>interaction_count_by_level</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>(max_level) how many terms containing the reference each level has</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-interaction_energy~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>interaction_energy</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Sum of every many-body correction, level 2 and up, whose term
+contains the reference (Hartree)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference_energy~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference_energy</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>The reference fragment&rsquo;s own energy, its one-body term (Hartree)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference_fragment~5"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference_fragment</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The reference as a monomer number, 1-based; 0 when there was none</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_energy~7"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -591,7 +700,7 @@ matching <code>has_*</code> flag on success.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~2"></span>
+      <span class="anchor" id="boundprocedure-destroy~22"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_destroy.html'>mbe_result_destroy</a>
@@ -649,7 +758,7 @@ matching <code>has_*</code> flag on success.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-reset~5"></span>
+      <span class="anchor" id="boundprocedure-reset~7"></span>
       <h3>
           procedure, public ::
   <strong>reset</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_result_reset.html'>mbe_result_reset</a>
@@ -727,6 +836,23 @@ matching <code>has_*</code> flag on success.</p>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">               </span><span class="c">!! Hessian has been computed</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_dipole</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">                </span><span class="c">!! Dipole has been computed</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_dipole_derivatives</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">    </span><span class="c">!! Dipole derivatives have been computed</span>
+
+<span class="w">      </span><span class="c">! The interaction energy of one fragment, when `compute_mbe` was given</span>
+<span class="w">      </span><span class="c">! a reference. `total_energy` and `has_energy` are then left unset: the</span>
+<span class="w">      </span><span class="c">! expansion was reduced to the terms these need, and what it sums to is</span>
+<span class="w">      </span><span class="c">! not the system's energy.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference_fragment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="c">!! The reference as a monomer number, 1-based; 0 when there was none</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! The reference fragment's own energy, its one-body term (Hartree)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">interaction_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! Sum of every many-body correction, level 2 and up, whose term</span>
+<span class="w">         </span><span class="c">!! contains the reference (Hartree)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">interaction_by_level</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (max_level) the same sum split by term size; element 1 is zero</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">interaction_count_by_level</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (max_level) how many terms containing the reference each level has</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_interaction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">           </span><span class="c">!! The four above are set</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">mbe_result_destroy</span><span class="w">            </span><span class="c">!! Clean up allocated memory</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reset</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">mbe_result_reset</span><span class="w">                </span><span class="c">!! Reset all values and flags</span>
@@ -756,7 +882,7 @@ matching <code>has_*</code> flag on success.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 21:34 +0000             </p>
+ on 2026-09-23 22:38 +0000             </p>
           </div>
         </div>
         <br>

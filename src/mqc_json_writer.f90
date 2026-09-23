@@ -6,7 +6,7 @@ module mqc_json_writer
    use mqc_json_output_types, only: json_output_data_t, ordered_rows_for_level, &
                                     OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
    use mqc_io_helpers, only: get_output_json_filename, get_basename
-   use mqc_physical_constants, only: HARTREE_TO_EV
+   use mqc_physical_constants, only: HARTREE_TO_EV, HARTREE_TO_KCALMOL
    use mqc_physical_constants, only: HARTREE_TO_CALMOL, R_CALMOLK, AU_TO_DEBYE, CAL_TO_J
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
@@ -240,7 +240,15 @@ contains
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
-      call json%add(main_obj, "total_energy", data%total_energy)
+      ! An interaction-energy run has no total: its term list was reduced to
+      ! what one fragment's interactions need, and the sum over it is not the
+      ! system's energy. So the key a consumer reads a total from is absent,
+      ! rather than present and holding something else.
+      if (data%has_interaction) then
+         call write_interaction_section(json, main_obj, data)
+      else
+         call json%add(main_obj, "total_energy", data%total_energy)
+      end if
 
       call write_unconverged_section(json, main_obj, data)
 
@@ -351,6 +359,153 @@ contains
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine write_mbe_breakdown_json_impl
+
+   subroutine write_interaction_section(json, parent, data)
+      !! The `interaction_energy` object of a `driver: "InteractionEnergy"` run
+      !!
+      !! `reference_fragment` is 0-based, the deck's own index;
+      !! `reference_monomer` is the same fragment as the `levels` indices and
+      !! the fragment table number it, from 1. Energies in Hartree, and the
+      !! total again in kcal/mol.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: obj, arr, entry
+      integer :: frag_level
+
+      call json%create_object(obj, "interaction_energy")
+      call json%add(parent, obj)
+      call json%add(obj, "reference_fragment", data%reference_fragment - 1)
+      call json%add(obj, "reference_monomer", data%reference_fragment)
+      call json%add(obj, "reference_energy", data%reference_energy)
+      call json%add(obj, "total", data%interaction_energy)
+      call json%add(obj, "total_kcal_mol", data%interaction_energy*HARTREE_TO_KCALMOL)
+
+      call json%create_array(arr, "by_level")
+      call json%add(obj, arr)
+      if (allocated(data%interaction_by_level) .and. allocated(data%interaction_count_by_level)) then
+         do frag_level = 2, size(data%interaction_by_level)
+            call json%create_object(entry, "")
+            call json%add(arr, entry)
+            call json%add(entry, "frag_level", frag_level)
+            call json%add(entry, "name", trim(get_frag_level_name(frag_level)))
+            call json%add(entry, "count", int(data%interaction_count_by_level(frag_level)))
+            call json%add(entry, "energy", data%interaction_by_level(frag_level))
+         end do
+      end if
+
+      ! The saving, measured against the ordinary expansion over the same
+      ! fragments, level, screening and counterpoise.
+      call json%add(obj, "terms_computed", int(data%fragment_count))
+      if (data%full_expansion_count > 0_int64) then
+         call json%add(obj, "terms_in_full_expansion", int(data%full_expansion_count))
+      end if
+
+      if (data%has_interaction_bonding) call write_interaction_bonding(json, obj, data)
+   end subroutine write_interaction_section
+
+   subroutine write_interaction_bonding(json, parent, data)
+      !! `interaction_energy.bonding`: per term, the quasi-atomic atom pairs and
+      !! orbital pairs crossing between the reference fragment and the rest
+      !!
+      !! Atoms are 0-based system indices. `id` and `monomers` are 1-based, as
+      !! the fragment table and `levels` number them; `fragments` is the same
+      !! membership 0-based, as the deck numbers it. An orbital pair's `ends`
+      !! put the donor first when `kind` is "delocalization".
+      use mqc_quao_rows, only: quao_type_name, QUAO_ROW_BOND
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, terms_arr, term_obj, arr, entry, ends, end_obj
+      integer :: t, k, side, reference
+
+      reference = data%reference_fragment
+      call json%create_object(section, "bonding")
+      call json%add(parent, section)
+      call json%add(section, "analysis", "gms_quao")
+      if (size(data%interaction_bonding) > 0) then
+         call json%add(section, "threshold_kcal_mol", data%interaction_bonding(1)%rows%threshold)
+      end if
+      call json%create_array(terms_arr, "terms")
+      call json%add(section, terms_arr)
+
+      do t = 1, size(data%interaction_bonding)
+         associate (term => data%interaction_bonding(t))
+            call json%create_object(term_obj, "")
+            call json%add(terms_arr, term_obj)
+            call json%add(term_obj, "id", term%term)
+            call json%add(term_obj, "monomers", abs(term%monomers))
+            call json%add(term_obj, "fragments", abs(term%monomers) - 1)
+            call json%add(term_obj, "orientation_stalled", term%rows%orientation_stalled)
+            call json%add(term_obj, "omitted_orbital_pairs", term%omitted_rows)
+
+            call json%create_array(arr, "atom_pairs")
+            call json%add(term_obj, arr)
+            do k = 1, size(term%pair_kinetic_bond_order)
+               call json%create_object(entry, "")
+               call json%add(arr, entry)
+               call json%add(entry, "reference_atom", term%pair_atoms(1, k) - 1)
+               call json%add(entry, "reference_element", &
+                             trim(element_of(data, term%pair_atoms(1, k))))
+               call json%add(entry, "partner_atom", term%pair_atoms(2, k) - 1)
+               call json%add(entry, "partner_element", &
+                             trim(element_of(data, term%pair_atoms(2, k))))
+               call json%add(entry, "bond_index", term%pair_bond_index(k))
+               call json%add(entry, "kinetic_bond_order", term%pair_kinetic_bond_order(k))
+            end do
+
+            call json%create_array(arr, "orbital_pairs")
+            call json%add(term_obj, arr)
+            do k = 1, term%rows%n
+               call json%create_object(entry, "")
+               call json%add(arr, entry)
+               if (term%rows%kind(k) == QUAO_ROW_BOND) then
+                  call json%add(entry, "kind", "bond")
+               else
+                  call json%add(entry, "kind", "delocalization")
+                  if (term%monomer_of_atom(1, k) == reference) then
+                     call json%add(entry, "direction", "reference_to_environment")
+                  else
+                     call json%add(entry, "direction", "environment_to_reference")
+                  end if
+               end if
+               call json%add(entry, "bond_order", term%rows%bond_order(k))
+               call json%add(entry, "kinetic_bond_order", term%rows%kinetic_bond_order(k))
+               call json%create_array(ends, "ends")
+               call json%add(entry, ends)
+               do side = 1, 2
+                  call json%create_object(end_obj, "")
+                  call json%add(ends, end_obj)
+                  call json%add(end_obj, "atom", term%rows%atom(side, k) - 1)
+                  call json%add(end_obj, "element", trim(element_of(data, term%rows%atom(side, k))))
+                  call json%add(end_obj, "fragment", term%monomer_of_atom(side, k) - 1)
+                  call json%add(end_obj, "on_reference", term%monomer_of_atom(side, k) == reference)
+                  call json%add(end_obj, "orbital", term%rows%orbital(side, k))
+                  call json%add(end_obj, "type", trim(quao_type_name(term%rows%orbital_type(side, k), &
+                                                                     term%rows%dominant_l(side, k))))
+                  call json%add(end_obj, "occupation", term%rows%occupation(side, k))
+                  if (term%rows%partner_atom(side, k) > 0) then
+                     call json%add(end_obj, "bonded_to", term%rows%partner_atom(side, k) - 1)
+                  end if
+               end do
+            end do
+         end associate
+      end do
+   end subroutine write_interaction_bonding
+
+   function element_of(data, atom) result(symbol)
+      !! Element symbol of system atom `atom`, 1-based; blank without the table
+      use mqc_elements, only: element_number_to_symbol
+      type(json_output_data_t), intent(in) :: data
+      integer, intent(in) :: atom
+      character(len=4) :: symbol
+
+      symbol = ""
+      if (.not. allocated(data%atomic_numbers)) return
+      symbol = element_number_to_symbol(data%atomic_numbers(atom))
+   end function element_of
 
    subroutine write_charges_section(json, parent, data)
       !! Atomic partial charges, per atom, with the scheme that produced them
