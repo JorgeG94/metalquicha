@@ -43,7 +43,10 @@ FMO user gets one JSON number and an empty levels array.
    (cheap, useful on its own) but the decomposition lands in EFMO.
 
 2. **Report unconnected pairs by default and refuse to print a bare connected
-   one.** Every adjacent-residue pair is covalently joined, and an uncorrected
+   one — an FMO-side concern only.** EFMO has no bond-breaking option at all,
+   so no EFMO fragment is half a severed bond and no row of its table can be
+   the covalently-joined case. The same reason means the monopole problem of
+   Layer 0 does not reach an EFMO export today. Every adjacent-residue pair is covalently joined, and an uncorrected
    connected pair reads about −14 Hartree in a table of kcal/mol. GAMESS
    prints a separate unconnected-only block for exactly this reason. For
    ligand binding, which is what people actually do with this, nothing of
@@ -56,7 +59,12 @@ FMO user gets one JSON number and an empty levels array.
    cheap regression the whole feature can be held to, and it should be a test
    before it is a feature.
 
-4. **Charge transfer is the residual and must be named so.** GAMESS defines it
+4. **Charge transfer is the residual on the FMO side, and must be named so
+   there — but not in EFMO.** EFMO's charge transfer is an explicit
+   perturbative sum over occupied-on-A to virtual-on-B amplitudes, computed
+   independently of the other three terms, so it carries none of the
+   basis-set superposition error a residual absorbs and may be exported
+   under its own name. What follows applies to the FMO-side term only. GAMESS defines it
    as what is left after the other three, which is why it is called
    `Ect+mix`. Basis-set superposition error and any unaccounted coupling land
    there. Report it under a name that says so; never as "charge transfer"
@@ -219,8 +227,15 @@ four terms per far pair. Purely additive, low risk, and on its own it gives a
 per-pair interaction map of a protein with distances, which is most of what a
 consumer of this actually reads.
 
-*Gate:* the sum of the exported pairs reproduces the total to round-off, and
-the total is unchanged from before the change.
+*Gate, corrected against measurement:* the sum of the exported pairs
+reproduces the **interaction** energy to round-off (1.4e-17 on the prism,
+exactly zero on the cage), **not** the total — the monomer sum and the
+polarization total are not pair quantities. And above level 2 the pair map
+is a pair map while the near expansion is not: pairs are filled only for
+two-member terms, so a level-3 deck falls short by exactly the difference
+between its third-level vacuum and induction contributions, measured at
+1.26e-4. Assert that shortfall rather than working around it. The second
+half of the gate does hold unchanged: the total must not move.
 
 ### Layer 3: decompose the QM pairs
 
