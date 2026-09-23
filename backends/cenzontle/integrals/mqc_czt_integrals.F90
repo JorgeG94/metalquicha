@@ -903,7 +903,7 @@ contains
 
    subroutine build_czt_molecule(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, mol, error, normalize_contractions, &
-                                 force_cartesian, ghost, ecp_name)
+                                 force_cartesian, ghost, ecp_name, nuclear_charge)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
       !! **Two normalisations, and they are not the same thing.** The BSE files
@@ -934,6 +934,9 @@ contains
          !! molecule runs all-electron rather than failing.
       logical, intent(in), optional :: ghost(:)
          !! Atoms keeping their basis and losing their nuclear charge; see
+         !! `molecule_build`.
+      integer, intent(in), optional :: nuclear_charge(:)
+         !! The charge each centre presents, in place of its atomic number; see
          !! `molecule_build`.
       logical, intent(in), optional :: force_cartesian
          !! Read the basis in Cartesian form whatever the file declares. See the note
@@ -1000,26 +1003,19 @@ contains
          end if
       end if
 
-      if (present(ghost)) then
-         if (have_ecp) then
-            call mol%build(atomic_numbers, coordinates, basis, error, &
-                           normalize_contractions=normalize_contractions, &
-                           force_cartesian=force_cartesian, ghost=ghost, ecp=ecp)
-         else
-            call mol%build(atomic_numbers, coordinates, basis, error, &
-                           normalize_contractions=normalize_contractions, &
-                           force_cartesian=force_cartesian, ghost=ghost)
-         end if
+      ! `ghost` and `nuclear_charge` are optional dummies here and optional
+      ! dummies there, so an absent one travels as absent and needs no branch
+      ! of its own. `ecp` is a local, which is why that one is still split.
+      if (have_ecp) then
+         call mol%build(atomic_numbers, coordinates, basis, error, &
+                        normalize_contractions=normalize_contractions, &
+                        force_cartesian=force_cartesian, ghost=ghost, &
+                        nuclear_charge=nuclear_charge, ecp=ecp)
       else
-         if (have_ecp) then
-            call mol%build(atomic_numbers, coordinates, basis, error, &
-                           normalize_contractions=normalize_contractions, &
-                           force_cartesian=force_cartesian, ecp=ecp)
-         else
-            call mol%build(atomic_numbers, coordinates, basis, error, &
-                           normalize_contractions=normalize_contractions, &
-                           force_cartesian=force_cartesian)
-         end if
+         call mol%build(atomic_numbers, coordinates, basis, error, &
+                        normalize_contractions=normalize_contractions, &
+                        force_cartesian=force_cartesian, ghost=ghost, &
+                        nuclear_charge=nuclear_charge)
       end if
       call basis%destroy()
       if (have_ecp) call ecp%destroy()
@@ -1060,7 +1056,8 @@ contains
    end function contraction_group_size
 
    subroutine molecule_build(this, atomic_numbers, coordinates, basis, error, &
-                             normalize_contractions, force_cartesian, ghost, ecp)
+                             normalize_contractions, force_cartesian, ghost, ecp, &
+                             nuclear_charge)
       !! Pack atoms and shells into libcint's atm/bas/env
       class(czt_molecule_t), intent(inout) :: this
       integer, intent(in) :: atomic_numbers(:)
@@ -1085,6 +1082,26 @@ contains
          !! attraction and the nuclear repulsion and nothing else: the AO count
          !! and ordering are identical to the unghosted molecule's, which is what
          !! lets matrices from two of them be contracted together.
+      integer, intent(in), optional :: nuclear_charge(:)
+         !! The charge each centre presents to the nuclear attraction and the
+         !! nuclear repulsion, one entry per atom, in place of the atomic
+         !! number. **The last word on the charge**: it overrides the ECP
+         !! reduction and a ghost's zero alike, so a caller combining it with
+         !! either has already done that arithmetic.
+         !!
+         !! A *split nucleus* is what this exists for. Fragmentation across a
+         !! covalent bond leaves the bond described by two fragments, and FMO
+         !! divides the bond-detached atom's nucleus between them -- `Z-1` with
+         !! the fragment that owns the atom and `+1` on a centre at the same
+         !! coordinates carrying the same basis in its neighbour -- so that each
+         !! fragment stays a neutral closed shell. The electron count follows
+         !! the sum of these charges, which is what makes that neutrality
+         !! automatic rather than asserted.
+         !!
+         !! Nothing here checks the entries against the atomic numbers. A
+         !! centre presenting a charge its element does not have is the point,
+         !! and the element itself stays in `atomic_numbers` for the grid, the
+         !! van der Waals radius and everything else that wants it.
 
       logical :: do_normalize
       integer :: ecp_env, ncore, ecp_row
@@ -1115,6 +1132,13 @@ contains
          call error%set(ERROR_VALIDATION, "libcint: the basis covers a different "// &
                         "number of atoms than the geometry has")
          return
+      end if
+      if (present(nuclear_charge)) then
+         if (size(nuclear_charge) /= this%natm) then
+            call error%set(ERROR_VALIDATION, "libcint: the nuclear charges cover a "// &
+                           "different number of atoms than the geometry has")
+            return
+         end if
       end if
 
       ! The ECP shells, and the env each needs: one exponent and one coefficient
@@ -1189,7 +1213,9 @@ contains
          ! The charge every other integral sees. An ECP has already accounted
          ! for the core electrons, so leaving Z in place would attract them a
          ! second time. A ghost has no charge at all and takes precedence: its
-         ! ECP is not there either.
+         ! ECP is not there either. An explicit `nuclear_charge` takes
+         ! precedence over both, because a split nucleus is not a thing either
+         ! of the other two rules knows how to describe.
          ncore = this%core_electrons(iatom)
          z_eff = atomic_numbers(iatom) - ncore
          if (present(ghost)) then
@@ -1198,6 +1224,7 @@ contains
                this%core_electrons(iatom) = 0
             end if
          end if
+         if (present(nuclear_charge)) z_eff = nuclear_charge(iatom)
          this%atm(LIBCINT_CHARGE_OF, iatom) = z_eff
          this%atm(LIBCINT_PTR_COORD, iatom) = off
          this%env(off + 1:off + 3) = coordinates(1:3, iatom)
