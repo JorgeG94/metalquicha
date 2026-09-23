@@ -725,7 +725,8 @@ contains
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
                            correlation, corr_aux_basis, freeze_core, n_frozen_core, &
-                           comm)
+                           pair_fragments, pair_distance, pair_qm, pair_energy, &
+                           pair_terms, comm)
       !! One effective fragment molecular orbital energy, with its breakdown
       !!
       !! Options arrive as plain scalars rather than the backend's own type, so
@@ -738,7 +739,8 @@ contains
       !! energy expression with the far half reported term by term -- and
       !! `energy` is their combination with `induction_correction` subtracted,
       !! as `run_efmo` assembles it rather than as this routine re-adds it.
-      use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo
+      use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, &
+                              efmo_pair_contribution
       use mqc_program_limits, only: N_EFMO_TERMS
       use pic_mpi_lib, only: comm_t
       use pic_types, only: dp
@@ -794,6 +796,27 @@ contains
          !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
       logical, intent(in), optional :: freeze_core
       integer, intent(in), optional :: n_frozen_core
+      integer, intent(out), optional, allocatable :: pair_fragments(:, :)
+         !! (2, n_pairs), the two fragments of each pair, **numbered from one**
+         !! as the printed table and the MBE output number them. Quantum pairs
+         !! first, in the order `efmo_split_pairs` built its lists.
+      real(dp), intent(out), optional, allocatable :: pair_distance(:)
+         !! `R_IJ`, the vdW-scaled closest approach of eq 2. Unitless.
+      logical, intent(out), optional, allocatable :: pair_qm(:)
+         !! True where a dimer SCF ran, false where the four effective-fragment
+         !! terms were used instead.
+      real(dp), intent(out), optional, allocatable :: pair_energy(:)
+         !! What this pair contributed to the total, in Hartree, by the same
+         !! two expressions the printed table uses: for a quantum pair
+         !! `E_IJ^0 - E_I^0 - E_J^0 - E_IJ^pol`, and for a far pair the sum of
+         !! its four terms. Assembled here rather than by the caller because
+         !! the monomer energies the first expression needs do not leave this
+         !! routine.
+      real(dp), intent(out), optional, allocatable :: pair_terms(:, :)
+         !! (4, n_pairs): electrostatics, dispersion, exchange repulsion and
+         !! charge transfer, in that order. **Meaningful only where `pair_qm`
+         !! is false**; a quantum pair has no such split and its column is
+         !! zero rather than a number that could be mistaken for one.
       type(comm_t), intent(in), optional :: comm
          !! Present means spread the monomers and the quantum dimers over this
          !! communicator. Every rank gets the same total back.
@@ -802,6 +825,7 @@ contains
       type(efmo_result_t) :: res
       character(len=2), allocatable :: symbols(:)
       integer :: i
+      integer :: k, n_pairs
 
       energy = 0.0_dp
       terms = 0.0_dp
@@ -855,8 +879,49 @@ contains
       n_qm_pairs = res%n_qm_pairs
       n_efp_pairs = res%n_efp_pairs
       n_qm_groups = res%n_qm_groups
-   end subroutine run_czt_efmo
 
+      ! The per-pair map, flattened to plain arrays. `efmo_pair_t` stays inside
+      ! the backend for the reason every other option here is a scalar: the
+      ! layer above is compiled against the stub in a build without this
+      ! backend and must not need a type that does not exist there.
+      n_pairs = 0
+      if (allocated(res%pairs)) n_pairs = size(res%pairs)
+      if (present(pair_fragments)) then
+         allocate (pair_fragments(2, n_pairs))
+         do k = 1, n_pairs
+            pair_fragments(1, k) = res%pairs(k)%i
+            pair_fragments(2, k) = res%pairs(k)%j
+         end do
+      end if
+      if (present(pair_distance)) then
+         allocate (pair_distance(n_pairs))
+         do k = 1, n_pairs
+            pair_distance(k) = res%pairs(k)%r
+         end do
+      end if
+      if (present(pair_qm)) then
+         allocate (pair_qm(n_pairs))
+         do k = 1, n_pairs
+            pair_qm(k) = res%pairs(k)%qm
+         end do
+      end if
+      if (present(pair_energy)) then
+         allocate (pair_energy(n_pairs))
+         do k = 1, n_pairs
+            pair_energy(k) = efmo_pair_contribution(res, k)
+         end do
+      end if
+      if (present(pair_terms)) then
+         allocate (pair_terms(4, n_pairs), source=0.0_dp)
+         do k = 1, n_pairs
+            if (res%pairs(k)%qm) cycle
+            pair_terms(1, k) = res%pairs(k)%electrostatics
+            pair_terms(2, k) = res%pairs(k)%dispersion
+            pair_terms(3, k) = res%pairs(k)%exchange_repulsion
+            pair_terms(4, k) = res%pairs(k)%charge_transfer
+         end do
+      end if
+   end subroutine run_czt_efmo
    subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       !! Closed-shell HF for one fragment, on the CPU
       use mqc_czt_charges, only: mulliken_charges, chelpg_charges, &

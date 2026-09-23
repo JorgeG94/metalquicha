@@ -235,7 +235,8 @@ contains
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
                            correlation, corr_aux_basis, freeze_core, n_frozen_core, &
-                           comm)
+                           pair_fragments, pair_distance, pair_qm, pair_energy, &
+                           pair_terms, comm)
       !! No-op stand-in: EFMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -283,6 +284,13 @@ contains
          !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
       logical, intent(in), optional :: freeze_core
       integer, intent(in), optional :: n_frozen_core
+      integer, intent(out), optional, allocatable :: pair_fragments(:, :)
+      real(dp), intent(out), optional, allocatable :: pair_distance(:)
+      logical, intent(out), optional, allocatable :: pair_qm(:)
+      real(dp), intent(out), optional, allocatable :: pair_energy(:)
+      real(dp), intent(out), optional, allocatable :: pair_terms(:, :)
+         !! Left unallocated, as the rest of this routine's results are left
+         !! zero: there is no backend here to have produced any pairs.
       type(comm_t), intent(in), optional :: comm
          !! Present means spread the monomers and the quantum dimers over this
          !! communicator. Every rank gets the same total back.
@@ -310,6 +318,9 @@ contains
       if (present(allow_crap_response) .or. present(response_batch)) return
       if (present(correlation) .or. present(freeze_core)) return
       if (present(corr_aux_basis) .or. present(n_frozen_core)) return
+      if (present(pair_fragments) .or. present(pair_distance)) return
+      if (present(pair_qm) .or. present(pair_energy)) return
+      if (present(pair_terms)) return
       if (present(comm)) return
    end subroutine run_czt_efmo
 
