@@ -367,6 +367,14 @@ contains
       !! bond-detached end of a bond it does not contain is one electron short
       !! of the naive sum over its atoms, and one holding the attached end is
       !! one electron over. Summed over every fragment the shifts cancel.
+      !!
+      !! **The electron moves either way; the nucleus may or may not follow.**
+      !! Where it does, a unit of nuclear charge crosses the same boundary and
+      !! the fragment comes out neutral rather than charged -- but that half
+      !! is applied per atom rather than per group, and only under a field;
+      !! see `nuc_charge` on `group_t` and `splits_nucleus` in
+      !! [[mqc_czt_fmo]]. What is counted here is the electron alone, which is
+      !! the `$FMOBND` assignment and not a convention.
       type(severed_bond_t), intent(in) :: cuts(:)
       integer, intent(in) :: n_cuts
       integer, intent(in) :: members(:)

@@ -30,6 +30,17 @@ module test_mqc_afo_fmo
    !! what separates them is the assembly and not the convergence.
    real(dp), parameter :: TOL = 1.0e-9_dp
 
+   real(dp), parameter :: CONVENTION_TOL = 1.0e-8_dp
+      !! How far the two charge conventions may leave an embedded total apart.
+      !!
+      !! They agree exactly, so this is a convergence bound and not a
+      !! tolerance on the physics: the two runs reach the same answer through
+      !! differently assembled one-electron matrices, and what separates them
+      !! is rounding in that assembly plus the monomer loop's own tolerance.
+      !! Measured at 2.8e-12 on the case below, so the bound is four orders
+      !! clear of the noise and eight below the 0.489 Hartree the choice was
+      !! once thought to be worth.
+
    private
    public :: collect_mqc_afo_fmo
 
@@ -48,7 +59,8 @@ contains
                   new_unittest("two_fragments_keep_the_identity_under_point_charges", test_ptc_two), &
                   new_unittest("three_fragments_keep_it_with_a_field_on_top", test_ptc_three), &
                   new_unittest("embedded_truncation_at_pairs_costs_the_three_body_term", test_ptc_pairs), &
-                  new_unittest("a_ring_kept_whole_takes_a_field_and_a_frozen_orbital", test_ptc_ring_kept) &
+                  new_unittest("a_ring_kept_whole_takes_a_field_and_a_frozen_orbital", test_ptc_ring_kept), &
+                  new_unittest("the_charge_convention_does_not_move_an_embedded_total", test_convention) &
                   ]
    end subroutine collect_mqc_afo_fmo
 
@@ -126,6 +138,17 @@ contains
       !! three-body term, and over covalent bonds it is large -- which is worth
       !! knowing rather than hiding, because the same quantity is a rounding
       !! error for a water cluster.
+      !!
+      !! **This is the run that decides `cut_nucleus = "auto"`.** With no field
+      !! the detached atom's nucleus stays whole with the fragment that owns
+      !! it, because splitting it would hand a unit of charge to the fragment
+      !! across the bond with nothing to hand it back: each monomer would then
+      !! be solved around a nucleus short by one proton, which is a much worse
+      !! model of a methyl group than the cation whole nuclei produce, and the
+      !! number here would be 0.304 rather than 0.180. Under a field the two
+      !! conventions are exactly equivalent, so nothing is given up by choosing
+      !! per embedding; see
+      !! `the_charge_convention_does_not_move_an_embedded_total`.
       !!
       !! It is an approximation and not a mistake, and the test above is what
       !! says so: the identical machinery at full order lands on the exact
@@ -331,6 +354,14 @@ contains
       !! than wrong and the reason is in `fmo.rst`; the bound here is an order
       !! of magnitude and not a pin, because what it has to separate is a
       !! three-body term from an eleven-Hartree assembly fault.
+      !!
+      !! **And it is not the fragments' net charge that does it**, which was
+      !! the standing explanation and was wrong. This number is the same to
+      !! convergence noise under either charge convention -- see
+      !! `the_charge_convention_does_not_move_an_embedded_total`, which runs
+      !! exactly this case both ways. What is left of the 0.489 is the
+      !! point-charge approximation at bonding contact, which is why FMO keeps
+      !! an exact term inside `resppc` in the first place.
       type(error_type), allocatable, intent(out) :: error
 
       call three_fragment_error(2, error, 1.0_dp, "ptc", &
@@ -390,6 +421,104 @@ contains
       call check_charge_sum(res, 0.0_dp, error)
    end subroutine test_ptc_ring_kept
 
+   subroutine test_convention(error)
+      !! Splitting a detached bond's nucleus does not move an embedded total
+      !!
+      !! **The only check in the tree that can see the charge convention at
+      !! all.** The telescoping identity cannot: at full expansion order the
+      !! top group is the whole system with nothing outside it, so there is no
+      !! field and every intermediate group's embedding cancels out of the
+      !! sum. Nor can the sum of atomic charges: plus and minus one add to
+      !! zero exactly as two neutral fragments do. And nor, it turns out, can
+      !! the two-body error, which is what this asserts.
+      !!
+      !! The invariance is exact rather than incidental, and worth writing
+      !! down because it was got wrong once. The field a group feels at an
+      !! atom is `q_all - own_q`, its own share taken back out, so a unit of
+      !! charge moved out of a group's own nucleus reappears in the field it
+      !! sees at the same point and with the same magnitude -- the total
+      !! one-electron potential there is `-(Z - pop_outside)/r` either way.
+      !! `q_all` itself does not move, because both Mulliken shares of a
+      !! detached atom are summed. And nuclear repulsion with per-atom charges
+      !! that add up over the fragments is pairwise-additive in the fragments,
+      !! so an expansion already reproduces it exactly at level two, for any
+      !! assignment.
+      !!
+      !! So the convention is free wherever there is a field, which is what
+      !! lets `cut_nucleus = "auto"` choose on other grounds -- and the run
+      !! picked here is the *truncated* one, since the full-order case would
+      !! be exact under any partition at all and would prove nothing.
+      !!
+      !! The two runs are checked to be genuinely different first. Without
+      !! that, an implementation that ignored `cut_nucleus` would pass this
+      !! by doing the same thing twice.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: e_split, e_whole
+      real(dp), allocatable :: q_split(:), q_whole(:)
+
+      call propane_ptc_pairs("split", e_split, q_split, error)
+      if (allocated(error)) return
+      call propane_ptc_pairs("whole", e_whole, q_whole, error)
+      if (allocated(error)) return
+
+      write (*, *) "   split-nucleus fragment charges =", q_split
+      write (*, *) "   whole-nucleus fragment charges =", q_whole
+
+      call check(error, maxval(abs(q_split)) < 1.0e-8_dp, &
+                 "cut_nucleus='split' left a fragment charged, so the nucleus did not "// &
+                 "follow the electron pair")
+      if (allocated(error)) return
+      call check(error, maxval(abs(q_whole)) > 0.5_dp, &
+                 "cut_nucleus='whole' left every fragment neutral, so the two runs "// &
+                 "compared below are the same run and the agreement means nothing")
+      if (allocated(error)) return
+
+      write (*, *) "   split =", e_split, "  whole =", e_whole, &
+         "  difference =", e_split - e_whole
+      call check(error, abs(e_split - e_whole) < CONVENTION_TOL, &
+                 "splitting a detached bond's nucleus moved an embedded total, which "// &
+                 "the field's own-share subtraction says it cannot")
+   end subroutine test_convention
+
+   subroutine propane_ptc_pairs(cut_nucleus, energy, fragment_charge, error)
+      !! Propane as three fragments, FMO(2) in point charges, one convention
+      character(len=*), intent(in) :: cut_nucleus
+      real(dp), intent(out) :: energy
+      real(dp), allocatable, intent(out) :: fragment_charge(:)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(11)
+      character(len=2) :: sym(11)
+      real(dp) :: xyz(3, 11)
+
+      call propane(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "ptc"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%cut_nucleus = cut_nucleus
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+
+      call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "the expansion failed")
+      if (allocated(error)) then
+         if (err%has_error()) write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+      call check(error, allocated(res%fragment_charge), "the run reported no "// &
+                 "per-fragment charges")
+      if (allocated(error)) return
+
+      energy = res%energy
+      fragment_charge = res%fragment_charge
+   end subroutine propane_ptc_pairs
+
    subroutine check_charge_sum(res, total, error)
       !! Every electron is somebody's, and the atomic charges have to say so
       !!
@@ -400,9 +529,16 @@ contains
       !! molecular charge -- and since they are what the field is built from,
       !! every fragment would then be embedded in a system carrying a charge the
       !! molecule does not have.
+      !!
+      !! And then **each fragment separately**, which the total cannot see. Two
+      !! fragments at plus and minus one sum to zero exactly as two neutral
+      !! ones do; only the per-fragment numbers say whether the nucleus was
+      !! split alongside the electron pair.
       type(fmo_result_t), intent(in) :: res
       real(dp), intent(in) :: total
       type(error_type), allocatable, intent(out) :: error
+
+      integer :: f
 
       call check(error, allocated(res%charges), "an embedded run reported no charges")
       if (allocated(error)) return
@@ -410,6 +546,18 @@ contains
       call check(error, abs(sum(res%charges) - total) < 1.0e-8_dp, &
                  "the fragment charges do not sum to the molecular charge, so the "// &
                  "detached atom's population was counted once instead of twice")
+      if (allocated(error)) return
+
+      call check(error, allocated(res%fragment_charge), &
+                 "an embedded run reported no per-fragment charges")
+      if (allocated(error)) return
+      write (*, *) "   per-fragment charges  =", res%fragment_charge
+      do f = 1, size(res%fragment_charge)
+         call check(error, abs(res%fragment_charge(f)) < 1.0e-8_dp, &
+                    "a fragment carries a net charge, so at a detached bond its "// &
+                    "nucleus and its electrons were not split the same way")
+         if (allocated(error)) return
+      end do
    end subroutine check_charge_sum
 
    subroutine methylcyclopropane(z, sym, xyz)
