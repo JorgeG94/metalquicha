@@ -130,8 +130,10 @@ module mqc_cuest_iface
          !! looser than the response solve's.
       logical :: second_order = .false.
          !! Converge the closed-shell SCF by trust-region Newton on the orbital
-         !! rotations once DIIS has got it close. Only the cenzontle backend
-         !! acts on it.
+         !! rotations once DIIS has got it close. Set by `keywords.scf.
+         !! second_order` or by `keywords.scf.accelerator: soscf`, which are
+         !! the same request. Only the cenzontle backend acts on it; the GPU
+         !! driver refuses it by name rather than ignoring it.
       real(dp) :: soscf_start = 1.0e-2_dp
          !! The commutator at which that switch happens.
       real(dp) :: hessian_response_tol = 1.0e-9_dp
@@ -140,10 +142,11 @@ module mqc_cuest_iface
          !! The analytic Hessian's coupled-perturbed solve; copied from the
          !! options, whose defaults are the ones that count.
       character(len=32) :: accelerator = "diis"
-         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
-         !! 'ediis'. The energy-based pair runs only while the error is large
-         !! and hands over to DIIS, so naming one chooses a different opening,
-         !! not a different endgame.
+         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis',
+         !! 'ediis' or 'soscf'. The energy-based pair runs only while the
+         !! error is large and hands over to DIIS, so naming one chooses a
+         !! different opening, not a different endgame. 'soscf' is the other
+         !! way round: DIIS opens and Newton finishes.
       character(len=32) :: convergence_metric = "standard"
          !! See `mqc_scf_convergence`.
       character(len=32) :: guess = "auto"
