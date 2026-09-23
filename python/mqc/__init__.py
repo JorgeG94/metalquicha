@@ -796,6 +796,25 @@ class Result:
         """
         return self._section("pie_terms")
 
+    @property
+    def interaction_energy(self):
+        """One fragment's interaction energy, or None.
+
+        Present after a ``driver="InteractionEnergy"`` run, which names the
+        fragment with ``keywords.fragmentation.reference_fragment``. ``total``
+        is the sum of every many-body correction whose term contains that
+        fragment, in Hartree, with ``total_kcal_mol`` beside it, and
+        ``by_level`` splits it by term size. ``reference_energy`` is the
+        fragment's own energy. ``reference_fragment`` is 0-based as the deck
+        wrote it, ``reference_monomer`` the same fragment numbered from 1 as
+        in the breakdown.
+
+        Such a run reports **no total energy**: its term list was reduced to
+        what these corrections need, so ``energy`` on this result means
+        nothing and this block is the answer.
+        """
+        return self._section("interaction_energy")
+
     def _section(self, name):
         """One object out of the output document, or None if it is absent.
 

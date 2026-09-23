@@ -36,6 +36,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    fmo
    efmo
    counterpoise
+   interaction_energy
    continuum_solvation
    charges_and_bond_orders
    bonding_analysis

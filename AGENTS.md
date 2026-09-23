@@ -221,6 +221,11 @@ end type
 - `CALC_TYPE_ENERGY` - Single-point energy
 - `CALC_TYPE_GRADIENT` - First derivatives
 - `CALC_TYPE_HESSIAN` - Second derivatives + vibrational analysis
+- `CALC_TYPE_INTERACTION_ENERGY` - `driver: "InteractionEnergy"`: the MBE
+  terms containing `keywords.fragmentation.reference_fragment` (0-based), from
+  a term list reduced to their closure under subsets. Fragments run as
+  energies; the output has an `interaction_energy` block and **no**
+  `total_energy`. See `mqc_docs/source/interaction_energy.rst`
 
 ## Methods Available
 
@@ -576,9 +581,9 @@ with `../../../`. The CPU suite is **generated** - edit
 under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t df-dft
-df-hf dft dh ecp efmo efp fmo fukui gradient hessian makefp mcscf mp2 neo
-optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2 soscf sos-mp2
-tddft udft uhf` -- worth checking against before assuming something is
+df-hf dft dh ecp efmo efp fmo fukui gradient hessian interaction_energy makefp
+mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2 soscf
+sos-mp2 tddft udft uhf` -- worth checking against before assuming something is
 untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this
 line if something is missing from it.
