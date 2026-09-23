@@ -1155,6 +1155,12 @@ contains
       call json%add(efmo_obj, "qm_dimers", data%efmo_qm_dimers)
       call json%add(efmo_obj, "efp_dimers", data%efmo_efp_dimers)
       call json%add(efmo_obj, "qm_groups", data%efmo_qm_groups)
+      ! Beside the pairs rather than inside them: a charge belongs to a
+      ! fragment, and repeating it on every row a fragment appears in would
+      ! invite a reader to sum it.
+      if (allocated(data%efmo_fragment_charges)) then
+         call json%add(efmo_obj, "fragment_charges", data%efmo_fragment_charges)
+      end if
       call write_efmo_pairs(json, efmo_obj, data)
    end subroutine write_efmo_section
 

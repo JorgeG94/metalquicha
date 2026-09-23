@@ -1536,6 +1536,7 @@ contains
          json_data%efmo_qm_dimers = n_qm
          json_data%efmo_efp_dimers = n_efp
          json_data%efmo_qm_groups = n_groups
+         json_data%efmo_fragment_charges = charges
          ! The per-pair map, which the aggregate sums above cannot stand in
          ! for: two systems with the same totals can have entirely different
          ! pairs carrying them, and it is the pairs an interaction analysis
