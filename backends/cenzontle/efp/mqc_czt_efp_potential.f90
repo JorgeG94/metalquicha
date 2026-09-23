@@ -50,6 +50,7 @@ module mqc_czt_efp_potential
    use pic_logger, only: logger => global_logger
    use mqc_scf_types, only: scf_numerics_t, print_scf_config
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
+   use mqc_fock_projector, only: fock_projector_t
    use mqc_program_limits, only: MAX_LINE_LENGTH
    implicit none
    private
@@ -148,6 +149,18 @@ module mqc_czt_efp_potential
       real(dp), allocatable :: points(:, :)           !! (3, n_points), Bohr
       real(dp), allocatable :: mass(:)                !! amu, zero at a midpoint
       real(dp), allocatable :: charge(:)              !! Z, zero at a midpoint
+         !! The nuclear charge the point presents, which at a cut bond is not
+         !! its element's: `Z-1` on a bond-detached atom and `+1` on the centre
+         !! standing in for it across the cut. What the file's `ZNUC` column
+         !! carries.
+      integer, allocatable :: element(:)              !! (n_atoms), atomic number
+         !! Which element sits at each atom, whatever charge it presents. The
+         !! basis, the radii and the core count follow this, never `charge`.
+      real(dp), allocatable :: valence(:)             !! (n_atoms)
+         !! The charge each atom's nucleus and core present to a valence
+         !! orbital: `charge` less two per core orbital that atom holds. A
+         !! centre carrying another fragment's detached atom holds no core, so
+         !! this is `+1` there. The number the projection basis header carries.
       real(dp), allocatable :: q_elec(:), q_nuc(:)    !! MONOPOLES
       real(dp), allocatable :: dipole(:, :)           !! (3, n_points)
       real(dp), allocatable :: quadrupole(:, :)       !! (6, n_points)
@@ -189,6 +202,8 @@ contains
       if (allocated(self%points)) deallocate (self%points)
       if (allocated(self%mass)) deallocate (self%mass)
       if (allocated(self%charge)) deallocate (self%charge)
+      if (allocated(self%element)) deallocate (self%element)
+      if (allocated(self%valence)) deallocate (self%valence)
       if (allocated(self%q_elec)) deallocate (self%q_elec)
       if (allocated(self%q_nuc)) deallocate (self%q_nuc)
       if (allocated(self%dipole)) deallocate (self%dipole)
@@ -222,7 +237,8 @@ contains
                                  energy_tol, density_tol, grad_tol_in, &
                                  scf_in, max_iter_in, dynamic_tol, &
                                  dynamic_maxiter, response, allow_crap_response, &
-                                 response_batch, quadrupole_blocks, scf_out)
+                                 response_batch, quadrupole_blocks, scf_out, &
+                                 nuclear_charge, ghost, projector)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what: the SCF gives the density
@@ -311,6 +327,24 @@ contains
          !! run that asked for both separately would run every monomer's SCF
          !! twice; `pot%scf_energy` carries the total alone and this carries the
          !! orbitals a correlated `E_I^0` would continue from.
+      integer, intent(in), optional :: nuclear_charge(:)
+         !! The charge each atom presents, when it is not its element's. A
+         !! fragment cut across a covalent bond splits the detached atom's
+         !! nucleus -- `Z-1` where the atom is owned, `+1` on the centre that
+         !! carries its functions across the cut -- and so is neutral. The
+         !! electron count follows the sum of these; `atomic_numbers` still
+         !! names the elements, which decide the basis, the bonds, the radii
+         !! and the core.
+      logical, intent(in), optional :: ghost(:)
+         !! Atoms whose functions are here but whose core is not: the centre a
+         !! fragment carries for another fragment's detached atom. A ghost
+         !! contributes no core orbital. Its charge is `nuclear_charge`'s.
+      type(fock_projector_t), intent(in), optional :: projector
+         !! Frozen orbitals the SCF is constrained by, from the adjusted frozen
+         !! orbitals at a cut bond. Everything after the SCF runs on the
+         !! constrained determinant as it would on any other: the frozen
+         !! occupied hybrid is localized, polarized and written with the rest,
+         !! which is what GAMESS's EFMO does too.
 
       type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
@@ -334,6 +368,7 @@ contains
       character(len=:), allocatable :: guess_name
       type(timer_type) :: stage
       logical :: talk
+      integer, allocatable :: presented(:), atom_core(:)
 
       character(len=MAX_LINE_LENGTH) :: line
 
@@ -341,7 +376,30 @@ contains
       if (present(verbose)) talk = verbose
       if (talk) call stage%start()
       natm = size(atomic_numbers)
-      n_electrons = sum(atomic_numbers)
+      ! What each atom presents, and how many core orbitals it holds. Both are
+      ! the element's own unless a cut bond says otherwise, and with neither
+      ! optional given this is exactly the arithmetic that ran before they
+      ! existed.
+      allocate (presented(natm), source=atomic_numbers)
+      if (present(nuclear_charge)) then
+         if (size(nuclear_charge) /= natm) then
+            call error%set(ERROR_VALIDATION, "makefp: one nuclear charge per atom")
+            return
+         end if
+         presented = nuclear_charge
+      end if
+      allocate (atom_core(natm))
+      do i = 1, natm
+         atom_core(i) = frozen_core([atomic_numbers(i)])
+      end do
+      if (present(ghost)) then
+         if (size(ghost) /= natm) then
+            call error%set(ERROR_VALIDATION, "makefp: one ghost flag per atom")
+            return
+         end if
+         where (ghost) atom_core = 0
+      end if
+      n_electrons = sum(presented)
       if (present(charge)) n_electrons = n_electrons - charge
       pot%name = trim(name)
       pot%basis_name = trim(basis_name)
@@ -380,7 +438,8 @@ contains
       end if
 
       call build_czt_molecule(atomic_numbers, element_symbols, coordinates, &
-                              basis_name, mol, error, force_cartesian=.true.)
+                              basis_name, mol, error, force_cartesian=.true., &
+                              ghost=ghost, nuclear_charge=nuclear_charge)
       if (error%has_error()) return
       pot%nao = mol%nao
 
@@ -402,7 +461,8 @@ contains
          ! in `validation/check_df_hessian`.
          call build_czt_molecule(atomic_numbers, element_symbols, coordinates, &
                                  aux_basis, aux, error, &
-                                 force_cartesian=mol%cartesian)
+                                 force_cartesian=mol%cartesian, ghost=ghost, &
+                                 nuclear_charge=nuclear_charge)
          if (error%has_error()) then
             call mol%destroy()
             return
@@ -520,14 +580,14 @@ contains
                           aux=aux, grad_tol=g_tol, diis_vectors=scf_diis, &
                           level_shift=shift, linear_dependence=lindep, &
                           accelerator=accel_kind, incremental_fock=incr, &
-                          scf=echo, b_ao_out=b_ao)
+                          scf=echo, b_ao_out=b_ao, projector=projector)
       else
          call run_czt_rhf(mol, n_electrons, n_iter, e_tol, d_tol, &
                           talk, scf, error, guess=guess_kind, guess_density=guess_total, &
                           grad_tol=g_tol, diis_vectors=scf_diis, &
                           level_shift=shift, linear_dependence=lindep, &
                           accelerator=accel_kind, incremental_fock=incr, &
-                          scf=echo)
+                          scf=echo, projector=projector)
       end if
       if (error%has_error()) then
          call mol%destroy()
@@ -561,7 +621,7 @@ contains
          call logger%info(trim(line))
       end if
 
-      core = frozen_core(atomic_numbers)
+      core = sum(atom_core)
       if (present(n_core)) core = n_core
       n_valence = pot%n_occ - core
       if (n_valence < 1) then
@@ -588,7 +648,8 @@ contains
       if (talk) call report(stage, "localization", talk)
 
       ! --- electrostatics -------------------------------------------------------
-      call distributed_multipoles(mol, scf%density, atomic_numbers, dma, error)
+      call distributed_multipoles(mol, scf%density, atomic_numbers, dma, error, &
+                                  nuclear_charge=presented)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -609,11 +670,14 @@ contains
       ! Mass and charge sit on atoms only; a bond midpoint carries neither, which
       ! is how GAMESS's reader tells the two kinds of point apart.
       allocate (pot%mass(pot%n_points), pot%charge(pot%n_points))
+      allocate (pot%element(natm), pot%valence(natm))
       pot%mass = 0.0_dp
       pot%charge = 0.0_dp
       do i = 1, natm
          pot%mass(i) = element_mass(atomic_numbers(i))
-         pot%charge(i) = real(atomic_numbers(i), dp)
+         pot%charge(i) = real(presented(i), dp)
+         pot%element(i) = atomic_numbers(i)
+         pot%valence(i) = real(presented(i) - 2*atom_core(i), dp)
       end do
 
       ! --- polarization ---------------------------------------------------------
@@ -706,7 +770,7 @@ contains
          return
       end if
 
-      call projection_basis_lines(atomic_numbers, pot%labels, pot%points, &
+      call projection_basis_lines(pot%valence, pot%labels, pot%points, &
                                   element_symbols, basis_name, pot%basis_lines, &
                                   error)
       if (error%has_error()) then
@@ -1220,7 +1284,7 @@ contains
       end do
    end subroutine to_gamess_ao_order
 
-   subroutine projection_basis_lines(atomic_numbers, labels, points, symbols, &
+   subroutine projection_basis_lines(valence, labels, points, symbols, &
                                      basis_name, lines, error)
       !! `PROJECTION BASIS SET`, in GAMESS's columns and its normalization
       !!
@@ -1233,7 +1297,8 @@ contains
       !!
       !! The primitive counter runs across the whole file rather than restarting
       !! per atom.
-      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: valence(:)
+         !! Each atom's charge less its core, as `efp_potential_t%valence`
       character(len=8), intent(in) :: labels(:)
       real(dp), intent(in) :: points(:, :)
       character(len=*), intent(in) :: symbols(:)
@@ -1245,12 +1310,12 @@ contains
       character(len=:), allocatable :: path
       character(len=MAX_LINE), allocatable :: buffer(:)
       character(len=MAX_LINE) :: text
-      integer :: n, natm, iatom, ish, nsh, k, primitive, valence, ncol, col
+      integer :: n, natm, iatom, ish, nsh, k, primitive, ncol, col
       integer :: l_of(2)
       logical :: is_l
       real(dp) :: expo, coefficient
 
-      natm = size(atomic_numbers)
+      natm = size(valence)
       call find_basis_file(basis_name, path, error)
       if (error%has_error()) return
       call build_molecular_basis_json(path, symbols, basis, error)
@@ -1260,13 +1325,12 @@ contains
       n = 0
       primitive = 0
       do iatom = 1, natm
-         valence = atomic_numbers(iatom) - frozen_core([atomic_numbers(iatom)])*2
          ! Ten wide here, where COORDINATES uses eight -- what MAKEFP writes, and
          ! the two sections genuinely differ. Written as A8 then two blanks rather
          ! than A10, because A10 on an eight-character string pads on the left and
          ! would indent the label instead of the number.
          write (text, "(A8,A2,3F15.10,F7.1)") labels(iatom), "  ", &
-            points(:, iatom), real(valence, dp)
+            points(:, iatom), valence(iatom)
          n = n + 1
          buffer(n) = text
 

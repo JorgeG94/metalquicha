@@ -35,7 +35,7 @@ module mqc_czt_efp_serialize
    public :: fragment_pack
    public :: fragment_unpack
 
-   integer, parameter :: EFP_HEADER_INTS = 54
+   integer, parameter :: EFP_HEADER_INTS = 56
       !! Counts, presence flags and one allocation flag per component array.
       !!
       !! Fixed size, because it is reduced before anything about the fragment is
@@ -44,8 +44,8 @@ module mqc_czt_efp_serialize
       !! the octupoles has `n_points > 0` and no octupole array, and rebuilding
       !! one full of zeros would be a different fragment.
 
-   integer, parameter :: N_REAL_ARRAYS = 23
-   integer, parameter :: N_INT_ARRAYS = 4
+   integer, parameter :: N_REAL_ARRAYS = 24
+   integer, parameter :: N_INT_ARRAYS = 5
 
    integer, parameter :: LABEL_LEN = 8
       !! Width of `labels`, which is what `efp_fragment_t` declares.
@@ -116,6 +116,8 @@ contains
       header(52) = flag(allocated(frag%shell_first))
       header(53) = flag(allocated(frag%shell_nprim))
       header(54) = flag(allocated(frag%labels))
+      header(55) = flag(allocated(frag%element))
+      header(56) = flag(allocated(frag%valence))
    end subroutine fragment_header
 
    pure function flag(present_) result(k)
@@ -152,6 +154,7 @@ contains
       n_ints = header(26)                              ! name, one integer per character
       n_ints = n_ints + header(54)*np*LABEL_LEN        ! labels, likewise
       n_ints = n_ints + (header(50) + header(51) + header(52) + header(53))*nsh
+      n_ints = n_ints + header(55)*header(2)           ! element, one per atom
 
       n_reals = header(27)*3*np &
                 + header(28)*np + header(29)*np + header(30)*np + header(31)*np &
@@ -162,7 +165,8 @@ contains
                 + header(42)*header(7)*nl*nf + header(43)*header(8)*nl*nf &
                 + header(44)*nprim + header(45)*nprim &
                 + header(46)*nao*nlp + header(47)*nlp*nlp &
-                + header(48)*nao*nmo + header(49)*nocc
+                + header(48)*nao*nmo + header(49)*nocc &
+                + header(56)*header(2)
    end subroutine fragment_buffer_sizes
 
    subroutine fragment_pack(frag, header, ibuf, rbuf, error)
@@ -207,6 +211,7 @@ contains
       call put_int(ibuf, ai, frag%shell_l, header(51))
       call put_int(ibuf, ai, frag%shell_first, header(52))
       call put_int(ibuf, ai, frag%shell_nprim, header(53))
+      call put_int(ibuf, ai, frag%element, header(55))
 
       ! Every array flattened with `reshape`, in the order
       ! `fragment_buffer_sizes` counts them and `fragment_unpack` reads them.
@@ -233,6 +238,7 @@ contains
       if (header(47) == 1) call put_real(rbuf, ar, reshape(frag%fock_lmo, [size(frag%fock_lmo)]))
       if (header(48) == 1) call put_real(rbuf, ar, reshape(frag%ctvec_gamess, [size(frag%ctvec_gamess)]))
       if (header(49) == 1) call put_real(rbuf, ar, frag%eps_occ)
+      if (header(56) == 1) call put_real(rbuf, ar, frag%valence)
    end subroutine fragment_pack
 
    subroutine put_int(buf, at, values, present_)
@@ -342,6 +348,7 @@ contains
       call take_int(ibuf, ai, frag%shell_l, nsh, header(51))
       call take_int(ibuf, ai, frag%shell_first, nsh, header(52))
       call take_int(ibuf, ai, frag%shell_nprim, nsh, header(53))
+      call take_int(ibuf, ai, frag%element, header(2), header(55))
 
       call take_2d(rbuf, ar, frag%points, 3, np, header(27))
       call take_1d(rbuf, ar, frag%mass, np, header(28))
@@ -366,6 +373,7 @@ contains
       call take_2d(rbuf, ar, frag%fock_lmo, nlp, nlp, header(47))
       call take_2d(rbuf, ar, frag%ctvec_gamess, nao, nmo, header(48))
       call take_1d(rbuf, ar, frag%eps_occ, nocc, header(49))
+      call take_1d(rbuf, ar, frag%valence, header(2), header(56))
    end subroutine fragment_unpack
 
    subroutine take_int(buf, at, values, n, present_)

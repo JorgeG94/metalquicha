@@ -583,6 +583,76 @@ carries up to 2.5 kcal/mol at :math:`R_{\rm cut} = 2.0`. The most stable isomer
 not preserved: the prism rises from fifth to second. Read EFMO energies of
 different isomers against each other with that in mind.
 
+Covalent fragments: where a cut reaches
+---------------------------------------
+
+A fragment cut across a covalent bond is detached the way FMO detaches it (see
+:doc:`fmo`): the detached atom keeps ``Z - 1`` of its nucleus and its hybrid
+frozen empty, and the fragment across the bond carries a centre at the same
+point with the same basis, ``+1`` of charge and the hybrid frozen occupied.
+Both fragments are neutral closed shells, which is what a fragment *potential*
+needs -- nothing in a far pair takes a net charge back out.
+
+That makes the charge a centre presents and the element it is two different
+things, and the effective-fragment path used to read one off the other. What
+reads which, now:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 33 33
+
+   * - Where
+     - Element (``atomic_numbers``, ``element``)
+     - Charge presented (``nuclear_charge``, ``charge``)
+   * - ``make_efp_potential``: the molecule
+     - the basis looked up
+     - the nuclear attraction and repulsion; the electron count is their sum
+   * - core orbitals left out of the localization
+     - the frozen core of the element; **none on a ghost**, whose core stays
+       with the atom's owner
+     - --
+   * - ``distributed_multipoles``
+     - bonds, so the midpoints, and the labels
+     - the nuclear monopole
+   * - screening grid, masses for the centre of mass
+     - radii and masses
+     - --
+   * - projection basis header, exchange-repulsion potential
+     - --
+     - the *valence* charge, charge less two per core orbital: ``+3`` on a
+       detached carbon, ``+1`` on the centre across the cut
+   * - a fragment's basis in the pair terms
+     - the element symbol
+     - the charge the molecule is built with (overlap and kinetic only)
+
+A potential made in memory carries ``element`` and ``valence`` per atom through
+to the fragment and across ranks. A ``.efp`` file carries neither, and a
+fragment read from one falls back on the nearest integer to its charge, which
+for a whole molecule is the same number -- so nothing read from a file moves.
+
+**The centre across the cut is an ordinary atom of the potential.** It has
+basis functions, so the distributed multipoles need an expansion point there;
+it is bonded to the attached atom, so it gets a midpoint; and it carries ``+1``.
+Summed over the two fragments of a cut, the monopoles put the whole nucleus back
+exactly once.
+
+The frozen occupied hybrid is localized, polarized and written with the rest of
+the valence orbitals, on the constrained determinant as it stands. That is what
+GAMESS's EFMO does, including its own acknowledgement that the Fock matrix is
+not diagonal in the unfrozen space.
+
+Every quantum mechanical step an EFMO run takes, with or without cuts:
+
+* each fragment's SCF, inside ``make_efp_potential``, which is also its
+  :math:`E_I^0`;
+* each near group's SCF;
+* with a correlated method, MP2 on both;
+* with cuts, one small SCF per cut bond, on the model system its hybrid comes
+  from.
+
+All of them go through the same group assembly: a cut belongs to a group, not a
+fragment, so a group holding both ends of a bond has it whole.
+
 What is not here yet
 --------------------
 
