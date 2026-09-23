@@ -685,12 +685,27 @@ contains
                expansion%esp = "ptc"
                expansion%expansion = "mbe"
             end if
-            ! `embedding` overrides what the expansion implies, which is how a
-            ! deck reaches the third pairing the backend supports: esp "none"
-            ! with an mbe expansion, a plain many-body expansion through this
-            ! module.
-            if (trim(config%embedding) == "none") then
-               expansion%esp = "none"
+            ! `embedding` overrides the field the method implies, leaving the
+            ! expansion alone. The two are independent in the backend and only
+            ! three of the four pairings were reachable from a deck before:
+            ! "fmo" with point charges is FMO's own expansion with the
+            ! long-range approximation made everywhere, which is the one shape
+            ! a detached bond can be run in, since a frozen orbital and an
+            ! exact density both describe the bond region and only a
+            ! per-atom field can have the detached atom's share taken back out
+            ! of it. An unknown spelling is refused rather than ignored: it
+            ! used to pass validation and change nothing.
+            if (len_trim(config%embedding) > 0) then
+               select case (trim(config%embedding))
+               case ("none", "ptc", "exact")
+                  expansion%esp = trim(config%embedding)
+               case default
+                  call logger%error("keywords.fragmentation.embedding: '"// &
+                                    trim(config%embedding)//"' is not a field this "// &
+                                    "method can build. Use 'exact' for densities, "// &
+                                    "'ptc' for point charges, or 'none'.")
+                  return
+               end select
             end if
 
             ! TODO(mqc): refactor this ugly ass code, in general the expansion assignemtn

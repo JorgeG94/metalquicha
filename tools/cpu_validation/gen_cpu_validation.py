@@ -499,6 +499,11 @@ HAND_MAINTAINED = {
     # both C-C bonds, expanded to its fragment count, has to reproduce the
     # unfragmented energy however the bonds were detached. It does, to 1.2e-12.
     "cpu/mqc/fmo/afo3_propane.json",
+    # And the same identity on a protein backbone: a glycine tripeptide cut at
+    # both C-alpha--C(=O) bonds, which is where FMO cuts a protein, over a
+    # point-charge field. The peptide bonds stay whole -- an amide C-N carries
+    # two localized orbitals and is refused by name.
+    "cpu/mqc/fmo/afo3_gly3.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an

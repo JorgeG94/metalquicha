@@ -50,9 +50,11 @@ module mqc_config_adapter
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       character(len=16) :: expansion_kind = "mbe"  !! "mbe", "fmo" or "ee-mbe"
       character(len=16) :: embedding = ""
-         !! What field the fragments sit in: "none" turns the embedding off and
-         !! leaves a plain many-body expansion. Empty means the deck said nothing
-         !! and the expansion picks its own default.
+         !! What field the fragments sit in: "exact" for the neighbours' own
+         !! densities, "ptc" for atomic point charges, "none" for no field at
+         !! all. Empty means the deck said nothing and the method picks: an
+         !! exact field for `fmo`, point charges for `ee-mbe`. It overrides the
+         !! field only -- which expansion is summed still follows `method`.
       character(len=16) :: bond_breaking = "none"
          !! How a cut covalent bond is represented; "none" refuses one
       real(dp) :: cap_scale = 1.0_dp
