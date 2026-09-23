@@ -17,7 +17,8 @@ module test_mqc_config_roundtrip
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, &
-                                 check_counterpoise_support
+                                 check_counterpoise_support, check_interaction_energy_support
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_INTERACTION_ENERGY
    use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
    use mqc_method_base, only: qc_method_t
    use mqc_method_factory, only: create_method
@@ -41,6 +42,8 @@ contains
                   new_unittest("counterpoise_roundtrip", test_counterpoise_roundtrip), &
                   new_unittest("counterpoise_is_refused_where_it_is_ignored", &
                                test_counterpoise_refusals), &
+                  new_unittest("interaction_energy_is_refused_where_it_is_not_defined", &
+                               test_interaction_energy_support), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
                   new_unittest("dft_settings_reach_the_method", test_dft_roundtrip), &
                   new_unittest("mcscf_active_space_reaches_the_method", test_mcscf_roundtrip), &
@@ -218,6 +221,130 @@ contains
                  "counterpoise with "//label//" must be refused, not ignored")
       call err%clear()
    end subroutine must_refuse
+
+   subroutine test_interaction_energy_support(error)
+      !! What `check_interaction_energy_support` allows, and what it refuses
+      !!
+      !! The driver runs this for every caller, a session and the C API among
+      !! them, which build a `driver_config_t` without a deck -- so it is
+      !! tested on the type directly. Each refusal is checked by its message,
+      !! not only its flag: a configuration written to be refused for one
+      !! reason can be refused for another, and a flag alone would pass a test
+      !! of a guard that does not exist.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: driver, plain
+      type(error_t) :: err
+
+      ! The supported run, so a guard that refuses everything fails here.
+      call interaction_driver(driver)
+      call check_interaction_energy_support(driver, 6, err)
+      call check(error,.not. err%has_error(), &
+                 "InteractionEnergy over MBE(2) with an ab initio method must be allowed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      ! Counterpoise at level 2 composes -- the pair builds its own ghosted rows.
+      driver%counterpoise = "vmfc"
+      call check_interaction_energy_support(driver, 6, err)
+      call check(error,.not. err%has_error(), "vmfc at level 2 must be allowed: "//err%get_message())
+      if (allocated(error)) return
+
+      ! And every other driver with no reference is none of this check's business.
+      call err%clear()
+      plain%calc_type = CALC_TYPE_ENERGY
+      call check_interaction_energy_support(plain, 6, err)
+      call check(error,.not. err%has_error(), "an Energy run with no reference must pass")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%calc_type = CALC_TYPE_ENERGY
+      call refused_with(error, driver, 6, "only read by", "a reference with driver Energy")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%reference_fragment = 0
+      call refused_with(error, driver, 6, "needs keywords.fragmentation.reference_fragment", &
+                        "InteractionEnergy with no reference")
+      if (allocated(error)) return
+
+      ! 1-based here: 7 of 6 is the deck's index 6, one past the end, and -1
+      ! is what the adapter stores for a negative deck index.
+      call interaction_driver(driver)
+      driver%reference_fragment = 7
+      call refused_with(error, driver, 6, "out of range", "a reference past the last fragment")
+      if (allocated(error)) return
+      driver%reference_fragment = -1
+      call refused_with(error, driver, 6, "out of range", "a negative reference")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      call refused_with(error, driver, 1, "at least two fragments", "an unfragmented system")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%nlevel = 1
+      call refused_with(error, driver, 6, "level of 2 or more", "level 1")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%allow_overlapping_fragments = .true.
+      call refused_with(error, driver, 6, "GMBE", "GMBE")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%expansion_kind = "fmo"
+      call refused_with(error, driver, 6, "method 'fmo'", "FMO")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%expansion_kind = "efmo"
+      call refused_with(error, driver, 6, "method 'efmo'", "EFMO")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%nlevel = 3
+      driver%counterpoise = "vmfc"
+      call refused_with(error, driver, 6, "limited to level 2", "vmfc at level 3")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%method_config%method_type = METHOD_TYPE_EFP2
+      call refused_with(error, driver, 6, "EFP", "EFP")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%method_config%neo%active = .true.
+      call refused_with(error, driver, 6, "keywords.neo", "NEO")
+   end subroutine test_interaction_energy_support
+
+   subroutine interaction_driver(driver)
+      !! An InteractionEnergy configuration every check accepts
+      type(driver_config_t), intent(out) :: driver
+
+      driver%calc_type = CALC_TYPE_INTERACTION_ENERGY
+      driver%reference_fragment = 1
+      driver%nlevel = 2
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .false.
+      driver%method_config%method_type = METHOD_TYPE_HF
+   end subroutine interaction_driver
+
+   subroutine refused_with(error, driver, n_fragments, text, label)
+      !! This configuration must be refused, with `text` in the message
+      type(error_type), allocatable, intent(inout) :: error
+      type(driver_config_t), intent(in) :: driver
+      integer, intent(in) :: n_fragments
+      character(len=*), intent(in) :: text, label
+
+      type(error_t) :: err
+
+      call check_interaction_energy_support(driver, n_fragments, err)
+      call check(error, err%has_error(), "InteractionEnergy with "//label//" must be refused")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), text) > 0, &
+                 "InteractionEnergy with "//label//" was refused for another reason: "// &
+                 err%get_message())
+   end subroutine refused_with
 
    subroutine write_pcm_input(method, extra_model)
       !! A deck asking for a continuum, for whichever reference

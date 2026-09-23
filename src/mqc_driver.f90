@@ -24,11 +24,12 @@ module mqc_driver
                                     check_system_geometry, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, &
-                                 check_counterpoise_support
+                                 check_counterpoise_support, check_interaction_energy_support
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
-                             CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP
+                             CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP, &
+                             CALC_TYPE_INTERACTION_ENERGY
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_scf_types, only: scf_numerics_t
    use mqc_mbe, only: compute_gmbe
@@ -183,6 +184,29 @@ contains
          end if
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
+
+      ! Before any of the branches below, several of which -- NEO, EFP, EFMO,
+      ! SAPT -- take their own path and would ignore the driver rather than
+      ! refuse it. `config_to_driver` has already asked this of a deck; a
+      ! session and the C API build their configuration without it.
+      block
+         type(error_t) :: support_error
+         call check_interaction_energy_support(config, sys_geom%n_monomers, support_error)
+         if (.not. support_error%has_error() .and. &
+             config%calc_type == CALC_TYPE_INTERACTION_ENERGY .and. present(supplied_terms)) then
+            call support_error%set(ERROR_VALIDATION, 'driver "InteractionEnergy" builds its '// &
+                                   "own term list, the closure under subsets of the terms "// &
+                                   "holding the reference fragment, and cannot take a supplied "// &
+                                   "one: a list closed for the full expansion is not the "// &
+                                   "reduced list, and the reduction is where the saving is.")
+         end if
+         if (support_error%has_error()) then
+            if (resources%mpi_comms%world_comm%rank() == 0) then
+               call logger%error(support_error%get_message())
+            end if
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      end block
 
       ! Resolved before the branches below rather than beside the JSON write at
       ! the end, because those branches write their own summary and return
@@ -398,6 +422,12 @@ contains
       integer :: max_intersection_level  !! Maximum k-way intersection depth for GMBE
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
+      integer(int64) :: n_full_terms
+         !! The ordinary expansion's term count, which an interaction-energy
+         !! run reports beside the reduced one it computed
+      integer(int32) :: fragment_calc_type
+         !! What each fragment computes. An interaction energy is energies of
+         !! fragments; only the list and the report differ.
       integer(default_int) :: supplied_width  !! Columns the caller actually provided
       type(error_t) :: checkpoint_error
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
@@ -433,6 +463,9 @@ contains
       max_level = config%nlevel
       allow_overlapping_fragments = config%allow_overlapping_fragments
       max_intersection_level = config%max_intersection_level
+      fragment_calc_type = config%calc_type
+      if (fragment_calc_type == CALC_TYPE_INTERACTION_ENERGY) fragment_calc_type = CALC_TYPE_ENERGY
+      n_full_terms = 0_int64
       ! Enumerated on the coordinator alone, far below, but copied into the
       ! expansion on every rank -- so the ranks that never enumerate need a
       ! value to copy rather than whatever the stack happened to hold.
@@ -590,7 +623,8 @@ contains
             ! the size sort, all of it in `generate_mbe_term_list` -- which a
             ! geometry optimization also calls, so the list it freezes is the
             ! one this would have built.
-            call generate_mbe_term_list(sys_geom, config, max_level, polymers, total_fragments)
+            call generate_mbe_term_list(sys_geom, config, max_level, polymers, total_fragments, &
+                                        n_full=n_full_terms)
 
             call logger%info("Generated fragments:")
             call logger%info("  Total fragments: "//to_char(total_fragments))
@@ -761,7 +795,7 @@ contains
          allocate (mbe_context_t :: expansion)
          select type (expansion)
          type is (mbe_context_t)
-            call expansion%init(config%method_config, config%calc_type)
+            call expansion%init(config%method_config, fragment_calc_type)
             allocate (expansion%sys_geom, source=sys_geom)
             if (present(bonds)) then
                ! source=sys_geom above already copies its bonds when the caller
@@ -775,6 +809,9 @@ contains
                allocate (expansion%polymers, source=polymers)
             end if
             expansion%max_level = max_level
+            ! Positive only for an interaction energy, whose reduced list
+            ! `generate_mbe_term_list` has already built above.
+            expansion%reference_fragment = config%reference_fragment
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
@@ -803,9 +840,9 @@ contains
           len_trim(config%checkpoint_file) > 0) then
          call expansion%checkpoint%open(trim(config%checkpoint_file), &
                                         calculation_fingerprint(sys_geom, config%method_config, &
-                                                                config%calc_type), &
+                                                                fragment_calc_type), &
                                         max_level + 1, &
-                                        config%calc_type == CALC_TYPE_ENERGY, &
+                                        fragment_calc_type == CALC_TYPE_ENERGY, &
                                         checkpoint_error)
          if (checkpoint_error%has_error()) then
             ! A checkpoint from another calculation is not a warning: its
@@ -824,6 +861,12 @@ contains
          call expansion%run_distributed(json_data)
       end if
       call expansion%checkpoint%close()
+
+      ! The saving, in the output rather than only the log: the reduced count
+      ! is `fragment_count`, and this is what it is measured against.
+      if (present(json_data) .and. resources%mpi_comms%world_comm%rank() == 0) then
+         if (json_data%has_interaction) json_data%full_expansion_count = n_full_terms
+      end if
 
       ! Clean up expansion context
       select type (expansion)

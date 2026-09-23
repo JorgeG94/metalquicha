@@ -11,6 +11,7 @@ module mqc_calc_types
    public :: CALC_TYPE_MAKEFP
    public :: CALC_TYPE_OPTIMIZE
    public :: CALC_TYPE_CONFORMERS
+   public :: CALC_TYPE_INTERACTION_ENERGY
    public :: CALC_TYPE_UNKNOWN
 
    ! Public functions
@@ -30,6 +31,12 @@ module mqc_calc_types
    !! Search for conformers, a sampling run wrapped around many gradients
    !! rather than a calculation. Driven above `run_calculation`, like OPTIMIZE,
    !! and not dispatchable from inside it.
+   integer(int32), parameter :: CALC_TYPE_INTERACTION_ENERGY = 7
+   !! The many-body interaction terms that contain one named fragment, from a
+   !! fragmented expansion reduced to the polymers those terms need. Every
+   !! fragment is an energy calculation; what differs from `CALC_TYPE_ENERGY`
+   !! is which fragments are computed and what is reported, which is not a
+   !! total energy. See `apply_reference_closure`.
 
 contains
 
@@ -67,6 +74,10 @@ contains
          calc_type = CALC_TYPE_OPTIMIZE
       case ("conformers", "conformer", "crest")
          calc_type = CALC_TYPE_CONFORMERS
+      case ("interactionenergy", "interaction_energy")
+         ! "InteractionEnergy" is how a deck writes it, capitalised like the
+         ! other drivers, and lowercases to the first spelling.
+         calc_type = CALC_TYPE_INTERACTION_ENERGY
       case default
          calc_type = CALC_TYPE_UNKNOWN
       end select
@@ -91,6 +102,8 @@ contains
          calc_type_str = "optimize"
       case (CALC_TYPE_CONFORMERS)
          calc_type_str = "conformers"
+      case (CALC_TYPE_INTERACTION_ENERGY)
+         calc_type_str = "interactionenergy"
       case default
          calc_type_str = "unknown"
       end select

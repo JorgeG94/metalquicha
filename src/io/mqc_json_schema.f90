@@ -659,6 +659,7 @@ contains
       call allow(keys, "level")
       call allow(keys, "max_intersection_level")
       call allow(keys, "counterpoise")
+      call allow(keys, "reference_fragment")
       call allow(keys, "far_field")
       call allow(keys, "resppc")
       call allow(keys, "rcut")

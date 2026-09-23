@@ -31,6 +31,8 @@ module mqc_config_adapter
    public :: get_logger_level  !! Convert log level string to integer
    public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
    public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
+   public :: check_interaction_energy_support
+      !! Refuse an interaction-energy run the reduced expansion cannot honour
 
    type :: driver_config_t
       !! Runtime configuration for the driver (internal use only)
@@ -492,6 +494,18 @@ contains
          driver_config%method_config%scf%eri_path = mqc_config%scf_eri_path
       end if
 
+      ! The deck counts fragments from zero, and the term list the reference is
+      ! matched against counts monomers from one.
+      if (mqc_config%reference_fragment_set) then
+         driver_config%reference_fragment = mqc_config%reference_fragment + 1
+         if (driver_config%reference_fragment < 1) driver_config%reference_fragment = -1
+      end if
+      if (present(error)) then
+         if (.not. error%has_error()) then
+            call check_interaction_energy_support(driver_config, nfrag_to_use, error)
+         end if
+      end if
+
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output
       driver_config%unchecked_input = mqc_config%unchecked_input
@@ -837,6 +851,136 @@ contains
       end select
 
    end subroutine check_counterpoise_support
+
+   subroutine check_interaction_energy_support(driver_config, n_fragments, error)
+      !! Refuse an interaction-energy run the reduced expansion cannot honour
+      !!
+      !! `n_fragments` is how many fragments the system has. The reference is
+      !! read from `driver_config%reference_fragment`, 1-based, 0 for none.
+      !!
+      !! Called by `config_to_driver` for a deck, and by the driver again for
+      !! every caller that builds a `driver_config_t` some other way. Silent for
+      !! any other driver that names no reference.
+      use mqc_calc_types, only: CALC_TYPE_INTERACTION_ENERGY, calc_type_to_string
+      use mqc_method_types, only: METHOD_TYPE_SAPT0, METHOD_TYPE_SAPT2
+      type(driver_config_t), intent(in) :: driver_config
+      integer, intent(in) :: n_fragments
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: KEY = "keywords.fragmentation.reference_fragment"
+      character(len=*), parameter :: DRIVER = 'driver "InteractionEnergy"'
+      integer :: ref
+
+      ref = driver_config%reference_fragment
+
+      if (driver_config%calc_type /= CALC_TYPE_INTERACTION_ENERGY) then
+         if (ref /= 0) then
+            call error%set(ERROR_VALIDATION, KEY//" is only read by "//DRIVER// &
+                           ", and this run's driver is '"// &
+                           calc_type_to_string(driver_config%calc_type)//"'. It would "// &
+                           "be ignored and the full expansion run.")
+         end if
+         return
+      end if
+
+      if (ref == 0) then
+         call error%set(ERROR_VALIDATION, DRIVER//" needs "//KEY// &
+                        ", the 0-based index of the fragment whose interactions are wanted.")
+         return
+      end if
+
+      ! Before the level: a system with no fragments has no level either, and
+      ! "declare fragments" is the more useful of the two things to be told.
+      if (n_fragments < 2) then
+         call error%set(ERROR_VALIDATION, DRIVER//" needs a fragmented system of at "// &
+                        "least two fragments, and this one has "// &
+                        int_to_text(n_fragments)//". An interaction is between "// &
+                        "fragments; declare them in the molecule's 'fragments' list.")
+         return
+      end if
+
+      if (ref < 1 .or. ref > n_fragments) then
+         call error%set(ERROR_VALIDATION, KEY//" is out of range: it is 0-based and "// &
+                        "this system has "//int_to_text(n_fragments)//" fragments, so "// &
+                        "it must lie between 0 and "//int_to_text(n_fragments - 1)//".")
+         return
+      end if
+
+      if (driver_config%nlevel < 2) then
+         call error%set(ERROR_VALIDATION, DRIVER//" needs "// &
+                        "keywords.fragmentation.level of 2 or more, and this run asks for "// &
+                        int_to_text(driver_config%nlevel)//". A one-body expansion has no "// &
+                        "interaction terms: the reference fragment's own energy is all "// &
+                        "there would be to report.")
+         return
+      end if
+
+      ! GMBE's terms are overlapping atom sets carrying inclusion-exclusion
+      ! coefficients, not monomer tuples, so "the terms that contain R" has no
+      ! definition there: an intersection is part of R and part of something
+      ! else at once.
+      if (driver_config%allow_overlapping_fragments) then
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available with overlapping "// &
+                        "fragments (GMBE). Its terms are intersections of primaries "// &
+                        "rather than tuples of fragments, so which of them 'contain' "// &
+                        "the reference is not defined. Use method MBE.")
+         return
+      end if
+
+      ! FMO and EE-MBE embed every fragment in a field made by all the others,
+      ! and EFMO assembles its own expansion inside the backend. Neither builds
+      ! the term list this selects from, so the reduction would not be applied
+      ! -- and under an embedding the monomers are coupled, so skipping one
+      ! changes the field the ones computed feel.
+      if (trim(driver_config%expansion_kind) /= "mbe") then
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available for "// &
+                        "keywords.fragmentation.method '"//trim(driver_config%expansion_kind)// &
+                        "'. It selects from the plain many-body expansion's term list, "// &
+                        "which an embedded or effective-fragment expansion does not "// &
+                        "build. Use method MBE.")
+         return
+      end if
+
+      ! Each of these takes its own path before the fragment expansion is
+      ! reached, and would ignore the driver rather than refuse it.
+      select case (driver_config%method_config%method_type)
+      case (METHOD_TYPE_EFP2)
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available for EFP. "// &
+                        "An EFP run sums its own pairwise terms over whole-system "// &
+                        "fragments and never reaches the many-body expansion this "// &
+                        "driver reduces.")
+         return
+      case (METHOD_TYPE_SAPT0, METHOD_TYPE_SAPT2)
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available for SAPT, which "// &
+                        "is already an interaction energy between two monomers and "// &
+                        "never reaches the many-body expansion. Run SAPT with driver "// &
+                        '"Energy".')
+         return
+      case default
+      end select
+
+      ! Counterpoise composes at level 2: every ghosted row a pair's correction
+      ! subtracts is built from that pair, which the reduced list keeps. Above
+      ! level 2 the counterpoise recursion itself is off -- see the TODO in
+      ! `compute_mbe_delta` -- and the interaction energy would inherit it.
+      if (trim(driver_config%counterpoise) == "vmfc" .and. driver_config%nlevel > 2) then
+         call error%set(ERROR_VALIDATION, DRIVER//" with keywords.fragmentation."// &
+                        "counterpoise 'vmfc' is limited to level 2. Above it, the "// &
+                        "counterpoise recursion subtracts a ghosted subset's own subsets "// &
+                        "in that subset's basis rather than its parent's, which is not the "// &
+                        "Valiron-Mayer expression and moves a water trimer's VMFC(3) energy "// &
+                        "by 4.3e-3 hartree; the interaction terms would carry the same "// &
+                        "error. Use level 2, or drop counterpoise.")
+         return
+      end if
+
+      if (driver_config%method_config%neo%active) then
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available with keywords.neo. "// &
+                        "A quantum proton is solved with every electron of the "// &
+                        "system, so a NEO run is never fragmented.")
+         return
+      end if
+   end subroutine check_interaction_energy_support
 
    subroutine copy_fragment_potentials(mqc_config, driver_config, molecule_index)
       !! The per-fragment potential paths, in fragment order
