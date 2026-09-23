@@ -7,6 +7,7 @@ module mqc_json_output_types
    private
 
    public :: json_output_data_t
+   public :: ordered_rows_for_level
    public :: OUTPUT_MODE_NONE, OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
 
    ! Output mode constants
@@ -237,6 +238,77 @@ module mqc_json_output_types
    end type json_output_data_t
 
 contains
+
+   subroutine ordered_rows_for_level(data, frag_level, order)
+      !! Row indices of one level's terms, strongest interaction first
+      !!
+      !! Sorted by the magnitude of the many-body correction, descending, so a
+      !! table of thousands of rows is read from the top. Nothing else in this
+      !! writer sorts, and nothing in this project did before: the enumeration
+      !! order the terms arrive in puts the largest of them nowhere in
+      !! particular.
+      !!
+      !! **Two-body terms joined by a severed covalent bond go last**,
+      !! whatever their magnitude, and they are the largest rows in any
+      !! fragmented peptide. Their correction is dominated by the energy of
+      !! re-forming the bond and is not an interaction energy, so letting them
+      !! lead a table sorted by strength would put the one row a reader must
+      !! not take at face value at the top of it.
+      !!
+      !! Level one keeps the order it was enumerated in. A monomer has no
+      !! correction to sort by, and its own energy is not a strength.
+      use pic_types, only: int_index
+      use pic_sorting, only: sort_index
+      type(json_output_data_t), intent(in) :: data
+      integer, intent(in) :: frag_level
+      integer(int64), allocatable, intent(out) :: order(:)
+
+      integer(int64), allocatable :: rows(:)
+      integer(int_index), allocatable :: perm(:)
+      real(dp), allocatable :: key(:)
+      logical, allocatable :: late(:)
+      integer(int64) :: i
+      integer :: n, k, p
+
+      n = 0
+      allocate (rows(data%fragment_count))
+      do i = 1_int64, data%fragment_count
+         if (count(data%polymers(i, :) > 0) /= frag_level) cycle
+         n = n + 1
+         rows(n) = i
+      end do
+
+      if (frag_level < 2 .or. n < 2 .or. .not. allocated(data%delta_energies)) then
+         order = rows(1:n)
+         return
+      end if
+
+      allocate (key(n), perm(n), late(n))
+      do k = 1, n
+         key(k) = abs(data%delta_energies(rows(k)))
+         late(k) = .false.
+         if (frag_level == 2 .and. allocated(data%fragment_connected)) then
+            late(k) = data%fragment_connected(rows(k))
+         end if
+      end do
+      call sort_index(key, perm, reverse=.true.)
+
+      ! Two passes over one sorted permutation rather than a compound key: the
+      ! grouping stays exact however the magnitudes fall, and each group is
+      ! still strongest first within itself.
+      allocate (order(n))
+      p = 0
+      do k = 1, n
+         if (late(int(perm(k)))) cycle
+         p = p + 1
+         order(p) = rows(int(perm(k)))
+      end do
+      do k = 1, n
+         if (.not. late(int(perm(k)))) cycle
+         p = p + 1
+         order(p) = rows(int(perm(k)))
+      end do
+   end subroutine ordered_rows_for_level
 
    subroutine json_output_data_destroy(this)
       !! Clean up all allocated memory

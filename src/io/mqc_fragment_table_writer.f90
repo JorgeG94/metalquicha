@@ -13,7 +13,7 @@ module mqc_fragment_table_writer
    use pic_logger, only: logger => global_logger
    use pic_timer, only: timer_type
    use pic_io, only: to_char
-   use mqc_json_output_types, only: json_output_data_t
+   use mqc_json_output_types, only: json_output_data_t, ordered_rows_for_level
    use mqc_result_types, only: scf_status_label
    use mqc_physical_constants, only: HARTREE_TO_EV
    use mqc_io_helpers, only: get_basename
@@ -39,8 +39,9 @@ contains
       !! stable key for joining the same system computed with different methods.
       type(json_output_data_t), intent(in) :: data
 
-      integer :: unit, ios, j, level
+      integer :: unit, ios, j, level, r
       integer(int64) :: i
+      integer(int64), allocatable :: row_order(:)
       logical :: have_scf
       logical :: have_orbitals
       logical :: have_energy, have_delta, have_distance
@@ -95,64 +96,74 @@ contains
       ! dominates at this row count. Reals go out at full precision, not a rounded
       ! display value -- screening studies difference the distances against the
       ! cutoffs that produced the list.
-      do i = 1_int64, data%fragment_count
-         level = count(data%polymers(i, :) > 0)
+      ! Level by level, strongest first within each, joined pairs last. The
+      ! same order the document uses, from the same routine: this file is the
+      ! default sink for the breakdown, so it is the table a reader actually
+      ! scans, and the two must not disagree about which row leads.
+      ! `frag_index` still carries the enumeration index, so a join against a
+      ! run of the same system keys on the same value it always did.
+      do level = 1, data%max_level
+         call ordered_rows_for_level(data, level, row_order)
+         do r = 1, size(row_order)
+            i = row_order(r)
 
-         write (unit, trim(row_fmt), advance="no") &
-            i, level, (data%polymers(i, j), j=1, data%max_level)
+            write (unit, trim(row_fmt), advance="no") &
+               i, level, (data%polymers(i, j), j=1, data%max_level)
 
-         if (have_energy .and. have_delta .and. have_distance) then
-            write (unit, '(3(",",es24.16))', advance="no") &
-               data%fragment_energies(i), data%delta_energies(i), data%fragment_distances(i)
-         else
-            call write_optional_value(unit, have_energy, data%fragment_energies, i, .false.)
-            call write_optional_value(unit, have_delta, data%delta_energies, i, .false.)
-            call write_optional_value(unit, have_distance, data%fragment_distances, i, .false.)
-         end if
-         ! A word rather than the integer: this column is read by eye as often
-         ! as by program, and "NO" in a spreadsheet is harder to scroll past
-         ! than a 2.
-         if (have_scf) then
-            write (unit, "(a)", advance="no") ","//trim(scf_status_label(data%fragment_scf_status(i)))
-         else
-            write (unit, "(a)", advance="no") ",?"
-         end if
-
-         ! Repeated in eV because that is the unit a gap gets compared in, and
-         ! converting a column of Hartrees by hand is how a factor of 27 ends
-         ! up in a plot. Blank, not zero, where the method reported no pair:
-         ! a gap of zero is a claim about the fragment.
-         if (have_orbitals .and. data%fragment_has_orbitals(i)) then
-            write (unit, '(2(",",es24.16),",",f12.6)', advance="no") data%fragment_homo(i), &
-               data%fragment_lumo(i), &
-               (data%fragment_lumo(i) - data%fragment_homo(i))*HARTREE_TO_EV
-         else
-            write (unit, "(a)", advance="no") ",,,"
-         end if
-
-         ! Charge and multiplicity last, so every existing column stays where a
-         ! reader's parser expects it. A charged fragment is otherwise invisible
-         ! in the breakdown.
-         if (have_charmult) then
-            write (unit, '(",",i0,",",i0)', advance="no") data%fragment_charges(i), &
-               data%fragment_multiplicities(i)
-         else
-            write (unit, "(a)", advance="no") ",,"
-         end if
-
-         ! Blank on anything that is not a two-body term, rather than NO. The
-         ! question "is this an interaction energy contaminated by a bond"
-         ! does not arise for a monomer or a trimer, and answering it there
-         ! would read as a reassurance the column is not making.
-         if (have_connected .and. level == 2) then
-            if (data%fragment_connected(i)) then
-               write (unit, "(a)") ",YES"
+            if (have_energy .and. have_delta .and. have_distance) then
+               write (unit, '(3(",",es24.16))', advance="no") &
+                  data%fragment_energies(i), data%delta_energies(i), data%fragment_distances(i)
             else
-               write (unit, "(a)") ",NO"
+               call write_optional_value(unit, have_energy, data%fragment_energies, i, .false.)
+               call write_optional_value(unit, have_delta, data%delta_energies, i, .false.)
+               call write_optional_value(unit, have_distance, data%fragment_distances, i, .false.)
             end if
-         else
-            write (unit, "(a)") ","
-         end if
+            ! A word rather than the integer: this column is read by eye as often
+            ! as by program, and "NO" in a spreadsheet is harder to scroll past
+            ! than a 2.
+            if (have_scf) then
+               write (unit, "(a)", advance="no") ","//trim(scf_status_label(data%fragment_scf_status(i)))
+            else
+               write (unit, "(a)", advance="no") ",?"
+            end if
+
+            ! Repeated in eV because that is the unit a gap gets compared in, and
+            ! converting a column of Hartrees by hand is how a factor of 27 ends
+            ! up in a plot. Blank, not zero, where the method reported no pair:
+            ! a gap of zero is a claim about the fragment.
+            if (have_orbitals .and. data%fragment_has_orbitals(i)) then
+               write (unit, '(2(",",es24.16),",",f12.6)', advance="no") data%fragment_homo(i), &
+                  data%fragment_lumo(i), &
+                  (data%fragment_lumo(i) - data%fragment_homo(i))*HARTREE_TO_EV
+            else
+               write (unit, "(a)", advance="no") ",,,"
+            end if
+
+            ! Charge and multiplicity last, so every existing column stays where a
+            ! reader's parser expects it. A charged fragment is otherwise invisible
+            ! in the breakdown.
+            if (have_charmult) then
+               write (unit, '(",",i0,",",i0)', advance="no") data%fragment_charges(i), &
+                  data%fragment_multiplicities(i)
+            else
+               write (unit, "(a)", advance="no") ",,"
+            end if
+
+            ! Blank on anything that is not a two-body term, rather than NO. The
+            ! question "is this an interaction energy contaminated by a bond"
+            ! does not arise for a monomer or a trimer, and answering it there
+            ! would read as a reassurance the column is not making.
+            if (have_connected .and. level == 2) then
+               if (data%fragment_connected(i)) then
+                  write (unit, "(a)") ",YES"
+               else
+                  write (unit, "(a)") ",NO"
+               end if
+            else
+               write (unit, "(a)") ","
+            end if
+         end do
+         deallocate (row_order)
       end do
 
       close (unit)
