@@ -14,6 +14,11 @@ program check_fmo_mpi
    !! The reference is computed on this rank with no communicator at all, so the
    !! comparison is against the serial code and not against another rank that
    !! could be wrong in the same way.
+   !!
+   !! Four cases: the three embeddings on a water tetramer, where no bond is
+   !! cut, and propane split across both of its carbon-carbon bonds with point
+   !! charges on top, where the layout that has to stay rank-independent is
+   !! wider than the fragment's own basis.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, warning_level
    use pic_mpi_lib, only: comm_t, comm_world, pic_mpi_init, pic_mpi_finalize
@@ -26,14 +31,16 @@ program check_fmo_mpi
    !! only difference allowed is the reduction's own rounding.
    real(dp), parameter :: TOL = 1.0e-10_dp
    integer, parameter :: N_WATERS = 4
+   integer, parameter :: N_PROPANE = 11
 
    type(comm_t) :: world
    type(fmo_options_t) :: opts
    type(fmo_result_t) :: serial_res, mpi_res
    type(error_t) :: error
-   integer :: z(3*N_WATERS), owner(3*N_WATERS)
-   character(len=2) :: sym(3*N_WATERS)
-   real(dp) :: xyz(3, 3*N_WATERS), mono(3, 3)
+   integer, allocatable :: z(:), owner(:)
+   character(len=2), allocatable :: sym(:)
+   real(dp), allocatable :: xyz(:, :)
+   real(dp) :: mono(3, 3)
    integer :: w, k, at, n_bad
    character(len=160) :: line
 
@@ -45,6 +52,7 @@ program check_fmo_mpi
    mono = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                    0.0_dp, -0.7572_dp, 0.5865_dp, &
                    0.0_dp, 0.7572_dp, 0.5865_dp], [3, 3])
+   allocate (z(3*N_WATERS), owner(3*N_WATERS), sym(3*N_WATERS), xyz(3, 3*N_WATERS))
    at = 0
    do w = 1, N_WATERS
       do k = 1, 3
@@ -66,6 +74,19 @@ program check_fmo_mpi
    call one_method("exact", "fmo", n_bad)
    call one_method("ptc", "mbe", n_bad)
    call one_method("none", "mbe", n_bad)
+
+   ! A detached bond changes what is distributed, not only how much of it: the
+   ! frozen orbitals are solved on one rank and shared, the monomer densities
+   ! reach over an atom their fragment does not own, and the charges that build
+   ! the field are summed from two fragments. Every one of those is a place a
+   ! rank could contribute a different amount than it did on one rank.
+   deallocate (z, owner, sym, xyz)
+   allocate (z(N_PROPANE), owner(N_PROPANE), sym(N_PROPANE), xyz(3, N_PROPANE))
+   call propane(z, sym, xyz)
+   owner = [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3]
+   opts%bond_breaking = "afo"
+   opts%level = 3
+   call one_method("ptc", "fmo", n_bad)
 
    if (world%leader()) then
       if (n_bad == 0) then
@@ -121,5 +142,35 @@ contains
          n_bad = n_bad + 1
       end if
    end subroutine one_method
+
+   subroutine propane(z, sym, xyz)
+      !! Idealised propane in Bohr, carbons first so a partition reads by eye
+      integer, intent(out) :: z(N_PROPANE)
+      character(len=2), intent(out) :: sym(N_PROPANE)
+      real(dp), intent(out) :: xyz(3, N_PROPANE)
+
+      integer :: i
+
+      z = [6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1]
+      do i = 1, N_PROPANE
+         if (z(i) == 6) then
+            sym(i) = "C "
+         else
+            sym(i) = "H "
+         end if
+      end do
+      xyz = reshape([1.5260_dp, 0.0000_dp, 0.0000_dp, &
+                     0.0000_dp, 0.0000_dp, 0.0000_dp, &
+                     -0.5716_dp, 1.4149_dp, 0.0000_dp, &
+                     2.1553_dp, -0.8900_dp, 0.0000_dp, &
+                     2.1553_dp, 0.4450_dp, -0.7707_dp, &
+                     2.1553_dp, 0.4450_dp, 0.7707_dp, &
+                     -0.3519_dp, -0.5217_dp, 0.8900_dp, &
+                     -0.3519_dp, -0.5217_dp, -0.8900_dp, &
+                     0.0178_dp, 2.3318_dp, 0.0000_dp, &
+                     -1.2200_dp, 1.8317_dp, -0.7707_dp, &
+                     -1.2200_dp, 1.8317_dp, 0.7707_dp], [3, 11])
+      xyz = xyz*A2B
+   end subroutine propane
 
 end program check_fmo_mpi
