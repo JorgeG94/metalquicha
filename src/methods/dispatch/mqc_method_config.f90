@@ -365,6 +365,7 @@ module mqc_method_config
       logical :: bonding_restrict_localization = .false.
       character(len=32) :: bonding_no_sharing_ci = "transform"
       real(dp) :: bonding_threshold = 1.0_dp
+      integer :: bonding_max_sweeps = 2000
    end type properties_config_t
 
    !============================================================================

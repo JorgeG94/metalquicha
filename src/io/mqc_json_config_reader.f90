@@ -234,6 +234,13 @@ contains
                            config%bonding_no_sharing_ci)
       call optional_logical(json, "properties.bonding_analysis.restrict_localization", &
                             config%bonding_restrict_localization)
+      call optional_int(json, "properties.bonding_analysis.orientation_max_sweeps", &
+                        config%bonding_max_sweeps)
+      if (config%bonding_max_sweeps < 1) then
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.orientation_max_sweeps "// &
+                        "must be at least 1, not "//to_char(config%bonding_max_sweeps)//".")
+         return
+      end if
 
       ! ---- driver ----------------------------------------------------------
       call require_string(json, "driver", text, error)

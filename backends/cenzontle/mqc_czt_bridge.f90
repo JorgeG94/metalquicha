@@ -1947,6 +1947,7 @@ contains
                                 no_sharing=settings%bonding_no_sharing, &
                                 no_sharing_ci=settings%bonding_no_sharing_ci, &
                                 restrict_localization=settings%bonding_restrict_localization, &
+                                max_sweeps=settings%bonding_max_sweeps, &
                                 atom_energy=ieda_atom, free_atom_energy=ieda_free, &
                                 pair_energy=ieda_pair, pair_classical=ieda_classical, &
                                 formation_energy=ieda_formation)
@@ -3477,6 +3478,7 @@ contains
                                       no_sharing=settings%bonding_no_sharing, &
                                       no_sharing_ci=settings%bonding_no_sharing_ci, &
                                       restrict_localization=settings%bonding_restrict_localization, &
+                                      max_sweeps=settings%bonding_max_sweeps, &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
@@ -3497,6 +3499,7 @@ contains
                                       no_sharing=settings%bonding_no_sharing, &
                                       no_sharing_ci=settings%bonding_no_sharing_ci, &
                                       restrict_localization=settings%bonding_restrict_localization, &
+                                      max_sweeps=settings%bonding_max_sweeps, &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &

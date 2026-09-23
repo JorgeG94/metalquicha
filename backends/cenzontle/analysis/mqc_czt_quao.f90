@@ -41,6 +41,11 @@ module mqc_czt_quao
    real(dp), parameter :: ORIENT_FLOOR = 1.0e-8_dp
       !! Below this the functional does not depend on the angle; skip the pair.
    integer, parameter :: ORIENT_MAX_SWEEPS = 2000
+      !! Sweep limit for the refinement and, unless a caller names another,
+      !! the orientation
+   real(dp), parameter :: ORIENT_GAIN_CRIT = 1.0e-9_dp
+      !! Largest single-rotation increase of eq (5.5) below which an orientation
+      !! that reaches its sweep limit is accepted rather than refused.
    real(dp), parameter :: KBO_SCALE = 0.1_dp
       !! Paper II eq (2), and empirical: raw kinetic interference energies in
       !! organic molecules run about an order of magnitude above the bond
@@ -97,6 +102,15 @@ module mqc_czt_quao
       logical :: oriented = .false.
       real(dp) :: orientation_sum = 0.0_dp
          !! Paper I eq (5.5) after orientation
+      logical :: orientation_stalled = .false.
+         !! The orientation reached its sweep limit with angles still above
+         !! `ORIENT_CRIT` but every rotation gaining under `ORIENT_GAIN_CRIT`,
+         !! and was accepted
+      real(dp) :: orientation_gain = 0.0_dp
+         !! Largest single-rotation increase of eq (5.5) in the final sweep
+      real(dp) :: orientation_angle = 0.0_dp
+         !! Largest rotation angle in the final sweep, radians; zero when the
+         !! orientation settled
       real(dp), allocatable :: character_of(:)
          !! (n_quao) how much of each orbital lies inside its own atom's
          !! free-atom space, as a norm rather than a square, so it is on the
@@ -869,7 +883,7 @@ contains
       deallocate (projection, claims, gram, half, orthogonal, density, work)
    end subroutine quasi_atomic_orbitals
 
-   subroutine orient_quasi_atomic_orbitals(quao, error)
+   subroutine orient_quasi_atomic_orbitals(quao, error, max_sweeps)
       !! Rotate within each atom until the bonding pattern appears
       !!
       !! Paper I eq (5.5). The sum of squares of each interatomic block of the
@@ -888,13 +902,23 @@ contains
       ! count. After orientation the field silently means something else.
       type(quao_result_t), intent(inout) :: quao
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_sweeps
+         !! At least one; `ORIENT_MAX_SWEEPS` when absent
 
       real(dp), allocatable :: p(:, :), rotation(:, :), pi(:), pj(:)
-      real(dp) :: r2, r3, q, theta, c, s, before, after
-      integer :: n, i, j, k, sweep
+      real(dp) :: r2, r3, q, theta, c, s, before, after, gain, angle
+      character(len=16) :: gain_text
+      integer :: n, i, j, k, sweep, sweep_limit
       logical :: moved, settled
 
       if (error%has_error()) return
+      sweep_limit = ORIENT_MAX_SWEEPS
+      if (present(max_sweeps)) sweep_limit = max_sweeps
+      if (sweep_limit < 1) then
+         call error%set(ERROR_VALIDATION, "the orientation needs at least one sweep, "// &
+                        "and was allowed "//to_char(sweep_limit)//".")
+         return
+      end if
       n = quao%n_quao
       allocate (p(n, n), rotation(n, n), pi(n), pj(n))
       p = quao%population_bond_order
@@ -906,8 +930,10 @@ contains
       before = orientation_sum(p, quao%atom_of)
       quao%sweeps = 0
       settled = .false.
-      do sweep = 1, ORIENT_MAX_SWEEPS
+      do sweep = 1, sweep_limit
          moved = .false.
+         gain = 0.0_dp
+         angle = 0.0_dp
          do i = 1, n
             do j = i + 1, n
                ! Only *within* an atom, and not across two subspaces: a
@@ -930,6 +956,10 @@ contains
                if (q < ORIENT_FLOOR) cycle
                theta = 0.25_dp*atan2(r3/q, r2/q)
                if (abs(theta) < ORIENT_CRIT) cycle
+               ! What the rotation by `theta` adds to eq (5.5): the pair's
+               ! share of it goes from `r2` to its maximum `q`.
+               gain = max(gain, q - r2)
+               angle = max(angle, abs(theta))
 
                c = cos(theta)
                s = sin(theta)
@@ -952,13 +982,26 @@ contains
          settled = .not. moved
          if (settled) exit
       end do
+      quao%orientation_gain = gain
+      quao%orientation_angle = angle
 
       ! See the refinement loop above: the count cannot tell convergence on the
-      ! final sweep from exhaustion.
+      ! final sweep from exhaustion. Two orbitals on one atom whose rotation is
+      ! coupled to a partner's across a bond -- a carbonyl C and O -- can
+      ! approach their optimum geometrically at ~0.9992 per sweep: the angle
+      ! is still 2.7e-6 after 2000 sweeps while each rotation gains 3e-11. The
+      ! functional has converged; only the angle test has not. Such a result
+      ! is accepted and flagged, and one still gaining is refused.
       if (.not. settled) then
-         call error%set(ERROR_VALIDATION, "the orientation did not settle in "// &
-                        to_char(ORIENT_MAX_SWEEPS)//" sweeps.")
-         return
+         if (gain >= ORIENT_GAIN_CRIT) then
+            write (gain_text, "(es8.1)") gain
+            call error%set(ERROR_VALIDATION, "the orientation did not settle in "// &
+                           to_char(sweep_limit)//" sweeps; the last still "// &
+                           "raised the functional by "//trim(adjustl(gain_text))// &
+                           ". Raise properties.bonding_analysis.orientation_max_sweeps.")
+            return
+         end if
+         quao%orientation_stalled = .true.
       end if
 
       ! The functional is being maximized, so it cannot come out lower than it

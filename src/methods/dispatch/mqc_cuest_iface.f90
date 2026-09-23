@@ -99,6 +99,8 @@ module mqc_cuest_iface
       character(len=32) :: bonding_no_sharing_ci = "transform"
       real(dp) :: bonding_threshold = 1.0_dp
          !! kcal/mol; pairs weaker than this are counted rather than printed.
+      integer :: bonding_max_sweeps = 2000
+         !! Sweep limit for the quasi-atomic orientation
 
       type(pcm_config_t) :: pcm
          !! The polarizable continuum, when one was asked for. Read by the CPU
@@ -208,6 +210,7 @@ contains
       settings%bonding_no_sharing = properties%bonding_no_sharing
       settings%bonding_no_sharing_ci = properties%bonding_no_sharing_ci
       settings%bonding_restrict_localization = properties%bonding_restrict_localization
+      settings%bonding_max_sweeps = properties%bonding_max_sweeps
       if (allocated(properties%fukui_population)) then
          settings%fukui_population = properties%fukui_population
       end if
