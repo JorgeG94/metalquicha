@@ -272,7 +272,7 @@ contains
       deallocate (df_age, e_age)
    end subroutine diis_extrapolate_with
 
-   subroutine parse_accelerator_name(name, scheme, ok)
+   subroutine parse_accelerator_name(name, scheme, ok, second_order)
       !! `keywords.scf.accelerator` to one of the ACCEL_* parameters
       !!
       !! Unknown names are refused rather than defaulted: `scheme` still comes
@@ -280,6 +280,21 @@ contains
       character(len=*), intent(in) :: name
       integer, intent(out) :: scheme
       logical, intent(out) :: ok
+      logical, intent(out), optional :: second_order
+         !! Whether the name asked for the second-order SCF, and **the
+         !! caller's declaration that it can run one**.
+         !!
+         !! `soscf` is accepted only when this is present. A caller that
+         !! cannot drive a Newton phase -- the unrestricted SCF, the CASSCF
+         !! reference, the guess ladder, the EFP fragment potentials -- omits
+         !! it and the name is then refused by that caller's existing
+         !! unknown-name branch, which names it. That is the point: there is
+         !! no argument a caller can forget that turns `soscf` into a silent
+         !! DIIS run.
+         !!
+         !! `scheme` comes back `ACCEL_DIIS` alongside it, and that is not a
+         !! fallback. The second-order SCF *is* a DIIS SCF for its opening
+         !! phase; see `run_soscf_phase`, which cannot be started from a guess.
 
       character(len=len(name)) :: lower
       integer :: i, c
@@ -291,6 +306,7 @@ contains
       end do
 
       ok = .true.
+      if (present(second_order)) second_order = .false.
       select case (trim(adjustl(lower)))
       case ("", "diis")
          scheme = ACCEL_DIIS
@@ -298,6 +314,15 @@ contains
          scheme = ACCEL_EDIIS
       case ("adiis")
          scheme = ACCEL_ADIIS
+      case ("soscf", "second_order", "second-order")
+         ! Pulay for the opening phase and a Newton finish, which is the only
+         ! shape a second-order SCF has here.
+         scheme = ACCEL_DIIS
+         if (present(second_order)) then
+            second_order = .true.
+         else
+            ok = .false.
+         end if
       case default
          scheme = ACCEL_DIIS
          ok = .false.

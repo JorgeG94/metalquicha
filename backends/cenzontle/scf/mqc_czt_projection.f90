@@ -123,9 +123,14 @@ contains
          if (.not. scf_in%use_diis) ndiis = 0
          incr = scf_in%incremental_fock
          call parse_accelerator_name(scf_in%accelerator, accel, accel_ok)
-         ! A spelling this routine cannot parse has already been refused by the
-         ! caller, which runs the same parse before any of this. Falling back
-         ! rather than erroring keeps a guess from failing a calculation.
+         ! A misspelling has already been refused by the caller, which runs the
+         ! same parse before any of this. Falling back rather than erroring
+         ! keeps a guess from failing a calculation.
+         !
+         ! `soscf` also lands here, and on purpose: these rungs are a guess for
+         ! the target SCF, not the SCF, and there is nothing for a Newton step
+         ! to add to a density that is about to be projected into a larger
+         ! basis anyway. The target SCF still runs second order.
          if (.not. accel_ok) accel = ACCEL_DIIS
       end if
 

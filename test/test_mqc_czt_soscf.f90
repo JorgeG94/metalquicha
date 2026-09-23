@@ -23,6 +23,14 @@ module test_mqc_czt_soscf
    !! **Does it converge to the same place as DIIS?** A second-order SCF that
    !! reaches a different energy than DIIS has not converged faster, it has
    !! converged somewhere else.
+   !!
+   !! **And does asking for it by the other name get the same run?**
+   !! `keywords.scf.second_order: true` and `keywords.scf.accelerator: soscf`
+   !! are one request with two spellings, so the second has to reach the same
+   !! stationary point through the same Newton phase -- not merely converge.
+   !! The accelerator name is also the spelling a caller that cannot run a
+   !! Newton phase has to refuse, and that refusal is tested here because it
+   !! is the thing standing between `soscf` and a silent DIIS run.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
@@ -36,6 +44,8 @@ module test_mqc_czt_soscf
    use mqc_czt_soscf, only: soscf_gradient, soscf_semicanonicalize, &
                             soscf_newton_step, HESSIAN_SCALE
    use mqc_orbital_rotation, only: rotation_matrix, MAX_ROTATION
+   use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS, ACCEL_EDIIS
+   use mqc_scf_types, only: scf_numerics_t
    implicit none
    private
 
@@ -66,21 +76,30 @@ contains
                   new_unittest("soscf_step_solves_the_newton_equations", &
                                test_newton_residual), &
                   new_unittest("soscf_lands_where_diis_lands", test_same_energy_as_diis), &
+                  new_unittest("soscf_as_the_accelerator_lands_there_too", &
+                               test_accelerator_route), &
+                  new_unittest("the_accelerator_name_needs_a_caller_that_can_run_it", &
+                               test_accelerator_name), &
                   new_unittest("soscf_refuses_a_continuum_solvent", test_refuses_pcm) &
                   ]
    end subroutine collect_mqc_czt_soscf_tests
 
    ! ---- the molecule and an energy at arbitrary orbitals ------------------
 
-   subroutine water(mol, scf, err, second_order)
+   subroutine water(mol, scf, err, second_order, accelerator)
       !! Water in STO-3G, the geometry the stability and CPHF tests use
       type(czt_molecule_t), intent(out) :: mol
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: err
       logical, intent(in), optional :: second_order
+      character(len=*), intent(in), optional :: accelerator
+         !! Routed through an `scf_numerics_t`, which is how a deck reaches
+         !! the SCF. Present and absent are two different ways of asking for
+         !! the same thing, which is the point of the test that uses it.
 
       real(dp) :: c(3, 3)
       type(scf_convergence_t) :: conv
+      type(scf_numerics_t) :: settings
 
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
                    0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
@@ -92,8 +111,14 @@ contains
       ! rather than at whatever `sqrt(energy_tol)` happened to derive.
       conv%metric = CONV_METRIC_COMMUTATOR
       conv%tolerance = 1.0e-9_dp
-      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
-                       in_core=.true., convergence=conv, second_order=second_order)
+      if (present(accelerator)) then
+         settings%accelerator = accelerator
+         call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+                          in_core=.true., convergence=conv, scf=settings)
+      else
+         call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+                          in_core=.true., convergence=conv, second_order=second_order)
+      end if
    end subroutine water
 
    subroutine energy_at(h, eri, coeff, n_occ, energy)
@@ -550,6 +575,119 @@ contains
          call mol%destroy()
       end block use_pcm
    end subroutine test_refuses_pcm
+
+   subroutine test_accelerator_route(error)
+      !! `accelerator: soscf` is the same run as `second_order: true`
+      !!
+      !! Not merely "also converges". The Newton phase has to be the thing
+      !! that finished it -- `second_order_started_at` says so -- because a
+      !! name that quietly fell back to DIIS would converge too, to the same
+      !! energy, and pass every test that only looked at the number.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol_flag, mol_name
+      type(rhf_result_t) :: by_flag, by_name
+      type(error_t) :: err
+      real(dp) :: difference
+
+      call water(mol_flag, by_flag, err, second_order=.true.)
+      call check(error,.not. err%has_error() .and. by_flag%converged, &
+                 "the second_order: true route failed")
+      if (allocated(error)) return
+
+      call water(mol_name, by_name, err, accelerator="soscf")
+      call check(error,.not. err%has_error(), "the accelerator: soscf route errored: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, by_name%converged, "the accelerator: soscf route did not converge")
+      if (allocated(error)) return
+      call check(error, by_name%second_order_started_at > 0, "naming soscf as the "// &
+                 "accelerator ran DIIS to the end: the Newton phase never started, "// &
+                 "which is exactly the silent fall back the name is supposed to "// &
+                 "prevent")
+      if (allocated(error)) return
+      call check(error, by_name%second_order_iterations > 0, "the Newton phase took "// &
+                 "no steps")
+      if (allocated(error)) return
+
+      ! Both stopped on the same commutator threshold, so the energies are
+      ! comparable at the same tightness -- and being the same request, they
+      ! should agree far more closely than two merely-converged SCFs would.
+      difference = abs(by_name%energy - by_flag%energy)
+      call check(error, difference < 1.0e-10_dp, "the accelerator route reached "// &
+                 real_to_text(by_name%energy)//" and the keyword route "// &
+                 real_to_text(by_flag%energy)//", a difference of "// &
+                 real_to_text(difference))
+      if (allocated(error)) return
+
+      ! The handover happens at the same commutator either way, so the two
+      ! runs should also have spent the same effort getting there.
+      call check(error, by_name%second_order_started_at == &
+                 by_flag%second_order_started_at, "the two spellings handed over on "// &
+                 "different DIIS iterations, so they are not the same request")
+
+      call mol_flag%destroy()
+      call mol_name%destroy()
+   end subroutine test_accelerator_route
+
+   subroutine test_accelerator_name(error)
+      !! Who may say `soscf`, and what happens to everyone else
+      !!
+      !! The optional `second_order` argument is the caller's declaration that
+      !! it can drive a Newton phase. Present, `soscf` parses; absent, it is
+      !! refused -- so a caller that cannot run one, and therefore never grew
+      !! the argument, refuses the name through the branch it already had for
+      !! misspellings. There is no way to forget this and get a silent DIIS
+      !! run, and that is the property being pinned.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: scheme
+      logical :: ok, wants
+
+      ! A caller that can run one.
+      call parse_accelerator_name("soscf", scheme, ok, wants)
+      call check(error, ok, "'soscf' should parse for a caller that can run it")
+      if (allocated(error)) return
+      call check(error, wants, "'soscf' should ask for the second-order finish")
+      if (allocated(error)) return
+      ! DIIS still, and not as a fallback: the second-order SCF *is* a DIIS
+      ! SCF for its opening phase.
+      call check(error, scheme == ACCEL_DIIS, "the opening phase of a second-order "// &
+                 "SCF is Pulay DIIS, so that is the extrapolation that comes back")
+      if (allocated(error)) return
+
+      ! Case and the other spellings.
+      call parse_accelerator_name("SOSCF", scheme, ok, wants)
+      call check(error, ok .and. wants, "the name should be case insensitive, as "// &
+                 "every other accelerator name is")
+      if (allocated(error)) return
+      call parse_accelerator_name("second_order", scheme, ok, wants)
+      call check(error, ok .and. wants, "'second_order' should spell the same request")
+      if (allocated(error)) return
+
+      ! A caller that cannot.
+      call parse_accelerator_name("soscf", scheme, ok)
+      call check(error,.not. ok, "'soscf' must be refused by a caller that cannot "// &
+                 "run a Newton phase, rather than quietly becoming DIIS")
+      if (allocated(error)) return
+
+      ! The ordinary names are unaffected, and ask for nothing second order.
+      call parse_accelerator_name("ediis", scheme, ok, wants)
+      call check(error, ok .and. scheme == ACCEL_EDIIS .and. .not. wants, &
+                 "'ediis' should still parse, and should not turn on the Newton phase")
+      if (allocated(error)) return
+      call parse_accelerator_name("", scheme, ok, wants)
+      call check(error, ok .and. scheme == ACCEL_DIIS .and. .not. wants, &
+                 "an empty name is the default, which is plain DIIS")
+      if (allocated(error)) return
+
+      ! And a misspelling is still a misspelling, with the argument present.
+      call parse_accelerator_name("soskf", scheme, ok, wants)
+      call check(error,.not. ok, "a misspelled name must still be refused")
+      if (allocated(error)) return
+      call check(error,.not. wants, "a refused name must not leave the second-order "// &
+                 "request set")
+   end subroutine test_accelerator_name
 
    function real_to_text(value) result(text)
       !! A number in a failure message, so the message says how badly

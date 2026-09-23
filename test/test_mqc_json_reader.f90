@@ -2677,6 +2677,29 @@ contains
       call check(error, close_enough(config%scf_soscf_start, DEFAULT_SOSCF_START), &
                  "the default handover threshold is the one in "// &
                  "mqc_calculation_defaults")
+      if (allocated(error)) return
+
+      ! The other spelling of the same request. The reader carries the name
+      ! through as a string and the backend resolves it -- which is where a
+      ! misspelling is refused -- so what is pinned here is that the deck key
+      ! reaches `scf_accelerator` intact and that naming it does not have to
+      ! be paired with `second_order` to mean anything.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"accelerator": "soscf"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%scf_accelerator), &
+                 "the accelerator name should have been read")
+      if (allocated(error)) return
+      call check(error, config%scf_accelerator == "soscf", &
+                 "'soscf' should reach the config as itself, not be rewritten; it "// &
+                 "arrived as '"//config%scf_accelerator//"'")
+      if (allocated(error)) return
+      call check(error,.not. config%scf_second_order, "naming the accelerator must "// &
+                 "not set `second_order` in the config: the two are resolved "// &
+                 "together in the backend, where the reference is known and an "// &
+                 "unrestricted one can be refused")
    end subroutine test_second_order_keywords
 
    subroutine test_diis_keywords(error)

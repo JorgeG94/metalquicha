@@ -89,8 +89,22 @@ contains
                         trim(settings%accelerator)//"', and the GPU backend has only "// &
                         "DIIS: its extrapolation is device-resident and no energy-based "// &
                         "scheme is implemented there. Refused rather than run as DIIS "// &
-                        "without saying so. Use the CPU backend for EDIIS or ADIIS, or "// &
-                        "drop the keyword.")
+                        "without saying so. Use the CPU backend for EDIIS, ADIIS or "// &
+                        "SOSCF, or drop the keyword.")
+         call record_failure(result, error)
+         return
+      end if
+
+      ! The same refusal for the other spelling of the same request. There is
+      ! no orbital-rotation Hessian under `backends/cuest`, so a Newton phase
+      ! cannot be run here; a deck that asked for one would otherwise get a
+      ! plain DIIS SCF and no indication that it had.
+      if (settings%second_order) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.second_order (or "// &
+                        "keywords.scf.accelerator 'soscf') asks for a trust-region "// &
+                        "Newton finish, and the GPU backend has no orbital-rotation "// &
+                        "Hessian to take one with. Refused rather than run as DIIS "// &
+                        "without saying so. Use the CPU backend, or drop the keyword.")
          call record_failure(result, error)
          return
       end if

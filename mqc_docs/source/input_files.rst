@@ -870,11 +870,14 @@ SCF Options
 
   See :doc:`scf_guess` for what each one is for and when to reach for it.
 
-- ``accelerator``: Which convergence accelerator opens the SCF (default:
-  ``diis``). One of ``diis``, ``ediis`` or ``adiis``. The energy-based pair run
+- ``accelerator``: Which convergence scheme the SCF uses (default: ``diis``).
+  One of ``diis``, ``ediis``, ``adiis`` or ``soscf``. The energy-based pair run
   only while the error is large and hand over to DIIS for the endgame, so naming
-  one asks for a different opening and not a different endgame. See
-  :ref:`accelerators` for when that is worth doing and how to tell it happened.
+  one asks for a different opening and not a different endgame. ``soscf`` is the
+  other way round -- DIIS opens and trust-region Newton finishes -- and is the
+  same request as ``second_order: true``; see :ref:`second-order-scf`. An
+  unrecognised name is refused rather than run as DIIS. See :ref:`accelerators`
+  for when the energy-based pair are worth doing and how to tell it happened.
 - ``eri_path``: Which four-centre integral path the CPU backend takes
   (default: ``rys``). ``rotaxis`` evaluates every quartet of s, p and L shells
   by the rotated-axis McMurchie-Davidson path libfint carries and the rest by
@@ -935,10 +938,13 @@ SCF Options
   accepts its lowest eigenpair (default: 1e-6).
 - ``stability_maxiter``: Davidson iterations it may take (default: 100).
 - ``second_order``: converge the closed-shell SCF by trust-region Newton on the
-  orbital rotations once DIIS has brought it close (default: false). See
+  orbital rotations once DIIS has brought it close (default: false).
+  ``accelerator: "soscf"`` is the same request under the other keyword; either
+  one turns it on and neither can turn the other off. See
   :ref:`second-order-scf`.
 - ``soscf_start``: the commutator :math:`\max|FDS - SDF|` at which that
-  handover happens (default: 1e-2).
+  handover happens (default: 1e-2). It governs both routes -- naming ``soscf``
+  as the accelerator does not skip the DIIS opening, because nothing can.
 
 .. _scf-stability:
 
@@ -1041,6 +1047,20 @@ orbital-rotation space instead.
      }
    }
 
+**There are two spellings and one feature.** ``accelerator: "soscf"`` asks for
+exactly what ``second_order: true`` asks for, and is there because a second-order
+SCF *is* the convergence scheme a deck chooses, alongside ``diis``, ``ediis``
+and ``adiis``, rather than a modifier hanging off one:
+
+.. code-block:: json
+
+   "keywords": { "scf": { "accelerator": "soscf" } }
+
+Either one turns it on, neither turns the other off, and ``soscf_start`` means
+the same thing under both. ``second-order`` and ``second_order`` are accepted
+spellings of the accelerator name, and the name is matched without regard to
+case.
+
 **It does not start second order, and that is deliberate.** A Newton step is a
 step on a quadratic model of the energy, and the model is the energy only near
 the point it was built at. An initial guess is not near the solution, and a
@@ -1130,6 +1150,16 @@ orbital-rotation Hessian carries no response of the surface charges and the step
 would be taken on the wrong curvature. A Fock projector -- frozen orbitals -- is
 refused, because the rotations it forbids are not excluded from the Newton
 step's parameter space. None of these is approximated silently.
+
+The same goes for the places the accelerator name can be written but the
+Newton phase cannot run. ``soscf`` is refused by name -- not quietly demoted to
+DIIS -- by the GPU backend, which has no orbital-rotation Hessian; by the
+reference SCF under an MCSCF, whose orbitals are reoptimised by the MCSCF's own
+second-order step; by the Fukui ions, which are open shell; and by the EFP
+fragment potentials. The one place it is accepted and deliberately ignored is
+the ``basis_set_projection`` guess ladder: those rungs are a guess for the
+target SCF and are about to be projected into a larger basis, so there is
+nothing for a Newton step to add. The target SCF still runs second order.
 
 One asymmetry is worth knowing about rather than discovering: with a
 density-fitted reference the Hessian is still built from exact integrals, so it

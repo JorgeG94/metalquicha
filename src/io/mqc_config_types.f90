@@ -185,10 +185,12 @@ module mqc_config_types
          !! `keywords.scf.incremental_fock`. False forces a full Fock build every
          !! iteration; see `scf_config_t` for why anyone would want that.
       character(len=:), allocatable :: scf_accelerator
-         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis' or
-         !! 'ediis'. The energy-based pair runs only while the error is large
-         !! and hands over to DIIS below `ACCEL_SWITCH`, so naming one asks for
-         !! a different opening, not a different endgame.
+         !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis',
+         !! 'ediis' or 'soscf'. The energy-based pair runs only while the
+         !! error is large and hands over to DIIS below `ACCEL_SWITCH`, so
+         !! naming one asks for a different opening, not a different endgame.
+         !! 'soscf' is the other way round -- DIIS opens and trust-region
+         !! Newton finishes -- and is the same request as `second_order`.
       character(len=:), allocatable :: scf_eri_path
          !! `keywords.scf.eri_path`: 'rys', 'rotaxis', 'hgp', 'hybrid' or
          !! 'auto'. Unallocated
@@ -413,6 +415,9 @@ module mqc_config_types
          !! `keywords.scf.second_order`. Converge the closed-shell SCF by
          !! trust-region Newton in the orbital-rotation space once DIIS has got
          !! it close, instead of by DIIS all the way.
+         !!
+         !! `keywords.scf.accelerator: 'soscf'` is the same request under the
+         !! other keyword, and either one turns it on.
          !!
          !! Off by default, and honestly so: each Newton step costs several
          !! Fock builds, so on a well-behaved system it converges in fewer
