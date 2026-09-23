@@ -107,31 +107,53 @@ FMO user gets one JSON number and an empty levels array.
 
 ### Layer 0: make a cut fragment neutral
 
-**Close to mandatory before EFMO covalent fragments, optional for FMO.**
-Measured on the bond-breaking branch: our fragments carry net charges of plus
-and minus one at a cut, because we keep whole nuclei and shift only
-electrons, where GAMESS splits the nucleus so both sides stay neutral. For
-FMO this is a partition choice and the field is not wrong: the summed atomic
-charges equal the molecular charge to 1e-14. It still costs accuracy —
-point-charge embedding across a detached bond gives 0.489 Hartree of
-two-body error on propane against 0.180 unembedded, partly because a unit
-charge makes the monopole the leading term of the field rather than a
-correction.
+**For EFMO alone. It does nothing for FMO, and an earlier draft of this
+section claimed otherwise.** Implemented and measured on
+`feat/fmo-neutral-cut`.
 
-For EFMO it is worse than an accuracy cost. The far-pair terms are EFP2
-expressions between fragment potentials, so **every adjacent-residue pair in
-a protein would carry a monopole-monopole term of order 1/R** — hundreds of
-kcal/mol where the interaction of interest is single digits — and it would
-land in the electrostatics column of the very table this plan exists to
-produce. The neutral convention makes that term vanish by construction.
+Our fragments carried net charges of plus and minus one at a cut, because we
+kept whole nuclei and shifted only electrons. GAMESS splits the nucleus so
+both sides stay neutral, and we now do too.
 
-*Shape:* an optional per-atom nuclear-charge override on the molecule
-builder (the charge slot is an integer and the core-electron count already
-offsets it), plus the electron shift, the group assembly, and every pinned
-frozen-orbital reference.
+**The FMO accuracy argument was wrong, and is disproved rather than merely
+doubted.** With point-charge embedding the total is *exactly invariant* to
+the convention: the field a group feels is the whole-system charge minus its
+own share, so a unit of charge taken out of a group's own nucleus reappears
+in the field it sees at the same point, and the summed populations do not
+change either. Measured across the convention change: 0.48908757203956554
+against 0.48908757203680864 on propane, agreeing to convergence noise. There
+was never an accuracy gain here to collect.
 
-*Gate:* not the telescoping identity, which cannot see it. The gate is
-whether two-body error across a cut drops below the 0.180 unembedded number.
+**Field-free runs get worse, so the split is gated on there being a field.**
+With nothing to supply the other half of the nucleus, the owning fragment is
+solved around a nucleus short by a proton, which is a worse model of a methyl
+group than the cation it replaces: 0.180 to 0.304 on propane, and 0.125 to
+1.549 on a numbering where the middle carbon is detached twice. GAMESS cannot
+arbitrate this because it never runs the construction without a field; its
+field-free reference state uses methyl caps instead. So whole nuclei are kept
+when `esp = "none"` and the nucleus is split otherwise, with both conventions
+stated in the log rather than switched silently.
+
+**Why it matters for EFMO.** The far-pair terms are EFP2 expressions between
+two fragments' own potentials, and there is no subtraction of a group's own
+share in a pair term, so a fragment's net charge simply sits in its multipole
+expansion. A charge on each of two adjacent residues gives a monopole term of
+roughly 96 kcal/mol at 3 to 4 Angstrom, against interactions of single-digit
+kcal/mol, plus monopole-dipole and monopole-induced-dipole terms — and it
+lands in the electrostatics column of the table this plan exists to produce.
+The neutral convention removes all of it by construction.
+
+*Gate:* not the telescoping identity, which is blind to the field, and not
+the two-body number, which is invariant. The gates are per-fragment
+neutrality, and an explicit test that the embedded total agrees under both
+conventions, which turns the invariance from a derivation into something CI
+enforces.
+
+*Also established:* there is no three-electron lone-pair case to handle. A
+bond carrying more than one localized orbital is refused by name, and a
+hydrogen detached atom likewise, so every cut moves exactly one electron and
+one unit of charge. Several separate cuts at one atom compose correctly and
+were exercised.
 
 ### Layer 1: covalent fragments
 
