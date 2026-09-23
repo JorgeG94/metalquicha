@@ -43,6 +43,7 @@ module mqc_driver
    use mqc_json, only: merge_multi_molecule_json
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_NONE
    use mqc_json_writer, only: write_json_output
+   use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
    private
 
@@ -440,10 +441,32 @@ contains
       ! Every input path arrives here, so this is where the system is checked:
       ! the JSON reader, the C interface and a supplied term list alike.
       if (resources%mpi_comms%world_comm%rank() == 0) then
+         ! Audited whether or not the deck listed bonds. A deck that forgot
+         ! `connectivity` is the case the audit exists for -- nothing is marked
+         ! broken, so nothing is capped, and an even-electron partition of a
+         ! covalent molecule runs to completion and answers the wrong question.
+         ! `afo` is the exception and is exempt: it perceives its own cuts from
+         ! the geometry and detaches each with a frozen orbital, so it needs no
+         ! declared list and a deck that gives none is complete as written.
+         !
+         ! `bonds` rather than `sys_geom%bonds`: on this path the deck's
+         ! connectivity arrives as its own argument and is not copied onto the
+         ! geometry until the expansion is built, hundreds of lines below. An
+         ! absent `bonds` forwards as absent, which is the deck that declared
+         ! none.
          call validate_system(sys_geom,.not. config%unchecked_input, validation_error, &
-                              check_bonds=allocated(sys_geom%bonds))
+                              check_bonds=(trim(config%bond_breaking) /= "afo"), &
+                              declared_bonds=bonds)
          if (validation_error%has_error()) then
             call logger%error("invalid system: "//validation_error%get_message())
+            ! Before the abort, not after: MPI_ABORT kills the process without
+            ! unwinding and discards whatever is still in the stdout buffer.
+            ! A refusal nobody can read is the failure this check exists to
+            ! stop, one layer up.
+            ! TODO(mqc): every other `abort_comm` in this file loses its
+            ! message the same way, including `check_system_geometry` above,
+            ! whose comment says `abort_comm` avoids that. It does not.
+            flush (output_unit)
             call abort_comm(resources%mpi_comms%world_comm, 1)
          end if
 
@@ -662,12 +685,27 @@ contains
                expansion%esp = "ptc"
                expansion%expansion = "mbe"
             end if
-            ! `embedding` overrides what the expansion implies, which is how a
-            ! deck reaches the third pairing the backend supports: esp "none"
-            ! with an mbe expansion, a plain many-body expansion through this
-            ! module.
-            if (trim(config%embedding) == "none") then
-               expansion%esp = "none"
+            ! `embedding` overrides the field the method implies, leaving the
+            ! expansion alone. The two are independent in the backend and only
+            ! three of the four pairings were reachable from a deck before:
+            ! "fmo" with point charges is FMO's own expansion with the
+            ! long-range approximation made everywhere, which is the one shape
+            ! a detached bond can be run in, since a frozen orbital and an
+            ! exact density both describe the bond region and only a
+            ! per-atom field can have the detached atom's share taken back out
+            ! of it. An unknown spelling is refused rather than ignored: it
+            ! used to pass validation and change nothing.
+            if (len_trim(config%embedding) > 0) then
+               select case (trim(config%embedding))
+               case ("none", "ptc", "exact")
+                  expansion%esp = trim(config%embedding)
+               case default
+                  call logger%error("keywords.fragmentation.embedding: '"// &
+                                    trim(config%embedding)//"' is not a field this "// &
+                                    "method can build. Use 'exact' for densities, "// &
+                                    "'ptc' for point charges, or 'none'.")
+                  return
+               end select
             end if
 
             ! TODO(mqc): refactor this ugly ass code, in general the expansion assignemtn
@@ -1354,6 +1392,9 @@ contains
       type(scf_numerics_t) :: efmo_scf
       integer :: correlation
       integer :: i, n_frag, n_qm, n_efp, n_groups, level
+      integer, allocatable :: pair_fragments(:, :)
+      real(dp), allocatable :: pair_distance(:), pair_energy(:), pair_terms(:, :)
+      logical, allocatable :: pair_qm(:)
 
       integer, parameter :: EFMO_DEFAULT_LEVEL = 2
          !! What `keywords.fragmentation.level` means when the deck omits it.
@@ -1503,6 +1544,9 @@ contains
                         corr_aux_basis=trim(config%method_config%scf%aux_basis_set), &
                         freeze_core=config%method_config%corr%freeze_core, &
                         n_frozen_core=config%method_config%corr%n_frozen_core, &
+                        pair_fragments=pair_fragments, pair_distance=pair_distance, &
+                        pair_qm=pair_qm, pair_energy=pair_energy, &
+                        pair_terms=pair_terms, &
                         comm=comm)
       if (err%has_error()) then
          call refuse(result_out, "EFMO: "//err%get_message())
@@ -1530,6 +1574,18 @@ contains
          json_data%efmo_qm_dimers = n_qm
          json_data%efmo_efp_dimers = n_efp
          json_data%efmo_qm_groups = n_groups
+         json_data%efmo_fragment_charges = charges
+         ! The per-pair map, which the aggregate sums above cannot stand in
+         ! for: two systems with the same totals can have entirely different
+         ! pairs carrying them, and it is the pairs an interaction analysis
+         ! reads. Moved rather than copied -- nothing here needs them again.
+         if (allocated(pair_energy)) then
+            call move_alloc(pair_fragments, json_data%efmo_pair_fragments)
+            call move_alloc(pair_distance, json_data%efmo_pair_distance)
+            call move_alloc(pair_qm, json_data%efmo_pair_qm)
+            call move_alloc(pair_energy, json_data%efmo_pair_energy)
+            call move_alloc(pair_terms, json_data%efmo_pair_terms)
+         end if
          json_data%has_efmo = .true.
          json_data%fragment_breakdown = config%fragment_breakdown
          call write_json_output(json_data)

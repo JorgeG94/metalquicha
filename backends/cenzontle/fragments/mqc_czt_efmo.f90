@@ -106,6 +106,8 @@ module mqc_czt_efmo
                                  subset_polarization_energy
    use mqc_czt_efp_interaction, only: efp_system_t, build_efp_system, polarization_energy
    use mqc_czt_efmo_pairs, only: efmo_split_pairs, efmo_near_subsets
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_bond_perception, only: connected_components
    use mqc_czt_subsets, only: subtract_subsets, n_choose
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
@@ -120,6 +122,7 @@ module mqc_czt_efmo
    public :: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
    public :: efmo_options_t
    public :: efmo_pair_t
+   public :: efmo_pair_contribution
    public :: efmo_result_t
    public :: run_efmo
 
@@ -293,6 +296,31 @@ module mqc_czt_efmo
 
 contains
 
+   pure function efmo_pair_contribution(res, k) result(e)
+      !! Pair `k`'s contribution to the EFMO total, in Hartree
+      !!
+      !! A quantum pair is its dimer energy less both monomers and less its own
+      !! induction, which is `dE_IJ^0 - dE_IJ^pol`; a far pair is the sum of
+      !! its four effective-fragment terms.
+      !!
+      !! Summed over every pair this is the near and far interaction energy
+      !! entire **only at level two** -- above it the near expansion carries
+      !! groups of three and more, which are not pairs and are not in
+      !! `res%pairs` at all, so the sum falls short of `nmer_correction` by
+      !! exactly those groups.
+      type(efmo_result_t), intent(in) :: res
+      integer, intent(in) :: k
+      real(dp) :: e
+
+      if (res%pairs(k)%qm) then
+         e = res%pairs(k)%e_dimer - res%monomer_energy(res%pairs(k)%i) &
+             - res%monomer_energy(res%pairs(k)%j) - res%pairs(k)%e_pair_pol
+      else
+         e = res%pairs(k)%electrostatics + res%pairs(k)%dispersion &
+             + res%pairs(k)%exchange_repulsion + res%pairs(k)%charge_transfer
+      end if
+   end function efmo_pair_contribution
+
    subroutine run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
                        opts, res, error, comm)
       !! One EFMO energy, from a system already partitioned into fragments
@@ -371,6 +399,9 @@ contains
       end if
 
       call fragment_counts(owner, n_frag, count_of, error)
+      if (error%has_error()) return
+
+      call refuse_covalent_cuts(atomic_numbers, coordinates, owner, n_atoms, error)
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
@@ -1161,14 +1192,10 @@ contains
       do k = 1, size(res%pairs)
          if (res%pairs(k)%qm) then
             write (line, "(A,I4,A,I4,F8.3,A,F22.10)") "  ", res%pairs(k)%i, "-", &
-               res%pairs(k)%j, res%pairs(k)%r, "  QM  ", &
-               res%pairs(k)%e_dimer - res%monomer_energy(res%pairs(k)%i) &
-               - res%monomer_energy(res%pairs(k)%j) - res%pairs(k)%e_pair_pol
+               res%pairs(k)%j, res%pairs(k)%r, "  QM  ", efmo_pair_contribution(res, k)
          else
             write (line, "(A,I4,A,I4,F8.3,A,F22.10)") "  ", res%pairs(k)%i, "-", &
-               res%pairs(k)%j, res%pairs(k)%r, "  EFP ", &
-               res%pairs(k)%electrostatics + res%pairs(k)%dispersion &
-               + res%pairs(k)%exchange_repulsion + res%pairs(k)%charge_transfer
+               res%pairs(k)%j, res%pairs(k)%r, "  EFP ", efmo_pair_contribution(res, k)
          end if
          call logger%info(trim(line))
       end do
@@ -1208,5 +1235,51 @@ contains
       call logger%info("  EFMO total energy   "//to_char(res%energy)//" Hartree")
       call logger%info("============================================================")
    end subroutine report
+
+   subroutine refuse_covalent_cuts(z, coords, owner, n_atoms, error)
+      !! Refuse a partition that puts one covalent molecule in two fragments
+      !!
+      !! EFMO has no cap and no frozen orbital: a monomer potential is a MAKEFP
+      !! of the fragment as given, so a cut bond leaves a dangling valence that
+      !! the localization and the twelve response solves are then run on. The
+      !! observed failure is not a diagnostic -- it is a full run that prints
+      !! its banner and reports NaN.
+      !!
+      !! The criterion is [[mqc_bond_perception]]'s, and the test is
+      !! connectedness rather than one bond, so a cut ring is caught too: a
+      !! partition severing an even number of bonds per fragment leaves every
+      !! electron count even, which is the case nothing else here notices.
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: owner(:)
+      integer, intent(in) :: n_atoms
+      type(error_t), intent(inout) :: error
+
+      type(system_geometry_t) :: geom
+      integer, allocatable :: component(:)
+      integer :: n_components, i, j
+
+      geom%total_atoms = n_atoms
+      allocate (geom%element_numbers(n_atoms), source=z(1:n_atoms))
+      allocate (geom%coordinates(3, n_atoms), source=coords(:, 1:n_atoms))
+      call connected_components(geom, component, n_components)
+
+      ! One offending pair is named rather than all of them.
+      do i = 1, n_atoms
+         do j = i + 1, n_atoms
+            if (component(i) /= component(j)) cycle
+            if (owner(i) == owner(j)) cycle
+            call error%set(ERROR_VALIDATION, "efmo: the partition cuts a covalent "// &
+                           "molecule -- atoms "//to_char(i)//" and "//to_char(j)// &
+                           " are covalently connected but were put in fragments "// &
+                           to_char(owner(i))//" and "//to_char(owner(j))//". A hydrogen "// &
+                           "cap's multipoles would act on its partner across the cut "// &
+                           "and no frozen-orbital route is wired in here, so this "// &
+                           "method cannot answer for that partition; fragment on "// &
+                           "whole molecules")
+            return
+         end do
+      end do
+   end subroutine refuse_covalent_cuts
 
 end module mqc_czt_efmo

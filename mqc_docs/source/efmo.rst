@@ -387,7 +387,8 @@ under ``efmo``, with the pair counts:
      "polarization_total": -0.026488526089,
      "qm_dimers": 15,
      "efp_dimers": 0,
-     "qm_groups": 15
+     "qm_groups": 15,
+     "fragment_charges": [0, 0, 0, 0, 0, 0]
    }
 
 ``qm_nmer_correction`` is :math:`\sum_S \Delta E_S^0` over the near groups of two
@@ -397,6 +398,100 @@ sum while being **subtracted** from the total, so that it can be compared agains
 another code's pair induction directly. ``qm_groups`` counts the near groups and
 equals ``qm_dimers`` at level two; the log carries the same sums split per level,
 which is what says whether a raised level was worth its binomial.
+
+The per-pair interaction map
+----------------------------
+
+The sums above say what the halves came to. They cannot say **which pairs** the
+interaction is made of, and two systems with identical sums can have entirely
+different pairs carrying them. ``efmo.pairs`` is that map, one object per pair.
+The two below are the strongest quantum pair and the strongest classical one from
+the shipped ``efmo_prism_rcut1`` deck:
+
+.. code-block:: json
+
+   "pairs": [
+     {
+       "fragments": [5, 6],
+       "distance": 0.770,
+       "treatment": "quantum",
+       "interaction_energy": -0.010522652
+     },
+     {
+       "fragments": [1, 4],
+       "distance": 1.313,
+       "treatment": "classical",
+       "interaction_energy": -0.003076750,
+       "electrostatics": -0.002929635,
+       "dispersion": -0.000093566,
+       "exchange_repulsion": -0.000052604,
+       "charge_transfer": -0.000000944
+     }
+   ]
+
+``fragments`` are numbered **from one**, as the log's table and the MBE fragment
+lists number them. (Atom indices elsewhere in the interfaces are 0-based; these
+are not atoms.) ``distance`` is the vdW-scaled :math:`R_{IJ}` that decided the
+split, so a reader can see which side of :math:`R_{\rm cut}` a pair fell on.
+
+``interaction_energy`` is what that pair contributed to the total: for a quantum
+pair :math:`E_{IJ}^0 - E_I^0 - E_J^0 - E_{IJ}^{\rm pol}`, and for a far pair the
+sum of its four terms. It is the same number the log's table prints, from the
+same routine, so the two cannot drift apart.
+
+**Rows are sorted strongest first**, by magnitude. Nothing else in the JSON
+output sorts; this does because the enumeration order puts the largest terms
+nowhere in particular, and an interaction map at protein scale is read from the
+top.
+
+``fragment_charges`` sits beside the pairs, one per fragment in fragment order.
+A pair row cannot explain its own large electrostatics term, and two adjacent
+charged fragments interact through a monopole term that dwarfs everything else
+in the table. An EFMO fragment's charge comes from the deck and from nowhere
+else -- EFMO runs no embedding of any kind -- so nothing about a run's settings
+can move these.
+
+Three things the key names do not say
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**The four named terms appear only on a classical pair.** A quantum pair's
+dimer SCF produces no such split, and four zeros would read as a decomposition
+that had been computed.
+
+**``charge_transfer`` is not a residual.** It is the explicit perturbative term
+-- GAMESS's ``ECHTR``, a sum over occupied-on-A to virtual-on-B amplitudes --
+computed independently of the other three. A decomposition analysis usually
+means by that name what is *left over* after the others, which additionally
+absorbs basis-set superposition error; this does not, and the two should not be
+compared as though they were the same quantity.
+
+**No per-pair polarization is reported.** The induction is solved
+self-consistently over the whole system and has no per-pair value. A quantum
+pair's ``interaction_energy`` does carry its own :math:`E_{IJ}^{\rm pol}`
+subtracted, because that is how the energy expression above is written -- but
+that is a term of this method, not a polarization component of a decomposition,
+and relabelling it as one would be inventing a number.
+
+What the map sums to
+~~~~~~~~~~~~~~~~~~~~
+
+**At level two** the pairs are the whole of the near and far interaction, so
+
+.. math::
+
+   \sum_{\rm pairs} E_{\rm int} =
+     \texttt{qm\_nmer\_correction} - \texttt{induction\_correction}
+     + \text{the four efp sums}
+
+exactly, and the reported total is that plus ``monomer_sum`` and
+``polarization_total``. Measured on the shipped decks: 1.4e-17 Hartree on
+``efmo_prism_rcut1`` and exactly zero on ``efmo_cage_rcut2``.
+
+**Above level two it does not**, and cannot. The map holds pairs; the near
+expansion at level three also holds groups of three, which are not pairs and are
+not in the list. On ``efmo_w3_level3`` the sum falls short by 1.26e-4 Hartree,
+which is exactly the three-body vacuum term less its induction. The pair map is
+still every pair -- it is simply no longer the whole interaction.
 
 Against GAMESS
 --------------
@@ -500,9 +595,14 @@ What is not here yet
   missing feature: it puts the induction inside each group's SCF, which makes a
   group's energy depend on its environment and stops the many-body differences
   telescoping. Nothing in EFMO as implemented here embeds anything.
-* **Whole molecules only.** A partition that cuts a covalent bond is refused: a
-  hydrogen cap's multipoles would act on the partner across the cut, and the
-  adjusted frozen orbital route FMO uses is not wired in here.
+* **Whole molecules only, and nothing checks it.** A partition that cuts a
+  covalent bond *should* be refused -- a hydrogen cap's multipoles would act on
+  the partner across the cut, and the adjusted frozen orbital route FMO takes
+  is not wired in here -- but no such check exists on this path. Cut one bond
+  and the odd electron count is caught somewhere downstream, with a message
+  about the wrong thing; cut an even number per fragment and the run completes
+  and reports a number. Fragment on whole molecules and do not rely on being
+  told. FMO and EE-MBE do refuse it, and take ``bond_breaking = "afo"``.
 * **The rest of the induction difference.** With
   ``keywords.efmo.induction_damping`` set to GAMESS's 0.6 the two codes'
   induction still differ by about two per cent, in the other direction; what is

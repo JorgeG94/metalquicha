@@ -11,7 +11,7 @@ module test_mqc_validate
    !! warns -- and checks each refusal fires exactly when it should.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_validate, only: validate_system, validate_terms
-   use mqc_physical_fragment, only: system_geometry_t, to_bohr
+   use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
    use mqc_fraglist, only: fraglist_t
    use mqc_error, only: error_t
    use pic_types, only: dp, default_int, int64
@@ -33,6 +33,7 @@ contains
                   new_unittest("charge_mismatch_is_refused", test_charge_mismatch), &
                   new_unittest("permissive_mode_only_warns", test_permissive), &
                   new_unittest("bond_audit_flags_undeclared_cut", test_bond_audit), &
+                  new_unittest("missing_connectivity_is_refused", test_no_connectivity), &
                   new_unittest("empty_term_list_is_refused", test_terms_empty), &
                   new_unittest("closed_term_list_passes", test_terms_ok), &
                   new_unittest("out_of_range_monomer_is_refused", test_terms_range), &
@@ -183,6 +184,78 @@ contains
 
       call geom%destroy()
    end subroutine test_bond_audit
+
+   subroutine test_no_connectivity(error)
+      !! A partition that cuts a bond with no bond list at all is refused
+      !!
+      !! The deck path is the one that reaches here with `bonds` unallocated:
+      !! a JSON deck that omits `connectivity` allocates nothing, so the audit
+      !! has no declared list to check against and used to skip entirely. The
+      !! partition below is the shape that matters -- both fragments come out
+      !! with an even electron count, so nothing further down notices either.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: geom
+      type(error_t) :: err
+      type(bond_t) :: declared(1)
+      character(len=:), allocatable :: message
+
+      ! Two carbons 1.53 A apart, one per monomer, and no `bonds` component.
+      geom%total_atoms = 2
+      geom%n_monomers = 2
+      geom%atoms_per_monomer = 1
+      geom%charge = 0
+      geom%multiplicity = 1
+      allocate (geom%element_numbers(2), source=[6, 6])
+      allocate (geom%coordinates(3, 2))
+      geom%coordinates = 0.0_dp
+      geom%coordinates(1, 2) = to_bohr(1.53_dp)
+      allocate (geom%fragment_sizes(2), source=[1, 1])
+      allocate (geom%fragment_atoms(1, 2))
+      geom%fragment_atoms(1, 1) = 0
+      geom%fragment_atoms(1, 2) = 1
+      allocate (geom%fragment_charges(2), source=[0, 0])
+      allocate (geom%fragment_multiplicities(2), source=[1, 1])
+
+      call validate_system(geom, strict=.true., error=err, check_bonds=.true.)
+      call check(error, err%has_error(), &
+                 "a covalent cut with no declared connectivity should be refused")
+      if (allocated(error)) then
+         call geom%destroy(); return
+      end if
+
+      ! Named, not merely refused: the message has to say which key is missing
+      ! or the chemist cannot act on it.
+      message = err%get_message()
+      call check(error, index(message, "connectivity") > 0, &
+                 "the refusal should name connectivity: "//message)
+      if (allocated(error)) then
+         call geom%destroy(); return
+      end if
+
+      ! `unchecked_input` is the escape hatch, and it must still be one.
+      err = error_t()
+      call validate_system(geom, strict=.false., error=err, check_bonds=.true.)
+      call check(error,.not. err%has_error(), &
+                 "permissive mode should warn rather than refuse")
+      if (allocated(error)) then
+         call geom%destroy(); return
+      end if
+
+      ! A deck that *did* declare the cut is not refused. On the deck path the
+      ! list arrives beside the geometry rather than on it, so this is the
+      ! argument that has to be honoured or every capped run is refused.
+      declared(1)%atom_i = 0
+      declared(1)%atom_j = 1
+      declared(1)%order = 1
+      declared(1)%is_broken = .true.
+      err = error_t()
+      call validate_system(geom, strict=.true., error=err, check_bonds=.true., &
+                           declared_bonds=declared)
+      call check(error,.not. err%has_error(), &
+                 "a declared cut should pass the audit: "//err%get_message())
+
+      call geom%destroy()
+   end subroutine test_no_connectivity
 
    ! ---- validate_terms -----------------------------------------------------
 

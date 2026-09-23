@@ -53,6 +53,7 @@ module test_mqc_czt_efmo
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, &
+                           efmo_pair_contribution, &
                            EFMO_CORR_NONE, EFMO_CORR_RI_MP2
    use mqc_czt_mp2, only: mp2_result_t, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
@@ -124,6 +125,10 @@ contains
                   new_unittest("efmo_no_pair_quantum_is_monomers_plus_efp", test_no_quantum), &
                   new_unittest("efmo_two_fragments_is_the_dimer_energy", test_two_fragments), &
                   new_unittest("efmo_trimer_split_one_quantum_two_effective", test_mixed), &
+                  new_unittest("efmo_pair_map_sums_to_the_interaction_energy", &
+                               test_pair_map_sums), &
+                  new_unittest("efmo_pair_map_falls_short_by_the_three_body_groups", &
+                               test_pair_map_level_three), &
                   new_unittest("efmo_rimp2_two_fragments_is_the_dimer_rimp2_energy", &
                                test_rimp2_dimer), &
                   new_unittest("efmo_rimp2_all_quantum_is_the_correlated_pair_sum", &
@@ -133,9 +138,70 @@ contains
                   new_unittest("efmo_full_level_is_the_unfragmented_energy", &
                                test_full_level), &
                   new_unittest("efmo_induction_series_sums_to_the_total", &
-                               test_induction_series) &
+                               test_induction_series), &
+                  new_unittest("efmo_covalent_cut_is_refused", test_covalent_cut) &
                   ]
    end subroutine collect_mqc_czt_efmo_tests
+
+   subroutine test_covalent_cut(error)
+      !! A partition that severs a covalent bond is refused rather than run
+      !!
+      !! Propane, with the two methyls in one fragment and the central CH2 in
+      !! the other. That shape is deliberate: it cuts two bonds, so both
+      !! fragments keep an **even** electron count -- 18 and 8 -- and the
+      !! closed-shell check further down never fires. Left to run, MAKEFP
+      !! localizes a wavefunction with dangling valences and the total comes
+      !! back NaN behind a success banner.
+      !!
+      !! Costs nothing: the refusal is ahead of the first SCF.
+      type(error_type), allocatable, intent(out) :: error
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      type(error_t) :: err
+      integer :: z(11), owner(11), charges(2)
+      character(len=2) :: symbols(11)
+      real(dp) :: xyz(3, 11)
+      character(len=:), allocatable :: message
+
+      call propane_geometry(z, symbols, xyz)
+      ! Fragment 1 is both methyls, fragment 2 the central CH2.
+      owner = [1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1]
+      charges = [0, 0]
+
+      opts%basis = BASIS
+      opts%rcut = 2.0_dp
+
+      call run_efmo(z, symbols, xyz, owner, charges, opts, res, err)
+      call check(error, err%has_error(), &
+                 "EFMO should refuse a partition that cuts a covalent molecule")
+      if (allocated(error)) return
+
+      message = err%get_message()
+      call check(error, index(message, "covalent") > 0, &
+                 "the refusal should say the partition cuts a covalent molecule: "// &
+                 message)
+   end subroutine test_covalent_cut
+
+   subroutine propane_geometry(z, symbols, xyz)
+      !! Idealised propane in Bohr, carbons first so a partition reads by eye
+      integer, intent(out) :: z(11)
+      character(len=2), intent(out) :: symbols(11)
+      real(dp), intent(out) :: xyz(3, 11)
+
+      z = [6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1]
+      symbols = ["C ", "C ", "C ", "H ", "H ", "H ", "H ", "H ", "H ", "H ", "H "]
+      xyz = reshape([1.5260_dp, 0.0000_dp, 0.0000_dp, &
+                     0.0000_dp, 0.0000_dp, 0.0000_dp, &
+                     -0.5716_dp, 1.4149_dp, 0.0000_dp, &
+                     2.1553_dp, -0.8900_dp, 0.0000_dp, &
+                     2.1553_dp, 0.4450_dp, -0.7707_dp, &
+                     2.1553_dp, 0.4450_dp, 0.7707_dp, &
+                     -0.3519_dp, -0.5217_dp, 0.8900_dp, &
+                     -0.3519_dp, -0.5217_dp, -0.8900_dp, &
+                     0.0178_dp, 2.3318_dp, 0.0000_dp, &
+                     -1.2200_dp, 1.8317_dp, -0.7707_dp, &
+                     -1.2200_dp, 1.8317_dp, 0.7707_dp], [3, 11])*ANG
+   end subroutine propane_geometry
 
    subroutine water_geometry(z, symbols, coords)
       !! One water, in Bohr, in the `yz` plane
@@ -1027,6 +1093,118 @@ contains
       call check(error, res%polarization_total, e_pol_total, thr=1.0e-12_dp, &
                  message="E_pol^total")
    end subroutine test_mixed
+
+   subroutine test_pair_map_sums(error)
+      !! The exported pair map accounts for the whole interaction energy
+      !!
+      !! `efmo_pair_contribution` is what the printed table prints and what the
+      !! JSON export writes, so this is the assertion that the map a reader
+      !! acts on is the energy the run reported and not a parallel set of
+      !! numbers. At level two the near expansion is pairs and nothing else, so
+      !! the sum over the map is exactly `nmer_correction - induction_correction`
+      !! plus the four far sums -- and the total is that plus the monomers and
+      !! the total induction, with nothing left over.
+      !!
+      !! The mixed geometry, because it is the only one where both halves are
+      !! non-empty: a quantum-only or far-only system would pass this with one
+      !! of the two branches of the contribution never evaluated.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      real(dp) :: pair_sum, interaction, total
+      integer :: z(9), owner(9), k
+      character(len=2) :: symbols(9)
+      real(dp) :: xyz(3, 9)
+
+      call build_reference(err)
+      call check(error,.not. err%has_error(), "building the reference failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call water_chain(3, z, symbols, xyz, owner)
+      call efmo_settings(opts)
+      opts%rcut = 2.0_dp
+      call run_efmo(z, symbols, xyz, owner, [0, 0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, size(res%pairs), 3, message="the map does not hold every pair")
+      if (allocated(error)) return
+
+      pair_sum = 0.0_dp
+      do k = 1, size(res%pairs)
+         pair_sum = pair_sum + efmo_pair_contribution(res, k)
+      end do
+
+      interaction = res%nmer_correction - res%induction_correction &
+                    + res%far_electrostatics + res%far_dispersion &
+                    + res%far_exchange_repulsion + res%far_charge_transfer
+      call check(error, pair_sum, interaction, thr=1.0e-12_dp, &
+                 message="the pair map does not sum to the interaction energy")
+      if (allocated(error)) return
+
+      ! And therefore reconstructs the reported total, which is the claim a
+      ! reader of the exported map is entitled to make.
+      total = res%monomer_sum + res%polarization_total + pair_sum
+      call check(error, total, res%energy, thr=1.0e-12_dp, &
+                 message="monomers plus induction plus the pair map is not the total")
+   end subroutine test_pair_map_sums
+
+   subroutine test_pair_map_level_three(error)
+      !! Above level two the map is a pair map and the near expansion is not
+      !!
+      !! `res%pairs` is filled only for groups of two -- `if (m /= 2) cycle` in
+      !! the enumeration -- so at level three the sum over the map is short of
+      !! the interaction energy by exactly the three-body groups. That is a
+      !! property of what a pair map *is* rather than a defect, and it is
+      !! asserted here so that the export is never read as a decomposition of
+      !! the whole energy at a level where it cannot be one.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      real(dp) :: pair_sum, interaction, three_body
+      integer :: z(9), owner(9), k
+      character(len=2) :: symbols(9)
+      real(dp) :: xyz(3, 9)
+
+      call build_reference(err)
+      call check(error,.not. err%has_error(), "building the reference failed: "// &
+                 err%get_full_trace())
+      if (allocated(error)) return
+
+      call water_chain(3, z, symbols, xyz, owner)
+      call efmo_settings(opts)
+      ! Every pair near, so the trimer itself is a near group: a near group is
+      ! one whose *every* pair is inside `R_cut`, and at the mixed cutoff there
+      ! is no group of three to be short by.
+      opts%rcut = 1.0e6_dp
+      opts%level = 3
+      call run_efmo(z, symbols, xyz, owner, [0, 0, 0], opts, res, err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, res%level_count(3) > 0, &
+                 "level three enumerated no group of three, so this proves nothing")
+      if (allocated(error)) return
+
+      pair_sum = 0.0_dp
+      do k = 1, size(res%pairs)
+         pair_sum = pair_sum + efmo_pair_contribution(res, k)
+      end do
+      interaction = res%nmer_correction - res%induction_correction &
+                    + res%far_electrostatics + res%far_dispersion &
+                    + res%far_exchange_repulsion + res%far_charge_transfer
+
+      ! Short by the three-body groups exactly -- both halves of them, the
+      ! vacuum term and the induction it carries.
+      three_body = res%level_vacuum(3) - res%level_induction(3)
+      call check(error, pair_sum + three_body, interaction, thr=1.0e-12_dp, &
+                 message="the shortfall is not the three-body groups")
+   end subroutine test_pair_map_level_three
 
 end module test_mqc_czt_efmo
 

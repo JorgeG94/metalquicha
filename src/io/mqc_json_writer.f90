@@ -118,6 +118,10 @@ contains
          if (output_data%has_vibrational) then
             call write_vibrational_json_impl(output_data)
          else
+            ! TODO(mqc): no per-fragment CSV is written here, where the MBE
+            ! branch above writes one. `fragment_breakdown` defaults to "csv"
+            ! and is simply ignored on this path, so a GMBE run leaves no
+            ! per-term table at all and the deck is not told.
             call write_gmbe_pie_json_impl(output_data)
          end if
 
@@ -1155,7 +1159,104 @@ contains
       call json%add(efmo_obj, "qm_dimers", data%efmo_qm_dimers)
       call json%add(efmo_obj, "efp_dimers", data%efmo_efp_dimers)
       call json%add(efmo_obj, "qm_groups", data%efmo_qm_groups)
+      ! Beside the pairs rather than inside them: a charge belongs to a
+      ! fragment, and repeating it on every row a fragment appears in would
+      ! invite a reader to sum it.
+      if (allocated(data%efmo_fragment_charges)) then
+         call json%add(efmo_obj, "fragment_charges", data%efmo_fragment_charges)
+      end if
+      call write_efmo_pairs(json, efmo_obj, data)
    end subroutine write_efmo_section
+
+   subroutine write_efmo_pairs(json, parent, data)
+      !! The per-pair interaction map, under `efmo.pairs`
+      !!
+      !! **Strongest first**, by the magnitude of the contribution rather than
+      !! its sign: an interaction map of a protein is read from the top, and
+      !! the enumeration order the pairs arrive in -- quantum ones first, then
+      !! by fragment index -- puts the largest terms nowhere in particular.
+      !! Nothing else in this writer sorts, so this is a deliberate departure
+      !! and not an accident of how the array was built.
+      !!
+      !! **Fragment numbers are 1-based**, as the printed table and the MBE
+      !! fragment lists write them. Atom indices elsewhere are 0-based; these
+      !! are not atoms.
+      !!
+      !! The four named terms are written only for a pair that has them. A
+      !! quantum pair's dimer SCF produces no such split, and writing four
+      !! zeros there would be a decomposition that reads as real.
+      !!
+      !! Three things a consumer cannot see from the key names:
+      !!
+      !! * `charge_transfer` is the explicit perturbative term, `ECHTR` of
+      !!   GAMESS's `efchtr.src`, computed from occupied-on-A to virtual-on-B
+      !!   amplitudes. It is **not** a residual left after the other three, so
+      !!   it is not PIEDA's `Ect+mix` and does not carry that quantity's
+      !!   basis-set superposition error.
+      !! * **No per-pair polarization is written.** The induction is solved
+      !!   over the whole system at once and has no per-pair value. A quantum
+      !!   pair's `interaction_energy` does have its own `E_IJ^pol` subtracted,
+      !!   because that is how the EFMO energy expression is written -- but
+      !!   that is a term of this method, not a polarization component of a
+      !!   decomposition.
+      !! * **Every pair here is covalently unconnected.** `efmo_options_t`
+      !!   carries no bond-breaking option, so an EFMO fragment is a whole
+      !!   molecule and no row of this table can be a severed bond reading in
+      !!   Hartree where its neighbours read in kcal/mol.
+      use pic_types, only: int_index
+      use pic_sorting, only: sort_index
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: pairs_arr, pair_obj, frags_arr
+      integer(int_index), allocatable :: order(:)
+      real(dp), allocatable :: key(:)
+      integer :: k, p, n
+
+      if (.not. allocated(data%efmo_pair_energy)) return
+      if (.not. allocated(data%efmo_pair_fragments)) return
+      if (.not. allocated(data%efmo_pair_distance)) return
+      if (.not. allocated(data%efmo_pair_qm)) return
+      n = size(data%efmo_pair_energy)
+      if (n == 0) return
+
+      ! `sort_index` sorts its key in place and writes 1-based positions into
+      ! an `index` that the caller sizes -- it is not allocatable, and an
+      ! unallocated one is a zero-length array it stops on. `reverse` turns the
+      ! non-decreasing sort of the magnitudes into the non-increasing one this
+      ! wants, so nothing here has to negate a key and remember it did.
+      allocate (key(n), order(n))
+      do k = 1, n
+         key(k) = abs(data%efmo_pair_energy(k))
+      end do
+      call sort_index(key, order, reverse=.true.)
+
+      call json%create_array(pairs_arr, "pairs")
+      call json%add(parent, pairs_arr)
+      do k = 1, n
+         p = int(order(k))
+         call json%create_object(pair_obj, "")
+         call json%add(pairs_arr, pair_obj)
+         call json%create_array(frags_arr, "fragments")
+         call json%add(pair_obj, frags_arr)
+         call json%add(frags_arr, "", data%efmo_pair_fragments(1, p))
+         call json%add(frags_arr, "", data%efmo_pair_fragments(2, p))
+         call json%add(pair_obj, "distance", data%efmo_pair_distance(p))
+         if (data%efmo_pair_qm(p)) then
+            call json%add(pair_obj, "treatment", "quantum")
+         else
+            call json%add(pair_obj, "treatment", "classical")
+         end if
+         call json%add(pair_obj, "interaction_energy", data%efmo_pair_energy(p))
+         if (.not. data%efmo_pair_qm(p) .and. allocated(data%efmo_pair_terms)) then
+            call json%add(pair_obj, "electrostatics", data%efmo_pair_terms(1, p))
+            call json%add(pair_obj, "dispersion", data%efmo_pair_terms(2, p))
+            call json%add(pair_obj, "exchange_repulsion", data%efmo_pair_terms(3, p))
+            call json%add(pair_obj, "charge_transfer", data%efmo_pair_terms(4, p))
+         end if
+      end do
+   end subroutine write_efmo_pairs
 
    subroutine write_sapt_section(json, parent, data)
       !! The decomposition, under `sapt`, when there is one

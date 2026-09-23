@@ -33,6 +33,7 @@ module mqc_czt_afo
    public :: build_group_frozen
    public :: cuts_outside_group
    public :: group_electron_shift
+   public :: peptide_bond_advice
    public :: DEFAULT_MODEL_RADIUS
    public :: BOND_ORBITAL_REACH
 
@@ -104,14 +105,16 @@ contains
       !! The model system for one cut bond
       !!
       !! Both ends of the bond, everything within `radius` of either of them,
-      !! every hydrogen hanging off what that selected, and a hydrogen cap for
-      !! each bond that leaves the set. `radius` is in Angstrom and defaults to
-      !! `DEFAULT_MODEL_RADIUS`.
+      !! every singly bonded atom hanging off what that selected, and a
+      !! hydrogen cap for each bond that leaves the set. `radius` is in
+      !! Angstrom and defaults to `DEFAULT_MODEL_RADIUS`.
       !!
-      !! Hydrogens come in wholesale rather than by distance, so that one just
-      !! outside the radius is not replaced by a cap hydrogen a few hundredths
-      !! of an Angstrom away -- a discontinuity in anything that moves the
-      !! geometry.
+      !! A singly bonded neighbour comes in wholesale rather than by distance,
+      !! so that one just outside the radius is not replaced by a cap hydrogen
+      !! a few hundredths of an Angstrom away -- a discontinuity in anything
+      !! that moves the geometry. For a heavy one there is a second reason: a
+      !! cap hydrogen closes one electron pair, and a carbonyl oxygen is held
+      !! by two, so capping it would leave the model a radical.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       type(severed_bond_t), intent(in) :: cut
@@ -148,6 +151,27 @@ contains
          if (near(coords, i, cut%atom_a, reach) .or. near(coords, i, cut%atom_b, reach)) then
             chosen(i) = .true.
          end if
+      end do
+
+      ! Terminal heavy atoms on anything already taken -- a carbonyl oxygen
+      ! above all. A cap hydrogen stands in for exactly one electron pair, so
+      ! replacing a doubly bonded oxygen by one leaves a valence open and the
+      ! model comes back a radical. Perception here is distance-based and
+      ! cannot report a bond order, so the order is not guessed: the atom comes
+      ! in whole instead. One pass, for the reason the hydrogens are one pass --
+      ! an atom with a single bond brings nothing else with it -- and it keeps
+      ! the model continuous in the geometry for the same reason too.
+      do i = 1, n_atoms
+         if (chosen(i)) cycle
+         if (z(i) == 1) cycle
+         if (count_bonds(z, coords, i, tol) /= 1) cycle
+         do j = 1, n_atoms
+            if (.not. chosen(j)) cycle
+            if (bonded_pair(z, coords, i, j, tol)) then
+               chosen(i) = .true.
+               exit
+            end if
+         end do
       end do
 
       ! Hydrogens on anything already taken. One pass: a hydrogen brings nothing
@@ -214,7 +238,11 @@ contains
          call error%set(ERROR_VALIDATION, "afo model: the model system for the bond "// &
                         "between atoms "//to_char(cut%atom_a)//" and "// &
                         to_char(cut%atom_b)//" has an odd electron count, so the "// &
-                        "capping did not close every valence it opened")
+                        "capping did not close every valence it opened. A cap "// &
+                        "hydrogen closes one electron pair, so the sphere around "// &
+                        "the bond has clipped a multiple bond at an atom that is "// &
+                        "not terminal, or the system is not a closed shell to begin "// &
+                        "with")
          return
       end if
 
@@ -367,6 +395,14 @@ contains
       !! bond-detached end of a bond it does not contain is one electron short
       !! of the naive sum over its atoms, and one holding the attached end is
       !! one electron over. Summed over every fragment the shifts cancel.
+      !!
+      !! **The electron moves either way; the nucleus may or may not follow.**
+      !! Where it does, a unit of nuclear charge crosses the same boundary and
+      !! the fragment comes out neutral rather than charged -- but that half
+      !! is applied per atom rather than per group, and only under a field;
+      !! see `nuc_charge` on `group_t` and `splits_nucleus` in
+      !! [[mqc_czt_fmo]]. What is counted here is the electron alone, which is
+      !! the `$FMOBND` assignment and not a convention.
       type(severed_bond_t), intent(in) :: cuts(:)
       integer, intent(in) :: n_cuts
       integer, intent(in) :: members(:)
@@ -537,6 +573,99 @@ contains
 
       within = sum((coords(:, i) - coords(:, j))**2) <= reach*reach
    end function near
+
+   function peptide_bond_advice(z, coords, atom_a, atom_b, tolerance) result(advice)
+      !! What to cut instead, when the bond named is a backbone peptide bond
+      !!
+      !! Empty unless the two atoms are a carbon and a nitrogen and that carbon
+      !! also carries a terminal oxygen, which on a protein is the amide of the
+      !! backbone. FMO's convention there is to leave the peptide bond whole
+      !! and cut the C-alpha--C(=O) bond one place along instead, so that the
+      !! detached bond is a nonpolar single one outside the carbonyl's
+      !! conjugation. Named by index where the carbonyl has exactly one carbon
+      !! neighbour to name.
+      !!
+      !! Atoms are numbered from one, as everywhere in this backend and one
+      !! more than the deck's own numbering.
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: atom_a, atom_b
+      real(dp), intent(in), optional :: tolerance
+      character(len=:), allocatable :: advice
+
+      real(dp) :: tol
+      integer :: carbon, nitrogen, j, alpha, n_alpha
+      logical :: carbonyl
+
+      advice = ""
+      tol = DEFAULT_BOND_TOLERANCE
+      if (present(tolerance)) tol = tolerance
+
+      if (.not. bonded_pair(z, coords, atom_a, atom_b, tol)) return
+      if (z(atom_a) == 6 .and. z(atom_b) == 7) then
+         carbon = atom_a
+         nitrogen = atom_b
+      else if (z(atom_a) == 7 .and. z(atom_b) == 6) then
+         carbon = atom_b
+         nitrogen = atom_a
+      else
+         return
+      end if
+
+      carbonyl = .false.
+      do j = 1, size(z)
+         if (j == carbon) cycle
+         if (z(j) /= 8) cycle
+         if (.not. bonded_pair(z, coords, carbon, j, tol)) cycle
+         if (count_bonds(z, coords, j, tol) == 1) carbonyl = .true.
+      end do
+      if (.not. carbonyl) return
+
+      n_alpha = 0
+      alpha = 0
+      do j = 1, size(z)
+         if (j == carbon) cycle
+         if (z(j) /= 6) cycle
+         if (.not. bonded_pair(z, coords, carbon, j, tol)) cycle
+         n_alpha = n_alpha + 1
+         alpha = j
+      end do
+
+      advice = " Atoms "//to_char(min(nitrogen, carbon))//" and "// &
+               to_char(max(nitrogen, carbon))//" are a "// &
+               "peptide bond -- an amide C(=O)-N, conjugated with the carbonyl "// &
+               "and not a plain single bond. The FMO convention for a protein is "// &
+               "to leave it whole and cut the C-alpha--C(=O) bond one place along "// &
+               "the backbone instead"
+      if (n_alpha == 1) then
+         advice = advice//", which here is the bond between atoms "// &
+                  to_char(min(alpha, carbon))//" and "// &
+                  to_char(max(alpha, carbon))//"."
+      else
+         advice = advice//"."
+      end if
+   end function peptide_bond_advice
+
+   pure function count_bonds(z, coords, i, tol) result(n)
+      !! How many atoms `i` is bonded to, by the same distance criterion
+      !!
+      !! One means terminal: a hydrogen, or the oxygen of a carbonyl. Since
+      !! perception is distance-based the count is of *neighbours*, not of
+      !! electron pairs, so a doubly bonded oxygen counts one.
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: i
+      real(dp), intent(in) :: tol
+      integer :: n
+
+      integer :: j
+
+      n = 0
+      do j = 1, size(z)
+         if (j == i) cycle
+         if (bonded_pair(z, coords, i, j, tol)) n = n + 1
+      end do
+   end function count_bonds
 
    pure function bonded_pair(z, coords, i, j, tol) result(is_bond)
       !! The same criterion `mqc_bond_perception` uses, on two atoms
