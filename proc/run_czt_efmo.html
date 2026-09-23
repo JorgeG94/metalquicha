@@ -169,10 +169,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -373,7 +373,7 @@ one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~10"></span>
+              <span class="anchor" id="variable-atomic_numbers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -388,7 +388,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~5"></span>
+              <span class="anchor" id="variable-element_symbols~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -403,7 +403,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~12"></span>
+              <span class="anchor" id="variable-coordinates~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -418,7 +418,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~6"></span>
+              <span class="anchor" id="variable-owner~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -448,7 +448,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~7"></span>
+              <span class="anchor" id="variable-basis_name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -463,7 +463,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-rcut~2"></span>
+              <span class="anchor" id="variable-rcut"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -478,7 +478,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~10"></span>
+              <span class="anchor" id="variable-level~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -493,7 +493,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge_transfer~2"></span>
+              <span class="anchor" id="variable-charge_transfer"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -508,7 +508,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-induction_damping~2"></span>
+              <span class="anchor" id="variable-induction_damping"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -524,7 +524,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive~3"></span>
+              <span class="anchor" id="variable-scf_drive~2"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -539,7 +539,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter~3"></span>
+              <span class="anchor" id="variable-scf_max_iter~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -554,7 +554,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol~3"></span>
+              <span class="anchor" id="variable-scf_energy_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -569,7 +569,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol~3"></span>
+              <span class="anchor" id="variable-scf_density_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -599,7 +599,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~3"></span>
+              <span class="anchor" id="variable-guess~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -614,7 +614,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~12"></span>
+              <span class="anchor" id="variable-energy~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -629,7 +629,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~14"></span>
+              <span class="anchor" id="variable-terms~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -689,7 +689,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~95"></span>
+              <span class="anchor" id="variable-error~88"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -704,7 +704,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~6"></span>
+              <span class="anchor" id="variable-verbose~5"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -749,7 +749,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-quadrupole_blocks~2"></span>
+              <span class="anchor" id="variable-quadrupole_blocks"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -779,7 +779,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dynamic_maxiter~2"></span>
+              <span class="anchor" id="variable-dynamic_maxiter"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -794,7 +794,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response~2"></span>
+              <span class="anchor" id="variable-response"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -809,7 +809,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_response~2"></span>
+              <span class="anchor" id="variable-allow_crap_response"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -824,7 +824,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response_batch~2"></span>
+              <span class="anchor" id="variable-response_batch"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -839,7 +839,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-correlation~2"></span>
+              <span class="anchor" id="variable-correlation"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -871,7 +871,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-freeze_core~3"></span>
+              <span class="anchor" id="variable-freeze_core"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -886,7 +886,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_frozen_core~3"></span>
+              <span class="anchor" id="variable-n_frozen_core"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -901,7 +901,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~8"></span>
+              <span class="anchor" id="variable-comm~9"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1560,7 +1560,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 15:13 +0000             </p>
+ on 2026-09-23 15:27 +0000             </p>
           </div>
         </div>
         <br>
