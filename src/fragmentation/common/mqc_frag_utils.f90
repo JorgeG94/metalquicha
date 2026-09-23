@@ -59,18 +59,22 @@ module mqc_frag_utils
 
    ! Local utilities
    public :: apply_distance_screening
+   public :: apply_reference_closure
    public :: generate_mbe_term_list
    public :: sort_fragments_by_size
 
 contains
 
-   subroutine generate_mbe_term_list(sys_geom, driver_config, max_level, polymers, total_fragments)
+   subroutine generate_mbe_term_list(sys_geom, driver_config, max_level, polymers, total_fragments, &
+                                     n_full)
       !! The term list a plain MBE run evaluates, at this geometry
       !!
       !! Monomers first, then every n-mer up to `max_level`, then distance
-      !! screening, the counterpoise rows if any, and the size sort. This is
-      !! the same list the driver evaluates, for a caller that needs it in
-      !! advance -- an optimization freezing the term list, say.
+      !! screening, the reduction to one fragment's interactions when
+      !! `driver_config%reference_fragment` names one, the counterpoise rows if
+      !! any, and the size sort. This is the same list the driver evaluates,
+      !! for a caller that needs it in advance -- an optimization freezing the
+      !! term list, say.
       !!
       !! Monomers are in the list here, unlike `fraglist_t`, which starts at
       !! pairs: `supplied_terms` is fed straight into the expansion and the
@@ -86,10 +90,15 @@ contains
       integer, intent(in) :: max_level
       integer, allocatable, intent(out) :: polymers(:, :)
       integer(int64), intent(out) :: total_fragments
+      integer(int64), intent(out), optional :: n_full
+         !! How long the list would have been with no reference fragment:
+         !! what the ordinary expansion computes over the same fragments,
+         !! level, screening and counterpoise. Equal to `total_fragments`
+         !! when there is no reference.
 
       integer, allocatable :: monomers(:)
-      integer(int64) :: n_rows
-      integer :: imon
+      integer(int64) :: n_rows, i
+      integer :: imon, n
 
       n_rows = get_nfrags(sys_geom%n_monomers, max_level)
 
@@ -109,6 +118,27 @@ contains
       deallocate (monomers)
 
       call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
+
+      ! Counted before the reduction below, and with the rows counterpoise
+      ! would add -- 2^n - 2 for every n-mer -- so the figure is the one the
+      ! ordinary run would have evaluated, not merely the list this started as.
+      if (present(n_full)) then
+         n_full = total_fragments
+         if (driver_config%counterpoise == "vmfc") then
+            do i = 1_int64, total_fragments
+               n = fragment_size_of(polymers(i, :))
+               if (n >= 2) n_full = n_full + 2_int64**n - 2_int64
+            end do
+         end if
+      end if
+
+      ! After screening, so the reduction starts from a list already closed
+      ! under subsets, and before the counterpoise rows, which are then built
+      ! for the terms that are kept and no others.
+      if (driver_config%reference_fragment > 0) then
+         call apply_reference_closure(polymers, total_fragments, driver_config%reference_fragment, &
+                                      max_level)
+      end if
 
       ! Counterpoise rows are added after screening, so a pair that was screened
       ! out does not bring its ghosted monomers along with it, and before the
@@ -243,6 +273,97 @@ contains
       end if
 
    end subroutine apply_distance_screening
+
+   subroutine apply_reference_closure(polymers, total_fragments, reference, max_level)
+      !! Keep only the terms the interactions of one fragment need, in place
+      !!
+      !! `reference` is a monomer number, 1-based. `polymers` must be closed
+      !! under subsets and hold no counterpoise rows yet; it is compacted, its
+      !! order kept, and `total_fragments` reduced. The result is closed under
+      !! subsets too.
+      !!
+      !! A term is kept when it contains the reference, or when adding the
+      !! reference to it gives a term that is in the list.
+      !
+      ! Why that rule. The correction for a term T is
+      !
+      !     dE(T) = E(T) - sum over proper subsets S of T of dE(S)
+      !
+      ! so it needs the energy of *every* subset of T, recursively -- not only
+      ! the ones that contain the reference. dE(R,A) needs E(A); dE(R,A,B)
+      ! needs E(A,B), E(A) and E(B). Computing only the terms that contain R
+      ! leaves those missing, and the lookup in `compute_mbe_delta` fails.
+      !
+      ! What is needed is the closure under subsets of the terms that contain
+      ! R. A subset S of such a term either contains R, and is itself such a
+      ! term, or does not, and then S + {R} is a subset of the same term --
+      ! so S is needed exactly when S + {R} is in the list. That is the rule
+      ! above, and it is the smallest list that serves: every term kept is a
+      ! subset of some term that contains R.
+      !
+      ! It is closed under subsets by construction rather than by a check at
+      ! run time. Let T be kept and S a proper subset of it. If R is in S, S is
+      ! a subset of T, which is in the input list (a kept term containing R is
+      ! an input term, and one without R has T + {R} in the input, which holds
+      ! T too); the input is closed, so S is in it, and S contains R, so S is
+      ! kept. If R is not in S, then S + {R} is a subset of T when R is in T,
+      ! or of T + {R} when it is not; both are input terms, so S + {R} is one
+      ! too, and S is kept.
+      !
+      ! With no distance screening the input is every term of up to L
+      ! monomers, and the rule becomes: every term of up to L monomers that
+      ! contains R, and every term of up to L-1 that does not. Only the
+      ! L-mers without R are skipped. With n fragments that is
+      !
+      !     kept = 1 + 2 * sum_{k=1}^{L-1} C(n-1, k)
+      !
+      ! against sum_{k=1}^{L} C(n, k) for the full expansion: 2n-1 terms
+      ! against n + n(n-1)/2 at L = 2. With screening the rule drops, in
+      ! addition, the subsets only a screened-out term containing R needed.
+      integer, intent(inout) :: polymers(:, :)
+      integer(int64), intent(inout) :: total_fragments
+      integer, intent(in) :: reference
+      integer, intent(in) :: max_level
+
+      type(fragment_lookup_t) :: lookup
+      integer(int64) :: i, n_kept, n_before
+      integer :: n
+      integer :: key(max_level + 1)
+      logical :: keep
+
+      n_before = total_fragments
+      if (n_before < 1_int64) return
+
+      call lookup%init(n_before)
+      do i = 1_int64, n_before
+         n = fragment_size_of(polymers(i, :))
+         call lookup%insert(polymers(i, :), n, i)
+      end do
+
+      n_kept = 0_int64
+      do i = 1_int64, n_before
+         n = fragment_size_of(polymers(i, :))
+         if (any(polymers(i, 1:n) == reference)) then
+            keep = .true.
+         else if (n < max_level) then
+            key(1:n) = polymers(i, 1:n)
+            key(n + 1) = reference
+            keep = lookup%find(key(1:n + 1), n + 1) > 0_int64
+         else
+            keep = .false.
+         end if
+
+         if (.not. keep) cycle
+         n_kept = n_kept + 1_int64
+         if (n_kept /= i) polymers(n_kept, :) = polymers(i, :)
+      end do
+      call lookup%destroy()
+
+      total_fragments = n_kept
+      call logger%info("Interaction energy of reference fragment "//to_char(reference - 1)// &
+                       " (0-based): computing "//to_char(n_kept)//" of "//to_char(n_before)// &
+                       " terms, skipping "//to_char(n_before - n_kept))
+   end subroutine apply_reference_closure
 
    function fragment_should_be_screened(fragment, n, sys_geom, driver_config) result(should_screen)
       !! Whether this fragment or any of its k-subsets, `k >= 2`, exceeds the

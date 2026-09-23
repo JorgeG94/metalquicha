@@ -58,6 +58,11 @@ module mqc_config_adapter
       real(dp) :: cap_scale = 1.0_dp
          !! Where a cap sits along the bond it closes
       character(len=16) :: counterpoise = "none"   !! "none" or "vmfc"
+      integer :: reference_fragment = 0
+         !! The fragment a `driver: "InteractionEnergy"` run reports the
+         !! interactions of, as a monomer number -- 1-based, the way a term list
+         !! names monomers, where the deck's own index is 0-based. 0 means none
+         !! was given; -1 means one was given that no fragment can have.
       character(len=16) :: fmo_far_field = "mulliken"  !! mulliken, chelpg or ignore
       real(dp) :: fmo_resppc = 2.0_dp    !! Point-charge cutoff; negative disables it
       integer :: fmo_max_outer = 50
