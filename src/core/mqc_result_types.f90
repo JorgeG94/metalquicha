@@ -1,7 +1,7 @@
 !! Quantum chemistry calculation result containers
 module mqc_result_types
    !! Energy, gradient and property containers, and the MPI transfer of one.
-   use pic_types, only: dp, int32
+   use pic_types, only: dp, int32, int64
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
    use mqc_error, only: error_t
    use mqc_calculation_defaults, only: STATE_SPIN_UNKNOWN, STATE_SPIN_SINGLET, &
@@ -275,6 +275,23 @@ module mqc_result_types
       logical :: has_hessian = .false.               !! Hessian has been computed
       logical :: has_dipole = .false.                !! Dipole has been computed
       logical :: has_dipole_derivatives = .false.    !! Dipole derivatives have been computed
+
+      ! The interaction energy of one fragment, when `compute_mbe` was given
+      ! a reference. `total_energy` and `has_energy` are then left unset: the
+      ! expansion was reduced to the terms these need, and what it sums to is
+      ! not the system's energy.
+      integer :: reference_fragment = 0
+         !! The reference as a monomer number, 1-based; 0 when there was none
+      real(dp) :: reference_energy = 0.0_dp
+         !! The reference fragment's own energy, its one-body term (Hartree)
+      real(dp) :: interaction_energy = 0.0_dp
+         !! Sum of every many-body correction, level 2 and up, whose term
+         !! contains the reference (Hartree)
+      real(dp), allocatable :: interaction_by_level(:)
+         !! (max_level) the same sum split by term size; element 1 is zero
+      integer(int64), allocatable :: interaction_count_by_level(:)
+         !! (max_level) how many terms containing the reference each level has
+      logical :: has_interaction = .false.           !! The four above are set
    contains
       procedure :: destroy => mbe_result_destroy            !! Clean up allocated memory
       procedure :: reset => mbe_result_reset                !! Reset all values and flags
@@ -467,6 +484,8 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
+      if (allocated(this%interaction_count_by_level)) deallocate (this%interaction_count_by_level)
       call this%reset()
    end subroutine mbe_result_destroy
 
@@ -479,6 +498,10 @@ contains
       this%has_hessian = .false.
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
+      this%reference_fragment = 0
+      this%reference_energy = 0.0_dp
+      this%interaction_energy = 0.0_dp
+      this%has_interaction = .false.
    end subroutine mbe_result_reset
 
    subroutine mbe_result_allocate_gradient(this, total_atoms)

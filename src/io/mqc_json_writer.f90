@@ -6,7 +6,7 @@ module mqc_json_writer
    use mqc_json_output_types, only: json_output_data_t, ordered_rows_for_level, &
                                     OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
    use mqc_io_helpers, only: get_output_json_filename, get_basename
-   use mqc_physical_constants, only: HARTREE_TO_EV
+   use mqc_physical_constants, only: HARTREE_TO_EV, HARTREE_TO_KCALMOL
    use mqc_physical_constants, only: HARTREE_TO_CALMOL, R_CALMOLK, AU_TO_DEBYE, CAL_TO_J
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
@@ -240,7 +240,15 @@ contains
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
-      call json%add(main_obj, "total_energy", data%total_energy)
+      ! An interaction-energy run has no total: its term list was reduced to
+      ! what one fragment's interactions need, and the sum over it is not the
+      ! system's energy. So the key a consumer reads a total from is absent,
+      ! rather than present and holding something else.
+      if (data%has_interaction) then
+         call write_interaction_section(json, main_obj, data)
+      else
+         call json%add(main_obj, "total_energy", data%total_energy)
+      end if
 
       call write_unconverged_section(json, main_obj, data)
 
@@ -351,6 +359,49 @@ contains
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine write_mbe_breakdown_json_impl
+
+   subroutine write_interaction_section(json, parent, data)
+      !! The `interaction_energy` object of a `driver: "InteractionEnergy"` run
+      !!
+      !! `reference_fragment` is 0-based, the deck's own index;
+      !! `reference_monomer` is the same fragment as the `levels` indices and
+      !! the fragment table number it, from 1. Energies in Hartree, and the
+      !! total again in kcal/mol.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: obj, arr, entry
+      integer :: frag_level
+
+      call json%create_object(obj, "interaction_energy")
+      call json%add(parent, obj)
+      call json%add(obj, "reference_fragment", data%reference_fragment - 1)
+      call json%add(obj, "reference_monomer", data%reference_fragment)
+      call json%add(obj, "reference_energy", data%reference_energy)
+      call json%add(obj, "total", data%interaction_energy)
+      call json%add(obj, "total_kcal_mol", data%interaction_energy*HARTREE_TO_KCALMOL)
+
+      call json%create_array(arr, "by_level")
+      call json%add(obj, arr)
+      if (allocated(data%interaction_by_level) .and. allocated(data%interaction_count_by_level)) then
+         do frag_level = 2, size(data%interaction_by_level)
+            call json%create_object(entry, "")
+            call json%add(arr, entry)
+            call json%add(entry, "frag_level", frag_level)
+            call json%add(entry, "name", trim(get_frag_level_name(frag_level)))
+            call json%add(entry, "count", int(data%interaction_count_by_level(frag_level)))
+            call json%add(entry, "energy", data%interaction_by_level(frag_level))
+         end do
+      end if
+
+      ! The saving, measured against the ordinary expansion over the same
+      ! fragments, level, screening and counterpoise.
+      call json%add(obj, "terms_computed", int(data%fragment_count))
+      if (data%full_expansion_count > 0_int64) then
+         call json%add(obj, "terms_in_full_expansion", int(data%full_expansion_count))
+      end if
+   end subroutine write_interaction_section
 
    subroutine write_charges_section(json, parent, data)
       !! Atomic partial charges, per atom, with the scheme that produced them

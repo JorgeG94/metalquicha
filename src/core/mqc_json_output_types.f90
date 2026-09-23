@@ -126,6 +126,22 @@ module mqc_json_output_types
          !! sharing one monomer is one problem rather than four hundred.
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
+
+      !----- Interaction energy of one fragment (driver InteractionEnergy) -----
+      ! Written in place of `total_energy`, never beside it: the expansion was
+      ! reduced to the terms these need, so its sum is not the system's energy
+      ! and `has_energy` stays false. See `mbe_result_t`, which these are
+      ! copied from.
+      logical :: has_interaction = .false.
+      integer :: reference_fragment = 0
+         !! The reference as a monomer number, 1-based as `polymers` holds it
+      real(dp) :: reference_energy = 0.0_dp
+      real(dp) :: interaction_energy = 0.0_dp
+      real(dp), allocatable :: interaction_by_level(:)       !! (max_level)
+      integer(int64), allocatable :: interaction_count_by_level(:)  !! (max_level)
+      integer(int64) :: full_expansion_count = 0
+         !! How many terms the ordinary expansion would have computed over the
+         !! same fragments, level and screening. 0 when not known.
       character(len=16) :: fragment_breakdown = "csv"
          !! Where the per-fragment table goes: "csv", "json" or "none"
       character(len=16) :: fingerprint = ""
@@ -339,6 +355,8 @@ contains
       if (allocated(this%fragment_distances)) deallocate (this%fragment_distances)
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)
+      if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
+      if (allocated(this%interaction_count_by_level)) deallocate (this%interaction_count_by_level)
 
       ! GMBE PIE data
       if (allocated(this%pie_atom_sets)) deallocate (this%pie_atom_sets)
@@ -406,6 +424,11 @@ contains
       this%excited_spin = ""
       this%fragment_count = 0
       this%max_level = 0
+      this%has_interaction = .false.
+      this%reference_fragment = 0
+      this%reference_energy = 0.0_dp
+      this%interaction_energy = 0.0_dp
+      this%full_expansion_count = 0
       this%n_pie_terms = 0
       this%has_sapt = .false.
       this%has_efmo = .false.
