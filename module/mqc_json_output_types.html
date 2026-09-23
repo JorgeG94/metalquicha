@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.7% of total for modules and submodules.">205 statements</a>
+                 title=" 0.9% of total for modules and submodules.">253 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -171,6 +171,7 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_json_output_types.html#proc-ordered_rows_for_level">ordered_rows_for_level</a>
             <a class="list-group-item" href="../module/mqc_json_output_types.html#proc-json_output_data_destroy">json_output_data_destroy</a>
             <a class="list-group-item" href="../module/mqc_json_output_types.html#proc-json_output_data_reset">json_output_data_reset</a>
         </div>
@@ -1496,7 +1497,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_order_scheme~2"></span>
+              <span class="anchor" id="variable-bond_order_scheme"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1601,7 +1602,7 @@ first, paired with <code>culprit_counts</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies"></span>
+              <span class="anchor" id="variable-delta_energies~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1861,7 +1862,7 @@ GAMESS term by term.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-excited_method~2"></span>
+              <span class="anchor" id="variable-excited_method"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1880,7 +1881,7 @@ same deck and nothing in an excitation energy says which.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-excited_spin~2"></span>
+              <span class="anchor" id="variable-excited_spin"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1917,7 +1918,7 @@ complete.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint"></span>
+              <span class="anchor" id="variable-fingerprint~5"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1936,7 +1937,7 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~4"></span>
+              <span class="anchor" id="variable-force_constants~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1953,7 +1954,7 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown~2"></span>
+              <span class="anchor" id="variable-fragment_breakdown"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1970,7 +1971,7 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges"></span>
+              <span class="anchor" id="variable-fragment_charges~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1987,7 +1988,28 @@ Empty when nothing computed it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
+              <span class="anchor" id="variable-fragment_connected"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>fragment_connected</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Whether this term&rsquo;s two monomers are joined by a severed covalent
+bond. <strong>Meaningful on two-body rows only</strong> &ndash; false everywhere else,
+because the many-body subtraction removes the pair terms and with
+them the bond energy. A true row&rsquo;s <code>delta_energy</code> includes the
+energy of re-forming that bond and is not an interaction energy.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_count~7"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2127,7 +2149,7 @@ magnitude, so nothing downstream can tell without this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~8"></span>
+              <span class="anchor" id="variable-frequencies~10"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2297,7 +2319,7 @@ magnitude, so nothing downstream can tell without this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~3"></span>
+              <span class="anchor" id="variable-gradient~14"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2518,7 +2540,7 @@ magnitude, so nothing downstream can tell without this.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_orbitals"></span>
+              <span class="anchor" id="variable-has_orbitals~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2587,7 +2609,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~5"></span>
+              <span class="anchor" id="variable-hessian~13"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2604,7 +2626,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-homo"></span>
+              <span class="anchor" id="variable-homo~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2706,7 +2728,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~6"></span>
+              <span class="anchor" id="variable-ir_intensities~7"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2723,7 +2745,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lumo"></span>
+              <span class="anchor" id="variable-lumo~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2740,7 +2762,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level"></span>
+              <span class="anchor" id="variable-max_level~22"></span>
               integer,
             </td>
               <td>public</td>
@@ -2757,7 +2779,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~7"></span>
+              <span class="anchor" id="variable-n_pie_terms~10"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2842,7 +2864,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              <span class="anchor" id="variable-pie_atom_sets~9"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2859,7 +2881,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~3"></span>
+              <span class="anchor" id="variable-pie_coefficients~6"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2893,7 +2915,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers"></span>
+              <span class="anchor" id="variable-polymers~18"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2910,7 +2932,7 @@ fragmented run leaves it false: gaps do not add.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~5"></span>
+              <span class="anchor" id="variable-reduced_masses~6"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3054,7 +3076,7 @@ cover &ndash; a triplet or complex instability is a different matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level"></span>
+              <span class="anchor" id="variable-sum_by_level~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -3088,7 +3110,7 @@ cover &ndash; a triplet or complex instability is a different matrix.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~4"></span>
+              <span class="anchor" id="variable-total_energy~7"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3223,7 +3245,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/json_output_data_t.html#boundprocedure-destroy~11'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
+  <strong><a href='../type/json_output_data_t.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -3242,6 +3264,76 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
 
         <section>
           <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-ordered_rows_for_level"></span> <h3>public  subroutine <a href='../proc/ordered_rows_for_level.html'>ordered_rows_for_level</a>(data, frag_level, order)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Row indices of one level&rsquo;s terms, strongest interaction first</p><a href="../proc/ordered_rows_for_level.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-data~21"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>data</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_level~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-order~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>order</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
               <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-json_output_data_destroy"></span> <h3>private  subroutine <a href='../proc/json_output_data_destroy.html'>json_output_data_destroy</a>(this)  
 </h3></div>
@@ -3262,7 +3354,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~27"></span>
+              <span class="anchor" id="variable-this~89"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3302,7 +3394,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~28"></span>
+              <span class="anchor" id="variable-this~90"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3345,7 +3437,7 @@ built from, zero-padded, exactly as <code>polymers</code> holds them.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 18:40 +0000             </p>
+ on 2026-09-23 18:44 +0000             </p>
           </div>
         </div>
         <br>
