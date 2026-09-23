@@ -43,6 +43,7 @@ module mqc_driver
    use mqc_json, only: merge_multi_molecule_json
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_NONE
    use mqc_json_writer, only: write_json_output
+   use, intrinsic :: iso_fortran_env, only: output_unit
    implicit none
    private
 
@@ -440,10 +441,32 @@ contains
       ! Every input path arrives here, so this is where the system is checked:
       ! the JSON reader, the C interface and a supplied term list alike.
       if (resources%mpi_comms%world_comm%rank() == 0) then
+         ! Audited whether or not the deck listed bonds. A deck that forgot
+         ! `connectivity` is the case the audit exists for -- nothing is marked
+         ! broken, so nothing is capped, and an even-electron partition of a
+         ! covalent molecule runs to completion and answers the wrong question.
+         ! `afo` is the exception and is exempt: it perceives its own cuts from
+         ! the geometry and detaches each with a frozen orbital, so it needs no
+         ! declared list and a deck that gives none is complete as written.
+         !
+         ! `bonds` rather than `sys_geom%bonds`: on this path the deck's
+         ! connectivity arrives as its own argument and is not copied onto the
+         ! geometry until the expansion is built, hundreds of lines below. An
+         ! absent `bonds` forwards as absent, which is the deck that declared
+         ! none.
          call validate_system(sys_geom,.not. config%unchecked_input, validation_error, &
-                              check_bonds=allocated(sys_geom%bonds))
+                              check_bonds=(trim(config%bond_breaking) /= "afo"), &
+                              declared_bonds=bonds)
          if (validation_error%has_error()) then
             call logger%error("invalid system: "//validation_error%get_message())
+            ! Before the abort, not after: MPI_ABORT kills the process without
+            ! unwinding and discards whatever is still in the stdout buffer.
+            ! A refusal nobody can read is the failure this check exists to
+            ! stop, one layer up.
+            ! TODO(mqc): every other `abort_comm` in this file loses its
+            ! message the same way, including `check_system_geometry` above,
+            ! whose comment says `abort_comm` avoids that. It does not.
+            flush (output_unit)
             call abort_comm(resources%mpi_comms%world_comm, 1)
          end if
 
