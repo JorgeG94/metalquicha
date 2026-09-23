@@ -227,14 +227,14 @@ electrostatically embedded MBE beside it.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_checkpoint.html'>mqc_checkpoint</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
                   <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_checkpoint.html'>mqc_checkpoint</a></li>
+                  <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1421,18 +1421,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M495.56,-558C458.43,-558 392.99,-558 348.82,-558"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="348.64,-554.5 338.64,-558 348.64,-561.5 348.64,-554.5"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_many_body_expansion~~UsedByGraph_node20" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_many_body_expansion~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_many_body_expansion~~UsedByGraph_node20"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="564,-528 486,-528 486,-504 564,-504 564,-528"/>
 <text text-anchor="middle" x="525" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_many_body_expansion~~UsedByGraph_edge19" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M485.76,-523.27C447.6,-530.52 388.99,-541.66 348.47,-549.36"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="347.76,-545.93 338.58,-551.24 349.06,-552.81 347.76,-545.93"/>
 </g>
@@ -1618,7 +1618,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~9"></span>
+              <span class="anchor" id="variable-this~100"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1633,7 +1633,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~2"></span>
+              <span class="anchor" id="variable-json_data~24"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1679,7 +1679,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~8"></span>
+              <span class="anchor" id="variable-this~99"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1694,7 +1694,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data"></span>
+              <span class="anchor" id="variable-json_data~23"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1745,7 +1745,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~2"></span>
+              <span class="anchor" id="variable-basis~12"></span>
               character(len=64),
             </td>
               <td>public</td>
@@ -1768,7 +1768,7 @@ silently produced 6-31G numbers.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~2"></span>
+              <span class="anchor" id="variable-bond_breaking~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1787,7 +1787,7 @@ only behaviour before caps existed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~2"></span>
+              <span class="anchor" id="variable-calc_type~9"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -1804,7 +1804,7 @@ only behaviour before caps existed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~2"></span>
+              <span class="anchor" id="variable-cap_scale~5"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1821,7 +1821,7 @@ only behaviour before caps existed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -1840,7 +1840,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~8"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -1857,7 +1857,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~4"></span>
+              <span class="anchor" id="variable-energy~21"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -1874,7 +1874,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp"></span>
+              <span class="anchor" id="variable-esp~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1891,7 +1891,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion"></span>
+              <span class="anchor" id="variable-expansion~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1908,7 +1908,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field"></span>
+              <span class="anchor" id="variable-far_field~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1925,7 +1925,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1942,7 +1942,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1959,7 +1959,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1976,7 +1976,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level"></span>
+              <span class="anchor" id="variable-level~10"></span>
               integer,
             </td>
               <td>public</td>
@@ -1995,7 +1995,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer"></span>
+              <span class="anchor" id="variable-max_outer~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2012,7 +2012,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~5"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2046,7 +2046,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2063,7 +2063,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2080,7 +2080,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2097,7 +2097,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol"></span>
+              <span class="anchor" id="variable-outer_tol~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2114,7 +2114,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner"></span>
+              <span class="anchor" id="variable-owner~16"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2131,7 +2131,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~9"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2148,7 +2148,7 @@ thing here as it does for MBE.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc"></span>
+              <span class="anchor" id="variable-resppc~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2166,7 +2166,7 @@ disables the approximation.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol"></span>
+              <span class="anchor" id="variable-scf_density_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2184,7 +2184,7 @@ convergence, held apart from the outer loop above.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive"></span>
+              <span class="anchor" id="variable-scf_drive~3"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
               <td>public</td>
@@ -2198,12 +2198,12 @@ convergence, held apart from the outer loop above.</p>
             <td>
 <p>How each fragment SCF is <em>driven</em> &ndash; the accelerator, DIIS
 subspace, level shift, linear-dependence threshold and incremental
-Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class="pull-right"><emph>Read more&hellip;</emph></a>
+Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol"></span>
+              <span class="anchor" id="variable-scf_energy_tol~3"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2220,7 +2220,7 @@ Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter"></span>
+              <span class="anchor" id="variable-scf_max_iter~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2237,7 +2237,7 @@ Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~77"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2263,7 +2263,7 @@ Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class=
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fmo_context_t.html#boundprocedure-destroy~3'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_destroy.html'>fmo_destroy</a></td>
+  <strong><a href='../type/fmo_context_t.html#boundprocedure-destroy~19'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_destroy.html'>fmo_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2283,7 +2283,7 @@ Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class=
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fmo_context_t.html#boundprocedure-init~4'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_init.html'>fmo_init</a></td>
+  <strong><a href='../type/fmo_context_t.html#boundprocedure-init~7'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fmo_init.html'>fmo_init</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2326,7 +2326,7 @@ Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class=
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~2"></span>
+              <span class="anchor" id="variable-calc_type~9"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2343,7 +2343,7 @@ Fock building.</p><a href="../type/fmo_context_t.html#variable-scf_drive" class=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -2362,7 +2362,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~8"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -2379,7 +2379,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2396,7 +2396,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2413,7 +2413,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2430,7 +2430,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~5"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2447,7 +2447,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms"></span>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -2464,7 +2464,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2481,7 +2481,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2498,7 +2498,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2515,7 +2515,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets"></span>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2532,7 +2532,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients"></span>
+              <span class="anchor" id="variable-pie_coefficients~4"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2549,7 +2549,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~9"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2566,7 +2566,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~77"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2592,7 +2592,7 @@ configured.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/gmbe_context_t.html#boundprocedure-destroy~2'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_destroy.html'>gmbe_destroy</a></td>
+  <strong><a href='../type/gmbe_context_t.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_destroy.html'>gmbe_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2612,7 +2612,7 @@ configured.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/gmbe_context_t.html#boundprocedure-init~3'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_init.html'>gmbe_init</a></td>
+  <strong><a href='../type/gmbe_context_t.html#boundprocedure-init~6'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_init.html'>gmbe_init</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2655,7 +2655,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~2"></span>
+              <span class="anchor" id="variable-calc_type~9"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2672,7 +2672,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -2691,7 +2691,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~8"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -2708,7 +2708,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2725,7 +2725,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2742,7 +2742,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2759,7 +2759,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~5"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -2776,7 +2776,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2793,7 +2793,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2810,7 +2810,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2827,7 +2827,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~9"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -2844,7 +2844,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~77"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -2923,7 +2923,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~2"></span>
+              <span class="anchor" id="variable-calc_type~9"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2940,7 +2940,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-checkpoint"></span>
+              <span class="anchor" id="variable-checkpoint~3"></span>
               type(<a href='../type/checkpoint_t.html'>checkpoint_t</a>),
             </td>
               <td>public</td>
@@ -2959,7 +2959,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~8"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -2976,7 +2976,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2993,7 +2993,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids"></span>
+              <span class="anchor" id="variable-group_ids~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3010,7 +3010,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
+              <span class="anchor" id="variable-group_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3027,7 +3027,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~3"></span>
+              <span class="anchor" id="variable-max_level~21"></span>
               integer,
             </td>
               <td>public</td>
@@ -3044,7 +3044,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~5"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -3061,7 +3061,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~2"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3078,7 +3078,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              <span class="anchor" id="variable-nodes_per_group~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -3095,7 +3095,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3112,7 +3112,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~20"></span>
               integer,
             </td>
               <td>public,</td>
@@ -3129,7 +3129,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~9"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -3146,7 +3146,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~77"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -3163,7 +3163,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
+              <span class="anchor" id="variable-total_fragments~10"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -3189,7 +3189,7 @@ configured.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_context_t.html#boundprocedure-destroy'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_destroy.html'>mbe_destroy</a></td>
+  <strong><a href='../type/mbe_context_t.html#boundprocedure-destroy~17'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_destroy.html'>mbe_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -3209,7 +3209,7 @@ configured.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mbe_context_t.html#boundprocedure-init~2'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_init.html'>mbe_init</a></td>
+  <strong><a href='../type/mbe_context_t.html#boundprocedure-init~5'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/mbe_init.html'>mbe_init</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -3252,7 +3252,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-z~2"></span>
+              <span class="anchor" id="variable-z~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3297,7 +3297,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~11"></span>
+              <span class="anchor" id="variable-this~102"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3342,7 +3342,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~10"></span>
+              <span class="anchor" id="variable-this~101"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3392,7 +3392,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~16"></span>
+              <span class="anchor" id="variable-this~107"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3432,7 +3432,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~15"></span>
+              <span class="anchor" id="variable-this~106"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3447,7 +3447,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~4"></span>
+              <span class="anchor" id="variable-method_config~7"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3462,7 +3462,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3502,7 +3502,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~18"></span>
+              <span class="anchor" id="variable-this~109"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3517,7 +3517,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~4"></span>
+              <span class="anchor" id="variable-json_data~26"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -3557,7 +3557,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~19"></span>
+              <span class="anchor" id="variable-this~110"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3572,7 +3572,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~5"></span>
+              <span class="anchor" id="variable-json_data~27"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3612,7 +3612,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~17"></span>
+              <span class="anchor" id="variable-this~108"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3627,7 +3627,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~3"></span>
+              <span class="anchor" id="variable-json_data~25"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3667,7 +3667,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~23"></span>
+              <span class="anchor" id="variable-this~114"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3707,7 +3707,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~22"></span>
+              <span class="anchor" id="variable-this~113"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3722,7 +3722,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~5"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3737,7 +3737,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3777,7 +3777,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~25"></span>
+              <span class="anchor" id="variable-this~116"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3792,7 +3792,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~9"></span>
+              <span class="anchor" id="variable-json_data~31"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3832,7 +3832,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~24"></span>
+              <span class="anchor" id="variable-this~115"></span>
               class(<a href='../type/gmbe_context_t.html'>gmbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3847,7 +3847,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~8"></span>
+              <span class="anchor" id="variable-json_data~30"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3887,7 +3887,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~12"></span>
+              <span class="anchor" id="variable-this~103"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3927,7 +3927,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~14"></span>
+              <span class="anchor" id="variable-this~105"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3967,7 +3967,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~13"></span>
+              <span class="anchor" id="variable-this~104"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3982,7 +3982,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~3"></span>
+              <span class="anchor" id="variable-method_config~6"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3997,7 +3997,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -4037,7 +4037,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~21"></span>
+              <span class="anchor" id="variable-this~112"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4052,7 +4052,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~7"></span>
+              <span class="anchor" id="variable-json_data~29"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -4092,7 +4092,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~20"></span>
+              <span class="anchor" id="variable-this~111"></span>
               class(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4107,7 +4107,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~6"></span>
+              <span class="anchor" id="variable-json_data~28"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -4147,7 +4147,7 @@ configured.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~26"></span>
+              <span class="anchor" id="variable-this~117"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4162,7 +4162,7 @@ configured.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-role"></span>
+              <span class="anchor" id="variable-role~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4205,7 +4205,7 @@ configured.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 19:18 +0000             </p>
+ on 2026-09-23 21:34 +0000             </p>
           </div>
         </div>
         <br>
