@@ -298,30 +298,105 @@ the keys involved, rather than approximated or ignored:
 Bonding analysis on the reference's terms
 -----------------------------------------
 
-``properties.bonding_analysis`` (:doc:`bonding_analysis`) is not refused here,
-and it is not supported either -- the same is true of any fragmented run. What
-happens today is that the analysis runs inside every fragment's SCF, the
-reference's terms and the subsets alike, and:
+With ``properties.bonding_analysis`` (:doc:`bonding_analysis`) on the deck, the
+quasi-atomic analysis runs in every term's SCF, and the terms that hold the
+reference and at least one other fragment are reported together at the end. Only
+what crosses between the reference and the other fragments of the term is
+kept: that is the part that describes their contact.
 
-- prints its tables to the log only, **unlabelled** -- nothing says which
-  fragment a table belongs to except its position among the ``Processed k/N``
-  lines;
-- numbers atoms within the fragment, not the system, and treats the hydrogen
-  caps as ordinary atoms with ordinary bonds;
-- writes **nothing** to the output files, ``energy_decomposition`` included,
-  and under MPI the decomposition would not reach the coordinator in any case;
-- fails on some fragments with a warning and carries on. On the gly3 and water
-  deck above at STO-3G and level 2, the localization did not converge
-  ("the orientation did not settle in 2000 sweeps") for two of the three
-  water--residue pairs.
+.. code-block:: json
 
-Turning it into an analysis of the reference's interactions would need the
-analysis run on the terms containing the reference only, reported per term with
-the fragment named and atoms numbered in the system, the caps marked as
-artificial, the results carried back from the worker ranks and written out, and
-the localization failures on these pairs understood. None of that is a sum over
-terms: a bonding analysis is not additive, so there is no many-body correction
-of one to take.
+   "properties": {
+     "bonding_analysis": {"type": "gms_quao", "energy_threshold": 1.0}
+   }
+
+On the gly3 and water deck above at STO-3G and level 2, after the interaction
+energy::
+
+    Bonding of reference fragment 3 with its environment (quasi-atomic, |kinetic bond order| >= 1.00 kcal/mol)
+      atoms and monomers are 0-based; reference atoms are marked *
+
+      term 2: monomers 1 3
+         atom pair                  index    kcal/mol
+         H 25*      - O 11         0.0147       -1.93
+         orbital pair, donor first                           direction       order    kcal/mol
+         O 11-C 10 pi             -- H 25*-O 24 sigma        env -> ref     0.0924       -1.32
+
+The water's hydrogen 25 is bonded to the middle residue's carbonyl oxygen 11,
+and the orbital row says how: the C=O pi orbital on oxygen 11 donates into the
+water's O--H sigma orbital. The other two water--residue terms have nothing at
+1 kcal/mol and print ``(none above threshold)``.
+
+There are two tables per term, and they are not equally robust:
+
+- **Atom pairs** sum over every orbital on the reference atom against every
+  orbital on the other: the ``index`` is the sum of squared bond orders, and
+  the kcal/mol is the sum of kinetic bond orders. A rotation within one atom
+  changes neither, so they do not depend on how well the orbitals were
+  oriented. Reference atom first; strongest bonding first.
+- **Orbital pairs** are the rows of the bonds and delocalization tables with
+  one end on each side, labelled as the full report labels them. A
+  delocalization row puts the donor first and says which way it goes. These do
+  depend on the orientation; a term whose orientation stopped at its sweep
+  limit (see :doc:`bonding_analysis`) says so under its table.
+
+Both use the deck's ``energy_threshold``. A row or pair with an end on a
+hydrogen cap or a ghost atom is dropped, since neither is an atom of the
+system; the count of dropped orbital pairs is printed and written. A bond the
+partition cut is whole inside a term holding both of its ends, so it appears
+here as an ordinary ``bond`` row.
+
+The same content goes into the JSON output, inside ``interaction_energy``:
+
+.. code-block:: json
+
+   "bonding": {
+     "analysis": "gms_quao",
+     "threshold_kcal_mol": 1.0,
+     "terms": [
+       {"id": 2, "monomers": [2, 4], "fragments": [1, 3],
+        "orientation_stalled": true, "omitted_orbital_pairs": 0,
+        "atom_pairs": [
+          {"reference_atom": 25, "reference_element": "H",
+           "partner_atom": 11, "partner_element": "O",
+           "bond_index": 0.014652935461, "kinetic_bond_order": -1.934518468024}],
+        "orbital_pairs": [
+          {"kind": "delocalization", "direction": "environment_to_reference",
+           "bond_order": 0.092424801839, "kinetic_bond_order": -1.321518079113,
+           "ends": [
+             {"atom": 11, "element": "O", "fragment": 1, "on_reference": false,
+              "orbital": 19, "type": "pi", "occupation": 1.191999144051,
+              "bonded_to": 10},
+             {"atom": 25, "element": "H", "fragment": 3, "on_reference": true,
+              "orbital": 29, "type": "sigma", "occupation": 0.755751628455,
+              "bonded_to": 24}]}]}
+     ]
+   }
+
+Atoms and ``fragments`` are 0-based, as the deck numbers them. ``id`` is the
+term's row in the fragment table, and ``monomers`` is the same membership
+1-based, as ``levels`` writes it. ``orbital`` is numbered as that term's
+molecular orbitals are. ``bonded_to`` is the atom a bonding orbital's bond goes
+to, and is absent for a lone pair or for a bond to a cap. Every term holding the
+reference and another fragment is listed, including one with nothing above
+threshold.
+
+The per-term numbers are not combined across terms. A bond order belongs to the
+calculation it came from, and there is no many-body correction of one to take:
+the dimer and the trimer each describe the contact in their own surroundings.
+Serial and MPI runs give the same tables.
+
+What it does not do yet:
+
+- The analysis also runs on the terms that do not hold the reference (the
+  subsets the interaction energy needs), and its full per-fragment tables are
+  still printed to the log for every term, numbered within that fragment. That
+  costs about half a second per term at STO-3G without the energy
+  decomposition. With ``energy_decomposition`` on, the cost is the dense
+  two-electron transformation, and it is paid on every term.
+- ``energy_decomposition`` is not written for any fragmented run.
+- A term restored from a checkpoint carries no bonding tables, and is left out
+  of the report.
 
 Where it is checked
 -------------------

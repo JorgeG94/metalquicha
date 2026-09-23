@@ -10,7 +10,8 @@ module mqc_mbe
    use pic_io, only: to_char
    use mqc_physical_constants, only: AU_TO_DEBYE
    use mqc_mbe_io, only: print_detailed_breakdown
-   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE
+   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE, interaction_bonding_term_t
+   use mqc_interaction_bonding, only: collect_interaction_bonding, print_interaction_bonding
    use mqc_result_types, only: SCF_UNKNOWN, SCF_NOT_CONVERGED
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
@@ -18,7 +19,8 @@ module mqc_mbe
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
-                                    fragment_charge_multiplicity, to_angstrom, severed_bond_pairs
+                                    fragment_charge_multiplicity, to_angstrom, severed_bond_pairs, &
+                                    get_monomer_atom_list
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_program_limits, only: MAX_MBE_LEVEL
@@ -779,6 +781,7 @@ contains
       type(timer_type) :: assembly_timer
       logical, allocatable :: joined_pairs(:, :)
       integer, allocatable :: pair_members(:)
+      type(interaction_bonding_term_t), allocatable :: bonding_terms(:)
 
       ! Determine what to compute based on allocated components in mbe_result
       compute_grad = allocated(mbe_result%gradient)
@@ -1044,6 +1047,24 @@ contains
       ! Print energy breakdown (always)
       if (interaction) then
          call print_interaction_breakdown(mbe_result, max_level)
+         if (present(sys_geom)) then
+            block
+               use mqc_error, only: error_t
+               type(error_t) :: bonding_error
+
+               ! A failure here costs the bonding report and nothing else: the
+               ! energy above is already assembled.
+               call collect_interaction_bonding(polymers, fragment_count, reference, results, &
+                                                sys_geom, bonding_terms, bonding_error)
+               if (bonding_error%has_error()) then
+                  call logger%warning("the reference fragment's bonding could not be "// &
+                                      "reported: "//bonding_error%get_message())
+                  if (allocated(bonding_terms)) deallocate (bonding_terms)
+               else if (allocated(bonding_terms)) then
+                  call print_interaction_bonding(bonding_terms, sys_geom, reference)
+               end if
+            end block
+         end if
       else
          call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
       end if
@@ -1225,6 +1246,11 @@ contains
             allocate (json_data%interaction_by_level, source=mbe_result%interaction_by_level)
             allocate (json_data%interaction_count_by_level, &
                       source=mbe_result%interaction_count_by_level)
+            if (allocated(bonding_terms)) then
+               call move_alloc(bonding_terms, json_data%interaction_bonding)
+               json_data%has_interaction_bonding = .true.
+               json_data%atomic_numbers = sys_geom%element_numbers
+            end if
          else
             allocate (json_data%sum_by_level(max_level))
             json_data%sum_by_level = sum_by_level
@@ -1566,36 +1592,5 @@ contains
 
       if (allocated(current_atoms)) deallocate (current_atoms)
    end subroutine process_intersection_derivatives
-
-   subroutine get_monomer_atom_list(sys_geom, monomer_idx, atom_list, n_atoms)
-      !! Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer, intent(in) :: monomer_idx
-      integer, allocatable, intent(out) :: atom_list(:)
-      integer, intent(out) :: n_atoms
-
-      integer :: i, base_idx
-
-      if (allocated(sys_geom%fragment_atoms)) then
-         n_atoms = sys_geom%fragment_sizes(monomer_idx)
-         if (n_atoms > 0) then
-            allocate (atom_list(n_atoms))
-            atom_list = sys_geom%fragment_atoms(1:n_atoms, monomer_idx)
-         else
-            allocate (atom_list(0))
-         end if
-      else
-         n_atoms = sys_geom%atoms_per_monomer
-         if (n_atoms > 0) then
-            allocate (atom_list(n_atoms))
-            base_idx = (monomer_idx - 1)*sys_geom%atoms_per_monomer
-            do i = 1, n_atoms
-               atom_list(i) = base_idx + (i - 1)
-            end do
-         else
-            allocate (atom_list(0))
-         end if
-      end if
-   end subroutine get_monomer_atom_list
 
 end module mqc_mbe

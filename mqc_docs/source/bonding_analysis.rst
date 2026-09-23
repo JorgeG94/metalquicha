@@ -603,7 +603,10 @@ Limits
 - Hydrogen through xenon. Past that the free-atom minimal basis this projects
   onto would need a relativistic treatment that does not exist here, and the
   analysis refuses rather than using a basis that does not describe the atom.
-- The output is printed, not written to the JSON output file.
+- The output is printed, not written to the JSON output file, except under
+  ``driver: "InteractionEnergy"``. There the bonding between the reference
+  fragment and the rest of each term is written; see
+  :doc:`interaction_energy`.
 
 References
 ----------

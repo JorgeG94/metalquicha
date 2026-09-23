@@ -76,6 +76,9 @@ contains
                                    hessian=known_hessian, homo=known_homo, &
                                    lumo=known_lumo, has_orbitals=known_orbitals)
             if (known) then
+               ! TODO(mqc): nothing restores `quao_rows`, so a term taken from
+               ! a checkpoint is silently missing from an InteractionEnergy
+               ! run's bonding report. The MPI reuse path has the same gap.
                results(frag_idx)%energy%scf = known_energy
                results(frag_idx)%has_energy = .true.
                results(frag_idx)%scf_status = known_status

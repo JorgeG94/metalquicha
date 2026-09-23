@@ -21,7 +21,8 @@ target_sources(
           mbe/mqc_mbe_fragment_distribution_scheme_hessian.F90
           mbe/mqc_serial_fragment_processor.f90
           mbe/mqc_unfragmented_workflow.f90
-          mbe/mqc_mbe_io.f90)
+          mbe/mqc_mbe_io.f90
+          mbe/mqc_interaction_bonding.f90)
 
 # Generalized MBE (overlapping fragments)
 target_sources(
