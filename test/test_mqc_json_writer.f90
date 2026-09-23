@@ -553,6 +553,7 @@ contains
       data%efmo_pair_distance = [0.91_dp, 2.60_dp, 1.75_dp]
       data%efmo_pair_qm = [.true., .false., .false.]
       data%efmo_pair_energy = [-0.0012_dp, -0.0004_dp, -0.0250_dp]
+      data%efmo_fragment_charges = [0, -1, 1]
       data%efmo_pair_terms = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, &
                                       -0.0003_dp, -0.0001_dp, 0.0002_dp, -0.0002_dp, &
                                       -0.0200_dp, -0.0030_dp, 0.0010_dp, -0.0030_dp], &
@@ -613,6 +614,15 @@ contains
       if (allocated(error)) return
       call check(error, value, -0.0004_dp, thr=1.0e-12_dp, &
                  message="the weakest pair is not last")
+      if (allocated(error)) return
+
+      ! The charges sit beside the pairs, one per fragment and in fragment
+      ! order, so the sort cannot have touched them.
+      call json%get("jw_efmo_pairs.efmo.fragment_charges(2)", value, found)
+      call check(error, found, "the fragment charges are missing")
+      if (allocated(error)) return
+      call check(error, nint(value) == -1, &
+                 "the fragment charges came back reordered or changed")
    end subroutine test_efmo_pairs
 
    subroutine test_unrestricted_spin(error)
