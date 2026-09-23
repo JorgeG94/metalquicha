@@ -6,7 +6,7 @@ module test_mqc_afo_model
    use mqc_physical_fragment, only: system_geometry_t, to_bohr, to_angstrom
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
    use mqc_czt_afo, only: afo_model_t, build_afo_model, cuts_outside_group, &
-                          group_electron_shift
+                          group_electron_shift, peptide_bond_advice
    implicit none
 
    !! Geometries are quoted to four decimals in Angstrom, so a distance
@@ -26,6 +26,10 @@ contains
                   new_unittest("model_caps_every_bond_it_leaves", test_propane_capped), &
                   new_unittest("model_cap_sits_at_a_standard_bond_length", test_cap_length), &
                   new_unittest("model_keeps_the_hydrogens_of_what_it_took", test_hydrogens), &
+                  new_unittest("model_keeps_a_carbonyl_oxygen_rather_than_capping_it", &
+                               test_terminal_oxygen), &
+                  new_unittest("a_backbone_cut_gives_a_closed_shell_model", test_backbone_model), &
+                  new_unittest("a_peptide_bond_names_the_c_alpha_cut_instead", test_peptide_advice), &
                   new_unittest("model_moves_rigidly_with_the_system", test_rotation), &
                   new_unittest("a_monomer_sees_only_its_own_boundaries", test_group_monomer), &
                   new_unittest("a_dimer_restores_the_bond_between_its_members", test_group_dimer), &
@@ -340,6 +344,151 @@ contains
       allocate (sys%coordinates(3, 8))
       sys%coordinates = to_bohr(xyz)
    end subroutine ethane
+
+   subroutine test_terminal_oxygen(error)
+      !! A doubly bonded oxygen comes in whole rather than as a cap hydrogen
+      !!
+      !! One cap hydrogen closes one electron pair. A carbonyl oxygen is held
+      !! by two, so swapping it for a cap opens a valence nothing closes and
+      !! the model comes back a radical -- which is what the parity check
+      !! reports, one step too late to be useful. Bond perception here is
+      !! distance-based and cannot tell a double bond from a short single one,
+      !! so the order is not guessed: a singly bonded heavy neighbour is taken
+      !! wholesale, exactly as a hydrogen is.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      type(afo_model_t) :: model
+      integer :: n_cuts, oxygens
+
+      call glycine_tripeptide(sys)
+      ! The C-alpha--C(=O) bond of residue 2, atoms 10 and 11. Its sphere
+      ! reaches residue 1's carbonyl carbon but not that carbon's oxygen.
+      call find_severed_bonds(sys, owner_c_alpha(), cuts, n_cuts)
+      call check(error, n_cuts, 2, "the partition should cut two C-alpha--C bonds")
+      if (allocated(error)) return
+
+      call build_afo_model(sys%element_numbers, sys%coordinates, cuts(2), model, err)
+      call check(error,.not. err%has_error(), "building the model failed")
+      if (allocated(error)) return
+
+      oxygens = count(model%z(:model%n_atoms - model%n_caps) == 8)
+      call check(error, oxygens, 2, &
+                 "the model did not take both carbonyl oxygens whole")
+   end subroutine test_terminal_oxygen
+
+   subroutine test_backbone_model(error)
+      !! Every C-alpha--C(=O) cut of a peptide gives a model that can be solved
+      !!
+      !! An odd electron count is refused rather than paired up, so this is
+      !! the check that stands between a protein and a frozen orbital at all.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      type(afo_model_t) :: model
+      integer :: n_cuts, c
+
+      call glycine_tripeptide(sys)
+      call find_severed_bonds(sys, owner_c_alpha(), cuts, n_cuts)
+      do c = 1, n_cuts
+         call build_afo_model(sys%element_numbers, sys%coordinates, cuts(c), model, err)
+         call check(error,.not. err%has_error(), "a backbone model could not be built")
+         if (allocated(error)) return
+         call check(error, mod(model%nelec, 2), 0, &
+                    "a backbone model came out with an odd electron count")
+         if (allocated(error)) return
+      end do
+   end subroutine test_backbone_model
+
+   subroutine test_peptide_advice(error)
+      !! A refusal on an amide says which bond to cut instead
+      !!
+      !! The one sentence a chemist needs: the backbone C(=O)-N carries more
+      !! than one localized orbital and is refused, and the convention is to
+      !! cut the C-alpha--C(=O) bond one place along. Atoms are numbered from
+      !! one, as everywhere in the backend.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      character(len=:), allocatable :: advice
+
+      call glycine_tripeptide(sys)
+
+      ! The peptide bond between residues 1 and 2.
+      advice = peptide_bond_advice(sys%element_numbers, sys%coordinates, 3, 9)
+      call check(error, len_trim(advice) > 0, "an amide C-N drew no advice")
+      if (allocated(error)) return
+      call check(error, index(advice, "C-alpha") > 0, &
+                 "the advice does not name the C-alpha--C bond")
+      if (allocated(error)) return
+      call check(error, index(advice, "atoms 2 and 3") > 0, &
+                 "the advice does not name the bond to cut instead")
+      if (allocated(error)) return
+
+      ! The C-alpha--C(=O) bond it points at is not itself an amide.
+      advice = peptide_bond_advice(sys%element_numbers, sys%coordinates, 2, 3)
+      call check(error, len_trim(advice), 0, "a C-C bond drew peptide advice")
+      if (allocated(error)) return
+
+      ! Neither is the amine nitrogen at the N terminus, which has no carbonyl.
+      advice = peptide_bond_advice(sys%element_numbers, sys%coordinates, 1, 2)
+      call check(error, len_trim(advice), 0, "an amine N-C drew peptide advice")
+   end subroutine test_peptide_advice
+
+   pure function owner_c_alpha() result(owner)
+      !! Glycine tripeptide split at both C-alpha--C(=O) bonds
+      !!
+      !! The FMO convention for a protein: the peptide bond stays whole and
+      !! each fragment is one residue's carbonyl with the next residue's amine
+      !! and C-alpha.
+      integer :: owner(24)
+
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+   end function owner_c_alpha
+
+   subroutine glycine_tripeptide(sys)
+      !! Glycine tripeptide, the geometry shipped as `sample_inputs/gly3.xyz`
+      !!
+      !! Atoms in the file's order: for each residue N, C-alpha, C(=O), O, then
+      !! its hydrogens, and a terminal OH on the last carbonyl.
+      type(system_geometry_t), intent(out) :: sys
+      real(dp) :: xyz(3, 24)
+
+      xyz = reshape([ &
+                    0.0172_dp, -0.4777_dp, -0.0078_dp, &    ! 1  N
+                    1.3251_dp, 0.1638_dp, 0.0713_dp, &      ! 2  C alpha
+                    1.8818_dp, 0.1765_dp, 1.4668_dp, &      ! 3  C carbonyl
+                    1.1564_dp, 0.4759_dp, 2.4031_dp, &      ! 4  O
+                    2.0041_dp, -0.3893_dp, -0.6156_dp, &    ! 5  H
+                    1.2934_dp, 1.2141_dp, -0.2903_dp, &     ! 6  H
+                    -0.6558_dp, -0.0682_dp, 0.6786_dp, &    ! 7  H
+                    -0.3827_dp, -0.2692_dp, -0.9506_dp, &   ! 8  H
+                    3.2094_dp, -0.0781_dp, 1.6702_dp, &     ! 9  N
+                    3.8490_dp, -0.0589_dp, 2.9843_dp, &     ! 10 C alpha
+                    5.3502_dp, -0.0789_dp, 2.9477_dp, &     ! 11 C carbonyl
+                    5.9543_dp, -0.1657_dp, 1.8893_dp, &     ! 12 O
+                    3.5421_dp, 0.8561_dp, 3.5394_dp, &      ! 13 H
+                    3.4987_dp, -0.9403_dp, 3.5644_dp, &     ! 14 H
+                    3.7846_dp, -0.3120_dp, 0.8286_dp, &     ! 15 H
+                    6.0352_dp, 0.0004_dp, 4.1282_dp, &      ! 16 N
+                    7.4955_dp, -0.0139_dp, 4.2014_dp, &     ! 17 C alpha
+                    8.0730_dp, 0.0278_dp, 5.5910_dp, &      ! 18 C carbonyl
+                    7.3557_dp, 0.0642_dp, 6.5759_dp, &      ! 19 O
+                    7.8695_dp, -0.9354_dp, 3.7022_dp, &     ! 20 H
+                    7.8868_dp, 0.8596_dp, 3.6345_dp, &      ! 21 H
+                    5.4671_dp, 0.0787_dp, 5.0035_dp, &      ! 22 H
+                    9.3769_dp, 0.0222_dp, 5.7818_dp, &      ! 23 O
+                    9.9377_dp, -0.0106_dp, 4.9381_dp], [3, 24])   ! 24 H
+
+      sys%total_atoms = 24
+      sys%n_monomers = 0
+      allocate (sys%element_numbers(24))
+      sys%element_numbers = [7, 6, 6, 8, 1, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, &
+                             7, 6, 6, 8, 1, 1, 1, 8, 1]
+      allocate (sys%coordinates(3, 24))
+      sys%coordinates = to_bohr(xyz)
+   end subroutine glycine_tripeptide
 
    subroutine propane(sys)
       !! Idealised propane: C-C 1.526, C-H 1.090, C-C-C 112 degrees
