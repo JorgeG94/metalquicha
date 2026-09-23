@@ -162,6 +162,10 @@ module mqc_config_types
          !! From `properties.bonding_analysis.energy_threshold`, in kcal/mol.
          !! Orbital pairs whose kinetic bond order is weaker than this are
          !! counted and then not printed.
+      integer :: bonding_max_sweeps = 2000
+         !! From `properties.bonding_analysis.orientation_max_sweeps`. Jacobi
+         !! sweeps the orientation may take before it is judged on how much the
+         !! last one still gained. At least one.
 
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2

@@ -2292,6 +2292,9 @@ contains
       call check(error, abs(config%bonding_threshold - 2.5_dp) < 1.0e-12_dp, &
                  "the reporting threshold should have been read")
       if (allocated(error)) return
+      call check(error, config%bonding_max_sweeps == 2000, &
+                 "the orientation sweep limit should default to 2000")
+      if (allocated(error)) return
 
       call check(error, config%bonding_no_sharing .eqv. .false., &
                  "the no-sharing analysis should be off unless asked for")
@@ -2393,6 +2396,26 @@ contains
                     "an absent properties block must not request an analysis")
          if (allocated(error)) return
       end if
+
+      ! The orientation's sweep limit, raised for a stubborn coupled pair.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "orientation_max_sweeps": 5000}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_max_sweeps == 5000, &
+                 "the orientation sweep limit should have been read")
+      if (allocated(error)) return
+
+      ! And refused below one: zero sweeps is an orientation that never ran.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "orientation_max_sweeps": 0}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an orientation sweep limit of zero should be refused")
+      if (allocated(error)) return
 
       ! An analysis nobody implements is refused, by name, with the list.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
