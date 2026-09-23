@@ -108,6 +108,10 @@ probe_*
 !probe_*.f90
 !probe_*.py
 !probe_*.sh
+# ... except the one directory the pattern catches that is not a binary: the
+# CPU validation decks live under validation/inputs/cpu/mqc/, and without this
+# every deck added there since the rule was written is silently untracked.
+!validation/inputs/cpu/mqc/
 
 # profiling / scratch
 *.nsys-rep

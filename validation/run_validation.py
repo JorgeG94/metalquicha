@@ -117,6 +117,23 @@ def extract_top_level_energy(json_data: Dict, test_type: str) -> Optional[float]
     return None
 
 
+def extract_interaction_energy(json_data: Dict) -> Optional[float]:
+    """The `interaction_energy.total` of a `driver: "InteractionEnergy"` run
+
+    Such a run writes no `total_energy` at all -- its term list was reduced to
+    what one fragment's interactions need, and the sum over it is not the
+    system's energy -- so a case pinning one names `expected_interaction_energy`
+    instead of `expected_energy`, and this is what it is compared against.
+    """
+    if not json_data:
+        return None
+    data = json_data[list(json_data.keys())[0]]
+    block = data.get("interaction_energy")
+    if not isinstance(block, dict) or "total" not in block:
+        return None
+    return float(block["total"])
+
+
 def extract_gradient_norm(json_data: Dict) -> Optional[float]:
     """Extract gradient_norm from JSON output"""
     if not json_data:
@@ -649,9 +666,15 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                 errors.append((test_name, "Energy mismatch"))
 
         else:
-            # Single molecule (unfragmented or fragmented)
-            expected = test["expected_energy"]
-            calculated = extract_top_level_energy(output_data, test_type)
+            # Single molecule (unfragmented or fragmented). An interaction-energy
+            # case has no total to compare, and says so by naming the number it
+            # does pin; the rest of this branch is the same comparison either way.
+            if "expected_interaction_energy" in test:
+                expected = test["expected_interaction_energy"]
+                calculated = extract_interaction_energy(output_data)
+            else:
+                expected = test["expected_energy"]
+                calculated = extract_top_level_energy(output_data, test_type)
 
             if calculated is None:
                 print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract energy from JSON\n")

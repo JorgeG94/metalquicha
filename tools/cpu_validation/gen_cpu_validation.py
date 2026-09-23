@@ -503,6 +503,18 @@ HAND_MAINTAINED = {
     # both C-C bonds, expanded to its fragment count, has to reproduce the
     # unfragmented energy however the bonds were detached. It does, to 1.2e-12.
     "cpu/mqc/fmo/afo3_propane.json",
+    # driver "InteractionEnergy". A reduced expansion's own number, pinned
+    # against the ordinary expansion's: the reference in each manifest entry
+    # is the sum of the per-term corrections holding the reference fragment,
+    # read from the fragment table of the same deck run with driver "Energy"
+    # and no reference_fragment. That is the identity the driver rests on --
+    # every correction it computes is the one the full expansion computes for
+    # the same term -- and PySCF has no fragmentation to produce it with. See
+    # PRESERVED_TESTS for the entries.
+    "cpu/mqc/interaction_energy/ie_prism_sto-3g_l2.json",
+    "cpu/mqc/interaction_energy/ie_prism_sto-3g_l3.json",
+    "cpu/mqc/interaction_energy/ie_prism_sto-3g_l2_vmfc.json",
+    "cpu/mqc/interaction_energy/ie_gly3_water_sto-3g_l3.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
@@ -3120,6 +3132,37 @@ PRESERVED_TESTS = [
         "expected_energy": -0.0022505226,
         "type": "unfragmented",
     },
+    # driver "InteractionEnergy", which writes no total_energy: the manifest
+    # names the number it does pin, and run_validation.py compares that
+    # instead. See HAND_MAINTAINED for where the references come from.
+    {
+        "name": "InteractionEnergy water prism STO-3G, MBE(2), first water (CPU)",
+        "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l2.json",
+        "expected_interaction_energy": -0.023358327762,
+        "type": "fragmented",
+        "reference_note": "reference is the sum of the five water-0 dimer corrections of the ordinary MBE(2) run of the same deck, which the reduced run reproduces bit for bit. 11 of the ordinary 21 terms are computed: the reference's five dimers, and the six monomers those dimers need.",
+    },
+    {
+        "name": "InteractionEnergy water prism STO-3G, MBE(3), a middle water (CPU)",
+        "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l3.json",
+        "expected_interaction_energy": -0.025353257419,
+        "type": "fragmented",
+        "reference_note": "reference is the sum of the fifteen corrections holding water 2 -- five dimers and ten trimers -- of the ordinary MBE(3) run of the same deck. 31 of 41 terms are computed: the ten trimers without water 2 are the only ones skipped, since every dimer is a subset some water-2 trimer needs.",
+    },
+    {
+        "name": "InteractionEnergy water prism STO-3G, VMFC(2), last water (CPU)",
+        "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l2_vmfc.json",
+        "expected_interaction_energy": -0.001228150957,
+        "type": "fragmented",
+        "reference_note": "reference is the sum of the five counterpoise-corrected water-5 dimer corrections of the ordinary VMFC(2) run of the same deck. 21 of 51 rows are computed: each pair builds its own two ghosted rows, so the reduction carries over unchanged. Level 2 only: above it the counterpoise recursion is not the Valiron-Mayer expression (see the TODO in compute_mbe_delta) and the driver refuses the pairing.",
+    },
+    {
+        "name": "InteractionEnergy glycine tripeptide + water STO-3G, MBE(3), water as reference (CPU)",
+        "input": "inputs/cpu/mqc/interaction_energy/ie_gly3_water_sto-3g_l3.json",
+        "expected_interaction_energy": -0.001740634224,
+        "type": "fragmented",
+        "reference_note": "the motivating case: a small molecule against a capped peptide. Residues are atoms 0-7, 8-14 and 15-23 of gly3.xyz with the peptide bonds C2-N8 and C10-N15 declared in connectivity, so each residue is hydrogen-capped; the water donates a 1.94 A hydrogen bond to the middle residue's carbonyl. Reference is the sum of the six corrections holding the water -- three residue dimers, three residue-residue trimers -- of the ordinary MBE(3) run of the same deck. 13 of 14 terms computed.",
+    },
 ]
 
 
@@ -4280,8 +4323,9 @@ def main():
     for entry in PRESERVED_TESTS:
         if entry["input"] not in {t["input"] for t in tests}:
             tests.append(dict(entry))
+            pinned = entry.get("expected_energy", entry.get("expected_interaction_energy"))
             print(f"{entry['name']}: transcribed reference "
-                  f"E={entry['expected_energy']:.10f}", flush=True)
+                  f"E={pinned:.10f}", flush=True)
 
     # Last, and that is load-bearing rather than arbitrary. These eight were
     # spliced onto the end of an existing manifest rather than produced by a
