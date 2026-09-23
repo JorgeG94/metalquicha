@@ -1,0 +1,86 @@
+{
+ "schema": {
+  "name": "mqc-frag",
+  "version": "1.0"
+ },
+ "molecules": [
+  {
+   "xyz": "gly3_water.xyz",
+   "connectivity": [
+    [
+     2,
+     8,
+     1
+    ],
+    [
+     10,
+     15,
+     1
+    ]
+   ],
+   "fragments": [
+    [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ],
+    [
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14
+    ],
+    [
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     23
+    ],
+    [
+     24,
+     25,
+     26
+    ]
+   ],
+   "fragment_charges": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "fragment_multiplicities": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "molecular_charge": 0,
+   "molecular_multiplicity": 1
+  }
+ ],
+ "model": {
+  "method": "HF",
+  "basis": "STO-3G"
+ },
+ "driver": "Energy",
+ "keywords": {
+  "fragmentation": {
+   "method": "mbe",
+   "level": 2,
+   "embedding": "none"
+  }
+ }
+}

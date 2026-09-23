@@ -41,6 +41,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    bonding_analysis
    makefp
    sapt
+   sapt_ligand_scan
    neo
 
 .. toctree::
