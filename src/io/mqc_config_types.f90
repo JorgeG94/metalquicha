@@ -648,6 +648,9 @@ module mqc_config_types
          !! between the two atoms -- still exact, one term longer.
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method
+      ! TODO(mqc): `distance_metric` is parsed, schema-allowed and unit-tested
+      ! but read by nothing, so a deck that asks for a metric other than the
+      ! screening's built-in one is silently given the built-in one.
       character(len=:), allocatable :: distance_metric
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs indexed by n-mer level (2=dimer, 3=trimer, etc.)
       integer :: global_groups = 0
