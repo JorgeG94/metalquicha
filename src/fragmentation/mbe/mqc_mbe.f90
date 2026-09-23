@@ -1214,7 +1214,6 @@ contains
             end if
          end if
 
-
          ! The per-level sums of a reduced list mix the reference's terms with
          ! the subsets they needed, and are no level's energy; the interaction
          ! block carries the per-level numbers that mean something instead.
