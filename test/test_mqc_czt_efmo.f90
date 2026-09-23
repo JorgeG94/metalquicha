@@ -138,9 +138,70 @@ contains
                   new_unittest("efmo_full_level_is_the_unfragmented_energy", &
                                test_full_level), &
                   new_unittest("efmo_induction_series_sums_to_the_total", &
-                               test_induction_series) &
+                               test_induction_series), &
+                  new_unittest("efmo_covalent_cut_is_refused", test_covalent_cut) &
                   ]
    end subroutine collect_mqc_czt_efmo_tests
+
+   subroutine test_covalent_cut(error)
+      !! A partition that severs a covalent bond is refused rather than run
+      !!
+      !! Propane, with the two methyls in one fragment and the central CH2 in
+      !! the other. That shape is deliberate: it cuts two bonds, so both
+      !! fragments keep an **even** electron count -- 18 and 8 -- and the
+      !! closed-shell check further down never fires. Left to run, MAKEFP
+      !! localizes a wavefunction with dangling valences and the total comes
+      !! back NaN behind a success banner.
+      !!
+      !! Costs nothing: the refusal is ahead of the first SCF.
+      type(error_type), allocatable, intent(out) :: error
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      type(error_t) :: err
+      integer :: z(11), owner(11), charges(2)
+      character(len=2) :: symbols(11)
+      real(dp) :: xyz(3, 11)
+      character(len=:), allocatable :: message
+
+      call propane_geometry(z, symbols, xyz)
+      ! Fragment 1 is both methyls, fragment 2 the central CH2.
+      owner = [1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1]
+      charges = [0, 0]
+
+      opts%basis = BASIS
+      opts%rcut = 2.0_dp
+
+      call run_efmo(z, symbols, xyz, owner, charges, opts, res, err)
+      call check(error, err%has_error(), &
+                 "EFMO should refuse a partition that cuts a covalent molecule")
+      if (allocated(error)) return
+
+      message = err%get_message()
+      call check(error, index(message, "covalent") > 0, &
+                 "the refusal should say the partition cuts a covalent molecule: "// &
+                 message)
+   end subroutine test_covalent_cut
+
+   subroutine propane_geometry(z, symbols, xyz)
+      !! Idealised propane in Bohr, carbons first so a partition reads by eye
+      integer, intent(out) :: z(11)
+      character(len=2), intent(out) :: symbols(11)
+      real(dp), intent(out) :: xyz(3, 11)
+
+      z = [6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1]
+      symbols = ["C ", "C ", "C ", "H ", "H ", "H ", "H ", "H ", "H ", "H ", "H "]
+      xyz = reshape([1.5260_dp, 0.0000_dp, 0.0000_dp, &
+                     0.0000_dp, 0.0000_dp, 0.0000_dp, &
+                     -0.5716_dp, 1.4149_dp, 0.0000_dp, &
+                     2.1553_dp, -0.8900_dp, 0.0000_dp, &
+                     2.1553_dp, 0.4450_dp, -0.7707_dp, &
+                     2.1553_dp, 0.4450_dp, 0.7707_dp, &
+                     -0.3519_dp, -0.5217_dp, 0.8900_dp, &
+                     -0.3519_dp, -0.5217_dp, -0.8900_dp, &
+                     0.0178_dp, 2.3318_dp, 0.0000_dp, &
+                     -1.2200_dp, 1.8317_dp, -0.7707_dp, &
+                     -1.2200_dp, 1.8317_dp, 0.7707_dp], [3, 11])*ANG
+   end subroutine propane_geometry
 
    subroutine water_geometry(z, symbols, coords)
       !! One water, in Bohr, in the `yz` plane
