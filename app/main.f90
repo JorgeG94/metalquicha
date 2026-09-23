@@ -184,6 +184,11 @@ program main
             call abort_comm(resources%mpi_comms%world_comm, 1)
          end if
       else
+         ! TODO(mqc): `run_calculation` hands back no status, so a refusal
+         ! inside it -- an unsupported method, a partition the backend will not
+         ! answer for -- is logged and then exits 0. A script driving mqc
+         ! cannot tell a refusal from a converged run by exit code alone; the
+         ! optimizer and conformer branches above do abort non-zero.
          call run_calculation(resources, config, sys_geom, mqc_config%bonds)
       end if
       call sys_geom%destroy()

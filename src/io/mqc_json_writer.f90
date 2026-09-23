@@ -118,6 +118,10 @@ contains
          if (output_data%has_vibrational) then
             call write_vibrational_json_impl(output_data)
          else
+            ! TODO(mqc): no per-fragment CSV is written here, where the MBE
+            ! branch above writes one. `fragment_breakdown` defaults to "csv"
+            ! and is simply ignored on this path, so a GMBE run leaves no
+            ! per-term table at all and the deck is not told.
             call write_gmbe_pie_json_impl(output_data)
          end if
 
