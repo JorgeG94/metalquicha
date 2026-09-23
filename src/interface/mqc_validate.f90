@@ -18,7 +18,7 @@ module mqc_validate
    !! own. It does not stop checking.
    use pic_types, only: dp, default_int, int64
    use mqc_string_utils, only: int_to_text
-   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_physical_fragment, only: system_geometry_t, bond_t
    use mqc_fraglist, only: fraglist_t
    use mqc_bond_perception, only: missing_broken_bonds
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -31,11 +31,15 @@ module mqc_validate
 
 contains
 
-   subroutine validate_system(sys_geom, strict, error, check_bonds)
+   subroutine validate_system(sys_geom, strict, error, check_bonds, declared_bonds)
       !! Check a system before it is fragmented
       !!
       !! `check_bonds` runs the perception audit, which is `O(N^2)` in the atom
-      !! count and so is asked for rather than assumed.
+      !! count and so is asked for rather than assumed. It runs whether or not
+      !! a bond list exists: with none, the geometry is audited against nothing
+      !! and every cut it implies comes back as undeclared. It does not run on
+      !! an overlapping partition, where which monomer owns a shared atom has
+      !! no single answer.
       ! TODO(mqc): reads `fragment_sizes` and `fragment_atoms` without checking
       ! that either is allocated, where the rest of the code branches on
       ! `allocated(sys_geom%fragment_atoms)`. A fixed-size-monomer geometry --
@@ -45,10 +49,18 @@ contains
       logical, intent(in) :: strict
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: check_bonds
+      type(bond_t), intent(in), optional :: declared_bonds(:)
+         !! The bonds to audit the geometry against, for a caller that holds
+         !! them apart from `sys_geom` -- the deck path, where connectivity
+         !! travels beside the geometry and is not copied onto it until the
+         !! expansion is built, long after this runs. Absent, the geometry's
+         !! own `bonds` is used, and an unallocated one means nothing was
+         !! declared.
 
       integer, allocatable :: owner_count(:)
       integer, allocatable :: missing_i(:), missing_j(:)
-      integer :: iatom, imon, islot, atom, total_charge, n_missing
+      type(bond_t), allocatable :: audited(:)
+      integer :: iatom, imon, islot, atom, total_charge, n_missing, n_declared
       logical :: audit
 
       if (sys_geom%total_atoms <= 0) then
@@ -107,23 +119,62 @@ contains
       end if
 
       ! ---- bonds ------------------------------------------------------------
+      ! Declaring nothing is not the same as declaring that there are no bonds,
+      ! and the audit is worth more in that case rather than less: capping is
+      ! driven by the declared list, so a partition with no list at all cuts
+      ! covalent bonds and caps none of them. Perception against an empty list
+      ! reports every cut the geometry implies.
       audit = .false.
       if (present(check_bonds)) audit = check_bonds
-      if (audit .and. allocated(sys_geom%bonds)) then
-         call missing_broken_bonds(sys_geom, sys_geom%bonds, size(sys_geom%bonds), &
+      ! Not on an overlapping partition. `monomer_of` answers with the first
+      ! monomer holding an atom, which for a shared atom is one of several, so
+      ! perception calls a bond cut that both ends of a GMBE primary hold
+      ! whole. The charge check above sits out the same case for the same
+      ! reason.
+      if (audit .and. .not. all(owner_count == 1)) audit = .false.
+      if (audit) then
+         if (present(declared_bonds)) then
+            allocate (audited, source=declared_bonds)
+         else if (allocated(sys_geom%bonds)) then
+            allocate (audited, source=sys_geom%bonds)
+         else
+            allocate (audited(0))
+         end if
+         n_declared = size(audited)
+         call missing_broken_bonds(sys_geom, audited, n_declared, &
                                    missing_i, missing_j, n_missing)
+         deallocate (audited)
          if (n_missing > 0) then
             call complain(strict, error, "the geometry implies "//int_to_text(n_missing)// &
                           " bond(s) crossing monomer boundaries that were never "// &
                           "declared, starting with atoms "//int_to_text(missing_i(1))//" and "// &
                           int_to_text(missing_j(1))//"; those fragments would have uncapped "// &
-                          "valences")
+                          "valences"//undeclared_hint(n_declared))
             if (strict) return
          end if
       end if
 
       deallocate (owner_count)
    end subroutine validate_system
+
+   pure function undeclared_hint(n_declared) result(hint)
+      !! What to add to the uncapped-valence message when nothing was declared
+      !!
+      !! Empty when the caller declared a list and merely left a bond out of
+      !! it: the message above already says which bond, and the fix is to add
+      !! it. A caller who declared nothing needs to be told the key exists.
+      integer, intent(in) :: n_declared
+      character(len=:), allocatable :: hint
+
+      if (n_declared > 0) then
+         hint = ""
+      else
+         hint = ". No connectivity was declared at all, so no bond is marked "// &
+                "broken and no fragment is capped; list the bonds in the "// &
+                "molecule's connectivity, or set system.unchecked_input if "// &
+                "the partition is deliberate"
+      end if
+   end function undeclared_hint
 
    subroutine validate_terms(terms, sys_geom, strict, error)
       !! Check a term list can be assembled into an expansion
