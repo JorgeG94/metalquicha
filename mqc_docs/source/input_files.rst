@@ -2031,6 +2031,17 @@ Troubleshooting
    fall in different fragments -- that is what makes a bond broken, and it is
    derived rather than declared
 
+**"the geometry implies N bond(s) crossing monomer boundaries that were never
+declared"**
+   The partition cuts covalent bonds, and the deck's ``connectivity`` does not
+   mention them -- when it is absent entirely, the message says so. Nothing is
+   marked broken, so no fragment is capped and the expansion answers for a set
+   of radicals rather than the molecule. List the bonds in the molecule's
+   ``connectivity``, or set ``system.unchecked_input`` to ``true`` if the
+   partition is deliberate, which turns the refusal into a warning.
+   ``bond_breaking: "afo"`` is exempt: it perceives its own cuts and detaches
+   each with a frozen orbital, so it needs no declared list.
+
 .. _migrating_from_mqc:
 
 Migrating from .mqc
