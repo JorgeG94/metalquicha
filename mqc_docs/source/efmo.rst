@@ -500,9 +500,14 @@ What is not here yet
   missing feature: it puts the induction inside each group's SCF, which makes a
   group's energy depend on its environment and stops the many-body differences
   telescoping. Nothing in EFMO as implemented here embeds anything.
-* **Whole molecules only.** A partition that cuts a covalent bond is refused: a
-  hydrogen cap's multipoles would act on the partner across the cut, and the
-  adjusted frozen orbital route FMO uses is not wired in here.
+* **Whole molecules only, and nothing checks it.** A partition that cuts a
+  covalent bond *should* be refused -- a hydrogen cap's multipoles would act on
+  the partner across the cut, and the adjusted frozen orbital route FMO takes
+  is not wired in here -- but no such check exists on this path. Cut one bond
+  and the odd electron count is caught somewhere downstream, with a message
+  about the wrong thing; cut an even number per fragment and the run completes
+  and reports a number. Fragment on whole molecules and do not rely on being
+  told. FMO and EE-MBE do refuse it, and take ``bond_breaking = "afo"``.
 * **The rest of the induction difference.** With
   ``keywords.efmo.induction_damping`` set to GAMESS's 0.6 the two codes'
   induction still differ by about two per cent, in the other direction; what is
