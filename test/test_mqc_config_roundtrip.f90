@@ -301,10 +301,18 @@ contains
       call refused_with(error, driver, 6, "method 'efmo'", "EFMO")
       if (allocated(error)) return
 
+      ! VMFC above level 2 composes as it does at level 2: every ghosted row a
+      ! term subtracts is built from that term, which the reduced list keeps.
+      ! It was refused while the counterpoise recursion dropped a ghosted row's
+      ! ghosts; allowed now, and pinned against the full expansion in the
+      ! validation suite.
       call interaction_driver(driver)
       driver%nlevel = 3
       driver%counterpoise = "vmfc"
-      call refused_with(error, driver, 6, "limited to level 2", "vmfc at level 3")
+      call err%clear()
+      call check_interaction_energy_support(driver, 6, err)
+      call check(error,.not. err%has_error(), "vmfc at level 3 must be allowed: "// &
+                 err%get_message())
       if (allocated(error)) return
 
       call interaction_driver(driver)

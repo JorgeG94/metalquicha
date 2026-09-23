@@ -251,10 +251,12 @@ What composes with it
 - **MPI.** The reduced list is distributed like any other; on the prism water
   hexamer at levels 2 and 3 and the three references tested, one, two and three
   ranks give bitwise-identical interaction energies.
-- **Counterpoise at level 2.** Each pair builds its own two ghosted rows, so
-  the reduction carries over unchanged: 21 of the ordinary 51 rows for one
-  water of the prism, and the VMFC(2) interaction energy of the full run to the
-  last digit. Above level 2 the pairing is refused; see below.
+- **Counterpoise.** Each term builds its own ghosted rows, so the reduction
+  carries over unchanged. For one water of the prism, VMFC(2) computes 21 of
+  the ordinary 51 rows and VMFC(3) 121 of 191, and each matches the full run's
+  terms holding that water: to the last digit at level 2, and to 1e-12 hartree
+  at level 3 against the Valiron--Mayer sum evaluated from the full run's
+  fragment table.
 - **Checkpoints.** A term's energy is the same whichever driver computed it, so
   a checkpoint written by an ``Energy`` run can seed an ``InteractionEnergy``
   run over the same system, and the other way round.
@@ -283,12 +285,6 @@ the keys involved, rather than approximated or ignored:
   lists -- and under an embedding every fragment feels the field of all the
   others, so skipping one would change the ones computed.
 - EFP, SAPT and NEO, which never reach the many-body expansion.
-- ``"counterpoise": "vmfc"`` above level 2. The counterpoise recursion above
-  level 2 subtracts a ghosted subset's own subsets in that subset's basis
-  rather than its parent's, which is not the Valiron--Mayer expression: a water
-  trimer's HF/STO-3G VMFC(3) total comes out 4.32e-3 hartree away from it. An
-  interaction energy built on it would carry the same error. This is recorded
-  in the code as a defect of the counterpoise recursion, not of this driver.
 - A multi-molecule deck. A fragment index names a different fragment -- or
   none -- in each molecule.
 - A supplied term list, through the Python or C interface: the reduction is
@@ -412,9 +408,9 @@ Where it is checked
   out of it.
 - ``test/test_mqc_config_roundtrip.f90`` and ``test/test_mqc_json_reader.f90``:
   every refusal above, by its message.
-- ``validation/inputs/cpu/mqc/interaction_energy/``: the prism at level 2, 3 and
-  VMFC(2), and the gly3 and water deck, each pinned to the sum of the same terms'
-  corrections from the ordinary run of the same deck.
+- ``validation/inputs/cpu/mqc/interaction_energy/``: the prism at level 2, 3,
+  VMFC(2) and VMFC(3), and the gly3 and water deck, each pinned to the sum of
+  the same terms' corrections from the ordinary run of the same deck.
 
 The identity itself -- every correction containing the reference equal to the
 full expansion's -- was checked term by term on the prism water hexamer
