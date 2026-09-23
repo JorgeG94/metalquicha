@@ -282,7 +282,8 @@ Schema
                "indices": [1, 2],
                "energy": -30.034567890123,
                "distance": 3.456789012345,
-               "delta_energy": -0.009876543210
+               "delta_energy": -0.009876543210,
+               "connected": false
              }
            ]
          }
@@ -333,6 +334,62 @@ Fields
    * - ``fragments[].delta_energy``
      - float
      - MBE correction energy for n-mers (n > 1)
+   * - ``fragments[].connected``
+     - bool
+     - Two-body terms only. True when the two monomers are joined by a covalent
+       bond the partition cut. See below.
+
+Reading a pair table
+--------------------
+
+For a two-body term the ``delta_energy`` **is** the pair interaction energy,
+which is what makes this table the thing a protein-ligand analysis reads: one
+residue per fragment, the ligand as its own fragment, and the ligand's pairs
+are its interactions with each residue.
+
+Two things to know before reading one.
+
+**A connected pair is not an interaction energy.** Where the partition cut a
+covalent bond -- every adjacent-residue pair of a backbone fragmented by
+residue -- the dimer has the bond and the two capped monomers do not, so the
+term carries the energy of re-forming it. That is of order 10\ :sup:`-1`
+Hartree for a carbon-carbon single bond, against 10\ :sup:`-4` for the
+interactions the rest of the table is made of. Those rows carry
+``"connected": true``, the document carries a ``connected_pair_note`` saying
+so, and the run says it at info level. **They are not corrected**, only
+marked: subtracting a cut-bond reference needs a model calculation per
+distinct bond.
+
+A ligand is not covalently bonded to the protein, so every pair a binding
+analysis cares about is unconnected and every connected row is a backbone pair
+to ignore.
+
+**Rows are sorted strongest first, and connected rows are excluded from that
+ordering.** Within each level the terms come out by descending
+``|delta_energy|``, with the connected ones placed after all the unconnected
+ones rather than leading the table by magnitude. Monomers keep their
+enumeration order, having no correction to sort by.
+
+Selecting one fragment's interactions
+-------------------------------------
+
+``indices`` carries the monomer numbers, from one, so one fragment's pairs are
+the two-body terms whose ``indices`` contain it. For the ligand as fragment 7:
+
+.. code-block:: python
+
+   import json
+
+   doc = json.load(open("output_complex.json"))["complex"]
+   dimers = next(l for l in doc["levels"] if l["frag_level"] == 2)
+   ligand = [f for f in dimers["fragments"]
+             if 7 in f["indices"] and not f.get("connected", False)]
+   for f in ligand:                      # already strongest first
+       other = [m for m in f["indices"] if m != 7][0]
+       print(other, f["delta_energy"])
+
+The same selection on the CSV sidecar is a filter on the ``m1`` and ``m2``
+columns with ``level == 2`` and ``connected != "YES"``.
 
 GMBE Output
 ===========

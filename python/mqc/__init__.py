@@ -855,6 +855,7 @@ class Result:
             iscf = header.index("scf") if "scf" in header else None
             ihomo = header.index("homo") if "homo" in header else None
             ilumo = header.index("lumo") if "lumo" in header else None
+            iconn = header.index("connected") if "connected" in header else None
             for line in handle:
                 if not line.strip():
                     continue
@@ -868,6 +869,7 @@ class Result:
                         _converged(cells[iscf]) if iscf is not None else None,
                         _number(cells, ihomo),
                         _number(cells, ilumo),
+                        _connected(cells[iconn]) if iconn is not None else None,
                     )
                 )
         return rows
@@ -889,10 +891,11 @@ class Result:
 class Term:
     """One term of the expansion, as read back from a breakdown."""
 
-    __slots__ = ("monomers", "energy", "delta", "distance", "converged", "homo", "lumo")
+    __slots__ = ("monomers", "energy", "delta", "distance", "converged", "homo",
+                 "lumo", "connected")
 
     def __init__(self, monomers, energy, delta, distance, converged=None,
-                 homo=None, lumo=None):
+                 homo=None, lumo=None, connected=None):
         self.monomers = monomers  # 1-based, as the expansion counts them
         self.energy = energy
         self.delta = delta  #: n-body contribution -- what a threshold is on
@@ -902,6 +905,11 @@ class Term:
             #: not a claim that it converged.
         self.homo = homo   #: Hartree, or None if the method reported no pair
         self.lumo = lumo   #: Hartree, or None
+        self.connected = connected
+            #: Two-body terms only; None on every other level and on a run
+            #: that wrote no such column. True means the two monomers are
+            #: joined by a covalent bond the partition cut, so `delta` carries
+            #: the energy of re-forming it and is not an interaction energy.
 
     @property
     def gap_ev(self):
@@ -1280,6 +1288,20 @@ def _number(cells, index):
         return float(text)
     except ValueError:
         return None
+
+
+def _connected(cell):
+    """The connected column: True, False, or None where it does not apply.
+
+    Blank on anything that is not a two-body term, because the question does
+    not arise there and a False would read as a reassurance.
+    """
+    word = cell.strip().upper()
+    if word == "YES":
+        return True
+    if word == "NO":
+        return False
+    return None
 
 
 def _converged(cell):
