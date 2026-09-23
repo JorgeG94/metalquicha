@@ -817,6 +817,12 @@ Specifies the calculation type:
 - ``MakeFP``: Build an effective fragment potential and write it as a ``.efp``
   file, computing no energy. ``MakeEFP`` is accepted for the same thing. See
   :doc:`makefp`.
+- ``InteractionEnergy``: The many-body interaction terms that contain one
+  fragment, named by ``keywords.fragmentation.reference_fragment``, from a
+  many-body expansion reduced to the terms they need. Reports that fragment's
+  energy and its interaction energy, and **no total energy**.
+  ``interaction_energy`` is accepted for the same thing. Needs a fragmented
+  system and ``"level"`` 2 or more. See :doc:`interaction_energy`.
 
 Keywords Section
 ----------------
@@ -1580,6 +1586,7 @@ Fragmentation Options
      "level": 2,
      "max_intersection_level": 3,
      "counterpoise": "none",
+     "reference_fragment": 0,
      "embedding": "none",
      "cutoff_method": "distance",
      "distance_metric": "min",
@@ -1605,6 +1612,15 @@ Fragmentation Options
 
 - ``level``: Maximum fragment size (1=monomers only, 2=up to dimers, 3=up to trimers, etc.)
 - ``max_intersection_level``: For GMBE only - maximum k-way intersection depth (default: level + 1)
+- ``reference_fragment``: the fragment whose interactions ``driver:
+  "InteractionEnergy"`` reports, as a **0-based** index into the molecule's
+  ``fragments`` list -- ``0`` is the first fragment, counted the way atom
+  indices are. The fragment table and the ``levels`` block of the output number
+  fragments from 1, and the output names the reference both ways. Absent by
+  default, which is the ordinary expansion; given with any driver other than
+  ``InteractionEnergy``, or that driver given without it, the deck is refused
+  rather than one of the two being ignored. Plain MBE only. See
+  :doc:`interaction_energy`.
 
 .. note::
 

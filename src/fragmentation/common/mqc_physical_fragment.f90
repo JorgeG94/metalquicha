@@ -20,6 +20,7 @@ module mqc_physical_fragment
    public :: build_fragment_from_indices
    public :: fragment_charge_multiplicity  !! Charge/multiplicity a set of monomers forms
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
+   public :: get_monomer_atom_list      !! A monomer's system atoms, 0-based
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
    public :: check_system_geometry      !! Validate the whole system before any work starts
    ! TODO(mqc): one redistribution for an array of any rank, rather than the
@@ -1136,5 +1137,36 @@ contains
       min_distance = to_angstrom(min_distance)
 
    end function calculate_monomer_distance
+
+   subroutine get_monomer_atom_list(sys_geom, monomer_idx, atom_list, n_atoms)
+      !! Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: monomer_idx
+      integer, allocatable, intent(out) :: atom_list(:)
+      integer, intent(out) :: n_atoms
+
+      integer :: i, base_idx
+
+      if (allocated(sys_geom%fragment_atoms)) then
+         n_atoms = sys_geom%fragment_sizes(monomer_idx)
+         if (n_atoms > 0) then
+            allocate (atom_list(n_atoms))
+            atom_list = sys_geom%fragment_atoms(1:n_atoms, monomer_idx)
+         else
+            allocate (atom_list(0))
+         end if
+      else
+         n_atoms = sys_geom%atoms_per_monomer
+         if (n_atoms > 0) then
+            allocate (atom_list(n_atoms))
+            base_idx = (monomer_idx - 1)*sys_geom%atoms_per_monomer
+            do i = 1, n_atoms
+               atom_list(i) = base_idx + (i - 1)
+            end do
+         else
+            allocate (atom_list(0))
+         end if
+      end if
+   end subroutine get_monomer_atom_list
 
 end module mqc_physical_fragment

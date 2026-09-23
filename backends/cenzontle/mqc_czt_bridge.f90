@@ -2012,6 +2012,8 @@ contains
                                 no_sharing=settings%bonding_no_sharing, &
                                 no_sharing_ci=settings%bonding_no_sharing_ci, &
                                 restrict_localization=settings%bonding_restrict_localization, &
+                                max_sweeps=settings%bonding_max_sweeps, &
+                                rows=result%quao_rows, &
                                 atom_energy=ieda_atom, free_atom_energy=ieda_free, &
                                 pair_energy=ieda_pair, pair_classical=ieda_classical, &
                                 formation_energy=ieda_formation)
@@ -2019,6 +2021,9 @@ contains
             call logger%warning("  the bonding analysis could not run: "// &
                                 analysis_error%get_message())
          end if
+         ! Built once the orbitals are labelled, so present even when the
+         ! energy decomposition after that failed.
+         result%has_quao_rows = allocated(result%quao_rows%atom_bond_index)
          call store_decomposition(result, ieda_atom, ieda_free, ieda_pair, &
                                   ieda_classical, ieda_formation)
       end if
@@ -3542,6 +3547,8 @@ contains
                                       no_sharing=settings%bonding_no_sharing, &
                                       no_sharing_ci=settings%bonding_no_sharing_ci, &
                                       restrict_localization=settings%bonding_restrict_localization, &
+                                      max_sweeps=settings%bonding_max_sweeps, &
+                                      rows=result%quao_rows, &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
@@ -3562,6 +3569,8 @@ contains
                                       no_sharing=settings%bonding_no_sharing, &
                                       no_sharing_ci=settings%bonding_no_sharing_ci, &
                                       restrict_localization=settings%bonding_restrict_localization, &
+                                      max_sweeps=settings%bonding_max_sweeps, &
+                                      rows=result%quao_rows, &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
@@ -3574,6 +3583,9 @@ contains
             call logger%warning("  the bonding analysis could not run: "// &
                                 analysis_error%get_message())
          end if
+         ! Built once the orbitals are labelled, so present even when the
+         ! energy decomposition after that failed.
+         result%has_quao_rows = allocated(result%quao_rows%atom_bond_index)
          call store_decomposition(result, ieda_atom, ieda_free, ieda_pair, &
                                   ieda_classical, ieda_formation)
       end if

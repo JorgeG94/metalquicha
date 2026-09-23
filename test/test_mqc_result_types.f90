@@ -3,6 +3,7 @@ module test_mqc_result_types
    use mqc_result_types, only: mp2_energy_t, cc_energy_t, energy_t, calculation_result_t, &
                                mbe_result_t, STATE_SPIN_SINGLET
    use pic_types, only: dp
+   use mqc_quao_rows, only: quao_rows_t, QUAO_ROW_BOND, QUAO_ROW_DELOCALIZATION
    use pic_test_helpers, only: is_equal
    implicit none
    private
@@ -26,6 +27,7 @@ contains
                   new_unittest("result_initialization", test_result_init), &
                   new_unittest("result_destroy", test_result_destroy), &
                   new_unittest("result_reset", test_result_reset), &
+                  new_unittest("quao_rows_pack_round_trip", test_quao_rows_round_trip), &
                   new_unittest("mp2_stability_warns_on_positive", test_mp2_stability), &
                   new_unittest("cc_stability_warns_on_positive", test_cc_stability), &
                   new_unittest("mbe_result_allocates_derivatives", test_mbe_allocate) &
@@ -272,6 +274,15 @@ contains
       result%state_spin = STATE_SPIN_SINGLET
       result%has_excited_states = .true.
 
+      ! The bonding-analysis rows, one of each kind, and their atom-pair sums.
+      call result%quao_rows%unpack([QUAO_ROW_BOND, 3, 4, 1, 2, 3, 3, 1, 1, 2, 1], &
+                                   [1.0_dp, 1.0_dp, 0.96_dp, -67.8_dp])
+      allocate (result%quao_rows%atom_bond_index(5, 5), &
+                result%quao_rows%atom_kinetic_bond_order(5, 5))
+      result%quao_rows%atom_bond_index = 0.1_dp
+      result%quao_rows%atom_kinetic_bond_order = -1.0_dp
+      result%has_quao_rows = .true.
+
       ! Everything the type owns is now allocated. Checked rather than
       ! assumed: a field added to the type and to `mismatch` but not to the
       ! block above would leave this case passing over a field it never
@@ -290,11 +301,57 @@ contains
       call check(error,.not. result%has_excited_states, &
                  "has_excited_states should be false after destroy")
       if (allocated(error)) return
+      call check(error,.not. result%has_quao_rows .and. result%quao_rows%n == 0, &
+                 "the bonding rows should be empty after destroy")
+      if (allocated(error)) return
 
       ! Check reset was called
       call check(error,.not. result%has_gradient, &
                  "has_gradient should be false after destroy")
    end subroutine test_result_destroy
+
+   subroutine test_quao_rows_round_trip(error)
+      !! `pack_integers`/`pack_reals` and `unpack` are inverses, column by column
+      !!
+      !! They are the MPI wire format for the bonding rows, so a column packed
+      !! into the wrong slot would reach the coordinator as a different atom or
+      !! orbital type and nothing downstream could tell.
+      type(error_type), allocatable, intent(out) :: error
+      type(quao_rows_t) :: sent, received
+
+      call sent%unpack([QUAO_ROW_BOND, 11, 15, 1, 2, 3, 3, 1, 1, 2, 1, &
+                        QUAO_ROW_DELOCALIZATION, 13, 9, 2, 1, 1, 3, 1, 1, 0, 3], &
+                       [0.99_dp, 1.01_dp, 0.9658_dp, -67.81_dp, &
+                        1.93_dp, 1.02_dp, 0.3780_dp, -9.21_dp])
+      call check(error, sent%n, 2, "two rows should have been unpacked")
+      if (allocated(error)) return
+      call check(error, sent%atom(2, 2), 1, "the acceptor atom of row 2")
+      if (allocated(error)) return
+      call check(error, sent%partner_atom(1, 2), 0, "a lone pair has no partner")
+      if (allocated(error)) return
+
+      call received%unpack(sent%pack_integers(), sent%pack_reals())
+      call check(error, received%n, sent%n, "row count")
+      if (allocated(error)) return
+      call check(error, all(received%kind == sent%kind), "kind")
+      if (allocated(error)) return
+      call check(error, all(received%orbital == sent%orbital), "orbital")
+      if (allocated(error)) return
+      call check(error, all(received%atom == sent%atom), "atom")
+      if (allocated(error)) return
+      call check(error, all(received%orbital_type == sent%orbital_type), "orbital_type")
+      if (allocated(error)) return
+      call check(error, all(received%dominant_l == sent%dominant_l), "dominant_l")
+      if (allocated(error)) return
+      call check(error, all(received%partner_atom == sent%partner_atom), "partner_atom")
+      if (allocated(error)) return
+      call check(error, all(received%occupation == sent%occupation), "occupation")
+      if (allocated(error)) return
+      call check(error, all(received%bond_order == sent%bond_order), "bond_order")
+      if (allocated(error)) return
+      call check(error, all(received%kinetic_bond_order == sent%kinetic_bond_order), &
+                 "kinetic_bond_order")
+   end subroutine test_quao_rows_round_trip
 
    function mismatch(result, want) result(name)
       !! The first component whose allocation is not `want`, by name, or empty
@@ -336,6 +393,20 @@ contains
       call note(allocated(result%transition_dipole_origin), "transition_dipole_origin", want, name)
       call note(allocated(result%nto_leading_weight), "nto_leading_weight", want, name)
       call note(allocated(result%state_spin), "state_spin", want, name)
+      call note(allocated(result%quao_rows%kind), "quao_rows%kind", want, name)
+      call note(allocated(result%quao_rows%orbital), "quao_rows%orbital", want, name)
+      call note(allocated(result%quao_rows%atom), "quao_rows%atom", want, name)
+      call note(allocated(result%quao_rows%orbital_type), "quao_rows%orbital_type", want, name)
+      call note(allocated(result%quao_rows%dominant_l), "quao_rows%dominant_l", want, name)
+      call note(allocated(result%quao_rows%partner_atom), "quao_rows%partner_atom", want, name)
+      call note(allocated(result%quao_rows%occupation), "quao_rows%occupation", want, name)
+      call note(allocated(result%quao_rows%bond_order), "quao_rows%bond_order", want, name)
+      call note(allocated(result%quao_rows%kinetic_bond_order), &
+                "quao_rows%kinetic_bond_order", want, name)
+      call note(allocated(result%quao_rows%atom_bond_index), "quao_rows%atom_bond_index", &
+                want, name)
+      call note(allocated(result%quao_rows%atom_kinetic_bond_order), &
+                "quao_rows%atom_kinetic_bond_order", want, name)
    end function mismatch
 
    subroutine note(state, field, want, name)

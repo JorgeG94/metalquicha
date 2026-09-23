@@ -10,7 +10,8 @@ module mqc_mbe
    use pic_io, only: to_char
    use mqc_physical_constants, only: AU_TO_DEBYE
    use mqc_mbe_io, only: print_detailed_breakdown
-   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE
+   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE, interaction_bonding_term_t
+   use mqc_interaction_bonding, only: collect_interaction_bonding, print_interaction_bonding
    use mqc_result_types, only: SCF_UNKNOWN, SCF_NOT_CONVERGED
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
@@ -18,7 +19,8 @@ module mqc_mbe
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
-                                    fragment_charge_multiplicity, to_angstrom, severed_bond_pairs
+                                    fragment_charge_multiplicity, to_angstrom, severed_bond_pairs, &
+                                    get_monomer_atom_list
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_program_limits, only: MAX_MBE_LEVEL
@@ -78,6 +80,14 @@ contains
             ! monomers real and the rest of *this* fragment ghosted, so the
             ! lookup finds the subset solved in the parent's basis rather than
             ! its own -- which is the whole of the correction.
+            ! TODO(mqc): for an auxiliary row such as [A,B,-C], `n` is the real
+            ! count, 2, so `vmfc_subset_key` reads only [A,B] and builds [A,-B]
+            ! -- A in the AB basis -- where Valiron-Mayer subtracts [A,-B,-C], A
+            ! in the parent ABC basis. VMFC(2) is unaffected; VMFC(3) and above
+            ! are not the published expression: a water trimer's HF/STO-3G
+            ! VMFC(3) total is 4.32e-3 hartree off it. `compute_mbe_dipole` has
+            ! the same key rule. InteractionEnergy refuses vmfc above level 2
+            ! because of this.
             if (counterpoise) then
                call vmfc_subset_key(fragment, n, indices(1:subset_size), subset_size, key(1:n))
                key_len = n
@@ -630,8 +640,101 @@ contains
       end if
    end subroutine print_mbe_gradient_info
 
+   subroutine assemble_interaction(polymers, fragment_count, max_level, reference, &
+                                   energies, delta_energies, mbe_result, world_comm)
+      !! The reference fragment's energy, and every correction whose term holds it
+      !!
+      !! A term counts when it is a real row -- not a counterpoise auxiliary --
+      !! of two or more monomers, one of which is the reference. Allocates the
+      !! two per-level arrays of `mbe_result`, (max_level), element 1 zero.
+      ! Each delta here is the one the ordinary expansion computes for the same
+      ! term, because every subset it subtracts is in the reduced list too --
+      ! which is what `apply_reference_closure` keeps, and why. The sum is the
+      ! reference's share of the full expansion's many-body energy, term for
+      ! term, and nothing else.
+      use mqc_result_types, only: mbe_result_t
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: max_level
+      integer, intent(in) :: reference  !! Monomer number, 1-based
+      real(dp), intent(in) :: energies(:), delta_energies(:)
+      type(mbe_result_t), intent(inout) :: mbe_result
+      type(comm_t), intent(in), optional :: world_comm
+
+      integer(int64) :: i
+      integer :: n
+      logical :: found_reference
+
+      if (allocated(mbe_result%interaction_by_level)) deallocate (mbe_result%interaction_by_level)
+      if (allocated(mbe_result%interaction_count_by_level)) then
+         deallocate (mbe_result%interaction_count_by_level)
+      end if
+      allocate (mbe_result%interaction_by_level(max_level))
+      allocate (mbe_result%interaction_count_by_level(max_level))
+      mbe_result%interaction_by_level = 0.0_dp
+      mbe_result%interaction_count_by_level = 0_int64
+      mbe_result%reference_fragment = reference
+      found_reference = .false.
+
+      do i = 1_int64, fragment_count
+         if (is_auxiliary_row(polymers(i, :))) cycle
+         if (.not. any(polymers(i, :) == reference)) cycle
+         n = int(real_count_of(polymers(i, :)))
+         if (n == 1) then
+            mbe_result%reference_energy = energies(i)
+            found_reference = .true.
+         else if (n <= max_level) then
+            mbe_result%interaction_by_level(n) = mbe_result%interaction_by_level(n) + delta_energies(i)
+            mbe_result%interaction_count_by_level(n) = mbe_result%interaction_count_by_level(n) + 1_int64
+         end if
+      end do
+
+      ! The closure keeps every term holding the reference, the reference
+      ! alone among them, so this cannot fire on a list the driver built.
+      if (.not. found_reference) then
+         call logger%error("compute_mbe: reference fragment "//to_char(reference)// &
+                           " has no one-body term in the list")
+         if (present(world_comm)) call abort_comm(world_comm, 1)
+         error stop "reference fragment missing from the term list"
+      end if
+
+      mbe_result%interaction_energy = sum(mbe_result%interaction_by_level)
+      mbe_result%has_interaction = .true.
+   end subroutine assemble_interaction
+
+   subroutine print_interaction_breakdown(mbe_result, max_level)
+      !! Print the reference fragment's interaction energy, level by level
+      !!
+      !! The reference is named in both the deck's numbering and the fragment
+      !! table's, and the line that says "Total" in an ordinary run says what
+      !! this number is instead, so the log cannot be read as a total energy.
+      use mqc_result_types, only: mbe_result_t
+      type(mbe_result_t), intent(in) :: mbe_result
+      integer, intent(in) :: max_level
+
+      integer :: nlevel
+      character(len=256) :: line
+
+      write (line, "(a,i0,a,i0,a)") "Interaction energy of reference fragment ", &
+         mbe_result%reference_fragment - 1, " (0-based, as in the deck; monomer ", &
+         mbe_result%reference_fragment, " in the fragment table):"
+      call logger%info(trim(line))
+      write (line, "(a,f20.10)") "  Reference fragment energy:  ", mbe_result%reference_energy
+      call logger%info(trim(line))
+      do nlevel = 2, max_level
+         write (line, "(a,i0,a,f20.10,a,i0,a)") "  ", nlevel, "-body terms:              ", &
+            mbe_result%interaction_by_level(nlevel), "   (", &
+            mbe_result%interaction_count_by_level(nlevel), " terms)"
+         call logger%info(trim(line))
+      end do
+      write (line, "(a,f20.10)") "  Interaction energy:         ", mbe_result%interaction_energy
+      call logger%info(trim(line))
+      call logger%info("  (the sum of the many-body corrections that contain the reference;")
+      call logger%info("   not a total energy, and no total energy is reported)")
+   end subroutine print_interaction_breakdown
+
    subroutine compute_mbe(polymers, fragment_count, max_level, results, &
-                          mbe_result, sys_geom, world_comm, json_data)
+                          mbe_result, sys_geom, world_comm, json_data, reference)
       !! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole
       !!
       !! What is computed follows what the caller pre-allocated in `mbe_result`:
@@ -641,6 +744,12 @@ contains
       !!
       !! Bond connectivity comes from `sys_geom%bonds`, and `json_data`, when
       !! present, is filled for the JSON writer.
+      !!
+      !! With `reference` the list is the reduced one `apply_reference_closure`
+      !! builds, and what is reported is that fragment's interaction energy --
+      !! `mbe_result%has_interaction` -- rather than a total: `has_energy`
+      !! stays false, and the dipole, which would be the reduced sum's, is not
+      !! assembled. Energies only; a derivative is refused.
       use mqc_result_types, only: calculation_result_t, mbe_result_t
 
       ! Required arguments
@@ -654,11 +763,14 @@ contains
       type(system_geometry_t), intent(in), optional :: sys_geom  !! Required for gradient/hessian
       type(comm_t), intent(in), optional :: world_comm           !! MPI communicator for abort
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
+      integer, intent(in), optional :: reference
+         !! The fragment whose interaction energy is wanted, as a monomer
+         !! number, 1-based. Absent or 0 is the ordinary expansion.
 
       ! Local variables
       integer(int64) :: i
       integer :: fragment_size, row_width, nlevel, current_log_level, hess_dim
-      logical :: use_vmfc
+      logical :: use_vmfc, interaction
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
       real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
@@ -669,6 +781,7 @@ contains
       type(timer_type) :: assembly_timer
       logical, allocatable :: joined_pairs(:, :)
       integer, allocatable :: pair_members(:)
+      type(interaction_bonding_term_t), allocatable :: bonding_terms(:)
 
       ! Determine what to compute based on allocated components in mbe_result
       compute_grad = allocated(mbe_result%gradient)
@@ -714,6 +827,24 @@ contains
                exit
             end if
          end do
+      end if
+
+      interaction = .false.
+      if (present(reference)) interaction = reference > 0
+      if (interaction) then
+         ! The terms that do not contain the reference were skipped, so a
+         ! derivative assembled from what is left would be the gradient of no
+         ! energy at all. The driver refuses the combination before any
+         ! fragment runs; this is the backstop for a caller that did not.
+         if (compute_grad .or. compute_hess) then
+            call logger%error("compute_mbe: an interaction energy is an energy only; "// &
+                              "no gradient or Hessian is assembled from a reduced "// &
+                              "expansion")
+            if (present(world_comm)) call abort_comm(world_comm, 1)
+            error stop "interaction energy derivatives are not implemented"
+         end if
+         ! Summed over a list missing terms, the dipole would be no molecule's.
+         compute_dipole = .false.
       end if
 
       ! Check if dipole derivatives are available (for IR intensities)
@@ -865,9 +996,15 @@ contains
       ! Clean up lookup table
       call lookup%destroy()
 
-      ! Compute totals and set status flags
-      mbe_result%total_energy = sum(sum_by_level)
-      mbe_result%has_energy = .true.
+      ! Compute totals and set status flags. A reduced expansion has no total
+      ! to report, and its sum is not written anywhere a total would be read.
+      if (interaction) then
+         call assemble_interaction(polymers, fragment_count, max_level, reference, &
+                                   energies, delta_energies, mbe_result, world_comm)
+      else
+         mbe_result%total_energy = sum(sum_by_level)
+         mbe_result%has_energy = .true.
+      end if
 
       ! Fold every fragment's derivatives into the system totals in one pass. The
       ! fragment is rebuilt once per fragment and shared by all three quantities.
@@ -908,7 +1045,29 @@ contains
       end if
 
       ! Print energy breakdown (always)
-      call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
+      if (interaction) then
+         call print_interaction_breakdown(mbe_result, max_level)
+         if (present(sys_geom)) then
+            block
+               use mqc_error, only: error_t
+               type(error_t) :: bonding_error
+
+               ! A failure here costs the bonding report and nothing else: the
+               ! energy above is already assembled.
+               call collect_interaction_bonding(polymers, fragment_count, reference, results, &
+                                                sys_geom, bonding_terms, bonding_error)
+               if (bonding_error%has_error()) then
+                  call logger%warning("the reference fragment's bonding could not be "// &
+                                      "reported: "//bonding_error%get_message())
+                  if (allocated(bonding_terms)) deallocate (bonding_terms)
+               else if (allocated(bonding_terms)) then
+                  call print_interaction_bonding(bonding_terms, sys_geom, reference)
+               end if
+            end block
+         end if
+      else
+         call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
+      end if
 
       ! Print gradient info if computed
       if (compute_grad) then
@@ -1076,8 +1235,26 @@ contains
             end if
          end if
 
-         allocate (json_data%sum_by_level(max_level))
-         json_data%sum_by_level = sum_by_level
+         ! The per-level sums of a reduced list mix the reference's terms with
+         ! the subsets they needed, and are no level's energy; the interaction
+         ! block carries the per-level numbers that mean something instead.
+         if (interaction) then
+            json_data%has_interaction = .true.
+            json_data%reference_fragment = mbe_result%reference_fragment
+            json_data%reference_energy = mbe_result%reference_energy
+            json_data%interaction_energy = mbe_result%interaction_energy
+            allocate (json_data%interaction_by_level, source=mbe_result%interaction_by_level)
+            allocate (json_data%interaction_count_by_level, &
+                      source=mbe_result%interaction_count_by_level)
+            if (allocated(bonding_terms)) then
+               call move_alloc(bonding_terms, json_data%interaction_bonding)
+               json_data%has_interaction_bonding = .true.
+               json_data%atomic_numbers = sys_geom%element_numbers
+            end if
+         else
+            allocate (json_data%sum_by_level(max_level))
+            json_data%sum_by_level = sum_by_level
+         end if
 
          ! Copy fragment distances if available
          allocate (json_data%fragment_distances(fragment_count))
@@ -1415,36 +1592,5 @@ contains
 
       if (allocated(current_atoms)) deallocate (current_atoms)
    end subroutine process_intersection_derivatives
-
-   subroutine get_monomer_atom_list(sys_geom, monomer_idx, atom_list, n_atoms)
-      !! Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer, intent(in) :: monomer_idx
-      integer, allocatable, intent(out) :: atom_list(:)
-      integer, intent(out) :: n_atoms
-
-      integer :: i, base_idx
-
-      if (allocated(sys_geom%fragment_atoms)) then
-         n_atoms = sys_geom%fragment_sizes(monomer_idx)
-         if (n_atoms > 0) then
-            allocate (atom_list(n_atoms))
-            atom_list = sys_geom%fragment_atoms(1:n_atoms, monomer_idx)
-         else
-            allocate (atom_list(0))
-         end if
-      else
-         n_atoms = sys_geom%atoms_per_monomer
-         if (n_atoms > 0) then
-            allocate (atom_list(n_atoms))
-            base_idx = (monomer_idx - 1)*sys_geom%atoms_per_monomer
-            do i = 1, n_atoms
-               atom_list(i) = base_idx + (i - 1)
-            end do
-         else
-            allocate (atom_list(0))
-         end if
-      end if
-   end subroutine get_monomer_atom_list
 
 end module mqc_mbe

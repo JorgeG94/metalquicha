@@ -78,6 +78,7 @@ contains
                   new_unittest("orbitals_are_actually_atomic", test_atomic_character), &
                   new_unittest("water_bonding_pattern", test_water_pattern), &
                   new_unittest("orientation_concentrates_bonding", test_orientation), &
+                  new_unittest("orientation_sweep_limit", test_orientation_limit), &
                   new_unittest("kinetic_bond_orders", test_kbo), &
                   new_unittest("split_localization_pairs_bonds", test_split), &
                   new_unittest("density_can_be_supplied", test_supplied_density), &
@@ -485,6 +486,53 @@ contains
       call check(error, abs(before_sum - 8.0_dp) < 1.0e-9_dp, &
                  "orientation must not change the electron count")
    end subroutine test_orientation
+
+   subroutine test_orientation_limit(error)
+      !! What the orientation does when it runs out of sweeps
+      !!
+      !! A limit below one is refused before anything turns. A limit reached
+      !! while the rotations still gain something is refused as well: one
+      !! sweep from the unoriented water QUAOs moves the functional by far
+      !! more than `ORIENT_GAIN_CRIT`. The stalled-but-converged branch is not
+      !! reached here -- water settles in a handful of sweeps -- which is also
+      !! the point of the last check: a case that settles must not be flagged.
+      type(error_type), allocatable, intent(out) :: error
+      type(quao_result_t) :: quao, attempt
+      type(aambs_dimensions_t) :: dims
+      type(error_t) :: err
+      real(dp), allocatable :: overlap(:, :)
+      logical :: ok
+
+      call water_quaos("cc-pvdz", quao, overlap, dims, err, ok)
+      call check(error, ok, "the construction should succeed")
+      if (allocated(error)) return
+
+      attempt = quao
+      call orient_quasi_atomic_orbitals(attempt, err, max_sweeps=0)
+      call check(error, err%has_error(), "a sweep limit of zero should be refused")
+      if (allocated(error)) return
+      call err%clear()
+
+      attempt = quao
+      call orient_quasi_atomic_orbitals(attempt, err, max_sweeps=1)
+      call check(error, err%has_error(), &
+                 "one sweep from unoriented orbitals still gains, and should be refused")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "orientation_max_sweeps") > 0, &
+                 "the refusal should name the key that raises the limit")
+      if (allocated(error)) return
+      call err%clear()
+
+      attempt = quao
+      call orient_quasi_atomic_orbitals(attempt, err)
+      call check(error,.not. err%has_error(), "the default limit should be enough for water")
+      if (allocated(error)) return
+      call check(error,.not. attempt%orientation_stalled, &
+                 "an orientation that settled should not be flagged as stalled")
+      if (allocated(error)) return
+      call check(error, attempt%orientation_angle == 0.0_dp, &
+                 "a settled orientation turned nothing in its final sweep")
+   end subroutine test_orientation_limit
 
    subroutine test_kbo(error)
       !! Kinetic bond orders: negative for bonds, and on the published scale

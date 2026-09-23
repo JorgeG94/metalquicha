@@ -14,7 +14,7 @@ module test_mqc_term_list
    !! No DL-FIND needed: this is the fragment layer, so it runs in CI whatever
    !! the optimizer backend is set to.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_frag_utils, only: generate_mbe_term_list, get_nfrags
+   use mqc_frag_utils, only: generate_mbe_term_list, get_nfrags, binomial, fragment_lookup_t
    use mqc_combinatorics, only: is_auxiliary_row, real_count_of
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_adapter, only: driver_config_t
@@ -35,7 +35,10 @@ contains
                   new_unittest("screened_list_keeps_monomers", test_screened_keeps_monomers), &
                   new_unittest("list_moves_with_geometry", test_list_moves_with_geometry), &
                   new_unittest("counterpoise_gives_every_n_mer_its_subsets", test_vmfc_rows), &
-                  new_unittest("counterpoise_follows_screening", test_vmfc_after_screening) &
+                  new_unittest("counterpoise_follows_screening", test_vmfc_after_screening), &
+                  new_unittest("reference_closure_has_the_derived_length", test_reference_count), &
+                  new_unittest("reference_closure_is_closed_complete_minimal", test_reference_closure), &
+                  new_unittest("reference_closure_follows_screening", test_reference_after_screening) &
                   ]
    end subroutine collect_mqc_term_list_tests
 
@@ -346,6 +349,212 @@ contains
          a(j + 1) = key
       end do
    end subroutine ascending
+
+   subroutine make_line(sys_geom, n, spacing)
+      !! `n` one-atom monomers in a line, `spacing` Bohr apart
+      type(system_geometry_t), intent(out) :: sys_geom
+      integer, intent(in) :: n
+      real(dp), intent(in) :: spacing
+
+      integer :: i
+
+      sys_geom%n_monomers = n
+      sys_geom%atoms_per_monomer = 1
+      sys_geom%total_atoms = n
+      sys_geom%charge = 0
+      sys_geom%multiplicity = 1
+      allocate (sys_geom%element_numbers(n))
+      allocate (sys_geom%coordinates(3, n))
+      sys_geom%element_numbers = 10
+      sys_geom%coordinates = 0.0_dp
+      do i = 1, n
+         sys_geom%coordinates(1, i) = real(i - 1, dp)*spacing
+      end do
+   end subroutine make_line
+
+   pure function reference_count(n, level) result(kept)
+      !! The reduced list's length with no screening: every term of up to
+      !! `level` monomers holding the reference, and every term of up to
+      !! `level - 1` without it
+      !!
+      !!     sum_{k=0}^{L-1} C(n-1, k)  +  sum_{k=1}^{L-1} C(n-1, k)
+      integer, intent(in) :: n, level
+      integer(int64) :: kept
+
+      integer :: k
+
+      kept = 1_int64
+      do k = 1, level - 1
+         kept = kept + 2_int64*binomial(n - 1, k)
+      end do
+   end function reference_count
+
+   subroutine test_reference_count(error)
+      !! The reduced list has the length the subset closure predicts
+      !!
+      !! Every system size from 2 to 7, every level up to 4 that fits, and
+      !! every choice of reference -- the first, the last and all between --
+      !! so a rule that works only for fragment 1, or only at level 2, fails.
+      !! `n_full` must be the ordinary expansion's count, which `get_nfrags`
+      !! is.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms, n_full
+      integer :: n, level, ref
+
+      do n = 2, 7
+         call make_line(sys_geom, n, 4.0_dp)
+         do level = 2, min(4, n)
+            do ref = 1, n
+               config%nlevel = level
+               config%reference_fragment = ref
+               call generate_mbe_term_list(sys_geom, config, level, polymers, n_terms, n_full=n_full)
+               call check(error, n_terms == reference_count(n, level), &
+                          "reference "//trim(int_str(int(ref, int64)))//" of "//trim(int_str(int(n, int64)))// &
+                          " at level "//trim(int_str(int(level, int64)))//" kept "//trim(int_str(n_terms))// &
+                          " terms, not "//trim(int_str(reference_count(n, level))))
+               if (allocated(error)) return
+               call check(error, n_full == get_nfrags(n, level), &
+                          "n_full should be the ordinary expansion's count")
+               if (allocated(error)) return
+            end do
+         end do
+      end do
+   end subroutine test_reference_count
+
+   subroutine test_reference_closure(error)
+      !! The reduced list is closed under subsets, holds every term with the
+      !! reference in it, and nothing that none of those needs
+      !!
+      !! Closure is what `compute_mbe_delta` relies on: a missing subset aborts
+      !! the run. Every term holding the reference is what the answer is made
+      !! of. Minimality is the saving: a term not holding the reference is kept
+      !! only when the same term with the reference added is kept, since that
+      !! is the term whose correction needs it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config, plain
+      integer, allocatable :: polymers(:, :), full(:, :)
+      integer(int64) :: n_terms, n_all
+      integer :: ref, level
+
+      call make_line(sys_geom, 6, 4.0_dp)
+      do level = 2, 4
+         plain%nlevel = level
+         call generate_mbe_term_list(sys_geom, plain, level, full, n_all)
+         do ref = 1, 6
+            config%nlevel = level
+            config%reference_fragment = ref
+            call generate_mbe_term_list(sys_geom, config, level, polymers, n_terms)
+            call check_reduced_list(error, polymers, n_terms, full, n_all, ref, level)
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_reference_closure
+
+   subroutine test_reference_after_screening(error)
+      !! The reduction on a screened list is still closed and still minimal
+      !!
+      !! Screening removes terms first, so the reduced list is not the
+      !! combinatorial one: a subset is needed only by the terms holding the
+      !! reference that survived the screen. Checked against the screened list
+      !! the ordinary run would have used.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config, plain
+      integer, allocatable :: polymers(:, :), full(:, :)
+      integer(int64) :: n_terms, n_all, n_full
+      integer :: ref
+
+      ! 4 Bohr is 2.117 Angstrom: a 5 Angstrom dimer cutoff keeps neighbours
+      ! up to two apart, and a 3 Angstrom trimer cutoff only adjacent triples.
+      call make_line(sys_geom, 6, 4.0_dp)
+      allocate (plain%fragment_cutoffs(3))
+      plain%fragment_cutoffs = [0.0_dp, 5.0_dp, 3.0_dp]
+      plain%nlevel = 3
+      call generate_mbe_term_list(sys_geom, plain, 3, full, n_all)
+
+      do ref = 1, 6
+         config = plain
+         config%reference_fragment = ref
+         call generate_mbe_term_list(sys_geom, config, 3, polymers, n_terms, n_full=n_full)
+         call check(error, n_full == n_all, "n_full should be the screened ordinary count")
+         if (allocated(error)) return
+         call check(error, n_terms < n_all, "the reduction should skip something here")
+         if (allocated(error)) return
+         call check_reduced_list(error, polymers, n_terms, full, n_all, ref, 3)
+         if (allocated(error)) return
+      end do
+   end subroutine test_reference_after_screening
+
+   subroutine check_reduced_list(error, polymers, n_terms, full, n_all, ref, level)
+      !! The three properties `apply_reference_closure` promises
+      type(error_type), allocatable, intent(inout) :: error
+      integer, intent(in) :: polymers(:, :), full(:, :)
+      integer(int64), intent(in) :: n_terms, n_all
+      integer, intent(in) :: ref, level
+
+      type(fragment_lookup_t) :: kept, everything
+      integer(int64) :: i
+      integer :: n, mask, j, k
+      integer :: sub(level), with_ref(level + 1)
+
+      call kept%init(n_terms)
+      do i = 1, n_terms
+         call kept%insert(polymers(i, :), count(polymers(i, :) /= 0), i)
+      end do
+      call everything%init(n_all)
+      do i = 1, n_all
+         call everything%insert(full(i, :), count(full(i, :) /= 0), i)
+      end do
+
+      ! Closed: every proper, non-empty subset of every kept term is kept.
+      do i = 1, n_terms
+         n = count(polymers(i, :) /= 0)
+         do mask = 1, 2**n - 2
+            k = 0
+            do j = 1, n
+               if (btest(mask, j - 1)) then
+                  k = k + 1
+                  sub(k) = polymers(i, j)
+               end if
+            end do
+            call check(error, kept%find(sub(1:k), k) > 0, &
+                       "a subset of a kept term is missing, which compute_mbe_delta would abort on")
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! Complete: every term of the ordinary list that holds the reference.
+      do i = 1, n_all
+         n = count(full(i, :) /= 0)
+         if (.not. any(full(i, 1:n) == ref)) cycle
+         call check(error, kept%find(full(i, 1:n), n) > 0, &
+                    "a term holding the reference was skipped")
+         if (allocated(error)) return
+      end do
+
+      ! Minimal: a kept term without the reference is a subset of a kept one with it.
+      do i = 1, n_terms
+         n = count(polymers(i, :) /= 0)
+         if (any(polymers(i, 1:n) == ref)) cycle
+         call check(error, n < level, "a term of the full level without the reference was kept")
+         if (allocated(error)) return
+         with_ref(1:n) = polymers(i, 1:n)
+         with_ref(n + 1) = ref
+         call check(error, kept%find(with_ref(1:n + 1), n + 1) > 0, &
+                    "a term was kept that no term holding the reference needs")
+         if (allocated(error)) return
+      end do
+
+      call kept%destroy()
+      call everything%destroy()
+   end subroutine check_reduced_list
 
    function int_str(n) result(s)
       !! The count, for a failure message that says what it actually found

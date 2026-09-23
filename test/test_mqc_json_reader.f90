@@ -16,7 +16,8 @@ module test_mqc_json_reader
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
                                METHOD_TYPE_DFT, METHOD_TYPE_MP2, METHOD_TYPE_CCSD_T, &
                                METHOD_TYPE_MCSCF
-   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
+                             CALC_TYPE_INTERACTION_ENERGY
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_FRAG_LEVEL, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
@@ -70,6 +71,8 @@ contains
                   new_unittest("fragmentation_settings", test_fragmentation), &
                   new_unittest("fragmentation_level_records_being_named", &
                                test_frag_level_named), &
+                  new_unittest("interaction_energy_driver_and_reference", &
+                               test_interaction_energy_keyword), &
                   new_unittest("bond_breaking_defaults", test_bond_breaking_defaults), &
                   new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
                   new_unittest("df_without_aux_fails", test_df_without_aux), &
@@ -803,6 +806,109 @@ contains
       call check(error, config%frag_level_set, &
                  "a deck that writes the level should record having written it")
    end subroutine test_fragmentation
+
+   subroutine test_interaction_energy_keyword(error)
+      !! `driver: "InteractionEnergy"` and `keywords.fragmentation.reference_fragment`
+      !!
+      !! The driver says what is computed and the keyword which fragment it is
+      !! computed for, so each is refused without the other rather than
+      !! ignored: a reference on an Energy deck would run the full expansion
+      !! and look as though it had been honoured. The index is 0-based as the
+      !! deck writes it and stored so, and a string or a negative number is
+      !! refused at read time. What needs the partition -- the upper bound, the
+      !! level -- is the adapter's, and `test_mqc_config_roundtrip` has it.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      character(len=*), parameter :: MODEL = '"method": "hf", "basis": "sto-3g"'
+      character(len=*), parameter :: FRAGMENTED = &
+                                     '"symbols": ["H", "H", "H", "H", "H", "H"], '// &
+                                     '"geometry": [0,0,0, 0.7,0,0, 4,0,0, 4.7,0,0, 8,0,0, 8.7,0,0], '// &
+                                     '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                                     '"fragments": [[0, 1], [2, 3], [4, 5]]'
+
+      ! The ordinary deck: both halves, the index kept as written.
+      call write_deck(MODEL, "InteractionEnergy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, "reference_fragment": 2}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%calc_type == CALC_TYPE_INTERACTION_ENERGY, &
+                 'driver "InteractionEnergy" should parse to CALC_TYPE_INTERACTION_ENERGY')
+      if (allocated(error)) return
+      call check(error, config%reference_fragment_set, "reference_fragment was not recorded as given")
+      if (allocated(error)) return
+      call check(error, config%reference_fragment, 2)
+      if (allocated(error)) return
+
+      ! The other spelling, and fragment 0, which a `value /= 0` test for
+      ! presence would lose.
+      call write_deck(MODEL, "interaction_energy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, "reference_fragment": 0}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%calc_type == CALC_TYPE_INTERACTION_ENERGY, &
+                 'driver "interaction_energy" should parse like "InteractionEnergy"')
+      if (allocated(error)) return
+      call check(error, config%reference_fragment_set .and. config%reference_fragment == 0, &
+                 "reference_fragment 0 should read back as given, and as given")
+      if (allocated(error)) return
+
+      ! A silent Energy deck names no reference.
+      call write_deck(MODEL, "Energy", '"fragmentation": {"method": "MBE", "level": 2}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%reference_fragment_set, &
+                 "a deck without reference_fragment should not record one")
+      if (allocated(error)) return
+
+      ! The driver alone.
+      call write_deck(MODEL, "InteractionEnergy", '"fragmentation": {"method": "MBE", "level": 2}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error, refused_naming(parse_error, "reference_fragment"), &
+                 "InteractionEnergy without a reference fragment was accepted")
+      if (allocated(error)) return
+
+      ! The keyword alone, which is the one that would otherwise be ignored.
+      call write_deck(MODEL, "Energy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, "reference_fragment": 1}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error, refused_naming(parse_error, "InteractionEnergy"), &
+                 "an Energy deck carrying reference_fragment was accepted")
+      if (allocated(error)) return
+
+      call write_deck(MODEL, "InteractionEnergy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, "reference_fragment": -1}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error, refused_naming(parse_error, "0-based"), &
+                 "a negative reference_fragment was accepted")
+      if (allocated(error)) return
+
+      call write_deck(MODEL, "InteractionEnergy", &
+                      '"fragmentation": {"method": "MBE", "level": 2, "reference_fragment": "1"}', &
+                      "", FRAGMENTED)
+      call read_deck(config, parse_error)
+      call check(error, refused_naming(parse_error, "must be an integer"), &
+                 "a reference_fragment spelled as a string was accepted")
+   end subroutine test_interaction_energy_keyword
+
+   logical function refused_naming(parse_error, text) result(refused)
+      !! Whether the read failed with a message containing `text`
+      type(error_t), intent(in) :: parse_error
+      character(len=*), intent(in) :: text
+
+      refused = .false.
+      if (.not. parse_error%has_error()) return
+      refused = index(parse_error%get_message(), text) > 0
+   end function refused_naming
 
    subroutine test_frag_level_named(error)
       !! A silent deck leaves the level unset, and that is not the same as one
@@ -2186,6 +2292,9 @@ contains
       call check(error, abs(config%bonding_threshold - 2.5_dp) < 1.0e-12_dp, &
                  "the reporting threshold should have been read")
       if (allocated(error)) return
+      call check(error, config%bonding_max_sweeps == 2000, &
+                 "the orientation sweep limit should default to 2000")
+      if (allocated(error)) return
 
       call check(error, config%bonding_no_sharing .eqv. .false., &
                  "the no-sharing analysis should be off unless asked for")
@@ -2287,6 +2396,26 @@ contains
                     "an absent properties block must not request an analysis")
          if (allocated(error)) return
       end if
+
+      ! The orientation's sweep limit, raised for a stubborn coupled pair.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "orientation_max_sweeps": 5000}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_max_sweeps == 5000, &
+                 "the orientation sweep limit should have been read")
+      if (allocated(error)) return
+
+      ! And refused below one: zero sweeps is an orientation that never ran.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bonding_analysis": '// &
+                      '{"type": "gms_quao", "orientation_max_sweeps": 0}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an orientation sweep limit of zero should be refused")
+      if (allocated(error)) return
 
       ! An analysis nobody implements is refused, by name, with the list.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &

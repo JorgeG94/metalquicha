@@ -3,6 +3,8 @@ module test_mqc_mbe
    use mqc_mbe, only: compute_mbe, collect_unconverged, score_unconverged
    use mqc_result_types, only: SCF_CONVERGED, SCF_NOT_CONVERGED, SCF_UNKNOWN
    use mqc_result_types, only: calculation_result_t, mbe_result_t
+   use mqc_frag_utils, only: apply_reference_closure, generate_fragment_list, &
+                             create_monomer_list, get_nfrags, binomial
    use pic_types, only: dp, int64
    implicit none
    private
@@ -17,6 +19,7 @@ contains
 
       testsuite = [ &
                   new_unittest("mbe_monomers_only", test_mbe_monomers_only), &
+                  new_unittest("interaction_energy_matches_full_expansion", test_interaction_energy), &
                   new_unittest("vmfc_dipole_excludes_ghosted_rows", test_vmfc_dipole), &
                   new_unittest("mbe_simple_dimer", test_mbe_simple_dimer), &
                   new_unittest("mbe_sorted_order", test_mbe_sorted_order), &
@@ -28,6 +31,128 @@ contains
                   new_unittest("failures_name_their_culprit", test_failures_name_their_culprit) &
                   ]
    end subroutine collect_mqc_mbe_tests
+
+   subroutine test_interaction_energy(error)
+      !! The reduced expansion's interaction energy is the full expansion's,
+      !! term for term
+      !!
+      !! Five monomers at level 3, with a made-up energy for every term that is
+      !! not additive in anything, so every correction is non-zero and every
+      !! subset matters. The reference's corrections are worked out here by
+      !! inclusion-exclusion over the *full* list,
+      !!
+      !!     dE(T) = sum over subsets S of T of (-1)^(|T|-|S|) E(S)
+      !!
+      !! which is the closed form of the recursion `compute_mbe` runs, and
+      !! compared with what `compute_mbe` gets from the reduced list alone. If
+      !! the reduction dropped a subset some correction needs, the run aborts;
+      !! if it kept the wrong one, the numbers disagree. Checked for every
+      !! choice of reference.
+      !!
+      !! And the two things that must not come out of a reduced run: a total
+      !! energy, and a dipole.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: N_MON = 5, LEVEL = 3
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms, i
+      integer :: ref, n, mask, j, k, sub(LEVEL)
+      real(dp) :: expected(LEVEL), parity
+      integer, allocatable :: monomers(:)
+
+      do ref = 1, N_MON
+         ! The ordinary list, then the reduction the driver applies.
+         allocate (monomers(N_MON))
+         call create_monomer_list(monomers)
+         allocate (polymers(get_nfrags(N_MON, LEVEL), LEVEL))
+         polymers = 0
+         n_terms = 0
+         do j = 1, N_MON
+            n_terms = n_terms + 1
+            polymers(n_terms, 1) = j
+         end do
+         call generate_fragment_list(monomers, LEVEL, polymers, n_terms)
+         call apply_reference_closure(polymers, n_terms, ref, LEVEL)
+
+         allocate (results(n_terms))
+         do i = 1, n_terms
+            results(i)%energy%scf = made_up_energy(polymers(i, :))
+            results(i)%has_energy = .true.
+            allocate (results(i)%dipole(3))
+            results(i)%dipole = 1.0_dp
+            results(i)%has_dipole = .true.
+         end do
+         call mbe_result%allocate_dipole()
+
+         call compute_mbe(polymers, n_terms, LEVEL, results, mbe_result, reference=ref)
+
+         ! What the full expansion says the reference's corrections are.
+         expected = 0.0_dp
+         do i = 1, n_terms
+            n = count(polymers(i, :) /= 0)
+            if (n < 2 .or. .not. any(polymers(i, 1:n) == ref)) cycle
+            do mask = 1, 2**n - 1
+               k = 0
+               do j = 1, n
+                  if (btest(mask, j - 1)) then
+                     k = k + 1
+                     sub(k) = polymers(i, j)
+                  end if
+               end do
+               parity = merge(1.0_dp, -1.0_dp, mod(n - k, 2) == 0)
+               expected(n) = expected(n) + parity*made_up_energy([sub(1:k), (0, j=k + 1, LEVEL)])
+            end do
+         end do
+
+         call check(error, mbe_result%has_interaction, "a reference run reported no interaction energy")
+         if (allocated(error)) return
+         call check(error,.not. mbe_result%has_energy, &
+                    "a reference run must not report a total energy: its sum is not the system's")
+         if (allocated(error)) return
+         call check(error,.not. mbe_result%has_dipole, &
+                    "a reference run must not report the reduced list's dipole")
+         if (allocated(error)) return
+         call check(error, mbe_result%reference_energy, made_up_energy([ref, 0, 0]), thr=1.0e-12_dp, &
+                    message="the reference energy should be the reference monomer's")
+         if (allocated(error)) return
+         do n = 2, LEVEL
+            call check(error, mbe_result%interaction_by_level(n), expected(n), thr=1.0e-12_dp, &
+                       message="a level of the interaction energy differs from the full expansion's")
+            if (allocated(error)) return
+            ! C(N-1, n-1) terms of size n hold the reference.
+            call check(error, mbe_result%interaction_count_by_level(n) == binomial(N_MON - 1, n - 1), &
+                       "the wrong number of terms was counted at a level")
+            if (allocated(error)) return
+         end do
+         call check(error, mbe_result%interaction_energy, sum(expected), thr=1.0e-12_dp, &
+                    message="the interaction energy differs from the full expansion's")
+         if (allocated(error)) return
+
+         call mbe_result%destroy()
+         deallocate (results, polymers, monomers)
+      end do
+   end subroutine test_interaction_energy
+
+   pure function made_up_energy(row) result(e)
+      !! A term energy with a genuine many-body part at every order
+      integer, intent(in) :: row(:)
+      real(dp) :: e
+
+      integer :: i, j
+
+      e = 0.0_dp
+      do i = 1, size(row)
+         if (row(i) == 0) cycle
+         e = e - 10.0_dp - 0.1_dp*row(i)
+         do j = i + 1, size(row)
+            if (row(j) == 0) cycle
+            e = e + 0.01_dp*real(mod(row(i)*row(j), 7) + 1, dp)
+         end do
+      end do
+      if (count(row /= 0) == 3) e = e + 1.0e-3_dp*real(product(row, mask=row /= 0), dp)
+   end function made_up_energy
 
    subroutine test_vmfc_dipole(error)
       !! The counterpoise dipole uses the ghosted rows without summing them

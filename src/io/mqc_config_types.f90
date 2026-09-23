@@ -162,6 +162,10 @@ module mqc_config_types
          !! From `properties.bonding_analysis.energy_threshold`, in kcal/mol.
          !! Orbital pairs whose kinetic bond order is weaker than this are
          !! counted and then not printed.
+      integer :: bonding_max_sweeps = 2000
+         !! From `properties.bonding_analysis.orientation_max_sweeps`. Jacobi
+         !! sweeps the orientation may take before it is judged on how much the
+         !! last one still gained. At least one.
 
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2
@@ -585,6 +589,16 @@ module mqc_config_types
          !! It is not free: a monomer's energy becomes one number per pair
          !! rather than one reusable across every pair it belongs to, so a
          !! level-2 expansion goes from N + C(N,2) subcalculations to 3*C(N,2).
+      integer :: reference_fragment = -1
+         !! `keywords.fragmentation.reference_fragment`: which fragment a
+         !! `driver: "InteractionEnergy"` run reports the interactions of. 0-based,
+         !! as the deck writes it -- a position in the molecule's `fragments`
+         !! list, counted the way atom indices are. Read only with
+         !! `reference_fragment_set`.
+      logical :: reference_fragment_set = .false.
+         !! Whether the deck wrote `reference_fragment` at all. Kept apart from
+         !! the value so that a deck asking for fragment -1 is refused as out of
+         !! range rather than mistaken for one that asked for nothing.
 
       character(len=:), allocatable :: fmo_far_field
          !! What a distant fragment contributes: mulliken, chelpg or ignore

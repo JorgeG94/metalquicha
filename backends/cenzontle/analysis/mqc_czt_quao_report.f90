@@ -26,6 +26,11 @@ module mqc_czt_quao_report
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_quao, only: quao_result_t, mo_aambs_overlap
+   use mqc_quao_rows, only: quao_rows_t, quao_type_name, QUAO_ROW_BOND, &
+                            QUAO_ROW_DELOCALIZATION, QUAO_TYPE_LPMOD, QUAO_TYPE_NONE, &
+                            QUAO_TYPE_LONE_PAIR, QUAO_TYPE_RADICAL, QUAO_TYPE_SIGMA, &
+                            QUAO_TYPE_PI, QUAO_TYPE_RDLP, QUAO_TYPE_RDNV, QUAO_TYPE_NVMOD, &
+                            QUAO_TYPE_NV
    use libcint_fortran, only: LIBCINT_ANG_OF, LIBCINT_ATOM_OF
    implicit none
    private
@@ -33,6 +38,7 @@ module mqc_czt_quao_report
    public :: quao_labels_t
    public :: label_quasi_atomic_orbitals
    public :: print_quao_report
+   public :: build_quao_rows
    public :: quao_type_name
    public :: QUAO_TYPE_LPMOD, QUAO_TYPE_NONE, QUAO_TYPE_LONE_PAIR, QUAO_TYPE_RADICAL
    public :: QUAO_TYPE_SIGMA, QUAO_TYPE_PI, QUAO_TYPE_RDLP, QUAO_TYPE_RDNV
@@ -74,23 +80,6 @@ module mqc_czt_quao_report
    integer, parameter :: QUAO_MAX_L = 3
       !! s, p, d, f -- GAMESS's `INUMTYP`. The accurate atomic minimal basis has
       !! nothing higher, since it holds free-atom occupied shells only.
-
-   ! Orbital types, numbered as GAMESS numbers them so the two can be compared
-   ! without a translation table.
-   integer, parameter :: QUAO_TYPE_LPMOD = -1
-      !! Lone-pair occupancy, but engaged in a strong bond. A lone pair that is
-      !! not quite one.
-   integer, parameter :: QUAO_TYPE_NONE = 0
-      !! Unclassified. Reached only on a transition metal, where the sigma/pi
-      !! test is skipped -- see `skip_direction_test`.
-   integer, parameter :: QUAO_TYPE_LONE_PAIR = 1
-   integer, parameter :: QUAO_TYPE_RADICAL = 2
-   integer, parameter :: QUAO_TYPE_SIGMA = 3
-   integer, parameter :: QUAO_TYPE_PI = 4
-   integer, parameter :: QUAO_TYPE_RDLP = 6      !! Reduced lone pair
-   integer, parameter :: QUAO_TYPE_RDNV = 7      !! Reduced, and nearly empty
-   integer, parameter :: QUAO_TYPE_NVMOD = 8     !! Empty, but in a strong bond
-   integer, parameter :: QUAO_TYPE_NV = 9        !! Empty
 
    type :: quao_labels_t
       !! What each quasi-atomic orbital is, and what it is bonded to
@@ -520,66 +509,140 @@ contains
       end do
    end subroutine sort_by_magnitude
 
-   pure function quao_type_name(orbital_type, dominant_l) result(name)
-      !! The label the report prints
-      !!
-      !! Lower case and spelled out rather than GAMESS's `SIGMA`, `PLP`,
-      !! `NVMOD`, which are its internal codes.
-      !!
-      !! `dominant_l` only matters for the lone-pair types, where it is the
-      !! difference between an s lone pair and a p one.
-      !!
-      !! Every type has a name, including the ones GAMESS leaves blank: a blank
-      !! column cannot be told from an orbital that genuinely has no type.
-      integer, intent(in) :: orbital_type
-      integer, intent(in) :: dominant_l
-      character(len=10) :: name
-
-      select case (orbital_type)
-      case (QUAO_TYPE_LPMOD)
-         name = shell_letter(dominant_l)//"-lone/bnd"
-      case (QUAO_TYPE_LONE_PAIR)
-         name = shell_letter(dominant_l)//"-lone"
-      case (QUAO_TYPE_RADICAL)
-         name = "radical"
-      case (QUAO_TYPE_SIGMA)
-         name = "sigma"
-      case (QUAO_TYPE_PI)
-         name = "pi"
-      case (QUAO_TYPE_RDLP)
-         name = "part-lone"
-      case (QUAO_TYPE_RDNV)
-         name = "part-empty"
-      case (QUAO_TYPE_NVMOD)
-         name = "empty/bnd"
-      case (QUAO_TYPE_NV)
-         name = "empty"
-      case default
-         name = "unclassed"
-      end select
-   end function quao_type_name
-
-   pure function shell_letter(l) result(letter)
-      integer, intent(in) :: l
-      character(len=1) :: letter
-
-      select case (l)
-      case (0)
-         letter = "s"
-      case (1)
-         letter = "p"
-      case (2)
-         letter = "d"
-      case (3)
-         letter = "f"
-      case default
-         letter = "?"
-      end select
-   end function shell_letter
-
    ! ---------------------------------------------------------------------------
    ! The report
    ! ---------------------------------------------------------------------------
+
+   subroutine build_quao_rows(quao, labels, interference, kinetic_bond_order, n_core, &
+                              n_atoms, threshold, rows)
+      !! The bonds and delocalization tables of `print_quao_report`, as data
+      !!
+      !! The same pairs in the same order: every pair whose kinetic
+      !! interference reaches `TOL_PRINT` hartree, strongest first, bonds before
+      !! delocalization, and delocalization weaker than `threshold` dropped. A
+      !! delocalization row has its donor, the fuller orbital, at end 1. Bond
+      !! orders are stored as magnitudes, their sign being a phase convention.
+      !!
+      !! The atom-pair sums cover every orbital pair, above threshold or not.
+      type(quao_result_t), intent(in) :: quao
+      type(quao_labels_t), intent(in) :: labels
+      real(dp), intent(in) :: interference(:, :)
+         !! (n_quao, n_quao), hartree
+      real(dp), intent(in) :: kinetic_bond_order(:, :)
+         !! (n_quao, n_quao), kcal/mol
+      integer, intent(in) :: n_core
+         !! Chemical-core orbitals, added to every orbital index
+      integer, intent(in) :: n_atoms
+      real(dp), intent(in) :: threshold
+         !! kcal/mol
+      type(quao_rows_t), intent(out) :: rows
+
+      integer, allocatable :: pair_i(:), pair_j(:), order(:), kept(:)
+      logical, allocatable :: bond(:)
+      integer :: n, np, i, j, k, row, pass, side, orb, iatom, jatom
+
+      n = quao%n_quao
+      call ranked_pairs(interference, n, pair_i, pair_j, order, np)
+      allocate (bond(np), kept(np))
+      do k = 1, np
+         bond(k) = is_bond(quao, labels, pair_i(order(k)), pair_j(order(k)))
+      end do
+
+      ! Bonds first, then delocalization, each in the ranked order.
+      rows%n = 0
+      do pass = 1, 2
+         do k = 1, np
+            i = pair_i(order(k))
+            j = pair_j(order(k))
+            if (pass == 1 .neqv. bond(k)) cycle
+            if (pass == 2 .and. abs(kinetic_bond_order(i, j)) < threshold) cycle
+            rows%n = rows%n + 1
+            kept(rows%n) = k
+         end do
+      end do
+
+      allocate (rows%kind(rows%n), rows%orbital(2, rows%n), rows%atom(2, rows%n), &
+                rows%orbital_type(2, rows%n), rows%dominant_l(2, rows%n), &
+                rows%partner_atom(2, rows%n), rows%occupation(2, rows%n), &
+                rows%bond_order(rows%n), rows%kinetic_bond_order(rows%n))
+      do row = 1, rows%n
+         k = kept(row)
+         i = pair_i(order(k))
+         j = pair_j(order(k))
+         if (bond(k)) then
+            rows%kind(row) = QUAO_ROW_BOND
+         else
+            rows%kind(row) = QUAO_ROW_DELOCALIZATION
+            if (quao%population_bond_order(j, j) > quao%population_bond_order(i, i)) then
+               i = pair_j(order(k))
+               j = pair_i(order(k))
+            end if
+         end if
+         do side = 1, 2
+            orb = i
+            if (side == 2) orb = j
+            rows%orbital(side, row) = n_core + orb
+            rows%atom(side, row) = quao%atom_of(orb)
+            rows%orbital_type(side, row) = labels%orbital_type(orb)
+            rows%dominant_l(side, row) = labels%dominant_l(orb)
+            rows%partner_atom(side, row) = 0
+            if (labels%partner_count(orb) > 0) then
+               rows%partner_atom(side, row) = quao%atom_of(labels%partner(orb, 1))
+            end if
+            rows%occupation(side, row) = quao%population_bond_order(orb, orb)
+         end do
+         rows%bond_order(row) = abs(quao%population_bond_order(i, j))
+         rows%kinetic_bond_order(row) = kinetic_bond_order(i, j)
+      end do
+
+      allocate (rows%atom_bond_index(n_atoms, n_atoms), &
+                rows%atom_kinetic_bond_order(n_atoms, n_atoms))
+      rows%atom_bond_index = 0.0_dp
+      rows%atom_kinetic_bond_order = 0.0_dp
+      do j = 1, n
+         jatom = quao%atom_of(j)
+         do i = 1, n
+            iatom = quao%atom_of(i)
+            if (iatom == jatom) cycle
+            rows%atom_bond_index(iatom, jatom) = rows%atom_bond_index(iatom, jatom) + &
+                                                 quao%population_bond_order(i, j)**2
+            rows%atom_kinetic_bond_order(iatom, jatom) = &
+               rows%atom_kinetic_bond_order(iatom, jatom) + kinetic_bond_order(i, j)
+         end do
+      end do
+      rows%threshold = threshold
+      rows%orientation_stalled = quao%orientation_stalled
+      deallocate (pair_i, pair_j, order, bond, kept)
+   end subroutine build_quao_rows
+
+   subroutine ranked_pairs(interference, n, pair_i, pair_j, order, np)
+      !! Orbital pairs above `TOL_PRINT`, and their order strongest first
+      !!
+      !! `pair_i(order(k))`, `pair_j(order(k))` is the k-th strongest pair,
+      !! with `pair_i < pair_j`. Shared by the report and the rows so the two
+      !! cannot select differently.
+      real(dp), intent(in) :: interference(:, :)
+      integer, intent(in) :: n
+      integer, allocatable, intent(out) :: pair_i(:), pair_j(:), order(:)
+      integer, intent(out) :: np
+
+      real(dp), allocatable :: magnitude(:)
+      integer :: i, j
+
+      allocate (pair_i(n*(n - 1)/2), pair_j(n*(n - 1)/2), magnitude(n*(n - 1)/2))
+      np = 0
+      do i = 1, n
+         do j = i + 1, n
+            if (abs(interference(i, j)) < TOL_PRINT) cycle
+            np = np + 1
+            pair_i(np) = i
+            pair_j(np) = j
+            magnitude(np) = interference(i, j)
+         end do
+      end do
+      call sort_by_magnitude(magnitude(1:np), order)
+      deallocate (magnitude)
+   end subroutine ranked_pairs
 
    subroutine print_quao_report(verbose, quao, labels, interference, &
                                 element_symbols, n_core, kinetic_bond_order, threshold)
@@ -617,7 +680,7 @@ contains
          !! Ignored without `kinetic_bond_order`, that being the quantity it is
          !! a threshold on; the `TOL_PRINT` hartree floor is then all there is.
 
-      real(dp), allocatable :: magnitude(:), occupation(:)
+      real(dp), allocatable :: occupation(:)
       integer, allocatable :: pair_i(:), pair_j(:), order(:)
       character(len=160) :: line
       character(len=24) :: left, right
@@ -633,18 +696,7 @@ contains
       cutoff = 0.0_dp
       if (present(threshold) .and. present(kinetic_bond_order)) cutoff = threshold
 
-      allocate (pair_i(n*(n - 1)/2), pair_j(n*(n - 1)/2), magnitude(n*(n - 1)/2))
-      np = 0
-      do i = 1, n
-         do j = i + 1, n
-            if (abs(interference(i, j)) < TOL_PRINT) cycle
-            np = np + 1
-            pair_i(np) = i
-            pair_j(np) = j
-            magnitude(np) = interference(i, j)
-         end do
-      end do
-      call sort_by_magnitude(magnitude(1:np), order)
+      call ranked_pairs(interference, n, pair_i, pair_j, order, np)
 
       ! ---- the covalent skeleton --------------------------------------------
       call logger%info("")
@@ -756,7 +808,7 @@ contains
          call logger%info(trim(line))
       end do
 
-      deallocate (pair_i, pair_j, magnitude, occupation, order)
+      deallocate (pair_i, pair_j, occupation, order)
    end subroutine print_quao_report
 
    pure function is_bond(quao, labels, i, j) result(bond)

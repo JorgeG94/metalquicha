@@ -346,6 +346,7 @@ contains
       call allow(keys, "no_sharing")
       call allow(keys, "no_sharing_ci")
       call allow(keys, "restrict_localization")
+      call allow(keys, "orientation_max_sweeps")
       call require(keys, "type")
    end function bonding_analysis_keys
 
@@ -659,6 +660,7 @@ contains
       call allow(keys, "level")
       call allow(keys, "max_intersection_level")
       call allow(keys, "counterpoise")
+      call allow(keys, "reference_fragment")
       call allow(keys, "far_field")
       call allow(keys, "resppc")
       call allow(keys, "rcut")

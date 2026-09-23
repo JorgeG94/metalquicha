@@ -21,6 +21,8 @@ with no reference to a Lewis structure anyone drew.
   analysis, ``"none"`` to switch it off. Required inside the block.
 - ``energy_threshold``: Orbital pairs whose kinetic bond order is weaker than
   this, in kcal/mol, are counted rather than printed (default: 1.0).
+- ``orientation_max_sweeps``: Jacobi sweeps the orientation of the orbitals may
+  take (default: 2000, at least 1). See `When the orientation is slow`_.
 
 ``properties`` sits beside ``keywords``, not inside it, and the distinction is
 worth keeping. ``keywords`` say how to compute the wave function and change the
@@ -539,6 +541,31 @@ Paper I reports 0.99999 against 0.105--0.272; anything much narrower means the
 valence space was not cleanly separable and the analysis rests on a choice
 rather than on a fact.
 
+When the orientation is slow
+----------------------------
+
+The orientation rotates orbitals within each atom until no rotation angle
+exceeds 1e-6. Usually that takes a handful of sweeps. When two orbitals on one
+atom are coupled to a partner's across a bond, such as the carbonyl C and O of
+a peptide residue, the angle can shrink by only about 0.08% per sweep. The
+functional stops changing long before the angle passes the test. In
+glycine tripeptide with a water, in STO-3G, three of seven fragments reached
+2000 sweeps with the angle still at 2.7e-6 and each rotation gaining 3e-11.
+
+Hitting the limit is judged on the gain, not the angle. If the last sweep's
+largest single-rotation gain is below 1e-9 the orientation is accepted, with a
+warning::
+
+    the orientation reached its sweep limit with the functional converged
+    (largest gain per rotation 2.7E-11) but hybrids still turning by up to
+    2.7E-06 rad; bond orders are reliable, hybrid directions to that angle.
+
+If anything is still gaining more than that, the analysis is refused and the
+message names the key to raise. A molecule whose orientation settles is
+unaffected by either branch, and gives exactly the numbers it gave before the
+limit was configurable. The same tripeptide settles in full with
+``"orientation_max_sweeps": 4000``.
+
 For correlated wave functions
 -----------------------------
 
@@ -576,7 +603,10 @@ Limits
 - Hydrogen through xenon. Past that the free-atom minimal basis this projects
   onto would need a relativistic treatment that does not exist here, and the
   analysis refuses rather than using a basis that does not describe the atom.
-- The output is printed, not written to the JSON output file.
+- The output is printed, not written to the JSON output file, except under
+  ``driver: "InteractionEnergy"``. There the bonding between the reference
+  fragment and the rest of each term is written; see
+  :doc:`interaction_energy`.
 
 References
 ----------

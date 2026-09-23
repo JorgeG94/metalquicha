@@ -45,7 +45,8 @@ module mqc_czt_bonding
                            project_no_sharing, &
                            active_cumulant, quao_projection, transform_cumulant
    use mqc_czt_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
-                                  print_quao_report
+                                  print_quao_report, build_quao_rows
+   use mqc_quao_rows, only: quao_rows_t
    implicit none
    private
 
@@ -178,7 +179,7 @@ contains
                                 no_sharing_ci, valence_wavefunction, &
                                 restrict_localization, atom_energy, &
                                 free_atom_energy, pair_energy, pair_classical, &
-                                formation_energy)
+                                formation_energy, max_sweeps, rows)
       !! The quasi-atomic bonding analysis, start to finish
       ! TODO(mqc): the dummy arguments are interrupted by local declarations --
       ! `aambs` through `labels` sit between `occupations` and `active_orbitals`
@@ -244,6 +245,8 @@ contains
          !! Off by default: the constraint costs atomic character, and buys only
          !! the ability to keep a restricted wave function in its own space,
          !! which matters when writing it out over the complete one will not fit.
+      integer, intent(in), optional :: max_sweeps
+         !! Sweep limit for the orientation; its own default when absent
       type(valence_wavefunction_t), intent(in), optional :: valence_wavefunction
          !! A converged multiconfigurational wave function to use instead of
          !! solving one, if it happens to be over the full valence space. Its
@@ -262,6 +265,10 @@ contains
          !! `pair_energy` and `pair_classical` carry the full pair energy in
          !! both (A,B) and (B,A), as everything in the decomposition does, so
          !! the total is `sum(atom_energy) + 0.5*sum(pair_energy)`.
+      type(quao_rows_t), intent(out), optional :: rows
+         !! The bonds and delocalization tables and the atom-pair sums, in
+         !! this calculation's atom numbering. Empty when the analysis failed
+         !! before the orbitals were labelled.
 
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
@@ -289,6 +296,7 @@ contains
       integer, allocatable :: core_off(:), core_n(:), val_off(:), val_n(:)
       integer, allocatable :: order(:)
       character(len=160) :: line
+      character(len=16) :: gain_text, angle_text
       character(len=8) :: label
       integer :: natm, iatom, i, core, valence
       logical :: loud
@@ -409,8 +417,17 @@ contains
                                     mixed, val_off, val_n, quao, error)
       end if
       call clk%lap("quasi-atomic orbitals")
-      call orient_quasi_atomic_orbitals(quao, error)
+      call orient_quasi_atomic_orbitals(quao, error, max_sweeps)
       if (error%has_error()) return
+      if (quao%orientation_stalled) then
+         write (gain_text, "(es8.1)") quao%orientation_gain
+         write (angle_text, "(es8.1)") quao%orientation_angle
+         call logger%warning("  the orientation reached its sweep limit with the functional "// &
+                             "converged (largest gain per rotation "//trim(adjustl(gain_text))// &
+                             ") but hybrids still turning by up to "// &
+                             trim(adjustl(angle_text))//" rad; bond orders are "// &
+                             "reliable, hybrid directions to that angle.")
+      end if
       call clk%lap("orientation")
 
       call mol%kinetic(kinetic)
@@ -418,6 +435,15 @@ contains
       call label_quasi_atomic_orbitals(quao, mol, aambs, mixed, s_mbs, &
                                        atomic_numbers, coordinates, labels, error)
       if (error%has_error()) return
+      if (present(rows)) then
+         if (present(threshold)) then
+            call build_quao_rows(quao, labels, interference, kbo, dims%n_core, natm, &
+                                 threshold, rows)
+         else
+            call build_quao_rows(quao, labels, interference, kbo, dims%n_core, natm, &
+                                 0.0_dp, rows)
+         end if
+      end if
 
       if (loud) then
          ! Populations first. The core electrons are added back because the

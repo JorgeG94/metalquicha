@@ -108,6 +108,12 @@ probe_*
 !probe_*.f90
 !probe_*.py
 !probe_*.sh
+# ... except the two directories the pattern catches that are not binaries: the
+# CPU validation decks under validation/inputs/cpu/mqc/ and the Python package
+# under python/mqc/. Without this every file added to either since the rule was
+# written is silently untracked, and `git add` refuses even a tracked one.
+!validation/inputs/cpu/mqc/
+!python/mqc/
 
 # profiling / scratch
 *.nsys-rep

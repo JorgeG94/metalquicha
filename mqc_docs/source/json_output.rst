@@ -391,6 +391,73 @@ the two-body terms whose ``indices`` contain it. For the ligand as fragment 7:
 The same selection on the CSV sidecar is a filter on the ``m1`` and ``m2``
 columns with ``level == 2`` and ``connected != "YES"``.
 
+Interaction Energy Output
+-------------------------
+
+A ``driver: "InteractionEnergy"`` run writes the MBE document above with one
+difference that matters: **there is no** ``total_energy``, and the ``levels``
+entries carry no ``total_energy`` either. The expansion was reduced to the
+terms one fragment's interactions need, and a sum over it is not the system's
+energy, so the key a consumer reads a total from is absent rather than present
+and holding something else. In its place:
+
+.. code-block:: json
+
+   "interaction_energy": {
+     "reference_fragment": 3,
+     "reference_monomer": 4,
+     "reference_energy": -75.98394029179254,
+     "total": -0.0032070897117932873,
+     "total_kcal_mol": -2.012479178320585,
+     "by_level": [
+       {"frag_level": 2, "name": "dimers",  "count": 3, "energy":  0.0006784376225397182},
+       {"frag_level": 3, "name": "trimers", "count": 3, "energy": -0.0038855273343330055}
+     ],
+     "terms_computed": 13,
+     "terms_in_full_expansion": 14
+   }
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 15 55
+
+   * - Field
+     - Type
+     - Description
+   * - ``reference_fragment``
+     - integer
+     - The reference, 0-based, as the deck's ``reference_fragment`` wrote it
+   * - ``reference_monomer``
+     - integer
+     - The same fragment, 1-based, as ``levels[].fragments[].indices`` and the
+       fragment table number it
+   * - ``reference_energy``
+     - float
+     - The reference fragment's own energy, its one-body term (Hartree)
+   * - ``total``
+     - float
+     - The sum of every many-body correction, level 2 and up, whose term
+       contains the reference (Hartree). Not a total energy.
+   * - ``total_kcal_mol``
+     - float
+     - The same, in kcal/mol
+   * - ``by_level[].count``
+     - integer
+     - How many terms of that size contain the reference
+   * - ``by_level[].energy``
+     - float
+     - Their corrections summed (Hartree)
+   * - ``terms_computed``
+     - integer
+     - Terms this run computed, the reference's and the subsets they need
+   * - ``terms_in_full_expansion``
+     - integer
+     - Terms the ordinary run would have computed over the same fragments,
+       level, screening and counterpoise
+
+``levels[].count`` and the fragment table count every computed term, the
+subsets without the reference included. See :doc:`interaction_energy`.
+
 GMBE Output
 ===========
 
