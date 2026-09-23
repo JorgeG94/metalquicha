@@ -212,6 +212,8 @@ contains
       type(json_value), pointer :: root, main_obj, levels_arr, level_obj, frags_arr, frag_obj
       type(json_value), pointer :: dipole_obj
       integer(int64) :: i, count_by_level
+      integer(int64), allocatable :: row_order(:)
+      integer :: k
       ! TODO(mqc): `j` is dead here.
       integer :: fragment_size, j, frag_level, iunit, io_stat
       integer, allocatable :: indices(:)
@@ -237,6 +239,18 @@ contains
       call json%add(main_obj, "total_energy", data%total_energy)
 
       call write_unconverged_section(json, main_obj, data)
+
+      ! Said once, above the levels, rather than on each row it applies to: a
+      ! reader who scans the table and never reads a per-row key still meets
+      ! it, and a row that is fine carries no disclaimer.
+      if (allocated(data%fragment_connected)) then
+         if (any(data%fragment_connected)) then
+            call json%add(main_obj, "connected_pair_note", &
+                          "Two-body terms marked connected join monomers across a severed "// &
+                          "covalent bond. Their delta_energy includes the energy of re-forming "// &
+                          "that bond and is not an interaction energy. They are sorted last.")
+         end if
+      end if
 
       ! Build levels array
       call json%create_array(levels_arr, "levels")
@@ -267,30 +281,36 @@ contains
             call json%create_array(frags_arr, "fragments")
             call json%add(level_obj, frags_arr)
 
-            do i = 1_int64, data%fragment_count
+            call ordered_rows_for_level(data, frag_level, row_order)
+            do k = 1, size(row_order)
+               i = row_order(k)
                fragment_size = count(data%polymers(i, :) > 0)
-               if (fragment_size == frag_level) then
-                  call json%create_object(frag_obj, "")
-                  call json%add(frags_arr, frag_obj)
+               call json%create_object(frag_obj, "")
+               call json%add(frags_arr, frag_obj)
 
-                  allocate (indices(fragment_size))
-                  indices = data%polymers(i, 1:fragment_size)
-                  call json%add(frag_obj, "indices", indices)
-                  deallocate (indices)
+               allocate (indices(fragment_size))
+               indices = data%polymers(i, 1:fragment_size)
+               call json%add(frag_obj, "indices", indices)
+               deallocate (indices)
 
-                  if (allocated(data%fragment_energies)) then
-                     call json%add(frag_obj, "energy", data%fragment_energies(i))
-                  end if
+               if (allocated(data%fragment_energies)) then
+                  call json%add(frag_obj, "energy", data%fragment_energies(i))
+               end if
 
-                  if (allocated(data%fragment_distances)) then
-                     call json%add(frag_obj, "distance", data%fragment_distances(i))
-                  end if
+               if (allocated(data%fragment_distances)) then
+                  call json%add(frag_obj, "distance", data%fragment_distances(i))
+               end if
 
-                  if (frag_level > 1 .and. allocated(data%delta_energies)) then
-                     call json%add(frag_obj, "delta_energy", data%delta_energies(i))
-                  end if
+               if (frag_level > 1 .and. allocated(data%delta_energies)) then
+                  call json%add(frag_obj, "delta_energy", data%delta_energies(i))
+               end if
+
+               ! Only on a two-body term, where the question means something.
+               if (frag_level == 2 .and. allocated(data%fragment_connected)) then
+                  call json%add(frag_obj, "connected", data%fragment_connected(i))
                end if
             end do
+            deallocate (row_order)
          end if
       end do
 
@@ -1127,6 +1147,77 @@ contains
          end do
       end do
    end subroutine write_ieda_section
+
+   subroutine ordered_rows_for_level(data, frag_level, order)
+      !! Row indices of one level's terms, strongest interaction first
+      !!
+      !! Sorted by the magnitude of the many-body correction, descending, so a
+      !! table of thousands of rows is read from the top. Nothing else in this
+      !! writer sorts, and nothing in this project did before: the enumeration
+      !! order the terms arrive in puts the largest of them nowhere in
+      !! particular.
+      !!
+      !! **Two-body terms joined by a severed covalent bond go last**,
+      !! whatever their magnitude, and they are the largest rows in any
+      !! fragmented peptide. Their correction is dominated by the energy of
+      !! re-forming the bond and is not an interaction energy, so letting them
+      !! lead a table sorted by strength would put the one row a reader must
+      !! not take at face value at the top of it.
+      !!
+      !! Level one keeps the order it was enumerated in. A monomer has no
+      !! correction to sort by, and its own energy is not a strength.
+      use pic_types, only: int_index
+      use pic_sorting, only: sort_index
+      type(json_output_data_t), intent(in) :: data
+      integer, intent(in) :: frag_level
+      integer(int64), allocatable, intent(out) :: order(:)
+
+      integer(int64), allocatable :: rows(:)
+      integer(int_index), allocatable :: perm(:)
+      real(dp), allocatable :: key(:)
+      logical, allocatable :: late(:)
+      integer(int64) :: i
+      integer :: n, k, p
+
+      n = 0
+      allocate (rows(data%fragment_count))
+      do i = 1_int64, data%fragment_count
+         if (count(data%polymers(i, :) > 0) /= frag_level) cycle
+         n = n + 1
+         rows(n) = i
+      end do
+
+      if (frag_level < 2 .or. n < 2 .or. .not. allocated(data%delta_energies)) then
+         order = rows(1:n)
+         return
+      end if
+
+      allocate (key(n), perm(n), late(n))
+      do k = 1, n
+         key(k) = abs(data%delta_energies(rows(k)))
+         late(k) = .false.
+         if (frag_level == 2 .and. allocated(data%fragment_connected)) then
+            late(k) = data%fragment_connected(rows(k))
+         end if
+      end do
+      call sort_index(key, perm, reverse=.true.)
+
+      ! Two passes over one sorted permutation rather than a compound key: the
+      ! grouping stays exact however the magnitudes fall, and each group is
+      ! still strongest first within itself.
+      allocate (order(n))
+      p = 0
+      do k = 1, n
+         if (late(int(perm(k)))) cycle
+         p = p + 1
+         order(p) = rows(int(perm(k)))
+      end do
+      do k = 1, n
+         if (.not. late(int(perm(k)))) cycle
+         p = p + 1
+         order(p) = rows(int(perm(k)))
+      end do
+   end subroutine ordered_rows_for_level
 
    subroutine write_efmo_section(json, parent, data)
       !! The EFMO breakdown, under `efmo`, when there is one

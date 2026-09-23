@@ -45,6 +45,7 @@ contains
       logical :: have_orbitals
       logical :: have_energy, have_delta, have_distance
       logical :: have_charmult
+      logical :: have_connected
       type(timer_type) :: table_timer
       character(len=256) :: filename
       character(len=32) :: col
@@ -68,7 +69,7 @@ contains
          write (col, "(a,i0)") ",m", j
          write (unit, "(a)", advance="no") trim(col)
       end do
-      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev,charge,mult"
+      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev,charge,mult,connected"
 
       ! Presence of the value columns is fixed for the whole run, so decide once
       ! rather than per row.
@@ -83,6 +84,7 @@ contains
                       .and. allocated(data%fragment_has_orbitals)
       have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo)
       have_charmult = allocated(data%fragment_charges) .and. allocated(data%fragment_multiplicities)
+      have_connected = allocated(data%fragment_connected)
 
       ! Explicit repeat count for the monomer columns rather than an unlimited "*"
       ! group: the unlimited form emits the separator before it discovers the data is
@@ -132,9 +134,24 @@ contains
          ! reader's parser expects it. A charged fragment is otherwise invisible
          ! in the breakdown.
          if (have_charmult) then
-            write (unit, '(",",i0,",",i0)') data%fragment_charges(i), data%fragment_multiplicities(i)
+            write (unit, '(",",i0,",",i0)', advance="no") data%fragment_charges(i), &
+               data%fragment_multiplicities(i)
          else
-            write (unit, "(a)") ",,"
+            write (unit, "(a)", advance="no") ",,"
+         end if
+
+         ! Blank on anything that is not a two-body term, rather than NO. The
+         ! question "is this an interaction energy contaminated by a bond"
+         ! does not arise for a monomer or a trimer, and answering it there
+         ! would read as a reassurance the column is not making.
+         if (have_connected .and. level == 2) then
+            if (data%fragment_connected(i)) then
+               write (unit, "(a)") ",YES"
+            else
+               write (unit, "(a)") ",NO"
+            end if
+         else
+            write (unit, "(a)") ","
          end if
       end do
 

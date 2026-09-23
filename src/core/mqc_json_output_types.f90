@@ -78,6 +78,12 @@ module mqc_json_output_types
       integer, allocatable :: polymers(:, :)          !! Fragment composition (n_fragments, max_level)
       real(dp), allocatable :: fragment_energies(:)   !! Per-fragment total energies
       real(dp), allocatable :: delta_energies(:)      !! MBE delta corrections
+      logical, allocatable :: fragment_connected(:)
+         !! Whether this term's two monomers are joined by a severed covalent
+         !! bond. **Meaningful on two-body rows only** -- false everywhere else,
+         !! because the many-body subtraction removes the pair terms and with
+         !! them the bond energy. A true row's `delta_energy` includes the
+         !! energy of re-forming that bond and is not an interaction energy.
       real(dp), allocatable :: sum_by_level(:)        !! Energy sum per level
       real(dp), allocatable :: fragment_distances(:)  !! Per-fragment min distances (Angstrom)
       integer, allocatable :: fragment_charges(:)         !! Per-fragment total charge
@@ -256,6 +262,7 @@ contains
       if (allocated(this%polymers)) deallocate (this%polymers)
       if (allocated(this%fragment_energies)) deallocate (this%fragment_energies)
       if (allocated(this%delta_energies)) deallocate (this%delta_energies)
+      if (allocated(this%fragment_connected)) deallocate (this%fragment_connected)
       if (allocated(this%sum_by_level)) deallocate (this%sum_by_level)
       if (allocated(this%fragment_distances)) deallocate (this%fragment_distances)
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)

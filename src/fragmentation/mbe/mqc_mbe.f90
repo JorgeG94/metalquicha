@@ -18,7 +18,7 @@ module mqc_mbe
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
-                                    fragment_charge_multiplicity, to_angstrom
+                                    fragment_charge_multiplicity, to_angstrom, severed_bond_pairs
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_program_limits, only: MAX_MBE_LEVEL
@@ -667,6 +667,8 @@ contains
       logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole, compute_dipole_derivs
       type(fragment_lookup_t) :: lookup
       type(timer_type) :: assembly_timer
+      logical, allocatable :: joined_pairs(:, :)
+      integer, allocatable :: pair_members(:)
 
       ! Determine what to compute based on allocated components in mbe_result
       compute_grad = allocated(mbe_result%gradient)
@@ -1050,6 +1052,29 @@ contains
 
          allocate (json_data%delta_energies(fragment_count))
          json_data%delta_energies = delta_energies
+
+         ! Which two-body rows are not interaction energies. A pair whose
+         ! monomers are joined by a severed bond carries the energy of
+         ! re-forming it, which is three orders of magnitude larger than the
+         ! interactions the rest of the table holds and would be read as a
+         ! result by anyone scanning the column. Marked rather than corrected:
+         ! subtracting a cut-bond reference needs a model calculation per
+         ! distinct bond, and a flag is what stops a wrong number now.
+         allocate (json_data%fragment_connected(fragment_count), source=.false.)
+         if (present(sys_geom)) then
+            call severed_bond_pairs(sys_geom, joined_pairs)
+            do i = 1_int64, fragment_count
+               if (count(polymers(i, 1:max_level) > 0) /= 2) cycle
+               pair_members = pack(polymers(i, 1:max_level), polymers(i, 1:max_level) > 0)
+               json_data%fragment_connected(i) = joined_pairs(pair_members(1), pair_members(2))
+            end do
+            if (any(json_data%fragment_connected)) then
+               call logger%info("  "//to_char(count(json_data%fragment_connected))// &
+                                " two-body terms join monomers across a severed covalent bond.")
+               call logger%info("  Their delta energies include the energy of re-forming that "// &
+                                "bond and are not interaction energies.")
+            end if
+         end if
 
          allocate (json_data%sum_by_level(max_level))
          json_data%sum_by_level = sum_by_level
