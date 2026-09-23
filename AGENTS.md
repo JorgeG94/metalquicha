@@ -146,7 +146,19 @@ partition that severs one. `"afo"` detaches it with an adjusted frozen orbital
 instead: a model system around the bond is solved and localized, the orbital on
 the bond is reduced to the detached atom's own basis functions, and that hybrid
 is frozen -- empty in the fragment that gets nothing of the bond, occupied in
-the one that gets all of it. Restricted to `embedding = "none"` for now.
+the one that gets all of it. Runs with `embedding = "none"` and `"ptc"`, and is
+refused with `"exact"`.
+
+**Under a field the detached atom's nucleus is split along with the bond
+pair** -- `Z-1` with the fragment that owns the atom, `+1` on the ghost centre
+its neighbour already carries there -- so both fragments are neutral closed
+shells. That is what a fragment *potential* needs: a net charge per fragment is
+a monopole of order 1/R on every adjacent-residue pair. It leaves an embedded
+FMO total *exactly* unchanged, because the field a group feels is
+`q_all - own_q` and the charge reappears in it at the same point; that
+invariance is asserted by a test rather than believed. With `embedding =
+"none"` the nucleus stays whole, because nothing would supply the other half.
+See `mqc_docs/source/fmo.rst`.
 
 The bookkeeping rule that matters: **a cut belongs to a group, not a fragment.**
 A bond severed between two monomers is whole again inside the dimer holding both

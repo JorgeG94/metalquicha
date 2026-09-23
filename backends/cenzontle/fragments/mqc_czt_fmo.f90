@@ -82,9 +82,15 @@ module mqc_czt_fmo
    !! from the members is what made an earlier capped version 11 Hartree wrong.
    !!
    !! **A detached atom is described by two fragments**, which is what a field
-   !! on top of a frozen orbital has to account for. Its owner holds its nucleus
-   !! with the hybrid there frozen empty; the fragment across the bond holds the
-   !! same functions as a ghost with the bond pair in that hybrid. So its
+   !! on top of a frozen orbital has to account for. Its owner holds it with
+   !! the hybrid there frozen empty; the fragment across the bond holds the
+   !! same functions as a ghost with the bond pair in that hybrid. **Its
+   !! nucleus is split to match** wherever there is a field -- `Z-1` with the
+   !! owner, `+1` on the ghost -- so both fragments come out neutral closed
+   !! shells and the two charges add back to `Z` in any group holding the
+   !! whole bond. That leaves an embedded total exactly unchanged, and with
+   !! `esp = "none"` it is not done at all, because nothing would supply the
+   !! other half; see `nuc_charge` on `group_t` and `splits_nucleus`. So its
    !! density block and its atomic population both arrive twice and are added
    !! -- summing is the only apportionment that leaves the charges adding to the
    !! molecular charge -- and a group is then told not to feel its own share of
@@ -180,6 +186,27 @@ module mqc_czt_fmo
          !! neighbour term is a contraction over a whole density matrix and has
          !! no per-atom part to remove, so there is nothing to subtract that
          !! would not be the point-charge approximation under another name.
+      character(len=16) :: cut_nucleus = "auto"
+         !! Whether a detached bond's nucleus is split between the two
+         !! fragments that describe it, or stays whole with the one that owns
+         !! the atom.
+         !!
+         !! `"auto"`, the default, splits it wherever there is an embedding
+         !! field and keeps it whole where there is not. **A split nucleus is
+         !! only defined when something supplies the other half.** With a field
+         !! the fragment across the bond supplies it -- it holds the `+1` and
+         !! the bond pair, and the group on the other side feels both through
+         !! the field -- so the split is free, and it is what leaves each
+         !! fragment a neutral closed shell. With `esp = "none"` nothing
+         !! supplies it, and the owner would be solved around a nucleus short
+         !! by one proton: a worse model of a methyl group than the cation
+         !! whole nuclei produce, and measurably so.
+         !!
+         !! `"split"` and `"whole"` force either convention. They exist because
+         !! the embedded total is *exactly* invariant to the choice and that is
+         !! worth asserting rather than deriving twice; see
+         !! `the_charge_convention_does_not_move_an_embedded_total` in
+         !! `test/test_mqc_afo_fmo.f90`. Neither is reachable from a deck.
       real(dp) :: cap_scale = 1.0_dp
          !! Where a hydrogen cap sits along the bond it closes, for the
          !! many-body path; see [[mqc_physical_fragment]]. Not used by
@@ -300,6 +327,19 @@ module mqc_czt_fmo
       logical :: converged = .false.
       real(dp), allocatable :: monomer_energy(:)     !! E'_I
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
+      real(dp), allocatable :: fragment_charge(:)
+         !! What each fragment's own atomic charges add up to, one per
+         !! fragment. Allocated only where the charges themselves are, so
+         !! `esp = "none"` leaves it absent.
+         !!
+         !! Zero for every fragment wherever a detached bond's nucleus is
+         !! split, and that is the statement worth checking: a Mulliken
+         !! population sums to the nuclear charge less the electron count, so
+         !! a fragment reading non-zero there means its nucleus and its
+         !! electrons were not divided the same way. The system total says
+         !! nothing about it -- the plus-and-minus-one convention sums to zero
+         !! just as neatly -- and neither does the telescoping identity, which
+         !! has no field to be wrong about.
    end type fmo_result_t
 
    type :: fragment_t
@@ -350,6 +390,11 @@ module mqc_czt_fmo
       !! the bond and its surroundings and not of whoever is being solved. One
       !! model system per cut bond, whatever the fragment count.
       logical :: active = .false.
+      logical :: split_nucleus = .false.
+         !! Whether a boundary moves a unit of nuclear charge as well as the
+         !! electron. Resolved once from `fmo_options_t%cut_nucleus` and the
+         !! embedding, so that every group of a run uses one convention and no
+         !! assembly has to work it out again.
       integer :: n_cuts = 0
       type(severed_bond_t), allocatable :: cuts(:)
       type(afo_hybrid_t), allocatable :: hybrid(:)
@@ -364,6 +409,33 @@ module mqc_czt_fmo
       integer :: n_real = 0    !! Atoms the group owns; ghosts follow them
       integer :: nelec = 0     !! With the boundary shift already applied
       integer, allocatable :: z(:)
+      integer, allocatable :: nuc_charge(:)
+         !! The charge each slot presents, which at a boundary need not be its
+         !! element's.
+         !!
+         !! Under the split convention a detached bond divides a nucleus
+         !! between the two fragments that describe it: the one owning the
+         !! bond-detached atom presents `Z-1` there, and the one carrying that
+         !! atom as a ghost presents `+1` rather than a ghost's usual zero.
+         !! Inside a group holding both ends the two add back to `Z` and the
+         !! bond is whole, which is the rule `cuts_outside_group` applies to
+         !! every other boundary object. `sum(nuc_charge)` is then `nelec` and
+         !! the group is neutral.
+         !!
+         !! Under the whole convention nothing moves and this is the elements'
+         !! own charges, zero on a ghost, so the two sides of a cut come out
+         !! at about plus and minus one. `afo_context_t%split_nucleus` says
+         !! which is in force, and `splits_nucleus` says why.
+         !!
+         !! **The choice does not move an embedded total, exactly**, which is
+         !! why it can be made on other grounds. The field a group feels is
+         !! `q_all - own_q`, so a unit of charge taken out of a group's own
+         !! nucleus reappears in the field it sees at the same point and the
+         !! one-electron potential is identical either way; the summed
+         !! Mulliken populations that build `q_all` do not move either; and
+         !! nuclear repulsion is two-body in the fragments for any assignment,
+         !! so it is already exact at level two. Asserted in
+         !! `the_charge_convention_does_not_move_an_embedded_total`.
       character(len=2), allocatable :: sym(:)
       real(dp), allocatable :: xyz(:, :)
       logical, allocatable :: ghost(:)
@@ -379,6 +451,11 @@ module mqc_czt_fmo
       logical, allocatable :: occupied(:)  !! True when this group gets the bond
       integer, allocatable :: cut_of(:)    !! Which system cut each boundary is
    end type group_t
+
+   real(dp), parameter :: FRAGMENT_NEUTRALITY_TOL = 1.0e-8_dp
+      !! How far a fragment's own charges may sum from zero before it is worth
+      !! a warning. A Mulliken sum is nuclear charge less `Tr(DS)`, so the only
+      !! thing between it and an exact integer is the SCF's own convergence.
 
    real(dp), parameter :: AFO_SHIFT = 1.0e3_dp
       !! Where a frozen virtual is held, in Hartree.
@@ -460,8 +537,12 @@ contains
       res%energy = res%monomer_sum + res%pair_sum
 
       ! Reported, not used.
-      call report_charges(frag, n_frag, n_atoms, res%charges, error)
+      call report_charges(frag, n_frag, n_atoms, res%charges, res%fragment_charge, error)
       if (error%has_error()) return
+      if (allocated(res%fragment_charge)) then
+         call log_fragment_charges(res%fragment_charge, &
+                                   .not. afo%active .or. afo%split_nucleus)
+      end if
 
       res%converged = res%converged .and. all_converged
       if (.not. all_converged) then
@@ -523,7 +604,8 @@ contains
       allocate (kind, source=parsed)
    end subroutine fmo_guess_kind
 
-   subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error, ghost)
+   subroutine open_fragment(frag_z, frag_sym, frag_xyz, opts, mol, bounds, error, ghost, &
+                            nuc_charge)
       !! A fragment's molecule and Schwarz bounds, built from its geometry
       !!
       !! Called wherever one is needed and discarded straight after, rather than
@@ -540,14 +622,17 @@ contains
          !! Atoms whose basis functions are wanted without their nucleus. A
          !! group holding the attached end of a detached bond carries the
          !! detached atom this way: the functions describe the bond region, and
-         !! the nucleus and its electrons stay with the fragment that owns them.
+         !! the electrons that are not the bond's stay with the fragment that
+         !! owns them.
+      integer, intent(in), optional :: nuc_charge(:)
+         !! The charge each centre presents, where that is not its element's.
+         !! A cut bond splits the detached atom's nucleus, so its owner shows
+         !! `Z-1` and the ghost above shows `+1`; see `group_t`.
 
-      if (present(ghost)) then
-         call build_czt_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, &
-                                 error, ghost=ghost)
-      else
-         call build_czt_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, error)
-      end if
+      ! Both are optional here and optional again in `build_czt_molecule`, so
+      ! an absent one arrives absent and needs no branch.
+      call build_czt_molecule(frag_z, frag_sym, frag_xyz, trim(opts%basis), mol, &
+                              error, ghost=ghost, nuclear_charge=nuc_charge)
       if (error%has_error()) return
       call schwarz_bounds(mol, bounds, error)
    end subroutine open_fragment
@@ -616,6 +701,15 @@ contains
                            "part to remove, and inventing one would make this the "// &
                            "point-charge method under another name. Set "// &
                            "keywords.fragmentation.embedding to 'ptc' or 'none'")
+            return
+         end if
+         if (trim(opts%cut_nucleus) /= "auto" .and. trim(opts%cut_nucleus) /= "split" &
+             .and. trim(opts%cut_nucleus) /= "whole") then
+            call error%set(ERROR_VALIDATION, "fmo: cut_nucleus='"// &
+                           trim(opts%cut_nucleus)//"' is not one of 'auto', 'split' or "// &
+                           "'whole'. Refused rather than read as 'auto', because the "// &
+                           "two conventions differ by an elementary charge per "// &
+                           "fragment and a misspelling would pick one silently")
             return
          end if
          call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
@@ -689,7 +783,7 @@ contains
       call assemble_group(frag, [which], afo, z, coords, group, error)
       if (error%has_error()) return
       call open_fragment(group%z, group%sym, group%xyz, opts, probe, probe_bounds, &
-                         error, ghost=group%ghost)
+                         error, ghost=group%ghost, nuc_charge=group%nuc_charge)
       if (error%has_error()) return
 
       frag(which)%nao_full = probe%nao
@@ -832,9 +926,54 @@ contains
       end if
 
       afo%active = .true.
+      afo%split_nucleus = splits_nucleus(opts)
       call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s), one "// &
                           "frozen orbital each")
+      if (afo%split_nucleus) then
+         call logger%verbose("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
+                             "fragment that owns the atom, +1 on the ghost its "// &
+                             "neighbour carries there -- so every fragment is a "// &
+                             "neutral closed shell. The field supplies the other half, "// &
+                             "and the total is unchanged by the choice.")
+      else
+         call logger%verbose("  fmo: a detached bond's nucleus is kept whole with the "// &
+                             "fragment that owns the atom, so the two sides of a cut "// &
+                             "carry about +1 and -1. Splitting it needs something to "// &
+                             "supply the other half, and with embedding 'none' there "// &
+                             "is no field to do it.")
+      end if
    end subroutine build_afo_context
+
+   pure function splits_nucleus(opts) result(split)
+      !! Does a boundary move a unit of nuclear charge as well as the electron?
+      !!
+      !! `"auto"` is the answer to a physical question rather than a
+      !! preference. A split nucleus is only defined when something supplies
+      !! the other half: with a field, the fragment across the bond holds the
+      !! `+1` and the bond pair and the group on this side feels both, so the
+      !! split costs nothing and leaves both fragments neutral. With
+      !! `esp = "none"` nothing supplies it and the owner is solved around a
+      !! nucleus short by one proton, which on propane in STO-3G takes the
+      !! MBE(2) error from 0.180 to 0.304 Hartree and, on the same molecule
+      !! numbered so that one carbon is the detached end of both bonds, from
+      !! 0.125 to 1.549.
+      !!
+      !! GAMESS splits unconditionally, and that does not settle it: GAMESS
+      !! never runs this without a field, and its own field-free reference
+      !! state is built with methyl caps instead, which is a third
+      !! construction again.
+      type(fmo_options_t), intent(in) :: opts
+      logical :: split
+
+      select case (trim(opts%cut_nucleus))
+      case ("split")
+         split = .true.
+      case ("whole")
+         split = .false.
+      case default
+         split = trim(opts%esp) /= "none"
+      end select
+   end function splits_nucleus
 
    subroutine afo_failure(cut, kind, n_on_bond, local, error)
       !! The same message on every rank, rebuilt from the reduced status
@@ -871,7 +1010,7 @@ contains
    end subroutine afo_failure
 
    subroutine assemble_group(frag, members, afo, z, coords, group, error)
-      !! One n-mer's geometry, electron count and boundaries
+      !! One n-mer's geometry, nuclear charges, electron count and boundaries
       !!
       !! The members end to end, then any ghosts they need. **Ghosts go last**,
       !! so every member keeps the contiguous run of basis functions the block
@@ -882,6 +1021,10 @@ contains
       !! whole inside the dimer that holds both, so that dimer has no boundary
       !! there; inheriting one from its members is the mistake that cost
       !! 11 Hartree when this was tried with caps.
+      !!
+      !! Where `afo%split_nucleus` is set, each boundary also moves a unit of
+      !! nuclear charge, and `sum(group%nuc_charge)` is then `group%nelec` and
+      !! the group is neutral. The electron moves either way.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: members(:)
       type(afo_context_t), intent(in) :: afo
@@ -926,6 +1069,7 @@ contains
       allocate (group%z(n_atoms), group%sym(n_atoms), group%xyz(3, n_atoms))
       allocate (group%ghost(n_atoms), source=.false.)
       allocate (group%atom_of(n_atoms), source=0)
+      allocate (group%nuc_charge(n_atoms), source=0)
       allocate (slot_of(size(z)), source=0)
 
       at = 0
@@ -941,6 +1085,10 @@ contains
          at = at + n_here
       end do
 
+      ! Whole nuclei on the atoms the group owns, nothing on a ghost. The
+      ! boundary loop below moves a unit of charge across each cut, where the
+      ! convention in force says to.
+      group%nuc_charge(:group%n_real) = group%z(:group%n_real)
       group%nelec = sum(group%z(:group%n_real))
       group%n_bound = n_outside
       allocate (group%bda_slot(max(n_outside, 1)))
@@ -982,6 +1130,25 @@ contains
             end if
          end if
          group%bda_slot(i) = slot
+
+         ! Split the nucleus the way the electron pair was split: the owner of
+         ! the detached atom keeps `Z-1` there and the fragment across the bond
+         ! puts `+1` on the ghost, so each side is neutral and the two add back
+         ! to `Z` in any group holding both. Per atom and accumulated rather
+         ! than assigned: one atom can be the detached end of two bonds, and
+         ! each of them takes its own unit.
+         !
+         ! The electron moves either way -- that is the `$FMOBND` assignment
+         ! and not a convention -- so it is `group_electron_shift` below and
+         ! not this loop that counts it. What is conditional is only whether
+         ! the nucleus goes with it.
+         if (afo%split_nucleus) then
+            if (group%occupied(i)) then
+               group%nuc_charge(slot) = group%nuc_charge(slot) + 1
+            else
+               group%nuc_charge(slot) = group%nuc_charge(slot) - 1
+            end if
+         end if
       end do
 
       if (afo%active) then
@@ -1310,7 +1477,7 @@ contains
       nelec = group%nelec
 
       call open_fragment(group%z, group%sym, group%xyz, opts, mol, bounds, error, &
-                         ghost=group%ghost)
+                         ghost=group%ghost, nuc_charge=group%nuc_charge)
       if (error%has_error()) return
 
       ! libcint orders functions by atom and the atoms went in fragment by
@@ -1629,7 +1796,7 @@ contains
       if (error%has_error()) return
 
       call open_fragment(group%z, group%sym, group%xyz, opts, mol, bounds, error, &
-                         ghost=group%ghost)
+                         ghost=group%ghost, nuc_charge=group%nuc_charge)
       if (error%has_error()) return
 
       call group_projector(group, mol, afo, proj, held, error)
@@ -2091,26 +2258,73 @@ contains
       end if
    end subroutine fragment_charges
 
-   subroutine report_charges(frag, n_frag, n_atoms, charges, error)
+   subroutine report_charges(frag, n_frag, n_atoms, charges, fragment_charge, error)
       !! Mulliken charges over the whole system, for the result record
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag, n_atoms
       real(dp), allocatable, intent(out) :: charges(:)
+      real(dp), allocatable, intent(out) :: fragment_charge(:)
+         !! Each fragment's own charges added up, before they are scattered
+         !! over the system. Left unallocated when no fragment has charges.
       type(error_t), intent(inout) :: error
 
-      integer :: f, s
+      integer :: f, s, n_with
 
       ! Gathered exactly as `all_charges` gathers the field's, so that what is
       ! reported is what was used: added through `mol_atom`, which puts both
       ! shares of a detached atom on that atom and leaves the total equal to the
       ! molecular charge.
       allocate (charges(n_atoms), source=0.0_dp)
+
+      ! `esp = "none"` computes no charges at all, and an array of zeros would
+      ! then read as a run that measured every fragment and found it neutral.
+      n_with = 0
+      do f = 1, n_frag
+         if (allocated(frag(f)%charges)) n_with = n_with + 1
+      end do
+      if (n_with == 0) return
+
+      allocate (fragment_charge(n_frag), source=0.0_dp)
       do f = 1, n_frag
          if (.not. allocated(frag(f)%charges)) cycle
+         ! Before the scatter, not after: once both shares of a detached atom
+         ! are on one system atom there is no telling them apart again, and
+         ! whether each fragment is separately neutral is the question the
+         ! system total cannot answer.
+         fragment_charge(f) = sum(frag(f)%charges)
          do s = 1, size(frag(f)%mol_atom)
             charges(frag(f)%mol_atom(s)) = charges(frag(f)%mol_atom(s)) + frag(f)%charges(s)
          end do
       end do
    end subroutine report_charges
+
+   subroutine log_fragment_charges(fragment_charge, expect_neutral)
+      !! Say what each fragment was left carrying, and complain if it should be zero
+      !!
+      !! A fragment at a detached bond is neutral when the bond's nucleus was
+      !! split the same way its electron pair was, and carries about plus or
+      !! minus one when it was not. Both are deliberate and `splits_nucleus`
+      !! says which was asked for; what is worth a warning is the first one
+      !! failing to come out, because a stray monopole is invisible in the
+      !! total and lands in whatever is built from the fragment afterwards.
+      real(dp), intent(in) :: fragment_charge(:)
+      logical, intent(in) :: expect_neutral
+         !! True where the run split its nuclei, or has no cut bonds at all.
+
+      character(len=100) :: line
+      integer :: f
+
+      do f = 1, size(fragment_charge)
+         write (line, "(a,i0,a,f12.8)") "  fmo: fragment ", f, " carries net charge ", &
+            fragment_charge(f)
+         call logger%verbose(trim(line))
+      end do
+      if (.not. expect_neutral) return
+      if (maxval(abs(fragment_charge)) > FRAGMENT_NEUTRALITY_TOL) then
+         write (line, "(a,f12.8)") "  fmo: a fragment is not neutral -- the largest net "// &
+            "charge is ", maxval(abs(fragment_charge))
+         call logger%warning(trim(line))
+      end if
+   end subroutine log_fragment_charges
 
 end module mqc_czt_fmo
