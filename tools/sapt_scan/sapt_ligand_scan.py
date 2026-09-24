@@ -171,6 +171,7 @@ def sapt_deck(xyz_name, n_a, n_b, basis, method, charge_a, charge_b, scf_toleran
             "molecular_charge": charge_a + charge_b,
             "molecular_multiplicity": 1,
             "fragments": [list(range(n_a)), list(range(n_a, n_a + n_b))],
+            "fragment_charges": [charge_a, charge_b]
         }],
         "model": {"method": method, "basis": basis},
         "keywords": {"scf": {"tolerance": scf_tolerance}},
