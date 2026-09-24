@@ -198,6 +198,11 @@ Cutting a covalent bond
 ``detached_atoms`` (default: the sp3 end, else the lower-numbered one)
    0-based atoms that are the detached ends of cut bonds; see below.
 
+``afo_localization`` (default ``"er"``)
+   How the model system around each cut bond is localized: ``"er"`` for
+   Edmiston-Ruedenberg, which is GAMESS's default and the paper's, or
+   ``"boys"`` for Foster-Boys. Read only with ``bond_breaking = "afo"``.
+
 The refusal is not a formality, and it is still the default. Cutting a single
 bond leaves both fragments with an odd electron count, which the closed-shell
 check catches on its own; but cutting an even number per fragment -- a ring, a
@@ -215,7 +220,8 @@ How a bond is detached
 The construction is GAMESS's adjusted frozen orbitals, as Fedorov, Jensen, Deka
 and Kitaura describe it (*J. Phys. Chem. A* **112**, 11808 (2008)) and as
 ``fmolib.src`` implements it, and it reproduces GAMESS's fragment energies to
-1e-8 Hartree; see `Against GAMESS`_.
+1e-8 Hartree on a single cut with Boys and 3e-8 with ER, as far as GAMESS's own
+model-system convergence allows; see `Against GAMESS`_.
 
 **Which end is detached.** Of the two atoms of a cut bond one is the *detached*
 end (GAMESS's BDA) and one the *attached* end. ``keywords.fragmentation.
@@ -236,19 +242,23 @@ double bond is two. It never applies where GAMESS's model is closed-shell
 already. Charged groups taken in are counted into the model's charge.
 
 **The orbitals.** The model is solved and every occupied orbital
-Boys-localized. The detached atom's own orbitals are the ones with the largest
+localized, Edmiston-Ruedenberg unless ``afo_localization`` says Boys. The detached atom's own orbitals are the ones with the largest
 population on it, ``sum_{mu,nu on A} C_mu S_mu,nu C_nu`` -- five for a carbon,
 its 1s and four sp3 -- and of those the one with the largest population on the
 attached atom is the bond's. Each is kept on every real atom bonded to either
 end and dropped elsewhere; a group takes whichever of those atoms it holds and
 Gram-Schmidt orthonormalises the set, occupied first.
 
-The localizer is the one difference from the paper, which uses
-Edmiston-Ruedenberg; this code has Boys only. GAMESS can be asked for either
-(``$CONTRL LOCAL``, read into the model at ``fmolib.src:5783``), and in GAMESS
-itself the choice moves butane with a water, cut once, by 1.4e-8 Hartree, but
-the glycine tripeptide with a water, cut twice, by 2.5e-4 -- above what this
-page otherwise calls agreement. Every GAMESS number here was run with Boys.
+**Which localizer.** Edmiston-Ruedenberg by default, as in the paper and in
+GAMESS (``$CONTRL LOCAL``, read into the model at ``fmolib.src:5783``); Boys was
+this code's only choice until ER was added. The two split the detached carbon's
+five orbitals differently, so the *monomers* move by a tenth of a Hartree --
+0.086 and -0.105 on butane with a water, in GAMESS and here alike -- while the
+pair holding the whole bond does not see it. What reaches a total is smaller but
+not negligible: in GAMESS's FMO2 the choice moves butane with a water, cut once,
+by 1.4e-8 Hartree, and the glycine tripeptide with a water, cut twice, by 2.5e-4
+-- with ER 3.9e-4 above the molecule's energy and with Boys 6.4e-4. Both are
+compared against GAMESS below.
 
 The two fragments then split the bond:
 
@@ -292,7 +302,9 @@ adjacent-residue pair of a protein -- and it is the default with or without a
 field. ``embedding = "none"`` used to keep the nucleus whole instead, which was
 measured better when only the bond orbital was frozen; with the full frozen set
 it is not (`What it costs`_), and on the glycine tripeptide with a water the
-whole convention's C-terminal fragment is an anion whose SCF does not converge.
+whole convention's C-terminal fragment is an anion whose SCF does not converge
+with a Boys model, and with an ER one converges to an MBE(2) error of 2.5e-2
+against the split convention's -3.7e-3.
 
 Frozen means the Fock matrix is forced block diagonal in a basis holding those
 orbitals: the couplings between them and the variational space are zeroed and the
@@ -361,17 +373,18 @@ What it costs
 ~~~~~~~~~~~~~
 
 Propane in STO-3G, split at both C-C bonds into three fragments, against
-ordinary RHF on the whole molecule:
+ordinary RHF on the whole molecule, error in Hartree with the model system
+localized each way:
 
-=================================  ==================
-Expansion                          Error, Hartree
-=================================  ==================
-Two fragments, one bond, MBE(2)    exact
-Three fragments, MBE(3)            1.3e-13
-Three fragments, MBE(2)            0.219
-Three fragments, FMO(3), ``ptc``   1.3e-13
-Three fragments, FMO(2), ``ptc``   0.200
-=================================  ==================
+=================================  ===========  ===========
+Expansion                          ER           Boys
+=================================  ===========  ===========
+Two fragments, one bond, MBE(2)    exact        exact
+Three fragments, MBE(3)            1.4e-13      1.8e-13
+Three fragments, MBE(2)            0.167        0.219
+Three fragments, FMO(3), ``ptc``   4.3e-14      1.6e-13
+Three fragments, FMO(2), ``ptc``   0.145        0.200
+=================================  ===========  ===========
 
 An expansion carried to the fragment count is exact by inclusion and exclusion
 whatever the partition did, so landing on the whole molecule to 1e-13 says the
@@ -386,14 +399,14 @@ orbital and once among the ghost's other orbitals, and its SCF for that dimer
 does not converge. Here the ghost's copy is left out. On a protein backbone
 cut at C-alpha--C two cuts are never that close.
 
-The nucleus convention in vacuo, MBE(2) error in Hartree:
+The nucleus convention in vacuo, MBE(2) error in Hartree, ER (Boys):
 
-=====================================  ===========  ===========
-Propane, three fragments               split        whole
-=====================================  ===========  ===========
-carbons in chain order                 0.2186       0.2200
-middle carbon detached twice (Z-2)     0.868        0.046
-=====================================  ===========  ===========
+=====================================  ================  ================
+Propane, three fragments               split             whole
+=====================================  ================  ================
+carbons in chain order                 0.1666 (0.2186)   0.2418 (0.2200)
+middle carbon detached twice (Z-2)     0.809 (0.868)     0.032 (0.046)
+=====================================  ================  ================
 
 ``"whole"`` is still better where one atom is detached from two neighbours,
 which GAMESS refuses outright; it can be asked for through
@@ -402,17 +415,17 @@ total, to 2.6e-12 on propane with the monomer loop converged to 1e-10.
 
 The glycine tripeptide with a water hydrogen-bonded to its middle carbonyl
 (``gly3_water_pair.xyz``), cut at both C-alpha--C bonds into four fragments,
-RHF/STO-3G, against the molecule's -762.311670856:
+RHF/STO-3G, against the molecule's -762.311670856, error in Hartree:
 
-=================================  ==================
-Expansion                          Error, Hartree
-=================================  ==================
-MBE(4), in vacuo                   4.5e-13
-MBE(2), in vacuo                   -3.1e-3
-FMO(2), ``ptc``                    -6.2e-5
-FMO(2), ``exact``                  +6.4e-4
-GAMESS FMO2, same field            +6.4e-4
-=================================  ==================
+=================================  ===========  ===========
+Expansion                          ER           Boys
+=================================  ===========  ===========
+MBE(4), in vacuo                   2.0e-12      2.3e-12
+MBE(2), in vacuo                   -3.7e-3      -3.1e-3
+FMO(2), ``ptc``                    -4.5e-4      -6.2e-5
+FMO(2), ``exact``                  +3.9e-4      +6.4e-4
+GAMESS FMO2, same field            +3.9e-4      +6.4e-4
+=================================  ===========  ===========
 
 With the exact field the two codes agree to 4.3e-8 in the total
 (-762.311027620 here, -762.311027577 in GAMESS, ``RESPPC=2.0 RESDIM=0
@@ -450,6 +463,35 @@ ethyl holding the ghost of C2             -77.4085157350       6.1e-9
 water                                     -74.9620085207       -9.0e-9
 MBE(2) of the three                       -230.4152004258      -1.7e-8
 ========================================  ===================  =========
+
+Pinned in ``butane_and_water_match_gamess_afo``, with ``afo_localization =
+"boys"``. The same system with the model ER-localized, against GAMESS with
+``LOCAL=RUEDNBRG`` and ``$LOCAL CVGLOC=1D-10`` (its FMO default, ``1D-7``, leaves
+the ethyls 1e-8 short of converged), every pair an SCF in vacuo, and our model's commutator bounded at 1e-9:
+
+========================================  ===================  =========
+                                          GAMESS               ours - it
+========================================  ===================  =========
+ethyl owning C2 at ``Z-1``                -63.6608350059       -8.5e-9
+ethyl holding the ghost of C2             -77.5130688706       3.3e-8
+water                                     -74.9620085207       -9.0e-9
+MBE(2) of the three                       -230.4152073207      -1.8e-8
+========================================  ===================  =========
+
+Pinned in ``butane_and_water_match_gamess_afo_er``. The ghost-holding ethyl is
+the loosest, and it is GAMESS's model system rather than the localizer: GAMESS
+stops that SCF at a density change of 1e-6, and an ER frozen set follows the
+model's orbitals about four times as closely as a Boys one -- loosening our
+model from 1e-10 to 1e-7 in the energy moves these monomers 1.3e-7 with ER and
+3e-8 with Boys.
+
+The glycine tripeptide with a water, cut twice, in vacuo the same way
+(``glycine_tripeptide_and_water_match_gamess_afo_er``): the four monomers agree
+with GAMESS to 1.8e-7 and MBE(2), -762.3153911672 there, to 4.1e-8. That is not
+an ER discrepancy -- the same run with Boys against GAMESS's Boys is 2.0e-7 and
+4.1e-8 -- but the same loose model SCF, on bigger models. Both comparisons bound
+our model's commutator at 1e-9; left to derive it from the energy tolerance, as
+it does by default, the tripeptide's ER monomers move another 2e-7.
 
 Pinned in ``butane_and_water_match_gamess_afo``. FMO2 in the exact field on the
 same system, ``RESPPC=2.0 RESDIM=0 RESPAP=0`` in GAMESS and ``resppc`` 2.0 here:

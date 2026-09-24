@@ -653,7 +653,7 @@ contains
                           cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, &
                           response_sum, level_sum, pair_fragments, pair_distance, &
                           pair_energy, pair_response, pair_connected, comm, &
-                          detached)
+                          detached, afo_localization)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -715,6 +715,9 @@ contains
          !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
+      character(len=*), intent(in), optional :: afo_localization
+         !! "er" or "boys"; see `fmo_options_t%afo_localization`. Absent keeps
+         !! that default.
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -743,6 +746,7 @@ contains
       opts%cap_scale = cap_scale
       if (present(fragment_charges)) opts%net_charge = fragment_charges
       if (present(detached)) opts%detached = detached
+      if (present(afo_localization)) opts%afo_localization = afo_localization
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return

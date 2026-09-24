@@ -21,7 +21,7 @@ module mqc_czt_afo
    use mqc_bond_perception, only: severed_bond_t, perceive_bonds, DEFAULT_BOND_TOLERANCE
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, atom_ao_blocks
    use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
-   use mqc_czt_localize, only: boys_localize
+   use mqc_czt_localize, only: boys_localize, er_localize, LOCALIZER_BOYS, LOCALIZER_ER
    use mqc_scf_types, only: scf_numerics_t
    implicit none
    private
@@ -86,6 +86,9 @@ module mqc_czt_afo
          !! hybrid is transferred through the detached atom's block of
          !! functions, so the model has to be built in the angular form the
          !! fragment is: EFMO's are Cartesian throughout, FMO's follow the basis.
+      character(len=8) :: localization = LOCALIZER_ER
+         !! How the model's occupied orbitals are localized: "er"
+         !! (Edmiston-Ruedenberg, GAMESS's default for the model) or "boys".
    end type afo_options_t
 
    integer, parameter :: GAMESS_MAX_Z = 86
@@ -569,7 +572,7 @@ contains
       end if
 
       n_occ = scf%n_occupied
-      call boys_localize(mol, scf%orbitals, n_occ, localized, centroids, error)
+      call localize_model(mol, scf%orbitals, n_occ, opts, localized, centroids, error)
       if (error%has_error()) return
 
       midpoint = 0.5_dp*(model%xyz(:, model%bda_local) + model%xyz(:, model%baa_local))
@@ -611,6 +614,27 @@ contains
 
       if (present(centroid_distance)) centroid_distance = distance
    end subroutine bond_hybrid
+
+   subroutine localize_model(mol, orbitals, n_occ, opts, localized, centroids, error)
+      !! The model's occupied orbitals, localized as `opts%localization` asks
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: n_occ
+      type(afo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: localized(:, :)   !! (n_ao, n_occ)
+      real(dp), allocatable, intent(out) :: centroids(:, :)   !! (3, n_occ), Bohr
+      type(error_t), intent(inout) :: error
+
+      select case (trim(opts%localization))
+      case (LOCALIZER_ER)
+         call er_localize(mol, orbitals, n_occ, localized, centroids, error)
+      case (LOCALIZER_BOYS)
+         call boys_localize(mol, orbitals, n_occ, localized, centroids, error)
+      case default
+         call error%set(ERROR_VALIDATION, "afo: unknown localization '"// &
+                        trim(opts%localization)//"'; expected 'er' or 'boys'")
+      end select
+   end subroutine localize_model
 
    pure function cap_position(z, coords, kept, gone) result(r)
       !! `R_H = R_kept + s (R_gone - R_kept)`, with `s` the standard bond length
@@ -1024,12 +1048,12 @@ contains
    subroutine bond_lmo_set(model, opts, set, n_on_bond, error)
       !! The frozen orbitals a cut bond contributes, from its model system
       !!
-      !! Solve the model and Boys-localize every occupied orbital. The
-      !! detached atom's own are the `atom_lmo_count` with the largest
-      !! population on it; of those, the one with the largest population on
-      !! the attached atom is the bond's and goes first. Each is kept on every
-      !! real atom of the model bonded to either end of the bond. All of it is
-      !! GAMESS's selection (`fmolib.src`, after `LMOX`, with `CRITLOC` the
+      !! Solve the model and localize every occupied orbital as
+      !! `opts%localization` says. The detached atom's own are the
+      !! `atom_lmo_count` with the largest population on it; of those, the one
+      !! with the largest population on the attached atom is the bond's and
+      !! goes first. Each is kept on every real atom of the model bonded to
+      !! either end of the bond. All of it is GAMESS's selection (`fmolib.src`, after `LMOX`, with `CRITLOC` the
       !! on-atom population and the default `RAFO`).
       !!
       !! `n_on_bond` counts localized orbitals whose centroid sits within
@@ -1066,6 +1090,10 @@ contains
       scf_numerics%max_iter = opts%scf_max_iter
       scf_numerics%energy_tol = opts%scf_energy_tol
       scf_numerics%density_tol = opts%scf_density_tol
+      ! TODO(mqc): the model SCF consumes its orbitals, yet its commutator
+      ! bound is left to derive as sqrt(energy_tol) -- 1e-5 at the FMO default.
+      ! Glycine tripeptide's ER monomers move 2e-7 between that and 1e-9, and
+      ! Boys ones less; a caller has to set `opts%scf%grad_tol` to get them.
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                        opts%scf_density_tol, .false., scf, error, scf=scf_numerics)
       if (error%has_error()) return
@@ -1075,7 +1103,7 @@ contains
          return
       end if
       n_occ = scf%n_occupied
-      call boys_localize(mol, scf%orbitals, n_occ, localized, centroids, error)
+      call localize_model(mol, scf%orbitals, n_occ, opts, localized, centroids, error)
       if (error%has_error()) return
 
       allocate (offsets(mol%natm), counts(mol%natm))

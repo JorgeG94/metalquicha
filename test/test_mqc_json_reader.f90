@@ -75,6 +75,8 @@ contains
                                test_interaction_energy_keyword), &
                   new_unittest("bond_breaking_defaults", test_bond_breaking_defaults), &
                   new_unittest("detached_atoms_read_as_given", test_detached_atoms), &
+                  new_unittest("afo_localization_is_read_and_a_misspelling_refused", &
+                               test_afo_localization), &
                   new_unittest("fmo_scf_keywords", test_fmo_scf_keywords), &
                   new_unittest("df_without_aux_fails", test_df_without_aux), &
                   new_unittest("fragmentation_cutoffs", test_cutoffs), &
@@ -972,6 +974,43 @@ contains
       call check(error, all(config%detached_atoms == [1, 9]), &
                  "detached_atoms should read back as given, 0-based")
    end subroutine test_detached_atoms
+
+   subroutine test_afo_localization(error)
+      !! `keywords.fragmentation.afo_localization`: "er" when the deck is
+      !! silent, either spelling in any case, and anything else refused at
+      !! read time rather than by the backend halfway through a run
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"bond_breaking": "afo"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%afo_localization), "er")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"bond_breaking": "afo", "afo_localization": "Boys"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%afo_localization), "boys")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"bond_breaking": "afo", "afo_localization": "pipek"}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a localization that is neither er nor boys must be refused")
+   end subroutine test_afo_localization
 
    subroutine test_bond_breaking_defaults(error)
       !! A deck that names neither key keeps the behaviour this program had

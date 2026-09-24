@@ -65,6 +65,9 @@ contains
                   new_unittest("butane_and_water_match_gamess_afo", test_gamess_butane_water), &
                   new_unittest("butane_and_water_match_gamess_fmo2_exact_field", &
                                test_gamess_butane_water_exact), &
+                  new_unittest("butane_and_water_match_gamess_afo_er", test_gamess_butane_water_er), &
+                  new_unittest("glycine_tripeptide_and_water_match_gamess_afo_er", &
+                               test_gamess_gly3_water_er), &
                   new_unittest("field_free_pairs_under_both_nucleus_conventions", &
                                test_field_free_conventions), &
                   new_unittest("glycine_tripeptide_and_water_across_two_cuts", &
@@ -153,6 +156,7 @@ contains
       opts%esp = "none"
       opts%expansion = "mbe"
       opts%bond_breaking = "afo"
+      opts%afo_localization = "boys"
       opts%cut_nucleus = "split"
       opts%level = 2
       ! Not the 1e-11 / 1e-9 the other cases use: at 1e-9 the commutator gate
@@ -173,6 +177,133 @@ contains
       call check(error, abs(res%energy - GAMESS_MBE2) < AGREE, &
                  "the in-vacuo MBE(2) does not match GAMESS's")
    end subroutine test_gamess_butane_water
+
+   subroutine test_gamess_butane_water_er(error)
+      !! The same butane and water, with the model system ER-localized
+      !!
+      !! GAMESS as for the Boys case but `LOCAL=RUEDNBRG`, `$LOCAL CVGLOC=1D-10`,
+      !! and `RESDIM=100 MODEFM(1)=0,1,0,0,0` so that every pair is an SCF in
+      !! vacuo and nothing else is computed: ethyl owning C2 -63.6608350059,
+      !! ethyl holding its ghost -77.5130688706, water -74.9620085207, MBE(2)
+      !! -230.4152073207. At GAMESS's own FMO default, `CVGLOC=1D-7`, the two
+      !! ethyls come out 1.1e-8 and 6e-9 lower: the localization is only
+      !! converged that far.
+      !!
+      !! The monomers moved 0.086 and -0.105 Hartree from Boys, in GAMESS and
+      !! here alike, while MBE(2) moved 6.9e-6 -- the frozen set is a
+      !! different split of the same carbon's five orbitals, and the pair
+      !! holding the whole bond does not see it.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17), owner(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      real(dp), parameter :: GAMESS_MONOMER(3) = [-63.6608350059_dp, -77.5130688706_dp, &
+                                                  -74.9620085207_dp]
+      real(dp), parameter :: GAMESS_MBE2 = -230.4152073207_dp
+      real(dp), parameter :: AGREE = 5.0e-8_dp
+         !! Measured 3.3e-8 on the ghost-holding ethyl and 1.8e-8 on MBE(2).
+         !! GAMESS stops the model system's SCF at a density change of 1e-6,
+         !! and an ER frozen set follows the model's orbitals about four
+         !! times as closely as a Boys one does: loosening the model here from
+         !! 1e-10 to 1e-7 in the energy moves these monomers 1.3e-7 with ER
+         !! and 3e-8 with Boys.
+
+      call butane_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3]
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "er"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      ! The model system's orbitals are what is being compared, so its
+      ! commutator is bounded outright rather than left at sqrt(energy_tol).
+      opts%scf%grad_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   ER monomers - GAMESS =", res%monomer_energy - GAMESS_MONOMER
+      write (*, *) "   ER MBE(2) - GAMESS   =", res%energy - GAMESS_MBE2
+      call check(error, maxval(abs(res%monomer_energy - GAMESS_MONOMER)) < AGREE, &
+                 "the ER-localized cut monomers do not match GAMESS's")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_MBE2) < AGREE, &
+                 "the ER-localized in-vacuo MBE(2) does not match GAMESS's")
+   end subroutine test_gamess_butane_water_er
+
+   subroutine test_gamess_gly3_water_er(error)
+      !! Glycine tripeptide and water, two C-alpha--C cuts, ER model, against GAMESS
+      !!
+      !! GAMESS 2026, `$FMOBND -2 3 / -10 11`, `RAFO(1)=1,1,1`, RHF/STO-3G,
+      !! `LOCAL=RUEDNBRG`, `$LOCAL CVGLOC=1D-10`, EFMO with `RESDIM=100
+      !! MODEFM(1)=0,1,0,0,0` for its in-vacuo monomers and pairs: -79.4153710175,
+      !! -189.8789505643, -389.5611493535, -74.9629282601, and MBE(2)
+      !! -762.3153911672.
+      !!
+      !! In vacuo, which isolates the frozen set from the field; the exact-field
+      !! FMO2 is compared on its own below.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(27), owner(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+      real(dp), parameter :: GAMESS_MONOMER(4) = [-79.4153710175_dp, -189.8789505643_dp, &
+                                                  -389.5611493535_dp, -74.9629282601_dp]
+      real(dp), parameter :: GAMESS_MBE2 = -762.3153911672_dp
+      real(dp), parameter :: AGREE_MONOMER = 3.0e-7_dp
+         !! Measured 1.8e-7 at worst. **Not an ER disagreement**: the Boys
+         !! run against GAMESS's Boys run, printed first, is 2.0e-7 on the
+         !! same monomers, and both are GAMESS converging its model systems to
+         !! a density change of 1e-6 -- its orbital gradient stops at 2e-7.
+      real(dp), parameter :: AGREE_TOTAL = 1.0e-7_dp
+         !! Measured 4.1e-8, with ER and with Boys
+
+      call gly3_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4]
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "boys"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      opts%scf%grad_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      write (*, *) "   Boys monomers - GAMESS =", res%monomer_energy - &
+         [-79.4968941332_dp, -189.8605453888_dp, -389.4556268227_dp, -74.9629282601_dp]
+      write (*, *) "   Boys MBE(2) - GAMESS   =", res%energy - (-762.3147713386_dp)
+      call err%clear()
+      opts%afo_localization = "er"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      ! The model system's orbitals are what is being compared, so its
+      ! commutator is bounded outright rather than left at sqrt(energy_tol).
+      opts%scf%grad_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   ER monomers - GAMESS =", res%monomer_energy - GAMESS_MONOMER
+      write (*, *) "   ER MBE(2) - GAMESS   =", res%energy - GAMESS_MBE2
+      call check(error, maxval(abs(res%monomer_energy - GAMESS_MONOMER)) < AGREE_MONOMER, &
+                 "the ER-localized cut monomers do not match GAMESS's")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_MBE2) < AGREE_TOTAL, &
+                 "the ER-localized in-vacuo MBE(2) does not match GAMESS's")
+   end subroutine test_gamess_gly3_water_er
 
    subroutine test_field_free_conventions(error)
       !! Propane's field-free MBE(2) error with the nucleus split and kept whole
@@ -353,6 +484,7 @@ contains
       opts%esp = "exact"
       opts%expansion = "fmo"
       opts%bond_breaking = "afo"
+      opts%afo_localization = "boys"
       opts%resppc = 2.0_dp
       opts%level = 2
       opts%scf_energy_tol = 1.0e-10_dp

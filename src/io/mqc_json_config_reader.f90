@@ -743,6 +743,8 @@ contains
       call optional_real(json, "keywords.fragmentation.scf_density_tolerance", config%fmo_scf_density_tol)
       call optional_string(json, "keywords.fragmentation.embedding", config%embedding)
       call optional_string(json, "keywords.fragmentation.bond_breaking", config%bond_breaking)
+      call read_afo_localization(json, config, error)
+      if (error%has_error()) return
       call read_detached_atoms(json, config, error)
       if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.cap_scale", config%cap_scale)
@@ -753,6 +755,27 @@ contains
 
       call read_cutoffs(json, config, error)
    end subroutine read_fragmentation
+
+   subroutine read_afo_localization(json, config, error)
+      !! `keywords.fragmentation.afo_localization`, "er" or "boys"
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      logical :: found
+
+      call json%get("keywords.fragmentation.afo_localization", text, found)
+      if (.not. found .or. .not. allocated(text)) return
+      select case (to_lower(trim(adjustl(text))))
+      case ("er", "boys")
+         config%afo_localization = to_lower(trim(adjustl(text)))
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.afo_localization: '"// &
+                        trim(text)//"' is not a localization; expected 'er' "// &
+                        "(Edmiston-Ruedenberg) or 'boys' (Foster-Boys)")
+      end select
+   end subroutine read_afo_localization
 
    subroutine read_detached_atoms(json, config, error)
       !! `keywords.fragmentation.detached_atoms`, 0-based as every atom index

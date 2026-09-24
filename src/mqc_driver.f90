@@ -740,6 +740,7 @@ contains
             end if
             expansion%basis = config%method_config%basis_set
             expansion%bond_breaking = config%bond_breaking
+            expansion%afo_localization = config%afo_localization
             if (allocated(config%detached_atoms)) then
                expansion%detached_atoms = config%detached_atoms
             end if
