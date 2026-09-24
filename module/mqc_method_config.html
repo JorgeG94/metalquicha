@@ -216,8 +216,8 @@ Re-exported from mqc_config_types</p>
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -2647,7 +2647,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_subspace~3"></span>
+              <span class="anchor" id="variable-max_subspace"></span>
               integer,
             </td>
               <td>public</td>
@@ -2664,7 +2664,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~4"></span>
+              <span class="anchor" id="variable-method~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2734,7 +2734,7 @@ refuses an explicit request and answers a silent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~4"></span>
+              <span class="anchor" id="variable-tolerance~2"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3565,7 +3565,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~2"></span>
+              <span class="anchor" id="variable-method_type"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3755,7 +3755,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~4"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -4024,7 +4024,7 @@ see <code>mqc_config_types</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~3"></span>
+              <span class="anchor" id="variable-method"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -4064,7 +4064,7 @@ substituting.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~3"></span>
+              <span class="anchor" id="variable-tolerance"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4627,7 +4627,7 @@ per run, in <code>set_eri_path</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~4"></span>
+              <span class="anchor" id="variable-guess"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -4640,7 +4640,7 @@ per run, in <code>set_eri_path</code>.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;sap&rsquo;, &lsquo;basis_set_projection&rsquo;,
-or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;</p><a href="../type/scf_config_t.html#variable-guess" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -4847,7 +4847,7 @@ naming one asks for a different opening, not a different endgame.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
               logical,
             </td>
               <td>public</td>
@@ -5128,7 +5128,7 @@ test or a new call path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~9"></span>
+              <span class="anchor" id="variable-guess~10"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -5141,12 +5141,12 @@ test or a new call path.</p>
                 <td>&#34;auto&#34;</td>
             <td>
 <p>Initial guess: &lsquo;core&rsquo;, &lsquo;gwh&rsquo;, &lsquo;sac&rsquo;, &lsquo;sad&rsquo;, &lsquo;sap&rsquo;, &lsquo;basis_set_projection&rsquo;
-or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~9" class="pull-right"><emph>Read more&hellip;</emph></a>
+or &lsquo;auto&rsquo;, where the backend picks.</p><a href="../type/scf_numerics_t.html#variable-guess~10" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess_steps~3"></span>
+              <span class="anchor" id="variable-guess_steps~4"></span>
               type(<a href='../type/guess_step_t.html'>guess_step_t</a>),
             </td>
               <td>public,</td>
@@ -5499,7 +5499,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -6102,7 +6102,7 @@ a solvent or dielectric was given without one</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 22:38 +0000             </p>
+ on 2026-09-24 01:15 +0000             </p>
           </div>
         </div>
         <br>

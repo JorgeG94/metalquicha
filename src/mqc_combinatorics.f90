@@ -12,6 +12,7 @@ module mqc_combinatorics
 
    public :: fragment_size_of      !! How many monomers a polymer row names
    public :: vmfc_subset_key       !! Counterpoise subset key: chosen real, rest ghosted
+   public :: vmfc_row_subset_key   !! The same, for a row that may already carry ghosts
    public :: is_auxiliary_row      !! A ghosted row: subtracted, never summed
    public :: real_count_of         !! Real (non-ghosted) monomers in a row
    public :: binomial              !! Binomial coefficient calculation
@@ -118,6 +119,42 @@ contains
          end if
       end do
    end subroutine vmfc_subset_key
+
+   pure subroutine vmfc_row_subset_key(row, chosen, k, key, key_len)
+      !! The counterpoise subset key of a term-list row, ghosts included
+      !!
+      !! `chosen` picks among the row's *real* monomers, in the order they
+      !! appear. The key keeps those real, ghosts the row's other real
+      !! monomers, and keeps every ghost the row already carries. So the row
+      !! `[1,2,-3]` choosing its first real monomer gives `[1,-2,-3]`: monomer 1
+      !! in the basis of all three, which is the subset Valiron-Mayer subtracts.
+      !! Member order is not significant; the lookup sorts keys.
+      integer, intent(in) :: row(:)
+         !! Zero-padded; positive entries real, negative ghosted
+      integer, intent(in) :: chosen(:)   !! Positions among the real entries, size k
+      integer, intent(in) :: k
+      integer, intent(out) :: key(:)     !! At least as long as the row's non-zero entries
+      integer, intent(out) :: key_len
+
+      integer :: reals(size(row)), ghosts(size(row))
+      integer :: n_real, n_ghost, i
+
+      n_real = 0
+      n_ghost = 0
+      do i = 1, size(row)
+         if (row(i) > 0) then
+            n_real = n_real + 1
+            reals(n_real) = row(i)
+         else if (row(i) < 0) then
+            n_ghost = n_ghost + 1
+            ghosts(n_ghost) = row(i)
+         end if
+      end do
+
+      call vmfc_subset_key(reals(1:n_real), n_real, chosen, k, key(1:n_real))
+      key(n_real + 1:n_real + n_ghost) = ghosts(1:n_ghost)
+      key_len = n_real + n_ghost
+   end subroutine vmfc_row_subset_key
 
    pure function fragment_size_of(row) result(n)
       !! How many monomers a polymer row names, padding excluded

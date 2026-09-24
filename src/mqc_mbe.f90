@@ -3,7 +3,7 @@ module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
-   use mqc_combinatorics, only: fragment_size_of, vmfc_subset_key, is_auxiliary_row, real_count_of
+   use mqc_combinatorics, only: fragment_size_of, vmfc_row_subset_key, is_auxiliary_row, real_count_of
    use pic_timer, only: timer_type
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
@@ -79,18 +79,12 @@ contains
             ! Build current subset. Under counterpoise the key names the chosen
             ! monomers real and the rest of *this* fragment ghosted, so the
             ! lookup finds the subset solved in the parent's basis rather than
-            ! its own -- which is the whole of the correction.
-            ! TODO(mqc): for an auxiliary row such as [A,B,-C], `n` is the real
-            ! count, 2, so `vmfc_subset_key` reads only [A,B] and builds [A,-B]
-            ! -- A in the AB basis -- where Valiron-Mayer subtracts [A,-B,-C], A
-            ! in the parent ABC basis. VMFC(2) is unaffected; VMFC(3) and above
-            ! are not the published expression: a water trimer's HF/STO-3G
-            ! VMFC(3) total is 4.32e-3 hartree off it. `compute_mbe_dipole` has
-            ! the same key rule. InteractionEnergy refuses vmfc above level 2
-            ! because of this.
+            ! its own -- which is the whole of the correction. A row that is
+            ! itself ghosted, such as [A,B,-C], keeps its ghosts: its subsets
+            ! are [A,-B,-C] and [-A,B,-C], in the ABC basis it was solved in.
             if (counterpoise) then
-               call vmfc_subset_key(fragment, n, indices(1:subset_size), subset_size, key(1:n))
-               key_len = n
+               call vmfc_row_subset_key(fragment, indices(1:subset_size), subset_size, &
+                                        key, key_len)
             else
                do i = 1, subset_size
                   subset(i) = fragment(indices(i))
@@ -109,7 +103,7 @@ contains
                   write (error_msg, "(a,i0,a,*(i0,1x))") "Subset not found! Fragment idx=", fragment_idx, &
                      " seeking subset: ", (key(j), j=1, key_len)
                   call logger%error(trim(error_msg))
-                  write (error_msg, "(a,*(i0,1x))") "  Full fragment: ", (fragment(j), j=1, n)
+                  write (error_msg, "(a,*(i0,1x))") "  Full fragment: ", (fragment(j), j=1, size(fragment))
                   call logger%error(trim(error_msg))
                   if (present(world_comm)) then
                      call abort_comm(world_comm, 1)
@@ -324,10 +318,6 @@ contains
       !! Mirrors the energy: deltaDipole = Dipole - sum(all subset deltaDipoles).
       !! Dipoles are additive vectors in the system frame, so no coordinate
       !! mapping is needed.
-      ! TODO(mqc): `counterpoise` below is declared and never assigned, then
-      ! read to choose the subset key. The branch is taken on an undefined
-      ! value, where `compute_mbe_delta` sets the same flag from its `vmfc`
-      ! argument.
       use mqc_result_types, only: calculation_result_t
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) ::  n
@@ -366,13 +356,11 @@ contains
 
          ! Loop through all combinations
          do
-            ! Build current subset. Under counterpoise the key names the chosen
-            ! monomers real and the rest of *this* fragment ghosted, so the
-            ! lookup finds the subset solved in the parent's basis rather than
-            ! its own -- which is the whole of the correction.
+            ! Build current subset, keeping a ghosted row's ghosts; see
+            ! `compute_mbe_delta`.
             if (counterpoise) then
-               call vmfc_subset_key(fragment, n, indices(1:subset_size), subset_size, key(1:n))
-               key_len = n
+               call vmfc_row_subset_key(fragment, indices(1:subset_size), subset_size, &
+                                        key, key_len)
             else
                do i = 1, subset_size
                   subset(i) = fragment(indices(i))

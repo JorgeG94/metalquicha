@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.8% of total for modules and submodules.">239 statements</a>
+                 title=" 0.9% of total for modules and submodules.">263 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -168,6 +168,7 @@
             <a class="list-group-item" href="../module/mqc_combinatorics.html#proc-get_next_combination">get_next_combination</a>
             <a class="list-group-item" href="../module/mqc_combinatorics.html#proc-next_combination_init">next_combination_init</a>
             <a class="list-group-item" href="../module/mqc_combinatorics.html#proc-print_combos">print_combos</a>
+            <a class="list-group-item" href="../module/mqc_combinatorics.html#proc-vmfc_row_subset_key">vmfc_row_subset_key</a>
             <a class="list-group-item" href="../module/mqc_combinatorics.html#proc-vmfc_subset_key">vmfc_subset_key</a>
             <a class="list-group-item" href="../module/mqc_combinatorics.html#proc-combine_util">combine_util</a>
         </div>
@@ -192,6 +193,7 @@
 including binomial coefficients, combinations, and fragment counting
 How many monomers a polymer row names
 Counterpoise subset key: chosen real, rest ghosted
+The same, for a row that may already carry ghosts
 A ghosted row: subtracted, never summed
 Real (non-ghosted) monomers in a row
 Binomial coefficient calculation
@@ -210,10 +212,10 @@ Calculate minimal distances for all fragments</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_math_utils.html'>mqc_math_utils</a></li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -1133,7 +1135,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~3"></span>
+              <span class="anchor" id="variable-row~12"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1178,7 +1180,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~2"></span>
+              <span class="anchor" id="variable-n_monomers~6"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1193,7 +1195,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level~20"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1238,7 +1240,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-row"></span>
+              <span class="anchor" id="variable-row~9"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1299,7 +1301,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~10"></span>
+              <span class="anchor" id="variable-k~47"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1314,7 +1316,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~15"></span>
+              <span class="anchor" id="variable-n~54"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1359,7 +1361,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-row~2"></span>
+              <span class="anchor" id="variable-row~10"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1409,7 +1411,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~2"></span>
+              <span class="anchor" id="variable-polymers~16"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1424,7 +1426,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
+              <span class="anchor" id="variable-fragment_count~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1439,7 +1441,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~10"></span>
+              <span class="anchor" id="variable-sys_geom~48"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1454,7 +1456,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~2"></span>
+              <span class="anchor" id="variable-distances"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1494,7 +1496,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr"></span>
+              <span class="anchor" id="variable-arr~8"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1509,7 +1511,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
+              <span class="anchor" id="variable-n~51"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1524,7 +1526,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~3"></span>
+              <span class="anchor" id="variable-r~9"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1554,7 +1556,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~3"></span>
+              <span class="anchor" id="variable-count~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1594,7 +1596,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~2"></span>
+              <span class="anchor" id="variable-monomers~9"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout),</td>
@@ -1634,7 +1636,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~3"></span>
+              <span class="anchor" id="variable-monomers~10"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1649,7 +1651,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~21"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1664,7 +1666,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers"></span>
+              <span class="anchor" id="variable-polymers~15"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -1679,7 +1681,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~2"></span>
+              <span class="anchor" id="variable-count~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1720,7 +1722,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~3"></span>
+              <span class="anchor" id="variable-indices~7"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1735,7 +1737,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~8"></span>
+              <span class="anchor" id="variable-k~45"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1750,7 +1752,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~14"></span>
+              <span class="anchor" id="variable-n~53"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1765,7 +1767,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next~3"></span>
+              <span class="anchor" id="variable-has_next~6"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1820,7 +1822,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~9"></span>
+              <span class="anchor" id="variable-k~46"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1875,7 +1877,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~5"></span>
+              <span class="anchor" id="variable-count~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1911,6 +1913,106 @@ has_next = .true. if there&rsquo;s a next combination</p>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-vmfc_row_subset_key"></span> <h3>public pure subroutine <a href='../proc/vmfc_row_subset_key.html'>vmfc_row_subset_key</a>(row, chosen, k, key, key_len)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The counterpoise subset key of a term-list row, ghosts included</p><a href="../proc/vmfc_row_subset_key.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-row~11"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>row</strong>(:)</td>
+            <td>
+<p>Zero-padded; positive entries real, negative ghosted</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-chosen~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>chosen</strong>(:)</td>
+            <td>
+<p>Positions among the real entries, size k</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~44"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key~12"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>key</strong>(:)</td>
+            <td>
+<p>At least as long as the row&rsquo;s non-zero entries</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key_len~3"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>key_len</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-vmfc_subset_key"></span> <h3>public pure subroutine <a href='../proc/vmfc_subset_key.html'>vmfc_subset_key</a>(fragment, n, chosen, k, key)  
 </h3></div>
     <div class="card-body">
@@ -1930,7 +2032,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~4"></span>
+              <span class="anchor" id="variable-fragment~33"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1945,7 +2047,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~9"></span>
+              <span class="anchor" id="variable-n~48"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1960,7 +2062,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-chosen"></span>
+              <span class="anchor" id="variable-chosen~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1975,7 +2077,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~7"></span>
+              <span class="anchor" id="variable-k~43"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1990,7 +2092,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~3"></span>
+              <span class="anchor" id="variable-key~11"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2030,7 +2132,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~2"></span>
+              <span class="anchor" id="variable-arr~9"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -2045,7 +2147,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~13"></span>
+              <span class="anchor" id="variable-n~52"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -2060,7 +2162,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-r~4"></span>
+              <span class="anchor" id="variable-r~10"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -2075,7 +2177,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-index"></span>
+              <span class="anchor" id="variable-index~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -2090,7 +2192,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~2"></span>
+              <span class="anchor" id="variable-data~21"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -2105,7 +2207,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~25"></span>
+              <span class="anchor" id="variable-i~144"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -2135,7 +2237,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~4"></span>
+              <span class="anchor" id="variable-count~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -2178,7 +2280,7 @@ has_next = .true. if there&rsquo;s a next combination</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 22:38 +0000             </p>
+ on 2026-09-24 01:15 +0000             </p>
           </div>
         </div>
         <br>

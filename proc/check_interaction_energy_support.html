@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">58 statements</a>
+                 title=" 0.2% of total for procedures.">54 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -353,7 +353,7 @@ any other driver that names no reference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~6"></span>
+              <span class="anchor" id="variable-driver_config~9"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -368,7 +368,7 @@ any other driver that names no reference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_fragments~4"></span>
+              <span class="anchor" id="variable-n_fragments~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -383,7 +383,7 @@ any other driver that names no reference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~75"></span>
+              <span class="anchor" id="variable-error~203"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1187,21 +1187,6 @@ parameter
 <span class="k">      case </span><span class="n">default</span>
 <span class="w">      </span><span class="k">end select</span>
 
-<span class="w">      </span><span class="c">! Counterpoise composes at level 2: every ghosted row a pair's correction</span>
-<span class="w">      </span><span class="c">! subtracts is built from that pair, which the reduced list keeps. Above</span>
-<span class="w">      </span><span class="c">! level 2 the counterpoise recursion itself is off -- see the TODO in</span>
-<span class="w">      </span><span class="c">! `compute_mbe_delta` -- and the interaction energy would inherit it.</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">counterpoise</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"vmfc"</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">driver_config</span><span class="p">%</span><span class="n">nlevel</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">DRIVER</span><span class="o">//</span><span class="s2">" with keywords.fragmentation."</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">"counterpoise 'vmfc' is limited to level 2. Above it, the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">"counterpoise recursion subtracts a ghosted subset's own subsets "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">"in that subset's basis rather than its parent's, which is not the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">"Valiron-Mayer expression and moves a water trimer's VMFC(3) energy "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">"by 4.3e-3 hartree; the interaction terms would carry the same "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                        </span><span class="s2">"error. Use level 2, or drop counterpoise."</span><span class="p">)</span>
-<span class="w">         </span><span class="k">return</span>
-<span class="k">      end if</span>
-
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">neo</span><span class="p">%</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">DRIVER</span><span class="o">//</span><span class="s2">" is not available with keywords.neo. "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                        </span><span class="s2">"A quantum proton is solved with every electron of the "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1232,7 +1217,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-23 22:38 +0000             </p>
+ on 2026-09-24 01:15 +0000             </p>
           </div>
         </div>
         <br>
