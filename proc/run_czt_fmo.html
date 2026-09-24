@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">32 statements</a>
+                 title=" 0.1% of total for procedures.">34 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, comm)  
+    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, comm)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -171,8 +171,8 @@
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -351,7 +351,7 @@ one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~5"></span>
+              <span class="anchor" id="variable-atomic_numbers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -366,7 +366,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~4"></span>
+              <span class="anchor" id="variable-element_symbols~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -381,7 +381,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~6"></span>
+              <span class="anchor" id="variable-coordinates~10"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -396,7 +396,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~10"></span>
+              <span class="anchor" id="variable-owner~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -411,7 +411,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~6"></span>
+              <span class="anchor" id="variable-basis_name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -426,7 +426,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp"></span>
+              <span class="anchor" id="variable-esp~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -441,7 +441,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~2"></span>
+              <span class="anchor" id="variable-expansion~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -456,7 +456,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field"></span>
+              <span class="anchor" id="variable-far_field~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -471,7 +471,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc"></span>
+              <span class="anchor" id="variable-resppc~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -486,7 +486,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~4"></span>
+              <span class="anchor" id="variable-level~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -501,7 +501,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer"></span>
+              <span class="anchor" id="variable-max_outer~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -516,7 +516,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol"></span>
+              <span class="anchor" id="variable-outer_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -531,7 +531,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter"></span>
+              <span class="anchor" id="variable-scf_max_iter~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -546,7 +546,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol"></span>
+              <span class="anchor" id="variable-scf_energy_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -561,7 +561,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol"></span>
+              <span class="anchor" id="variable-scf_density_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -576,7 +576,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive"></span>
+              <span class="anchor" id="variable-scf_drive~2"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -591,7 +591,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking"></span>
+              <span class="anchor" id="variable-bond_breaking~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -606,7 +606,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale"></span>
+              <span class="anchor" id="variable-cap_scale~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -621,7 +621,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~8"></span>
+              <span class="anchor" id="variable-energy~19"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -636,7 +636,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~69"></span>
+              <span class="anchor" id="variable-error~119"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -651,7 +651,23 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~8"></span>
+              <span class="anchor" id="variable-fragment_charges~3"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_charges</strong>(:)</td>
+            <td>
+                <p>Each fragment&rsquo;s net charge, indexed as <code>owner</code> numbers them. Absent
+means every fragment is neutral.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -943,7 +959,7 @@ large graphs.</div>
 <span class="w">                          </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">max_outer</span><span class="p">,</span><span class="w"> </span><span class="n">outer_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_max_iter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">scf_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_density_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_drive</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">bond_breaking</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                          </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
+<span class="w">                          </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! No-op stand-in: FMO needs the CPU integral backend</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from</span>
@@ -968,6 +984,9 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cap_scale</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Each fragment's net charge, indexed as `owner` numbers them. Absent</span>
+<span class="w">         </span><span class="c">!! means every fragment is neutral.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">         </span><span class="c">!! Present means distribute the fragment work over this communicator.</span>
 <span class="w">         </span><span class="c">!! Absent means one rank does all of it.</span>
@@ -982,6 +1001,7 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">resppc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="nb">huge</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">level</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">max_outer</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">outer_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">scf_max_iter</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">scf_energy_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">scf_density_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">fragment_charges</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_czt_fmo</span>
 </pre></div>
@@ -1007,7 +1027,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 03:22 +0000             </p>
+ on 2026-09-24 19:26 +0000             </p>
           </div>
         </div>
         <br>
