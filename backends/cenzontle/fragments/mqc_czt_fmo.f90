@@ -2086,6 +2086,7 @@ contains
       real(dp), allocatable :: q_all(:)
       real(dp) :: e_sum, e_prev
       integer, allocatable :: owner(:)
+      type(fragment_t), allocatable :: prev(:)
       integer :: i, outer, me
       logical :: show_conv
 
@@ -2120,11 +2121,19 @@ contains
 
          ! Independent within a pass, so who computes which is free. The
          ! exchange after is the barrier.
+         !
+         ! Each fragment is solved against `prev`, the pass as it began, and
+         ! its result swapped into `frag`. Solving in `frag` itself let a
+         ! fragment read the densities its rank had already updated this
+         ! pass, so the passes depended on the rank count and the order: 2lty's
+         ! first pass came out 0.44 Hartree apart on one rank and on four.
+         prev = frag
          do i = 1, n_frag
             if (owner(i) /= me) cycle
-            call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
+            call solve_fragment(prev, n_frag, i, z, coords, q_all, opts, afo, &
                                 all_converged, error)
             if (error%has_error()) return
+            call swap_solution(prev(i), frag(i))
          end do
          call exchange_monomers(frag, n_frag, owner, comm)
 
@@ -2145,6 +2154,30 @@ contains
                      to_char(opts%max_outer)//" passes; the monomer sum was still "// &
                      "moving by "//to_char(res%outer_change)//" Hartree")
    end subroutine calculate_monomers
+
+   subroutine swap_solution(a, b)
+      !! Exchange what a fragment's SCF produced between two copies of it
+      !!
+      !! The density, the charges and both energies -- the fields
+      !! `solve_fragment` writes and `exchange_monomers` shares.
+      type(fragment_t), intent(inout) :: a, b
+
+      real(dp), allocatable :: tmp(:, :), tmp_q(:)
+      real(dp) :: e
+
+      call move_alloc(a%density, tmp)
+      call move_alloc(b%density, a%density)
+      call move_alloc(tmp, b%density)
+      call move_alloc(a%charges, tmp_q)
+      call move_alloc(b%charges, a%charges)
+      call move_alloc(tmp_q, b%charges)
+      e = a%energy
+      a%energy = b%energy
+      b%energy = e
+      e = a%energy_total
+      a%energy_total = b%energy_total
+      b%energy_total = e
+   end subroutine swap_solution
 
    subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
       !! Every n-mer from pairs up to the truncation level
