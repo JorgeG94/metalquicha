@@ -44,7 +44,9 @@ contains
                   new_unittest("a_peptide_flags_its_joined_pairs_and_keeps_the_ligand", &
                                test_peptide), &
                   new_unittest("separated_water_pairs_match_gamess_es_dimers", &
-                               test_separated_waters) &
+                               test_separated_waters), &
+                  new_unittest("an_unconverged_fragment_scf_is_refused_by_name", &
+                               test_unconverged_refused) &
                   ]
    end subroutine collect_mqc_fmo_pairs
 
@@ -283,6 +285,59 @@ contains
       call check(error, abs(res%energy - GAMESS_RESDIM0) < 1.0e-7_dp, &
                  "FMO2 solving every pair does not match GAMESS at RESDIM=0")
    end subroutine test_separated_waters
+
+   subroutine test_unconverged_refused(error)
+      !! A fragment or pair SCF that does not converge stops the run, and says which
+      !!
+      !! Two SCF iterations are too few for any of the water trimer's
+      !! fragments or pairs. With no field the monomers are solved once, so
+      !! every monomer and every pair fails, and the refusal has to name them
+      !! all rather than report "at least one". `allow_crap_scf` keeps the run
+      !! and still lists them.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      character(len=:), allocatable :: message
+      real(dp) :: ang(3, 9)
+      integer :: z(9)
+      character(len=2) :: sym(9)
+
+      z = [8, 1, 1, 8, 1, 1, 8, 1, 1]
+      sym = ["O ", "H ", "H ", "O ", "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                     0.0_dp, -0.7572_dp, 0.5865_dp, &
+                     0.0_dp, 0.7572_dp, 0.5865_dp, &
+                     0.0_dp, 0.0_dp, 2.9_dp, &
+                     0.0_dp, -0.7572_dp, 3.4865_dp, &
+                     0.0_dp, 0.7572_dp, 3.4865_dp, &
+                     0.0_dp, 0.0_dp, 5.8_dp, &
+                     0.0_dp, -0.7572_dp, 6.3865_dp, &
+                     0.0_dp, 0.7572_dp, 6.3865_dp], [3, 9])
+
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%level = 2
+      opts%scf_max_iter = 2
+      call run_fmo2(z, sym, to_bohr(ang), [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error, err%has_error(), "an unconverged fragment SCF was not refused")
+      if (allocated(error)) return
+      message = err%get_message()
+      write (*, *) "   ", message
+      call check(error, index(message, "fragment 2") > 0 .and. index(message, "pair 1-3") > 0, &
+                 "the refusal does not name the fragments and pairs that failed")
+      if (allocated(error)) return
+
+      call err%clear()
+      opts%scf%allow_crap_scf = .true.
+      call run_fmo2(z, sym, to_bohr(ang), [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "allow_crap_scf should keep the run")
+      if (allocated(error)) return
+      call check(error, size(res%unconverged, 2), 6, "all three fragments and pairs")
+      if (allocated(error)) return
+      call check(error,.not. res%converged, "a run with unconverged pieces is not converged")
+   end subroutine test_unconverged_refused
 
    subroutine water20_run(resdim, res, error)
       !! `sample_inputs/w20_isomer1.xyz`, a water per fragment, STO-3G, exact field

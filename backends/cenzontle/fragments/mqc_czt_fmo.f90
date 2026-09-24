@@ -370,6 +370,11 @@ module mqc_czt_fmo
       integer :: outer_iterations = 0            !! passes of the monomer SCF
       real(dp) :: outer_change = 0.0_dp          !! last movement of the monomer sum
       logical :: converged = .false.
+      integer, allocatable :: unconverged(:, :)
+         !! (level, n) the terms whose SCF did not converge, one column each,
+         !! fragments numbered from one and zero-padded; monomers from the last
+         !! pass only. Allocated, possibly with no columns, once the run gets
+         !! that far.
       real(dp), allocatable :: monomer_energy(:)     !! E'_I
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
       real(dp), allocatable :: fragment_charge(:)
@@ -540,7 +545,6 @@ contains
       type(fragment_t), allocatable :: frag(:)
       type(afo_context_t) :: afo
       integer :: n_atoms, n_frag, i
-      logical :: all_converged
 
       n_atoms = size(atomic_numbers)
       if (size(owner) /= n_atoms .or. size(coordinates, 2) /= n_atoms) then
@@ -562,10 +566,9 @@ contains
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
-      all_converged = .true.
 
       call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, afo, res, &
-                              all_converged, error, comm)
+                              error, comm)
       if (error%has_error()) return
 
       do i = 1, n_frag
@@ -578,7 +581,7 @@ contains
       res%monomer_sum = sum(res%monomer_energy)
 
       call calculate_polymers(frag, n_frag, atomic_numbers, coordinates, opts, afo, res, &
-                              all_converged, error, comm)
+                              error, comm)
       if (error%has_error()) return
 
       ! `response_sum` is inside `pair_sum` already; it is reported, not added.
@@ -592,22 +595,95 @@ contains
                                    .not. afo%active .or. afo%split_nucleus)
       end if
 
-      res%converged = res%converged .and. all_converged
-      if (.not. all_converged) then
+      if (.not. allocated(res%unconverged)) allocate (res%unconverged(1, 0))
+      if (size(res%unconverged, 2) > 0) then
+         res%converged = .false.
          ! Refused unless the deck said otherwise. `allow_crap_scf` means the
          ! same here as everywhere else: keep a total built partly from
          ! unconverged pieces, as a result to follow up rather than to trust.
          if (.not. opts%scf%allow_crap_scf) then
-            call error%set(ERROR_VALIDATION, "fmo: at least one fragment SCF did not "// &
-                           "converge, so the total is not trustworthy. Set "// &
-                           "keywords.scf.allow_crap_scf to finish anyway.")
+            call error%set(ERROR_VALIDATION, "fmo: the SCF did not converge for "// &
+                           unconverged_list(res%unconverged)//", so the total is not "// &
+                           "trustworthy. Set keywords.scf.allow_crap_scf to finish anyway.")
             return
          end if
-         call logger%warning("  fmo: at least one fragment SCF did not converge, and "// &
-                             "allow_crap_scf kept the run. The total is built partly "// &
-                             "from unconverged fragments.")
+         call logger%warning("  fmo: the SCF did not converge for "// &
+                             unconverged_list(res%unconverged)//", and allow_crap_scf "// &
+                             "kept the run. The total is built partly from them.")
       end if
    end subroutine run_fmo2
+
+   function unconverged_list(terms) result(text)
+      !! The terms, as "fragment 3, pair 10-18, ...", for an error message
+      integer, intent(in) :: terms(:, :)   !! (level, n), zero-padded
+      character(len=:), allocatable :: text
+
+      integer :: t, m, n
+
+      text = ""
+      do t = 1, size(terms, 2)
+         n = count(terms(:, t) > 0)
+         if (t > 1) text = text//", "
+         select case (n)
+         case (1)
+            text = text//"fragment "
+         case (2)
+            text = text//"pair "
+         case default
+            text = text//"n-mer "
+         end select
+         do m = 1, n
+            if (m > 1) text = text//"-"
+            text = text//to_char(terms(m, t))
+         end do
+      end do
+   end function unconverged_list
+
+   subroutine record_unconverged(res, failed, terms, term_size, level)
+      !! Append the failed terms to `res%unconverged`
+      type(fmo_result_t), intent(inout) :: res
+      logical, intent(in) :: failed(:)
+      integer, intent(in) :: terms(:, :), term_size(:)
+      integer, intent(in) :: level
+
+      integer, allocatable :: add(:, :)
+      integer :: t, k, rows
+
+      rows = level
+      if (allocated(res%unconverged)) rows = max(rows, size(res%unconverged, 1))
+      allocate (add(rows, count(failed)), source=0)
+      k = 0
+      do t = 1, size(failed)
+         if (.not. failed(t)) cycle
+         k = k + 1
+         add(1:term_size(t), k) = terms(1:term_size(t), t)
+      end do
+      if (.not. allocated(res%unconverged)) then
+         res%unconverged = add
+      else
+         block
+            integer, allocatable :: old(:, :)
+            old = res%unconverged
+            deallocate (res%unconverged)
+            allocate (res%unconverged(rows, size(old, 2) + k), source=0)
+            res%unconverged(1:size(old, 1), 1:size(old, 2)) = old
+            res%unconverged(:, size(old, 2) + 1:) = add
+         end block
+      end if
+   end subroutine record_unconverged
+
+   subroutine gather_failures(failed, comm)
+      !! Every rank's failures on every rank: each term was solved by one
+      type(comm_t), intent(in), optional :: comm
+      logical, intent(inout) :: failed(:)
+
+      real(dp), allocatable :: flag(:)
+
+      if (.not. spread_over(comm)) return
+      flag = merge(1.0_dp, 0.0_dp, failed)
+      call allreduce(comm, flag, size(flag), MPI_SUM)
+      failed = flag > 0.5_dp
+   end subroutine gather_failures
 
    subroutine fmo_guess_kind(opts, kind)
       !! The deck's initial guess for a fragment SCF, as an `SCF_GUESS_*` kind
@@ -2071,7 +2147,7 @@ contains
       end if
    end subroutine solve_fragment
 
-   subroutine calculate_monomers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
+   subroutine calculate_monomers(frag, n_frag, z, coords, opts, afo, res, error, comm)
       !! The outer SCF: every monomer in the field of all the others, iterated
       !!
       !! One pass solves every fragment against the field the previous pass
@@ -2088,7 +2164,6 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
       type(fmo_result_t), intent(inout) :: res
-      logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
 
@@ -2097,26 +2172,35 @@ contains
       integer, allocatable :: owner(:)
       type(fragment_t), allocatable :: prev(:)
       integer :: i, outer, me
-      logical :: show_conv
+      logical :: show_conv, ok
+      logical, allocatable :: failed(:)
+      ! This pass's failures only: an early pass that did not converge is
+      ! superseded by the next, which starts from a better field.
 
       call monomer_owners(frag, n_frag, comm, owner)
       me = 0
       if (spread_over(comm)) me = comm%rank()
+      allocate (failed(n_frag), source=.false.)
 
       ! Isolated fragments, to start the field from something.
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
       do i = 1, n_frag
          if (owner(i) /= me) cycle
-         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, all_converged, &
+         ok = .true.
+         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, ok, &
                              error, bare=.true.)
          if (error%has_error()) return
+         failed(i) = .not. ok
       end do
       call exchange_monomers(frag, n_frag, owner, comm)
 
       if (opts%esp == "none") then
          res%converged = .true.
          res%outer_iterations = 1
+         call gather_failures(failed, comm)
+         call record_unconverged(res, failed, reshape([(i, i=1, n_frag)], [1, n_frag]), &
+                                 [(1, i=1, n_frag)], 1)
          return
       end if
 
@@ -2137,11 +2221,14 @@ contains
          ! pass, so the passes depended on the rank count and the order: 2lty's
          ! first pass came out 0.44 Hartree apart on one rank and on four.
          prev = frag
+         failed = .false.
          do i = 1, n_frag
             if (owner(i) /= me) cycle
+            ok = .true.
             call solve_fragment(prev, n_frag, i, z, coords, q_all, opts, afo, &
-                                all_converged, error)
+                                ok, error)
             if (error%has_error()) return
+            failed(i) = .not. ok
             call swap_solution(prev(i), frag(i))
          end do
          call exchange_monomers(frag, n_frag, owner, comm)
@@ -2152,6 +2239,9 @@ contains
          call fmo_outer_row(show_conv, outer, e_sum, res%outer_change)
          if (res%outer_change < opts%outer_tol) then
             res%converged = .true.
+            call gather_failures(failed, comm)
+            call record_unconverged(res, failed, reshape([(i, i=1, n_frag)], [1, n_frag]), &
+                                    [(1, i=1, n_frag)], 1)
             call convergence_footer(show_conv, .true., outer, "outer iterations", 45)
             return
          end if
@@ -2188,7 +2278,7 @@ contains
       b%energy_total = e
    end subroutine swap_solution
 
-   subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
+   subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, error, comm)
       !! Every n-mer from pairs up to the truncation level
       !!
       !! Independent of each other once the monomers have settled, so one bag of
@@ -2216,10 +2306,11 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
       type(fmo_result_t), intent(inout) :: res
-      logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
 
+      logical, allocatable :: failed(:)
+      logical :: ok
       real(dp), allocatable :: q_all(:), totals(:)
       integer, allocatable :: terms(:, :), term_size(:)
       real(dp), allocatable :: correction(:), response(:)
@@ -2236,6 +2327,7 @@ contains
       call enumerate_subsets(n_frag, level, terms, term_size, n_terms)
       allocate (correction(n_terms), source=0.0_dp)
       allocate (response(n_terms), source=0.0_dp)
+      allocate (failed(n_terms), source=.false.)
 
       ! Count the n-mers (size >= 2) so the progress below has a denominator;
       ! the monomers are already solved.
@@ -2293,9 +2385,11 @@ contains
             cycle
          end if
 
+         ok = .true.
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
-                        opts, afo, e_internal, e_resp, all_converged, error)
+                        opts, afo, e_internal, e_resp, ok, error)
          if (error%has_error()) return
+         failed(t) = .not. ok
          ! The response goes inside the correction, not alongside it: a larger
          ! n-mer subtracts its subsets' corrections whole, so a response left
          ! outside the recursion is never cancelled. At level two nothing
@@ -2329,6 +2423,9 @@ contains
 
       ! Subtract what the subsets already covered. Ordered by size, so every
       ! subset of a term is final before the term is reduced.
+      call gather_failures(failed, comm)
+      call record_unconverged(res, failed, terms, term_size, level)
+
       call subtract_subsets(terms, term_size, n_terms, correction)
 
       res%pair_sum = 0.0_dp

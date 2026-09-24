@@ -4,6 +4,7 @@ module mqc_many_body_expansion
    !! concrete ones: standard MBE, generalized MBE, and FMO2 with the
    !! electrostatically embedded MBE beside it.
    use pic_types, only: int32, int64, dp
+   use pic_mpi_lib, only: abort_comm
    use mqc_method_config, only: method_config_t
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_resources, only: resources_t
@@ -422,12 +423,38 @@ contains
                        detached=this%detached_atoms, &
                        afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
-         call logger%error("fmo_run_serial: "//error%get_message())
+         call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
          return
       end if
       call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
       call fmo_report(this, json_data)
    end subroutine fmo_run_serial
+
+   subroutine fmo_refuse(this, message)
+      !! Report an FMO refusal once and end the run with a failing status
+      !!
+      !! The backend sets the same error on every rank -- a failure is
+      !! gathered before it is judged -- so every rank arrives here, and only
+      !! the first says why. `abort_comm` and not a return: the expansion
+      !! interface carries no error, and a return let the run finish with
+      !! exit status zero and, on the ranks that had not failed, a total.
+      use pic_logger, only: logger => global_logger
+      use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
+      class(fmo_context_t), intent(inout) :: this
+      character(len=*), intent(in) :: message
+
+      if (.not. this%has_mpi()) then
+         call logger%error(message)
+         error stop 1
+      end if
+      if (this%resources%mpi_comms%world_comm%rank() == 0) call logger%error(message)
+      ! Flushed by hand: MPI_ABORT ends the process without closing units, so
+      ! with standard output redirected to a file the reason was lost and
+      ! only Open MPI's own notice remained.
+      flush (output_unit)
+      flush (error_unit)
+      call abort_comm(this%resources%mpi_comms%world_comm, 1)
+   end subroutine fmo_refuse
 
    subroutine fmo_report(this, json_data)
       !! Hand the total, its sums and the pairs to whatever writes the output
@@ -524,7 +551,7 @@ contains
                        detached=this%detached_atoms, &
                        afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
-         call logger%error("fmo_run_distributed: "//error%get_message())
+         call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())
          return
       end if
       if (this%resources%mpi_comms%world_comm%leader()) then
