@@ -709,6 +709,28 @@ contains
                allocate (expansion%sys_geom%bonds, source=bonds)
             end if
             call fragment_owner_map(sys_geom, expansion%owner, expansion%n_fragments)
+            ! The deck's per-fragment charges, which this path used to ignore:
+            ! every fragment was solved neutral whatever it was declared, so a
+            ! charged residue came out a radical and was refused, and a charged
+            ! system of neutral-looking fragments was quietly run neutral.
+            if (allocated(sys_geom%fragment_charges)) then
+               if (sum(sys_geom%fragment_charges) /= sys_geom%charge) then
+                  call logger%error("fragments: the fragment_charges add up to "// &
+                                    to_char(sum(sys_geom%fragment_charges))// &
+                                    " and molecular_charge is "// &
+                                    to_char(sys_geom%charge)//". FMO solves each "// &
+                                    "fragment with its declared charge, so the two "// &
+                                    "have to agree.")
+                  return
+               end if
+               expansion%fragment_charges = sys_geom%fragment_charges
+            else if (sys_geom%charge /= 0) then
+               call logger%error("fragments: molecular_charge is "// &
+                                 to_char(sys_geom%charge)//" and no fragment_charges "// &
+                                 "say which fragments carry it. FMO solves each "// &
+                                 "fragment with its own charge.")
+               return
+            end if
             expansion%basis = config%method_config%basis_set
             expansion%bond_breaking = config%bond_breaking
             expansion%cap_scale = config%cap_scale

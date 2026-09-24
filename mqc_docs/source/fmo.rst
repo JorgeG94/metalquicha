@@ -430,6 +430,21 @@ No ``connectivity`` is needed -- cut bonds are perceived from the geometry, not
 declared. Error messages number atoms from **one**, so the bond reported as
 "atoms 10 and 11" is the one between the deck's atoms 9 and 10.
 
+**Charged residues are declared.** ``fragment_charges`` gives each fragment's net
+charge as it would be with its cut bonds closed -- +1 for a lysine or arginine,
+-1 for an aspartate or glutamate, the termini wherever they fall -- and the
+charges have to add up to ``molecular_charge``, or the deck is refused. The
+electron a detached bond moves is counted on top. A charged system that gives no
+``fragment_charges`` is refused too: every fragment would be solved neutral.
+
+The model system around a cut is closed with neutral caps, so any charge it
+holds is a group it took in whole. An ammonium (a nitrogen with four
+neighbours), a guanidinium (a carbon between three such nitrogens) and a
+carboxylate (a carbon with two terminal oxygens) are recognised and counted --
+the first C-alpha--C(=O) cut of a protein takes the N-terminal ammonium in, and
+without that the model was a radical and the cut was refused. Any other charged
+group in a model sphere still is, with a message that says so.
+
 The field has to be point charges: ``"embedding": "ptc"`` alongside
 ``"bond_breaking": "afo"``. An exact field is refused with a detached bond for
 the reason above, and no field at all leaves each side of a cut carrying about

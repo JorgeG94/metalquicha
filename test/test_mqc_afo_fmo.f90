@@ -60,7 +60,8 @@ contains
                   new_unittest("three_fragments_keep_it_with_a_field_on_top", test_ptc_three), &
                   new_unittest("embedded_truncation_at_pairs_costs_the_three_body_term", test_ptc_pairs), &
                   new_unittest("a_ring_kept_whole_takes_a_field_and_a_frozen_orbital", test_ptc_ring_kept), &
-                  new_unittest("the_charge_convention_does_not_move_an_embedded_total", test_convention) &
+                  new_unittest("the_charge_convention_does_not_move_an_embedded_total", test_convention), &
+                  new_unittest("a_charged_fragment_keeps_the_identity", test_charged_fragment) &
                   ]
    end subroutine collect_mqc_afo_fmo
 
@@ -480,6 +481,108 @@ contains
                  "splitting a detached bond's nucleus moved an embedded total, which "// &
                  "the field's own-share subtraction says it cannot")
    end subroutine test_convention
+
+   subroutine test_charged_fragment(error)
+      !! A protonated N terminus, as two fragments across a detached bond
+      !!
+      !! Glycine tripeptide with a third hydrogen on its amine, charge +1, cut
+      !! at the first C-alpha--C(=O) bond. The first fragment is the ammonium
+      !! and its C-alpha, declared +1; the rest is declared neutral. Two
+      !! fragments are exact, so the answer is the whole cation's.
+      !!
+      !! It fails two ways without the charge: the first fragment is solved
+      !! neutral and comes out a radical, and the model system around the cut
+      !! takes the ammonium in whole and comes out a radical too. Either is a
+      !! refusal, and together they were every charged protein.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: whole
+      integer :: z(25), owner(25), i
+      character(len=2) :: sym(25)
+      real(dp) :: xyz(3, 25), ang(3, 25)
+
+      z = [7, 6, 6, 8, 1, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 8, 1, 1]
+      do i = 1, 25
+         select case (z(i))
+         case (7)
+            sym(i) = "N "
+         case (6)
+            sym(i) = "C "
+         case (8)
+            sym(i) = "O "
+         case default
+            sym(i) = "H "
+         end select
+      end do
+      ang = reshape([ &
+                    0.0171625298_dp, -0.4776667709_dp, -0.0077801388_dp, &
+                    1.3251492481_dp, 0.1638239831_dp, 0.0713249069_dp, &
+                    1.8818395599_dp, 0.1764813685_dp, 1.4667973423_dp, &
+                    1.1563644386_dp, 0.4758564459_dp, 2.4030731780_dp, &
+                    2.0041403197_dp, -0.3893217244_dp, -0.6156078332_dp, &
+                    1.2933738676_dp, 1.2140808724_dp, -0.2903017566_dp, &
+                    -0.6557592247_dp, -0.0682256808_dp, 0.6785523482_dp, &
+                    -0.3826962098_dp, -0.2691894812_dp, -0.9506317163_dp, &
+                    3.2093591995_dp, -0.0780774266_dp, 1.6702200732_dp, &
+                    3.8489825798_dp, -0.0589263473_dp, 2.9842578467_dp, &
+                    5.3502343581_dp, -0.0788662970_dp, 2.9476716562_dp, &
+                    5.9543074560_dp, -0.1656759551_dp, 1.8893430618_dp, &
+                    3.5421254604_dp, 0.8561169960_dp, 3.5393994122_dp, &
+                    3.4986665918_dp, -0.9402544817_dp, 3.5643998498_dp, &
+                    3.7845901118_dp, -0.3119789206_dp, 0.8286081985_dp, &
+                    6.0352251963_dp, 0.0003525130_dp, 4.1282386693_dp, &
+                    7.4955375902_dp, -0.0138802141_dp, 4.2014382315_dp, &
+                    8.0730347718_dp, 0.0277800836_dp, 5.5909529457_dp, &
+                    7.3557278976_dp, 0.0641983810_dp, 6.5759347789_dp, &
+                    7.8694940865_dp, -0.9353711779_dp, 3.7021749317_dp, &
+                    7.8868335534_dp, 0.8596348618_dp, 3.6344677391_dp, &
+                    5.4670886620_dp, 0.0786510231_dp, 5.0034540291_dp, &
+                    9.3768940878_dp, 0.0221621974_dp, 5.7818296269_dp, &
+                    9.9376629532_dp, -0.0106298905_dp, 4.9380771002_dp, &
+                    0.1428172219_dp, -1.4729676966_dp, 0.1765754027_dp], [3, 25])
+      xyz = to_bohr(ang)
+      owner = 2
+      owner([1, 2, 5, 6, 7, 8, 25]) = 1
+
+      opts%basis = "sto-3g"
+      opts%esp = "ptc"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%level = 2
+      opts%net_charge = [1, 0]
+      ! The default tolerances. 1e-11 is below what an 84-electron fragment
+      ! reaches here -- its energy wanders by a few 1e-10 between iterations --
+      ! and it was the SCF, not the identity, that failed on it.
+
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the charged expansion failed")
+      if (allocated(error)) then
+         if (err%has_error()) write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_czt_rhf(mol, sum(z) - 1, 200, 1.0e-9_dp, 1.0e-7_dp, .false., whole, err)
+      call check(error,.not. err%has_error(), "the reference calculation failed")
+      if (allocated(error)) return
+
+      write (*, "(a,es12.4)") "   fmo - whole: ", res%energy - whole%energy
+      call check(error, abs(res%energy - whole%energy) < TOL, &
+                 "two fragments of a cation did not reproduce the whole cation")
+      if (allocated(error)) return
+
+      call check(error, allocated(res%fragment_charge), "no fragment charges reported")
+      if (allocated(error)) return
+      write (*, "(a,2f14.10)") "   fragment charges: ", res%fragment_charge
+      call check(error, res%fragment_charge(1), 1.0_dp, thr=1.0e-6_dp, &
+                 message="the ammonium fragment does not carry its +1")
+      if (allocated(error)) return
+      call check(error, res%fragment_charge(2), 0.0_dp, thr=1.0e-6_dp, &
+                 message="the neutral fragment is not neutral")
+   end subroutine test_charged_fragment
 
    subroutine propane_ptc_pairs(cut_nucleus, energy, fragment_charge, error)
       !! Propane as three fragments, FMO(2) in point charges, one convention
