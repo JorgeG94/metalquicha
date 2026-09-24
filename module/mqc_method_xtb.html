@@ -202,27 +202,27 @@ XTB method implementation type</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">tblite_xtb_singlepoint</li>
+                  <li class="list-inline-item">tblite_results</li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">tblite_context_type</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">mctc_env</li>
+                  <li class="list-inline-item">mctc_io</li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">tblite_container</li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">mctc_env</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">tblite_xtb_singlepoint</li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
-                  <li class="list-inline-item">tblite_results</li>
-                  <li class="list-inline-item">tblite_solvation</li>
-                  <li class="list-inline-item">tblite_context_type</li>
-                  <li class="list-inline-item">tblite_wavefunction</li>
-                  <li class="list-inline-item">mctc_io</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">tblite_xtb_gfn1</li>
+                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item">tblite_post_processing_list</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">tblite_xtb_calculator</li>
                   <li class="list-inline-item">tblite_xtb_gfn2</li>
+                  <li class="list-inline-item">tblite_wavefunction</li>
+                  <li class="list-inline-item">tblite_solvation</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1425,7 +1425,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              <span class="anchor" id="variable-allow_crap_scf~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -1531,7 +1531,7 @@ tell it did not get what it asked for.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~5"></span>
+              <span class="anchor" id="variable-max_iter~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -1635,7 +1635,7 @@ says otherwise.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose~14"></span>
               logical,
             </td>
               <td>public</td>
@@ -1680,17 +1680,17 @@ it with the overlap, and most fragments have no use for it.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_energy~2'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_energy~4'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
                   <td><p>Energy-only calculation</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_gradient~2'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_gradient~4'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a></td>
                   <td><p>Energy + gradient calculation</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_hessian~2'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_hessian~4'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a></td>
                   <td><p>Placeholder for Hessian calculation</p></td>
               </tr>
           </tbody>
@@ -1723,7 +1723,7 @@ it with the overlap, and most fragments have no use for it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~67"></span>
+              <span class="anchor" id="variable-this~131"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1738,7 +1738,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~19"></span>
+              <span class="anchor" id="variable-result~51"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1848,7 +1848,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~4"></span>
+              <span class="anchor" id="variable-mol~5"></span>
               type(structure_type),
             </td>
 <td>intent(in)</td>
@@ -1863,7 +1863,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~24"></span>
+              <span class="anchor" id="variable-result~56"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1918,7 +1918,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~3"></span>
+              <span class="anchor" id="variable-mol~4"></span>
               type(structure_type),
             </td>
 <td>intent(in)</td>
@@ -1963,7 +1963,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~7"></span>
+              <span class="anchor" id="variable-method~16"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2053,7 +2053,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~76"></span>
+              <span class="anchor" id="variable-error~202"></span>
               type(error_type),
             </td>
 <td>intent(out),</td>
@@ -2108,7 +2108,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~23"></span>
+              <span class="anchor" id="variable-result~55"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2123,7 +2123,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~4"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2178,7 +2178,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~21"></span>
+              <span class="anchor" id="variable-n_atoms~50"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2193,7 +2193,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~25"></span>
+              <span class="anchor" id="variable-result~57"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2233,7 +2233,7 @@ it with the overlap, and most fragments have no use for it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~68"></span>
+              <span class="anchor" id="variable-this~132"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2248,7 +2248,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~8"></span>
+              <span class="anchor" id="variable-fragment~34"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2263,7 +2263,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~20"></span>
+              <span class="anchor" id="variable-result~52"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2303,7 +2303,7 @@ it with the overlap, and most fragments have no use for it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~69"></span>
+              <span class="anchor" id="variable-this~133"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2318,7 +2318,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~35"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2333,7 +2333,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~21"></span>
+              <span class="anchor" id="variable-result~53"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2373,7 +2373,7 @@ it with the overlap, and most fragments have no use for it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~70"></span>
+              <span class="anchor" id="variable-this~134"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2388,7 +2388,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~36"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2403,7 +2403,7 @@ it with the overlap, and most fragments have no use for it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~22"></span>
+              <span class="anchor" id="variable-result~54"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2446,7 +2446,7 @@ it with the overlap, and most fragments have no use for it.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 19:26 +0000             </p>
+ on 2026-09-24 23:24 +0000             </p>
           </div>
         </div>
         <br>

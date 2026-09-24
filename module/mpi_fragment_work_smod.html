@@ -153,10 +153,10 @@
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-get_group_leader_rank">get_group_leader_rank</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-global_coordinator_impl">global_coordinator_impl</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-group_global_coordinator_impl">group_global_coordinator_impl</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_group_node_requests">handle_group_node_requests</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_requests_group">handle_local_worker_requests_group</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_results">handle_local_worker_results</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_node_results">handle_node_results</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_group_node_requests~2">handle_group_node_requests</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_requests_group~2">handle_local_worker_requests_group</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_results~2">handle_local_worker_results</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_node_results~2">handle_node_results</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-node_coordinator_impl">node_coordinator_impl</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-node_worker_impl">node_worker_impl</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-record_task">record_task</a>
@@ -200,12 +200,12 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
-                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
-                  <li class="list-inline-item"><a href='mqc_verbosity.html'>mqc_verbosity</a></li>
                   <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
-                  <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
+                  <li class="list-inline-item"><a href='mqc_verbosity.html'>mqc_verbosity</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2624,7 +2624,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-f~2"></span>
+              <span class="anchor" id="variable-f~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2639,7 +2639,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~2"></span>
+              <span class="anchor" id="variable-polymers~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2654,7 +2654,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~97"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2669,7 +2669,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_results"></span>
+              <span class="anchor" id="variable-task_results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2684,7 +2684,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_offset~2"></span>
+              <span class="anchor" id="variable-task_offset~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2714,7 +2714,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_result"></span>
+              <span class="anchor" id="variable-frag_result~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2729,7 +2729,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~8"></span>
+              <span class="anchor" id="variable-world_comm~28"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2769,7 +2769,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers"></span>
+              <span class="anchor" id="variable-polymers~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2784,7 +2784,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
+              <span class="anchor" id="variable-total_fragments~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2799,7 +2799,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~96"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2814,7 +2814,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expand"></span>
+              <span class="anchor" id="variable-expand~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2844,7 +2844,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_offset"></span>
+              <span class="anchor" id="variable-task_offset~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2874,7 +2874,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_tasks"></span>
+              <span class="anchor" id="variable-total_tasks~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -2889,7 +2889,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2945,7 +2945,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_type"></span>
+              <span class="anchor" id="variable-fragment_type~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -2960,7 +2960,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~2"></span>
+              <span class="anchor" id="variable-fragment_size~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -2975,7 +2975,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_indices"></span>
+              <span class="anchor" id="variable-fragment_indices~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2990,7 +2990,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-disp_code"></span>
+              <span class="anchor" id="variable-disp_code~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -3030,7 +3030,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~25"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3045,7 +3045,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~2"></span>
+              <span class="anchor" id="variable-total_fragments~11"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3060,7 +3060,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~98"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3075,7 +3075,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_results~2"></span>
+              <span class="anchor" id="variable-task_results~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3090,7 +3090,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-task_offset~3"></span>
+              <span class="anchor" id="variable-task_offset~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3150,7 +3150,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scan_pos"></span>
+              <span class="anchor" id="variable-scan_pos~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -3165,7 +3165,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~9"></span>
+              <span class="anchor" id="variable-world_comm~29"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3205,7 +3205,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~9"></span>
+              <span class="anchor" id="variable-ctx~12"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3220,7 +3220,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_rank"></span>
+              <span class="anchor" id="variable-node_rank~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3250,7 +3250,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_id~3"></span>
+              <span class="anchor" id="variable-group_id~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3290,7 +3290,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~2"></span>
+              <span class="anchor" id="variable-ctx~5"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3306,7 +3306,7 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~6"></span>
+              <span class="anchor" id="variable-json_data~33"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3346,7 +3346,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~8"></span>
+              <span class="anchor" id="variable-ctx~11"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3367,7 +3367,7 @@ count, so it is state rather than a side effect on a file.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_group_node_requests"></span> <h3> subroutine <a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, finished_nodes)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_group_node_requests~2"></span> <h3> subroutine <a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, finished_nodes)  
 </h3></div>
     <div class="card-body">
           
@@ -3386,7 +3386,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~3"></span>
+              <span class="anchor" id="variable-ctx~6"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3446,7 +3446,7 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-finished_nodes"></span>
+              <span class="anchor" id="variable-finished_nodes~3"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -3467,7 +3467,7 @@ count, so it is state rather than a side effect on a file.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests_group"></span> <h3> subroutine <a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, worker_fragment_map, local_finished_workers)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests_group~2"></span> <h3> subroutine <a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, worker_fragment_map, local_finished_workers)  
 </h3></div>
     <div class="card-body">
           
@@ -3486,7 +3486,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~4"></span>
+              <span class="anchor" id="variable-ctx~7"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3561,7 +3561,7 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_finished_workers~2"></span>
+              <span class="anchor" id="variable-local_finished_workers~5"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -3582,7 +3582,7 @@ count, so it is state rather than a side effect on a file.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_results"></span> <h3> subroutine <a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a>(ctx, task_rows, worker_fragment_map, results, results_received, total_items, coord_timer)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_results~2"></span> <h3> subroutine <a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a>(ctx, task_rows, worker_fragment_map, results, results_received, total_items, coord_timer)  
 </h3></div>
     <div class="card-body">
           
@@ -3601,7 +3601,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~6"></span>
+              <span class="anchor" id="variable-ctx~9"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3646,7 +3646,7 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~2"></span>
+              <span class="anchor" id="variable-results~11"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3661,122 +3661,7 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~2"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>results_received</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-total_items"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>total_items</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-coord_timer~3"></span>
-              type(timer_type),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>coord_timer</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results"></span> <h3> subroutine <a href='../proc/handle_node_results.html'>handle_node_results</a>(ctx, task_rows, results, results_received, total_items, coord_timer)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Drain results from remote node coordinators and update tracking state.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ctx~7"></span>
-              type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ctx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-task_rows~5"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>task_rows</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-results~3"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>results</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-results_received~3"></span>
+              <span class="anchor" id="variable-results_received~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -3806,7 +3691,122 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~4"></span>
+              <span class="anchor" id="variable-coord_timer~8"></span>
+              type(timer_type),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coord_timer</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results~2"></span> <h3> subroutine <a href='../proc/handle_node_results~2.html'>handle_node_results</a>(ctx, task_rows, results, results_received, total_items, coord_timer)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Drain results from remote node coordinators and update tracking state.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ctx~10"></span>
+              type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ctx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_rows~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_rows</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results~12"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results_received~10"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results_received</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_items~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_items</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_timer~9"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3846,7 +3846,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~11"></span>
+              <span class="anchor" id="variable-ctx~14"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3886,7 +3886,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~13"></span>
+              <span class="anchor" id="variable-ctx~16"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3926,7 +3926,7 @@ count, so it is state rather than a side effect on a file.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~5"></span>
+              <span class="anchor" id="variable-ctx~8"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3971,7 +3971,7 @@ count, so it is state rather than a side effect on a file.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~7"></span>
+              <span class="anchor" id="variable-result~49"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4012,7 +4012,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~2"></span>
+              <span class="anchor" id="variable-comm~27"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -4027,7 +4027,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag"></span>
+              <span class="anchor" id="variable-tag~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4072,7 +4072,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank~2"></span>
+              <span class="anchor" id="variable-dest_rank~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -4119,7 +4119,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx"></span>
+              <span class="anchor" id="variable-fragment_idx~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -4134,7 +4134,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~6"></span>
+              <span class="anchor" id="variable-result~48"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4149,7 +4149,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config"></span>
+              <span class="anchor" id="variable-method_config~11"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -4164,7 +4164,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag"></span>
+              <span class="anchor" id="variable-phys_frag~5"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -4179,7 +4179,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type"></span>
+              <span class="anchor" id="variable-calc_type~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -4194,7 +4194,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~27"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -4209,7 +4209,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-print_geometry"></span>
+              <span class="anchor" id="variable-print_geometry~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -4224,7 +4224,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sole_calculation"></span>
+              <span class="anchor" id="variable-sole_calculation~2"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -4235,7 +4235,7 @@ task_idx indexes the flat task list, not the fragment list.</p>
             <td><strong>sole_calculation</strong></td>
             <td>
 <p>True when this is the ONLY calculation of the run rather than one
-of many. Default false.</p><a href="../proc/do_fragment_work.html#variable-sole_calculation" class="pull-right"><emph>Read more&hellip;</emph></a>
+of many. Default false.</p><a href="../proc/do_fragment_work.html#variable-sole_calculation~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
     </tbody>
@@ -4269,7 +4269,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx"></span>
+              <span class="anchor" id="variable-ctx~4"></span>
               class(*),
             </td>
 <td>intent(inout)</td>
@@ -4284,7 +4284,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~5"></span>
+              <span class="anchor" id="variable-json_data~32"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -4326,7 +4326,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~10"></span>
+              <span class="anchor" id="variable-ctx~13"></span>
               class(*),
             </td>
 <td>intent(in)</td>
@@ -4368,7 +4368,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~12"></span>
+              <span class="anchor" id="variable-ctx~15"></span>
               class(*),
             </td>
 <td>intent(in)</td>
@@ -4409,7 +4409,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 19:26 +0000             </p>
+ on 2026-09-24 23:24 +0000             </p>
           </div>
         </div>
         <br>

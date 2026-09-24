@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">34 statements</a>
+                 title=" 0.2% of total for procedures.">47 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, comm)  
+    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, response_sum, level_sum, pair_fragments, pair_distance, pair_energy, pair_response, pair_connected, comm)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -169,10 +169,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -351,7 +351,7 @@ one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~12"></span>
+              <span class="anchor" id="variable-atomic_numbers~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -366,7 +366,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~6"></span>
+              <span class="anchor" id="variable-element_symbols~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -381,7 +381,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~10"></span>
+              <span class="anchor" id="variable-coordinates~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -396,7 +396,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~8"></span>
+              <span class="anchor" id="variable-owner~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -411,7 +411,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~8"></span>
+              <span class="anchor" id="variable-basis_name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -426,7 +426,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp~2"></span>
+              <span class="anchor" id="variable-esp"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -441,7 +441,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~3"></span>
+              <span class="anchor" id="variable-expansion~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -456,7 +456,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field~2"></span>
+              <span class="anchor" id="variable-far_field"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -471,7 +471,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc~2"></span>
+              <span class="anchor" id="variable-resppc"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -486,7 +486,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~23"></span>
+              <span class="anchor" id="variable-level~19"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -501,7 +501,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer~2"></span>
+              <span class="anchor" id="variable-max_outer"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -516,7 +516,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol~2"></span>
+              <span class="anchor" id="variable-outer_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -531,7 +531,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter~2"></span>
+              <span class="anchor" id="variable-scf_max_iter"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -546,7 +546,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol~2"></span>
+              <span class="anchor" id="variable-scf_energy_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -561,7 +561,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol~2"></span>
+              <span class="anchor" id="variable-scf_density_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -576,7 +576,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive~2"></span>
+              <span class="anchor" id="variable-scf_drive"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -591,7 +591,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~3"></span>
+              <span class="anchor" id="variable-bond_breaking~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -606,7 +606,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~3"></span>
+              <span class="anchor" id="variable-cap_scale~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -621,7 +621,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~19"></span>
+              <span class="anchor" id="variable-energy~12"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -636,7 +636,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~119"></span>
+              <span class="anchor" id="variable-error~117"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -651,7 +651,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges~3"></span>
+              <span class="anchor" id="variable-fragment_charges~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -667,7 +667,148 @@ means every fragment is neutral.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~10"></span>
+              <span class="anchor" id="variable-monomer_sum"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomer_sum</strong></td>
+            <td>
+                <p><code>sum_I E'_I</code>, or the embedded monomer energies under EE-MBE</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_sum"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pair_sum</strong></td>
+            <td>
+                <p>Every term of two or more fragments. Named for the level-two case;
+above it this holds the larger terms too.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-response_sum"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>response_sum</strong></td>
+            <td>
+                <p><code>sum Tr(dD u)</code> over the n-mers, already inside <code>pair_sum</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_sum"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>level_sum</strong>(:)</td>
+            <td>
+                <p>(level): the sum of the terms with that many members. Slot one is
+<code>monomer_sum</code>; the rest add up to <code>pair_sum</code>.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_fragments~2"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_fragments</strong>(:,:)</td>
+            <td>
+                <p>(2, n_pairs), the two fragments of each two-member term, numbered
+from one, lower first</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_distance~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_distance</strong>(:)</td>
+            <td>
+                <p>(n_pairs), closest interatomic approach in <strong>Angstrom</strong>, real atoms
+only</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_energy~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_energy</strong>(:)</td>
+            <td>
+                <p>(n_pairs), each pair&rsquo;s term of the expansion in Hartree. The pair
+interaction energy under the FMO expansion, a correction under
+EE-MBE, and neither where <code>pair_connected</code> is true.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_response"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_response</strong>(:)</td>
+            <td>
+                <p>(n_pairs), <code>Tr(dD_IJ u_IJ)</code>, already inside <code>pair_energy</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_connected"></span>
+              logical,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_connected</strong>(:)</td>
+            <td>
+                <p>(n_pairs), true where a detached bond joins the two fragments</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -959,7 +1100,9 @@ large graphs.</div>
 <span class="w">                          </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">max_outer</span><span class="p">,</span><span class="w"> </span><span class="n">outer_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_max_iter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">scf_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_density_tol</span><span class="p">,</span><span class="w"> </span><span class="n">scf_drive</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">bond_breaking</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                          </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
+<span class="w">                          </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_sum</span><span class="p">,</span><span class="w"> </span><span class="n">pair_sum</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">response_sum</span><span class="p">,</span><span class="w"> </span><span class="n">level_sum</span><span class="p">,</span><span class="w"> </span><span class="n">pair_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">pair_distance</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">pair_energy</span><span class="p">,</span><span class="w"> </span><span class="n">pair_response</span><span class="p">,</span><span class="w"> </span><span class="n">pair_connected</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! No-op stand-in: FMO needs the CPU integral backend</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from</span>
@@ -987,6 +1130,30 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Each fragment's net charge, indexed as `owner` numbers them. Absent</span>
 <span class="w">         </span><span class="c">!! means every fragment is neutral.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_sum</span>
+<span class="w">         </span><span class="c">!! `sum_I E'_I`, or the embedded monomer energies under EE-MBE</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_sum</span>
+<span class="w">         </span><span class="c">!! Every term of two or more fragments. Named for the level-two case;</span>
+<span class="w">         </span><span class="c">!! above it this holds the larger terms too.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">response_sum</span>
+<span class="w">         </span><span class="c">!! `sum Tr(dD u)` over the n-mers, already inside `pair_sum`</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_sum</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (level): the sum of the terms with that many members. Slot one is</span>
+<span class="w">         </span><span class="c">!! `monomer_sum`; the rest add up to `pair_sum`.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_fragments</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! (2, n_pairs), the two fragments of each two-member term, numbered</span>
+<span class="w">         </span><span class="c">!! from one, lower first</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_distance</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_pairs), closest interatomic approach in **Angstrom**, real atoms</span>
+<span class="w">         </span><span class="c">!! only</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_energy</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_pairs), each pair's term of the expansion in Hartree. The pair</span>
+<span class="w">         </span><span class="c">!! interaction energy under the FMO expansion, a correction under</span>
+<span class="w">         </span><span class="c">!! EE-MBE, and neither where `pair_connected` is true.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_response</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_pairs), `Tr(dD_IJ u_IJ)`, already inside `pair_energy`</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_connected</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_pairs), true where a detached bond joins the two fragments</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">         </span><span class="c">!! Present means distribute the fragment work over this communicator.</span>
 <span class="w">         </span><span class="c">!! Absent means one rank does all of it.</span>
@@ -1002,6 +1169,10 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">outer_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">scf_max_iter</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">scf_energy_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">scf_density_tol</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">fragment_charges</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">monomer_sum</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_sum</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">response_sum</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">level_sum</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_fragments</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_distance</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_energy</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_response</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_connected</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_czt_fmo</span>
 </pre></div>
@@ -1027,7 +1198,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 19:26 +0000             </p>
+ on 2026-09-24 23:24 +0000             </p>
           </div>
         </div>
         <br>
