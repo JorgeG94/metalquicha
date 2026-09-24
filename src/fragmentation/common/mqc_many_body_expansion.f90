@@ -220,6 +220,18 @@ module mqc_many_body_expansion
          !! convergence, held apart from the outer loop above.
       real(dp) :: energy = 0.0_dp
          !! What the run produced
+      real(dp) :: monomer_sum = 0.0_dp
+      real(dp) :: pair_sum = 0.0_dp
+         !! Every term of two or more fragments, not only the pairs
+      real(dp) :: response_sum = 0.0_dp
+      real(dp), allocatable :: level_sum(:)
+      integer, allocatable :: pair_fragments(:, :)
+         !! (2, n_pairs), numbered from one
+      real(dp), allocatable :: pair_distance(:)    !! Angstrom
+      real(dp), allocatable :: pair_energy(:)      !! Hartree
+      real(dp), allocatable :: pair_response(:)    !! Hartree, inside `pair_energy`
+      logical, allocatable :: pair_connected(:)
+         !! The two-member terms and their sums, as `run_czt_fmo` returns them
 
    contains
       procedure :: run_serial => fmo_run_serial
@@ -335,8 +347,17 @@ contains
 
       if (allocated(this%owner)) deallocate (this%owner)
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
+      if (allocated(this%level_sum)) deallocate (this%level_sum)
+      if (allocated(this%pair_fragments)) deallocate (this%pair_fragments)
+      if (allocated(this%pair_distance)) deallocate (this%pair_distance)
+      if (allocated(this%pair_energy)) deallocate (this%pair_energy)
+      if (allocated(this%pair_response)) deallocate (this%pair_response)
+      if (allocated(this%pair_connected)) deallocate (this%pair_connected)
       this%n_fragments = 0
       this%energy = 0.0_dp
+      this%monomer_sum = 0.0_dp
+      this%pair_sum = 0.0_dp
+      this%response_sum = 0.0_dp
       call this%destroy_base()
    end subroutine fmo_destroy
 
@@ -383,6 +404,12 @@ contains
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                        fragment_charges=this%fragment_charges, &
+                       monomer_sum=this%monomer_sum, pair_sum=this%pair_sum, &
+                       response_sum=this%response_sum, level_sum=this%level_sum, &
+                       pair_fragments=this%pair_fragments, &
+                       pair_distance=this%pair_distance, pair_energy=this%pair_energy, &
+                       pair_response=this%pair_response, &
+                       pair_connected=this%pair_connected, &
                        detached=this%detached_atoms)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
@@ -393,20 +420,35 @@ contains
    end subroutine fmo_run_serial
 
    subroutine fmo_report(this, json_data)
-      !! Hand the total to whatever writes the output file
+      !! Hand the total, its sums and the pairs to whatever writes the output
       !!
-      !! Written in `OUTPUT_MODE_MBE`: the expansion differs from MBE's, but
-      !! the shape of the answer -- one energy for the whole system, assembled
-      !! from fragments -- is the same.
-      use mqc_json_output_types, only: OUTPUT_MODE_MBE
+      !! `OUTPUT_MODE_UNFRAGMENTED`, as EFMO is written: one energy for one
+      !! system with a named breakdown beside it, under `fmo`. Not the MBE
+      !! mode, whose levels array and fragment table are built from a term
+      !! list this path never fills.
+      use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
 
       class(fmo_context_t), intent(in) :: this
       type(json_output_data_t), intent(inout), optional :: json_data
 
       if (.not. present(json_data)) return
-      json_data%output_mode = OUTPUT_MODE_MBE
+      json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
       json_data%total_energy = this%energy
       json_data%has_energy = .true.
+      json_data%has_fmo = .true.
+      json_data%fmo_expansion = this%expansion
+      json_data%fmo_embedding = this%esp
+      json_data%fmo_monomer_sum = this%monomer_sum
+      json_data%fmo_pair_sum = this%pair_sum
+      json_data%fmo_response_sum = this%response_sum
+      if (allocated(this%level_sum)) json_data%fmo_level_sum = this%level_sum
+      if (allocated(this%pair_energy)) then
+         json_data%fmo_pair_fragments = this%pair_fragments
+         json_data%fmo_pair_distance = this%pair_distance
+         json_data%fmo_pair_energy = this%pair_energy
+         json_data%fmo_pair_response = this%pair_response
+         json_data%fmo_pair_connected = this%pair_connected
+      end if
    end subroutine fmo_report
 
    subroutine fmo_run_distributed(this, json_data)
@@ -460,6 +502,12 @@ contains
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                        fragment_charges=this%fragment_charges, &
+                       monomer_sum=this%monomer_sum, pair_sum=this%pair_sum, &
+                       response_sum=this%response_sum, level_sum=this%level_sum, &
+                       pair_fragments=this%pair_fragments, &
+                       pair_distance=this%pair_distance, pair_energy=this%pair_energy, &
+                       pair_response=this%pair_response, &
+                       pair_connected=this%pair_connected, &
                        comm=this%resources%mpi_comms%world_comm, &
                        detached=this%detached_atoms)
       if (error%has_error()) then

@@ -101,7 +101,7 @@ module mqc_czt_fmo
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
    !! 1140 SCFs against 190 for level two. No level is refused, but the binomial
    !! is the whole story.
-   use pic_types, only: dp
+   use pic_types, only: dp, int_index
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
    use mqc_convergence_report, only: convergence_header, convergence_footer
@@ -109,7 +109,7 @@ module mqc_czt_fmo
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_efmo_pairs, only: vdw_scaled_distance
    use mqc_czt_subsets, only: enumerate_subsets, subtract_subsets
-   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_physical_fragment, only: system_geometry_t, to_angstrom
    use mqc_bond_perception, only: connected_components, find_severed_bonds, severed_bond_t
    use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_lmo_set_t, &
                           build_bonded_model, bond_lmo_set, build_group_frozen_set, &
@@ -124,11 +124,14 @@ module mqc_czt_fmo
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_scf_types, only: scf_numerics_t
+   use pic_sorting, only: sort_index
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
    private
 
    public :: fmo_options_t
    public :: fmo_result_t
+   public :: fmo_pair_t
    public :: run_fmo2
 
    type :: fmo_options_t
@@ -320,12 +323,43 @@ module mqc_czt_fmo
       real(dp) :: scf_density_tol = 1.0e-7_dp
    end type fmo_options_t
 
+   type :: fmo_pair_t
+      !! One two-member term of the expansion, kept rather than summed away
+      !!
+      !! Fragments numbered from one, `i < j`, as the partition numbers them.
+      integer :: i = 0, j = 0
+      real(dp) :: distance = 0.0_dp
+         !! Closest approach of any atom of `i` to any atom of `j`, in
+         !! Angstrom. Real atoms only: no ghost, no model-system cap.
+      real(dp) :: energy = 0.0_dp
+         !! The pair's term after its members' are subtracted, in Hartree.
+         !! Under `expansion = "fmo"` that is `E'_IJ - E'_I - E'_J +
+         !! Tr(dD_IJ u_IJ)`, the pair interaction energy (IFIE). Under
+         !! `expansion = "mbe"` with a field it is a correction and not an
+         !! interaction energy, and where `connected` is true it is neither.
+      real(dp) :: response = 0.0_dp
+         !! `Tr(dD_IJ u_IJ)`, already inside `energy`; zero with no field.
+      logical :: connected = .false.
+         !! A detached bond joins the two fragments, so `energy` carries the
+         !! bond itself and reads in Hartree where its neighbours read in
+         !! kcal/mol.
+   end type fmo_pair_t
+
    type :: fmo_result_t
       !! The energy, and enough of the parts to see where it came from
       real(dp) :: energy = 0.0_dp                !! The FMO2 total
       real(dp) :: monomer_sum = 0.0_dp           !! sum_I E'_I
       real(dp) :: pair_sum = 0.0_dp              !! sum of every n-mer correction
       real(dp) :: response_sum = 0.0_dp          !! sum of Tr(dD u), the last term
+      real(dp), allocatable :: level_sum(:)
+         !! Sum of the terms with `m` members, for `m` = 1 to the level run.
+         !! Slot one is `monomer_sum`; the rest add up to `pair_sum`, which
+         !! despite its name holds every n-mer above one.
+      type(fmo_pair_t), allocatable :: pairs(:)
+         !! Every two-member term, in enumeration order. Summed, they are
+         !! `level_sum(2)` and so `pair_sum` only at level two; above it
+         !! `pair_sum` also holds the larger terms, which are not pairs.
+         !! Unallocated when the level run is one.
       integer :: outer_iterations = 0            !! passes of the monomer SCF
       real(dp) :: outer_change = 0.0_dp          !! last movement of the monomer sum
       logical :: converged = .false.
@@ -2008,7 +2042,7 @@ contains
 
       real(dp), allocatable :: q_all(:), totals(:)
       integer, allocatable :: terms(:, :), term_size(:)
-      real(dp), allocatable :: correction(:)
+      real(dp), allocatable :: correction(:), response(:)
       real(dp) :: e_internal, e_resp
       integer :: n_terms, t, task, level, n_nmers
 
@@ -2020,6 +2054,7 @@ contains
 
       call enumerate_subsets(n_frag, level, terms, term_size, n_terms)
       allocate (correction(n_terms), source=0.0_dp)
+      allocate (response(n_terms), source=0.0_dp)
 
       ! Count the n-mers (size >= 2) so the progress below has a denominator;
       ! the monomers are already solved.
@@ -2063,6 +2098,7 @@ contains
          ! outside the recursion is never cancelled. At level two nothing
          ! contains a pair, so the two placements agree there.
          correction(t) = e_internal + e_resp
+         response(t) = e_resp
          res%response_sum = res%response_sum + e_resp
       end do
 
@@ -2075,12 +2111,17 @@ contains
                if (term_size(t) == 1) correction(t) = 0.0_dp
             end do
          end if
-         allocate (totals(n_terms + 1))
+         ! The per-term responses ride along after the total, so the
+         ! elements the energy is made of are reduced exactly as before.
+         ! Monomers carry no response, so nothing needs zeroing there.
+         allocate (totals(2*n_terms + 1))
          totals(1:n_terms) = correction
          totals(n_terms + 1) = res%response_sum
+         totals(n_terms + 2:) = response
          call allreduce(comm, totals, size(totals), MPI_SUM)
          correction = totals(1:n_terms)
          res%response_sum = totals(n_terms + 1)
+         response = totals(n_terms + 2:)
       end if
 
       ! Subtract what the subsets already covered. Ordered by size, so every
@@ -2092,11 +2133,145 @@ contains
          if (term_size(t) >= 2) res%pair_sum = res%pair_sum + correction(t)
       end do
 
+      allocate (res%level_sum(level), source=0.0_dp)
+      do t = 1, n_terms
+         res%level_sum(term_size(t)) = res%level_sum(term_size(t)) + correction(t)
+      end do
+
+      ! Every rank holds the reduced terms, so every rank builds the same
+      ! pairs from them and nothing about a pair is ever sent.
+      call collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
+                         response, res%pairs)
+      call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
    end subroutine calculate_polymers
 
+   subroutine collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
+                            response, pairs)
+      !! The two-member terms, with the distance and connectivity a reader needs
+      !!
+      !! `correction` must already have had its subsets subtracted.
+      type(fragment_t), intent(in) :: frag(:)
+      real(dp), intent(in) :: coords(:, :)         !! (3, n_atoms), Bohr
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: terms(:, :), term_size(:)
+      integer, intent(in) :: n_terms
+      real(dp), intent(in) :: correction(:), response(:)
+      type(fmo_pair_t), allocatable, intent(out) :: pairs(:)
+
+      integer :: t, k, c, a, b, fi, fj
+      real(dp) :: r2
+
+      allocate (pairs(count(term_size(1:n_terms) == 2)))
+      k = 0
+      do t = 1, n_terms
+         if (term_size(t) /= 2) cycle
+         k = k + 1
+         fi = terms(1, t)
+         fj = terms(2, t)
+         pairs(k)%i = min(fi, fj)
+         pairs(k)%j = max(fi, fj)
+         pairs(k)%energy = correction(t)
+         pairs(k)%response = response(t)
+
+         r2 = huge(1.0_dp)
+         do a = 1, size(frag(fi)%atoms)
+            do b = 1, size(frag(fj)%atoms)
+               r2 = min(r2, sum((coords(:, frag(fi)%atoms(a)) &
+                                 - coords(:, frag(fj)%atoms(b)))**2))
+            end do
+         end do
+         pairs(k)%distance = to_angstrom(sqrt(r2))
+
+         if (afo%active) then
+            do c = 1, afo%n_cuts
+               if ((afo%cuts(c)%frag_a == fi .and. afo%cuts(c)%frag_b == fj) .or. &
+                   (afo%cuts(c)%frag_a == fj .and. afo%cuts(c)%frag_b == fi)) then
+                  pairs(k)%connected = .true.
+                  exit
+               end if
+            end do
+         end if
+      end do
+   end subroutine collect_pairs
+
+   subroutine log_pair_table(pairs, opts, comm)
+      !! The pairs at info level, strongest first, connected pairs apart
+      !!
+      !! Sorted by magnitude, so a protein's map is read from the top. A pair
+      !! joined by a detached bond is listed after the rest under its own
+      !! heading and never under "interaction energies": its term carries the
+      !! bond itself.
+      type(fmo_pair_t), intent(in) :: pairs(:)
+      type(fmo_options_t), intent(in) :: opts
+      type(comm_t), intent(in), optional :: comm
+
+      integer, allocatable :: order(:)
+      character(len=160) :: line
+      integer :: k, p
+
+      if (.not. is_leader(comm)) return
+      if (size(pairs) == 0) return
+
+      ! Under the FMO expansion a pair's term is its interaction energy; under
+      ! the embedded MBE one it is a correction, and with no field the two
+      ! expansions are the same.
+      if (opts%expansion == "fmo" .or. opts%esp == "none") then
+         call logger%info("  fmo: pair interaction energies, strongest first")
+      else
+         call logger%info("  fmo: pair terms of the embedded expansion, strongest "// &
+                          "first -- corrections, not interaction energies")
+      end if
+      call logger%info("  fmo:     pair  R/Angstrom          dE/Hartree   "// &
+                       "dE/kcal/mol    Tr(dD u)/Hartree")
+
+      order = pairs_by_strength(pairs, .false.)
+      do k = 1, size(order)
+         p = order(k)
+         write (line, "(a,i5,'-',i0,t17,f10.3,es20.10,f14.4,es20.10)") "  fmo: ", &
+            pairs(p)%i, pairs(p)%j, pairs(p)%distance, pairs(p)%energy, &
+            pairs(p)%energy*HARTREE_TO_KCALMOL, pairs(p)%response
+         call logger%info(trim(line))
+      end do
+
+      order = pairs_by_strength(pairs, .true.)
+      if (size(order) == 0) return
+      call logger%info("  fmo: joined by a detached bond -- each term carries the "// &
+                       "bond and is not an interaction energy")
+      do k = 1, size(order)
+         p = order(k)
+         write (line, "(a,i5,'-',i0,t17,f10.3,es20.10,t61,es20.10)") "  fmo: ", &
+            pairs(p)%i, pairs(p)%j, pairs(p)%distance, pairs(p)%energy, &
+            pairs(p)%response
+         call logger%info(trim(line))
+      end do
+   end subroutine log_pair_table
+
+   function pairs_by_strength(pairs, connected) result(order)
+      !! Positions of the pairs whose `connected` matches, largest `|energy|` first
+      type(fmo_pair_t), intent(in) :: pairs(:)
+      logical, intent(in) :: connected
+      integer, allocatable :: order(:)
+
+      integer, allocatable :: pick(:)
+      integer(int_index), allocatable :: idx(:)
+      real(dp), allocatable :: key(:)
+      integer :: k
+
+      pick = pack([(k, k=1, size(pairs))], pairs%connected .eqv. connected)
+      allocate (order(size(pick)))
+      if (size(pick) == 0) return
+      key = abs(pairs(pick)%energy)
+      allocate (idx(size(pick)))
+      call sort_index(key, idx, reverse=.true.)
+      order = pick(idx)
+   end function pairs_by_strength
+
    subroutine log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
-      !! Every n-mer's term of the expansion, one line each
+      !! Every term of three or more fragments, one line each
+      !!
+      !! Pairs are in the table `log_pair_table` prints at info level; this is
+      !! what that table leaves out above level two.
       !!
       !! **What the column is depends on which expansion is running**, and the
       !! header says which rather than leaving it to be assumed.
@@ -2122,10 +2297,8 @@ contains
       !! frozen orbital that the pair restores, so the difference carries the
       !! bond itself.
       !!
-      !! Printed rather than written to the fragment CSV because this path
-      !! reports one total to the output file and has no per-term row to attach
-      !! it to. Gated at verbose and leader-guarded: the count is `C(N,n)` and
-      !! the numbers are the reduced ones, identical on every rank.
+      !! Gated at verbose and leader-guarded: the count is `C(N,n)` and the
+      !! numbers are the reduced ones, identical on every rank.
       integer, intent(in) :: terms(:, :), term_size(:)
       integer, intent(in) :: n_terms
       real(dp), intent(in) :: correction(:)
@@ -2137,6 +2310,7 @@ contains
       integer :: t, m
 
       if (.not. is_leader(comm)) return
+      if (.not. any(term_size(1:n_terms) >= 3)) return
 
       if (opts%expansion == "mbe" .and. opts%esp /= "none") then
          call logger%verbose("  fmo: n-mer terms of the embedded expansion, Hartree "// &
@@ -2144,11 +2318,11 @@ contains
                              "own energy already holds its electrostatics with every "// &
                              "other fragment")
       else
-         call logger%verbose("  fmo: n-mer interaction energies, Hartree")
+         call logger%verbose("  fmo: many-body terms above pairs, Hartree")
       end if
       call logger%verbose("  fmo:   fragments                     dE")
       do t = 1, n_terms
-         if (term_size(t) < 2) cycle
+         if (term_size(t) < 3) cycle
          members = to_char(terms(1, t))
          do m = 2, term_size(t)
             members = members//"-"//to_char(terms(m, t))
