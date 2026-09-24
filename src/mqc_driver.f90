@@ -12,7 +12,7 @@ module mqc_driver
    use mqc_method_types, only: needs_serial_execution
    use mqc_mbe_fragment_distribution_scheme, only: unfragmented_calculation, distributed_unfragmented_hessian
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t, &
-                                      fmo_context_t
+                                      fmo_context_t, fmo_method_refusal
    use mqc_method_config, only: method_config_t
    ! GMBE functions are now called via type-bound procedures in gmbe_context_t
    use mqc_validate, only: validate_system, validate_terms
@@ -699,6 +699,13 @@ contains
          ! FMO or electrostatically embedded MBE. Both are the same machinery,
          ! differing only in what a fragment sees of its neighbours and how the
          ! pieces are added up, so one context serves both.
+         ! The one check for both schemes, since both are built here and both
+         ! reach the backend through `run_czt_fmo`. EFMO does not, and refuses
+         ! its own methods in `run_efmo_energy`.
+         if (len(fmo_method_refusal(config%method_config%method_type)) > 0) then
+            call logger%error(fmo_method_refusal(config%method_config%method_type))
+            return
+         end if
          allocate (fmo_context_t :: expansion)
          select type (expansion)
          type is (fmo_context_t)
@@ -709,6 +716,28 @@ contains
                allocate (expansion%sys_geom%bonds, source=bonds)
             end if
             call fragment_owner_map(sys_geom, expansion%owner, expansion%n_fragments)
+            ! The deck's per-fragment charges, which this path used to ignore:
+            ! every fragment was solved neutral whatever it was declared, so a
+            ! charged residue came out a radical and was refused, and a charged
+            ! system of neutral-looking fragments was quietly run neutral.
+            if (allocated(sys_geom%fragment_charges)) then
+               if (sum(sys_geom%fragment_charges) /= sys_geom%charge) then
+                  call logger%error("fragments: the fragment_charges add up to "// &
+                                    to_char(sum(sys_geom%fragment_charges))// &
+                                    " and molecular_charge is "// &
+                                    to_char(sys_geom%charge)//". FMO solves each "// &
+                                    "fragment with its declared charge, so the two "// &
+                                    "have to agree.")
+                  return
+               end if
+               expansion%fragment_charges = sys_geom%fragment_charges
+            else if (sys_geom%charge /= 0) then
+               call logger%error("fragments: molecular_charge is "// &
+                                 to_char(sys_geom%charge)//" and no fragment_charges "// &
+                                 "say which fragments carry it. FMO solves each "// &
+                                 "fragment with its own charge.")
+               return
+            end if
             expansion%basis = config%method_config%basis_set
             expansion%bond_breaking = config%bond_breaking
             expansion%cap_scale = config%cap_scale
@@ -719,12 +748,27 @@ contains
                expansion%esp = "ptc"
                expansion%expansion = "mbe"
             end if
-            ! `embedding` overrides what the expansion implies, which is how a
-            ! deck reaches the third pairing the backend supports: esp "none"
-            ! with an mbe expansion, a plain many-body expansion through this
-            ! module.
-            if (trim(config%embedding) == "none") then
-               expansion%esp = "none"
+            ! `embedding` overrides the field the method implies, leaving the
+            ! expansion alone. The two are independent in the backend and only
+            ! three of the four pairings were reachable from a deck before:
+            ! "fmo" with point charges is FMO's own expansion with the
+            ! long-range approximation made everywhere, which is the one shape
+            ! a detached bond can be run in, since a frozen orbital and an
+            ! exact density both describe the bond region and only a
+            ! per-atom field can have the detached atom's share taken back out
+            ! of it. An unknown spelling is refused rather than ignored: it
+            ! used to pass validation and change nothing.
+            if (len_trim(config%embedding) > 0) then
+               select case (trim(config%embedding))
+               case ("none", "ptc", "exact")
+                  expansion%esp = trim(config%embedding)
+               case default
+                  call logger%error("keywords.fragmentation.embedding: '"// &
+                                    trim(config%embedding)//"' is not a field this "// &
+                                    "method can build. Use 'exact' for densities, "// &
+                                    "'ptc' for point charges, or 'none'.")
+                  return
+               end select
             end if
 
             ! TODO(mqc): refactor this ugly ass code, in general the expansion assignemtn

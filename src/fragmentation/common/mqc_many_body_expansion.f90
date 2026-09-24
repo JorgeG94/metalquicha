@@ -11,6 +11,7 @@ module mqc_many_body_expansion
    use mqc_json_output_types, only: json_output_data_t
    use mqc_checkpoint, only: checkpoint_t
    use mqc_scf_types, only: scf_numerics_t
+   use mqc_method_types, only: METHOD_TYPE_HF, method_type_to_string, needs_serial_execution
    implicit none
    private
 
@@ -18,6 +19,7 @@ module mqc_many_body_expansion
    public :: mbe_context_t
    public :: gmbe_context_t
    public :: fmo_context_t
+   public :: fmo_method_refusal
 
    !============================================================================
    ! Abstract base type for all many-body expansion methods
@@ -172,6 +174,9 @@ module mqc_many_body_expansion
       integer, allocatable :: owner(:)
          !! Fragment index per atom, numbered from one with no gaps
       integer :: n_fragments = 0
+      integer, allocatable :: fragment_charges(:)
+         !! Each fragment's net charge, as the deck declares it. Unallocated
+         !! means every fragment is neutral.
       character(len=64) :: basis = ""
          !! **Empty on purpose, and refused rather than defaulted.** This field
          !! used to start at "6-31g", which no run ever saw: every caller
@@ -292,6 +297,26 @@ contains
       call this%destroy_base()
    end subroutine mbe_destroy
 
+   function fmo_method_refusal(method_type) result(message)
+      !! Why FMO and EE-MBE cannot run `model.method` yet, or "" when they can
+      !!
+      !! Every fragment and n-mer SCF on this path is restricted Hartree-Fock:
+      !! `run_czt_fmo` is handed a basis and never a method.
+      integer(int32), intent(in) :: method_type
+      character(len=:), allocatable :: message
+
+      ! TODO(mqc): a stopgap until the fragment calculations go through a
+      ! method-agnostic fragment solver. Until then anything but HF would run
+      ! as HF and report that total -- a B3LYP deck did, bit for bit -- so it is
+      ! refused here. Remove this with the solver work.
+      message = ""
+      if (method_type == METHOD_TYPE_HF) return
+      message = "The fragment calculations of FMO and EE-MBE currently run "// &
+                "Hartree-Fock only, and model.method is '"// &
+                trim(method_type_to_string(method_type))//"', which is not yet "// &
+                "wired into them. Set model.method to 'hf'."
+   end function fmo_method_refusal
+
    subroutine fmo_init(this, method_config, calc_type)
       !! Initialise an FMO context
       class(fmo_context_t), intent(out) :: this
@@ -307,6 +332,7 @@ contains
       class(fmo_context_t), intent(inout) :: this
 
       if (allocated(this%owner)) deallocate (this%owner)
+      if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       this%n_fragments = 0
       this%energy = 0.0_dp
       call this%destroy_base()
@@ -353,7 +379,8 @@ contains
                        this%max_outer, this%outer_tol, this%scf_max_iter, &
                        this%scf_energy_tol, this%scf_density_tol, &
                        this%scf_drive, &
-                       trim(this%bond_breaking), this%cap_scale, this%energy, error)
+                       trim(this%bond_breaking), this%cap_scale, this%energy, error, &
+                       fragment_charges=this%fragment_charges)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -429,6 +456,7 @@ contains
                        this%scf_energy_tol, this%scf_density_tol, &
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
+                       fragment_charges=this%fragment_charges, &
                        comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())
@@ -620,7 +648,6 @@ contains
       !! The role and thread count are logged because "four threads, no
       !! speedup" and "one thread all along" are otherwise indistinguishable.
       use omp_lib, only: omp_set_num_threads, omp_get_max_threads
-      use mqc_method_types, only: needs_serial_execution
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
       class(many_body_expansion_t), intent(inout) :: this

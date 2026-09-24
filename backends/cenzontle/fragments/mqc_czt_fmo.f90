@@ -113,7 +113,7 @@ module mqc_czt_fmo
    use mqc_bond_perception, only: connected_components, find_severed_bonds, severed_bond_t
    use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_hybrid_t, build_afo_model, &
                           bond_hybrid, cuts_outside_group, group_electron_shift, &
-                          build_group_frozen
+                          build_group_frozen, peptide_bond_advice
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 atom_ao_blocks
@@ -186,6 +186,11 @@ module mqc_czt_fmo
          !! neighbour term is a contraction over a whole density matrix and has
          !! no per-atom part to remove, so there is nothing to subtract that
          !! would not be the point-charge approximation under another name.
+      integer, allocatable :: net_charge(:)
+         !! Each fragment's net charge, as the deck declares it for the
+         !! fragment with its cut bonds closed: a lysine residue +1, an
+         !! aspartate -1. The electron a detached bond moves is counted on top
+         !! of it. Unallocated means every fragment is neutral.
       character(len=16) :: cut_nucleus = "auto"
          !! Whether a detached bond's nucleus is split between the two
          !! fragments that describe it, or stays whole with the one that owns
@@ -332,11 +337,12 @@ module mqc_czt_fmo
          !! fragment. Allocated only where the charges themselves are, so
          !! `esp = "none"` leaves it absent.
          !!
-         !! Zero for every fragment wherever a detached bond's nucleus is
-         !! split, and that is the statement worth checking: a Mulliken
-         !! population sums to the nuclear charge less the electron count, so
-         !! a fragment reading non-zero there means its nucleus and its
-         !! electrons were not divided the same way. The system total says
+         !! The declared charge (`net_charge`, zero unless given) for every
+         !! fragment wherever a detached bond's nucleus is split, and that is
+         !! the statement worth checking: a Mulliken population sums to the
+         !! nuclear charge less the electron count, so a fragment reading
+         !! anything else means its nucleus and its electrons were not divided
+         !! the same way. The system total says
          !! nothing about it -- the plus-and-minus-one convention sums to zero
          !! just as neatly -- and neither does the telescoping identity, which
          !! has no field to be wrong about.
@@ -374,6 +380,7 @@ module mqc_czt_fmo
       real(dp) :: energy = 0.0_dp                !! internal, E'
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
+      integer :: charge = 0                      !! declared net charge
       integer :: n_caps = 0
          !! Hydrogen caps closing cut bonds, held at the end of `z`, `sym` and
          !! `xyz` and deliberately absent from `atoms`: a cap answers to no
@@ -540,7 +547,7 @@ contains
       call report_charges(frag, n_frag, n_atoms, res%charges, res%fragment_charge, error)
       if (error%has_error()) return
       if (allocated(res%fragment_charge)) then
-         call log_fragment_charges(res%fragment_charge, &
+         call log_fragment_charges(res%fragment_charge, real(frag%charge, dp), &
                                    .not. afo%active .or. afo%split_nucleus)
       end if
 
@@ -674,6 +681,13 @@ contains
                         "fragment has no atoms")
          return
       end if
+      if (allocated(opts%net_charge)) then
+         if (size(opts%net_charge) /= n_frag) then
+            call error%set(ERROR_VALIDATION, "fmo: "//to_char(size(opts%net_charge))// &
+                           " fragment charges for "//to_char(n_frag)//" fragments")
+            return
+         end if
+      end if
 
       if (opts%bond_breaking == "none") then
          call refuse_severed_bonds(z, coords, owner, n_atoms, error)
@@ -731,7 +745,8 @@ contains
          frag(f)%z = z(frag(f)%atoms)
          frag(f)%sym = symbols(frag(f)%atoms)
          frag(f)%xyz = coords(:, frag(f)%atoms)
-         frag(f)%nelec = sum(frag(f)%z)
+         if (allocated(opts%net_charge)) frag(f)%charge = opts%net_charge(f)
+         frag(f)%nelec = sum(frag(f)%z) - frag(f)%charge
          ! A detached bond moves an electron between the two fragments it
          ! joins. Applied here so the closed-shell check below sees the count
          ! the fragment will actually be solved with -- ethane split into two
@@ -899,7 +914,8 @@ contains
 
       if (spread_over(comm)) call allreduce(comm, status, 3, MPI_SUM)
       if (status(1) /= 0) then
-         call afo_failure(afo%cuts(status(2)), status(1), status(3), local, error)
+         call afo_failure(afo%cuts(status(2)), status(1), status(3), z, coords, &
+                          local, error)
          return
       end if
 
@@ -933,12 +949,14 @@ contains
          call logger%verbose("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
                              "fragment that owns the atom, +1 on the ghost its "// &
                              "neighbour carries there -- so every fragment is a "// &
-                             "neutral closed shell. The field supplies the other half, "// &
+                             "closed shell carrying only its declared charge. The "// &
+                             "field supplies the other half, "// &
                              "and the total is unchanged by the choice.")
       else
          call logger%verbose("  fmo: a detached bond's nucleus is kept whole with the "// &
                              "fragment that owns the atom, so the two sides of a cut "// &
-                             "carry about +1 and -1. Splitting it needs something to "// &
+                             "carry about +1 and -1 beyond their declared charges. "// &
+                             "Splitting it needs something to "// &
                              "supply the other half, and with embedding 'none' there "// &
                              "is no field to do it.")
       end if
@@ -975,34 +993,45 @@ contains
       end select
    end function splits_nucleus
 
-   subroutine afo_failure(cut, kind, n_on_bond, local, error)
+   subroutine afo_failure(cut, kind, n_on_bond, z, coords, local, error)
       !! The same message on every rank, rebuilt from the reduced status
       !!
       !! `local` carries the lead rank's own error text, which exists only on
       !! that rank, so the message is reconstructed from integers every rank has
       !! and the leader's own text is logged where it has any.
+      !!
+      !! `z` and `coords` are the whole system's, and are here only so that a
+      !! cut through a protein backbone can name the bond to cut instead. Every
+      !! rank holds them, so the reconstruction stays rank-independent.
       type(severed_bond_t), intent(in) :: cut
       integer, intent(in) :: kind, n_on_bond
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
       type(error_t), intent(inout) :: local
       type(error_t), intent(inout) :: error
 
-      character(len=:), allocatable :: bond
+      character(len=:), allocatable :: bond, advice
 
       bond = "the bond between atoms "//to_char(cut%atom_a)//" and "// &
-             to_char(cut%atom_b)
+             to_char(cut%atom_b)//" (numbered from one)"
+      advice = peptide_bond_advice(z, coords, cut%atom_a, cut%atom_b)
 
       select case (kind)
       case (1)
          call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
-                        " could not be built")
+                        " could not be built -- it came out with an odd electron "// &
+                        "count, so a cap hydrogen was asked to close a valence "// &
+                        "worth more than one electron pair, or the sphere took in "// &
+                        "a charged group that is not recognised."//advice)
       case (2)
          call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
-                        " could not be solved, so there is no orbital to freeze")
+                        " could not be solved, so there is no orbital to freeze."// &
+                        advice)
       case default
          call error%set(ERROR_VALIDATION, "fmo: "//to_char(n_on_bond)//" localized "// &
                         "orbitals sit on "//bond//", so it is not a single bond. One "// &
                         "frozen orbital stands in for one electron pair; cut at a "// &
-                        "single bond")
+                        "single bond."//advice)
       end select
       if (local%has_error()) then
          call logger%verbose("  fmo: "//trim(local%get_message()))
@@ -1023,8 +1052,9 @@ contains
       !! 11 Hartree when this was tried with caps.
       !!
       !! Where `afo%split_nucleus` is set, each boundary also moves a unit of
-      !! nuclear charge, and `sum(group%nuc_charge)` is then `group%nelec` and
-      !! the group is neutral. The electron moves either way.
+      !! nuclear charge, and `sum(group%nuc_charge)` is then `group%nelec`
+      !! plus the members' declared charges: a neutral group is neutral. The
+      !! electron moves either way.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: members(:)
       type(afo_context_t), intent(in) :: afo
@@ -1089,7 +1119,7 @@ contains
       ! boundary loop below moves a unit of charge across each cut, where the
       ! convention in force says to.
       group%nuc_charge(:group%n_real) = group%z(:group%n_real)
-      group%nelec = sum(group%z(:group%n_real))
+      group%nelec = sum(group%z(:group%n_real)) - sum(frag(members)%charge)
       group%n_bound = n_outside
       allocate (group%bda_slot(max(n_outside, 1)))
       allocate (group%occupied(max(n_outside, 1)))
@@ -1204,6 +1234,15 @@ contains
       !! 0.28 Hartree low.
       !!
       !! The criterion is the one [[mqc_bond_perception]] uses everywhere else.
+      !!
+      !! **What is detected and what is reported are not the same pair.** The
+      !! connected-component test is the robust trigger -- it fires wherever two
+      !! fragments hold pieces of one molecule, however far apart the two atoms
+      !! it happens to name are -- but on a peptide the first such pair is two
+      !! nitrogens six bonds apart, which tells a reader nothing. So the pair
+      !! reported is a directly severed bond where there is one, and there
+      !! always is: a component spanning two fragments has some bond crossing
+      !! between them.
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)
       integer, intent(in) :: owner(:)
@@ -1211,29 +1250,44 @@ contains
       type(error_t), intent(inout) :: error
 
       type(system_geometry_t) :: geom
+      type(severed_bond_t), allocatable :: cuts(:)
       integer, allocatable :: component(:)
-      integer :: n_components, i, j
+      integer :: n_components, n_cuts, i, j, bad_i, bad_j
 
       geom%total_atoms = n_atoms
       allocate (geom%element_numbers(n_atoms), source=z)
       allocate (geom%coordinates(3, n_atoms), source=coords)
       call connected_components(geom, component, n_components)
 
-      ! A covalently connected group spanning two fragments is a severed bond.
-      ! One offending pair is named rather than all of them.
-      do i = 1, n_atoms
+      bad_i = 0
+      bad_j = 0
+      outer: do i = 1, n_atoms
          do j = i + 1, n_atoms
             if (component(i) /= component(j)) cycle
             if (owner(i) == owner(j)) cycle
-            call error%set(ERROR_VALIDATION, "fmo: the partition cuts a covalent "// &
-                           "molecule -- atoms "//to_char(i)//" and "//to_char(j)// &
-                           " are covalently connected but were put in fragments "// &
-                           to_char(owner(i))//" and "//to_char(owner(j))//". This "// &
-                           "method has no way to cap a cut bond, so it cannot answer "// &
-                           "for that partition; fragment on whole molecules")
-            return
+            bad_i = i
+            bad_j = j
+            exit outer
          end do
-      end do
+      end do outer
+      if (bad_i == 0) return
+
+      ! One offending bond is named rather than all of them.
+      call find_severed_bonds(geom, owner, cuts, n_cuts)
+      if (n_cuts > 0) then
+         bad_i = cuts(1)%atom_a
+         bad_j = cuts(1)%atom_b
+      end if
+
+      call error%set(ERROR_VALIDATION, "fmo: the partition cuts a covalent "// &
+                     "molecule -- atoms "//to_char(bad_i)//" and "//to_char(bad_j)// &
+                     " (numbered from one) are covalently connected but were "// &
+                     "put in fragments "//to_char(owner(bad_i))//" and "// &
+                     to_char(owner(bad_j))//". Nothing represents a cut bond here "// &
+                     "unless it is asked to, so either fragment on whole "// &
+                     "molecules or set keywords.fragmentation.bond_breaking to "// &
+                     "'afo', which detaches the bond with a frozen orbital."// &
+                     peptide_bond_advice(z, coords, bad_i, bad_j))
    end subroutine refuse_severed_bonds
 
    function effective_resppc(opts) result(r)
@@ -2023,7 +2077,72 @@ contains
       do t = 1, n_terms
          if (term_size(t) >= 2) res%pair_sum = res%pair_sum + correction(t)
       end do
+
+      call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
    end subroutine calculate_polymers
+
+   subroutine log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
+      !! Every n-mer's term of the expansion, one line each
+      !!
+      !! **What the column is depends on which expansion is running**, and the
+      !! header says which rather than leaving it to be assumed.
+      !!
+      !! On the FMO expansion each term is built from *internal* energies, so
+      !! a pair's is `E'_IJ - E'_I - E'_J` plus that pair's response to the
+      !! field: the pair interaction energy FMO calls an IFIE, and the number a
+      !! protein-ligand analysis is after. It is the same difference MBE's
+      !! `delta_energy` column carries, only between fragments polarized by the
+      !! rest of the system rather than in vacuum.
+      !!
+      !! On the MBE expansion with a field -- EE-MBE -- each term is built from
+      !! *total* embedded energies, and a monomer's already holds its
+      !! electrostatic interaction with every other fragment. The pair term
+      !! therefore carries that interaction back out with the opposite sign and
+      !! is a correction, not an interaction energy. Read it as one and a
+      !! distant ligand pair comes out tens of kcal/mol from nothing. Use the
+      !! FMO expansion for pair analysis; with no field at all the two agree,
+      !! there being nothing to double count.
+      !!
+      !! A pair whose two fragments share a detached bond is not an interaction
+      !! energy under any expansion: the monomers hold a split nucleus and a
+      !! frozen orbital that the pair restores, so the difference carries the
+      !! bond itself.
+      !!
+      !! Printed rather than written to the fragment CSV because this path
+      !! reports one total to the output file and has no per-term row to attach
+      !! it to. Gated at verbose and leader-guarded: the count is `C(N,n)` and
+      !! the numbers are the reduced ones, identical on every rank.
+      integer, intent(in) :: terms(:, :), term_size(:)
+      integer, intent(in) :: n_terms
+      real(dp), intent(in) :: correction(:)
+      type(fmo_options_t), intent(in) :: opts
+      type(comm_t), intent(in), optional :: comm
+
+      character(len=120) :: line
+      character(len=:), allocatable :: members
+      integer :: t, m
+
+      if (.not. is_leader(comm)) return
+
+      if (opts%expansion == "mbe" .and. opts%esp /= "none") then
+         call logger%verbose("  fmo: n-mer terms of the embedded expansion, Hartree "// &
+                             "-- corrections, not interaction energies: a monomer's "// &
+                             "own energy already holds its electrostatics with every "// &
+                             "other fragment")
+      else
+         call logger%verbose("  fmo: n-mer interaction energies, Hartree")
+      end if
+      call logger%verbose("  fmo:   fragments                     dE")
+      do t = 1, n_terms
+         if (term_size(t) < 2) cycle
+         members = to_char(terms(1, t))
+         do m = 2, term_size(t)
+            members = members//"-"//to_char(terms(m, t))
+         end do
+         write (line, "(a,a20,f24.12)") "  fmo: ", adjustl(members), correction(t)
+         call logger%verbose(trim(line))
+      end do
+   end subroutine log_interaction_table
 
    function spread_over(comm) result(many)
       !! Whether there is more than one rank to spread over
@@ -2298,17 +2417,20 @@ contains
       end do
    end subroutine report_charges
 
-   subroutine log_fragment_charges(fragment_charge, expect_neutral)
-      !! Say what each fragment was left carrying, and complain if it should be zero
+   subroutine log_fragment_charges(fragment_charge, declared, expect_declared)
+      !! Say what each fragment was left carrying, and complain if it should not
       !!
-      !! A fragment at a detached bond is neutral when the bond's nucleus was
-      !! split the same way its electron pair was, and carries about plus or
-      !! minus one when it was not. Both are deliberate and `splits_nucleus`
-      !! says which was asked for; what is worth a warning is the first one
-      !! failing to come out, because a stray monopole is invisible in the
-      !! total and lands in whatever is built from the fragment afterwards.
+      !! A fragment at a detached bond carries its declared charge when the
+      !! bond's nucleus was split the same way its electron pair was, and about
+      !! plus or minus one more when it was not. Both are deliberate and
+      !! `splits_nucleus` says which was asked for; what is worth a warning is
+      !! the first one failing to come out, because a stray monopole is
+      !! invisible in the total and lands in whatever is built from the
+      !! fragment afterwards.
       real(dp), intent(in) :: fragment_charge(:)
-      logical, intent(in) :: expect_neutral
+      real(dp), intent(in) :: declared(:)
+         !! What the deck said each fragment carries; zero unless it said
+      logical, intent(in) :: expect_declared
          !! True where the run split its nuclei, or has no cut bonds at all.
 
       character(len=100) :: line
@@ -2319,10 +2441,11 @@ contains
             fragment_charge(f)
          call logger%verbose(trim(line))
       end do
-      if (.not. expect_neutral) return
-      if (maxval(abs(fragment_charge)) > FRAGMENT_NEUTRALITY_TOL) then
-         write (line, "(a,f12.8)") "  fmo: a fragment is not neutral -- the largest net "// &
-            "charge is ", maxval(abs(fragment_charge))
+      if (.not. expect_declared) return
+      if (maxval(abs(fragment_charge - declared)) > FRAGMENT_NEUTRALITY_TOL) then
+         write (line, "(a,f12.8)") "  fmo: a fragment does not carry the charge it "// &
+            "was declared with -- the largest difference is ", &
+            maxval(abs(fragment_charge - declared))
          call logger%warning(trim(line))
       end if
    end subroutine log_fragment_charges

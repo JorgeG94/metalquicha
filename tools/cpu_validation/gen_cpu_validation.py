@@ -503,6 +503,11 @@ HAND_MAINTAINED = {
     # both C-C bonds, expanded to its fragment count, has to reproduce the
     # unfragmented energy however the bonds were detached. It does, to 1.2e-12.
     "cpu/mqc/fmo/afo3_propane.json",
+    # And the same identity on a protein backbone: a glycine tripeptide cut at
+    # both C-alpha--C(=O) bonds, which is where FMO cuts a protein, over a
+    # point-charge field. The peptide bonds stay whole -- an amide C-N carries
+    # two localized orbitals and is refused by name.
+    "cpu/mqc/fmo/afo3_gly3.json",
     # driver "InteractionEnergy". A reduced expansion's own number, pinned
     # against the ordinary expansion's: the reference in each manifest entry
     # is the sum of the per-term corrections holding the reference fragment,
@@ -3132,6 +3137,23 @@ PRESERVED_TESTS = [
         "input": "inputs/cpu/mqc/efp/water_f_dimer_efp.json",
         "expected_energy": -0.0022505226,
         "type": "unfragmented",
+    },
+    # FMO over a peptide backbone with two detached bonds, expanded to its
+    # fragment count. Declared here rather than left to the read-back because it
+    # carries a key the sweep cannot produce: `timeout`. The deck is 65 s in a
+    # release build and 1140 s in the Coverage-mqc one at the one thread
+    # run_validation.py gives every deck, most of it the monomer self-consistency
+    # a point-charge field needs; the default 300 s killed it. Its reference is
+    # an identity, so a cheaper deck would pin less -- without the field there is
+    # no split nucleus and no own-charge subtraction, and even then it is 362 s.
+    {
+        "name": "AFO glycine tripeptide sto-3g cut at both C-alpha--C, exact at full level (CPU)",
+        "input": "inputs/cpu/mqc/fmo/afo3_gly3.json",
+        "expected_energy": -687.343081551242,
+        "tolerance": 1.0e-8,
+        "type": "fragmented",
+        "timeout": 2400,
+        "reference_note": "the unfragmented RHF/STO-3G energy of the same geometry, which an expansion carried to its fragment count has to reproduce whatever the partition did; this run lands 6.9e-11 away. A protein backbone rather than propane, so what it pins is the peptide case specifically: the model system around a C-alpha--C(=O) cut takes the neighbouring carbonyl oxygen whole instead of capping it -- a cap hydrogen closes one electron pair and that oxygen is held by two, so capping it made every backbone model a radical and the run was refused outright. Point charges, not an exact field, because a frozen orbital and an exact density both describe the bond region. The peptide bond itself is deliberately left whole: it carries two localized orbitals and is refused by name.",
     },
     # driver "InteractionEnergy", which writes no total_energy: the manifest
     # names the number it does pin, and run_validation.py compares that

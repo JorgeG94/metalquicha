@@ -210,8 +210,20 @@ How a bond is detached
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Each cut bond gets a small **model system** -- both its atoms, everything within
-a radius of either, every hydrogen hanging off what that took, and a hydrogen cap
-for each bond leaving the set at the standard length for the atom it hangs off.
+a radius of either, every *singly bonded* atom hanging off what that took, and a
+hydrogen cap for each bond leaving the set at the standard length for the atom it
+hangs off.
+
+A singly bonded neighbour comes in wholesale rather than by distance so that one
+just outside the radius is not swapped for a cap hydrogen a few hundredths of an
+Angstrom away, which is a discontinuity in anything that moves the geometry. For
+a heavy one -- a carbonyl oxygen, above all -- there is a second reason: a cap
+hydrogen closes exactly one electron pair, a carbonyl oxygen is held by two, and
+capping it leaves the model a radical. Bond perception here is distance-based and
+cannot report a bond order, so the order is not guessed and the atom comes in
+whole instead. Without that rule every backbone cut of a peptide failed, amide
+and C-alpha--C alike, because the sphere reaches a neighbouring carbonyl carbon
+without reaching its oxygen.
 That is solved, localized, and the orbital sitting on the bond is kept, reduced
 to the coefficients on the bond-detached atom. Expressing it there is what makes
 it transferable: those functions exist unchanged in any fragment containing that
@@ -366,7 +378,11 @@ Restrictions
 ~~~~~~~~~~~~
 
 ``bond_breaking = "afo"`` runs with ``embedding = "none"`` and with
-``embedding = "ptc"``. It is refused with ``embedding = "exact"``. A frozen
+``embedding = "ptc"``.  ``embedding`` is read straight through as the field,
+whichever ``method`` was named, so ``"fmo"`` with ``"ptc"`` is FMO's own
+expansion over a point-charge field and is the pairing a detached bond runs in.
+A spelling that is none of ``"exact"``, ``"ptc"`` or ``"none"`` is refused; it
+used to pass validation and change nothing. It is refused with ``embedding = "exact"``. A frozen
 orbital and an embedding field both describe the bond region, so the detached
 atom's share has to come out of the field before the two can be used together.
 With point charges that share is one number per atom -- the population that put
@@ -380,6 +396,67 @@ Refused by name, rather than answered badly:
 * a cut through a ring, where two fragments meet in more than one place
 * a bond detached at a hydrogen, which has nothing left to hybridise
 * a bond carrying more than one localized orbital, which is not a single bond
+* a model system that comes out with an odd electron count, which means a cap
+  hydrogen was asked to close a valence worth more than one pair
+
+Where the refused bond is a backbone amide, the message names the
+C-alpha--C(=O) bond to cut instead, by atom index.
+
+.. _protein-backbone:
+
+Cutting a protein backbone
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Cut the C-alpha--C(=O) bond, not the peptide bond.** This is FMO's convention
+for proteins and it is not a matter of taste here: the amide C--N is conjugated
+with the carbonyl, Boys localization puts two orbitals on it, and it is refused
+by name as "not a single bond". The C-alpha--C(=O) bond one place along is a
+nonpolar single bond outside that conjugation, and it is accepted.
+
+So a fragment is one residue's carbonyl together with the *next* residue's
+amine and C-alpha, and the peptide bond stays whole inside it. For the glycine
+tripeptide in ``sample_inputs``, with atoms numbered from zero as a deck numbers
+them:
+
+.. code-block:: json
+
+   "fragments": [
+     [0, 1, 4, 5, 6, 7],
+     [2, 3, 8, 9, 12, 13, 14],
+     [10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+   ]
+
+No ``connectivity`` is needed -- cut bonds are perceived from the geometry, not
+declared. Error messages number atoms from **one**, so the bond reported as
+"atoms 10 and 11" is the one between the deck's atoms 9 and 10.
+
+**Charged residues are declared.** ``fragment_charges`` gives each fragment's net
+charge as it would be with its cut bonds closed -- +1 for a lysine or arginine,
+-1 for an aspartate or glutamate, the termini wherever they fall -- and the
+charges have to add up to ``molecular_charge``, or the deck is refused. The
+electron a detached bond moves is counted on top. A charged system that gives no
+``fragment_charges`` is refused too: every fragment would be solved neutral.
+
+The model system around a cut is closed with neutral caps, so any charge it
+holds is a group it took in whole. An ammonium (a nitrogen with four
+neighbours), a guanidinium (a carbon between three such nitrogens) and a
+carboxylate (a carbon with two terminal oxygens) are recognised and counted --
+the first C-alpha--C(=O) cut of a protein takes the N-terminal ammonium in, and
+without that the model was a radical and the cut was refused. Any other charged
+group in a model sphere still is, with a message that says so.
+
+The field has to be point charges: ``"embedding": "ptc"`` alongside
+``"bond_breaking": "afo"``. An exact field is refused with a detached bond for
+the reason above, and no field at all leaves each side of a cut carrying about
+plus or minus one elementary charge, which on a protein puts a spurious ``1/R``
+monopole on every adjacent-residue pair.
+
+Per-pair interaction energies -- the numbers a protein-ligand analysis is for --
+are printed at ``"logger": {"level": "verbose"}``, one line per n-mer, under
+``fmo: n-mer interaction energies``. For a pair that number is
+``E'_IJ - E'_I - E'_J``, the same difference MBE's ``delta_energy`` column
+carries, but between fragments polarized by the rest of the system rather than
+in vacuum. This path writes one total to the output file and no fragment CSV.
 
 Limits
 ------
@@ -388,6 +465,11 @@ Limits
 than quietly paired up. A detached bond moves an electron between the two
 fragments it joins, and the count checked here is the one after that move: ethane
 split into two methyls is 9 and 9 before it and 8 and 10 after.
+
+**Hartree-Fock only, for now.** Every fragment and n-mer is solved with
+restricted Hartree-Fock; other methods are not yet wired into these fragment
+calculations, and any other ``model.method`` is refused by name. It used to be
+ignored: a B3LYP deck ran as Hartree-Fock and reported that total.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.
