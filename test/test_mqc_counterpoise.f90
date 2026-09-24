@@ -18,7 +18,8 @@ module test_mqc_counterpoise
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices
-   use mqc_combinatorics, only: vmfc_subset_key, is_auxiliary_row, real_count_of
+   use mqc_combinatorics, only: vmfc_subset_key, vmfc_row_subset_key, is_auxiliary_row, &
+                                real_count_of
    use mqc_error, only: error_t
    use pic_io, only: to_char
    implicit none
@@ -53,6 +54,7 @@ contains
                   new_unittest("a_signed_index_ghosts_its_monomer", test_signed_indices), &
                   new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity), &
                   new_unittest("the_subset_key_ghosts_the_complement", test_subset_key), &
+                  new_unittest("a_ghosted_row_keeps_its_ghosts", test_row_subset_key), &
                   new_unittest("an_auxiliary_row_is_never_summed", test_auxiliary), &
                   new_unittest("bsse_shrinks_as_the_monomers_separate", test_bsse_decays) &
                   ]
@@ -459,6 +461,45 @@ contains
       call check(error, all(key(1:2) > 0), &
                  "choosing everything should ghost nothing")
    end subroutine test_subset_key
+
+   subroutine test_row_subset_key(error)
+      !! A row that is itself ghosted passes its ghosts on to its subsets
+      !!
+      !! `[1,2,-3]` is the pair 12 in the basis of 123. Its subsets are what
+      !! Valiron-Mayer subtracts inside the trimer's correction, and they are in
+      !! the trimer's basis too: `[1,-2,-3]`, not `[1,-2]`. Dropping the `-3` is
+      !! the defect this key exists to prevent -- it looks up monomer 1 in the
+      !! pair's basis, a real row with a real energy, so nothing fails and
+      !! VMFC(3) comes out wrong.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: key(3)
+      integer :: key_len
+
+      call vmfc_row_subset_key([1, 2, -3], [1], 1, key, key_len)
+      call check(error, key_len, 3, "the key should span the whole trimer")
+      if (allocated(error)) return
+      call check(error, key(1), 1, "the chosen monomer should stay real")
+      if (allocated(error)) return
+      call check(error, all(key(2:3) == [-2, -3]), &
+                 "the other real monomer should be ghosted and the row's ghost kept")
+      if (allocated(error)) return
+
+      ! Ghost first, and zero-padded: position counts real monomers only.
+      call vmfc_row_subset_key([-1, 3, 2], [2], 1, key, key_len)
+      call check(error, key_len, 3, "a leading ghost is still part of the row")
+      if (allocated(error)) return
+      call check(error, key(1), 2, "the second real monomer is 2, wherever the ghost sits")
+      if (allocated(error)) return
+      call check(error, all(key(2:3) == [-3, -1]), "3 ghosted, -1 kept")
+      if (allocated(error)) return
+
+      ! An unghosted row gives what vmfc_subset_key gives.
+      call vmfc_row_subset_key([1, 2, 0], [2], 1, key, key_len)
+      call check(error, key_len, 2, "padding is not a monomer")
+      if (allocated(error)) return
+      call check(error, all(key(1:2) == [2, -1]), "the plain pair rule")
+   end subroutine test_row_subset_key
 
    subroutine test_auxiliary(error)
       !! A ghosted row is auxiliary, and its size is its real monomers

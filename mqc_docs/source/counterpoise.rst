@@ -52,20 +52,20 @@ Term         Uncorrected (Ha)   VMFC (Ha)          Difference
 ===========  =================  =================  ==================
 1-body       -227.9519233972    -227.9519233972    none, by definition
 2-body         -0.0178176735      -0.0145142064    2.07 kcal/mol
-3-body         -0.0007565683      +0.0026639427    2.15 kcal/mol
-Total        -227.9704976390    -227.9637736609    4.22 kcal/mol
+3-body         -0.0007565683      -0.0006102466    0.09 kcal/mol
+Total        -227.9704976390    -227.9670478502    2.16 kcal/mol
 ===========  =================  =================  ==================
 
-Two things in that table are the argument for the correction. The uncorrected
-total, ``-227.9704976390``, is exactly the supermolecular energy -- an MBE at
-level ``N`` over ``N`` fragments is exact, and this one is exact to every digit
+Two things in that table are worth reading. The uncorrected total,
+``-227.9704976390``, is exactly the supermolecular energy -- an MBE at level
+``N`` over ``N`` fragments is exact, and this one is exact to every digit
 printed, which is how you know the expansion itself is right and the difference
-is entirely superposition error. And the **3-body term changes sign**. The
-uncorrected three-body contribution is small -- half a kcal/mol -- while the
-superposition error at that order is four times larger, so for this system a
-many-body analysis reading the uncorrected numbers gets the wrong sign for the
-non-additive part of the binding. The correction is not only a shift in the
-total; it can change what the decomposition says.
+is entirely superposition error. And the error is not spread evenly: nearly all
+of it, 2.07 of 2.16 kcal/mol, sits in the two-body term. The three-body term
+moves by 0.09 kcal/mol, a fifth of its own size, and keeps its sign. That is
+what Valiron--Mayer is built to do: every subset a trimer subtracts is computed
+in the trimer's own basis, so the three-body correction subtracts like from
+like.
 
 The one-body term is untouched on purpose. Each monomer keeps its own basis
 there, because that is the reference the interaction energy is measured *from*.

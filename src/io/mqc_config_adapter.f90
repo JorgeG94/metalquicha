@@ -961,21 +961,6 @@ contains
       case default
       end select
 
-      ! Counterpoise composes at level 2: every ghosted row a pair's correction
-      ! subtracts is built from that pair, which the reduced list keeps. Above
-      ! level 2 the counterpoise recursion itself is off -- see the TODO in
-      ! `compute_mbe_delta` -- and the interaction energy would inherit it.
-      if (trim(driver_config%counterpoise) == "vmfc" .and. driver_config%nlevel > 2) then
-         call error%set(ERROR_VALIDATION, DRIVER//" with keywords.fragmentation."// &
-                        "counterpoise 'vmfc' is limited to level 2. Above it, the "// &
-                        "counterpoise recursion subtracts a ghosted subset's own subsets "// &
-                        "in that subset's basis rather than its parent's, which is not the "// &
-                        "Valiron-Mayer expression and moves a water trimer's VMFC(3) energy "// &
-                        "by 4.3e-3 hartree; the interaction terms would carry the same "// &
-                        "error. Use level 2, or drop counterpoise.")
-         return
-      end if
-
       if (driver_config%method_config%neo%active) then
          call error%set(ERROR_VALIDATION, DRIVER//" is not available with keywords.neo. "// &
                         "A quantum proton is solved with every electron of the "// &

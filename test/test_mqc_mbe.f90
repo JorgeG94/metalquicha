@@ -21,6 +21,7 @@ contains
                   new_unittest("mbe_monomers_only", test_mbe_monomers_only), &
                   new_unittest("interaction_energy_matches_full_expansion", test_interaction_energy), &
                   new_unittest("vmfc_dipole_excludes_ghosted_rows", test_vmfc_dipole), &
+                  new_unittest("vmfc3_is_valiron_mayer", test_vmfc3), &
                   new_unittest("mbe_simple_dimer", test_mbe_simple_dimer), &
                   new_unittest("mbe_sorted_order", test_mbe_sorted_order), &
                   new_unittest("mbe_reverse_order", test_mbe_reverse_order), &
@@ -153,6 +154,87 @@ contains
       end do
       if (count(row /= 0) == 3) e = e + 1.0e-3_dp*real(product(row, mask=row /= 0), dp)
    end function made_up_energy
+
+   subroutine test_vmfc3(error)
+      !! VMFC(3) over three monomers is the Valiron-Mayer expression
+      !!
+      !! Every term's increment is the alternating sum of its subsets' energies,
+      !! all in that term's basis:
+      !!
+      !!     E = sum_i E_i(i) + sum_ij [E_ij - E_i(ij) - E_j(ij)]
+      !!       + E_123 - sum_ij E_ij(123) + sum_i E_i(123)
+      !!
+      !! Nineteen rows with energies that are not additive in anything. The
+      !! pair-in-trimer rows such as [1,2,-3] are where the recursion used to
+      !! go wrong: it subtracted monomer 1 in the pair's basis, [1,-2], rather
+      !! than in the trimer's, [1,-2,-3]. That is a real row, so nothing
+      !! failed; the total was just not this one. The dipole takes the same
+      !! recursion and is checked against the same expression.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: fragment_count
+      integer :: i
+      real(dp) :: expected
+
+      fragment_count = 19
+      allocate (polymers(fragment_count, 3), results(fragment_count))
+      ! Ordered by real-monomer count, so every subset precedes its parent.
+      polymers(1, :) = [1, 0, 0]
+      polymers(2, :) = [2, 0, 0]
+      polymers(3, :) = [3, 0, 0]
+      polymers(4, :) = [1, -2, 0]
+      polymers(5, :) = [2, -1, 0]
+      polymers(6, :) = [1, -3, 0]
+      polymers(7, :) = [3, -1, 0]
+      polymers(8, :) = [2, -3, 0]
+      polymers(9, :) = [3, -2, 0]
+      polymers(10, :) = [1, -2, -3]
+      polymers(11, :) = [2, -1, -3]
+      polymers(12, :) = [3, -1, -2]
+      polymers(13, :) = [1, 2, 0]
+      polymers(14, :) = [1, 3, 0]
+      polymers(15, :) = [2, 3, 0]
+      polymers(16, :) = [1, 2, -3]
+      polymers(17, :) = [1, 3, -2]
+      polymers(18, :) = [2, 3, -1]
+      polymers(19, :) = [1, 2, 3]
+
+      do i = 1, int(fragment_count)
+         results(i)%has_energy = .true.
+         results(i)%energy%scf = -10.0_dp*count(polymers(i, :) > 0) &
+                                 - 0.001_dp*real(i, dp)**2 - 0.0003_dp*real(i, dp)
+         allocate (results(i)%dipole(3))
+         results(i)%dipole = [results(i)%energy%scf, 0.0_dp, 0.0_dp]
+         results(i)%has_dipole = .true.
+      end do
+      allocate (mbe_result%dipole(3))
+      mbe_result%dipole = 0.0_dp
+
+      call compute_mbe(polymers, fragment_count, 3, results, mbe_result)
+
+      expected = e(1) + e(2) + e(3) &
+                 + (e(13) - e(4) - e(5)) + (e(14) - e(6) - e(7)) + (e(15) - e(8) - e(9)) &
+                 + e(19) - e(16) - e(17) - e(18) + e(10) + e(11) + e(12)
+      call check(error, mbe_result%total_energy, expected, thr=1.0e-12_dp, &
+                 message="VMFC(3) is not the Valiron-Mayer expression; a ghosted row's "// &
+                 "subsets were looked up outside its basis")
+      if (allocated(error)) return
+      call check(error, mbe_result%dipole(1), expected, thr=1.0e-12_dp, &
+                 message="the VMFC(3) dipole does not follow the same expression")
+
+   contains
+
+      pure function e(row) result(energy)
+         integer, intent(in) :: row
+         real(dp) :: energy
+
+         energy = results(row)%energy%scf
+      end function e
+
+   end subroutine test_vmfc3
 
    subroutine test_vmfc_dipole(error)
       !! The counterpoise dipole uses the ghosted rows without summing them
