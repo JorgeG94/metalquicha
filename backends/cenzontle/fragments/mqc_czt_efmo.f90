@@ -314,6 +314,11 @@ module mqc_czt_efmo
          !! cost. Equal to `n_qm_pairs` at level two.
       integer :: n_cuts = 0
          !! Covalent bonds the partition detached, each with a frozen orbital
+      real(dp), allocatable :: potential_charge(:)
+         !! Each fragment's potential summed, nuclear and electronic monopoles
+         !! together. Equal to the deck's fragment charge to SCF convergence,
+         !! across a detached bond included: that is what splitting the
+         !! nucleus buys, and what the far pairs need.
    end type efmo_result_t
 
 contains
@@ -386,7 +391,8 @@ contains
       type(efmo_options_t) :: run_opts
          !! `opts` with the induction damping a detached bond needs, when the
          !! deck left it at zero; see `COVALENT_INDUCTION_DAMPING`
-      real(dp), allocatable :: decide(:, :)
+      real(dp), allocatable :: decide(:, :), centre_xyz(:, :)
+      integer, allocatable :: centre_owner(:), centre_z(:)
       type(timing_report_t) :: clk
          !! Where an EFMO run's wall time goes, stage by stage. The paper's Fig
          !! 7 makes the same split and the claim it supports -- that the
@@ -478,18 +484,30 @@ contains
       if (error%has_error()) return
       res%monomer_sum = sum(res%monomer_energy)
       res%monomer_correlation = sum(monomer_corr)
+      allocate (res%potential_charge(n_frag))
+      do k = 1, n_frag
+         res%potential_charge(k) = frags(k)%net_charge()
+      end do
 
       ! One matrix of separations decides both halves: which pairs are far, and
       ! which groups are near enough to be solved quantum mechanically.
       call efmo_split_pairs(owner, atomic_numbers, coordinates, opts%rcut, &
                             qm_pairs, efp_pairs, error, r=separation)
       if (error%has_error()) return
-      ! A covalently joined pair is quantum whatever its separation: its bond
-      ! is whole only inside the dimer, and two fragments sharing a centre
-      ! have no classical interaction to speak of. `decide` is what the split
-      ! is made on; `separation` stays the measured distance, for the report.
       decide = separation
-      if (afo%active) call force_joined_near(afo, opts%rcut, decide, qm_pairs, efp_pairs)
+      if (afo%active) then
+         ! With cuts the split is decided over every centre a fragment's
+         ! potential has, so a ghost counts where it sits -- it carries a
+         ! charge and a bond pair there -- and a covalently joined pair is
+         ! quantum whatever its separation. `separation` stays the distance
+         ! between the fragments' own atoms, which is what the report shows.
+         call with_ghosts(afo, owner, atomic_numbers, coordinates, centre_owner, &
+                          centre_z, centre_xyz)
+         call efmo_split_pairs(centre_owner, centre_z, centre_xyz, opts%rcut, &
+                               qm_pairs, efp_pairs, error, r=decide)
+         if (error%has_error()) return
+         call force_joined_near(afo, opts%rcut, decide, qm_pairs, efp_pairs)
+      end if
       res%n_qm_pairs = size(qm_pairs, 2)
       res%n_efp_pairs = size(efp_pairs, 2)
       allocate (res%pairs(res%n_qm_pairs + res%n_efp_pairs))
@@ -922,27 +940,77 @@ contains
       call mol%destroy()
    end subroutine cut_projector
 
+   subroutine with_ghosts(afo, owner, z, xyz, centre_owner, centre_z, centre_xyz)
+      !! The system's atoms, then one centre per ghost, each with its holder
+      !!
+      !! A fragment holding the attached end of a cut carries the detached
+      !! atom's functions, a `+1` and the bond pair at that atom's position, so
+      !! for the separation that decides quantum against effective the ghost is
+      !! one of its centres. One per holder and atom, as `assemble_group` makes
+      !! them; a repeat changes no minimum and is not filtered.
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: owner(:), z(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, allocatable, intent(out) :: centre_owner(:), centre_z(:)
+      real(dp), allocatable, intent(out) :: centre_xyz(:, :)
+
+      integer :: n, c
+
+      n = size(owner)
+      allocate (centre_owner(n + afo%n_cuts), centre_z(n + afo%n_cuts))
+      allocate (centre_xyz(3, n + afo%n_cuts))
+      centre_owner(:n) = owner
+      centre_z(:n) = z
+      centre_xyz(:, :n) = xyz
+      do c = 1, afo%n_cuts
+         centre_owner(n + c) = afo%cuts(c)%frag_b
+         centre_z(n + c) = z(afo%cuts(c)%atom_a)
+         centre_xyz(:, n + c) = xyz(:, afo%cuts(c)%atom_a)
+      end do
+   end subroutine with_ghosts
+
    subroutine force_joined_near(afo, rcut, decide, qm_pairs, efp_pairs)
       !! Make every covalently joined pair quantum, and redo the split
       !!
-      !! Joined means a cut bond runs between the two, or both carry a ghost of
-      !! the same detached atom. Either way the pair shares a centre: its bond
-      !! is only whole inside the dimer, and two potentials with a charge at
-      !! one point have no multipole interaction at all. So no cutoff may make
-      !! such a pair effective.
+      !! Joined means the two fragments hold centres at one atom of a cut bond,
+      !! or at that atom and a neighbour it is bonded to: its owner, the
+      !! fragment across each cut it takes part in, and whoever carries a
+      !! ghost of it. A cut between two fragments is the plain case; two
+      !! fragments that both ghost one detached atom share a centre; and a
+      !! fragment ghosting an atom sits a bond length from every other
+      !! fragment that atom is bonded to. No multipole expansion describes a
+      !! pair that close -- on propane in three pieces the two ends, joined
+      !! through a ghost of the middle carbon, come out at -0.34 Hartree
+      !! effective against +0.27 quantum -- so no cutoff may make one
+      !! effective. Along a peptide backbone cut at C-alpha--C this joins
+      !! exactly the neighbouring residues.
       type(afo_context_t), intent(in) :: afo
       real(dp), intent(in) :: rcut
       real(dp), intent(inout) :: decide(:, :)
       integer, allocatable, intent(inout) :: qm_pairs(:, :), efp_pairs(:, :)
 
-      integer :: c, d, i, j, n, n_qm, n_efp
+      integer, allocatable :: touching(:)
+      integer :: c, d, i, j, n, n_qm, n_efp, atom, n_touch, k
 
+      allocate (touching(2*afo%n_cuts))
       do c = 1, afo%n_cuts
-         call join(afo%cuts(c)%frag_a, afo%cuts(c)%frag_b)
-         do d = c + 1, afo%n_cuts
-            if (afo%cuts(d)%atom_a == afo%cuts(c)%atom_a) then
-               call join(afo%cuts(c)%frag_b, afo%cuts(d)%frag_b)
-            end if
+         do k = 1, 2
+            atom = afo%cuts(c)%atom_a
+            if (k == 2) atom = afo%cuts(c)%atom_b
+            ! Every fragment on either side of any cut this atom takes part in:
+            ! its owner, each neighbour across a cut, and so every ghost holder.
+            n_touch = 0
+            do d = 1, afo%n_cuts
+               if (afo%cuts(d)%atom_a /= atom .and. afo%cuts(d)%atom_b /= atom) cycle
+               n_touch = n_touch + 2
+               touching(n_touch - 1) = afo%cuts(d)%frag_a
+               touching(n_touch) = afo%cuts(d)%frag_b
+            end do
+            do i = 1, n_touch - 1
+               do j = i + 1, n_touch
+                  call join(touching(i), touching(j))
+               end do
+            end do
          end do
       end do
 

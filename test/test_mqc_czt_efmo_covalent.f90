@@ -27,7 +27,8 @@ module test_mqc_czt_efmo_covalent
    !! and the reference here are the same basis.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, EFMO_CORR_MP2
+   use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, EFMO_CORR_MP2, &
+                           efmo_pair_contribution
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -65,6 +66,9 @@ contains
                                test_methylcyclopropane), &
                   new_unittest("efmo_afo_joined_pairs_are_quantum_at_any_cutoff", &
                                test_joined_pairs_quantum), &
+                  new_unittest("efmo_afo_cut_potentials_are_neutral", test_neutral), &
+                  new_unittest("efmo_afo_far_water_pair_against_the_quantum_pair", &
+                               test_far_water), &
                   new_unittest("efmo_afo_correlation_is_refused", test_refuse_mp2) &
                   ]
    end subroutine collect_mqc_czt_efmo_covalent_tests
@@ -177,21 +181,179 @@ contains
                  message="a bonded pair made quantum by rule is not the molecule")
       if (allocated(error)) return
 
-      ! Three fragments: the two bonded pairs quantum, the ends effective.
+      ! Three fragments. The ends are not bonded to each other, but the third
+      ! carries a ghost of the middle carbon, a bond length from the first
+      ! carbon: joined, so quantum too. Effective, that pair came out at -0.34
+      ! Hartree against +0.27 quantum.
       call run_efmo(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], [0, 0, 0], opts, res, &
                     err)
       call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
       if (allocated(error)) return
-      call check(error, res%n_qm_pairs, 2, message="the two bonded pairs are not quantum")
+      call check(error, res%n_qm_pairs, 3, message="a joined pair of propane is not quantum")
       if (allocated(error)) return
-      call check(error, res%n_efp_pairs, 1, message="the end pair is not effective")
-      if (allocated(error)) return
-      write (*, *) "   three fragments at R_cut 0.1: EFMO - RHF =", res%energy - whole
-      write (*, *) "   end pair: es, disp, exrep, ct =", res%far_electrostatics, &
-         res%far_dispersion, res%far_exchange_repulsion, res%far_charge_transfer
-      call check(error, abs(res%energy - whole) < 0.5_dp, &
-                 "three fragments with the end pair effective is not even near the molecule")
+
+      ! Butane in four: the first and last share no centre and no bond, so
+      ! that one pair alone is effective; its two numbers are reported.
+      pair_one_four: block
+         integer :: zb(14)
+         character(len=2) :: sb(14)
+         real(dp) :: xb(3, 14), efp_value, qm_value
+         call butane(zb, sb, xb)
+         call run_efmo(zb, sb, xb, [1, 2, 3, 4, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4], [0, 0, 0, 0], &
+                       opts, res, err)
+         call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+         if (allocated(error)) return
+         call check(error, res%n_qm_pairs, 5, message="butane's joined pairs are not quantum")
+         if (allocated(error)) return
+         call check(error, res%n_efp_pairs, 1, message="butane's end pair is not effective")
+         if (allocated(error)) return
+         call far_and_near(zb, sb, xb, [1, 2, 3, 4, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4], [1, 4], &
+                           "afo", efp_value, qm_value, err)
+         call check(error,.not. err%has_error(), "the end pair failed: "// &
+                    err%get_full_trace())
+         if (allocated(error)) return
+         write (*, *) "   butane end pair (1,4): efp", efp_value, " qm", qm_value
+      end block pair_one_four
    end subroutine test_joined_pairs_quantum
+
+   subroutine test_neutral(error)
+      !! Every fragment's potential sums to the charge it was given
+      !!
+      !! Propane in three pieces, so the middle fragment both owns a detached
+      !! atom (`Z-1`, hybrid empty) and carries a ghost of another (`+1`,
+      !! hybrid full). With whole nuclei the two ends would be at +1 and -1
+      !! and the middle at zero only by cancellation.
+      type(error_type), allocatable, intent(out) :: error
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      type(error_t) :: err
+      integer :: z(11), k
+      character(len=2) :: sym(11)
+      real(dp) :: xyz(3, 11)
+
+      call propane(z, sym, xyz)
+      call settings(opts)
+      opts%level = 1
+      call run_efmo(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], [0, 0, 0], opts, res, &
+                    err)
+      call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, *) "   potential charges =", res%potential_charge
+      do k = 1, 3
+         call check(error, abs(res%potential_charge(k)) < 1.0e-6_dp, &
+                    "a cut fragment's potential is not neutral")
+         if (allocated(error)) return
+      end do
+   end subroutine test_neutral
+
+   subroutine test_far_water(error)
+      !! A water beyond the cutoff, against a cut fragment and against the same
+      !! molecule uncut
+      !!
+      !! Each far pair's four effective-fragment terms are compared with the
+      !! same pair solved as a quantum dimer, `E_IJ^0 - E_I^0 - E_J^0 -
+      !! E_IJ^pol`, which is what the pair contributes when it is near. The
+      !! uncut molecule is the baseline: the effective-fragment approximation
+      !! has an error of its own there, and what a cut must not do is make it
+      !! materially worse.
+      type(error_type), allocatable, intent(out) :: error
+      integer :: z(14), k
+      character(len=2) :: sym(14)
+      real(dp) :: xyz(3, 14), gap(3), efp_w, qm_w, efp_c, qm_c, worst_whole, worst_cut
+      real(dp), parameter :: SEPARATION(3) = [3.5_dp, 4.5_dp, 6.0_dp]
+      type(error_t) :: err
+
+      worst_whole = 0.0_dp
+      worst_cut = 0.0_dp
+      do k = 1, size(SEPARATION)
+         call propane_water(SEPARATION(k), z, sym, xyz)
+         ! Uncut: propane is fragment 1, the water fragment 2.
+         call far_and_near(z, sym, xyz, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2], &
+                           [1, 2], "none", efp_w, qm_w, err)
+         call check(error,.not. err%has_error(), "uncut run failed: "// &
+                    err%get_full_trace())
+         if (allocated(error)) return
+         ! Cut: the methyl facing the water is fragment 1, the ethyl 2.
+         call far_and_near(z, sym, xyz, [1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                           [1, 3], "afo", efp_c, qm_c, err)
+         call check(error,.not. err%has_error(), "cut run failed: "// &
+                    err%get_full_trace())
+         if (allocated(error)) return
+         gap = [efp_w - qm_w, efp_c - qm_c, 0.0_dp]
+         write (*, "(a,f5.2,a,4es13.4,a,2es11.3)") "   water at ", SEPARATION(k), &
+            " A: whole efp/qm, cut efp/qm =", efp_w, qm_w, efp_c, qm_c, &
+            "  errors whole, cut:", gap(1), gap(2)
+         worst_whole = max(worst_whole, abs(gap(1)))
+         worst_cut = max(worst_cut, abs(gap(2)))
+      end do
+      write (*, *) "   worst |efp - qm|: whole", worst_whole, " cut", worst_cut
+      call check(error, worst_cut < 3.0_dp*worst_whole + 2.0e-4_dp, &
+                 "a far pair with a cut fragment is much worse than the same pair uncut")
+   end subroutine test_far_water
+
+   subroutine far_and_near(z, sym, xyz, owner, pair, bond_breaking, efp_value, qm_value, err)
+      !! One pair's contribution computed effective and computed quantum
+      integer, intent(in) :: z(:), owner(:), pair(2)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: xyz(:, :)
+      character(len=*), intent(in) :: bond_breaking
+      real(dp), intent(out) :: efp_value, qm_value
+      type(error_t), intent(inout) :: err
+
+      type(efmo_options_t) :: opts
+      type(efmo_result_t) :: res
+      integer, allocatable :: charges(:)
+      integer :: k
+
+      efp_value = 0.0_dp
+      qm_value = 0.0_dp
+      allocate (charges(maxval(owner)), source=0)
+      call settings(opts)
+      opts%bond_breaking = bond_breaking
+      opts%induction_damping = 0.1_dp
+      opts%rcut = 0.1_dp
+      call run_efmo(z, sym, xyz, owner, charges, opts, res, err)
+      if (err%has_error()) return
+      do k = 1, size(res%pairs)
+         if (res%pairs(k)%i == pair(1) .and. res%pairs(k)%j == pair(2)) then
+            efp_value = efmo_pair_contribution(res, k)
+         end if
+      end do
+      opts%rcut = 1.0e6_dp
+      call run_efmo(z, sym, xyz, owner, charges, opts, res, err)
+      if (err%has_error()) return
+      do k = 1, size(res%pairs)
+         if (res%pairs(k)%i == pair(1) .and. res%pairs(k)%j == pair(2)) then
+            qm_value = efmo_pair_contribution(res, k)
+         end if
+      end do
+   end subroutine far_and_near
+
+   subroutine propane_water(distance, z, sym, xyz)
+      !! Propane, and a water on the far side of its first methyl
+      !!
+      !! The oxygen sits `distance` Angstrom beyond the first carbon along the
+      !! C-C axis, its hydrogens pointing away.
+      real(dp), intent(in) :: distance
+      integer, intent(out) :: z(14)
+      character(len=2), intent(out) :: sym(14)
+      real(dp), intent(out) :: xyz(3, 14)
+
+      integer :: zp(11)
+      character(len=2) :: sp(11)
+      real(dp) :: xp(3, 11), x0
+
+      call propane(zp, sp, xp)
+      z(1:11) = zp
+      sym(1:11) = sp
+      xyz(:, 1:11) = xp
+      z(12:14) = [8, 1, 1]
+      sym(12:14) = ["O ", "H ", "H "]
+      x0 = 1.5260_dp + distance
+      xyz(:, 12) = [x0, 0.0_dp, 0.0_dp]*ANG
+      xyz(:, 13) = [x0 + 0.5686_dp, 0.7725_dp, 0.0_dp]*ANG
+      xyz(:, 14) = [x0 + 0.5686_dp, -0.7725_dp, 0.0_dp]*ANG
+   end subroutine propane_water
 
    subroutine test_refuse_mp2(error)
       !! MP2 across a cut would correlate into the frozen virtual; refused
