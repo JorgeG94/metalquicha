@@ -465,6 +465,12 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_afo_orbital)
   addtest(mqc_afo_fmo)
 
+  # The pairs FMO exports, against the sums they were taken out of: every pair
+  # adds up to the pair sum at level two, falls short by exactly the three-body
+  # sum at level three, and on a peptide with a water the two pairs a detached
+  # bond joins are flagged while every ligand row is present.
+  addtest(mqc_fmo_pairs)
+
   # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
   # backends/cenzontle/, which is only added when an integrals backend is
   # enabled -- registering it beside the src/ tests built fine here and broke
