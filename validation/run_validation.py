@@ -22,9 +22,20 @@ class Colors:
     BOLD = '\033[1m'
 
 
+DEFAULT_TIMEOUT = 300
+"""Seconds a deck may run before it is killed, unless its manifest entry says
+otherwise with a "timeout" key. A deck that needs more says so where it is
+declared, and says why in its reference_note; the default does not move."""
+
+
 def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: bool = False,
-                   use_mpi: bool = False, nprocs: int = 4, test_type: str = "unfragmented") -> bool:
-    """Run a metalquicha calculation and cache stdout/stderr"""
+                   use_mpi: bool = False, nprocs: int = 4, test_type: str = "unfragmented",
+                   timeout: int = DEFAULT_TIMEOUT) -> str:
+    """Run a metalquicha calculation and cache stdout/stderr
+
+    Returns "ok", "failed" or "timeout", so a deck that ran out of time is not
+    reported as one that crashed.
+    """
     import os
 
     # Set environment for reproducible calculations
@@ -51,7 +62,7 @@ def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: boo
             cmd,
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minute timeout
+            timeout=timeout,
             env=env
         )
 
@@ -74,21 +85,21 @@ def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: boo
         if verbose:
             print(f"  Log saved to: {log_file}")
 
-        return result.returncode == 0
+        return "ok" if result.returncode == 0 else "failed"
     except subprocess.TimeoutExpired:
         print(f"  {Colors.RED}✗ Timeout running {input_file}{Colors.RESET}")
         # Save timeout info to log
         with open(log_file, 'w') as f:
-            f.write(f"TIMEOUT after 300 seconds\n")
+            f.write(f"TIMEOUT after {timeout} seconds\n")
             f.write(f"Calculation: {input_file}\n")
-        return False
+        return "timeout"
     except Exception as e:
         print(f"  {Colors.RED}✗ Error running {input_file}: {e}{Colors.RESET}")
         # Save error info to log
         with open(log_file, 'w') as f:
             f.write(f"ERROR: {e}\n")
             f.write(f"Calculation: {input_file}\n")
-        return False
+        return "failed"
 
 
 def get_output_filename(input_file: str) -> str:
@@ -607,12 +618,18 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
             else:
                 print(f"  Running: {exe_path} {input_file}")
 
-        if not run_calculation(input_file, exe_path, verbose=verbose,
-                             use_mpi=use_mpi, nprocs=nprocs, test_type=test_type):
+        timeout = int(test.get("timeout", DEFAULT_TIMEOUT))
+        status = run_calculation(input_file, exe_path, verbose=verbose,
+                                 use_mpi=use_mpi, nprocs=nprocs, test_type=test_type,
+                                 timeout=timeout)
+        if status != "ok":
             print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Calculation error")
             print(f"  See validation_logs/{Path(input_file).stem}.log for details\n")
             failed += 1
-            errors.append((test_name, "Calculation failed"))
+            if status == "timeout":
+                errors.append((test_name, f"Timed out after {timeout} s"))
+            else:
+                errors.append((test_name, "Calculation failed"))
             continue
 
         # Read output JSON
