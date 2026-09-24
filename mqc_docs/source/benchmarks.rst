@@ -44,6 +44,13 @@ invisible at one thread count: it looks expensive rather than serial. The
 exchange-correlation quadrature was serial for the whole life of the code, and
 this ladder is the report that would have shown it.
 
+A threaded BLAS looks exactly like that. The quadrature calls ``dgemm`` from
+inside its own OpenMP threads, and a pthreads OpenBLAS left threaded contends
+with them: PBE on ten waters spent 33 s in the quadrature on four threads,
+against 8 s with the BLAS held to one. Every run here holds it to one, as
+``tools/run.sh`` does; export ``OPENBLAS_NUM_THREADS`` (or ``MKL_NUM_THREADS``)
+yourself to measure it otherwise.
+
 **The correlated methods, each at its own size.** MP2 goes as the fifth power of
 the basis and coupled cluster as the sixth or seventh, so no single system
 serves them. MP2 and RI-MP2 run on ten waters in cc-pVDZ, the coupled-cluster
@@ -68,6 +75,8 @@ happens to be in a program.
   threads within five per cent of the best time on the ladder
 * a warning when parallel efficiency at that point is under sixty per cent,
   which means a serial stage and points at the ladder to find it
+* a warning when the exchange-correlation quadrature's own time does not scale
+  across the ladder, naming the BLAS thread settings the run used
 * whether fragment work wants threads or ranks *at the size measured*
 * whether RI-MP2 is actually faster than conventional MP2 on this hardware, and
   it says so plainly when density fitting has stopped paying for itself

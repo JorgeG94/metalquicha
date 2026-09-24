@@ -640,8 +640,14 @@ Four things worth knowing before optimising anything here, all of them measured.
 
 * **The exchange-correlation quadrature dominates a DFT run** -- 89 per cent of
   an LDA one and 98 of a meta-GGA one, against a Fock build under two per cent.
-  Threading it is worth 5-10x, and until that lands a pure GGA costs about 26x
-  Hartree-Fock, which is backwards for a functional carrying no exact exchange.
+  It is threaded, and scales -- 32 s on one thread, 8 s on four, PBE on ten
+  waters in 6-31G -- **provided the BLAS is sequential**. It calls `dgemm` from
+  inside its own OpenMP threads, so a pthreads OpenBLAS left threaded (what a
+  Debian or Ubuntu system library is) contends with them and the quadrature
+  does not speed up at all: 33 s on four threads. `tools/run.sh` and
+  `benchmarks/run_benchmarks.py` set `OPENBLAS_NUM_THREADS=1` for this; calling
+  `mqc` directly does not. Held to one, PBE costs 3.4x Hartree-Fock on four
+  threads.
 * **Only xTB is pinned to one thread, and not for speed.** `needs_serial_execution`
   in `src/mqc_method_types.f90` names GFN1 and GFN2 and nothing else: threaded,
   tblite corrupts a result rather than failing. Every other method -- the whole

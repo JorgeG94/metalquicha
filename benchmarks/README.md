@@ -43,6 +43,13 @@ exchange-correlation quadrature was serial for the whole life of the code, and
 this ladder is the report that would have shown it. Read the speedup column: a
 run that stops improving has a serial stage in it somewhere.
 
+A threaded BLAS looks exactly like that. The quadrature calls `dgemm` from inside
+its own OpenMP threads, and a pthreads OpenBLAS left threaded contends with them:
+PBE on ten waters spent 33 s in the quadrature on four threads, against 8 s with
+the BLAS held to one. Every run here holds it to one, as `tools/run.sh` does;
+export `OPENBLAS_NUM_THREADS` (or `MKL_NUM_THREADS`) yourself to measure it
+otherwise.
+
 **The correlated methods, each at its own size.** MP2 goes as the fifth power of
 the basis and coupled cluster as the sixth or seventh, so no single system
 serves them: one where MP2 is worth timing makes CCSD(T) take an hour, and one

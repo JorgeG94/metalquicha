@@ -141,8 +141,24 @@ def deck(path, geometry, method, functional, driver, basis, fragments=None, leve
     return path
 
 
-def run_once(exe, deck_path, threads, ranks=1):
+# What tools/run.sh sets, and for the same reason: the program threads its own
+# loops, and a BLAS that starts threads of its own inside them contends rather
+# than helps. Measured here with the system's pthreads OpenBLAS: PBE on w10 in
+# 6-31G spent 33 s in the XC quadrature on four OpenMP threads and 8 s with the
+# BLAS held to one. A value already in the environment is kept, so the effect of
+# a threaded BLAS can still be measured on purpose.
+BLAS_THREADS = ("MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "CRAYBLAS_NUM_THREADS")
+
+
+def run_env(threads):
     env = dict(os.environ, OMP_NUM_THREADS=str(threads))
+    for name in BLAS_THREADS:
+        env.setdefault(name, "1")
+    return env
+
+
+def run_once(exe, deck_path, threads, ranks=1):
+    env = run_env(threads)
     cmd = [str(exe), str(deck_path)]
     if ranks > 1:
         cmd = ["mpirun", "-np", str(ranks)] + cmd
@@ -187,9 +203,11 @@ def describe_build(exe):
     text = proc.stdout + proc.stderr
     features = FEATURES.search(text)
     build = BUILDINFO.search(text)
+    env = run_env(1)
     return {
         "features": features.group(1).strip() if features else "unknown",
         "build": build.group(1).strip() if build else "unknown (binary predates build info)",
+        "blas_threads": " ".join(f"{name}={env[name]}" for name in BLAS_THREADS),
         "host": platform.node(),
         "cpus": os.cpu_count(),
     }
@@ -228,6 +246,7 @@ def main():
     print(f"  host {info['host']}, {info['cpus']} cpus, running at {args.threads} threads")
     print(f"  {info['features']}")
     print(f"  {info['build']}")
+    print(f"  {info['blas_threads']}")
     print("=" * 78)
 
     work = Path(args.keep) if args.keep else Path(tempfile.mkdtemp(prefix="mqc-bench-"))
@@ -383,11 +402,23 @@ def advise(results):
                            f"{conv:.1f} s against {ri:.1f} s -- density fitting is not paying "
                            "for itself at this size"))
 
-    hf, pbe = median("energy/hf"), median("energy/pbe")
-    if hf and pbe and pbe / hf > 3.0:
-        advice.append(("(density functional cost is high)",
-                       f"a pure GGA is {pbe/hf:.1f}x Hartree-Fock here; carrying no exact "
-                       "exchange it should cost less, so the quadrature is worth a look"))
+    # Whether the exchange-correlation quadrature scales, from the ladder's own
+    # stage times. Not a PBE/HF ratio: the Fock build of a pure functional costs
+    # what Hartree-Fock's does here, so the quadrature is added on top and a
+    # ratio above one is expected. What is not expected is a quadrature that
+    # stays flat as threads are added -- which is what a threaded BLAS inside
+    # its OpenMP threads looks like.
+    rungs = sorted(int(k.split("/")[1]) for k, v in cases.items()
+                   if k.startswith("ladder/") and "XC quadrature" in v.get("stages", {}))
+    if len(rungs) >= 2:
+        low, high = rungs[0], rungs[-1]
+        xc_low = cases[f"ladder/{low:02d}"]["stages"]["XC quadrature"]
+        xc_high = cases[f"ladder/{high:02d}"]["stages"]["XC quadrature"]
+        if xc_high > 0 and (xc_low / xc_high) < 0.5 * (high / low):
+            advice.append(("(the XC quadrature is not scaling)",
+                           f"{xc_low:.1f} s on {low} thread(s), {xc_high:.1f} s on {high}. It "
+                           "calls the BLAS from inside its own threads, so check the BLAS is "
+                           "sequential: " + results["info"].get("blas_threads", "")))
 
     blas = results["info"].get("build", "")
     if "seq" in blas and serial and mpi and mpi > serial:
