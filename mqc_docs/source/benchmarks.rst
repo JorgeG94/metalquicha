@@ -50,11 +50,12 @@ serves them. MP2 and RI-MP2 run on ten waters in cc-pVDZ, the coupled-cluster
 pair on five in 6-31G, each placed where its own work rather than the reference
 SCF is what moves.
 
-**A fragmented case, serial and under MPI.** Fragment work pins itself to one
-OpenMP thread and spreads over ranks instead, so a change that helps a single
-molecule can hurt the fragment path. One did: threaded BLAS is five times faster
-on one molecule and thirty-one per cent slower on four ranks. Without this phase
-that trade reads as a pure win.
+**A fragmented case, on one rank and on four.** An ab initio fragment keeps the
+threads it is given -- only xTB is pinned to one, because tblite corrupts a
+result when threaded -- so the question is how to split the cores: all of them
+on one fragment at a time, or a quarter each on four at once. Which wins depends
+on the fragment size and the machine, and a change that helps a single molecule
+can move it either way; without this phase that would go unseen.
 
 What it recommends
 ==================

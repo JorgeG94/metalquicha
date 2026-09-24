@@ -26,10 +26,11 @@ real investigation where the plain number was misleading:
     exchange-correlation quadrature was serial for the whole life of the code
     and this is the report that would have shown it.
 
-  * **A fragmented case, serial and under MPI.** Fragment work pins itself to
-    one OpenMP thread and parallelises with MPI instead, so a change that helps
-    a single molecule can hurt the fragment path. One did: threaded BLAS is five
-    times faster on one molecule and thirty-one per cent slower on four ranks.
+  * **A fragmented case, on one rank and on four.** An ab initio fragment keeps
+    the threads it is given -- only xTB is pinned to one -- so the question is
+    how to split the cores: all of them on one fragment at a time, or a quarter
+    each on four at once. Which wins depends on the fragment size and the
+    machine, and a change that helps a single molecule can move it either way.
 
 The build configuration is recorded with the numbers, because the BLAS choice
 alone moves a run by a factor of five and cannot be recovered afterwards.
@@ -283,7 +284,8 @@ def main():
             else:
                 record(f"ladder/{n:02d}", out)
 
-        say("\nfragmented, w20 MBE(2) -- fragment work pins to one thread and spreads over ranks")
+        say("\nfragmented, w20 MBE(2) -- every thread on one fragment, against four ranks "
+            "with a quarter each")
         frags = [[3 * i, 3 * i + 1, 3 * i + 2] for i in range(20)]
         d = deck(work / "frag.json", work / "w20.xyz", "dft", "pbe", "Energy", args.basis,
                  fragments=frags, level=2)
@@ -350,8 +352,8 @@ def advise(results):
         if mpi > serial:
             advice.append(("threads, not ranks, at this size",
                            f"{serial:.0f} s on one rank against {mpi:.0f} s on four; "
-                           "fragment workers pin to one thread each, so ranks only pay off "
-                           "once there are more fragments than cores"))
+                           "at this fragment size a fragment gains more from four times the "
+                           "threads than four fragments at once gain from concurrency"))
         else:
             advice.append((f"mpirun -np 4",
                            f"{mpi:.0f} s against {serial:.0f} s threaded"))

@@ -636,7 +636,7 @@ JSON output (`output_<basename>.json`) contains:
 ## Performance
 
 Four things worth knowing before optimising anything here, all of them measured.
-A benchmark suite that checks them lives on `perf/benchmark-suite`.
+`benchmarks/run_benchmarks.py` checks them on the machine it runs on; see `benchmarks/README.md`.
 
 * **The exchange-correlation quadrature dominates a DFT run** -- 89 per cent of
   an LDA one and 98 of a meta-GGA one, against a Fock build under two per cent.

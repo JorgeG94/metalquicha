@@ -42,6 +42,16 @@ string(TOUPPER "${CMAKE_BUILD_TYPE}" _mqc_cfg)
 set(MQC_BUILD_INFO_FFLAGS
     "${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_mqc_cfg}}")
 string(STRIP "${MQC_BUILD_INFO_FFLAGS}" MQC_BUILD_INFO_FFLAGS)
+# The architecture flags in effect, read from the flags themselves rather than
+# from MQC_ARCH_FLAGS, whose default is the sentinel "DEFAULT" and says nothing
+# about whether -march=native was applied.
+string(REGEX MATCHALL "(-march=|-mtune=|-mno-|-x|-mcpu=)[^ ]+" _mqc_arch
+             "${MQC_BUILD_INFO_FFLAGS}")
+list(REMOVE_DUPLICATES _mqc_arch)
+string(JOIN " " MQC_BUILD_INFO_ARCH ${_mqc_arch})
+if(NOT MQC_BUILD_INFO_ARCH)
+  set(MQC_BUILD_INFO_ARCH "none")
+endif()
 configure_file("${PROJECT_SOURCE_DIR}/cmake/templates/mqc_build_info.f90.in"
                "${PROJECT_BINARY_DIR}/generated/mqc_build_info.f90" @ONLY)
 target_sources(${main_lib}

@@ -52,15 +52,15 @@ where its own work rather than the reference SCF is what moves. RI-MP2 coming in
 below conventional MP2 is the expected result and worth a glance -- if it ever
 does not, density fitting has stopped paying for itself.
 
-**A fragmented case, serial and under MPI.** Fragment work pins itself to one
-OpenMP thread and parallelises with MPI instead, so a change that helps a single
-molecule can hurt the fragment path. One did: threaded BLAS is five times faster
-on one molecule and thirty-one per cent slower on four ranks. Without this phase
-that trade looks like a pure win.
+**A fragmented case, on one rank and on four.** An ab initio fragment keeps the
+threads it is given -- only xTB is pinned to one, because tblite corrupts a
+result when threaded -- so the question is how to split the cores. Which wins
+depends on the fragment size and the machine, and a change that helps a single
+molecule can move it either way; without this phase that would go unseen.
 
 Note that `fragmented/mpi4` being slower than `fragmented/serial` is not a fault.
-The serial run puts every thread on one fragment at a time; four ranks put one
-thread on each of four. They are different shapes of the same work, and which
+The serial run puts every thread on one fragment at a time; four ranks put a
+quarter of the threads on each of four. They are different shapes of the same work, and which
 wins depends on the system and the rank count. What the suite is watching is
 whether either *changes*.
 

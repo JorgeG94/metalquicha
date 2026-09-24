@@ -25,7 +25,7 @@ module mqc_build_info
 
    character(len=*), parameter :: MQC_BUILD_TYPE = "@CMAKE_BUILD_TYPE@"
    character(len=*), parameter :: MQC_BLAS_VENDOR = "@MQC_BUILD_INFO_BLAS@"
-   character(len=*), parameter :: MQC_ARCH_FLAGS = "@MQC_ARCH_FLAGS@"
+   character(len=*), parameter :: MQC_ARCH_FLAGS = "@MQC_BUILD_INFO_ARCH@"
    character(len=*), parameter :: MQC_FORTRAN_COMPILER = &
       "@CMAKE_Fortran_COMPILER_ID@ @CMAKE_Fortran_COMPILER_VERSION@"
    character(len=*), parameter :: MQC_FORTRAN_FLAGS = "@MQC_BUILD_INFO_FFLAGS@"
