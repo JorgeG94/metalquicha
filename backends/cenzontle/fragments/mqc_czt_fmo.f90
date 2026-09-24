@@ -123,7 +123,7 @@ module mqc_czt_fmo
    use mqc_czt_direct, only: schwarz_bounds, coulomb_from_blocks
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_PROJ
    use mqc_scf_types, only: scf_numerics_t
    use pic_sorting, only: sort_index
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
@@ -1777,7 +1777,10 @@ contains
       integer, allocatable :: deck_guess
       type(group_t) :: group
       type(fock_projector_t) :: proj
-      real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:)
+      real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:), d_start(:, :)
+      type(scf_numerics_t) :: drive
+      integer :: attempt
+      real(dp), parameter :: RETRY_LEVEL_SHIFT = 0.5_dp
       logical, allocatable :: inside(:), shared(:)
       integer, allocatable :: near(:), ao_off(:), ao_count(:)
       integer :: m, at, nao_m, expect, nelec
@@ -1859,21 +1862,48 @@ contains
       ! the decks that asked for a specific guess.
       call fmo_guess_kind(opts, deck_guess)
 
-      if (allocated(u) .and. held) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
-                          h_extra=u, projector=proj)
-      else if (allocated(u)) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
-      else if (held) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
-                          projector=proj)
-      else
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess)
+      ! Started from its members, as GAMESS starts a dimer: their densities
+      ! side by side, which is `d_split`, ghosts and detached atoms placed by
+      ! atom. A deck that names a guess keeps it. The backend's own default,
+      ! a Wolfsberg-Helmholz Fock matrix, knows nothing of the field or of the
+      ! frozen orbitals, and five of 2lty's pairs never left it: a hundred
+      ! iterations with occupied orbitals above zero. `d_start` stays
+      ! unallocated, and so arrives absent, when the deck's guess is used.
+      if (.not. allocated(deck_guess)) then
+         allocate (deck_guess, source=SCF_GUESS_PROJ)
+         d_start = d_split
       end if
+
+      ! One retry with a level shift, from the same start, if the first did
+      ! not converge. Second-order convergence would be the usual fallback,
+      ! but it refuses a Fock projector, which every fragment next to a
+      ! detached bond has.
+      drive = opts%scf
+      do attempt = 1, 2
+         if (allocated(u) .and. held) then
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start, h_extra=u, projector=proj)
+         else if (allocated(u)) then
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start, h_extra=u)
+         else if (held) then
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start, projector=proj)
+         else
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start)
+         end if
+         if (error%has_error()) return
+         if (scf%converged .or. attempt == 2) exit
+         call logger%verbose("  fmo: "//unconverged_list(reshape(members, &
+                                                                 [size(members), 1]))//" did not converge; retrying "// &
+                             "with a level shift")
+         drive%level_shift = max(drive%level_shift, RETRY_LEVEL_SHIFT)
+      end do
       if (error%has_error()) return
       if (.not. scf%converged) all_converged = .false.
 
