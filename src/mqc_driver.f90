@@ -740,6 +740,9 @@ contains
             end if
             expansion%basis = config%method_config%basis_set
             expansion%bond_breaking = config%bond_breaking
+            if (allocated(config%detached_atoms)) then
+               expansion%detached_atoms = config%detached_atoms
+            end if
             expansion%cap_scale = config%cap_scale
             if (config%expansion_kind == "fmo") then
                expansion%esp = "exact"

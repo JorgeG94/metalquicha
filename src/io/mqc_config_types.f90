@@ -648,6 +648,10 @@ module mqc_config_types
          !! `mqc_czt_afo.f90` and `mqc_docs/source/fmo.rst`. An FMO
          !! expansion accepts `"none"` and `"afo"`; it refuses `"caps"` as not
          !! implemented for that expansion.
+      integer, allocatable :: detached_atoms(:)
+         !! `keywords.fragmentation.detached_atoms`: 0-based atoms that are the
+         !! detached ends of cut bonds, GAMESS's `$FMOBND` sign. Unallocated
+         !! lets each cut take its sp3 end, else its lower-numbered one.
          !!
          !! Independent of `embedding`, but not every pairing of the two is
          !! sound: a cap puts an electron where an exact embedding already
@@ -739,6 +743,7 @@ contains
       if (allocated(this%frag_method)) deallocate (this%frag_method)
       if (allocated(this%embedding)) deallocate (this%embedding)
       if (allocated(this%bond_breaking)) deallocate (this%bond_breaking)
+      if (allocated(this%detached_atoms)) deallocate (this%detached_atoms)
       if (allocated(this%cutoff_method)) deallocate (this%cutoff_method)
       if (allocated(this%distance_metric)) deallocate (this%distance_metric)
       if (allocated(this%fragment_cutoffs)) deallocate (this%fragment_cutoffs)

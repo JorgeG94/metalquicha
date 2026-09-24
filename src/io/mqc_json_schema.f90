@@ -670,6 +670,7 @@ contains
       call allow(keys, "scf_energy_tolerance")
       call allow(keys, "scf_density_tolerance")
       call allow(keys, "bond_breaking")
+      call allow(keys, "detached_atoms")
       call allow(keys, "cap_scale")
       call allow(keys, "embedding")
       call allow(keys, "cutoff_method")

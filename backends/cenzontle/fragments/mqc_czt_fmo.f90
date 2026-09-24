@@ -84,13 +84,13 @@ module mqc_czt_fmo
    !! **A detached atom is described by two fragments**, which is what a field
    !! on top of a frozen orbital has to account for. Its owner holds it with
    !! the hybrid there frozen empty; the fragment across the bond holds the
-   !! same functions as a ghost with the bond pair in that hybrid. **Its
-   !! nucleus is split to match** wherever there is a field -- `Z-1` with the
-   !! owner, `+1` on the ghost -- so both fragments come out neutral closed
-   !! shells and the two charges add back to `Z` in any group holding the
-   !! whole bond. That leaves an embedded total exactly unchanged, and with
-   !! `esp = "none"` it is not done at all, because nothing would supply the
-   !! other half; see `nuc_charge` on `group_t` and `splits_nucleus`. So its
+   !! same functions as a ghost with the bond pair in that hybrid, and the
+   !! detached atom's core and other bonds projected out. **Its nucleus is
+   !! split to match** -- `Z-1` with the owner, `+1` on the ghost -- so both
+   !! fragments come out neutral closed shells and the two charges add back
+   !! to `Z` in any group holding the whole bond. That leaves an embedded
+   !! total exactly unchanged; see `nuc_charge` on `group_t` and
+   !! `splits_nucleus`. So its
    !! density block and its atomic population both arrive twice and are added
    !! -- summing is the only apportionment that leaves the charges adding to the
    !! molecular charge -- and a group is then told not to feel its own share of
@@ -111,9 +111,11 @@ module mqc_czt_fmo
    use mqc_czt_subsets, only: enumerate_subsets, subtract_subsets
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_bond_perception, only: connected_components, find_severed_bonds, severed_bond_t
-   use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_hybrid_t, build_afo_model, &
-                          bond_hybrid, cuts_outside_group, group_electron_shift, &
-                          build_group_frozen, peptide_bond_advice
+   use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_lmo_set_t, &
+                          build_bonded_model, bond_lmo_set, build_group_frozen_set, &
+                          lmo_set_pack_size, lmo_set_pack, lmo_set_unpack, orient_cut, &
+                          cuts_outside_group, group_electron_shift, &
+                          peptide_bond_advice
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 atom_ao_blocks
@@ -191,21 +193,18 @@ module mqc_czt_fmo
          !! fragment with its cut bonds closed: a lysine residue +1, an
          !! aspartate -1. The electron a detached bond moves is counted on top
          !! of it. Unallocated means every fragment is neutral.
+      integer, allocatable :: detached(:)
+         !! Atoms, 1-based, a deck names as the detached ends of cut bonds --
+         !! GAMESS's `$FMOBND` sign. A cut with neither end named takes the sp3
+         !! end, else the lower-numbered one; see `orient_cut`.
       character(len=16) :: cut_nucleus = "auto"
          !! Whether a detached bond's nucleus is split between the two
          !! fragments that describe it, or stays whole with the one that owns
          !! the atom.
          !!
-         !! `"auto"`, the default, splits it wherever there is an embedding
-         !! field and keeps it whole where there is not. **A split nucleus is
-         !! only defined when something supplies the other half.** With a field
-         !! the fragment across the bond supplies it -- it holds the `+1` and
-         !! the bond pair, and the group on the other side feels both through
-         !! the field -- so the split is free, and it is what leaves each
-         !! fragment a neutral closed shell. With `esp = "none"` nothing
-         !! supplies it, and the owner would be solved around a nucleus short
-         !! by one proton: a worse model of a methyl group than the cation
-         !! whole nuclei produce, and measurably so.
+         !! `"auto"`, the default, splits it, field or no field -- GAMESS's
+         !! convention, and what leaves each fragment a neutral closed shell;
+         !! `splits_nucleus` has the measurements that decided it.
          !!
          !! `"split"` and `"whole"` force either convention. They exist because
          !! the embedded total is *exactly* invariant to the choice and that is
@@ -404,7 +403,8 @@ module mqc_czt_fmo
          !! assembly has to work it out again.
       integer :: n_cuts = 0
       type(severed_bond_t), allocatable :: cuts(:)
-      type(afo_hybrid_t), allocatable :: hybrid(:)
+      type(afo_lmo_set_t), allocatable :: sets(:)
+         !! Each cut bond's frozen orbitals; see `afo_lmo_set_t`
       character(len=2), allocatable :: sym(:)
          !! System-wide symbols. A group holding the attached end of a bond has
          !! to name the detached atom to ghost it, and that atom is one it does
@@ -843,7 +843,7 @@ contains
       type(afo_model_t) :: model
       type(afo_options_t) :: afo_opts
       type(error_t) :: local
-      real(dp), allocatable :: hyb(:), flat(:)
+      real(dp), allocatable :: flat(:)
       integer, allocatable :: lengths(:)
       integer :: status(3)
       integer :: i, n_on_bond, at, total
@@ -856,6 +856,17 @@ contains
       allocate (geom%coordinates(3, size(z)), source=coords)
       call find_severed_bonds(geom, owner, afo%cuts, afo%n_cuts)
       if (afo%n_cuts == 0) return
+      ! Which end is detached, before anything is built from the cut: the
+      ! electron shift, the split nucleus, the ghost and the frozen roles all
+      ! read `atom_a` as the detached end and `frag_a` as its owner.
+      do i = 1, afo%n_cuts
+         if (allocated(opts%detached)) then
+            call orient_cut(z, coords, afo%cuts(i), error, detached=opts%detached)
+         else
+            call orient_cut(z, coords, afo%cuts(i), error)
+         end if
+         if (error%has_error()) return
+      end do
 
       do i = 1, afo%n_cuts
          if (afo%cuts(i)%in_ring) then
@@ -883,7 +894,7 @@ contains
       afo_opts%scf_energy_tol = opts%scf_energy_tol
       afo_opts%scf_density_tol = opts%scf_density_tol
       afo_opts%scf = opts%scf
-      allocate (afo%hybrid(afo%n_cuts))
+      allocate (afo%sets(afo%n_cuts))
       allocate (afo%sym(size(symbols)), source=symbols)
       allocate (lengths(afo%n_cuts), source=0)
       status = 0
@@ -893,12 +904,12 @@ contains
       ! message every rank raises is the same one.
       if (is_leader(comm)) then
          do i = 1, afo%n_cuts
-            call build_afo_model(z, coords, afo%cuts(i), model, local)
+            call build_bonded_model(z, coords, afo%cuts(i), model, local)
             if (local%has_error()) then
                status = [1, i, 0]
                exit
             end if
-            call bond_hybrid(model, afo_opts, hyb, n_on_bond, local)
+            call bond_lmo_set(model, afo_opts, afo%sets(i), n_on_bond, local)
             if (local%has_error()) then
                status = [2, i, 0]
                exit
@@ -907,8 +918,7 @@ contains
                status = [3, i, n_on_bond]
                exit
             end if
-            afo%hybrid(i)%coeff = hyb
-            lengths(i) = size(hyb)
+            lengths(i) = lmo_set_pack_size(afo%sets(i))
          end do
       end if
 
@@ -926,16 +936,14 @@ contains
          if (is_leader(comm)) then
             at = 0
             do i = 1, afo%n_cuts
-               flat(at + 1:at + lengths(i)) = afo%hybrid(i)%coeff
+               call lmo_set_pack(afo%sets(i), flat(at + 1:at + lengths(i)))
                at = at + lengths(i)
             end do
          end if
          call allreduce(comm, flat, total, MPI_SUM)
          at = 0
          do i = 1, afo%n_cuts
-            if (allocated(afo%hybrid(i)%coeff)) deallocate (afo%hybrid(i)%coeff)
-            allocate (afo%hybrid(i)%coeff(lengths(i)))
-            afo%hybrid(i)%coeff = flat(at + 1:at + lengths(i))
+            call lmo_set_unpack(flat(at + 1:at + lengths(i)), afo%sets(i))
             at = at + lengths(i)
          end do
          deallocate (flat)
@@ -943,8 +951,9 @@ contains
 
       afo%active = .true.
       afo%split_nucleus = splits_nucleus(opts)
-      call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s), one "// &
-                          "frozen orbital each")
+      call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s); each "// &
+                          "freezes its bond orbital on both sides and the detached "// &
+                          "atom's other orbitals where it is a ghost")
       if (afo%split_nucleus) then
          call logger%verbose("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
                              "fragment that owns the atom, +1 on the ghost its "// &
@@ -965,21 +974,21 @@ contains
    pure function splits_nucleus(opts) result(split)
       !! Does a boundary move a unit of nuclear charge as well as the electron?
       !!
-      !! `"auto"` is the answer to a physical question rather than a
-      !! preference. A split nucleus is only defined when something supplies
-      !! the other half: with a field, the fragment across the bond holds the
-      !! `+1` and the bond pair and the group on this side feels both, so the
-      !! split costs nothing and leaves both fragments neutral. With
-      !! `esp = "none"` nothing supplies it and the owner is solved around a
-      !! nucleus short by one proton, which on propane in STO-3G takes the
-      !! MBE(2) error from 0.180 to 0.304 Hartree and, on the same molecule
-      !! numbered so that one carbon is the detached end of both bonds, from
-      !! 0.125 to 1.549.
+      !! `"auto"` splits, with or without a field, which is GAMESS's
+      !! convention and the one the frozen set is built for.
       !!
-      !! GAMESS splits unconditionally, and that does not settle it: GAMESS
-      !! never runs this without a field, and its own field-free reference
-      !! state is built with methyl caps instead, which is a third
-      !! construction again.
+      !! It used to keep the nucleus whole when `esp = "none"`, on the grounds
+      !! that nothing supplies the other half, and with the bond orbital alone
+      !! frozen that was measured better: propane's MBE(2) error in STO-3G was
+      !! 0.180 whole against 0.304 split. With GAMESS's frozen set -- the
+      !! detached atom's core and other bonds projected out of the ghost too --
+      !! the same numbers are 0.2200 whole and 0.2186 split, and on the
+      !! glycine tripeptide with a water, cut at both C-alpha--C bonds, the
+      !! whole convention's C-terminal fragment is an anion whose SCF does not
+      !! converge while the split one lands 3.1 mHa from the molecule. Only
+      !! an atom detached from two neighbours still favours whole nuclei in
+      !! vacuo (propane numbered middle-first: 0.046 whole, 0.868 split), and
+      !! GAMESS refuses that case outright. `"whole"` remains for it.
       type(fmo_options_t), intent(in) :: opts
       logical :: split
 
@@ -989,7 +998,7 @@ contains
       case ("whole")
          split = .false.
       case default
-         split = trim(opts%esp) /= "none"
+         split = .true.
       end select
    end function splits_nucleus
 
@@ -1197,28 +1206,33 @@ contains
       logical, intent(out) :: active
       type(error_t), intent(inout) :: error
 
-      type(afo_hybrid_t), allocatable :: hybrids(:)
+      type(afo_lmo_set_t), allocatable :: sets(:)
       real(dp), allocatable :: frozen(:, :), basis(:, :), s(:, :)
-      integer :: i, n_frozen_occ, n_mo
+      integer, allocatable :: bda(:), baa(:)
+      integer :: i, n_frozen_occ, n_mo, n
 
       active = .false.
       if (error%has_error()) return
       if (group%n_bound == 0) return
 
-      allocate (hybrids(group%n_bound))
-      do i = 1, group%n_bound
-         hybrids(i)%coeff = afo%hybrid(group%cut_of(i))%coeff
+      n = group%n_bound
+      allocate (sets(n), bda(n), baa(n))
+      do i = 1, n
+         sets(i) = afo%sets(group%cut_of(i))
+         bda(i) = afo%cuts(group%cut_of(i))%atom_a
+         baa(i) = afo%cuts(group%cut_of(i))%atom_b
       end do
 
-      call build_group_frozen(mol, group%bda_slot(:group%n_bound), &
-                              group%occupied(:group%n_bound), hybrids, frozen, &
-                              n_frozen_occ, error)
+      ! GAMESS's frozen set: the bond orbital on both sides, and the detached
+      ! atom's other orbitals frozen empty where it is a ghost.
+      call build_group_frozen_set(mol, group%atom_of, bda, baa, group%occupied(:n), &
+                                  sets, frozen, n_frozen_occ, error)
       if (error%has_error()) return
 
       call mol%overlap(s)
       call build_frozen_basis(frozen, n_frozen_occ, s, basis, n_mo, error)
       if (error%has_error()) return
-      call proj%init(basis, s, n_frozen_occ, group%n_bound, AFO_SHIFT, error)
+      call proj%init(basis, s, n_frozen_occ, size(frozen, 2), AFO_SHIFT, error)
       if (error%has_error()) return
       active = .true.
    end subroutine group_projector

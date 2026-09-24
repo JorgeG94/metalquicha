@@ -61,7 +61,12 @@ contains
                   new_unittest("embedded_truncation_at_pairs_costs_the_three_body_term", test_ptc_pairs), &
                   new_unittest("a_ring_kept_whole_takes_a_field_and_a_frozen_orbital", test_ptc_ring_kept), &
                   new_unittest("the_charge_convention_does_not_move_an_embedded_total", test_convention), &
-                  new_unittest("a_charged_fragment_keeps_the_identity", test_charged_fragment) &
+                  new_unittest("a_charged_fragment_keeps_the_identity", test_charged_fragment), &
+                  new_unittest("butane_and_water_match_gamess_afo", test_gamess_butane_water), &
+                  new_unittest("field_free_pairs_under_both_nucleus_conventions", &
+                               test_field_free_conventions), &
+                  new_unittest("glycine_tripeptide_and_water_across_two_cuts", &
+                               test_gly3_water) &
                   ]
    end subroutine collect_mqc_afo_fmo
 
@@ -110,6 +115,248 @@ contains
          write (*, *) "   difference  =", res%energy - whole%energy
       end if
    end subroutine test_exact
+
+   subroutine test_gamess_butane_water(error)
+      !! Butane cut at C2-C3 with a water off one end, against GAMESS
+      !!
+      !! GAMESS 2026 (`../mgga/gamess`), `$FMO NBODY=2 RAFO(1)=1,1,1`,
+      !! `$FMOBND -2 3`, RHF/STO-3G, Cartesian, run as the in-vacuo EFMO it
+      !! prints the in-vacuo monomer and dimer energies of: ethyl owning the
+      !! detached C2 at `Z-1`, -63.7464859666; ethyl across the cut carrying the
+      !! ghost at `+1`, -77.4085157350; water -74.9620085207; and the dimers
+      !! 1-2 -155.4534214272, 1-3 -138.7089277335, 2-3 -152.3698614874. Their
+      !! MBE(2) is -230.4152004258.
+      !!
+      !! What this pins is the frozen *set*: the bond orbital frozen on both
+      !! sides and, where the detached atom is a ghost, its core and its other
+      !! three bonds frozen empty too -- GAMESS's "1 occupied and 4 virtual".
+      !! Freezing the bond orbital alone left the two ethyls 0.127 and 0.298
+      !! Hartree above these.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17), owner(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      real(dp), parameter :: GAMESS_MONOMER(3) = [-63.7464859666_dp, -77.4085157350_dp, &
+                                                  -74.9620085207_dp]
+      real(dp), parameter :: GAMESS_MBE2 = -230.4152004258_dp
+      real(dp), parameter :: AGREE = 2.0e-6_dp
+         !! GAMESS converges the model system to 1e-6 and prints ten decimals
+
+      call butane_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3]
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      ! Not the 1e-11 / 1e-9 the other cases use: at 1e-9 the commutator gate
+      ! sits on the threading noise floor for the 30-function butane, and one
+      ! run in three on two threads stopped short at 1.4e-10. What is compared
+      ! here is 2e-6.
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   monomers - GAMESS =", res%monomer_energy - GAMESS_MONOMER
+      write (*, *) "   MBE(2) - GAMESS   =", res%energy - GAMESS_MBE2
+      call check(error, maxval(abs(res%monomer_energy - GAMESS_MONOMER)) < AGREE, &
+                 "the cut monomers do not match GAMESS's, so the frozen set differs")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_MBE2) < AGREE, &
+                 "the in-vacuo MBE(2) does not match GAMESS's")
+   end subroutine test_gamess_butane_water
+
+   subroutine test_field_free_conventions(error)
+      !! Propane's field-free MBE(2) error with the nucleus split and kept whole
+      !!
+      !! Both numberings: carbons in chain order, and the middle carbon first
+      !! so that it is the detached end of both bonds. Measured and reported,
+      !! since which convention a field-free run should use is decided from
+      !! these numbers; only a sanity bound is asserted.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: whole
+      integer :: z(11), numbering, c
+      character(len=2) :: sym(11)
+      real(dp) :: xyz(3, 11)
+      character(len=5), parameter :: CONVENTION(2) = ["split", "whole"]
+
+      do numbering = 1, 2
+         if (numbering == 1) call propane(z, sym, xyz)
+         if (numbering == 2) call propane_middle_first(z, sym, xyz)
+         call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+         call run_czt_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
+         call mol%destroy()
+         do c = 1, 2
+            opts%basis = "sto-3g"
+            opts%esp = "none"
+            opts%expansion = "mbe"
+            opts%bond_breaking = "afo"
+            opts%cut_nucleus = CONVENTION(c)
+            opts%level = 2
+            opts%scf_energy_tol = 1.0e-11_dp
+            opts%scf_density_tol = 1.0e-9_dp
+            if (numbering == 1) then
+               call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], opts, res, err)
+            else
+               call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+            end if
+            call check(error,.not. err%has_error(), "the expansion failed: "// &
+                       err%get_message())
+            if (allocated(error)) return
+            write (*, "(a,i2,a,a,a,f12.6)") "    numbering", numbering, "  nucleus ", &
+               CONVENTION(c), "  MBE(2) error (hartree) =", res%energy - whole%energy
+            call check(error, abs(res%energy - whole%energy) < 10.0_dp, &
+                       "field-free MBE(2) on propane is off by more than ten hartree")
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_field_free_conventions
+
+   subroutine test_gly3_water(error)
+      !! Glycine tripeptide cut at both C-alpha--C(=O) bonds, with a water
+      !!
+      !! Four fragments, RHF/STO-3G, `gly3_water_pair.xyz`. At full order the
+      !! expansion is the molecule; at pairs it is compared with the molecule
+      !! and reported, with point charges and in vacuo under each nucleus
+      !! convention.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: whole
+      integer :: z(27), owner(27), run
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+      character(len=5), parameter :: ESP(4) = ["none ", "none ", "ptc  ", "none "]
+      character(len=5), parameter :: NUC(4) = ["split", "whole", "auto ", "split"]
+      integer, parameter :: LEVEL(4) = [2, 2, 2, 4]
+
+      call gly3_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4]
+      call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_czt_rhf(mol, sum(z), 200, 1.0e-10_dp, 1.0e-8_dp, .false., whole, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the whole-molecule RHF failed")
+      if (allocated(error)) return
+      do run = 1, size(ESP)
+         opts%basis = "sto-3g"
+         opts%esp = trim(ESP(run))
+         opts%expansion = merge("mbe", "fmo", ESP(run) == "none")
+         opts%bond_breaking = "afo"
+         opts%cut_nucleus = trim(NUC(run))
+         opts%level = LEVEL(run)
+         opts%scf_energy_tol = 1.0e-10_dp
+         opts%scf_density_tol = 1.0e-8_dp
+         call run_fmo2(z, sym, xyz, owner, opts, res, err)
+         if (err%has_error()) then
+            write (*, *) "   ", ESP(run), NUC(run), LEVEL(run), " failed: ", &
+               trim(err%get_message())
+            call err%clear()
+            cycle
+         end if
+         write (*, "(a,a,a,a,a,i2,a,es12.4)") "    esp ", ESP(run), " nucleus ", NUC(run), &
+            " level", LEVEL(run), "  error (hartree) =", res%energy - whole%energy
+         if (LEVEL(run) == 4) then
+            call check(error, abs(res%energy - whole%energy) < 1.0e-8_dp, &
+                       "full order over two detached peptide bonds is not the molecule")
+            if (allocated(error)) return
+         end if
+      end do
+   end subroutine test_gly3_water
+
+   subroutine gly3_water(z, sym, xyz)
+      !! `validation/inputs/sample_inputs/gly3_water_pair.xyz`
+      integer, intent(out) :: z(27)
+      character(len=2), intent(out) :: sym(27)
+      real(dp), intent(out) :: xyz(3, 27)
+      real(dp) :: ang(3, 27)
+      integer :: i
+
+      z = [7, 6, 6, 8, 1, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 8, 1, 8, 1, 1]
+      do i = 1, 27
+         select case (z(i))
+         case (1)
+            sym(i) = "H "
+         case (6)
+            sym(i) = "C "
+         case (7)
+            sym(i) = "N "
+         case default
+            sym(i) = "O "
+         end select
+      end do
+      ang = reshape([ &
+                    0.0171625298_dp, -0.4776667709_dp, -0.0077801388_dp, &   ! N
+                    1.3251492481_dp, 0.1638239831_dp, 0.0713249069_dp, &   ! C
+                    1.8818395599_dp, 0.1764813685_dp, 1.4667973423_dp, &   ! C
+                    1.1563644386_dp, 0.4758564459_dp, 2.4030731780_dp, &   ! O
+                    2.0041403197_dp, -0.3893217244_dp, -0.6156078332_dp, &   ! H
+                    1.2933738676_dp, 1.2140808724_dp, -0.2903017566_dp, &   ! H
+                    -0.6557592247_dp, -0.0682256808_dp, 0.6785523482_dp, &   ! H
+                    -0.3826962098_dp, -0.2691894812_dp, -0.9506317163_dp, &   ! H
+                    3.2093591995_dp, -0.0780774266_dp, 1.6702200732_dp, &   ! N
+                    3.8489825798_dp, -0.0589263473_dp, 2.9842578467_dp, &   ! C
+                    5.3502343581_dp, -0.0788662970_dp, 2.9476716562_dp, &   ! C
+                    5.9543074560_dp, -0.1656759551_dp, 1.8893430618_dp, &   ! O
+                    3.5421254604_dp, 0.8561169960_dp, 3.5393994122_dp, &   ! H
+                    3.4986665918_dp, -0.9402544817_dp, 3.5643998498_dp, &   ! H
+                    3.7845901118_dp, -0.3119789206_dp, 0.8286081985_dp, &   ! H
+                    6.0352251963_dp, 0.0003525130_dp, 4.1282386693_dp, &   ! N
+                    7.4955375902_dp, -0.0138802141_dp, 4.2014382315_dp, &   ! C
+                    8.0730347718_dp, 0.0277800836_dp, 5.5909529457_dp, &   ! C
+                    7.3557278976_dp, 0.0641983810_dp, 6.5759347789_dp, &   ! O
+                    7.8694940865_dp, -0.9353711779_dp, 3.7021749317_dp, &   ! H
+                    7.8868335534_dp, 0.8596348618_dp, 3.6344677391_dp, &   ! H
+                    5.4670886620_dp, 0.0786510231_dp, 5.0034540291_dp, &   ! H
+                    9.3768940878_dp, 0.0221621974_dp, 5.7818296269_dp, &   ! O
+                    9.9376629532_dp, -0.0106298905_dp, 4.9380771002_dp, &   ! H
+                    7.3635223930_dp, -0.3681902986_dp, -0.5795840740_dp, &   ! O
+                    6.8902239587_dp, -0.3001739023_dp, 0.2496289275_dp, &   ! H
+                    6.6876213700_dp, -0.2710584500_dp, -1.2503709636_dp &   ! H
+                    ], [3, 27])
+      xyz = to_bohr(ang)
+   end subroutine gly3_water
+
+   subroutine butane_water(z, sym, xyz)
+      !! Anti butane and a water 4.5 A beyond C4, as the GAMESS deck has them
+      integer, intent(out) :: z(17)
+      character(len=2), intent(out) :: sym(17)
+      real(dp), intent(out) :: xyz(3, 17)
+      real(dp) :: ang(3, 17)
+
+      z = [6, 6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 8, 1, 1]
+      sym = ["C ", "C ", "C ", "C ", "H ", "H ", "H ", "H ", "H ", "H ", "H ", "H ", &
+             "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([0.000000_dp, 0.000000_dp, 0.000000_dp, &
+                     1.268400_dp, 0.855600_dp, 0.000000_dp, &
+                     2.536900_dp, 0.000000_dp, 0.000000_dp, &
+                     3.805300_dp, 0.855600_dp, 0.000000_dp, &
+                     0.272900_dp, -1.055300_dp, 0.000000_dp, &
+                     -0.588900_dp, 0.222400_dp, -0.889800_dp, &
+                     -0.588900_dp, 0.222400_dp, 0.889800_dp, &
+                     1.268400_dp, 1.484700_dp, 0.890100_dp, &
+                     1.268400_dp, 1.484700_dp, -0.890100_dp, &
+                     2.536900_dp, -0.629100_dp, -0.890100_dp, &
+                     2.536900_dp, -0.629100_dp, 0.890100_dp, &
+                     3.532400_dp, 1.910800_dp, 0.000000_dp, &
+                     4.394200_dp, 0.633100_dp, -0.889800_dp, &
+                     4.394200_dp, 0.633100_dp, 0.889800_dp, &
+                     7.535896_dp, 3.372076_dp, 0.000000_dp, &
+                     7.575283_dp, 4.330466_dp, 0.000000_dp, &
+                     8.439273_dp, 3.049628_dp, 0.000000_dp], [3, 17])
+      xyz = to_bohr(ang)
+   end subroutine butane_water
 
    subroutine test_three_exact(error)
       !! Three fragments, two detached bonds, expanded to full order
@@ -607,6 +854,12 @@ contains
       opts%level = 2
       opts%scf_energy_tol = 1.0e-11_dp
       opts%scf_density_tol = 1.0e-9_dp
+      ! The monomer loop to 1e-10 rather than its 1e-7 default: the two
+      ! conventions polarise the monomers differently on the way in, so at
+      ! the default what separates the totals is that loop's own stopping
+      ! point, 5.6e-9, and not the physics this test is about.
+      opts%outer_tol = 1.0e-10_dp
+      opts%max_outer = 100
 
       call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], opts, res, err)
       call check(error,.not. err%has_error(), "the expansion failed")

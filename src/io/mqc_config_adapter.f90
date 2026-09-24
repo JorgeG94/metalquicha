@@ -59,6 +59,9 @@ module mqc_config_adapter
          !! field only -- which expansion is summed still follows `method`.
       character(len=16) :: bond_breaking = "none"
          !! How a cut covalent bond is represented; "none" refuses one
+      integer, allocatable :: detached_atoms(:)
+         !! Detached ends of cut bonds, **1-based** here, converted from the
+         !! deck's 0-based list
       real(dp) :: cap_scale = 1.0_dp
          !! Where a cap sits along the bond it closes
       character(len=16) :: counterpoise = "none"   !! "none" or "vmfc"
@@ -231,6 +234,9 @@ contains
       end if
       if (allocated(mqc_config%bond_breaking)) then
          driver_config%bond_breaking = mqc_config%bond_breaking
+      end if
+      if (allocated(mqc_config%detached_atoms)) then
+         driver_config%detached_atoms = mqc_config%detached_atoms + 1
       end if
       driver_config%cap_scale = mqc_config%cap_scale
       ! `expansion_kind` is NOT copied from the deck here any more --

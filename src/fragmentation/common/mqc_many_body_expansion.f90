@@ -187,6 +187,8 @@ module mqc_many_body_expansion
          !! silently produced 6-31G numbers.
       character(len=16) :: esp = "exact"
       character(len=16) :: expansion = "fmo"
+      integer, allocatable :: detached_atoms(:)
+         !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
       character(len=16) :: bond_breaking = "none"
          !! How a cut covalent bond is represented on this expansion; "none"
          !! refuses a partition that cuts one, which is the default and was the
@@ -380,7 +382,8 @@ contains
                        this%scf_energy_tol, this%scf_density_tol, &
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
-                       fragment_charges=this%fragment_charges)
+                       fragment_charges=this%fragment_charges, &
+                       detached=this%detached_atoms)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -457,7 +460,8 @@ contains
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                        fragment_charges=this%fragment_charges, &
-                       comm=this%resources%mpi_comms%world_comm)
+                       comm=this%resources%mpi_comms%world_comm, &
+                       detached=this%detached_atoms)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())
          return

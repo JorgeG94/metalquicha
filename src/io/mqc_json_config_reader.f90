@@ -743,6 +743,8 @@ contains
       call optional_real(json, "keywords.fragmentation.scf_density_tolerance", config%fmo_scf_density_tol)
       call optional_string(json, "keywords.fragmentation.embedding", config%embedding)
       call optional_string(json, "keywords.fragmentation.bond_breaking", config%bond_breaking)
+      call read_detached_atoms(json, config, error)
+      if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.cap_scale", config%cap_scale)
       call optional_string(json, "keywords.fragmentation.cutoff_method", config%cutoff_method)
       call optional_string(json, "keywords.fragmentation.distance_metric", config%distance_metric)
@@ -751,6 +753,27 @@ contains
 
       call read_cutoffs(json, config, error)
    end subroutine read_fragmentation
+
+   subroutine read_detached_atoms(json, config, error)
+      !! `keywords.fragmentation.detached_atoms`, 0-based as every atom index
+      !! in a deck
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: indices(:)
+      logical :: found
+
+      call json%get("keywords.fragmentation.detached_atoms", indices, found)
+      if (.not. found) return
+      if (.not. allocated(indices)) return
+      if (any(indices < 0)) then
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.detached_atoms: atom "// &
+                        "indices are 0-based and cannot be negative")
+         return
+      end if
+      config%detached_atoms = indices
+   end subroutine read_detached_atoms
 
    subroutine read_efmo(json, config, error)
       !! The keywords.efmo block

@@ -183,7 +183,8 @@ contains
                           level, max_outer, outer_tol, scf_max_iter, &
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
-                          cap_scale, energy, error, fragment_charges, comm)
+                          cap_scale, energy, error, fragment_charges, comm, &
+                          detached)
       !! No-op stand-in: FMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -212,6 +213,8 @@ contains
          !! Each fragment's net charge, indexed as `owner` numbers them. Absent
          !! means every fragment is neutral.
       type(comm_t), intent(in), optional :: comm
+      integer, intent(in), optional :: detached(:)
+         !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
 
@@ -226,7 +229,7 @@ contains
       if (outer_tol < 0.0_dp .or. scf_max_iter < 0 .or. scf_energy_tol < 0.0_dp) return
       if (scf_density_tol < 0.0_dp) return
       if (present(fragment_charges)) return
-      if (present(comm)) return
+      if (present(comm) .or. present(detached)) return
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &

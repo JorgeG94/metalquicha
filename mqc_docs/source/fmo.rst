@@ -195,6 +195,9 @@ Cutting a covalent bond
    atoms and the two fragments they were put in. ``"afo"`` detaches the bond with
    an **adjusted frozen orbital** instead.
 
+``detached_atoms`` (default: the sp3 end, else the lower-numbered one)
+   0-based atoms that are the detached ends of cut bonds; see below.
+
 The refusal is not a formality, and it is still the default. Cutting a single
 bond leaves both fragments with an odd electron count, which the closed-shell
 check catches on its own; but cutting an even number per fragment -- a ring, a
@@ -209,28 +212,45 @@ reach any of this.
 How a bond is detached
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Each cut bond gets a small **model system** -- both its atoms, everything within
-a radius of either, every *singly bonded* atom hanging off what that took, and a
-hydrogen cap for each bond leaving the set at the standard length for the atom it
-hangs off.
+The construction is GAMESS's adjusted frozen orbitals, as Fedorov, Jensen, Deka
+and Kitaura describe it (*J. Phys. Chem. A* **112**, 11808 (2008)) and as
+``fmolib.src`` implements it, and it reproduces GAMESS's fragment energies to
+1e-8 Hartree; see `Against GAMESS`_.
 
-A singly bonded neighbour comes in wholesale rather than by distance so that one
-just outside the radius is not swapped for a cap hydrogen a few hundredths of an
-Angstrom away, which is a discontinuity in anything that moves the geometry. For
-a heavy one -- a carbonyl oxygen, above all -- there is a second reason: a cap
-hydrogen closes exactly one electron pair, a carbonyl oxygen is held by two, and
-capping it leaves the model a radical. Bond perception here is distance-based and
-cannot report a bond order, so the order is not guessed and the atom comes in
-whole instead. Without that rule every backbone cut of a peptide failed, amide
-and C-alpha--C alike, because the sphere reaches a neighbouring carbonyl carbon
-without reaching its oxygen.
-That is solved, localized, and the orbital sitting on the bond is kept, reduced
-to the coefficients on the bond-detached atom. Expressing it there is what makes
-it transferable: those functions exist unchanged in any fragment containing that
-atom, so putting it to work is an index map.
+**Which end is detached.** Of the two atoms of a cut bond one is the *detached*
+end (GAMESS's BDA) and one the *attached* end. ``keywords.fragmentation.
+detached_atoms`` names the detached ends, 0-based, as the sign in GAMESS's
+``$FMOBND`` does; naming both ends of one bond is refused. A bond neither end of
+which is named is detached at its sp3 end -- the one with four neighbours when
+the other has fewer, which on a protein backbone cut at C-alpha--C(=O) is the
+C-alpha -- and otherwise at its lower-numbered atom.
 
-The two fragments then split the bond, following the assignment FMO uses. Of the
-pair, one atom is the *detached* end and one the *attached* end:
+**The model system.** Both atoms of the bond and every atom bonded to either,
+by GAMESS's own bond test (Emsley radii times 1.2, hydrogen's unscaled); then,
+for each atom bonded to one of those and not taken, a hydrogen comes in where it
+is and anything else is replaced by a cap hydrogen at GAMESS's X-H length for the
+atom it hangs off (1.09 A from carbon, 1.01 from nitrogen, 0.96 from oxygen). One
+addition GAMESS does not make: a *terminal* heavy atom bonded to a taken one --
+a carbonyl oxygen -- comes in whole, since a cap closes one electron pair and a
+double bond is two. It never applies where GAMESS's model is closed-shell
+already. Charged groups taken in are counted into the model's charge.
+
+**The orbitals.** The model is solved and every occupied orbital
+Boys-localized. The detached atom's own orbitals are the ones with the largest
+population on it, ``sum_{mu,nu on A} C_mu S_mu,nu C_nu`` -- five for a carbon,
+its 1s and four sp3 -- and of those the one with the largest population on the
+attached atom is the bond's. Each is kept on every real atom bonded to either
+end and dropped elsewhere; a group takes whichever of those atoms it holds and
+Gram-Schmidt orthonormalises the set, occupied first.
+
+The localizer is the one difference from the paper, which uses
+Edmiston-Ruedenberg; this code has Boys only. GAMESS can be asked for either
+(``$CONTRL LOCAL``, read into the model at ``fmolib.src:5783``), and in GAMESS
+itself the choice moves butane with a water, cut once, by 1.4e-8 Hartree, but
+the glycine tripeptide with a water, cut twice, by 2.5e-4 -- above what this
+page otherwise calls agreement. Every GAMESS number here was run with Boys.
+
+The two fragments then split the bond:
 
 ============================  =========================  =========================
                               fragment of the detached   fragment of the attached
@@ -238,31 +258,41 @@ pair, one atom is the *detached* end and one the *attached* end:
 nucleus                       ``Z - 1`` of it            ``+1`` of it, on a ghost
 its basis functions           owns them                  carries them, ghosted
 the bond's electron pair      none of it                 all of it
-the hybrid on that atom       frozen empty               frozen occupied
+the bond orbital              frozen empty               frozen occupied
+the atom's other orbitals     free                       frozen empty
 electron count                ``sum(Z) - 1``             ``sum(Z) + 1``
 net charge                    ``0``                      ``0``
 ============================  =========================  =========================
 
+**The atom's other orbitals are projected out of the ghost** -- for a carbon
+its 1s and its three other sp3, GAMESS's "1 occupied and 4 virtual frozen
+LMOs". Without it the borrowed functions are free to hold anything, and the
+fragment's electrons spread into the directions of the detached atom's other
+bonds.
+
+**What the old construction got wrong.** Until this was matched to GAMESS the
+bond orbital was reduced to the detached atom's own functions and frozen alone.
+On butane with a water that left the two cut monomers 0.127 and 0.298 Hartree
+above GAMESS's. Put back one piece at a time: the bond orbital over its
+neighbours as well carries all of the 0.127 and most of the 0.298; the four
+extra empties are the last 0.026, and in the other direction -- without them
+the ghost-holding monomer comes out *below* GAMESS's, as removing a constraint
+must. With the point-charge field the old construction also over-polarised the
+monomers at every cut: the monomer loop's energy change rose from 0.34 to 1.05
+Hartree over the first three passes on a two-fragment glycine tripeptide and
+took twenty passes. It now falls from the first pass, 5.0e-3, 1.1e-3, 1.5e-4,
+and stops at seven; GAMESS takes nine on the same system.
+
 The nucleus is split because the electron pair is. One unit of charge crosses
 the bond with the pair, so both fragments come out neutral closed shells and
 the two halves add back to ``Z`` inside any n-mer holding the whole bond. That
-is GAMESS's convention, and it is what a fragment *potential* needs: a fragment
+is GAMESS's convention, it is what a fragment *potential* needs -- a fragment
 carrying a unit charge puts a monopole term of order ``1/R`` on every
-adjacent-residue pair of a protein.
-
-**It happens only where there is a field**, because a split nucleus is only
-defined when something supplies the other half. With ``embedding = "ptc"`` the
-fragment across the bond supplies it -- it holds the ``+1`` and the bond pair,
-and the group on this side feels both -- so the split is free, and the table
-above is what runs. With ``embedding = "none"`` nothing supplies it, so the
-nucleus stays whole with its owner and the two sides come out at about ``+1``
-and ``-1``: the electron still moves, only the proton does not. Solving a
-methyl group around a nucleus short by one proton is a worse model than the
-cation, and the table under `What it costs`_ says by how much.
-
-GAMESS splits unconditionally and that does not settle the question, because
-GAMESS never runs this without a field at all -- its field-free reference state
-is built with methyl caps, which is a third construction again.
+adjacent-residue pair of a protein -- and it is the default with or without a
+field. ``embedding = "none"`` used to keep the nucleus whole instead, which was
+measured better when only the bond orbital was frozen; with the full frozen set
+it is not (`What it costs`_), and on the glycine tripeptide with a water the
+whole convention's C-terminal fragment is an anion whose SCF does not converge.
 
 Frozen means the Fock matrix is forced block diagonal in a basis holding those
 orbitals: the couplings between them and the variational space are zeroed and the
@@ -280,9 +310,9 @@ A detached bond under a field
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A detached atom is described by **two** fragments: its owner holds ``Z-1`` of
-the nucleus with the hybrid there frozen empty, and the fragment across the bond
+the nucleus with the bond orbital frozen empty, and the fragment across the bond
 holds the same functions as a ghost carrying ``+1`` with the bond pair in that
-hybrid. Three things follow, and all three are what ``embedding = "ptc"`` needed
+orbital. Three things follow, and all three are what ``embedding = "ptc"`` needed
 before it could be allowed.
 
 **Its population arrives twice, and the two shares are added.** Summing is the
@@ -315,8 +345,8 @@ nuclear repulsion with per-atom charges that add up over the fragments is
 pairwise-additive *in the fragments*, so an expansion reproduces it exactly at
 level two whatever the assignment. **The embedded energy is therefore invariant
 to the charge convention, exactly**, and measured that way -- propane's FMO(2)
-error is 0.48908757203956554 with whole nuclei and 0.48908757203680864 with
-split ones, which is convergence noise. The two runs are in the unit suite side
+total is -116.59715762085884 with whole nuclei and -116.59715762085621 with
+split ones, with the monomer loop converged to 1e-10. The two runs are in the unit suite side
 by side, as ``the_charge_convention_does_not_move_an_embedded_total``.
 
 So the reason to split the nucleus is not the FMO energy at all. It is that a
@@ -338,41 +368,74 @@ Expansion                          Error, Hartree
 =================================  ==================
 Two fragments, one bond, MBE(2)    exact
 Three fragments, MBE(3)            1.3e-13
-Three fragments, MBE(2)            0.180
+Three fragments, MBE(2)            0.219
 Three fragments, FMO(3), ``ptc``   1.3e-13
-Three fragments, FMO(2), ``ptc``   0.489
+Three fragments, FMO(2), ``ptc``   0.200
 =================================  ==================
 
-The middle row is the statement worth reading. An expansion carried to the
-fragment count is exact by inclusion and exclusion whatever the partition did, so
-landing on the whole molecule to 1e-13 says the bookkeeping is right across every
-group -- three monomers with boundaries, three dimers, and one of those dimers
-the pair of end fragments, which are not bonded to each other and whose group
-carries a ghost of a carbon belonging to neither.
+An expansion carried to the fragment count is exact by inclusion and exclusion
+whatever the partition did, so landing on the whole molecule to 1e-13 says the
+bookkeeping is right across every group. The two-body rows are the three-body
+term, and across detached bonds on fragments this small it is large; with the
+frozen bond orbital alone they were 0.180 and 0.489.
 
-The three-body rows are the three-body term, and across covalent bonds it is
-large. Expect that: the same quantity is a rounding error for a water cluster and
-110 kcal/mol here. Truncating at pairs is not advisable across detached bonds.
+Propane's two ends are a bond apart from the middle carbon each detaches, so the
+dimer of the two ends holds a ghost of that carbon beside the bond to it that it
+owns. GAMESS freezes the same bond twice there, once as the owner's empty bond
+orbital and once among the ghost's other orbitals, and its SCF for that dimer
+does not converge. Here the ghost's copy is left out. On a protein backbone
+cut at C-alpha--C two cuts are never that close.
 
-**And the point charges make the truncated expansion worse, not better** --
-0.489 Hartree against 0.180 with no embedding at all, where on a water cluster
-the embedding is worth a factor of twenty. That is not a fault in the
-bookkeeping, and it is not the fragments' charges either, which was the
-standing explanation here until the two conventions were run side by side.
-``embedding = "ptc"`` makes *every* fragment distant, including the one on the
-other end of the cut bond, and a point-charge field is at its worst at bonding
-contact, which is why FMO keeps an exact term inside ``resppc`` in the first
-place. That is the whole of it. None of these rows moves with the charge
-convention except the unembedded one, and the full-order rows land on the
-supermolecule to 1e-13 regardless.
+The nucleus convention in vacuo, MBE(2) error in Hartree:
 
-The unembedded row is why the split is not unconditional. Splitting the nucleus
-there takes it from 0.180 to 0.304 Hartree, and on the same molecule numbered so
-that one carbon is the detached end of *both* bonds -- and so presents ``Z-2``
--- from 0.125 to 1.549. With no field there is nothing holding the other half,
-so each monomer is solved around a nucleus short by a proton. The embedded rows
-do not move at all. So the convention is chosen per embedding, and nothing is
-given up by doing so.
+=====================================  ===========  ===========
+Propane, three fragments               split        whole
+=====================================  ===========  ===========
+carbons in chain order                 0.2186       0.2200
+middle carbon detached twice (Z-2)     0.868        0.046
+=====================================  ===========  ===========
+
+``"whole"`` is still better where one atom is detached from two neighbours,
+which GAMESS refuses outright; it can be asked for through
+``fmo_options_t%cut_nucleus``. With a field the two conventions give the same
+total, to 2.6e-12 on propane with the monomer loop converged to 1e-10.
+
+The glycine tripeptide with a water hydrogen-bonded to its middle carbonyl
+(``gly3_water_pair.xyz``), cut at both C-alpha--C bonds into four fragments,
+RHF/STO-3G, against the molecule's -762.311670856:
+
+=================================  ==================
+Expansion                          Error, Hartree
+=================================  ==================
+MBE(4), in vacuo                   4.5e-13
+MBE(2), in vacuo                   -3.1e-3
+FMO(2), ``ptc``                    -6.2e-5
+GAMESS FMO2, its default field     +6.4e-4
+=================================  ==================
+
+GAMESS's FMO2 uses the exact electrostatic potential for near fragments and
+separated-dimer electrostatics for far ones, so the last row is a different
+approximation of the same expansion, not a reference for the one above it.
+
+Against GAMESS
+~~~~~~~~~~~~~~
+
+Butane cut at C2-C3 with a water 4.5 A beyond C4, RHF/STO-3G, both codes solving
+every fragment in vacuo (GAMESS as the in-vacuo half of an EFMO run,
+``RAFO(1)=1,1,1``, ``LOCAL=BOYS``):
+
+========================================  ===================  =========
+                                          GAMESS               ours - it
+========================================  ===================  =========
+ethyl owning C2 at ``Z-1``                -63.7464859666       4.7e-9
+ethyl holding the ghost of C2             -77.4085157350       6.1e-9
+water                                     -74.9620085207       -9.0e-9
+MBE(2) of the three                       -230.4152004258      -1.7e-8
+========================================  ===================  =========
+
+Pinned in ``butane_and_water_match_gamess_afo``. With a field, FMO2 on the same
+system: -230.415277443 here with point charges, -230.415265534 in GAMESS with its
+own field, against -230.415265709 unfragmented.
 
 Restrictions
 ~~~~~~~~~~~~
