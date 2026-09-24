@@ -66,6 +66,8 @@ contains
                   new_unittest("butane_and_water_match_gamess_afo", test_gamess_butane_water), &
                   new_unittest("butane_and_water_match_gamess_fmo2_exact_field", &
                                test_gamess_butane_water_exact), &
+                  new_unittest("butane_and_water_match_gamess_with_a_separated_pair", &
+                               test_gamess_butane_water_separated), &
                   new_unittest("butane_and_water_match_gamess_fmo2_exact_field_er", &
                                test_gamess_butane_water_exact_er), &
                   new_unittest("glycine_tripeptide_and_water_match_gamess_fmo2_exact_field_er", &
@@ -468,8 +470,9 @@ contains
       !! `LOCAL=BOYS`, RHF/STO-3G: -230.415265994, printed to nine decimals.
       !! `RESPPC` is the same vdW-scaled distance as `resppc` here, so the
       !! water is exact to the ethyl it hydrogen-bonds and point charges to
-      !! the other; `RESDIM=0` computes every dimer, which is all this code
-      !! does. The molecule is -230.415265709.
+      !! the other; `RESDIM=0` computes every dimer, which is what `resdim`
+      !! zero, `fmo_options_t`'s default, does here. The molecule is
+      !! -230.415265709.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(fmo_options_t) :: opts
@@ -499,6 +502,68 @@ contains
       call check(error, abs(res%energy - GAMESS_FMO2) < 1.0e-7_dp, &
                  "FMO2 in the exact field does not match GAMESS")
    end subroutine test_gamess_butane_water_exact
+
+   subroutine test_gamess_butane_water_separated(error)
+      !! Butane and water in the exact field, the far pair separated, against GAMESS
+      !!
+      !! GAMESS 2026, `$FMO NBODY=2 RAFO(1)=1,1,1` with its defaults otherwise
+      !! -- `RESDIM=2.0`, `RESPPC=2.0`, `RESPAP=0` -- RHF/STO-3G. The water sits
+      !! 2.33 contact units from the ethyl it does not hydrogen-bond, so that
+      !! pair is an ES dimer, `D=S` in GAMESS's table, and the other two are
+      !! solved. Both monomers of it carry a detached bond: the ethyl holds a
+      !! ghost for the carbon across the cut, which is what makes this the
+      !! test of the separated pair's boundary handling.
+      !!
+      !! Totals -230.415265534 with `LOCAL=BOYS` and -230.415265548 with
+      !! `LOCAL=RUEDNBRG`; the separated pair's `E"IJ-E"I-E"J` -0.00024981 and
+      !! -0.00025100, printed to eight decimals.
+      type(error_type), allocatable, intent(out) :: error
+      character(len=4), parameter :: LOCALIZATION(2) = ["boys", "er  "]
+      real(dp), parameter :: GAMESS_FMO2(2) = [-230.415265534_dp, -230.415265548_dp]
+      real(dp), parameter :: GAMESS_ES(2) = [-0.00024981_dp, -0.00025100_dp]
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17), run, k
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+
+      call butane_water(z, sym, xyz)
+      do run = 1, 2
+         opts%basis = "sto-3g"
+         opts%esp = "exact"
+         opts%expansion = "fmo"
+         opts%bond_breaking = "afo"
+         opts%afo_localization = trim(LOCALIZATION(run))
+         opts%resppc = 2.0_dp
+         opts%resdim = 2.0_dp
+         opts%level = 2
+         opts%scf_energy_tol = 1.0e-10_dp
+         opts%scf_density_tol = 1.0e-8_dp
+         opts%outer_tol = 1.0e-9_dp
+         call run_fmo2(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                       opts, res, err)
+         call check(error,.not. err%has_error(), "FMO2 with a separated pair failed: "// &
+                    err%get_message())
+         if (allocated(error)) return
+         write (*, *) "   FMO2 separated ("//trim(LOCALIZATION(run))//") - GAMESS =", &
+            res%energy - GAMESS_FMO2(run)
+         call check(error, abs(res%energy - GAMESS_FMO2(run)) < 1.0e-7_dp, &
+                    "FMO2 with a separated pair does not match GAMESS")
+         if (allocated(error)) return
+
+         call check(error, count(res%pairs%separated), 1, "not exactly one pair separated")
+         if (allocated(error)) return
+         k = findloc(res%pairs%separated, .true., dim=1)
+         call check(error, res%pairs(k)%i == 1 .and. res%pairs(k)%j == 3, &
+                    "the separated pair is not the water and the far ethyl")
+         if (allocated(error)) return
+         write (*, *) "   separated pair - GAMESS =", res%pairs(k)%energy - GAMESS_ES(run)
+         call check(error, abs(res%pairs(k)%energy - GAMESS_ES(run)) < 1.0e-8_dp, &
+                    "the separated pair does not match GAMESS's ES dimer")
+         if (allocated(error)) return
+      end do
+   end subroutine test_gamess_butane_water_separated
 
    subroutine test_gamess_butane_water_exact_er(error)
       !! Butane and water, FMO2 in the exact field with the ER model, against GAMESS

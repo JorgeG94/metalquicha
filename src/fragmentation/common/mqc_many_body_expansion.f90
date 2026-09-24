@@ -201,6 +201,9 @@ module mqc_many_body_expansion
       real(dp) :: resppc = 2.0_dp
          !! Separation past which a neighbour becomes point charges. Negative
          !! disables the approximation.
+      real(dp) :: resdim = 0.0_dp
+         !! Separation past which a pair is taken as electrostatics instead of
+         !! solved; zero solves every pair. Resolved from the deck by the driver.
       integer :: level = 2
          !! Fragments at a time: 2 is FMO2, 3 is FMO3. Taken from the
          !! fragmentation level the deck already gives, since it means the same
@@ -234,6 +237,8 @@ module mqc_many_body_expansion
       real(dp), allocatable :: pair_response(:)    !! Hartree, inside `pair_energy`
       logical, allocatable :: pair_connected(:)
          !! The two-member terms and their sums, as `run_czt_fmo` returns them
+      logical, allocatable :: pair_separated(:)
+         !! Pairs beyond `resdim`, whose term is electrostatics and not an SCF
 
    contains
       procedure :: run_serial => fmo_run_serial
@@ -355,6 +360,7 @@ contains
       if (allocated(this%pair_energy)) deallocate (this%pair_energy)
       if (allocated(this%pair_response)) deallocate (this%pair_response)
       if (allocated(this%pair_connected)) deallocate (this%pair_connected)
+      if (allocated(this%pair_separated)) deallocate (this%pair_separated)
       this%n_fragments = 0
       this%energy = 0.0_dp
       this%monomer_sum = 0.0_dp
@@ -412,6 +418,7 @@ contains
                        pair_distance=this%pair_distance, pair_energy=this%pair_energy, &
                        pair_response=this%pair_response, &
                        pair_connected=this%pair_connected, &
+                       pair_separated=this%pair_separated, resdim=this%resdim, &
                        detached=this%detached_atoms, &
                        afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
@@ -451,6 +458,7 @@ contains
          json_data%fmo_pair_energy = this%pair_energy
          json_data%fmo_pair_response = this%pair_response
          json_data%fmo_pair_connected = this%pair_connected
+         json_data%fmo_pair_separated = this%pair_separated
       end if
    end subroutine fmo_report
 
@@ -511,6 +519,7 @@ contains
                        pair_distance=this%pair_distance, pair_energy=this%pair_energy, &
                        pair_response=this%pair_response, &
                        pair_connected=this%pair_connected, &
+                       pair_separated=this%pair_separated, resdim=this%resdim, &
                        comm=this%resources%mpi_comms%world_comm, &
                        detached=this%detached_atoms, &
                        afo_localization=trim(this%afo_localization))

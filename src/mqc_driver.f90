@@ -778,6 +778,23 @@ contains
             ! does for MBE: how many fragments at a time.
             expansion%level = max_level
             expansion%resppc = config%fmo_resppc
+            ! GAMESS's RESDIM default is 2.0 for FMO2 and tied to trimer
+            ! trimming, which this code does not do, for FMO3; so a deck that
+            ! says nothing gets it at level two only. It stands in for a pair
+            ! interaction energy, which only the FMO expansion has.
+            if (config%fmo_resdim < 0.0_dp) then
+               expansion%resdim = 0.0_dp
+               if (expansion%expansion == "fmo" .and. max_level == 2) expansion%resdim = 2.0_dp
+            else
+               if (config%fmo_resdim > 0.0_dp .and. expansion%expansion /= "fmo") then
+                  call logger%error("keywords.fragmentation.resdim: separated pairs are "// &
+                                    "an approximation to the FMO pair interaction "// &
+                                    "energy, and EE-MBE's pair terms are not one. "// &
+                                    "Leave resdim out, or set it to 0.")
+                  return
+               end if
+               expansion%resdim = config%fmo_resdim
+            end if
             expansion%max_outer = config%fmo_max_outer
             expansion%outer_tol = config%fmo_tolerance
             expansion%scf_max_iter = config%fmo_scf_max_iter

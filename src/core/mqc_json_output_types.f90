@@ -311,6 +311,9 @@ module mqc_json_output_types
       real(dp), allocatable :: fmo_pair_response(:)
          !! `Tr(dD_IJ u_IJ)`, already inside `fmo_pair_energy`
       logical, allocatable :: fmo_pair_connected(:)
+      logical, allocatable :: fmo_pair_separated(:)
+         !! Beyond `resdim`: the pair's energy is its monomers' electrostatic
+         !! interaction, and no pair SCF was run
          !! A detached bond joins the pair
 
    contains
@@ -443,6 +446,7 @@ contains
       if (allocated(this%fmo_pair_energy)) deallocate (this%fmo_pair_energy)
       if (allocated(this%fmo_pair_response)) deallocate (this%fmo_pair_response)
       if (allocated(this%fmo_pair_connected)) deallocate (this%fmo_pair_connected)
+      if (allocated(this%fmo_pair_separated)) deallocate (this%fmo_pair_separated)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)

@@ -723,6 +723,8 @@ contains
       if (error%has_error()) return
       call optional_string(json, "keywords.fragmentation.far_field", config%fmo_far_field)
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
+      call read_resdim(json, config, error)
+      if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.rcut", config%efmo_rcut)
       ! Unitless and a *ratio* of a distance to a van der Waals contact, so
       ! zero or negative is not "no cutoff" the way a negative `resppc` is: it
@@ -1979,6 +1981,32 @@ contains
 
       call json%get(path, ignored, was_named)
    end subroutine named
+
+   subroutine read_resdim(json, config, error)
+      !! `keywords.fragmentation.resdim`, refused if negative
+      !!
+      !! Absent leaves `fmo_resdim` at its negative "not given", which the
+      !! driver resolves by method and level. A deck cannot write that itself:
+      !! a negative separation means nothing, and zero already says "no
+      !! approximation".
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: value
+      logical :: found
+
+      call json%get("keywords.fragmentation.resdim", value, found)
+      if (.not. found) return
+      if (value < 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.resdim must be zero "// &
+                        "or positive. It is a separation in units of van der Waals "// &
+                        "contact past which an FMO pair is taken as electrostatics "// &
+                        "instead of solved; 0 solves every pair.")
+         return
+      end if
+      config%fmo_resdim = value
+   end subroutine read_resdim
 
    subroutine optional_real(json, path, value)
       !! Fetch a real if present, leaving `value` at its default otherwise

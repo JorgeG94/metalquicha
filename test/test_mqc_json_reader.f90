@@ -82,6 +82,8 @@ contains
                   new_unittest("fragmentation_cutoffs", test_cutoffs), &
                   new_unittest("efmo_keywords", test_efmo_keywords), &
                   new_unittest("efmo_rcut_must_be_positive", test_efmo_rcut_refused), &
+                  new_unittest("fmo_resdim_is_read_and_left_unset_by_silence", &
+                               test_fmo_resdim), &
                   new_unittest("cutoffs_must_decrease", test_cutoffs_monotonic), &
                   new_unittest("global_groups", test_global_groups), &
                   new_unittest("nodes_per_group", test_nodes_per_group), &
@@ -1154,6 +1156,52 @@ contains
       call check(error, parse_error%has_error(), &
                  "a negative induction_damping should be refused")
    end subroutine test_efmo_keywords
+
+   subroutine test_fmo_resdim(error)
+      !! `resdim` reaches the config, silence leaves it unset, and a negative
+      !! one is refused
+      !!
+      !! Unset rather than 2.0, because the default depends on the method and
+      !! the level -- GAMESS's 2.0 for FMO2, zero otherwise -- and the driver
+      !! is where both are known. Zero is a value a deck can write, meaning
+      !! every pair is solved, so "unset" is spelt as a negative the reader
+      !! never lets through from a deck.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"resdim": 2.5}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, close_enough(config%fmo_resdim, 2.5_dp))
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"resdim": 0}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, close_enough(config%fmo_resdim, 0.0_dp))
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fmo_resdim < 0.0_dp, "silence should leave resdim unset")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, '// &
+                      '"resdim": -1.0}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a negative resdim should be refused")
+   end subroutine test_fmo_resdim
 
    subroutine test_efmo_rcut_refused(error)
       !! `rcut` at or below zero is refused rather than run

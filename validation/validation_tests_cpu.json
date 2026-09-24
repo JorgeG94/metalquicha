@@ -4740,7 +4740,7 @@
             "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
             "expected_energy": -227.970541160128,
             "type": "fragmented",
-            "reference_note": "moved 8.3e-9 Hartree when the vdW-scaled interfragment distance switched from Bondi radii to GAMESS's $FMO VDWRAD table (H 1.20 / O 1.40 against 1.10 / 1.52), which is what RESPPC and RESDIM are quoted against. The outer pair of this trimer sits at R = 1.91 on the old radii and 2.03 on the new ones, so it crosses the default resppc = 2.0 and its embedding ESP is now the Mulliken point-charge approximation, as it is in GAMESS. Same physics, a different pair approximated; the reference is this program's own, as it was before."
+            "reference_note": "moved 8.3e-9 Hartree when the vdW-scaled interfragment distance switched from Bondi radii to GAMESS's $FMO VDWRAD table (H 1.20 / O 1.40 against 1.10 / 1.52), which is what RESPPC and RESDIM are quoted against. The outer pair of this trimer sits at R = 1.91 on the old radii and 2.03 on the new ones, so it crosses the default resppc = 2.0 and its embedding ESP is now the Mulliken point-charge approximation, as it is in GAMESS. Same physics, a different pair approximated; the reference is this program's own, as it was before. The deck sets resdim 0: at 2.03 the outer pair is also past GAMESS's RESDIM default of 2.0, which FMO2 now applies when a deck says nothing, and as a separated pair it moves the total by 5.1e-7. Pinned at 0 so the reference keeps checking the pair SCF; separated pairs are checked against GAMESS in test_mqc_fmo_pairs."
         },
         {
             "name": "EE-MBE water trimer 6-31g (CPU)",

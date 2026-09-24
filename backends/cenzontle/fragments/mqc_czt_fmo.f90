@@ -256,6 +256,16 @@ module mqc_czt_fmo
          !! Negative disables the approximation and makes every fragment exact.
          !! Zero makes every fragment distant, which is then identical to
          !! `esp = "ptc"` -- and is asserted to be, in `check_fmo`.
+      real(dp) :: resdim = 0.0_dp
+         !! Separation past which a pair is not solved but taken as the
+         !! electrostatic interaction of its two monomers, the separated-dimer
+         !! (ES-dimer) approximation. Measured as `resppc` is; zero, the
+         !! default here, solves every pair. GAMESS's RESDIM, whose FMO2
+         !! default of 2.0 the deck layer applies.
+         !!
+         !! Read only under `expansion = "fmo"` with a field, where a pair's
+         !! term is an interaction energy for the approximation to stand in
+         !! for.
       integer :: level = 2
          !! How many fragments at a time. Two is FMO2, three is FMO3, and the
          !! expansion is truncated there.
@@ -337,6 +347,9 @@ module mqc_czt_fmo
          !! A detached bond joins the two fragments, so `energy` carries the
          !! bond itself and reads in Hartree where its neighbours read in
          !! kcal/mol.
+      logical :: separated = .false.
+         !! Beyond `resdim`: no pair SCF was run, and `energy` is the
+         !! electrostatic interaction of the two monomers, `response` zero.
    end type fmo_pair_t
 
    type :: fmo_result_t
@@ -1878,7 +1891,7 @@ contains
 
       logical, allocatable :: keep(:)
       real(dp) :: r, best
-      integer :: k, g, ia, ib
+      integer :: k, g
 
       allocate (keep(n_frag), source=.false.)
       do k = 1, n_frag
@@ -1890,13 +1903,9 @@ contains
 
          best = huge(1.0_dp)
          do g = 1, size(group)
-            do ia = 1, size(frag(group(g))%atoms)
-               do ib = 1, size(frag(k)%atoms)
-                  call unitless_distance(frag(group(g)), ia, frag(k), ib, r, error)
-                  if (error%has_error()) return
-                  best = min(best, r)
-               end do
-            end do
+            call fragment_separation(frag(group(g)), frag(k), r, error)
+            if (error%has_error()) return
+            best = min(best, r)
          end do
          keep(k) = best <= resppc
       end do
@@ -2181,7 +2190,8 @@ contains
       real(dp), allocatable :: q_all(:), totals(:)
       integer, allocatable :: terms(:, :), term_size(:)
       real(dp), allocatable :: correction(:), response(:)
-      real(dp) :: e_internal, e_resp
+      logical, allocatable :: separated(:)
+      real(dp) :: e_internal, e_resp, e_es
       integer :: n_terms, t, task, level, n_nmers
 
       level = min(opts%level, n_frag)
@@ -2200,6 +2210,16 @@ contains
       if (is_leader(comm)) then
          call logger%info("  fmo: "//to_char(n_nmers)//" n-mers up to level "// &
                           to_char(level))
+      end if
+
+      ! Decided on every rank from the geometry alone, so every rank agrees on
+      ! which pairs are separated without being told.
+      call separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
+      if (error%has_error()) return
+      if (is_leader(comm) .and. any(separated)) then
+         call logger%info("  fmo: "//to_char(count(separated))//" of "// &
+                          to_char(count(term_size(1:n_terms) == 2))//" pairs are "// &
+                          "separated beyond resdim and taken as electrostatics")
       end if
 
       ! Monomers are level one and already solved; their correction is their
@@ -2227,6 +2247,18 @@ contains
          end if
 
          if (.not. mine(task, comm)) cycle
+
+         if (separated(t)) then
+            ! No pair SCF, so no response either: the correction is the two
+            ! monomers' energies plus their electrostatic interaction, and the
+            ! subtraction below leaves the interaction alone.
+            call es_dimer_energy(frag, terms(1, t), terms(2, t), afo, z, coords, opts, &
+                                 e_es, error)
+            if (error%has_error()) return
+            correction(t) = frag(terms(1, t))%energy + frag(terms(2, t))%energy + e_es
+            response(t) = 0.0_dp
+            cycle
+         end if
 
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
                         opts, afo, e_internal, e_resp, all_converged, error)
@@ -2279,13 +2311,146 @@ contains
       ! Every rank holds the reduced terms, so every rank builds the same
       ! pairs from them and nothing about a pair is ever sent.
       call collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
-                         response, res%pairs)
+                         response, separated, res%pairs)
       call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
    end subroutine calculate_polymers
 
+   subroutine separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
+      !! Which terms are pairs beyond `resdim`, to be taken as electrostatics
+      !!
+      !! Only under the FMO expansion with a field, where a pair's term is an
+      !! interaction energy; everywhere else, and at `resdim` zero, none are.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: terms(:, :), term_size(:)
+      integer, intent(in) :: n_terms
+      type(fmo_options_t), intent(in) :: opts
+      logical, allocatable, intent(out) :: separated(:)   !! (n_terms)
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: r
+      integer :: t
+
+      allocate (separated(n_terms), source=.false.)
+      if (opts%resdim <= 0.0_dp) return
+      if (opts%expansion /= "fmo" .or. opts%esp == "none") return
+      do t = 1, n_terms
+         if (term_size(t) /= 2) cycle
+         call fragment_separation(frag(terms(1, t)), frag(terms(2, t)), r, error)
+         if (error%has_error()) return
+         separated(t) = r > opts%resdim
+      end do
+   end subroutine separated_pairs
+
+   subroutine fragment_separation(fa, fb, r, error)
+      !! FMO's separation of two fragments: the least unitless distance over
+      !! every pair of their atoms
+      type(fragment_t), intent(in) :: fa, fb
+      real(dp), intent(out) :: r
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: this
+      integer :: ia, ib
+
+      r = huge(1.0_dp)
+      do ia = 1, size(fa%atoms)
+         do ib = 1, size(fb%atoms)
+            call unitless_distance(fa, ia, fb, ib, this, error)
+            if (error%has_error()) return
+            r = min(r, this)
+         end do
+      end do
+   end subroutine fragment_separation
+
+   subroutine es_dimer_energy(frag, i, j, afo, z, coords, opts, e_es, error)
+      !! The electrostatic interaction of two monomers, standing in for their
+      !! pair SCF
+      !!
+      !! `E = Tr(D_I u_J) + Tr(D_J u_I) + sum D_I D_J (mn|ls) + E_nn`: each
+      !! monomer's density in the other's nuclei, the two densities' exact
+      !! Coulomb repulsion, and the nuclei's. Each monomer enters as its own
+      !! SCF saw it -- its density over its full basis, ghosts included, and
+      !! its nuclei as it presented them -- which is how the field built them.
+      !!
+      !! GAMESS's `esdim` in fmo.src. Its point-charge form of the repulsion
+      !! is a separate cutoff, the second element of RESPPC, that is off by
+      !! default, and is not offered here.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: i, j
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), intent(out) :: e_es                 !! Hartree
+      type(error_t), intent(inout) :: error
+
+      type(group_t) :: g(2)
+      type(czt_molecule_t) :: mol
+      real(dp), allocatable :: matrices(:, :, :), u(:, :), d(:, :), j_mat(:, :)
+      integer :: members(2), n_ao(2)
+      integer :: side, a, b, s, t
+
+      e_es = 0.0_dp
+      members = [i, j]
+      do side = 1, 2
+         call assemble_group(frag, [members(side)], afo, z, coords, g(side), error)
+         if (error%has_error()) return
+      end do
+
+      ! Each density in the other monomer's nuclei, on its own basis.
+      do side = 1, 2
+         a = side
+         b = 3 - side
+         call build_czt_molecule(g(a)%z, g(a)%sym, g(a)%xyz, trim(opts%basis), mol, error, &
+                                 ghost=g(a)%ghost, nuclear_charge=g(a)%nuc_charge)
+         if (error%has_error()) return
+         n_ao(a) = mol%nao
+         if (size(frag(members(a))%density, 1) /= n_ao(a)) then
+            call error%set(ERROR_VALIDATION, "fmo: a separated monomer's density is not "// &
+                           "the size of the molecule its SCF saw")
+            return
+         end if
+         call esp_matrices(mol, g(b)%xyz, matrices, error)
+         if (error%has_error()) return
+         allocate (u(n_ao(a), n_ao(a)), source=0.0_dp)
+         do s = 1, size(g(b)%nuc_charge)
+            u = u - real(g(b)%nuc_charge(s), dp)*matrices(:, :, s)
+         end do
+         e_es = e_es + sum(frag(members(a))%density*u)
+         deallocate (u, matrices)
+      end do
+
+      ! The two densities' repulsion, once: J's density in the ket, I's basis
+      ! in the bra, over a molecule holding both.
+      call build_czt_molecule([g(1)%z, g(2)%z], [g(1)%sym, g(2)%sym], &
+                              reshape([g(1)%xyz, g(2)%xyz], &
+                                      [3, size(g(1)%z) + size(g(2)%z)]), &
+                              trim(opts%basis), mol, error)
+      if (error%has_error()) return
+      if (mol%nao /= n_ao(1) + n_ao(2)) then
+         call error%set(ERROR_VALIDATION, "fmo: a separated pair's basis is not its "// &
+                        "monomers' end to end")
+         return
+      end if
+      allocate (d(mol%nao, mol%nao), source=0.0_dp)
+      d(n_ao(1) + 1:, n_ao(1) + 1:) = frag(j)%density
+      call coulomb_from_blocks(mol, n_ao(1), [n_ao(1), mol%nao], d, j_mat, error)
+      if (error%has_error()) return
+      e_es = e_es + sum(frag(i)%density*j_mat)
+
+      ! The nuclei, as each monomer presented them.
+      do s = 1, size(g(1)%nuc_charge)
+         if (g(1)%nuc_charge(s) == 0) cycle
+         do t = 1, size(g(2)%nuc_charge)
+            if (g(2)%nuc_charge(t) == 0) cycle
+            e_es = e_es + real(g(1)%nuc_charge(s)*g(2)%nuc_charge(t), dp)/ &
+                   norm2(g(1)%xyz(:, s) - g(2)%xyz(:, t))
+         end do
+      end do
+   end subroutine es_dimer_energy
+
    subroutine collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
-                            response, pairs)
+                            response, separated, pairs)
       !! The two-member terms, with the distance and connectivity a reader needs
       !!
       !! `correction` must already have had its subsets subtracted.
@@ -2295,6 +2460,7 @@ contains
       integer, intent(in) :: terms(:, :), term_size(:)
       integer, intent(in) :: n_terms
       real(dp), intent(in) :: correction(:), response(:)
+      logical, intent(in) :: separated(:)   !! From [[separated_pairs]]
       type(fmo_pair_t), allocatable, intent(out) :: pairs(:)
 
       integer :: t, k, c, a, b, fi, fj
@@ -2311,6 +2477,7 @@ contains
          pairs(k)%j = max(fi, fj)
          pairs(k)%energy = correction(t)
          pairs(k)%response = response(t)
+         pairs(k)%separated = separated(t)
 
          r2 = huge(1.0_dp)
          do a = 1, size(frag(fi)%atoms)
@@ -2369,8 +2536,14 @@ contains
          write (line, "(a,i5,'-',i0,t17,f10.3,es20.10,f14.4,es20.10)") "  fmo: ", &
             pairs(p)%i, pairs(p)%j, pairs(p)%distance, pairs(p)%energy, &
             pairs(p)%energy*HARTREE_TO_KCALMOL, pairs(p)%response
+         ! GAMESS's `D=S`: no pair SCF, the term is electrostatics alone.
+         if (pairs(p)%separated) line = trim(line)//"  ES"
          call logger%info(trim(line))
       end do
+      if (any(pairs%separated)) then
+         call logger%info("  fmo: ES marks a separated pair, taken as the electrostatic "// &
+                          "interaction of its monomers")
+      end if
 
       order = pairs_by_strength(pairs, .true.)
       if (size(order) == 0) return

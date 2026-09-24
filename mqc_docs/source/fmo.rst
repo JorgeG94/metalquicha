@@ -138,6 +138,33 @@ All optional, all under ``keywords.fragmentation``.
    not to have one past the cutoff. It is the honest way to ask what the
    long-range field is worth: set the cutoff where you mean to and compare.
 
+``resdim`` (default ``2.0`` for FMO2, ``0`` otherwise)
+   How far apart two fragments have to be before their pair is not solved at all
+   but taken as the electrostatic interaction of the two monomers, measured as
+   ``resppc`` is. GAMESS calls such a pair a separated or ES dimer and marks it
+   ``D=S``; here its row in the pair table carries ``ES``, and ``separated`` in
+   the JSON output. Its energy is
+
+   .. math::
+
+      \Delta E_{IJ} = \mathrm{Tr}(D^I u^J) + \mathrm{Tr}(D^J u^I)
+         + \sum_{\mu\nu \in I} \sum_{\lambda\sigma \in J}
+           D^I_{\mu\nu} D^J_{\lambda\sigma} (\mu\nu|\lambda\sigma)
+         + E^{\rm nuc}_{IJ}
+
+   with each monomer's converged density and its nuclei as its own SCF presented
+   them, ghosts and detached-bond charges included, and no response term. The
+   repulsion is exact, as GAMESS computes it by default.
+
+   ``0`` solves every pair. The default is GAMESS's for FMO2; at level three
+   GAMESS ties it to trimer trimming, which this code does not do, so a deck that
+   says nothing solves every pair there. EE-MBE has no pair interaction energy for
+   the approximation to stand in for, and refuses a non-zero value.
+
+   Twenty waters in STO-3G separate 64 of their 190 pairs, and match GAMESS
+   ``RESDIM=2.0`` to 5.5e-08 in the total and to 5e-09 in each separated pair; the
+   separation moves the total by 6.4e-06 against solving every pair.
+
 ``max_outer`` (default ``50``) and ``outer_tolerance`` (default ``1e-7``)
    Cap and convergence for the monomer self-consistency loop, the latter on the
    sum of monomer energies in Hartree.
@@ -520,7 +547,13 @@ same system, ``RESPPC=2.0 RESDIM=0 RESPAP=0`` in GAMESS and ``resppc`` 2.0 here:
 -230.415266021 against -230.415266004 with ER, 1.7e-8 apart; pinned in
 ``butane_and_water_match_gamess_fmo2_exact_field`` and ``..._er``. The two
 pairs across no cut match GAMESS's printed 0.302 and -0.158 kcal/mol; the cut
-pair is -9122.239 against a printed -9122.246, the printout offset above. With point charges it is
+pair is -9122.239 against a printed -9122.246, the printout offset above.
+At GAMESS's default ``RESDIM=2.0`` the water and the ethyl it does not
+hydrogen-bond are a separated pair, both of them fragments with a detached bond:
+-230.415265614 against -230.415265534 with Boys and -230.415265628 against
+-230.415265548 with ER, 8.0e-8 apart, the separated pair within 4.4e-9 of
+GAMESS's printed -0.00024981 and -0.00025100 Hartree; pinned in
+``butane_and_water_match_gamess_with_a_separated_pair``. With point charges it is
 -230.415277443; the molecule is -230.415265709.
 
 Restrictions

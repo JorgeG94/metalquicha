@@ -605,6 +605,12 @@ module mqc_config_types
       real(dp) :: fmo_resppc = 2.0_dp
          !! Separation past which a fragment becomes point charges; negative
          !! turns the approximation off and makes every neighbour exact
+      real(dp) :: fmo_resdim = -1.0_dp
+         !! `keywords.fragmentation.resdim`: separation past which an FMO pair
+         !! is taken as its monomers' electrostatic interaction instead of
+         !! solved. Negative means the deck did not say, which the driver
+         !! resolves to GAMESS's 2.0 for FMO2 and to zero, every pair solved,
+         !! otherwise. Zero turns the approximation off.
       integer :: fmo_max_outer = 50
       real(dp) :: fmo_tolerance = 1.0e-7_dp
          !! Outer (monomer) SCF convergence, on the monomer energy sum

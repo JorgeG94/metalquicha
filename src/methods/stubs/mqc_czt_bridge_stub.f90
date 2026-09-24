@@ -186,7 +186,7 @@ contains
                           cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, &
                           response_sum, level_sum, pair_fragments, pair_distance, &
                           pair_energy, pair_response, pair_connected, comm, &
-                          detached, afo_localization)
+                          detached, afo_localization, pair_separated, resdim)
       !! No-op stand-in: FMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -246,6 +246,10 @@ contains
       character(len=*), intent(in), optional :: afo_localization
          !! "er" or "boys"; see `fmo_options_t%afo_localization`. Absent keeps
          !! that default.
+      logical, intent(out), optional, allocatable :: pair_separated(:)
+         !! (n_pairs), true where the pair lies beyond `resdim`
+      real(dp), intent(in), optional :: resdim
+         !! Separated-dimer cutoff; see `fmo_options_t%resdim`
 
       energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &
@@ -263,7 +267,7 @@ contains
       if (present(pair_distance) .or. present(pair_energy)) return
       if (present(pair_response) .or. present(pair_connected)) return
       if (present(comm) .or. present(detached)) return
-      if (present(afo_localization)) return
+      if (present(afo_localization) .or. present(pair_separated) .or. present(resdim)) return
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
