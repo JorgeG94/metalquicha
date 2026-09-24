@@ -99,9 +99,18 @@ CORRELATED_GRADIENTS = [
 # A cation of the same cluster rather than a small radical: the open-shell path
 # costs about twice the closed-shell one and that ratio is only visible at a
 # size where the closed-shell number was worth measuring.
+#
+# The functional is a hybrid, not a GGA. Unrestricted PBE on this cation -- and
+# on the neutral triplet -- does not converge: it oscillates around -381.0
+# hartree with the DIIS error stuck near 0.1 for a hundred cycles, and a level
+# shift of 0.2 or 0.5 does not settle it. A pure GGA spreads a hole over
+# several waters with near-degenerate arrangements; exact exchange localises it
+# enough to converge. The unrestricted Kohn-Sham code itself is not the
+# problem -- the udft validation cases pass -- so this is a choice of test
+# system, not a workaround for a defect.
 OPEN_SHELL_CASES = [
     ("uhf", "hf", None, "w5", "6-31g", "unrestricted HF"),
-    ("upbe", "dft", "pbe", "w5", "6-31g", "unrestricted GGA"),
+    ("ub3lyp", "dft", "b3lyp", "w5", "6-31g", "unrestricted global hybrid"),
 ]
 
 
@@ -120,7 +129,7 @@ def deck(path, geometry, method, functional, driver, basis, fragments=None, leve
         molecule["fragments"] = fragments
         keywords["fragmentation"] = {"method": "mbe", "level": level}
     if multiplicity > 1:
-        keywords["scf"]["unrestricted"] = True
+        model["unrestricted"] = True
     path.write_text(json.dumps({
         "schema": {"name": "mqc-benchmark", "version": "1.0"},
         "molecules": [molecule],
@@ -141,7 +150,13 @@ def run_once(exe, deck_path, threads, ranks=1):
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=deck_path.parent)
     wall = time.perf_counter() - start
     if proc.returncode != 0:
-        return {"failed": (proc.stdout + proc.stderr).strip().splitlines()[-3:]}
+        # The program's own complaint rather than the last lines of output:
+        # under MPI those are the launcher's abort notice, which says nothing
+        # about why.
+        lines = (proc.stdout + proc.stderr).strip().splitlines()
+        said = [l.strip() for l in lines if re.search(r"error|refus|invalid", l, re.I)
+                and "MPI_ABORT" not in l]
+        return {"failed": said[:2] or lines[-3:]}
     stages = {}
     for line in proc.stdout.splitlines():
         hit = STAGE_ROW.match(line)
