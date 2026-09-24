@@ -4771,6 +4771,7 @@
             "input": "inputs/cpu/mqc/fmo/afo3_gly3.json",
             "expected_energy": -687.343081551242,
             "tolerance": 1e-08,
+            "timeout": 2400,
             "type": "fragmented",
             "reference_note": "the unfragmented RHF/STO-3G energy of the same geometry, which an expansion carried to its fragment count has to reproduce whatever the partition did; this run lands 6.9e-11 away. A protein backbone rather than propane, so what it pins is the peptide case specifically: the model system around a C-alpha--C(=O) cut takes the neighbouring carbonyl oxygen whole instead of capping it -- a cap hydrogen closes one electron pair and that oxygen is held by two, so capping it made every backbone model a radical and the run was refused outright. Point charges, not an exact field, because a frozen orbital and an exact density both describe the bond region. The peptide bond itself is deliberately left whole: it carries two localized orbitals and is refused by name."
         },
