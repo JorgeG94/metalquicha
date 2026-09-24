@@ -85,9 +85,12 @@ module mqc_czt_efmo
    !! a group's energy depend on its environment, so the many-body differences
    !! no longer telescope and the level = N identity above stops holding.
    !!
-   !! **Closed shell, whole molecules.** Covalent fragments are Phase 5; a
-   !! partition that cuts a bond is refused here rather than capped, since a
-   !! cap's multipoles would act on the partner across the cut.
+   !! **Closed shell. A cut bond is detached, never capped**, and only when
+   !! `bond_breaking = "afo"` asks for it: each monomer, its potential and each
+   !! near group are solved with FMO's adjusted frozen orbitals and split
+   !! nuclei, so every fragment stays neutral, and a covalently joined pair is
+   !! always quantum. A cap's multipoles would act on the partner across the
+   !! cut, which is why capping is not offered. Energies only.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -1594,11 +1597,11 @@ contains
    subroutine refuse_covalent_cuts(z, coords, owner, n_atoms, error)
       !! Refuse a partition that puts one covalent molecule in two fragments
       !!
-      !! EFMO has no cap and no frozen orbital: a monomer potential is a MAKEFP
-      !! of the fragment as given, so a cut bond leaves a dangling valence that
+      !! With `bond_breaking = "none"` a monomer potential is a MAKEFP of the
+      !! fragment as given, so a cut bond would leave a dangling valence that
       !! the localization and the twelve response solves are then run on. The
       !! observed failure is not a diagnostic -- it is a full run that prints
-      !! its banner and reports NaN.
+      !! its banner and reports NaN. `"afo"` is the route that detaches it.
       !!
       !! The criterion is [[mqc_bond_perception]]'s, and the test is
       !! connectedness rather than one bond, so a cut ring is caught too: a
@@ -1627,11 +1630,10 @@ contains
             call error%set(ERROR_VALIDATION, "efmo: the partition cuts a covalent "// &
                            "molecule -- atoms "//to_char(i)//" and "//to_char(j)// &
                            " are covalently connected but were put in fragments "// &
-                           to_char(owner(i))//" and "//to_char(owner(j))//". A hydrogen "// &
-                           "cap's multipoles would act on its partner across the cut "// &
-                           "and no frozen-orbital route is wired in here, so this "// &
-                           "method cannot answer for that partition; fragment on "// &
-                           "whole molecules")
+                           to_char(owner(i))//" and "//to_char(owner(j))//". Set "// &
+                           "keywords.fragmentation.bond_breaking to 'afo' to detach "// &
+                           "each cut bond with a frozen orbital, or fragment on whole "// &
+                           "molecules")
             return
          end do
       end do

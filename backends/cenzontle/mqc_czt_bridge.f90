@@ -824,7 +824,7 @@ contains
                            allow_crap_response, response_batch, &
                            correlation, corr_aux_basis, freeze_core, n_frozen_core, &
                            pair_fragments, pair_distance, pair_qm, pair_energy, &
-                           pair_terms, comm)
+                           pair_terms, comm, bond_breaking)
       !! One effective fragment molecular orbital energy, with its breakdown
       !!
       !! Options arrive as plain scalars rather than the backend's own type, so
@@ -916,6 +916,9 @@ contains
          !! is false**; a quantum pair has no such split and its column is
          !! zero rather than a number that could be mistaken for one.
       type(comm_t), intent(in), optional :: comm
+      character(len=*), intent(in), optional :: bond_breaking
+         !! `keywords.fragmentation.bond_breaking`: `"afo"` detaches each cut
+         !! covalent bond with a frozen orbital, `"none"` (absent) refuses a cut.
          !! Present means spread the monomers and the quantum dimers over this
          !! communicator. Every rank gets the same total back.
 
@@ -960,6 +963,7 @@ contains
       if (present(corr_aux_basis)) opts%corr_aux_basis = corr_aux_basis
       if (present(freeze_core)) opts%freeze_core = freeze_core
       if (present(n_frozen_core)) opts%n_frozen_core = n_frozen_core
+      if (present(bond_breaking)) opts%bond_breaking = bond_breaking
 
       if (present(comm)) then
          call run_efmo(atomic_numbers, symbols, coordinates, owner, fragment_charges, &
