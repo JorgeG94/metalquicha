@@ -17,7 +17,11 @@ module test_mqc_czt_mp2
    !!   * the frozen-core *gradient* has to difference the frozen-core energy,
    !!     match `pyscf.grad.mp2` element by element, and come out the same from
    !!     every memory path -- the occupied-frozen block of the relaxed density
-   !!     is built from the Lagrangian, and no energy comparison can see it.
+   !!     is built from the Lagrangian, and no energy comparison can see it;
+   !!   * the packed AO tensor MP2 is built from has to be symmetric under the
+   !!     bra-ket swap, since only one triangle is written and the other is
+   !!     mirrored, and its Schwarz screening has to drop nothing larger than
+   !!     the threshold it was given while dropping something.
    use testdrive, only: new_unittest, unittest_type, error_type, check
 !$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use pic_types, only: dp
@@ -77,7 +81,9 @@ contains
                   new_unittest("ri_mp2_frozen_gradient_integral_paths_agree", &
                                test_ri_frozen_gradient_paths), &
                   new_unittest("ri_mp2_gradient_rejects_freezing_everything", &
-                               test_ri_frozen_gradient_refusal) &
+                               test_ri_frozen_gradient_refusal), &
+                  new_unittest("packed_eri_is_symmetric_and_screened_within_bound", &
+                               test_packed_eri_screening) &
                   ]
    end subroutine collect_mqc_czt_mp2_tests
 
@@ -685,6 +691,60 @@ contains
       call check(error, err%has_error(), &
                  "the RI gradient must refuse a core that freezes everything")
    end subroutine test_ri_frozen_gradient_refusal
+
+   subroutine test_packed_eri_screening(error)
+      !! Two waters 5 Angstrom apart, screened at a threshold loose enough to
+      !! drop quartets that are small but not zero
+      !!
+      !! At the default threshold the quartets screening removes are the ones
+      !! libcint's own optimizer already returns as zero, so the two tensors
+      !! would be identical and the test would prove nothing. At 1e-6 the
+      !! screened tensor must differ from the unscreened (`screen_tol = 0`) one,
+      !! and by no more than the threshold, the Schwarz bound being an upper
+      !! bound. Both have to be exactly symmetric: the fill stores the lower
+      !! triangle and copies it across, so any asymmetry is a missed or
+      !! misplaced store.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: TEST_SCREEN = 1.0e-6_dp
+      integer, parameter :: N_ATOMS = 6
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: full(:, :), screened(:, :)
+      real(dp) :: c(3, N_ATOMS)
+      integer :: n_dropped
+
+      c = reshape([0.0_dp, 0.0_dp, 0.1173_dp, &
+                   0.0_dp, 0.7572_dp, -0.4692_dp, &
+                   0.0_dp, -0.7572_dp, -0.4692_dp, &
+                   5.0_dp, 0.0_dp, 0.1173_dp, &
+                   5.0_dp, 0.7572_dp, -0.4692_dp, &
+                   5.0_dp, -0.7572_dp, -0.4692_dp], [3, N_ATOMS])*ANG
+      call build_czt_molecule([8, 1, 1, 8, 1, 1], ["O ", "H ", "H ", "O ", "H ", "H "], &
+                              c, "6-31G", mol, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call mol%eris_packed(full, screen_tol=0.0_dp)
+      call mol%eris_packed(screened, screen_tol=TEST_SCREEN)
+
+      call check(error, all(full == transpose(full)), &
+                 "the unscreened packed tensor is not symmetric under the bra-ket swap")
+      if (allocated(error)) return
+      call check(error, all(screened == transpose(screened)), &
+                 "the screened packed tensor is not symmetric under the bra-ket swap")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(full - screened)) <= TEST_SCREEN, &
+                 "screening dropped an integral larger than its threshold")
+      if (allocated(error)) return
+
+      n_dropped = count(screened == 0.0_dp .and. full /= 0.0_dp)
+      call check(error, n_dropped > 0, "nothing was screened at a threshold of 1e-6")
+      if (allocated(error)) return
+
+      call mol%destroy()
+   end subroutine test_packed_eri_screening
 
 end module test_mqc_czt_mp2
 

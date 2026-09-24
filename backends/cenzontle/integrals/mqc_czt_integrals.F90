@@ -22,7 +22,7 @@ module mqc_czt_integrals
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
    use pic_blas_interfaces, only: pic_gemm, pic_trsm
-   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES, DF_PAIR_SCREEN
+   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES, DF_PAIR_SCREEN, ERI_PACKED_SCREEN
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
@@ -2926,7 +2926,7 @@ contains
       deallocate (pair_i, pair_j)
    end subroutine ket_transformed_pairs
 
-   subroutine molecule_eris_packed(this, eri)
+   subroutine molecule_eris_packed(this, eri, screen_tol)
       !! Every unique two-electron integral, as (pq|rs) over packed AO pairs
       !!
       !! The dense n^4 form `eris` returns costs more to fill than to compute:
@@ -2936,19 +2936,28 @@ contains
       !! the bra-ket swap to write out, into an array a quarter the size.
       !!
       !! `eris` stays: the in-core SCF and `check_direct` read the dense form.
+      !!
+      !! Shell quartets whose Schwarz bound is below `screen_tol` are not
+      !! evaluated and are left zero.
       class(czt_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: eri(:, :)
+      real(dp), intent(in), optional :: screen_tol
+         !! Defaults to `ERI_PACKED_SCREEN`; zero evaluates every quartet
 
       real(dp), allocatable :: buf(:)
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, lsh_max
       integer :: shls(4)
       integer :: i, j, k, l, io, jo, ko, lo, ret, idx
-      integer :: p, q, r, t, pq, rt, n_pair
+      integer :: p, qq, r, t, pq, rt, n_pair
       integer :: npair_sh, ipair
       integer, allocatable :: pair_i(:), pair_j(:)
-      real(dp) :: value
+      real(dp) :: value, tol, q_bra, q_max
+      real(dp), allocatable :: q_split(:, :), q(:, :)
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
+
+      tol = ERI_PACKED_SCREEN
+      if (present(screen_tol)) tol = screen_tol
 
       n_pair = this%nao*(this%nao + 1)/2
       allocate (eri(n_pair, n_pair))
@@ -2963,6 +2972,13 @@ contains
       ! The fused-sp view where it exists; AO-indexed output, so only the
       ! shell loops feel it.
       call eri_shell_table(this, tab)
+      ! Bounds on the split shells, re-blocked onto the view the loop runs on.
+      ! libcint's optimizer already returns most of what this removes as zero;
+      ! screening here saves the call, measured at five per cent of the fill on
+      ! decane in cc-pVDZ, where the fill is bound by memory, not integrals.
+      call shell_pair_bounds(this, q_split)
+      call eri_schwarz_collapse(this, q_split, q)
+      q_max = maxval(q)
 
       opt = c_null_ptr
       call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, tab%bas, &
@@ -2980,14 +2996,16 @@ contains
       end do
 
       !$omp parallel default(none) &
-      !$omp    shared(this, tab, eri, opt, npair_sh, pair_i, pair_j) &
+      !$omp    shared(this, tab, eri, opt, npair_sh, pair_i, pair_j, q, q_max, tol) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
-      !$omp            i, j, k, l, p, q, r, t, pq, rt, shls, ret, idx, value, buf)
+      !$omp            i, j, k, l, p, qq, r, t, pq, rt, shls, ret, idx, value, buf, q_bra)
       allocate (buf(tab%block_max**4))
       !$omp do schedule(dynamic)
       do ipair = 1, npair_sh
          ish = pair_i(ipair)
          jsh = pair_j(ipair)
+         q_bra = q(ish, jsh)
+         if (q_bra*q_max < tol) cycle
          di = tab%dims(ish)
          io = tab%offs(ish)
          dj = tab%dims(jsh)
@@ -2998,6 +3016,7 @@ contains
             lsh_max = ksh
             if (ksh == ish) lsh_max = jsh
             do lsh = 1, lsh_max
+               if (q_bra*q(ksh, lsh) < tol) cycle
                dl = tab%dims(lsh)
                lo = tab%offs(lsh)
                shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
@@ -3011,7 +3030,7 @@ contains
                      r = ko + k
                      rt = pair_index(r, t)
                      do j = 1, dj
-                        q = jo + j
+                        qq = jo + j
                         do i = 1, di
                            p = io + i
                            idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
@@ -3021,7 +3040,7 @@ contains
                            ! here put every second store n_pair doubles from the
                            ! last -- a TLB miss each -- and cost 2.7x the fill
                            ! on four threads, more than the integrals.
-                           pq = pair_index(p, q)
+                           pq = pair_index(p, qq)
                            if (pq >= rt) then
                               eri(pq, rt) = value
                            else
