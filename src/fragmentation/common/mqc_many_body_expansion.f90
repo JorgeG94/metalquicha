@@ -193,6 +193,8 @@ module mqc_many_body_expansion
          !! How a cut covalent bond is represented on this expansion; "none"
          !! refuses a partition that cuts one, which is the default and was the
          !! only behaviour before caps existed.
+      character(len=8) :: afo_localization = "er"
+         !! How a cut bond's model system is localized; "er" or "boys"
       real(dp) :: cap_scale = 1.0_dp
          !! Where a cap sits along the bond it closes.
       character(len=16) :: far_field = "mulliken"
@@ -383,7 +385,8 @@ contains
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                        fragment_charges=this%fragment_charges, &
-                       detached=this%detached_atoms)
+                       detached=this%detached_atoms, &
+                       afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -461,7 +464,8 @@ contains
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
                        fragment_charges=this%fragment_charges, &
                        comm=this%resources%mpi_comms%world_comm, &
-                       detached=this%detached_atoms)
+                       detached=this%detached_atoms, &
+                       afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())
          return

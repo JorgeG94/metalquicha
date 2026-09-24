@@ -318,6 +318,9 @@ module mqc_czt_fmo
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
+      character(len=8) :: afo_localization = "er"
+         !! How a cut bond's model system is localized, "er" or "boys"; see
+         !! `afo_options_t%localization`.
    end type fmo_options_t
 
    type :: fmo_result_t
@@ -894,6 +897,7 @@ contains
       afo_opts%scf_energy_tol = opts%scf_energy_tol
       afo_opts%scf_density_tol = opts%scf_density_tol
       afo_opts%scf = opts%scf
+      afo_opts%localization = opts%afo_localization
       allocate (afo%sets(afo%n_cuts))
       allocate (afo%sym(size(symbols)), source=symbols)
       allocate (lengths(afo%n_cuts), source=0)

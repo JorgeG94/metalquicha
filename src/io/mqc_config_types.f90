@@ -648,6 +648,10 @@ module mqc_config_types
          !! `mqc_czt_afo.f90` and `mqc_docs/source/fmo.rst`. An FMO
          !! expansion accepts `"none"` and `"afo"`; it refuses `"caps"` as not
          !! implemented for that expansion.
+      character(len=8) :: afo_localization = "er"
+         !! How the model system around a cut bond is localized when
+         !! `bond_breaking = "afo"`: `"er"` for Edmiston-Ruedenberg, GAMESS's
+         !! default, or `"boys"` for Foster-Boys.
       integer, allocatable :: detached_atoms(:)
          !! `keywords.fragmentation.detached_atoms`: 0-based atoms that are the
          !! detached ends of cut bonds, GAMESS's `$FMOBND` sign. Unallocated

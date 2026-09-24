@@ -184,7 +184,7 @@ contains
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
                           cap_scale, energy, error, fragment_charges, comm, &
-                          detached)
+                          detached, afo_localization)
       !! No-op stand-in: FMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -217,6 +217,9 @@ contains
          !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
+      character(len=*), intent(in), optional :: afo_localization
+         !! "er" or "boys"; see `fmo_options_t%afo_localization`. Absent keeps
+         !! that default.
 
       energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &
@@ -230,6 +233,7 @@ contains
       if (scf_density_tol < 0.0_dp) return
       if (present(fragment_charges)) return
       if (present(comm) .or. present(detached)) return
+      if (present(afo_localization)) return
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
