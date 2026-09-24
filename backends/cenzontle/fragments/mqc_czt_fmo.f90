@@ -102,7 +102,7 @@ module mqc_czt_fmo
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
    !! 1140 SCFs against 190 for level two. No level is refused, but the binomial
    !! is the whole story.
-   use pic_types, only: dp, int_index
+   use pic_types, only: dp, int_index, int64
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
    use mqc_convergence_report, only: convergence_header, convergence_footer
@@ -2085,19 +2085,24 @@ contains
 
       real(dp), allocatable :: q_all(:)
       real(dp) :: e_sum, e_prev
-      integer :: i, outer
+      integer, allocatable :: owner(:)
+      integer :: i, outer, me
       logical :: show_conv
+
+      call monomer_owners(frag, n_frag, comm, owner)
+      me = 0
+      if (spread_over(comm)) me = comm%rank()
 
       ! Isolated fragments, to start the field from something.
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
       do i = 1, n_frag
-         if (.not. mine(i, comm)) cycle
+         if (owner(i) /= me) cycle
          call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, all_converged, &
                              error, bare=.true.)
          if (error%has_error()) return
       end do
-      call exchange_monomers(frag, n_frag, comm)
+      call exchange_monomers(frag, n_frag, owner, comm)
 
       if (opts%esp == "none") then
          res%converged = .true.
@@ -2116,12 +2121,12 @@ contains
          ! Independent within a pass, so who computes which is free. The
          ! exchange after is the barrier.
          do i = 1, n_frag
-            if (.not. mine(i, comm)) cycle
+            if (owner(i) /= me) cycle
             call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
                                 all_converged, error)
             if (error%has_error()) return
          end do
-         call exchange_monomers(frag, n_frag, comm)
+         call exchange_monomers(frag, n_frag, owner, comm)
 
          e_sum = sum(frag(:)%energy)
          res%outer_iterations = outer
@@ -2475,11 +2480,64 @@ contains
       many = comm%size() > 1
    end function spread_over
 
-   function mine(task, comm) result(owned)
-      !! Whether this rank owns a task, round robin
+   subroutine monomer_owners(frag, n_frag, comm, owner)
+      !! The rank that solves each monomer: costliest first, each onto the least
+      !! loaded rank
       !!
-      !! Static rather than handed out on demand: FMO's tasks are all much of a
-      !! size, so there is no imbalance for a task server to absorb.
+      !! A pass is one bag of monomers with a barrier after it, so its wall time
+      !! is the busiest rank's, and a protein's fragments differ in cost by more
+      !! than an order of magnitude. The cost is estimated from the partition
+      !! alone, identically on every rank, so the table needs no communication
+      !! and which rank solves a fragment changes nothing in its answer.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: n_frag
+      type(comm_t), intent(in), optional :: comm
+      integer, allocatable, intent(out) :: owner(:)   !! 0-based rank per fragment
+
+      ! What one unit of n^3, the fragment's own SCF, costs against one unit of
+      ! n^2 n_K^2, its near-field Coulomb build: 1e-5 s against 2.5e-8 s on
+      ! 2lty in HF/STO-3G, a fit that follows the measured monomer times to a
+      ! correlation of 0.997.
+      integer(int64), parameter :: SCF_WEIGHT = 400_int64
+      integer(int64), allocatable :: cost(:), key(:), load(:)
+      integer(int_index), allocatable :: order(:)
+      integer(int64) :: n, near_sq
+      integer :: f, k, n_rank, pick
+
+      allocate (owner(n_frag), source=0)
+      if (.not. spread_over(comm)) return
+      n_rank = comm%size()
+
+      allocate (cost(n_frag), order(n_frag), load(0:n_rank - 1))
+      do f = 1, n_frag
+         n = int(frag(f)%nao_full, int64)
+         near_sq = 0_int64
+         if (allocated(frag(f)%near)) then
+            do k = 1, size(frag(f)%near)
+               near_sq = near_sq + int(frag(frag(f)%near(k))%nao_full, int64)**2
+            end do
+         end if
+         cost(f) = n*n*near_sq + SCF_WEIGHT*n**3
+      end do
+      ! A copy is sorted, because `sort_index` reorders its argument in place.
+      key = cost
+      call sort_index(key, order, reverse=.true.)
+
+      load = 0_int64
+      do k = 1, n_frag
+         f = int(order(k))
+         pick = minloc(load, dim=1) - 1
+         owner(f) = pick
+         load(pick) = load(pick) + cost(f)
+      end do
+   end subroutine monomer_owners
+
+   function mine(task, comm) result(owned)
+      !! Whether this rank owns an n-mer, round robin
+      !!
+      !! Static rather than handed out on demand. The n-mers are many against
+      !! the ranks, which evens their sizes out; the monomers are few, and are
+      !! placed by [[monomer_owners]] instead.
       integer, intent(in) :: task
       type(comm_t), intent(in), optional :: comm
       logical :: owned
@@ -2554,7 +2612,7 @@ contains
       call logger%info(trim(line))
    end subroutine fmo_outer_row
 
-   subroutine exchange_monomers(frag, n_frag, comm)
+   subroutine exchange_monomers(frag, n_frag, owner, comm)
       !! Share what each rank computed this pass with every other
       !!
       !! A sum-reduce over buffers that are zero where a rank computed nothing,
@@ -2563,6 +2621,7 @@ contains
       !! next pass reads.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
+      integer, intent(in) :: owner(:)   !! From [[monomer_owners]]
       type(comm_t), intent(in), optional :: comm
 
       real(dp), allocatable :: buf(:)
@@ -2583,7 +2642,7 @@ contains
       at = 0
       do f = 1, n_frag
          n = frag(f)%nao_full*frag(f)%nao_full
-         if (mine(f, comm)) then
+         if (owner(f) == comm%rank()) then
             if (allocated(frag(f)%density)) buf(at + 1:at + n) = reshape(frag(f)%density, [n])
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
