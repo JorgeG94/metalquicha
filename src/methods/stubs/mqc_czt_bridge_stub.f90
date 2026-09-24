@@ -183,7 +183,9 @@ contains
                           level, max_outer, outer_tol, scf_max_iter, &
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
-                          cap_scale, energy, error, fragment_charges, comm)
+                          cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, &
+                          response_sum, level_sum, pair_fragments, pair_distance, &
+                          pair_energy, pair_response, pair_connected, comm)
       !! No-op stand-in: FMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -211,6 +213,30 @@ contains
       integer, intent(in), optional :: fragment_charges(:)
          !! Each fragment's net charge, indexed as `owner` numbers them. Absent
          !! means every fragment is neutral.
+      real(dp), intent(out), optional :: monomer_sum
+         !! `sum_I E'_I`, or the embedded monomer energies under EE-MBE
+      real(dp), intent(out), optional :: pair_sum
+         !! Every term of two or more fragments. Named for the level-two case;
+         !! above it this holds the larger terms too.
+      real(dp), intent(out), optional :: response_sum
+         !! `sum Tr(dD u)` over the n-mers, already inside `pair_sum`
+      real(dp), intent(out), optional, allocatable :: level_sum(:)
+         !! (level): the sum of the terms with that many members. Slot one is
+         !! `monomer_sum`; the rest add up to `pair_sum`.
+      integer, intent(out), optional, allocatable :: pair_fragments(:, :)
+         !! (2, n_pairs), the two fragments of each two-member term, numbered
+         !! from one, lower first
+      real(dp), intent(out), optional, allocatable :: pair_distance(:)
+         !! (n_pairs), closest interatomic approach in **Angstrom**, real atoms
+         !! only
+      real(dp), intent(out), optional, allocatable :: pair_energy(:)
+         !! (n_pairs), each pair's term of the expansion in Hartree. The pair
+         !! interaction energy under the FMO expansion, a correction under
+         !! EE-MBE, and neither where `pair_connected` is true.
+      real(dp), intent(out), optional, allocatable :: pair_response(:)
+         !! (n_pairs), `Tr(dD_IJ u_IJ)`, already inside `pair_energy`
+      logical, intent(out), optional, allocatable :: pair_connected(:)
+         !! (n_pairs), true where a detached bond joins the two fragments
       type(comm_t), intent(in), optional :: comm
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
@@ -226,6 +252,10 @@ contains
       if (outer_tol < 0.0_dp .or. scf_max_iter < 0 .or. scf_energy_tol < 0.0_dp) return
       if (scf_density_tol < 0.0_dp) return
       if (present(fragment_charges)) return
+      if (present(monomer_sum) .or. present(pair_sum) .or. present(response_sum)) return
+      if (present(level_sum) .or. present(pair_fragments)) return
+      if (present(pair_distance) .or. present(pair_energy)) return
+      if (present(pair_response) .or. present(pair_connected)) return
       if (present(comm)) return
    end subroutine run_czt_fmo
 

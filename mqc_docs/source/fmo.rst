@@ -451,12 +451,110 @@ the reason above, and no field at all leaves each side of a cut carrying about
 plus or minus one elementary charge, which on a protein puts a spurious ``1/R``
 monopole on every adjacent-residue pair.
 
-Per-pair interaction energies -- the numbers a protein-ligand analysis is for --
-are printed at ``"logger": {"level": "verbose"}``, one line per n-mer, under
-``fmo: n-mer interaction energies``. For a pair that number is
-``E'_IJ - E'_I - E'_J``, the same difference MBE's ``delta_energy`` column
-carries, but between fragments polarized by the rest of the system rather than
-in vacuum. This path writes one total to the output file and no fragment CSV.
+The per-pair interaction energies -- the numbers a protein-ligand analysis is
+for -- are in the output file and the log; see :ref:`fmo-pairs`. The two pairs a
+detached bond joins are flagged there and are not interaction energies.
+
+.. _fmo-pairs:
+
+Pair interaction energies
+-------------------------
+
+Every two-fragment term of the expansion is kept and reported, rather than only
+summed into the total. At info level the log carries a table, strongest first::
+
+   fmo: pair interaction energies, strongest first
+   fmo:     pair  R/Angstrom          dE/Hartree   dE/kcal/mol    Tr(dD u)/Hartree
+   fmo:    3-4       1.893   ...
+   fmo: joined by a detached bond -- each term carries the bond and is not an interaction energy
+   fmo:    1-2       ...
+
+and the output JSON an ``fmo`` object beside ``total_energy``:
+
+.. code-block:: json
+
+   "fmo": {
+     "expansion": "fmo",
+     "embedding": "ptc",
+     "monomer_sum": -761.2,
+     "pair_sum": -1.07,
+     "response_sum": 0.0021,
+     "level_sums": [-761.2, -1.07],
+     "connected_pair_note": "...",
+     "pairs": [
+       {"fragments": [3, 4], "distance": 1.893, "connected": false,
+        "delta_energy": -0.0055, "interaction_energy": -0.0055,
+        "response": 0.0003},
+       {"fragments": [1, 2], "distance": 1.52, "connected": true,
+        "delta_energy": -17.6, "response": 0.0011}
+     ]
+   }
+
+(values illustrative). The fields:
+
+``fragments``
+   The two fragments, **numbered from one** in the order of the deck's
+   ``fragments`` list, lower first. Atom indices elsewhere are 0-based; these
+   are fragments.
+``distance``
+   The closest approach of any atom of one to any atom of the other, in
+   **Angstrom**, real atoms only. EFMO's ``distance`` is a unitless vdW-scaled
+   ``R_IJ``; this one is not.
+``delta_energy``
+   The pair's term of the expansion in Hartree, after both monomers are taken
+   off: ``E'_IJ - E'_I - E'_J + Tr(dD_IJ u_IJ)`` under the FMO expansion. On
+   every row, and what the second entry of ``level_sums`` adds up.
+``interaction_energy``
+   The same number, written **only** where it is one: under the FMO expansion
+   (or with no field at all) and on a pair no detached bond joins. This is the
+   pair interaction energy FMO calls an IFIE.
+``response``
+   ``Tr(dD_IJ u_IJ)``, the pair density's response to the field of everything
+   outside it. Already inside ``delta_energy``; zero with no field.
+``connected``
+   A detached bond joins the two fragments. Sorted after every other pair.
+
+``pair_sum`` is every term of two or more fragments, so above level two it is
+more than the pairs add up to. ``level_sums`` holds one sum per term size, the
+first entry being ``monomer_sum``; at level three the pairs fall short of
+``pair_sum`` by exactly the third entry, the three-body sum, and no row stands
+in for the three-body terms. The total is ``monomer_sum + pair_sum`` and is not
+changed by any of this.
+
+**What these are.** The interaction of two fragments that have both already been
+polarized by the whole rest of the system, *excluding* their mutual induction:
+that relaxation happened in the monomer self-consistency, so it sits in the
+monomer terms and not in the pair. On a glycine tripeptide with a water
+hydrogen-bonded to a carbonyl (HF/6-31G, point charges, frozen orbitals) every
+ligand IFIE comes out less attractive than the vacuum pair energy of a plain
+expansion on the same partition, by more the closer the contact -- 3.7 kcal/mol
+on the hydrogen bond. The ranking of residues agrees.
+
+**What they are not.**
+
+* **Not a binding energy when summed.** On that same system the three ligand
+  IFIEs add to +0.60 kcal/mol, against a supermolecular binding energy of
+  -6.02: the induction they exclude is most of the binding. A binding energy
+  from FMO means two runs, with and without the ligand, and a difference of
+  totals.
+* **Not interaction energies where ``connected`` is true.** The monomers hold a
+  split nucleus and a frozen orbital the pair restores, so the term carries the
+  bond itself, about -17 Hartree on a peptide. Such a pair has no
+  ``interaction_energy`` key, and a ``connected_pair_note`` says why. This is
+  the same convention as the MBE fragment table's ``connected`` column.
+* **Not interaction energies under EE-MBE.** There a monomer's energy is its
+  total embedded energy and already holds its electrostatics with every other
+  fragment, so the pair term takes that back out and is a correction: a
+  distant ligand pair reads tens of kcal/mol from nothing. The rows are written
+  with ``delta_energy`` only, and a ``pair_note`` says so. Use
+  ``method: "fmo"`` for pair analysis.
+* **Not decomposed.** There is no electrostatics, exchange, charge-transfer or
+  dispersion split of an FMO pair; that is PIEDA, and it is not implemented.
+  EFMO's far pairs do carry four terms.
+* **Not counterpoise-corrected.**
+
+The pairs are built on every rank from the reduced terms, so an MPI run reports
+the same pairs as a serial one and no pair crosses a wire.
 
 Limits
 ------

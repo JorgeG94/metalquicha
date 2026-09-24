@@ -650,7 +650,9 @@ contains
                           level, max_outer, outer_tol, scf_max_iter, &
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
-                          cap_scale, energy, error, fragment_charges, comm)
+                          cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, &
+                          response_sum, level_sum, pair_fragments, pair_distance, &
+                          pair_energy, pair_response, pair_connected, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -683,6 +685,30 @@ contains
       integer, intent(in), optional :: fragment_charges(:)
          !! Each fragment's net charge, indexed as `owner` numbers them. Absent
          !! means every fragment is neutral.
+      real(dp), intent(out), optional :: monomer_sum
+         !! `sum_I E'_I`, or the embedded monomer energies under EE-MBE
+      real(dp), intent(out), optional :: pair_sum
+         !! Every term of two or more fragments. Named for the level-two case;
+         !! above it this holds the larger terms too.
+      real(dp), intent(out), optional :: response_sum
+         !! `sum Tr(dD u)` over the n-mers, already inside `pair_sum`
+      real(dp), intent(out), optional, allocatable :: level_sum(:)
+         !! (level): the sum of the terms with that many members. Slot one is
+         !! `monomer_sum`; the rest add up to `pair_sum`.
+      integer, intent(out), optional, allocatable :: pair_fragments(:, :)
+         !! (2, n_pairs), the two fragments of each two-member term, numbered
+         !! from one, lower first
+      real(dp), intent(out), optional, allocatable :: pair_distance(:)
+         !! (n_pairs), closest interatomic approach in **Angstrom**, real atoms
+         !! only
+      real(dp), intent(out), optional, allocatable :: pair_energy(:)
+         !! (n_pairs), each pair's term of the expansion in Hartree. The pair
+         !! interaction energy under the FMO expansion, a correction under
+         !! EE-MBE, and neither where `pair_connected` is true.
+      real(dp), intent(out), optional, allocatable :: pair_response(:)
+         !! (n_pairs), `Tr(dD_IJ u_IJ)`, already inside `pair_energy`
+      logical, intent(out), optional, allocatable :: pair_connected(:)
+         !! (n_pairs), true where a detached bond joins the two fragments
       type(comm_t), intent(in), optional :: comm
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
@@ -690,7 +716,7 @@ contains
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
       character(len=2), allocatable :: symbols(:)
-      integer :: i
+      integer :: i, k, n_pairs
 
       energy = 0.0_dp
       allocate (symbols(size(atomic_numbers)))
@@ -717,6 +743,53 @@ contains
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return
       energy = res%energy
+      if (present(monomer_sum)) monomer_sum = res%monomer_sum
+      if (present(pair_sum)) pair_sum = res%pair_sum
+      if (present(response_sum)) response_sum = res%response_sum
+      if (present(level_sum)) then
+         if (allocated(res%level_sum)) then
+            level_sum = res%level_sum
+         else
+            level_sum = [res%monomer_sum]
+         end if
+      end if
+
+      ! The pairs, flattened to plain arrays for the reason every option above
+      ! is a scalar: the layer above is compiled against the stub in a build
+      ! without this backend and must not need `fmo_pair_t`.
+      n_pairs = 0
+      if (allocated(res%pairs)) n_pairs = size(res%pairs)
+      if (present(pair_fragments)) then
+         allocate (pair_fragments(2, n_pairs))
+         do k = 1, n_pairs
+            pair_fragments(1, k) = res%pairs(k)%i
+            pair_fragments(2, k) = res%pairs(k)%j
+         end do
+      end if
+      if (present(pair_distance)) then
+         allocate (pair_distance(n_pairs))
+         do k = 1, n_pairs
+            pair_distance(k) = res%pairs(k)%distance
+         end do
+      end if
+      if (present(pair_energy)) then
+         allocate (pair_energy(n_pairs))
+         do k = 1, n_pairs
+            pair_energy(k) = res%pairs(k)%energy
+         end do
+      end if
+      if (present(pair_response)) then
+         allocate (pair_response(n_pairs))
+         do k = 1, n_pairs
+            pair_response(k) = res%pairs(k)%response
+         end do
+      end if
+      if (present(pair_connected)) then
+         allocate (pair_connected(n_pairs))
+         do k = 1, n_pairs
+            pair_connected(k) = res%pairs(k)%connected
+         end do
+      end if
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
