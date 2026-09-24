@@ -466,5 +466,10 @@ than quietly paired up. A detached bond moves an electron between the two
 fragments it joins, and the count checked here is the one after that move: ethane
 split into two methyls is 9 and 9 before it and 8 and 10 after.
 
+**Hartree-Fock only, for now.** Every fragment and n-mer is solved with
+restricted Hartree-Fock; other methods are not yet wired into these fragment
+calculations, and any other ``model.method`` is refused by name. It used to be
+ignored: a B3LYP deck ran as Hartree-Fock and reported that total.
+
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.

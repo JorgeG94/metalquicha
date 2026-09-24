@@ -12,7 +12,7 @@ module mqc_driver
    use mqc_method_types, only: needs_serial_execution
    use mqc_mbe_fragment_distribution_scheme, only: unfragmented_calculation, distributed_unfragmented_hessian
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t, &
-                                      fmo_context_t
+                                      fmo_context_t, fmo_method_refusal
    use mqc_method_config, only: method_config_t
    ! GMBE functions are now called via type-bound procedures in gmbe_context_t
    use mqc_validate, only: validate_system, validate_terms
@@ -699,6 +699,13 @@ contains
          ! FMO or electrostatically embedded MBE. Both are the same machinery,
          ! differing only in what a fragment sees of its neighbours and how the
          ! pieces are added up, so one context serves both.
+         ! The one check for both schemes, since both are built here and both
+         ! reach the backend through `run_czt_fmo`. EFMO does not, and refuses
+         ! its own methods in `run_efmo_energy`.
+         if (len(fmo_method_refusal(config%method_config%method_type)) > 0) then
+            call logger%error(fmo_method_refusal(config%method_config%method_type))
+            return
+         end if
          allocate (fmo_context_t :: expansion)
          select type (expansion)
          type is (fmo_context_t)

@@ -25,6 +25,8 @@ module test_mqc_fmo_partitions
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_error, only: error_t
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
+   use mqc_many_body_expansion, only: fmo_method_refusal
+   use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_DFT, METHOD_TYPE_MP2
    implicit none
    private
 
@@ -43,7 +45,8 @@ contains
       testsuite = [ &
                   new_unittest("a_single_cut_bond_is_refused", test_ethane), &
                   new_unittest("an_even_cut_is_refused_too", test_cyclopropane), &
-                  new_unittest("a_hydrogen_bond_is_not_a_cut", test_close_dimer) &
+                  new_unittest("a_hydrogen_bond_is_not_a_cut", test_close_dimer), &
+                  new_unittest("a_method_other_than_hf_is_refused", test_method) &
                   ]
    end subroutine collect_fmo_partitions
 
@@ -140,6 +143,33 @@ contains
                  label//" was refused: "//err%get_message())
       call err%clear()
    end subroutine must_allow
+
+   subroutine test_method(error)
+      !! FMO is handed a basis and never a method, so anything but HF is refused
+      !!
+      !! A B3LYP deck used to come back with the Hartree-Fock total, bit for
+      !! bit, and no word about it. A functional and MP2 both have to be
+      !! refused, and with a message that says this is not wired in yet.
+      type(error_type), allocatable, intent(out) :: error
+      character(len=:), allocatable :: why
+
+      why = fmo_method_refusal(METHOD_TYPE_HF)
+      call check(error, len(why), 0, "Hartree-Fock was refused")
+      if (allocated(error)) return
+
+      why = fmo_method_refusal(METHOD_TYPE_DFT)
+      call check(error, len(why) > 0, "DFT was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "model.method") > 0, &
+                 "the refusal does not name the key to change")
+      if (allocated(error)) return
+      call check(error, index(why, "not yet wired") > 0, &
+                 "the refusal reads as a limit in principle rather than one of now")
+      if (allocated(error)) return
+
+      why = fmo_method_refusal(METHOD_TYPE_MP2)
+      call check(error, len(why) > 0, "MP2 was not refused")
+   end subroutine test_method
 
    subroutine attempt(z, coords_ang, owner, error)
       !! Run FMO2 on this partition and report whatever came back
