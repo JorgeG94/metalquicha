@@ -28,7 +28,7 @@ module test_mqc_czt_direct
    use mqc_czt_direct, only: build_fock_direct, build_fock_direct_many, &
                              build_fock_direct_nosym, build_fock_direct_uhf, &
                              build_fock_direct_uhf_many, schwarz_bounds, &
-                             direct_stats_t
+                             direct_stats_t, coulomb_from_blocks
    use mqc_error, only: error_t
    implicit none
    private
@@ -111,9 +111,190 @@ contains
                   new_unittest("the_uhf_batch_matches_an_explicit_contraction", &
                                test_uhf_many_explicit), &
                   new_unittest("the_uhf_batch_handles_antisymmetric_pairs", &
-                               test_uhf_many_antisymmetric) &
+                               test_uhf_many_antisymmetric), &
+                  new_unittest("the_block_coulomb_build_is_the_bra_block_of_the_full_one", &
+                               test_block_coulomb) &
                   ]
    end subroutine collect_mqc_czt_direct_tests
+
+   subroutine test_block_coulomb(error)
+      !! `coulomb_from_blocks` is the bra block of the full Coulomb build
+      !!
+      !! The layout an FMO near field hands it: glycine tripeptide and water
+      !! cut into four pieces across the two C-alpha bonds, a group first and
+      !! three neighbours after it, each with the detached atom its SCF held as
+      !! a ghost. A ghost sits on the same centre as the real atom another
+      !! block owns, so the supersystem carries duplicated centres, exactly as
+      !! the FMO one does. Each neighbour gets a density of its own; the group
+      !! gets none.
+      !!
+      !! The reference is `build_fock_direct` over the whole supersystem with
+      !! exchange off, which is what the near field was built from before this
+      !! routine existed, sliced to the group. Held to 1e-12 with the default
+      !! screen, which both apply by the same test, and with none. STO-3G has
+      !! fused L shells and 6-31G* adds Cartesian d, so both shell tables the
+      !! quartet loop can run on are covered.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: BRA(8) = [3, 4, 9, 10, 13, 14, 15, 2]
+      integer, parameter :: KET1(6) = [1, 2, 5, 6, 7, 8]
+      integer, parameter :: KET2(12) = [11, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 10]
+      integer, parameter :: KET3(3) = [25, 26, 27]
+      character(len=6), parameter :: BASES(2) = ["sto-3g", "6-31g*"]
+      type(czt_molecule_t) :: mol, piece
+      type(error_t) :: err
+      type(direct_stats_t) :: stats, block_stats
+      integer :: z_all(27), order(29), z(29), ket_first(4), b, ib, k, nao_k, i, j, lo
+      character(len=2) :: sym_all(27), sym(29)
+      real(dp) :: xyz_all(3, 27), xyz(3, 29), diff
+      real(dp), allocatable :: d(:, :), c(:, :), zero_h(:, :), bounds(:, :), full(:, :)
+      real(dp), allocatable :: j_block(:, :)
+      real(dp) :: tols(2)
+
+      call gly3_water_geometry(z_all, sym_all, xyz_all)
+      order = [BRA, KET1, KET2, KET3]
+      z = z_all(order)
+      sym = sym_all(order)
+      xyz = xyz_all(:, order)
+      tols = [1.0e-11_dp, NO_SCREENING]
+
+      do ib = 1, size(BASES)
+         call build_czt_molecule(z, sym, xyz, trim(BASES(ib)), mol, err)
+         if (err%has_error()) then
+            call check(error, .false., "supersystem: "//err%get_message())
+            return
+         end if
+
+         ! Each block's size from the piece on its own, the way FMO counts it.
+         allocate (d(mol%nao, mol%nao), source=0.0_dp)
+         lo = 0
+         do k = 0, 3
+            select case (k)
+            case (0)
+               call build_czt_molecule(z_all(BRA), sym_all(BRA), xyz_all(:, BRA), &
+                                       trim(BASES(ib)), piece, err)
+            case (1)
+               call build_czt_molecule(z_all(KET1), sym_all(KET1), xyz_all(:, KET1), &
+                                       trim(BASES(ib)), piece, err)
+            case (2)
+               call build_czt_molecule(z_all(KET2), sym_all(KET2), xyz_all(:, KET2), &
+                                       trim(BASES(ib)), piece, err)
+            case (3)
+               call build_czt_molecule(z_all(KET3), sym_all(KET3), xyz_all(:, KET3), &
+                                       trim(BASES(ib)), piece, err)
+            end select
+            if (err%has_error()) then
+               call check(error, .false., "piece: "//err%get_message())
+               return
+            end if
+            nao_k = piece%nao
+            call piece%destroy()
+            if (k == 0) then
+               b = nao_k
+               lo = nao_k
+               cycle
+            end if
+            ket_first(k) = lo
+            ! D = 2 C C^T over half the block: symmetric, positive semidefinite
+            ! and of a density's size, without an SCF.
+            allocate (c(nao_k, max(1, nao_k/2)))
+            do j = 1, size(c, 2)
+               do i = 1, nao_k
+                  c(i, j) = 0.3_dp*sin(1.7_dp*i + 0.9_dp*j*k)/sqrt(real(nao_k, dp)) + &
+                            merge(0.8_dp, 0.0_dp, i == j)
+               end do
+            end do
+            d(lo + 1:lo + nao_k, lo + 1:lo + nao_k) = 2.0_dp*matmul(c, transpose(c))
+            deallocate (c)
+            lo = lo + nao_k
+         end do
+         ket_first(4) = lo
+         call check(error, lo, mol%nao, "the pieces do not add up to the supersystem")
+         if (allocated(error)) return
+
+         call schwarz_bounds(mol, bounds, err)
+         allocate (zero_h(mol%nao, mol%nao), source=0.0_dp)
+         allocate (full(mol%nao, mol%nao))
+         do k = 1, size(tols)
+            if (.not. err%has_error()) then
+               call build_fock_direct(mol, zero_h, d, bounds, full, stats, err, &
+                                      screen_tol=tols(k), k_scale=0.0_dp, j_scale=1.0_dp)
+            end if
+            if (.not. err%has_error()) then
+               call coulomb_from_blocks(mol, b, ket_first, d, j_block, err, &
+                                        screen_tol=tols(k), stats=block_stats)
+            end if
+            if (err%has_error()) then
+               call check(error, .false., "a build failed: "//err%get_message())
+               return
+            end if
+            diff = maxval(abs(j_block - full(1:b, 1:b)))
+            write (*, '(3x,a,a,a,es9.2,a,es10.3,a,i0,a,i0,a,f8.3)') "block Coulomb, ", &
+               trim(BASES(ib)), ", screen ", tols(k), ": max |diff| ", diff, &
+               ", quartets ", block_stats%quartets_computed, " of ", stats%quartets_computed, &
+               ", max |J| ", maxval(abs(j_block))
+            call check(error, diff <= 1.0e-12_dp, "the block Coulomb build is not the "// &
+                       "bra block of the full one in "//trim(BASES(ib)))
+            if (allocated(error)) return
+            call check(error, maxval(abs(j_block)) > 1.0_dp, &
+                       "the block Coulomb build came back without a field")
+            if (allocated(error)) return
+         end do
+         deallocate (d, zero_h, full, bounds)
+         call mol%destroy()
+      end do
+   end subroutine test_block_coulomb
+
+   subroutine gly3_water_geometry(z, sym, xyz)
+      !! `validation/inputs/sample_inputs/gly3_water_pair.xyz`, in Bohr
+      integer, intent(out) :: z(27)
+      character(len=2), intent(out) :: sym(27)
+      real(dp), intent(out) :: xyz(3, 27)
+      integer :: i
+
+      z = [7, 6, 6, 8, 1, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 8, 1, 8, 1, 1]
+      do i = 1, 27
+         select case (z(i))
+         case (1)
+            sym(i) = "H "
+         case (6)
+            sym(i) = "C "
+         case (7)
+            sym(i) = "N "
+         case default
+            sym(i) = "O "
+         end select
+      end do
+      xyz = ANG*reshape([ &
+                        0.0171625298_dp, -0.4776667709_dp, -0.0077801388_dp, &
+                        1.3251492481_dp, 0.1638239831_dp, 0.0713249069_dp, &
+                        1.8818395599_dp, 0.1764813685_dp, 1.4667973423_dp, &
+                        1.1563644386_dp, 0.4758564459_dp, 2.4030731780_dp, &
+                        2.0041403197_dp, -0.3893217244_dp, -0.6156078332_dp, &
+                        1.2933738676_dp, 1.2140808724_dp, -0.2903017566_dp, &
+                        -0.6557592247_dp, -0.0682256808_dp, 0.6785523482_dp, &
+                        -0.3826962098_dp, -0.2691894812_dp, -0.9506317163_dp, &
+                        3.2093591995_dp, -0.0780774266_dp, 1.6702200732_dp, &
+                        3.8489825798_dp, -0.0589263473_dp, 2.9842578467_dp, &
+                        5.3502343581_dp, -0.0788662970_dp, 2.9476716562_dp, &
+                        5.9543074560_dp, -0.1656759551_dp, 1.8893430618_dp, &
+                        3.5421254604_dp, 0.8561169960_dp, 3.5393994122_dp, &
+                        3.4986665918_dp, -0.9402544817_dp, 3.5643998498_dp, &
+                        3.7845901118_dp, -0.3119789206_dp, 0.8286081985_dp, &
+                        6.0352251963_dp, 0.0003525130_dp, 4.1282386693_dp, &
+                        7.4955375902_dp, -0.0138802141_dp, 4.2014382315_dp, &
+                        8.0730347718_dp, 0.0277800836_dp, 5.5909529457_dp, &
+                        7.3557278976_dp, 0.0641983810_dp, 6.5759347789_dp, &
+                        7.8694940865_dp, -0.9353711779_dp, 3.7021749317_dp, &
+                        7.8868335534_dp, 0.8596348618_dp, 3.6344677391_dp, &
+                        5.4670886620_dp, 0.0786510231_dp, 5.0034540291_dp, &
+                        9.3768940878_dp, 0.0221621974_dp, 5.7818296269_dp, &
+                        9.9376629532_dp, -0.0106298905_dp, 4.9380771002_dp, &
+                        7.3635223930_dp, -0.3681902986_dp, -0.5795840740_dp, &
+                        6.8902239587_dp, -0.3001739023_dp, 0.2496289275_dp, &
+                        6.6876213700_dp, -0.2710584500_dp, -1.2503709636_dp &
+                        ], [3, 27])
+   end subroutine gly3_water_geometry
 
    subroutine setup(mol, eri, bounds, zero_h, sym, anti, err, basis)
       !! Water in 6-31G, its integrals, and one density of each symmetry

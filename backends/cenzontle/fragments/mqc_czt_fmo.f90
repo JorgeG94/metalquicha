@@ -120,7 +120,7 @@ module mqc_czt_fmo
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 atom_ao_blocks
-   use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
+   use mqc_czt_direct, only: schwarz_bounds, coulomb_from_blocks
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -1621,10 +1621,9 @@ contains
       type(error_t), intent(inout) :: error
 
       type(czt_molecule_t) :: local
-      type(direct_stats_t) :: stats
-      integer, allocatable :: zl(:)
+      integer, allocatable :: zl(:), ket_first(:)
       character(len=2), allocatable :: sym(:)
-      real(dp), allocatable :: xyz(:, :), d(:, :), zero_h(:, :), bounds(:, :), j_full(:, :)
+      real(dp), allocatable :: xyz(:, :), d(:, :)
       integer :: k, at, nao_k, expect
 
       allocate (j_near(group_nao, group_nao), source=0.0_dp)
@@ -1649,10 +1648,9 @@ contains
                         "included, have "//to_char(expect))
          return
       end if
-      call schwarz_bounds(local, bounds, error)
-      if (error%has_error()) return
 
       allocate (d(local%nao, local%nao), source=0.0_dp)
+      allocate (ket_first(size(near) + 1))
       at = group_nao
       do k = 1, size(near)
          nao_k = frag(near(k))%nao_full
@@ -1661,16 +1659,13 @@ contains
                            "size of the molecule its SCF saw")
             return
          end if
+         ket_first(k) = at
          d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
          at = at + nao_k
       end do
+      ket_first(size(near) + 1) = at
 
-      allocate (zero_h(local%nao, local%nao), source=0.0_dp)
-      allocate (j_full(local%nao, local%nao))
-      call build_fock_direct(local, zero_h, d, bounds, j_full, stats, error, &
-                             k_scale=0.0_dp, j_scale=1.0_dp)
-      if (error%has_error()) return
-      j_near = j_full(1:group_nao, 1:group_nao)
+      call coulomb_from_blocks(local, group_nao, ket_first, d, j_near, error)
    end subroutine full_local_coulomb
 
    subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
@@ -1933,10 +1928,10 @@ contains
       !! The exact Coulomb operator of the near fragments, on the group's basis
       !!
       !! Built over a molecule holding the group and its near neighbours only,
-      !! with the group's own density zeroed, so what comes back on the group's
-      !! block is `sum_{K near} sum_{ls in K} D^K_ls (mn|ls)` and nothing else.
-      !! No subtraction, and no dependence on the system beyond the
-      !! neighbourhood.
+      !! and only from quartets with `mn` on the group and `ls` inside one
+      !! neighbour, so what comes back is `sum_{K near} sum_{ls in K} D^K_ls
+      !! (mn|ls)` and nothing else. No subtraction, and no dependence on the
+      !! system beyond the neighbourhood.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: group_z(:)
       character(len=2), intent(in) :: group_sym(:)
@@ -1948,10 +1943,9 @@ contains
       type(error_t), intent(inout) :: error
 
       type(czt_molecule_t) :: local
-      type(direct_stats_t) :: stats
-      integer, allocatable :: z(:)
+      integer, allocatable :: z(:), ket_first(:)
       character(len=2), allocatable :: sym(:)
-      real(dp), allocatable :: xyz(:, :), d(:, :), zero_h(:, :), bounds(:, :), j_full(:, :)
+      real(dp), allocatable :: xyz(:, :), d(:, :)
       integer :: k, at, nao_k, expect
 
       allocate (j_near(group_nao, group_nao), source=0.0_dp)
@@ -1977,25 +1971,22 @@ contains
                         "layout assumes")
          return
       end if
-      call schwarz_bounds(local, bounds, error)
-      if (error%has_error()) return
 
-      ! Only the neighbours carry density. The group's own block stays zero, so
-      ! its own Coulomb contribution never enters and needs no removing.
+      ! Only the neighbours carry density, each on its own diagonal block, and
+      ! only those blocks are contracted: the group's own density never enters
+      ! and needs no removing.
       allocate (d(local%nao, local%nao), source=0.0_dp)
+      allocate (ket_first(size(near) + 1))
       at = group_nao
       do k = 1, size(near)
          nao_k = frag(near(k))%nao
+         ket_first(k) = at
          d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
          at = at + nao_k
       end do
+      ket_first(size(near) + 1) = at
 
-      allocate (zero_h(local%nao, local%nao), source=0.0_dp)
-      allocate (j_full(local%nao, local%nao))
-      call build_fock_direct(local, zero_h, d, bounds, j_full, stats, error, &
-                             k_scale=0.0_dp, j_scale=1.0_dp)
-      if (error%has_error()) return
-      j_near = j_full(1:group_nao, 1:group_nao)
+      call coulomb_from_blocks(local, group_nao, ket_first, d, j_near, error)
    end subroutine local_coulomb
 
    subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, afo, &
