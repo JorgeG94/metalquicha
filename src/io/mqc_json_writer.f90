@@ -161,6 +161,7 @@ contains
 
       call write_sapt_section(json, main_obj, data)
       call write_efmo_section(json, main_obj, data)
+      call write_fmo_section(json, main_obj, data)
       call write_ieda_section(json, main_obj, data)
       call write_charges_section(json, main_obj, data)
       call write_bond_orders_section(json, main_obj, data)
@@ -1432,6 +1433,120 @@ contains
          end if
       end do
    end subroutine write_efmo_pairs
+
+   subroutine write_fmo_section(json, parent, data)
+      !! The FMO or EE-MBE breakdown, under `fmo`, when there is one
+      !!
+      !! The sums the total is made of, then the pairs. `pair_sum` holds every
+      !! term of two or more fragments, so above level two it is more than the
+      !! pairs add up to; `level_sums` says by how much.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: fmo_obj
+
+      if (.not. data%has_fmo) return
+
+      call json%create_object(fmo_obj, "fmo")
+      call json%add(parent, fmo_obj)
+      call json%add(fmo_obj, "expansion", trim(data%fmo_expansion))
+      call json%add(fmo_obj, "embedding", trim(data%fmo_embedding))
+      call json%add(fmo_obj, "monomer_sum", data%fmo_monomer_sum)
+      call json%add(fmo_obj, "pair_sum", data%fmo_pair_sum)
+      call json%add(fmo_obj, "response_sum", data%fmo_response_sum)
+      if (allocated(data%fmo_level_sum)) then
+         call json%add(fmo_obj, "level_sums", data%fmo_level_sum)
+      end if
+      call write_fmo_pairs(json, fmo_obj, data)
+   end subroutine write_fmo_section
+
+   subroutine write_fmo_pairs(json, parent, data)
+      !! The per-pair map, under `fmo.pairs`
+      !!
+      !! Shaped like `efmo.pairs` -- `fragments` numbered from one,
+      !! `distance`, `interaction_energy` -- with MBE's `delta_energy` and
+      !! `connected` beside them, and ordered as MBE orders its pair rows:
+      !! strongest first by magnitude, pairs joined by a detached bond last.
+      !!
+      !! `delta_energy` is on every row: the pair's term of the expansion,
+      !! which is what sums to `level_sums(2)`. `interaction_energy` is the
+      !! same number, written only where it is one -- under the FMO expansion
+      !! (or with no field) and on a pair no detached bond joins. Under EE-MBE
+      !! a monomer's own energy already holds its electrostatics with every
+      !! other fragment, so a pair term is a correction; and a connected pair's
+      !! term carries the bond itself.
+      !!
+      !! `distance` is the closest interatomic approach in **Angstrom**, as in
+      !! the MBE fragment table. EFMO's is a unitless vdW-scaled `R_IJ`.
+      !!
+      !! `response` is `Tr(dD_IJ u_IJ)`, already inside `delta_energy`.
+      use pic_types, only: int_index
+      use pic_sorting, only: sort_index
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: pairs_arr, pair_obj, frags_arr
+      integer(int_index), allocatable :: idx(:)
+      integer, allocatable :: pick(:)
+      real(dp), allocatable :: key(:)
+      integer :: k, p, n, block
+      logical :: interactions, joined
+
+      if (.not. allocated(data%fmo_pair_energy)) return
+      if (.not. allocated(data%fmo_pair_fragments)) return
+      if (.not. allocated(data%fmo_pair_distance)) return
+      if (.not. allocated(data%fmo_pair_connected)) return
+      n = size(data%fmo_pair_energy)
+      if (n == 0) return
+
+      interactions = trim(data%fmo_expansion) == "fmo" .or. &
+                     trim(data%fmo_embedding) == "none"
+      if (.not. interactions) then
+         call json%add(parent, "pair_note", &
+                       "Under the embedded MBE expansion a monomer's energy already "// &
+                       "holds its electrostatics with every other fragment, so each "// &
+                       "pair's delta_energy is a correction and not an interaction "// &
+                       "energy. No interaction_energy is written.")
+      end if
+      if (any(data%fmo_pair_connected)) then
+         call json%add(parent, "connected_pair_note", &
+                       "Pairs marked connected are joined by a detached bond. Their "// &
+                       "delta_energy includes the energy of re-forming that bond and "// &
+                       "is not an interaction energy. They are sorted last.")
+      end if
+
+      call json%create_array(pairs_arr, "pairs")
+      call json%add(parent, pairs_arr)
+      do block = 1, 2
+         joined = block == 2
+         pick = pack([(k, k=1, n)], data%fmo_pair_connected .eqv. joined)
+         if (size(pick) == 0) cycle
+         key = abs(data%fmo_pair_energy(pick))
+         if (allocated(idx)) deallocate (idx)
+         allocate (idx(size(pick)))
+         call sort_index(key, idx, reverse=.true.)
+         do k = 1, size(pick)
+            p = pick(idx(k))
+            call json%create_object(pair_obj, "")
+            call json%add(pairs_arr, pair_obj)
+            call json%create_array(frags_arr, "fragments")
+            call json%add(pair_obj, frags_arr)
+            call json%add(frags_arr, "", data%fmo_pair_fragments(1, p))
+            call json%add(frags_arr, "", data%fmo_pair_fragments(2, p))
+            call json%add(pair_obj, "distance", data%fmo_pair_distance(p))
+            call json%add(pair_obj, "connected", data%fmo_pair_connected(p))
+            call json%add(pair_obj, "delta_energy", data%fmo_pair_energy(p))
+            if (interactions .and. .not. joined) then
+               call json%add(pair_obj, "interaction_energy", data%fmo_pair_energy(p))
+            end if
+            if (allocated(data%fmo_pair_response)) then
+               call json%add(pair_obj, "response", data%fmo_pair_response(p))
+            end if
+         end do
+      end do
+   end subroutine write_fmo_pairs
 
    subroutine write_sapt_section(json, parent, data)
       !! The decomposition, under `sapt`, when there is one

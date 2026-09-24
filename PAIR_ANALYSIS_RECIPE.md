@@ -476,7 +476,10 @@ different place; the numbers below are for this one.
 
 ## 9. Reading the pair energies
 
-At verbose the run prints, after the n-mer loop:
+*Superseded on `feat/fmo-pair-export`:* the pairs are now an info-level table sorted by
+strength, with distances and connected pairs set apart, and an `fmo.pairs` array in the
+output JSON -- see `mqc_docs/source/fmo.rst`, "Pair interaction energies". What this branch
+printed at verbose, after the n-mer loop, was:
 
 ```
   fmo: n-mer interaction energies, Hartree
@@ -615,4 +618,5 @@ the frozen-orbital route has no caps outside its own model systems.
 2. **A refusal still exits 0.** Grep the log.
 3. **`efmo` refuses a covalent cut** on main. Do not point EFMO at a protein.
 4. **`fmo` writes no fragment CSV**, so `system.fragment_breakdown` does nothing on this
-   path. The pair table is verbose stdout only.
+   path. The pairs are in the output JSON under `fmo.pairs` (from `feat/fmo-pair-export`),
+   and in an info-level table in the log.

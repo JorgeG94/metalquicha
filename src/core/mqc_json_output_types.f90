@@ -286,6 +286,33 @@ module mqc_json_output_types
          !! (4, n_pairs): electrostatics, dispersion, exchange repulsion and
          !! charge transfer. Meaningful only where `efmo_pair_qm` is false.
 
+      logical :: has_fmo = .false.
+      character(len=16) :: fmo_expansion = ""
+         !! "fmo" or "mbe": how the fragment energies were assembled
+      character(len=16) :: fmo_embedding = ""
+         !! "exact", "ptc" or "none": the field the fragments sat in
+      real(dp) :: fmo_monomer_sum = 0.0_dp
+      real(dp) :: fmo_pair_sum = 0.0_dp
+         !! Every term of two or more fragments, not only the pairs
+      real(dp) :: fmo_response_sum = 0.0_dp
+         !! `sum Tr(dD u)`, already inside `fmo_pair_sum`
+      real(dp), allocatable :: fmo_level_sum(:)
+         !! (level): the sum of the terms with that many members; slot one is
+         !! the monomer sum
+      integer, allocatable :: fmo_pair_fragments(:, :)
+         !! (2, n_pairs), numbered from one as the fragment lists are
+      real(dp), allocatable :: fmo_pair_distance(:)
+         !! Closest interatomic approach, in Angstrom. Not EFMO's `R_IJ`,
+         !! which is unitless.
+      real(dp), allocatable :: fmo_pair_energy(:)
+         !! Each two-member term, Hartree. An interaction energy only where
+         !! `fmo_expansion` is "fmo" (or there is no field) and the pair is not
+         !! connected.
+      real(dp), allocatable :: fmo_pair_response(:)
+         !! `Tr(dD_IJ u_IJ)`, already inside `fmo_pair_energy`
+      logical, allocatable :: fmo_pair_connected(:)
+         !! A detached bond joins the pair
+
    contains
       procedure :: destroy => json_output_data_destroy
       procedure :: reset => json_output_data_reset
@@ -410,6 +437,12 @@ contains
       if (allocated(this%efmo_pair_energy)) deallocate (this%efmo_pair_energy)
       if (allocated(this%efmo_pair_terms)) deallocate (this%efmo_pair_terms)
       if (allocated(this%efmo_fragment_charges)) deallocate (this%efmo_fragment_charges)
+      if (allocated(this%fmo_level_sum)) deallocate (this%fmo_level_sum)
+      if (allocated(this%fmo_pair_fragments)) deallocate (this%fmo_pair_fragments)
+      if (allocated(this%fmo_pair_distance)) deallocate (this%fmo_pair_distance)
+      if (allocated(this%fmo_pair_energy)) deallocate (this%fmo_pair_energy)
+      if (allocated(this%fmo_pair_response)) deallocate (this%fmo_pair_response)
+      if (allocated(this%fmo_pair_connected)) deallocate (this%fmo_pair_connected)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
@@ -473,6 +506,12 @@ contains
       this%n_pie_terms = 0
       this%has_sapt = .false.
       this%has_efmo = .false.
+      this%has_fmo = .false.
+      this%fmo_expansion = ""
+      this%fmo_embedding = ""
+      this%fmo_monomer_sum = 0.0_dp
+      this%fmo_pair_sum = 0.0_dp
+      this%fmo_response_sum = 0.0_dp
       this%efmo_qm_dimers = 0
       this%efmo_efp_dimers = 0
       this%efmo_qm_groups = 0
