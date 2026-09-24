@@ -65,8 +65,9 @@ module mqc_czt_fmo
    !!
    !! **Whole molecules by default, and a covalent cut has to be asked for.**
    !! `bond_breaking = "none"` refuses a partition that severs a bond;
-   !! `"afo"` detaches it with an adjusted frozen orbital instead, and runs
-   !! with `esp = "none"` or `esp = "ptc"` but not with `esp = "exact"`. The
+   !! `"afo"` detaches it with an adjusted frozen orbital instead, under any
+   !! field; with the exact one each neighbour acts as itself, ghost and
+   !! split nucleus included (`cut_embedding`). The
    !! refusal of a cut is not a formality either: cut
    !! an even number of bonds per fragment -- a ring, a double bond -- and every
    !! electron count stays even, so nothing else objects, and cyclopropane split
@@ -176,21 +177,11 @@ module mqc_czt_fmo
          !! electron count even, so nothing else objects, and cyclopropane split
          !! into three CH2 comes back 0.28 Hartree low.
          !!
-         !! `"afo"` detaches the bond with an adjusted frozen orbital. A model
-         !! system around the bond is solved and localized, the orbital on the
-         !! bond is reduced to the detached atom's own functions, and that
-         !! hybrid is frozen -- empty in the fragment that gets nothing of the
-         !! bond, occupied in the one that gets all of it. See
-         !! [[mqc_czt_afo]].
-         !!
-         !! **`"afo"` is refused with `esp = "exact"`.** A frozen orbital and a
-         !! field both describe the bond region, so the detached atom's share
-         !! has to come out of the field first. With `esp = "ptc"` that share is
-         !! one number per atom -- the population that put it there -- and is
-         !! removed exactly, so the two run together. With an exact density the
-         !! neighbour term is a contraction over a whole density matrix and has
-         !! no per-atom part to remove, so there is nothing to subtract that
-         !! would not be the point-charge approximation under another name.
+         !! `"afo"` detaches the bond with GAMESS's adjusted frozen orbitals:
+         !! the bond orbital of a small model system frozen empty in the
+         !! fragment that gets nothing of the bond and occupied in the one that
+         !! gets all of it, with the detached atom's other orbitals frozen
+         !! empty there too. See [[mqc_czt_afo]]. It runs under every `esp`.
       integer, allocatable :: net_charge(:)
          !! Each fragment's net charge, as the deck declares it for the
          !! fragment with its cut bonds closed: a lysine residue +1, an
@@ -727,30 +718,13 @@ contains
          call refuse_severed_bonds(z, coords, owner, n_atoms, error)
          if (error%has_error()) return
       else if (opts%bond_breaking == "afo") then
-         ! Adjusted frozen orbitals. A frozen orbital and an embedding field both
-         ! describe the detached bond, so the two can only be used together
-         ! where the detached atom's share of the field can be said exactly.
-         ! With point charges it can: the share is one number per atom, it is
-         ! the population that put it there, and taking it back out is
-         ! `group_own_charge`. With an exact density it cannot: the neighbour
-         ! term is a Coulomb contraction over a whole density matrix with no
-         ! per-atom part in it to remove, and inventing one would be the
-         ! point-charge approximation smuggled into the path defined by not
-         ! making it.
-         if (opts%esp == "exact") then
-            call error%set(ERROR_VALIDATION, "fmo: bond_breaking='afo' is implemented "// &
-                           "for esp='none' and esp='ptc'. A frozen orbital and an "// &
-                           "embedding field both describe the detached bond, so the "// &
-                           "detached atom's share of the field has to come out before "// &
-                           "the two can be used together. With point charges that "// &
-                           "share is the population that put it there and is removed "// &
-                           "exactly; with an exact density the neighbour term is a "// &
-                           "contraction over a whole density matrix with no per-atom "// &
-                           "part to remove, and inventing one would make this the "// &
-                           "point-charge method under another name. Set "// &
-                           "keywords.fragmentation.embedding to 'ptc' or 'none'")
-            return
-         end if
+         ! Adjusted frozen orbitals, under any field. With an exact field each
+         ! neighbour acts through its own nuclei as it presents them -- `Z-1`
+         ! and `+1` at a detached atom -- and its own density over its own
+         ! basis, ghost functions included, so a detached atom's two shares
+         ! arrive from the two fragments that hold them and nothing has to be
+         ! taken back out; see `cut_embedding`. That is how GAMESS's FMOESP
+         ! builds it (fmoint.src).
          if (trim(opts%cut_nucleus) /= "auto" .and. trim(opts%cut_nucleus) /= "split" &
              .and. trim(opts%cut_nucleus) /= "whole") then
             call error%set(ERROR_VALIDATION, "fmo: cut_nucleus='"// &
@@ -1512,9 +1486,9 @@ contains
             weight(g) = real(z(i), dp)      !! nucleus only; electrons via J below
          else
             ! A shared atom keeps only what the fragments outside this group put
-            ! there. Nothing shared ever reaches the near branch above: a
-            ! detached bond and an exact embedding are refused together, so
-            ! `own_q` is zero throughout whenever `near` has anything in it.
+            ! there. Nothing shared ever reaches the near branch above: with a
+            ! detached bond and an exact field `cut_embedding` builds the field
+            ! instead, so `own_q` is zero whenever `near` has anything in it.
             weight(g) = q_all(i) - own_q(i)  !! nucleus and electrons, approximated
          end if
       end do
@@ -1540,6 +1514,161 @@ contains
       if (error%has_error()) return
       u = u + j_near
    end subroutine embedding_operator
+
+   subroutine cut_embedding(mol, group, members, near, frag, n_frag, afo, z, coords, &
+                            opts, u, error)
+      !! The field a group sits in when bonds are detached, fragment by fragment
+      !!
+      !! Every fragment outside the group contributes as itself. A near one --
+      !! within `resppc`, which a bonded neighbour always is -- through its
+      !! nuclei as its own monomer presents them, `Z-1` on a detached atom it
+      !! owns and `+1` on a ghost it holds, and through the Coulomb operator of
+      !! its density over its full basis, ghost functions included. A distant
+      !! one through its atomic charges, ghost included, at its own centres.
+      !! That is GAMESS's construction (`FMOESP` in `fmoint.src`: a connected
+      !! pair is at distance zero and so always exact, and each neighbour is
+      !! built by `MAKEMOL` with its own split charges and density).
+      !!
+      !! Nothing is taken back out, because nothing of the group's own is put
+      !! in: a detached atom's two shares come from the two fragments that hold
+      !! them, and where one of those is a member it is simply not outside.
+      !! Comes back unallocated when there is no field.
+      type(czt_molecule_t), intent(in) :: mol
+      type(group_t), intent(in) :: group     !! This group, ghosts included
+      integer, intent(in) :: members(:)
+      integer, intent(in) :: near(:)
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: n_frag
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: u(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(group_t), allocatable :: nb(:)
+      real(dp), allocatable :: points(:, :), weight(:), matrices(:, :, :), j_near(:, :)
+      integer :: k, s, g, n_max, kn
+
+      n_max = 0
+      do k = 1, n_frag
+         if (any(members == k)) cycle
+         n_max = n_max + size(frag(k)%mol_atom)
+      end do
+      if (n_max == 0) return
+
+      allocate (points(3, n_max), weight(n_max), nb(size(near)))
+      g = 0
+      do k = 1, n_frag
+         if (any(members == k)) cycle
+         kn = findloc(near, k, dim=1)
+         if (kn > 0) then
+            call assemble_group(frag, [k], afo, z, coords, nb(kn), error)
+            if (error%has_error()) return
+            do s = 1, size(nb(kn)%nuc_charge)
+               if (nb(kn)%nuc_charge(s) == 0) cycle
+               g = g + 1
+               points(:, g) = nb(kn)%xyz(:, s)
+               weight(g) = real(nb(kn)%nuc_charge(s), dp)
+            end do
+         else
+            if (opts%far_field == "ignore") cycle
+            if (.not. allocated(frag(k)%charges)) then
+               call error%set(ERROR_VALIDATION, "fmo: a distant fragment has no charges "// &
+                              "to stand in for it")
+               return
+            end if
+            do s = 1, size(frag(k)%mol_atom)
+               g = g + 1
+               points(:, g) = coords(:, frag(k)%mol_atom(s))
+               weight(g) = frag(k)%charges(s)
+            end do
+         end if
+      end do
+      if (g == 0 .and. size(near) == 0) return
+
+      allocate (u(mol%nao, mol%nao), source=0.0_dp)
+      if (g > 0) then
+         call esp_matrices(mol, points(:, 1:g), matrices, error)
+         if (error%has_error()) return
+         do s = 1, g
+            u = u - weight(s)*matrices(:, :, s)
+         end do
+      end if
+      if (size(near) == 0) return
+
+      call full_local_coulomb(frag, group, mol%nao, near, nb, opts, j_near, error)
+      if (error%has_error()) return
+      u = u + j_near
+   end subroutine cut_embedding
+
+   subroutine full_local_coulomb(frag, group, group_nao, near, nb, opts, j_near, error)
+      !! The Coulomb operator of the near fragments' densities over the group
+      !!
+      !! `local_coulomb` for fragments that carry ghosts: each near fragment is
+      !! laid out as the molecule its SCF saw, ghosts and all, and brings the
+      !! density that SCF produced, at that full size.
+      type(fragment_t), intent(in) :: frag(:)
+      type(group_t), intent(in) :: group
+      integer, intent(in) :: group_nao
+      integer, intent(in) :: near(:)
+      type(group_t), intent(in) :: nb(:)        !! Each near fragment as a group of one
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: j_near(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(czt_molecule_t) :: local
+      type(direct_stats_t) :: stats
+      integer, allocatable :: zl(:)
+      character(len=2), allocatable :: sym(:)
+      real(dp), allocatable :: xyz(:, :), d(:, :), zero_h(:, :), bounds(:, :), j_full(:, :)
+      integer :: k, at, nao_k, expect
+
+      allocate (j_near(group_nao, group_nao), source=0.0_dp)
+      if (size(near) == 0) return
+
+      zl = group%z
+      sym = group%sym
+      xyz = group%xyz
+      expect = group_nao
+      do k = 1, size(near)
+         zl = [zl, nb(k)%z]
+         sym = [sym, nb(k)%sym]
+         xyz = reshape([xyz, nb(k)%xyz], [3, size(zl)])
+         expect = expect + frag(near(k))%nao_full
+      end do
+
+      call build_czt_molecule(zl, sym, xyz, trim(opts%basis), local, error)
+      if (error%has_error()) return
+      if (local%nao /= expect) then
+         call error%set(ERROR_VALIDATION, "fmo: the local supersystem has "// &
+                        to_char(local%nao)//" basis functions where its parts, ghosts "// &
+                        "included, have "//to_char(expect))
+         return
+      end if
+      call schwarz_bounds(local, bounds, error)
+      if (error%has_error()) return
+
+      allocate (d(local%nao, local%nao), source=0.0_dp)
+      at = group_nao
+      do k = 1, size(near)
+         nao_k = frag(near(k))%nao_full
+         if (size(frag(near(k))%density, 1) /= nao_k) then
+            call error%set(ERROR_VALIDATION, "fmo: a near fragment's density is not the "// &
+                           "size of the molecule its SCF saw")
+            return
+         end if
+         d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
+         at = at + nao_k
+      end do
+
+      allocate (zero_h(local%nao, local%nao), source=0.0_dp)
+      allocate (j_full(local%nao, local%nao))
+      call build_fock_direct(local, zero_h, d, bounds, j_full, stats, error, &
+                             k_scale=0.0_dp, j_scale=1.0_dp)
+      if (error%has_error()) return
+      j_near = j_full(1:group_nao, 1:group_nao)
+   end subroutine full_local_coulomb
 
    subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
                         e_internal, e_resp, all_converged, error)
@@ -1621,9 +1750,14 @@ contains
       call near_fragments(frag, n_frag, members, effective_resppc(opts), near, error)
       if (error%has_error()) return
 
-      call group_own_charge(frag, members, afo, size(z), shared, own_q)
-      call embedding_operator(mol, group%z, group%sym, group%xyz, near, frag, n_frag, &
-                              inside, shared, own_q, z, coords, q_all, opts, u, error)
+      if (afo%active .and. opts%esp == "exact") then
+         call cut_embedding(mol, group, members, near, frag, n_frag, afo, z, coords, &
+                            opts, u, error)
+      else
+         call group_own_charge(frag, members, afo, size(z), shared, own_q)
+         call embedding_operator(mol, group%z, group%sym, group%xyz, near, frag, n_frag, &
+                                 inside, shared, own_q, z, coords, q_all, opts, u, error)
+      end if
       if (error%has_error()) return
 
       call group_projector(group, mol, afo, proj, held, error)
@@ -1907,10 +2041,15 @@ contains
       if (.not. isolated) then
          allocate (inside(size(z)), source=.false.)
          inside(frag(which)%atoms) = .true.
-         call group_own_charge(frag, [which], afo, size(z), shared, own_q)
-         call embedding_operator(mol, frag(which)%z, frag(which)%sym, frag(which)%xyz, &
-                                 frag(which)%near, frag, n_frag, inside, shared, own_q, &
-                                 z, coords, q_all, opts, u, error)
+         if (afo%active .and. opts%esp == "exact") then
+            call cut_embedding(mol, group, [which], frag(which)%near, frag, n_frag, afo, &
+                               z, coords, opts, u, error)
+         else
+            call group_own_charge(frag, [which], afo, size(z), shared, own_q)
+            call embedding_operator(mol, frag(which)%z, frag(which)%sym, frag(which)%xyz, &
+                                    frag(which)%near, frag, n_frag, inside, shared, own_q, &
+                                    z, coords, q_all, opts, u, error)
+         end if
          if (error%has_error()) return
       end if
 

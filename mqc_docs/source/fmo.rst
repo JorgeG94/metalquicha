@@ -410,12 +410,30 @@ Expansion                          Error, Hartree
 MBE(4), in vacuo                   4.5e-13
 MBE(2), in vacuo                   -3.1e-3
 FMO(2), ``ptc``                    -6.2e-5
-GAMESS FMO2, its default field     +6.4e-4
+FMO(2), ``exact``                  +6.4e-4
+GAMESS FMO2, same field            +6.4e-4
 =================================  ==================
 
-GAMESS's FMO2 uses the exact electrostatic potential for near fragments and
-separated-dimer electrostatics for far ones, so the last row is a different
-approximation of the same expansion, not a reference for the one above it.
+With the exact field the two codes agree to 4.3e-8 in the total
+(-762.311027620 here, -762.311027577 in GAMESS, ``RESPPC=2.0 RESDIM=0
+RESPAP=0``, ``LOCAL=BOYS``), and every pair energy agrees to the 0.001
+kcal/mol GAMESS prints:
+
+============  =================  =================
+pair          here, kcal/mol     GAMESS PIEDA total
+============  =================  =================
+3-4           -5.504             -5.504
+1-3           1.856              1.856
+2-4           1.237              1.237
+1-4           0.074              0.074
+1-2 (cut)     -9120.12           -9120.121
+2-3 (cut)     -9116.42           -9116.422
+============  =================  =================
+
+The response part of the water pair, ``Tr(dD u)``, is 0.718 kcal/mol in both.
+Here the monomer loop stops after 6 passes, GAMESS's after 9; the two stop on
+different measures (the change in the monomer energy sum here, density and
+energy there).
 
 Against GAMESS
 ~~~~~~~~~~~~~~
@@ -433,26 +451,31 @@ water                                     -74.9620085207       -9.0e-9
 MBE(2) of the three                       -230.4152004258      -1.7e-8
 ========================================  ===================  =========
 
-Pinned in ``butane_and_water_match_gamess_afo``. With a field, FMO2 on the same
-system: -230.415277443 here with point charges, -230.415265534 in GAMESS with its
-own field, against -230.415265709 unfragmented.
+Pinned in ``butane_and_water_match_gamess_afo``. FMO2 in the exact field on the
+same system, ``RESPPC=2.0 RESDIM=0 RESPAP=0`` in GAMESS and ``resppc`` 2.0 here:
+-230.415266010 against GAMESS's -230.415265994, 1.6e-8 apart, pinned in
+``butane_and_water_match_gamess_fmo2_exact_field``. With point charges it is
+-230.415277443; the molecule is -230.415265709.
 
 Restrictions
 ~~~~~~~~~~~~
 
-``bond_breaking = "afo"`` runs with ``embedding = "none"`` and with
-``embedding = "ptc"``.  ``embedding`` is read straight through as the field,
-whichever ``method`` was named, so ``"fmo"`` with ``"ptc"`` is FMO's own
-expansion over a point-charge field and is the pairing a detached bond runs in.
-A spelling that is none of ``"exact"``, ``"ptc"`` or ``"none"`` is refused; it
-used to pass validation and change nothing. It is refused with ``embedding = "exact"``. A frozen
-orbital and an embedding field both describe the bond region, so the detached
-atom's share has to come out of the field before the two can be used together.
-With point charges that share is one number per atom -- the population that put
-it there -- and is removed exactly. With an exact density the neighbour term is
-a Coulomb contraction over a whole density matrix and has no per-atom part to
-remove; inventing one would be the point-charge approximation smuggled into the
-path defined by not making it.
+``bond_breaking = "afo"`` runs with every field: ``"none"``, ``"ptc"`` and
+``"exact"``. A spelling that is none of those is refused; it used to pass
+validation and change nothing.
+
+**With the exact field each neighbour acts as itself**, as GAMESS builds it
+(``FMOESP`` in ``fmoint.src``): a near fragment -- within ``resppc``, which a
+bonded neighbour always is -- through its nuclei as its own monomer presents
+them, ``Z-1`` on a detached atom it owns and ``+1`` on a ghost it holds, and
+through the Coulomb operator of its whole density over its whole basis, ghost
+functions included; a distant fragment through its atomic charges, ghost
+included. A detached atom's two shares therefore arrive from the two fragments
+that hold them, and a group's own share is never put in, so nothing has to be
+taken back out. This used to be refused on the grounds that the exact
+neighbour term has no per-atom part to remove, which was true and beside the
+point: removing it was never necessary. At full order the expansion lands on
+the molecule to 1e-13 (``three_fragments_are_exact_under_an_exact_field``).
 
 Refused by name, rather than answered badly:
 
@@ -508,11 +531,11 @@ the first C-alpha--C(=O) cut of a protein takes the N-terminal ammonium in, and
 without that the model was a radical and the cut was refused. Any other charged
 group in a model sphere still is, with a message that says so.
 
-The field has to be point charges: ``"embedding": "ptc"`` alongside
-``"bond_breaking": "afo"``. An exact field is refused with a detached bond for
-the reason above, and no field at all leaves each side of a cut carrying about
-plus or minus one elementary charge, which on a protein puts a spurious ``1/R``
-monopole on every adjacent-residue pair.
+Use the exact field, ``"embedding": "exact"`` alongside
+``"bond_breaking": "afo"``: it is FMO's own field and what GAMESS runs, and on
+the glycine tripeptide with a water it matches GAMESS's total to 4e-8 and its
+pair energies to the digit it prints. Point charges at bonding distance are the
+field's worst case.
 
 The per-pair interaction energies -- the numbers a protein-ligand analysis is
 for -- are in the output file and the log; see :ref:`fmo-pairs`. The two pairs a

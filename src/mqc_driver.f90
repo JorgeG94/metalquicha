@@ -755,12 +755,9 @@ contains
             ! expansion alone. The two are independent in the backend and only
             ! three of the four pairings were reachable from a deck before:
             ! "fmo" with point charges is FMO's own expansion with the
-            ! long-range approximation made everywhere, which is the one shape
-            ! a detached bond can be run in, since a frozen orbital and an
-            ! exact density both describe the bond region and only a
-            ! per-atom field can have the detached atom's share taken back out
-            ! of it. An unknown spelling is refused rather than ignored: it
-            ! used to pass validation and change nothing.
+            ! long-range approximation made everywhere. A detached bond runs
+            ! with every field. An unknown spelling is refused rather than
+            ! ignored: it used to pass validation and change nothing.
             if (len_trim(config%embedding) > 0) then
                select case (trim(config%embedding))
                case ("none", "ptc", "exact")

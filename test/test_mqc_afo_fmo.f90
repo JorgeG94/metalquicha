@@ -51,7 +51,7 @@ contains
 
       testsuite = [ &
                   new_unittest("two_fragments_across_a_cut_bond_are_exact", test_exact), &
-                  new_unittest("afo_is_refused_with_an_exact_embedding", test_refuse_esp), &
+                  new_unittest("three_fragments_are_exact_under_an_exact_field", test_exact_field), &
                   new_unittest("a_ring_cut_is_refused_by_name", test_refuse_ring), &
                   new_unittest("three_fragments_at_full_order_are_exact", test_three_exact), &
                   new_unittest("truncating_at_pairs_costs_the_three_body_term", test_three_pairs), &
@@ -63,6 +63,8 @@ contains
                   new_unittest("the_charge_convention_does_not_move_an_embedded_total", test_convention), &
                   new_unittest("a_charged_fragment_keeps_the_identity", test_charged_fragment), &
                   new_unittest("butane_and_water_match_gamess_afo", test_gamess_butane_water), &
+                  new_unittest("butane_and_water_match_gamess_fmo2_exact_field", &
+                               test_gamess_butane_water_exact), &
                   new_unittest("field_free_pairs_under_both_nucleus_conventions", &
                                test_field_free_conventions), &
                   new_unittest("glycine_tripeptide_and_water_across_two_cuts", &
@@ -327,6 +329,44 @@ contains
                     ], [3, 27])
       xyz = to_bohr(ang)
    end subroutine gly3_water
+
+   subroutine test_gamess_butane_water_exact(error)
+      !! The same butane and water, FMO2 in the exact field, against GAMESS
+      !!
+      !! GAMESS 2026, `$FMO NBODY=2 RAFO(1)=1,1,1 RESPPC=2.0 RESDIM=0 RESPAP=0`,
+      !! `LOCAL=BOYS`, RHF/STO-3G: -230.415265994, printed to nine decimals.
+      !! `RESPPC` is the same vdW-scaled distance as `resppc` here, so the
+      !! water is exact to the ethyl it hydrogen-bonds and point charges to
+      !! the other; `RESDIM=0` computes every dimer, which is all this code
+      !! does. The molecule is -230.415265709.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      real(dp), parameter :: GAMESS_FMO2 = -230.415265994_dp
+
+      call butane_water(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%resppc = 2.0_dp
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      opts%outer_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                    opts, res, err)
+      call check(error,.not. err%has_error(), "FMO2 in the exact field failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   FMO2 exact - GAMESS =", res%energy - GAMESS_FMO2
+      call check(error, abs(res%energy - GAMESS_FMO2) < 1.0e-7_dp, &
+                 "FMO2 in the exact field does not match GAMESS")
+   end subroutine test_gamess_butane_water_exact
 
    subroutine butane_water(z, sym, xyz)
       !! Anti butane and a water 4.5 A beyond C4, as the GAMESS deck has them
@@ -983,32 +1023,20 @@ contains
       xyz = to_bohr(ang)
    end subroutine propane_middle_first
 
-   subroutine test_refuse_esp(error)
-      !! An exact embedding stays refused, and for a reason that has not moved
+   subroutine test_exact_field(error)
+      !! Propane in three pieces at full order, each fragment in the exact
+      !! field of its neighbours
       !!
-      !! Point charges now run alongside a detached bond because the detached
-      !! atom's share of the field is one number per atom there and comes back
-      !! out exactly. The exact embedding builds a Coulomb contraction over the
-      !! neighbour's whole density matrix, which has no per-atom part to remove,
-      !! so there is nothing to subtract that would not be the point-charge
-      !! approximation under another name.
+      !! Each neighbour acts through its own nuclei as it presents them and its
+      !! own density over its own basis, ghost functions included; see
+      !! `cut_embedding`. At full order the expansion is the molecule whatever
+      !! the field did to the pieces.
       type(error_type), allocatable, intent(out) :: error
-      type(error_t) :: err
-      type(fmo_options_t) :: opts
-      type(fmo_result_t) :: res
-      integer :: z(8)
-      character(len=2) :: sym(8)
-      real(dp) :: xyz(3, 8)
 
-      call ethane(z, sym, xyz)
-      opts%basis = "sto-3g"
-      opts%esp = "exact"
-      opts%bond_breaking = "afo"
-
-      call run_fmo2(z, sym, xyz, [1, 1, 1, 1, 2, 2, 2, 2], opts, res, err)
-      call check(error, err%has_error(), &
-                 "a detached bond was accepted alongside an embedding field")
-   end subroutine test_refuse_esp
+      call three_fragment_error(3, error, 1.0e-12_dp, "exact", &
+                                "a full-order expansion over detached bonds in an "// &
+                                "exact field did not reproduce the whole molecule")
+   end subroutine test_exact_field
 
    subroutine test_refuse_ring(error)
       !! Cyclopropane into three CH2 joins each pair of fragments twice
