@@ -650,7 +650,7 @@ contains
                           level, max_outer, outer_tol, scf_max_iter, &
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
-                          cap_scale, energy, error, comm)
+                          cap_scale, energy, error, fragment_charges, comm)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -680,6 +680,9 @@ contains
       real(dp), intent(in) :: cap_scale
       real(dp), intent(out) :: energy
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: fragment_charges(:)
+         !! Each fragment's net charge, indexed as `owner` numbers them. Absent
+         !! means every fragment is neutral.
       type(comm_t), intent(in), optional :: comm
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
@@ -709,6 +712,7 @@ contains
       opts%scf = scf_drive
       opts%bond_breaking = bond_breaking
       opts%cap_scale = cap_scale
+      if (present(fragment_charges)) opts%net_charge = fragment_charges
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return

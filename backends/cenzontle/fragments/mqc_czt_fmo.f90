@@ -186,6 +186,11 @@ module mqc_czt_fmo
          !! neighbour term is a contraction over a whole density matrix and has
          !! no per-atom part to remove, so there is nothing to subtract that
          !! would not be the point-charge approximation under another name.
+      integer, allocatable :: net_charge(:)
+         !! Each fragment's net charge, as the deck declares it for the
+         !! fragment with its cut bonds closed: a lysine residue +1, an
+         !! aspartate -1. The electron a detached bond moves is counted on top
+         !! of it. Unallocated means every fragment is neutral.
       character(len=16) :: cut_nucleus = "auto"
          !! Whether a detached bond's nucleus is split between the two
          !! fragments that describe it, or stays whole with the one that owns
@@ -332,11 +337,12 @@ module mqc_czt_fmo
          !! fragment. Allocated only where the charges themselves are, so
          !! `esp = "none"` leaves it absent.
          !!
-         !! Zero for every fragment wherever a detached bond's nucleus is
-         !! split, and that is the statement worth checking: a Mulliken
-         !! population sums to the nuclear charge less the electron count, so
-         !! a fragment reading non-zero there means its nucleus and its
-         !! electrons were not divided the same way. The system total says
+         !! The declared charge (`net_charge`, zero unless given) for every
+         !! fragment wherever a detached bond's nucleus is split, and that is
+         !! the statement worth checking: a Mulliken population sums to the
+         !! nuclear charge less the electron count, so a fragment reading
+         !! anything else means its nucleus and its electrons were not divided
+         !! the same way. The system total says
          !! nothing about it -- the plus-and-minus-one convention sums to zero
          !! just as neatly -- and neither does the telescoping identity, which
          !! has no field to be wrong about.
@@ -374,6 +380,7 @@ module mqc_czt_fmo
       real(dp) :: energy = 0.0_dp                !! internal, E'
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
       integer :: nelec = 0
+      integer :: charge = 0                      !! declared net charge
       integer :: n_caps = 0
          !! Hydrogen caps closing cut bonds, held at the end of `z`, `sym` and
          !! `xyz` and deliberately absent from `atoms`: a cap answers to no
@@ -540,7 +547,7 @@ contains
       call report_charges(frag, n_frag, n_atoms, res%charges, res%fragment_charge, error)
       if (error%has_error()) return
       if (allocated(res%fragment_charge)) then
-         call log_fragment_charges(res%fragment_charge, &
+         call log_fragment_charges(res%fragment_charge, real(frag%charge, dp), &
                                    .not. afo%active .or. afo%split_nucleus)
       end if
 
@@ -674,6 +681,13 @@ contains
                         "fragment has no atoms")
          return
       end if
+      if (allocated(opts%net_charge)) then
+         if (size(opts%net_charge) /= n_frag) then
+            call error%set(ERROR_VALIDATION, "fmo: "//to_char(size(opts%net_charge))// &
+                           " fragment charges for "//to_char(n_frag)//" fragments")
+            return
+         end if
+      end if
 
       if (opts%bond_breaking == "none") then
          call refuse_severed_bonds(z, coords, owner, n_atoms, error)
@@ -731,7 +745,8 @@ contains
          frag(f)%z = z(frag(f)%atoms)
          frag(f)%sym = symbols(frag(f)%atoms)
          frag(f)%xyz = coords(:, frag(f)%atoms)
-         frag(f)%nelec = sum(frag(f)%z)
+         if (allocated(opts%net_charge)) frag(f)%charge = opts%net_charge(f)
+         frag(f)%nelec = sum(frag(f)%z) - frag(f)%charge
          ! A detached bond moves an electron between the two fragments it
          ! joins. Applied here so the closed-shell check below sees the count
          ! the fragment will actually be solved with -- ethane split into two
@@ -934,12 +949,14 @@ contains
          call logger%verbose("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
                              "fragment that owns the atom, +1 on the ghost its "// &
                              "neighbour carries there -- so every fragment is a "// &
-                             "neutral closed shell. The field supplies the other half, "// &
+                             "closed shell carrying only its declared charge. The "// &
+                             "field supplies the other half, "// &
                              "and the total is unchanged by the choice.")
       else
          call logger%verbose("  fmo: a detached bond's nucleus is kept whole with the "// &
                              "fragment that owns the atom, so the two sides of a cut "// &
-                             "carry about +1 and -1. Splitting it needs something to "// &
+                             "carry about +1 and -1 beyond their declared charges. "// &
+                             "Splitting it needs something to "// &
                              "supply the other half, and with embedding 'none' there "// &
                              "is no field to do it.")
       end if
@@ -1004,7 +1021,8 @@ contains
          call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
                         " could not be built -- it came out with an odd electron "// &
                         "count, so a cap hydrogen was asked to close a valence "// &
-                        "worth more than one electron pair."//advice)
+                        "worth more than one electron pair, or the sphere took in "// &
+                        "a charged group that is not recognised."//advice)
       case (2)
          call error%set(ERROR_VALIDATION, "fmo: the model system for "//bond// &
                         " could not be solved, so there is no orbital to freeze."// &
@@ -1034,8 +1052,9 @@ contains
       !! 11 Hartree when this was tried with caps.
       !!
       !! Where `afo%split_nucleus` is set, each boundary also moves a unit of
-      !! nuclear charge, and `sum(group%nuc_charge)` is then `group%nelec` and
-      !! the group is neutral. The electron moves either way.
+      !! nuclear charge, and `sum(group%nuc_charge)` is then `group%nelec`
+      !! plus the members' declared charges: a neutral group is neutral. The
+      !! electron moves either way.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: members(:)
       type(afo_context_t), intent(in) :: afo
@@ -1100,7 +1119,7 @@ contains
       ! boundary loop below moves a unit of charge across each cut, where the
       ! convention in force says to.
       group%nuc_charge(:group%n_real) = group%z(:group%n_real)
-      group%nelec = sum(group%z(:group%n_real))
+      group%nelec = sum(group%z(:group%n_real)) - sum(frag(members)%charge)
       group%n_bound = n_outside
       allocate (group%bda_slot(max(n_outside, 1)))
       allocate (group%occupied(max(n_outside, 1)))
@@ -2398,17 +2417,20 @@ contains
       end do
    end subroutine report_charges
 
-   subroutine log_fragment_charges(fragment_charge, expect_neutral)
-      !! Say what each fragment was left carrying, and complain if it should be zero
+   subroutine log_fragment_charges(fragment_charge, declared, expect_declared)
+      !! Say what each fragment was left carrying, and complain if it should not
       !!
-      !! A fragment at a detached bond is neutral when the bond's nucleus was
-      !! split the same way its electron pair was, and carries about plus or
-      !! minus one when it was not. Both are deliberate and `splits_nucleus`
-      !! says which was asked for; what is worth a warning is the first one
-      !! failing to come out, because a stray monopole is invisible in the
-      !! total and lands in whatever is built from the fragment afterwards.
+      !! A fragment at a detached bond carries its declared charge when the
+      !! bond's nucleus was split the same way its electron pair was, and about
+      !! plus or minus one more when it was not. Both are deliberate and
+      !! `splits_nucleus` says which was asked for; what is worth a warning is
+      !! the first one failing to come out, because a stray monopole is
+      !! invisible in the total and lands in whatever is built from the
+      !! fragment afterwards.
       real(dp), intent(in) :: fragment_charge(:)
-      logical, intent(in) :: expect_neutral
+      real(dp), intent(in) :: declared(:)
+         !! What the deck said each fragment carries; zero unless it said
+      logical, intent(in) :: expect_declared
          !! True where the run split its nuclei, or has no cut bonds at all.
 
       character(len=100) :: line
@@ -2419,10 +2441,11 @@ contains
             fragment_charge(f)
          call logger%verbose(trim(line))
       end do
-      if (.not. expect_neutral) return
-      if (maxval(abs(fragment_charge)) > FRAGMENT_NEUTRALITY_TOL) then
-         write (line, "(a,f12.8)") "  fmo: a fragment is not neutral -- the largest net "// &
-            "charge is ", maxval(abs(fragment_charge))
+      if (.not. expect_declared) return
+      if (maxval(abs(fragment_charge - declared)) > FRAGMENT_NEUTRALITY_TOL) then
+         write (line, "(a,f12.8)") "  fmo: a fragment does not carry the charge it "// &
+            "was declared with -- the largest difference is ", &
+            maxval(abs(fragment_charge - declared))
          call logger%warning(trim(line))
       end if
    end subroutine log_fragment_charges

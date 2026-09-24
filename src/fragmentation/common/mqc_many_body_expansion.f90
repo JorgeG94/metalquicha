@@ -172,6 +172,9 @@ module mqc_many_body_expansion
       integer, allocatable :: owner(:)
          !! Fragment index per atom, numbered from one with no gaps
       integer :: n_fragments = 0
+      integer, allocatable :: fragment_charges(:)
+         !! Each fragment's net charge, as the deck declares it. Unallocated
+         !! means every fragment is neutral.
       character(len=64) :: basis = ""
          !! **Empty on purpose, and refused rather than defaulted.** This field
          !! used to start at "6-31g", which no run ever saw: every caller
@@ -307,6 +310,7 @@ contains
       class(fmo_context_t), intent(inout) :: this
 
       if (allocated(this%owner)) deallocate (this%owner)
+      if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       this%n_fragments = 0
       this%energy = 0.0_dp
       call this%destroy_base()
@@ -353,7 +357,8 @@ contains
                        this%max_outer, this%outer_tol, this%scf_max_iter, &
                        this%scf_energy_tol, this%scf_density_tol, &
                        this%scf_drive, &
-                       trim(this%bond_breaking), this%cap_scale, this%energy, error)
+                       trim(this%bond_breaking), this%cap_scale, this%energy, error, &
+                       fragment_charges=this%fragment_charges)
       if (error%has_error()) then
          call logger%error("fmo_run_serial: "//error%get_message())
          return
@@ -429,6 +434,7 @@ contains
                        this%scf_energy_tol, this%scf_density_tol, &
                        this%scf_drive, &
                        trim(this%bond_breaking), this%cap_scale, this%energy, error, &
+                       fragment_charges=this%fragment_charges, &
                        comm=this%resources%mpi_comms%world_comm)
       if (error%has_error()) then
          call logger%error("fmo_run_distributed: "//error%get_message())

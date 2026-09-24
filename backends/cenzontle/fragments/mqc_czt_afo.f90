@@ -96,6 +96,9 @@ module mqc_czt_afo
       integer, allocatable :: from_system(:)  !! (n_atoms - n_caps), 1-based
       integer :: bda_local = 0               !! Where the bond's first atom sits
       integer :: baa_local = 0               !! Where its second atom sits
+      integer :: charge = 0
+         !! Net charge of the charged groups the sphere took in whole; see
+         !! `model_formal_charge`
       integer :: nelec = 0
    end type afo_model_t
 
@@ -233,7 +236,8 @@ contains
          end do
       end do
 
-      model%nelec = sum(model%z)
+      model%charge = model_formal_charge(z, coords, chosen, tol)
+      model%nelec = sum(model%z) - model%charge
       if (mod(model%nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "afo model: the model system for the bond "// &
                         "between atoms "//to_char(cut%atom_a)//" and "// &
@@ -241,8 +245,9 @@ contains
                         "capping did not close every valence it opened. A cap "// &
                         "hydrogen closes one electron pair, so the sphere around "// &
                         "the bond has clipped a multiple bond at an atom that is "// &
-                        "not terminal, or the system is not a closed shell to begin "// &
-                        "with")
+                        "not terminal, has taken in a charged group this builder "// &
+                        "does not recognise, or the system is not a closed shell "// &
+                        "to begin with")
          return
       end if
 
@@ -645,6 +650,57 @@ contains
          advice = advice//"."
       end if
    end function peptide_bond_advice
+
+   pure function model_formal_charge(z, coords, chosen, tol) result(q)
+      !! The net charge of the ionised groups among the chosen atoms
+      !!
+      !! A model system is closed with neutral caps, so any charge it holds is
+      !! a group it took in whole: a peptide's N-terminal ammonium sits inside
+      !! the sphere around the first C-alpha--C(=O) bond, and a C-terminal
+      !! carboxylate inside the last one. Without the charge such a model has
+      !! an odd electron count and no hybrid can be taken off it.
+      !!
+      !! Recognised, from neighbour counts alone since perception here reports
+      !! no bond orders: a nitrogen with four neighbours (ammonium, +1); a
+      !! carbon whose three neighbours are nitrogens with three neighbours each
+      !! (guanidinium, +1); and a carbon with three neighbours, two of them
+      !! terminal oxygens (carboxylate, -1). A neutral carboxylic acid has a
+      !! hydrogen on one oxygen, so that oxygen is not terminal and the group
+      !! is not counted.
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      logical, intent(in) :: chosen(:)
+      real(dp), intent(in) :: tol
+      integer :: q
+
+      integer :: i, j, n_n3, n_o1
+
+      q = 0
+      do i = 1, size(z)
+         if (.not. chosen(i)) cycle
+         select case (z(i))
+         case (7)
+            if (count_bonds(z, coords, i, tol) == 4) q = q + 1
+         case (6)
+            if (count_bonds(z, coords, i, tol) /= 3) cycle
+            n_n3 = 0
+            n_o1 = 0
+            do j = 1, size(z)
+               if (j == i) cycle
+               if (.not. bonded_pair(z, coords, i, j, tol)) cycle
+               if (z(j) == 7 .and. count_bonds(z, coords, j, tol) == 3) n_n3 = n_n3 + 1
+               if (z(j) == 8 .and. chosen(j) .and. count_bonds(z, coords, j, tol) == 1) then
+                  n_o1 = n_o1 + 1
+               end if
+            end do
+            if (n_n3 == 3) q = q + 1
+            if (n_o1 == 2) q = q - 1
+         case default
+            ! Nothing else is recognised; a charged group of another element
+            ! leaves the count odd and the model is refused.
+         end select
+      end do
+   end function model_formal_charge
 
    pure function count_bonds(z, coords, i, tol) result(n)
       !! How many atoms `i` is bonded to, by the same distance criterion

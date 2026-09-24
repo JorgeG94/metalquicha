@@ -29,6 +29,8 @@ contains
                   new_unittest("model_keeps_a_carbonyl_oxygen_rather_than_capping_it", &
                                test_terminal_oxygen), &
                   new_unittest("a_backbone_cut_gives_a_closed_shell_model", test_backbone_model), &
+                  new_unittest("a_charged_terminus_is_counted_into_the_model", &
+                               test_charged_termini), &
                   new_unittest("a_peptide_bond_names_the_c_alpha_cut_instead", test_peptide_advice), &
                   new_unittest("model_moves_rigidly_with_the_system", test_rotation), &
                   new_unittest("a_monomer_sees_only_its_own_boundaries", test_group_monomer), &
@@ -399,8 +401,78 @@ contains
          call check(error, mod(model%nelec, 2), 0, &
                     "a backbone model came out with an odd electron count")
          if (allocated(error)) return
+         call check(error, model%charge, 0, "a neutral backbone model was given a charge")
+         if (allocated(error)) return
       end do
    end subroutine test_backbone_model
+
+   subroutine test_charged_termini(error)
+      !! The ammonium and carboxylate a zwitterionic peptide ends in
+      !!
+      !! The sphere around the first C-alpha--C(=O) bond takes the N-terminal
+      !! nitrogen whole, hydrogens and all, and a sphere around the last
+      !! C-alpha--C bond takes the C-terminal carboxylate whole. Charged, each
+      !! has one proton more or less than a neutral model, so without its
+      !! charge the model is a radical and the cut is refused -- which is what
+      !! every charged protein did.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(system_geometry_t) :: neutral, sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      type(severed_bond_t) :: last
+      type(afo_model_t) :: model
+      integer :: n_cuts, c, owner(24)
+
+      call glycine_tripeptide(neutral)
+
+      ! Zwitterion: a third hydrogen on N1, and none on the terminal O23.
+      sys%total_atoms = 24
+      sys%n_monomers = 0
+      sys%element_numbers = [neutral%element_numbers(1:23), 1]
+      allocate (sys%coordinates(3, 24))
+      sys%coordinates(:, 1:23) = neutral%coordinates(:, 1:23)
+      sys%coordinates(:, 24) = to_bohr([0.1428_dp, -1.4730_dp, 0.1766_dp])
+
+      ! The new hydrogen is on the first fragment's nitrogen.
+      owner = owner_c_alpha()
+      owner(24) = 1
+      call find_severed_bonds(sys, owner, cuts, n_cuts)
+      call check(error, n_cuts, 2, "the zwitterion has two C-alpha--C(=O) cuts")
+      if (allocated(error)) return
+      do c = 1, n_cuts
+         call build_afo_model(sys%element_numbers, sys%coordinates, cuts(c), model, err)
+         call check(error,.not. err%has_error(), "a zwitterion backbone model was refused")
+         if (allocated(error)) then
+            write (*, *) "   message: ", trim(err%get_message())
+            return
+         end if
+         call check(error, mod(model%nelec, 2), 0, "a zwitterion backbone model is "// &
+                    "a radical")
+         if (allocated(error)) return
+         ! Only the first cut's sphere reaches the ammonium.
+         if (min(cuts(c)%atom_a, cuts(c)%atom_b) == 2) then
+            call check(error, model%charge, 1, "the N-terminal model is not +1")
+         else
+            call check(error, model%charge, 0, "a model away from both termini is charged")
+         end if
+         if (allocated(error)) return
+      end do
+
+      ! The last residue's C-alpha--C bond, which this partition leaves whole.
+      last%atom_a = 17
+      last%atom_b = 18
+      last%frag_a = 3
+      last%frag_b = 4
+      call build_afo_model(sys%element_numbers, sys%coordinates, last, model, err)
+      call check(error,.not. err%has_error(), "the C-terminal model was refused")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+      call check(error, mod(model%nelec, 2), 0, "the C-terminal model is a radical")
+      if (allocated(error)) return
+      call check(error, model%charge, -1, "the C-terminal model is not -1")
+   end subroutine test_charged_termini
 
    subroutine test_peptide_advice(error)
       !! A refusal on an amide says which bond to cut instead
