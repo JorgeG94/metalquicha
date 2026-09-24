@@ -2933,8 +2933,7 @@ contains
       !! eight stores per integral across eight stride patterns, which is
       !! bandwidth rather than arithmetic and does not improve with more cores.
       !! Packing the two AO pairs collapses (mu nu) with (nu mu), leaving only
-      !! the bra-ket swap to write out -- two stores per integral, into an array
-      !! a quarter the size.
+      !! the bra-ket swap to write out, into an array a quarter the size.
       !!
       !! `eris` stays: the in-core SCF and `check_direct` read the dense form.
       class(czt_molecule_t), intent(in) :: this
@@ -2953,7 +2952,13 @@ contains
 
       n_pair = this%nao*(this%nao + 1)/2
       allocate (eri(n_pair, n_pair))
-      eri = 0.0_dp
+      ! Zeroed by every thread: this is the first touch of the whole array, and
+      ! the page faults cost more than the stores.
+      !$omp parallel do default(none) shared(eri, n_pair) private(rt) schedule(static)
+      do rt = 1, n_pair
+         eri(:, rt) = 0.0_dp
+      end do
+      !$omp end parallel do
 
       ! The fused-sp view where it exists; AO-indexed output, so only the
       ! shell loops feel it.
@@ -3011,9 +3016,17 @@ contains
                            p = io + i
                            idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
                            value = buf(idx)
+                           ! One store, into the lower triangle, and the
+                           ! bra-ket mirror afterwards in blocks. Storing both
+                           ! here put every second store n_pair doubles from the
+                           ! last -- a TLB miss each -- and cost 2.7x the fill
+                           ! on four threads, more than the integrals.
                            pq = pair_index(p, q)
-                           eri(pq, rt) = value
-                           eri(rt, pq) = value
+                           if (pq >= rt) then
+                              eri(pq, rt) = value
+                           else
+                              eri(rt, pq) = value
+                           end if
                         end do
                      end do
                   end do
@@ -3027,7 +3040,31 @@ contains
 
       call libcint_del_optimizer(opt)
       deallocate (pair_i, pair_j)
+      call mirror_lower_triangle(eri)
    end subroutine molecule_eris_packed
+
+   subroutine mirror_lower_triangle(a)
+      !! Copy the strict lower triangle of a square matrix onto the upper one
+      real(dp), intent(inout) :: a(:, :)    !! (n, n), lower triangle filled
+
+      integer, parameter :: BLK = 64
+         !! Tile edge; a 64 by 64 tile of doubles is 32 KiB, both sides of the
+         !! transpose stay in cache
+      integer :: n, ib, jb, i, j
+
+      n = size(a, 1)
+      !$omp parallel do default(none) shared(a, n) private(ib, jb, i, j) schedule(dynamic)
+      do jb = 1, n, BLK
+         do ib = 1, jb, BLK
+            do j = jb, min(jb + BLK - 1, n)
+               do i = ib, min(ib + BLK - 1, j - 1)
+                  a(i, j) = a(j, i)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine mirror_lower_triangle
 
    pure function pair_index(p, q) result(pq)
       !! Where the AO pair (p,q) sits once the two orderings are collapsed

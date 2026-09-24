@@ -27,7 +27,7 @@ module mqc_czt_mp2
    use pic_blas_interfaces, only: pic_gemm
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_integrals, only: czt_molecule_t, build_df_mo_tensor, pair_index
+   use mqc_czt_integrals, only: czt_molecule_t, build_df_mo_tensor
    implicit none
    private
 
@@ -120,10 +120,13 @@ contains
       call clk%begin("energy denominators")
       e_ss = 0.0_dp
       e_os = 0.0_dp
-      do i = 1, n_o
+      !$omp parallel do default(none) collapse(2) schedule(static) &
+      !$omp    shared(ovov, orbital_energies, frozen, n_occ, n_o, n_v) &
+      !$omp    private(i, j, a, b, iajb, ibja, denom) reduction(+:e_ss, e_os)
+      do b = 1, n_v
          do j = 1, n_o
             do a = 1, n_v
-               do b = 1, n_v
+               do i = 1, n_o
                   iajb = ovov(i, a, j, b)
                   ibja = ovov(i, b, j, a)
                   denom = orbital_energies(frozen + i) + orbital_energies(frozen + j) &
@@ -134,6 +137,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       call clk%lap()
       call clk%finish()
@@ -505,10 +509,10 @@ contains
       integer :: i, j, a, b
       real(dp) :: iajb, ibja, denom
       e = 0.0_dp
-      do i = 1, n_o
+      do b = 1, n_v
          do j = 1, n_o
             do a = 1, n_v
-               do b = 1, n_v
+               do i = 1, n_o
                   iajb = ovov(i, a, j, b)
                   ibja = ovov(i, b, j, a)
                   denom = eps(frozen + i) + eps(frozen + j) &
@@ -530,10 +534,10 @@ contains
       integer :: i, j, a, b
       real(dp) :: iajb, denom
       e = 0.0_dp
-      do i = 1, n_oa
+      do b = 1, n_vb
          do j = 1, n_ob
             do a = 1, n_va
-               do b = 1, n_vb
+               do i = 1, n_oa
                   iajb = ovov(i, a, j, b)
                   denom = eps_a(frozen + i) + eps_b(frozen + j) &
                           - eps_a(n_occ_a + a) - eps_b(n_occ_b + b)
@@ -615,8 +619,11 @@ contains
       real(dp), allocatable, intent(out) :: out(:, :, :, :)
 
       real(dp), allocatable :: half(:, :)
-      real(dp), allocatable :: m(:, :), tmp(:, :), blk(:, :)
-      integer :: n_ao, n1, n2, n3, n4, n_pair, pq, l, mm, n, o, p, q
+      real(dp), allocatable :: m(:, :), tmp(:, :), blk(:, :), buf(:, :)
+      integer :: n_ao, n1, n2, n3, n4, n_pair, pq, l, mm, n, o, p, q, k, c0, nb
+      integer, parameter :: CHUNK = 32
+         !! Packed pairs transformed before `half` is written, so its stores
+         !! run CHUNK doubles long rather than one
 
       n_ao = size(c1, 1)
       n1 = size(c1, 2)
@@ -630,39 +637,53 @@ contains
       allocate (half(n_pair, n1*n2))
       !$omp parallel default(none) &
       !$omp    shared(eri, half, c1, c2, n_pair, n_ao, n1, n2) &
-      !$omp    private(pq, p, q, l, mm, m, tmp, blk)
-      allocate (m(n_ao, n_ao), tmp(n1, n_ao), blk(n1, n2))
-      !$omp do schedule(static)
-      do pq = 1, n_pair
-         do q = 1, n_ao
+      !$omp    private(pq, p, q, l, mm, m, tmp, blk, buf, c0, nb, k)
+      allocate (m(n_ao, n_ao), tmp(n1, n_ao), blk(n1, n2), buf(CHUNK, n1*n2))
+      !$omp do schedule(dynamic)
+      do c0 = 1, n_pair, CHUNK
+         nb = min(CHUNK, n_pair - c0 + 1)
+         do pq = c0, c0 + nb - 1
+            ! Walking the packed index in order is `pair_index` for p >= q,
+            ! without the call.
+            k = 0
             do p = 1, n_ao
-               m(p, q) = eri(pair_index(p, q), pq)
+               do q = 1, p
+                  k = k + 1
+                  m(p, q) = eri(k, pq)
+                  m(q, p) = eri(k, pq)
+               end do
+            end do
+            call pic_gemm(c1, m, tmp, transa="T")
+            call pic_gemm(tmp, c2, blk)
+            do mm = 1, n2
+               do l = 1, n1
+                  buf(pq - c0 + 1, (mm - 1)*n1 + l) = blk(l, mm)
+               end do
             end do
          end do
-         call pic_gemm(c1, m, tmp, transa="T")
-         call pic_gemm(tmp, c2, blk)
-         do mm = 1, n2
-            do l = 1, n1
-               half(pq, (mm - 1)*n1 + l) = blk(l, mm)
-            end do
+         do k = 1, n1*n2
+            half(c0:c0 + nb - 1, k) = buf(1:nb, k)
          end do
       end do
       !$omp end do
-      deallocate (m, tmp, blk)
+      deallocate (m, tmp, blk, buf)
       !$omp end parallel
 
       ! Second half: the same operation on the ket pair, for each (12).
       allocate (out(n1, n2, n3, n4))
       !$omp parallel default(none) &
       !$omp    shared(half, out, c3, c4, n_pair, n_ao, n1, n2, n3, n4) &
-      !$omp    private(pq, p, q, l, mm, n, o, m, tmp, blk)
+      !$omp    private(pq, p, q, l, mm, n, o, m, tmp, blk, k)
       allocate (m(n_ao, n_ao), tmp(n3, n_ao), blk(n3, n4))
       !$omp do schedule(static) collapse(2)
       do mm = 1, n2
          do l = 1, n1
-            do q = 1, n_ao
-               do p = 1, n_ao
-                  m(p, q) = half(pair_index(p, q), (mm - 1)*n1 + l)
+            k = 0
+            do p = 1, n_ao
+               do q = 1, p
+                  k = k + 1
+                  m(p, q) = half(k, (mm - 1)*n1 + l)
+                  m(q, p) = half(k, (mm - 1)*n1 + l)
                end do
             end do
             call pic_gemm(c3, m, tmp, transa="T")
