@@ -900,10 +900,9 @@ contains
          end if
       end do
 
+      ! The model's convergence is its own, `afo_options_t`'s defaults; only
+      ! how its SCF is driven follows the fragments'.
       afo_opts%basis = opts%basis
-      afo_opts%scf_max_iter = opts%scf_max_iter
-      afo_opts%scf_energy_tol = opts%scf_energy_tol
-      afo_opts%scf_density_tol = opts%scf_density_tol
       afo_opts%scf = opts%scf
       afo_opts%localization = opts%afo_localization
       allocate (afo%sets(afo%n_cuts))

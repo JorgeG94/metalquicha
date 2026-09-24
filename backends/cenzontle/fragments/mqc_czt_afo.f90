@@ -78,9 +78,17 @@ module mqc_czt_afo
       ! ignored -- the three bare fields below are passed positionally and win.
       ! Two declarations of one concept in one type, so setting the `scf` ones
       ! has no effect and no complaint.
-      integer :: scf_max_iter = 100
-      real(dp) :: scf_energy_tol = 1.0e-10_dp
-      real(dp) :: scf_density_tol = 1.0e-8_dp
+      integer :: scf_max_iter = 200
+      real(dp) :: scf_energy_tol = 1.0e-11_dp
+      real(dp) :: scf_density_tol = 1.0e-9_dp
+      real(dp) :: scf_grad_tol = 1.0e-9_dp
+         !! The model's own convergence, deliberately not the fragments'. What
+         !! leaves the model is its orbitals, which are first order in the
+         !! commutator, so that is bounded outright rather than derived as
+         !! `sqrt(scf_energy_tol)`; and a model is a dozen atoms, so the extra
+         !! iterations cost nothing. Bounding it at 1e-5, which is what the
+         !! fragment tolerance used to hand down, left the glycine
+         !! tripeptide's ER monomers 2e-7 short.
       logical :: cartesian = .false.
          !! Build the model system Cartesian whatever the basis declares. The
          !! hybrid is transferred through the detached atom's block of
@@ -562,8 +570,10 @@ contains
       scf_numerics%max_iter = opts%scf_max_iter
       scf_numerics%energy_tol = opts%scf_energy_tol
       scf_numerics%density_tol = opts%scf_density_tol
+      scf_numerics%grad_tol = opts%scf_grad_tol
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, .false., scf, error, scf=scf_numerics)
+                       opts%scf_density_tol, .false., scf, error, scf=scf_numerics, &
+                       grad_tol=opts%scf_grad_tol)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &
@@ -1090,12 +1100,10 @@ contains
       scf_numerics%max_iter = opts%scf_max_iter
       scf_numerics%energy_tol = opts%scf_energy_tol
       scf_numerics%density_tol = opts%scf_density_tol
-      ! TODO(mqc): the model SCF consumes its orbitals, yet its commutator
-      ! bound is left to derive as sqrt(energy_tol) -- 1e-5 at the FMO default.
-      ! Glycine tripeptide's ER monomers move 2e-7 between that and 1e-9, and
-      ! Boys ones less; a caller has to set `opts%scf%grad_tol` to get them.
+      scf_numerics%grad_tol = opts%scf_grad_tol
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, .false., scf, error, scf=scf_numerics)
+                       opts%scf_density_tol, .false., scf, error, scf=scf_numerics, &
+                       grad_tol=opts%scf_grad_tol)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &

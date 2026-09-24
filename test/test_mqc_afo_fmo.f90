@@ -21,6 +21,7 @@ module test_mqc_afo_fmo
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: to_bohr
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
@@ -65,6 +66,12 @@ contains
                   new_unittest("butane_and_water_match_gamess_afo", test_gamess_butane_water), &
                   new_unittest("butane_and_water_match_gamess_fmo2_exact_field", &
                                test_gamess_butane_water_exact), &
+                  new_unittest("butane_and_water_match_gamess_fmo2_exact_field_er", &
+                               test_gamess_butane_water_exact_er), &
+                  new_unittest("glycine_tripeptide_and_water_match_gamess_fmo2_exact_field_er", &
+                               test_gamess_gly3_water_exact_er), &
+                  new_unittest("glycine_tripeptide_and_water_match_gamess_fmo2_exact_field", &
+                               test_gamess_gly3_water_exact_boys), &
                   new_unittest("butane_and_water_match_gamess_afo_er", test_gamess_butane_water_er), &
                   new_unittest("glycine_tripeptide_and_water_match_gamess_afo_er", &
                                test_gamess_gly3_water_er), &
@@ -222,9 +229,6 @@ contains
       opts%level = 2
       opts%scf_energy_tol = 1.0e-10_dp
       opts%scf_density_tol = 1.0e-8_dp
-      ! The model system's orbitals are what is being compared, so its
-      ! commutator is bounded outright rather than left at sqrt(energy_tol).
-      opts%scf%grad_tol = 1.0e-9_dp
       call run_fmo2(z, sym, xyz, owner, opts, res, err)
       call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
                  err%get_message())
@@ -278,7 +282,6 @@ contains
       opts%level = 2
       opts%scf_energy_tol = 1.0e-10_dp
       opts%scf_density_tol = 1.0e-8_dp
-      opts%scf%grad_tol = 1.0e-9_dp
       call run_fmo2(z, sym, xyz, owner, opts, res, err)
       write (*, *) "   Boys monomers - GAMESS =", res%monomer_energy - &
          [-79.4968941332_dp, -189.8605453888_dp, -389.4556268227_dp, -74.9629282601_dp]
@@ -289,9 +292,6 @@ contains
       opts%level = 2
       opts%scf_energy_tol = 1.0e-10_dp
       opts%scf_density_tol = 1.0e-8_dp
-      ! The model system's orbitals are what is being compared, so its
-      ! commutator is bounded outright rather than left at sqrt(energy_tol).
-      opts%scf%grad_tol = 1.0e-9_dp
       call run_fmo2(z, sym, xyz, owner, opts, res, err)
       call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
                  err%get_message())
@@ -499,6 +499,130 @@ contains
       call check(error, abs(res%energy - GAMESS_FMO2) < 1.0e-7_dp, &
                  "FMO2 in the exact field does not match GAMESS")
    end subroutine test_gamess_butane_water_exact
+
+   subroutine test_gamess_butane_water_exact_er(error)
+      !! Butane and water, FMO2 in the exact field with the ER model, against GAMESS
+      !!
+      !! As the Boys case above, with `LOCAL=RUEDNBRG`: -230.415266004, and the
+      !! same at `$LOCAL CVGLOC=1D-10`. Pair interaction energies, kcal/mol, as
+      !! GAMESS's PIEDA prints them: water with the ethyl it hydrogen-bonds
+      !! 0.302, with the far one -0.158, and the cut pair -9122.246.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: GAMESS_FMO2 = -230.415266004_dp
+      integer, parameter :: PAIR_I(3) = [1, 1, 2], PAIR_J(3) = [2, 3, 3]
+      real(dp), parameter :: GAMESS_PAIR(3) = [-9122.246_dp, -0.158_dp, 0.302_dp]
+      integer :: z(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+
+      call butane_water(z, sym, xyz)
+      call exact_field_against_gamess(z, sym, xyz, &
+                                      [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                                      "er", GAMESS_FMO2, PAIR_I, PAIR_J, GAMESS_PAIR, error)
+   end subroutine test_gamess_butane_water_exact_er
+
+   subroutine test_gamess_gly3_water_exact_er(error)
+      !! Glycine tripeptide and water, two C-alpha--C cuts, FMO2 in the exact field, ER
+      !!
+      !! GAMESS 2026, `$FMO NBODY=2 RAFO(1)=1,1,1 RESPPC=2.0 RESDIM=0 RESPAP=0`,
+      !! `$FMOBND -2 3 / -10 11`, `LOCAL=RUEDNBRG`, RHF/STO-3G: -762.311281570,
+      !! the same at `$LOCAL CVGLOC=1D-10` and the same again at GAMESS's
+      !! default `RESDIM`. The molecule is -762.311670856. PIEDA totals,
+      !! kcal/mol, pairs ordered 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: GAMESS_FMO2 = -762.311281570_dp
+      integer, parameter :: PAIR_I(6) = [1, 1, 1, 2, 2, 3], PAIR_J(6) = [2, 3, 4, 3, 4, 4]
+      real(dp), parameter :: GAMESS_PAIR(6) = [-9109.379_dp, 1.899_dp, 0.075_dp, &
+                                               -9105.133_dp, 1.265_dp, -5.475_dp]
+      integer :: z(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+
+      call gly3_water(z, sym, xyz)
+      call exact_field_against_gamess(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, &
+                                                    3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4], &
+                                      "er", GAMESS_FMO2, PAIR_I, PAIR_J, GAMESS_PAIR, error)
+   end subroutine test_gamess_gly3_water_exact_er
+
+   subroutine test_gamess_gly3_water_exact_boys(error)
+      !! The same, with the Boys model: GAMESS -762.311027578 at `$LOCAL
+      !! CVGLOC=1D-10` (-762.311027577 at its default)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: GAMESS_FMO2 = -762.311027578_dp
+      integer, parameter :: PAIR_I(6) = [1, 1, 1, 2, 2, 3], PAIR_J(6) = [2, 3, 4, 3, 4, 4]
+      real(dp), parameter :: GAMESS_PAIR(6) = [-9120.121_dp, 1.856_dp, 0.074_dp, &
+                                               -9116.422_dp, 1.237_dp, -5.504_dp]
+      integer :: z(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+
+      call gly3_water(z, sym, xyz)
+      call exact_field_against_gamess(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, &
+                                                    3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4], &
+                                      "boys", GAMESS_FMO2, PAIR_I, PAIR_J, GAMESS_PAIR, error)
+   end subroutine test_gamess_gly3_water_exact_boys
+
+   subroutine exact_field_against_gamess(z, sym, xyz, owner, localization, gamess_total, &
+                                         pair_i, pair_j, gamess_pair, error)
+      !! FMO2 in the exact field against a GAMESS total and its PIEDA pair totals
+      !!
+      !! A pair not joined by a cut bond has to match GAMESS's printed kcal/mol
+      !! to its last digit, within 1.5e-3 for the rounding. **A cut pair is held
+      !! only to 2e-2.** Ours is the term the total is built from; GAMESS's
+      !! printed one is not -- its monomers plus its printed pairs miss its own
+      !! total by 1.3e-5 Hartree per cut, 8e-3 kcal/mol, with ER and with Boys
+      !! alike, and that is exactly how far each cut pair here sits from it.
+      integer, intent(in) :: z(:), owner(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: xyz(:, :)
+      character(len=*), intent(in) :: localization
+      real(dp), intent(in) :: gamess_total
+      integer, intent(in) :: pair_i(:), pair_j(:)
+      real(dp), intent(in) :: gamess_pair(:)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      real(dp) :: ours, bound
+      integer :: p, k
+
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = localization
+      opts%resppc = 2.0_dp
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      opts%outer_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "FMO2 in the exact field failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   FMO2 exact ("//localization//") - GAMESS =", res%energy - gamess_total
+      call check(error, abs(res%energy - gamess_total) < 1.0e-7_dp, &
+                 "FMO2 in the exact field does not match GAMESS")
+      if (allocated(error)) return
+
+      call check(error, allocated(res%pairs), "no pair terms came back")
+      if (allocated(error)) return
+      do p = 1, size(pair_i)
+         ours = huge(1.0_dp)
+         do k = 1, size(res%pairs)
+            if (res%pairs(k)%i == pair_i(p) .and. res%pairs(k)%j == pair_j(p)) then
+               ours = res%pairs(k)%energy*HARTREE_TO_KCALMOL
+               bound = merge(2.0e-2_dp, 1.5e-3_dp, res%pairs(k)%connected)
+            end if
+         end do
+         write (*, "(a,i2,a,i2,a,f14.4,a,f12.4)") "    pair", pair_i(p), "-", pair_j(p), &
+            "  here", ours, "  - GAMESS", ours - gamess_pair(p)
+         call check(error, abs(ours - gamess_pair(p)) < bound, &
+                    "a pair interaction energy does not match GAMESS's PIEDA")
+         if (allocated(error)) return
+      end do
+   end subroutine exact_field_against_gamess
 
    subroutine butane_water(z, sym, xyz)
       !! Anti butane and a water 4.5 A beyond C4, as the GAMESS deck has them

@@ -427,24 +427,37 @@ FMO(2), ``exact``                  +3.9e-4      +6.4e-4
 GAMESS FMO2, same field            +3.9e-4      +6.4e-4
 =================================  ===========  ===========
 
-With the exact field the two codes agree to 4.3e-8 in the total
-(-762.311027620 here, -762.311027577 in GAMESS, ``RESPPC=2.0 RESDIM=0
-RESPAP=0``, ``LOCAL=BOYS``), and every pair energy agrees to the 0.001
-kcal/mol GAMESS prints:
+With the exact field the two codes agree to 4.2e-8 in the total with either
+localizer (``RESPPC=2.0 RESDIM=0 RESPAP=0`` in GAMESS, ``resppc`` 2.0 here):
+-762.311281612 against -762.311281570 with ER, -762.311027620 against
+-762.311027578 with Boys. GAMESS gives the same ER total at its default
+``RESDIM`` and at ``$LOCAL CVGLOC=1D-10``. Pair energies against GAMESS's PIEDA
+totals, kcal/mol:
 
-============  =================  =================
-pair          here, kcal/mol     GAMESS PIEDA total
-============  =================  =================
-3-4           -5.504             -5.504
-1-3           1.856              1.856
-2-4           1.237              1.237
-1-4           0.074              0.074
-1-2 (cut)     -9120.12           -9120.121
-2-3 (cut)     -9116.42           -9116.422
-============  =================  =================
+============  =================  =================  =================  =================
+pair          ER, here           ER, GAMESS         Boys, here         Boys, GAMESS
+============  =================  =================  =================  =================
+3-4           -5.4748            -5.475             -5.5039            -5.504
+1-3           1.8986             1.899              1.8558             1.856
+2-4           1.2650             1.265              1.2370             1.237
+1-4           0.0747             0.075              0.0740             0.074
+1-2 (cut)     -9109.3723         -9109.379          -9120.1131         -9120.121
+2-3 (cut)     -9105.1257         -9105.133          -9116.4139         -9116.422
+============  =================  =================  =================  =================
 
-The response part of the water pair, ``Tr(dD u)``, is 0.718 kcal/mol in both.
-Here the monomer loop stops after 6 passes, GAMESS's after 9; the two stop on
+Every pair across no cut agrees to the digit GAMESS prints. **The cut pairs
+differ by 7-8e-3 kcal/mol, and it is GAMESS's printout, not the energy:**
+GAMESS's printed monomers plus its printed pair totals miss its own FMO2 total
+by 1.3e-5 Hartree per cut -- 2.3e-5 here, 1.3e-5 on butane, with ER and with
+Boys alike -- so the printed cut-pair row is not the term its total is built
+from. Ours is, and summed with our monomers it gives our total to 1e-10.
+Pinned, with the totals, in
+``glycine_tripeptide_and_water_match_gamess_fmo2_exact_field_er``, and without
+the ``_er`` for Boys.
+
+The response part of the water pair, ``Tr(dD u)``, is 0.718 kcal/mol in both
+with Boys and 0.763 with ER. Here the monomer loop stops after 6 passes at the
+default ``outer_tolerance``, GAMESS's after 9; the two stop on
 different measures (the change in the monomer energy sum here, density and
 energy there).
 
@@ -467,7 +480,7 @@ MBE(2) of the three                       -230.4152004258      -1.7e-8
 Pinned in ``butane_and_water_match_gamess_afo``, with ``afo_localization =
 "boys"``. The same system with the model ER-localized, against GAMESS with
 ``LOCAL=RUEDNBRG`` and ``$LOCAL CVGLOC=1D-10`` (its FMO default, ``1D-7``, leaves
-the ethyls 1e-8 short of converged), every pair an SCF in vacuo, and our model's commutator bounded at 1e-9:
+the ethyls 1e-8 short of converged), every pair an SCF in vacuo:
 
 ========================================  ===================  =========
                                           GAMESS               ours - it
@@ -489,14 +502,25 @@ The glycine tripeptide with a water, cut twice, in vacuo the same way
 (``glycine_tripeptide_and_water_match_gamess_afo_er``): the four monomers agree
 with GAMESS to 1.8e-7 and MBE(2), -762.3153911672 there, to 4.1e-8. That is not
 an ER discrepancy -- the same run with Boys against GAMESS's Boys is 2.0e-7 and
-4.1e-8 -- but the same loose model SCF, on bigger models. Both comparisons bound
-our model's commutator at 1e-9; left to derive it from the energy tolerance, as
-it does by default, the tripeptide's ER monomers move another 2e-7.
+4.1e-8 -- but the same loose model SCF, on bigger models.
+
+**The model system converges on its own terms.** Its SCF used to take the
+fragments' tolerances and derive its commutator bound from them, 1e-5 at the
+FMO defaults, although what leaves the model is its orbitals, which are first
+order in that bound. It now runs to 1e-11 in the energy and 1e-9 in the
+commutator whatever the fragments ask for, which a dozen atoms makes free.
+At the default fragment tolerances that moves the tripeptide's exact-field
+monomers by up to 1.3e-7 with ER and 1.6e-7 with Boys, and its totals by
+4e-10; every comparison with GAMESS above holds, because GAMESS's own model
+stops at a density change of 1e-6 and that remains the residual.
 
 Pinned in ``butane_and_water_match_gamess_afo``. FMO2 in the exact field on the
 same system, ``RESPPC=2.0 RESDIM=0 RESPAP=0`` in GAMESS and ``resppc`` 2.0 here:
--230.415266010 against GAMESS's -230.415265994, 1.6e-8 apart, pinned in
-``butane_and_water_match_gamess_fmo2_exact_field``. With point charges it is
+-230.415266010 against GAMESS's -230.415265994 with Boys, 1.6e-8 apart, and
+-230.415266021 against -230.415266004 with ER, 1.7e-8 apart; pinned in
+``butane_and_water_match_gamess_fmo2_exact_field`` and ``..._er``. The two
+pairs across no cut match GAMESS's printed 0.302 and -0.158 kcal/mol; the cut
+pair is -9122.239 against a printed -9122.246, the printout offset above. With point charges it is
 -230.415277443; the molecule is -230.415265709.
 
 Restrictions
