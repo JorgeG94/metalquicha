@@ -388,6 +388,13 @@ module mqc_czt_fmo
          !! has no field to be wrong about.
    end type fmo_result_t
 
+   type :: scf_block_t
+      !! An SCF table being written to a file, to be printed whole
+      logical :: active = .false.
+      integer :: console_level = 0
+      character(len=:), allocatable :: path
+   end type scf_block_t
+
    type :: fragment_t
       !! One fragment: what persists between passes, and nothing that does not
       !!
@@ -818,8 +825,15 @@ contains
          call near_fragments(frag, n_frag, [f], effective_resppc(opts), frag(f)%near, error)
          if (error%has_error()) return
       end do
-      call logger%verbose("  fmo: fragment 1 treats "//to_char(size(frag(1)%near))// &
-                          " of "//to_char(n_frag - 1)//" neighbours exactly")
+      if (is_leader(comm) .and. opts%esp == "exact" .and. n_frag > 1) then
+         ! One line for the whole partition: which fragment "fragment 1" was
+         ! depended on nothing, and every rank printed it.
+         call logger%info("  fmo: each fragment's field holds "// &
+                          to_char(minval([(size(frag(f)%near), f=1, n_frag)]))//" to "// &
+                          to_char(maxval([(size(frag(f)%near), f=1, n_frag)]))// &
+                          " neighbours exactly (of "//to_char(n_frag - 1)//"), the rest "// &
+                          "as point charges")
+      end if
    end subroutine build_fragments
 
    subroutine fragment_layout(frag, which, afo, z, coords, opts, error)
@@ -944,6 +958,7 @@ contains
       afo_opts%basis = opts%basis
       afo_opts%scf = opts%scf
       afo_opts%localization = opts%afo_localization
+      afo_opts%show_scf = show_inner_scf()
       allocate (afo%sets(afo%n_cuts))
       allocate (afo%sym(size(symbols)), source=symbols)
       allocate (lengths(afo%n_cuts), source=0)
@@ -958,6 +973,13 @@ contains
             if (local%has_error()) then
                status = [1, i, 0]
                exit
+            end if
+            if (afo_opts%show_scf) then
+               call logger%verbose("  fmo: model system for the bond between atoms "// &
+                                   to_char(afo%cuts(i)%atom_a)//" and "// &
+                                   to_char(afo%cuts(i)%atom_b)//", fragments "// &
+                                   to_char(afo%cuts(i)%frag_a)//" and "// &
+                                   to_char(afo%cuts(i)%frag_b))
             end if
             call bond_lmo_set(model, afo_opts, afo%sets(i), n_on_bond, local)
             if (local%has_error()) then
@@ -1001,23 +1023,24 @@ contains
 
       afo%active = .true.
       afo%split_nucleus = splits_nucleus(opts)
-      call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s); each "// &
-                          "freezes its bond orbital on both sides and the detached "// &
-                          "atom's other orbitals where it is a ghost")
+      if (.not. is_leader(comm)) return
+      call logger%info("  fmo: "//to_char(afo%n_cuts)//" detached bond(s); each "// &
+                       "freezes its bond orbital on both sides and the detached "// &
+                       "atom's other orbitals where it is a ghost")
       if (afo%split_nucleus) then
-         call logger%verbose("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
-                             "fragment that owns the atom, +1 on the ghost its "// &
-                             "neighbour carries there -- so every fragment is a "// &
-                             "closed shell carrying only its declared charge. The "// &
-                             "field supplies the other half, "// &
-                             "and the total is unchanged by the choice.")
+         call logger%info("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
+                          "fragment that owns the atom, +1 on the ghost its "// &
+                          "neighbour carries there -- so every fragment is a "// &
+                          "closed shell carrying only its declared charge. The "// &
+                          "field supplies the other half, "// &
+                          "and the total is unchanged by the choice.")
       else
-         call logger%verbose("  fmo: a detached bond's nucleus is kept whole with the "// &
-                             "fragment that owns the atom, so the two sides of a cut "// &
-                             "carry about +1 and -1 beyond their declared charges. "// &
-                             "Splitting it needs something to "// &
-                             "supply the other half, and with embedding 'none' there "// &
-                             "is no field to do it.")
+         call logger%info("  fmo: a detached bond's nucleus is kept whole with the "// &
+                          "fragment that owns the atom, so the two sides of a cut "// &
+                          "carry about +1 and -1 beyond their declared charges. "// &
+                          "Splitting it needs something to "// &
+                          "supply the other half, and with embedding 'none' there "// &
+                          "is no field to do it.")
       end if
    end subroutine build_afo_context
 
@@ -1131,8 +1154,11 @@ contains
                         "frozen orbital stands in for one electron pair; cut at a "// &
                         "single bond."//advice)
       end select
+      ! The rank that solved the models knows why; the others only that it
+      ! failed.
       if (local%has_error()) then
-         call logger%verbose("  fmo: "//trim(local%get_message()))
+         call error%set(ERROR_VALIDATION, error%get_message()//" ("// &
+                        trim(local%get_message())//")")
       end if
    end subroutine afo_failure
 
@@ -1747,7 +1773,7 @@ contains
    end subroutine full_local_coulomb
 
    subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
-                        e_internal, e_resp, error)
+                        e_internal, e_resp, error, comm)
       !! One n-mer, in the field of every fragment outside it
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag
@@ -1759,6 +1785,8 @@ contains
       type(afo_context_t), intent(in) :: afo
       real(dp), intent(out) :: e_internal, e_resp
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+         !! Only for how the SCF table is printed
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -1767,6 +1795,8 @@ contains
       type(fock_projector_t) :: proj
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:), d_start(:, :)
       type(scf_numerics_t) :: drive
+      type(scf_block_t) :: block
+      logical :: show_table
       integer :: attempt
       real(dp), parameter :: RETRY_LEVEL_SHIFT = 0.5_dp
       logical, allocatable :: inside(:), shared(:)
@@ -1867,30 +1897,33 @@ contains
       ! but it refuses a Fock projector, which every fragment next to a
       ! detached bond has.
       drive = opts%scf
+      show_table = show_inner_scf()
+      call open_scf_block("  fmo: "//term_name(members)//" SCF, n-mer phase", comm, block)
       do attempt = 1, 2
          if (allocated(u) .and. held) then
             call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
                              guess_density=d_start, h_extra=u, projector=proj)
          else if (allocated(u)) then
             call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
                              guess_density=d_start, h_extra=u)
          else if (held) then
             call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
                              guess_density=d_start, projector=proj)
          else
             call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_inner_scf(), scf, error, scf=drive, guess=deck_guess, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
                              guess_density=d_start)
          end if
-         if (error%has_error()) return
+         if (error%has_error()) exit
          if (scf%converged .or. attempt == 2) exit
          call logger%verbose("  fmo: "//term_name(members)//" did not converge; "// &
                              "retrying with a level shift")
          drive%level_shift = max(drive%level_shift, RETRY_LEVEL_SHIFT)
       end do
+      call close_scf_block(block)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call refuse_unconverged(term_name(members), "in the n-mer phase, after a "// &
@@ -2096,7 +2129,7 @@ contains
    end subroutine local_coulomb
 
    subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, afo, &
-                             stage, error, bare)
+                             stage, error, bare, comm)
       !! One monomer: build it, field it, solve it, read its charges, drop it
       !!
       !! The whole of a fragment's work for one outer pass, and the unit a rank
@@ -2115,6 +2148,8 @@ contains
          !! Solve it in vacuum. True only for the very first pass, where no
          !! fragment has a density yet and so there is no field to solve
          !! against.
+      type(comm_t), intent(in), optional :: comm
+         !! Only for how the SCF table is printed
 
       type(czt_molecule_t) :: mol
       type(group_t) :: group
@@ -2153,7 +2188,8 @@ contains
          if (error%has_error()) return
       end if
 
-      call inner_scf(frag(which), mol, opts, error, term_name([which]), stage, u, proj, held)
+      call inner_scf(frag(which), mol, opts, error, term_name([which]), stage, u, proj, &
+                     held, comm)
       if (error%has_error()) return
 
       ! The density stays the size the SCF produced it, ghost block and all.
@@ -2205,7 +2241,8 @@ contains
       do i = 1, n_frag
          if (owner(i) /= me) cycle
          call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
-                             "in vacuo, before the first pass", error, bare=.true.)
+                             "in vacuo, before the first pass", error, bare=.true., &
+                             comm=comm)
          if (error%has_error()) return
       end do
       call exchange_monomers(frag, n_frag, owner, comm)
@@ -2236,7 +2273,7 @@ contains
          do i = 1, n_frag
             if (owner(i) /= me) cycle
             call solve_fragment(prev, n_frag, i, z, coords, q_all, opts, afo, &
-                                "in SCC pass "//to_char(outer), error)
+                                "in SCC pass "//to_char(outer), error, comm=comm)
             if (error%has_error()) return
             call swap_solution(prev(i), frag(i))
          end do
@@ -2389,7 +2426,7 @@ contains
          end if
 
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
-                        opts, afo, e_internal, e_resp, error)
+                        opts, afo, e_internal, e_resp, error, comm)
          if (error%has_error()) return
          ! The response goes inside the correction, not alongside it: a larger
          ! n-mer subtracts its subsets' corrections whole, so a response left
@@ -2752,14 +2789,14 @@ contains
       if (.not. any(term_size(1:n_terms) >= 3)) return
 
       if (opts%expansion == "mbe" .and. opts%esp /= "none") then
-         call logger%verbose("  fmo: n-mer terms of the embedded expansion, Hartree "// &
-                             "-- corrections, not interaction energies: a monomer's "// &
-                             "own energy already holds its electrostatics with every "// &
-                             "other fragment")
+         call logger%info("  fmo: n-mer terms of the embedded expansion, Hartree "// &
+                          "-- corrections, not interaction energies: a monomer's "// &
+                          "own energy already holds its electrostatics with every "// &
+                          "other fragment")
       else
-         call logger%verbose("  fmo: many-body terms above pairs, Hartree")
+         call logger%info("  fmo: many-body terms above pairs, Hartree")
       end if
-      call logger%verbose("  fmo:   fragments                     dE")
+      call logger%info("  fmo:   fragments                     dE")
       do t = 1, n_terms
          if (term_size(t) < 3) cycle
          members = to_char(terms(1, t))
@@ -2767,7 +2804,7 @@ contains
             members = members//"-"//to_char(terms(m, t))
          end do
          write (line, "(a,a20,f24.12)") "  fmo: ", adjustl(members), correction(t)
-         call logger%verbose(trim(line))
+         call logger%info(trim(line))
       end do
    end subroutine log_interaction_table
 
@@ -2863,38 +2900,85 @@ contains
       leads = comm%rank() == 0
    end function is_leader
 
+   subroutine open_scf_block(header, comm, block)
+      !! Start a fragment SCF's verbose output: its header, and on more than one
+      !! rank a place to hold the table until it is complete
+      !!
+      !! A rank prints only what it computed. With several ranks printing at
+      !! once their tables would interleave line by line, so each one is
+      !! written to a file of the rank's own through the logger's file output,
+      !! the console silenced meanwhile, and [[close_scf_block]] prints it as
+      !! one write. Always paired with that, before any return: the console
+      !! stays silent until it is called.
+      use pic_logger, only: error_level
+      character(len=*), intent(in) :: header
+      type(comm_t), intent(in), optional :: comm
+      type(scf_block_t), intent(out) :: block
+
+      if (.not. show_inner_scf()) return
+      if (.not. spread_over(comm)) then
+         call logger%verbose(header)
+         return
+      end if
+      block%active = .true.
+      call logger%configuration(level=block%console_level)
+      block%path = "mqc_fmo_scf_rank"//to_char(comm%rank())//".tmp"
+      call logger%configure_file_output(block%path, level=block%console_level)
+      call logger%configure(level=error_level - 1)
+      call logger%verbose(header)
+   end subroutine open_scf_block
+
+   subroutine close_scf_block(block)
+      !! Print a held SCF table in one write, and give the console back
+      character(len=:), allocatable :: text
+      type(scf_block_t), intent(inout) :: block
+
+      character(len=512) :: line
+      integer :: unit, ios
+
+      if (.not. block%active) return
+      call logger%close_log_file()
+      call logger%configure(level=block%console_level)
+      block%active = .false.
+
+      text = ""
+      open (newunit=unit, file=block%path, status="old", action="read", iostat=ios)
+      if (ios /= 0) return
+      do
+         read (unit, "(a)", iostat=ios) line
+         if (ios /= 0) exit
+         if (len(text) > 0) text = text//new_line("a")
+         text = text//trim(line)
+      end do
+      close (unit, status="delete")
+      if (len(text) > 0) call logger%verbose(text)
+   end subroutine close_scf_block
+
    function show_inner_scf() result(show)
       !! Whether to print each fragment's per-iteration SCF table
       !!
-      !! The individual monomer and n-mer SCFs are the finest thing this method
-      !! prints and there are a great many of them, so they sit at the deepest
-      !! level.
-      ! TODO(mqc): replace debug_level with verbose_level once pic defines large_info;
-      !      the outer convergence (see calculate_monomers) drops to large_info at
-      !      the same time, so inner SCF and outer stay one level apart.
+      !! At verbose, as an unfragmented SCF prints its own table, each headed by
+      !! the term and the stage it belongs to; see [[open_scf_block]].
       logical :: show
       integer :: level
 
       call logger%configuration(level=level)
-      show = level >= debug_level
+      show = level >= verbose_level
    end function show_inner_scf
 
    function show_outer(comm) result(show)
       !! Whether to print the FMO outer-loop (monomer SCF) convergence table
       !!
-      !! Leader-guarded -- the monomer sum is a reduced total -- and gated at
-      !! verbose: one level above the info progress lines and one below the debug
-      !! per-fragment SCF tables. The level travels in this flag rather than in
-      !! the logger call because the shared table frame prints through
-      !! `logger%info`.
-      ! TODO(mqc): replace verbose_level with large_info once pic defines it, so the
-      !      outer table sits just below the inner SCF tables (see show_inner_scf).
+      !! Leader-guarded -- the monomer sum is a reduced total -- and shown at
+      !! info, with the pair table and the totals. The level travels in this
+      !! flag rather than in the logger call because the shared table frame
+      !! prints through `logger%info`.
       type(comm_t), intent(in), optional :: comm
       logical :: show
       integer :: level
 
       call logger%configuration(level=level)
-      show = is_leader(comm) .and. level >= verbose_level
+      show = is_leader(comm) .and. level >= info_level
    end function show_outer
 
    subroutine fmo_outer_row(show, iter, monomer_sum, change)
@@ -2976,7 +3060,7 @@ contains
       end do
    end subroutine exchange_monomers
 
-   subroutine inner_scf(f, mol, opts, error, what, stage, u, proj, held)
+   subroutine inner_scf(f, mol, opts, error, what, stage, u, proj, held, comm)
       !! The inner SCF: this fragment's orbitals, against a fixed external field
       type(fragment_t), intent(inout) :: f
       type(czt_molecule_t), intent(in) :: mol
@@ -2989,8 +3073,12 @@ contains
       logical, intent(in), optional :: held
          !! Whether `proj` carries anything. Separate from its presence because
          !! a fragment with no boundary still has a projector object.
+      type(comm_t), intent(in), optional :: comm
+         !! Only for how the SCF table is printed; see [[open_scf_block]]
 
       type(rhf_result_t) :: scf
+      type(scf_block_t) :: block
+      logical :: show_table
       integer, allocatable :: deck_guess
       logical :: embedded, constrained
 
@@ -3008,21 +3096,26 @@ contains
       ! the decks that asked for a specific guess.
       call fmo_guess_kind(opts, deck_guess)
 
+      ! Asked before the block opens: it silences the console, which is what
+      ! `show_inner_scf` reads.
+      show_table = show_inner_scf()
+      call open_scf_block("  fmo: "//what//" SCF, "//stage, comm, block)
       if (embedded .and. constrained) then
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, &
                           h_extra=u, projector=proj)
       else if (embedded) then
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
       else if (constrained) then
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, &
                           projector=proj)
       else
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess)
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess)
       end if
+      call close_scf_block(block)
       if (error%has_error()) return
       if (.not. scf%converged) then
          call refuse_unconverged(what, stage, scf, error)

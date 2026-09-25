@@ -97,6 +97,8 @@ module mqc_czt_afo
       character(len=8) :: localization = LOCALIZER_ER
          !! How the model's occupied orbitals are localized: "er"
          !! (Edmiston-Ruedenberg, GAMESS's default for the model) or "boys".
+      logical :: show_scf = .false.
+         !! Print the model system's SCF table, at the caller's verbose level
    end type afo_options_t
 
    integer, parameter :: GAMESS_MAX_Z = 86
@@ -572,12 +574,14 @@ contains
       scf_numerics%density_tol = opts%scf_density_tol
       scf_numerics%grad_tol = opts%scf_grad_tol
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, .false., scf, error, scf=scf_numerics, &
+                       opts%scf_density_tol, opts%show_scf, scf, error, scf=scf_numerics, &
                        grad_tol=opts%scf_grad_tol)
       if (error%has_error()) return
       if (.not. scf%converged) then
-         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &
-                        "so there is no orbital to freeze")
+         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge "// &
+                        "in "//to_char(scf%iterations)//" iterations, orbital gradient "// &
+                        to_char(scf%commutator)//" at the last, so there is no orbital "// &
+                        "to freeze")
          return
       end if
 
@@ -1102,12 +1106,14 @@ contains
       scf_numerics%density_tol = opts%scf_density_tol
       scf_numerics%grad_tol = opts%scf_grad_tol
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, .false., scf, error, scf=scf_numerics, &
+                       opts%scf_density_tol, opts%show_scf, scf, error, scf=scf_numerics, &
                        grad_tol=opts%scf_grad_tol)
       if (error%has_error()) return
       if (.not. scf%converged) then
-         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge, "// &
-                        "so there is no orbital to freeze")
+         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge "// &
+                        "in "//to_char(scf%iterations)//" iterations, orbital gradient "// &
+                        to_char(scf%commutator)//" at the last, so there is no orbital "// &
+                        "to freeze")
          return
       end if
       n_occ = scf%n_occupied
