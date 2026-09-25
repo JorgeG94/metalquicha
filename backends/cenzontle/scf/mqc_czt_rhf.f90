@@ -114,15 +114,14 @@ module mqc_czt_rhf
       integer :: full_builds = 0
          !! Full Fock builds performed, as opposed to updates from the density
          !! change. With incremental building on this is one plus a rebuild
-         !! every `INCREMENTAL_RESET` iterations; with it off, one per
-         !! iteration.
-         !!
-         !! Counted because it is the only observable difference the setting
-         !! makes: an incremental build is exact to the convergence threshold,
-         !! so the energy, the iteration count and every property come out
-         !! identical either way.
+         !! every `INCREMENTAL_RESET` iterations until the SCF settles, and one
+         !! per iteration after; with it off, one per iteration.
       integer :: updates = 0                 !! Builds from the density change
       logical :: active = .false.            !! Off until the first full build seeds it
+      logical :: settled = .false.
+         !! The commutator has fallen below `INCREMENTAL_SETTLED`; every build
+         !! from here on is a full one
+      integer :: settled_at = 0              !! The iteration that happened at; zero if never
    end type incremental_state_t
 
    type :: rhf_result_t
@@ -133,11 +132,16 @@ module mqc_czt_rhf
       integer :: iterations = 0
       integer :: full_fock_builds = 0
          !! Fock matrices built in full, as opposed to updated from the density
-         !! change. Equals `iterations` when `incremental_fock` is off, and one
-         !! plus a rebuild every `INCREMENTAL_RESET` iterations when it is on.
+         !! change. Equals `iterations` when `incremental_fock` is off. When it
+         !! is on: one, a rebuild every `INCREMENTAL_RESET` iterations, and one
+         !! per iteration once the commutator is below `INCREMENTAL_SETTLED`.
       integer :: incremental_updates = 0
          !! Fock matrices built from the density change. Zero when
          !! `incremental_fock` is off.
+      integer :: incremental_settled_at = 0
+         !! The iteration whose commutator fell below `INCREMENTAL_SETTLED`, after
+         !! which every build was full. Zero if it never did, or with
+         !! `incremental_fock` off.
       ! The second-order phase, when `keywords.scf.second_order` asked for one.
       ! Zero everywhere means the whole SCF was DIIS, which is the default.
       integer :: second_order_started_at = 0
@@ -295,6 +299,16 @@ module mqc_czt_rhf
       !! accumulates where a full build's does not; rebuilding every sixteenth
       !! iteration keeps the drift at the level of the convergence threshold
       !! for one full build in sixteen.
+
+   ! The screening an incremental build drops accumulates between rebuilds:
+   ! about 1e-10 in the energy on CAM-B3LYP water in cc-pVDZ. A deck asking for
+   ! 1e-13 then converged only when a rebuild happened to land at the right
+   ! iteration -- 10 to 88 iterations run to run, and past the limit on a slow
+   ! runner. Below this commutator the density change is small enough that
+   ! screening already skips most of a full build, so the few that remain cost
+   ! little. Psi4's `INCFOCK_CONVERGENCE` makes the same switch at 1e-5.
+   real(dp), parameter :: INCREMENTAL_SETTLED = 1.0e-5_dp
+      !! Commutator below which every Fock build is a full one
 
    ! Stage labels, named once so the per-iteration column and the summary table
    ! cannot drift apart, and so a caller can ask `clk%seconds_of(STAGE_FOCK)`.
@@ -1060,6 +1074,10 @@ contains
       ! quantity worth extrapolating against.
       call commutator(st%fock, st%density, ops%s, ops%x, st%err)
       gnorm = maxval(abs(st%err))
+      if (gnorm < INCREMENTAL_SETTLED .and. .not. st%incr%settled) then
+         st%incr%settled = .true.
+         st%incr%settled_at = iter
+      end if
       st%fock_flat = reshape(st%fock, [ops%n_ao*ops%n_ao])
       call st%diis%push(st%fock_flat, reshape(st%err, [ops%n_mo*ops%n_mo]), &
                         density=reshape(st%density, [ops%n_ao*ops%n_ao]), energy=st%e_elec)
@@ -1103,6 +1121,7 @@ contains
       result%iterations = iter
       result%commutator = gnorm
       result%full_fock_builds = st%incr%full_builds
+      result%incremental_settled_at = st%incr%settled_at
       result%incremental_updates = st%incr%updates
       ! `shift_now` is part of the test below rather than checked
       ! afterwards: the orbitals and eigenvalues that leave here are the ones
@@ -1217,6 +1236,10 @@ contains
       st%err_flat(1:msq) = reshape(st%err_a, [msq])
       st%err_flat(msq + 1:2*msq) = reshape(st%err_b, [msq])
       gnorm = maxval(abs(st%err_flat))
+      if (gnorm < INCREMENTAL_SETTLED .and. .not. st%incr%settled) then
+         st%incr%settled = .true.
+         st%incr%settled_at = iter
+      end if
       st%dens_flat(1:nsq) = reshape(st%d_a, [nsq])
       st%dens_flat(nsq + 1:2*nsq) = reshape(st%d_b, [nsq])
       call st%diis%push(st%fock_flat, st%err_flat, density=st%dens_flat, energy=st%e_elec)
@@ -1267,6 +1290,7 @@ contains
       result%iterations = iter
       result%commutator = gnorm
       result%full_fock_builds = st%incr%full_builds
+      result%incremental_settled_at = st%incr%settled_at
       result%incremental_updates = st%incr%updates
       st%drms_prev = drms
       ! **The energy and the commutator, and not the density.** `de` and
@@ -1566,6 +1590,7 @@ contains
       if (error%has_error()) return
       st%eigenvalues = energies
       result%full_fock_builds = st%incr%full_builds
+      result%incremental_settled_at = st%incr%settled_at
       result%incremental_updates = st%incr%updates
 
       deallocate (fock_cur, fock_try, coeff_try, density_try, step_matrix)
@@ -2137,7 +2162,8 @@ contains
          call build_fock(h, eri, density, fock, k_scale=k_scale)
       else
          if (use_incremental) then
-            full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET
+            full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET &
+                         .or. incr%settled
             if (full_build) then
                incr%full_builds = incr%full_builds + 1
                call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
@@ -2329,7 +2355,8 @@ contains
       if (allocated(eri)) then
          call build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale=k_scale)
       else if (use_incremental) then
-         full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET
+         full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET &
+                      .or. incr%settled
          if (full_build) then
             call build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, &
                                        stats, error, k_scale=k_scale)

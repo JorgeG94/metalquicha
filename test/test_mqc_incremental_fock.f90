@@ -29,6 +29,14 @@ module test_mqc_incremental_fock
    !!
    !! So the SCF counts its builds instead. `full_fock_builds` and
    !! `incremental_updates` are exact, free, and the same on every machine.
+   !!
+   !! **Exact to the convergence threshold only once the SCF has settled.**
+   !! The screening an incremental build drops accumulates between rebuilds, by
+   !! about 1e-10 in the energy on CAM-B3LYP water in cc-pVDZ, and a deck held
+   !! to 1e-13 then converged in anything from 10 to 88 iterations depending on
+   !! when a rebuild landed. So once the commutator falls below
+   !! `INCREMENTAL_SETTLED` every build is a full one, and the iteration the
+   !! switch happened at is reported, which keeps the counts exact.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
@@ -58,25 +66,36 @@ contains
 
       testsuite = [ &
                   new_unittest("incremental_off_builds_every_fock_in_full", test_off), &
-                  new_unittest("incremental_on_builds_one_and_updates", test_on), &
-                  new_unittest("incremental_does_not_move_the_energy", test_same_energy) &
+                  new_unittest("incremental_on_seeds_updates_then_settles", test_on), &
+                  new_unittest("incremental_does_not_move_the_energy", test_same_energy), &
+                  new_unittest("incremental_converges_as_full_at_tight_tolerance", &
+                               test_tight_tolerance) &
                   ]
    end subroutine collect_incremental_fock
 
-   subroutine converge(scf, error, incremental)
+   subroutine converge(scf, error, incremental, energy_tol, basis)
       !! One water SCF, with incremental building on or off
       type(rhf_result_t), intent(out) :: scf
       type(error_type), allocatable, intent(out) :: error
       logical, intent(in) :: incremental
+      real(dp), intent(in), optional :: energy_tol   !! Default 1e-9
+      character(len=*), intent(in), optional :: basis  !! Default STO-3G
 
       type(czt_molecule_t) :: mol
       type(error_t) :: err
+      real(dp) :: tol
 
-      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      tol = 1.0e-9_dp
+      if (present(energy_tol)) tol = energy_tol
+      if (present(basis)) then
+         call build_czt_molecule(WATER_Z, WATER_SYM, WATER, basis, mol, err)
+      else
+         call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      end if
       call check(error,.not. err%has_error(), "the molecule should build")
       if (allocated(error)) return
 
-      call run_czt_rhf(mol, 10, 50, 1.0e-9_dp, 1.0e-7_dp, .false., scf, err, &
+      call run_czt_rhf(mol, 10, 50, tol, 1.0e-7_dp, .false., scf, err, &
                        incremental_fock=incremental)
       call check(error,.not. err%has_error(), "the SCF should run: "//err%get_full_trace())
       if (allocated(error)) return
@@ -100,12 +119,13 @@ contains
    end subroutine test_off
 
    subroutine test_on(error)
-      !! On: one full build to seed the reference, then updates
+      !! On: one full build to seed the reference, updates, then full builds
+      !! once the SCF has settled
       !!
-      !! The count is one plus a rebuild every `RESET_WINDOW` iterations, and
-      !! this SCF converges well inside one window, so it is exactly one. That
-      !! is the assertion the timing could not make: a setting that changes no
-      !! number still changes something countable.
+      !! Inside one `RESET_WINDOW`, settling at iteration k of N: one seed build,
+      !! k - 1 updates, and N - k full builds after it. That is the assertion
+      !! the timing could not make: a setting that changes no number still
+      !! changes something countable.
       type(error_type), allocatable, intent(out) :: error
 
       type(rhf_result_t) :: scf
@@ -118,11 +138,15 @@ contains
                  "to be exact; if it no longer does, the expectation needs the "// &
                  "periodic rebuilds added back")
       if (allocated(error)) return
-      call check(error, scf%full_fock_builds == 1, &
-                 "with incremental building on, only the first build is full")
+      call check(error, scf%incremental_settled_at > 1, &
+                 "a converged SCF settles, and not on its first iteration")
       if (allocated(error)) return
-      call check(error, scf%incremental_updates == scf%iterations - 1, &
-                 "and every iteration after it is an update")
+      call check(error, scf%full_fock_builds, &
+                 1 + scf%iterations - scf%incremental_settled_at, &
+                 "the seed build, then one per iteration after settling")
+      if (allocated(error)) return
+      call check(error, scf%incremental_updates, scf%incremental_settled_at - 1, &
+                 "and updates in between")
       if (allocated(error)) return
       ! The point of the pair: the setting arrived and did something, and the
       ! something is invisible in every number the SCF reports as a result.
@@ -153,6 +177,34 @@ contains
       call check(error, on%iterations == off%iterations, &
                  "nor the iteration count")
    end subroutine test_same_energy
+
+   subroutine test_tight_tolerance(error)
+      !! Held to 1e-12, it settles and then converges as the full builds do
+      !!
+      !! Water HF in cc-pVDZ does not drift enough to show the failure itself:
+      !! with the switch disabled it still takes 11 iterations both ways, and
+      !! only the settling check fails. The drift is a range-separated
+      !! functional's, and the CAM-B3LYP RPA validation deck is where it is
+      !! caught end to end; this pins the switch and that it costs nothing.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(rhf_result_t) :: on, off
+
+      call converge(on, error, incremental=.true., energy_tol=1.0e-12_dp, basis="cc-pvdz")
+      if (allocated(error)) return
+      call converge(off, error, incremental=.false., energy_tol=1.0e-12_dp, basis="cc-pvdz")
+      if (allocated(error)) return
+
+      write (*, "(a,2i4,es12.3)") "   tight: iterations on, off; |dE| =", on%iterations, &
+         off%iterations, abs(on%energy - off%energy)
+      call check(error, abs(on%energy - off%energy) < 1.0e-11_dp, &
+                 "incremental building must not move a tightly converged energy")
+      if (allocated(error)) return
+      call check(error, abs(on%iterations - off%iterations) <= 1, &
+                 "nor take longer to reach it than full builds do")
+      if (allocated(error)) return
+      call check(error, on%incremental_settled_at > 0, "the tight SCF must settle")
+   end subroutine test_tight_tolerance
 
 end module test_mqc_incremental_fock
 
