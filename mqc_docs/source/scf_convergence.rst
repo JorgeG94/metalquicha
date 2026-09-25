@@ -599,6 +599,15 @@ forces a full Fock build every iteration. A run that then converges was being
 broken by accumulated increments, which is worth knowing. ``diis: false`` is a
 diagnostic in the same spirit rather than a setting.
 
+The late part of that is already automatic. Once the commutator falls below
+1e-5, every Fock build is a full one whatever the setting says. Past that point
+the density change is small, and screening already skips most of a full build,
+so it costs almost nothing. Before this, the accumulated increments could keep
+a tightly converged run wandering by about 1e-10 in the energy. A CAM-B3LYP
+water deck held to 1e-13 took anywhere from 10 to 88 iterations; it now takes
+10 to 13. So ``incremental_fock: false`` is only worth trying for trouble
+earlier in the SCF.
+
 **5. Go second order.** ``accelerator: "soscf"``. This is also the point at
 which to suspect that the difficulty is real curvature rather than a bad path
 through it.
