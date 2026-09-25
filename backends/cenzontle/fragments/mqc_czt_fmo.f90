@@ -878,7 +878,8 @@ contains
    end subroutine fragment_layout
 
    subroutine build_cut_context(z, symbols, coords, owner, basis, scf, scf_max_iter, &
-                                scf_energy_tol, scf_density_tol, afo, error, comm)
+                                scf_energy_tol, scf_density_tol, afo, error, comm, &
+                                detached)
       !! Every cut bond's frozen orbital, for a caller that is not FMO
       !!
       !! EFMO's entry into `build_afo_context`: the same model systems, the same
@@ -898,6 +899,8 @@ contains
       type(afo_context_t), intent(out) :: afo
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
+      integer, intent(in), optional :: detached(:)
+         !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
 
       type(fmo_options_t) :: opts
 
@@ -908,6 +911,7 @@ contains
       opts%scf_max_iter = scf_max_iter
       opts%scf_energy_tol = scf_energy_tol
       opts%scf_density_tol = scf_density_tol
+      if (present(detached)) opts%detached = detached
       call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm, &
                              cartesian=.true.)
    end subroutine build_cut_context

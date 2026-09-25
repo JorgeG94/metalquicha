@@ -343,7 +343,7 @@ contains
          !! Frozen orbitals the SCF is constrained by, from the adjusted frozen
          !! orbitals at a cut bond. Everything after the SCF runs on the
          !! constrained determinant as it would on any other: the frozen
-         !! occupied hybrid is localized, polarized and written with the rest,
+         !! occupied bond orbital is localized, polarized and written with the rest,
          !! which is what GAMESS's EFMO does too.
 
       type(czt_molecule_t) :: mol, aux

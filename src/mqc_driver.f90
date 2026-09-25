@@ -1648,7 +1648,8 @@ contains
                         pair_fragments=pair_fragments, pair_distance=pair_distance, &
                         pair_qm=pair_qm, pair_energy=pair_energy, &
                         pair_terms=pair_terms, &
-                        comm=comm, bond_breaking=trim(config%bond_breaking))
+                        comm=comm, bond_breaking=trim(config%bond_breaking), &
+                        detached=config%detached_atoms)
       if (err%has_error()) then
          call refuse(result_out, "EFMO: "//err%get_message())
          return

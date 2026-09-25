@@ -135,8 +135,8 @@ module mqc_czt_efmo
    real(dp), parameter :: COVALENT_INDUCTION_DAMPING = 0.1_dp
       !! The induction damping a run with detached bonds gets when the deck set
       !! none. Undamped, the induced dipoles of two fragments sharing a bond
-      !! region -- the frozen hybrid's centroid sits on the bond, a bohr or so
-      !! from the other side's orbitals -- do not converge at all. 0.1 is
+      !! region -- the frozen bond orbital's centroid sits on the bond, a bohr
+      !! or so from the other side's orbitals -- do not converge at all. 0.1 is
       !! GAMESS's own value for exactly this case (`$FMO SCREEN`, set in
       !! `EFMOSCREENSETUP` whenever a bond is detached).
 
@@ -177,10 +177,14 @@ module mqc_czt_efmo
          !! that cuts a covalent bond. `"afo"` detaches each cut bond with an
          !! adjusted frozen orbital, through FMO's own assembly: the detached
          !! atom's nucleus split `Z-1` / `+1` so every fragment is neutral, the
-         !! hybrid frozen empty on one side and occupied on the other, and the
+         !! bond orbital frozen empty on one side and occupied on the other --
+         !! the ghost's other orbitals frozen empty with it -- and the
          !! boundary decided per group so a group holding both ends has none.
          !! Every monomer, its potential and every near group are solved that
          !! way, and a covalently joined pair is always a quantum one.
+      integer, allocatable :: detached(:)
+         !! 1-based detached ends of cut bonds, from
+         !! `keywords.fragmentation.detached_atoms`; see `orient_cut`
       logical :: charge_transfer = .true.
          !! Include `E_IJ^CT` in the far pairs. GAMESS's EFMO has it; the 2012
          !! method left it out, so it is switchable rather than assumed.
@@ -441,12 +445,12 @@ contains
       case ("none")
          call refuse_covalent_cuts(atomic_numbers, coordinates, owner, n_atoms, error)
       case ("afo")
-         ! Every cut bond's hybrid, before any fragment is solved: a hybrid is
-         ! a property of the bond and its surroundings, not of who uses it.
+         ! Every cut bond's frozen orbitals, before any fragment is solved:
+         ! they belong to the bond and its surroundings, not to who uses them.
          call build_cut_context(atomic_numbers, symbols, coordinates, owner, &
                                 trim(opts%basis), opts%scf, opts%scf_max_iter, &
                                 opts%scf_energy_tol, opts%scf_density_tol, afo, &
-                                error, comm)
+                                error, comm, detached=opts%detached)
          if (error%has_error()) return
          if (afo%active) res%n_cuts = afo%n_cuts
          if (afo%active .and. opts%correlation /= EFMO_CORR_NONE) then
@@ -812,7 +816,7 @@ contains
          if (afo%active) then
             ! A fragment of one, through FMO's assembly: its own atoms, a ghost
             ! for each detached atom across a boundary it holds the attached
-            ! end of, the nucleus split at each, and the frozen hybrids.
+            ! end of, the nucleus split at each, and the frozen orbitals.
             call assemble_cut_group(z, symbols, xyz, owner, [k], afo, group, error)
             if (error%has_error()) return
             call cut_projector(group, afo, opts, proj, error)
@@ -923,7 +927,7 @@ contains
       !! The frozen-orbital constraint a group's boundaries imply
       !!
       !! Built against a molecule opened only to be measured, Cartesian with the
-      !! ghosts and split charges the SCF will see, so the hybrids land on the
+      !! ghosts and split charges the SCF will see, so the frozen orbitals land on the
       !! same functions. A group with no boundary comes back with an inactive
       !! projector, which constrains nothing.
       type(group_t), intent(in) :: group

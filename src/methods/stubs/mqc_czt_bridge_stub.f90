@@ -281,7 +281,8 @@ contains
                            allow_crap_response, response_batch, &
                            correlation, corr_aux_basis, freeze_core, n_frozen_core, &
                            pair_fragments, pair_distance, pair_qm, pair_energy, &
-                           pair_terms, comm, bond_breaking)
+                           pair_terms, comm, bond_breaking, &
+                           detached)
       !! No-op stand-in: EFMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -342,6 +343,8 @@ contains
          !! covalent bond with a frozen orbital, `"none"` (absent) refuses a cut.
          !! Present means spread the monomers and the quantum dimers over this
          !! communicator. Every rank gets the same total back.
+      integer, intent(in), optional :: detached(:)
+         !! 1-based detached ends of cut bonds
 
       energy = 0.0_dp
       terms = 0.0_dp
@@ -369,7 +372,7 @@ contains
       if (present(pair_fragments) .or. present(pair_distance)) return
       if (present(pair_qm) .or. present(pair_energy)) return
       if (present(pair_terms)) return
-      if (present(comm) .or. present(bond_breaking)) return
+      if (present(comm) .or. present(bond_breaking) .or. present(detached)) return
    end subroutine run_czt_efmo
 
    subroutine run_czt_makefp(atomic_numbers, element_symbols, coordinates, &
