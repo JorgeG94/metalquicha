@@ -433,12 +433,14 @@ contains
    subroutine fmo_refuse(this, message)
       !! Report an FMO refusal once and end the run with a failing status
       !!
-      !! The backend sets the same error on every rank -- a failure is
-      !! gathered before it is judged -- so every rank arrives here, and only
-      !! the first says why. `abort_comm` and not a return: the expansion
-      !! interface carries no error, and a return let the run finish with
-      !! exit status zero and, on the ranks that had not failed, a total.
+      !! Reached by whichever rank failed, which need not be the first, so
+      !! that rank says why; an error every rank reaches is said once per
+      !! rank. `abort_comm` and not a return: the expansion interface carries
+      !! no error, and a return let the run finish with exit status zero and,
+      !! on the ranks that had not failed, a total. MPI_ABORT ends the ranks
+      !! still waiting on the failed one, wherever they are waiting.
       use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
       use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
       class(fmo_context_t), intent(inout) :: this
       character(len=*), intent(in) :: message
@@ -447,7 +449,12 @@ contains
          call logger%error(message)
          error stop 1
       end if
-      if (this%resources%mpi_comms%world_comm%rank() == 0) call logger%error(message)
+      if (this%resources%mpi_comms%world_comm%size() > 1) then
+         call logger%error("rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
+                           ": "//message)
+      else
+         call logger%error(message)
+      end if
       ! Flushed by hand: MPI_ABORT ends the process without closing units, so
       ! with standard output redirected to a file the reason was lost and
       ! only Open MPI's own notice remained.

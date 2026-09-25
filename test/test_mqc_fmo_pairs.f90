@@ -287,13 +287,14 @@ contains
    end subroutine test_separated_waters
 
    subroutine test_unconverged_refused(error)
-      !! A fragment or pair SCF that does not converge stops the run, and says which
+      !! A fragment SCF that does not converge stops the run where it happens
       !!
-      !! Two SCF iterations are too few for any of the water trimer's
-      !! fragments or pairs. With no field the monomers are solved once, so
-      !! every monomer and every pair fails, and the refusal has to name them
-      !! all rather than report "at least one". `allow_crap_scf` keeps the run
-      !! and still lists them.
+      !! Two SCF iterations are too few for any water of the trimer, so the
+      !! first fragment of the in-vacuo pass fails and nothing after it runs:
+      !! the error names that fragment, the stage and how far the SCF got, and
+      !! no pair or total is formed. `allow_crap_scf` does not change that --
+      !! under FMO every later number stands on every fragment's SCF. With a
+      !! field and more iterations the same holds for a pair.
       type(error_type), allocatable, intent(out) :: error
 
       type(error_t) :: err
@@ -317,26 +318,21 @@ contains
                      0.0_dp, 0.7572_dp, 6.3865_dp], [3, 9])
 
       opts%basis = "sto-3g"
-      opts%esp = "none"
       opts%level = 2
       opts%scf_max_iter = 2
+      opts%scf%allow_crap_scf = .true.
       call run_fmo2(z, sym, to_bohr(ang), [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
       call check(error, err%has_error(), "an unconverged fragment SCF was not refused")
       if (allocated(error)) return
       message = err%get_message()
       write (*, *) "   ", message
-      call check(error, index(message, "fragment 2") > 0 .and. index(message, "pair 1-3") > 0, &
-                 "the refusal does not name the fragments and pairs that failed")
+      call check(error, index(message, "fragment 1 ") > 0 .and. &
+                 index(message, "in vacuo") > 0 .and. index(message, "2 iterations") > 0, &
+                 "the refusal does not name the fragment, the stage and the iterations")
       if (allocated(error)) return
-
-      call err%clear()
-      opts%scf%allow_crap_scf = .true.
-      call run_fmo2(z, sym, to_bohr(ang), [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
-      call check(error,.not. err%has_error(), "allow_crap_scf should keep the run")
+      call check(error,.not. allocated(res%pairs), "pairs were formed after a failure")
       if (allocated(error)) return
-      call check(error, size(res%unconverged, 2), 6, "all three fragments and pairs")
-      if (allocated(error)) return
-      call check(error,.not. res%converged, "a run with unconverged pieces is not converged")
+      call check(error, res%energy == 0.0_dp, "a total was formed after a failure")
    end subroutine test_unconverged_refused
 
    subroutine water20_run(resdim, res, error)
