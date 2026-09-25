@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 4.4% of total for modules and submodules.">1310 statements</a>
+                 title=" 4.6% of total for modules and submodules.">1360 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -174,10 +174,12 @@
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-optional_real">optional_real</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-optional_string">optional_string</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-populate_config">populate_config</a>
+            <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_afo_localization">read_afo_localization</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_avas_orbitals">read_avas_orbitals</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_connectivity">read_connectivity</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_constraints">read_constraints</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_cutoffs">read_cutoffs</a>
+            <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_detached_atoms">read_detached_atoms</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_dft_dispersion">read_dft_dispersion</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_efmo">read_efmo</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_efp_dispersion">read_efp_dispersion</a>
@@ -194,6 +196,7 @@
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_neo">read_neo</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_ormas_partition">read_ormas_partition</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_reference_fragment">read_reference_fragment</a>
+            <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_resdim">read_resdim</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_scf_eri_path">read_scf_eri_path</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-require_int">require_int</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-require_string">require_string</a>
@@ -247,24 +250,24 @@ Parse settings from a JSON string, no molecules</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_dispersion_apply.html'>mqc_dispersion_apply</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_ascii</li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item">json_module</li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_dispersion_names.html'>mqc_dispersion_names</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
+                  <li class="list-inline-item">json_module</li>
                   <li class="list-inline-item"><a href='mqc_json_schema.html'>mqc_json_schema</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item">pic_ascii</li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_names.html'>mqc_dispersion_names</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_apply.html'>mqc_dispersion_apply</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1343,7 +1346,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i~3"></span>
+              <span class="anchor" id="variable-atom_i~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1358,7 +1361,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_j~3"></span>
+              <span class="anchor" id="variable-atom_j~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1373,7 +1376,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~4"></span>
+              <span class="anchor" id="variable-nfrag~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1388,7 +1391,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~5"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1433,7 +1436,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~14"></span>
+              <span class="anchor" id="variable-path~20"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1478,7 +1481,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~27"></span>
+              <span class="anchor" id="variable-config~51"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1523,7 +1526,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~11"></span>
+              <span class="anchor" id="variable-value~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1628,7 +1631,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~8"></span>
+              <span class="anchor" id="variable-level~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1678,7 +1681,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~2"></span>
+              <span class="anchor" id="variable-filename~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1693,7 +1696,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~5"></span>
+              <span class="anchor" id="variable-config~26"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1708,7 +1711,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~50"></span>
+              <span class="anchor" id="variable-error~113"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1748,7 +1751,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~6"></span>
+              <span class="anchor" id="variable-text~32"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1763,7 +1766,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~6"></span>
+              <span class="anchor" id="variable-config~27"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1778,7 +1781,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~51"></span>
+              <span class="anchor" id="variable-error~114"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1818,7 +1821,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~10"></span>
+              <span class="anchor" id="variable-config~31"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1833,7 +1836,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~55"></span>
+              <span class="anchor" id="variable-error~118"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1873,7 +1876,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~9"></span>
+              <span class="anchor" id="variable-config~30"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1888,7 +1891,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~54"></span>
+              <span class="anchor" id="variable-error~117"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1943,7 +1946,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~2"></span>
+              <span class="anchor" id="variable-method_type~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1958,7 +1961,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~59"></span>
+              <span class="anchor" id="variable-error~124"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1998,7 +2001,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~33"></span>
+              <span class="anchor" id="variable-json~32"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2013,7 +2016,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~10"></span>
+              <span class="anchor" id="variable-path~16"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2068,7 +2071,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~32"></span>
+              <span class="anchor" id="variable-json~31"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2083,7 +2086,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~9"></span>
+              <span class="anchor" id="variable-path~15"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2098,7 +2101,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~7"></span>
+              <span class="anchor" id="variable-value~9"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2171,7 +2174,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~13"></span>
+              <span class="anchor" id="variable-path~19"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2186,7 +2189,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~10"></span>
+              <span class="anchor" id="variable-value~13"></span>
               logical,
             </td>
 <td>intent(inout)</td>
@@ -2241,7 +2244,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~12"></span>
+              <span class="anchor" id="variable-path~18"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2256,7 +2259,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~9"></span>
+              <span class="anchor" id="variable-value~12"></span>
               logical,
             </td>
 <td>intent(inout)</td>
@@ -2326,7 +2329,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~11"></span>
+              <span class="anchor" id="variable-path~17"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2341,7 +2344,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~8"></span>
+              <span class="anchor" id="variable-value~11"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -2381,7 +2384,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~31"></span>
+              <span class="anchor" id="variable-json~30"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2396,7 +2399,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~8"></span>
+              <span class="anchor" id="variable-path~14"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2411,7 +2414,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~6"></span>
+              <span class="anchor" id="variable-value~8"></span>
               character(len=:),
             </td>
 <td>intent(inout),</td>
@@ -2451,7 +2454,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~7"></span>
+              <span class="anchor" id="variable-json~4"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2481,7 +2484,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~7"></span>
+              <span class="anchor" id="variable-config~28"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2496,7 +2499,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~52"></span>
+              <span class="anchor" id="variable-error~115"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2532,6 +2535,76 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_afo_localization"></span> <h3>private  subroutine <a href='../proc/read_afo_localization.html'>read_afo_localization</a>(json, config, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>keywords.fragmentation.afo_localization</code>, &ldquo;er&rdquo; or &ldquo;boys&rdquo;</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~7"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~33"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~120"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-read_avas_orbitals"></span> <h3>private  subroutine <a href='../proc/read_avas_orbitals.html'>read_avas_orbitals</a>(json, config, error)  
 </h3></div>
     <div class="card-body">
@@ -2551,7 +2624,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~25"></span>
+              <span class="anchor" id="variable-json~24"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2566,7 +2639,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~48"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2581,7 +2654,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~71"></span>
+              <span class="anchor" id="variable-error~136"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2621,7 +2694,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~28"></span>
+              <span class="anchor" id="variable-json~27"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2666,7 +2739,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~3"></span>
+              <span class="anchor" id="variable-nfrag~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2681,7 +2754,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~4"></span>
+              <span class="anchor" id="variable-fragments~6"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2696,7 +2769,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~2"></span>
+              <span class="anchor" id="variable-nbonds~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2711,7 +2784,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~2"></span>
+              <span class="anchor" id="variable-nbroken~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2726,7 +2799,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~10"></span>
+              <span class="anchor" id="variable-bonds~15"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2741,7 +2814,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~74"></span>
+              <span class="anchor" id="variable-error~139"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2781,7 +2854,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~19"></span>
+              <span class="anchor" id="variable-json~18"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2796,7 +2869,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config~44"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2811,7 +2884,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~67"></span>
+              <span class="anchor" id="variable-error~132"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2851,7 +2924,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~11"></span>
+              <span class="anchor" id="variable-json~10"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2866,7 +2939,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~13"></span>
+              <span class="anchor" id="variable-config~36"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2881,10 +2954,81 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~58"></span>
+              <span class="anchor" id="variable-error~123"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_detached_atoms"></span> <h3>private  subroutine <a href='../proc/read_detached_atoms.html'>read_detached_atoms</a>(json, config, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>keywords.fragmentation.detached_atoms</code>, 0-based as every atom index
+in a deck</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~8"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~34"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~121"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
@@ -2921,7 +3065,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~13"></span>
+              <span class="anchor" id="variable-json~12"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2936,7 +3080,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~15"></span>
+              <span class="anchor" id="variable-config~38"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2951,7 +3095,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~61"></span>
+              <span class="anchor" id="variable-error~126"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2991,7 +3135,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~10"></span>
+              <span class="anchor" id="variable-json~9"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3006,7 +3150,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~12"></span>
+              <span class="anchor" id="variable-config~35"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3021,7 +3165,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~57"></span>
+              <span class="anchor" id="variable-error~122"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3061,7 +3205,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~12"></span>
+              <span class="anchor" id="variable-json~11"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3076,7 +3220,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~14"></span>
+              <span class="anchor" id="variable-config~37"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3091,7 +3235,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~60"></span>
+              <span class="anchor" id="variable-error~125"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3131,7 +3275,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~15"></span>
+              <span class="anchor" id="variable-json~14"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3146,7 +3290,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~17"></span>
+              <span class="anchor" id="variable-config~40"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3161,7 +3305,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~63"></span>
+              <span class="anchor" id="variable-error~128"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3201,7 +3345,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~16"></span>
+              <span class="anchor" id="variable-json~15"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3216,7 +3360,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~18"></span>
+              <span class="anchor" id="variable-config~41"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3231,7 +3375,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~64"></span>
+              <span class="anchor" id="variable-error~129"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3271,7 +3415,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~21"></span>
+              <span class="anchor" id="variable-json~20"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3286,7 +3430,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~7"></span>
+              <span class="anchor" id="variable-key~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3301,7 +3445,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-target"></span>
+              <span class="anchor" id="variable-target~2"></span>
               character(len=*),
             </td>
 <td>intent(inout)</td>
@@ -3341,7 +3485,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~9"></span>
+              <span class="anchor" id="variable-json~6"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3356,7 +3500,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~11"></span>
+              <span class="anchor" id="variable-config~32"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3371,7 +3515,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~56"></span>
+              <span class="anchor" id="variable-error~119"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3411,7 +3555,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~27"></span>
+              <span class="anchor" id="variable-json~26"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3471,7 +3615,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~2"></span>
+              <span class="anchor" id="variable-nfrag~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3486,7 +3630,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~3"></span>
+              <span class="anchor" id="variable-fragments~5"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3516,7 +3660,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~73"></span>
+              <span class="anchor" id="variable-error~138"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3556,7 +3700,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~18"></span>
+              <span class="anchor" id="variable-json~17"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3571,7 +3715,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~20"></span>
+              <span class="anchor" id="variable-config~43"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3586,7 +3730,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~66"></span>
+              <span class="anchor" id="variable-error~131"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3626,7 +3770,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~20"></span>
+              <span class="anchor" id="variable-json~19"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3641,7 +3785,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~22"></span>
+              <span class="anchor" id="variable-config~45"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3681,7 +3825,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~22"></span>
+              <span class="anchor" id="variable-json~21"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3696,7 +3840,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~23"></span>
+              <span class="anchor" id="variable-config~46"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3711,7 +3855,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~68"></span>
+              <span class="anchor" id="variable-error~133"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3751,7 +3895,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~23"></span>
+              <span class="anchor" id="variable-json~22"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3796,7 +3940,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~4"></span>
+              <span class="anchor" id="variable-charge~12"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3811,7 +3955,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~4"></span>
+              <span class="anchor" id="variable-multiplicity~9"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3826,7 +3970,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~2"></span>
+              <span class="anchor" id="variable-geom~4"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -3841,7 +3985,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag"></span>
+              <span class="anchor" id="variable-nfrag~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3856,7 +4000,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~2"></span>
+              <span class="anchor" id="variable-fragments~4"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3886,7 +4030,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds"></span>
+              <span class="anchor" id="variable-nbonds~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3901,7 +4045,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken"></span>
+              <span class="anchor" id="variable-nbroken~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3916,7 +4060,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~14"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3931,7 +4075,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~69"></span>
+              <span class="anchor" id="variable-error~134"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3971,7 +4115,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~26"></span>
+              <span class="anchor" id="variable-json~25"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4016,7 +4160,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~3"></span>
+              <span class="anchor" id="variable-geom~5"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -4031,7 +4175,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~72"></span>
+              <span class="anchor" id="variable-error~137"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4071,7 +4215,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~17"></span>
+              <span class="anchor" id="variable-json~16"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4086,7 +4230,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~19"></span>
+              <span class="anchor" id="variable-config~42"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4101,7 +4245,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~65"></span>
+              <span class="anchor" id="variable-error~130"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4141,7 +4285,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~24"></span>
+              <span class="anchor" id="variable-json~23"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4156,7 +4300,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~24"></span>
+              <span class="anchor" id="variable-config~47"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4171,7 +4315,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~70"></span>
+              <span class="anchor" id="variable-error~135"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4211,7 +4355,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~8"></span>
+              <span class="anchor" id="variable-json~5"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4226,7 +4370,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~8"></span>
+              <span class="anchor" id="variable-config~29"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4241,7 +4385,77 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~53"></span>
+              <span class="anchor" id="variable-error~116"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_resdim"></span> <h3>private  subroutine <a href='../proc/read_resdim.html'>read_resdim</a>(json, config, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>keywords.fragmentation.resdim</code>, refused if negative</p><a href="../proc/read_resdim.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~33"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~49"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~142"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4281,7 +4495,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~14"></span>
+              <span class="anchor" id="variable-json~13"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4296,7 +4510,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~16"></span>
+              <span class="anchor" id="variable-config~39"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4311,7 +4525,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~62"></span>
+              <span class="anchor" id="variable-error~127"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4351,7 +4565,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~30"></span>
+              <span class="anchor" id="variable-json~29"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4366,7 +4580,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~7"></span>
+              <span class="anchor" id="variable-path~13"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4381,7 +4595,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~5"></span>
+              <span class="anchor" id="variable-value~7"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -4396,7 +4610,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~76"></span>
+              <span class="anchor" id="variable-error~141"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4436,7 +4650,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~29"></span>
+              <span class="anchor" id="variable-json~28"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4451,7 +4665,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~6"></span>
+              <span class="anchor" id="variable-path~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4466,7 +4680,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~4"></span>
+              <span class="anchor" id="variable-value~6"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -4481,7 +4695,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~75"></span>
+              <span class="anchor" id="variable-error~140"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4521,7 +4735,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~50"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4551,7 +4765,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~77"></span>
+              <span class="anchor" id="variable-error~143"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4594,7 +4808,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 23:24 +0000             </p>
+ on 2026-09-25 05:16 +0000             </p>
           </div>
         </div>
         <br>

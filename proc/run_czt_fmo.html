@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">47 statements</a>
+                 title=" 0.2% of total for procedures.">52 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, response_sum, level_sum, pair_fragments, pair_distance, pair_energy, pair_response, pair_connected, comm)  
+    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, response_sum, level_sum, pair_fragments, pair_distance, pair_energy, pair_response, pair_connected, comm, detached, afo_localization, pair_separated, resdim)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -169,10 +169,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -351,7 +351,7 @@ one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~17"></span>
+              <span class="anchor" id="variable-atomic_numbers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -366,7 +366,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~4"></span>
+              <span class="anchor" id="variable-element_symbols~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -381,7 +381,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~8"></span>
+              <span class="anchor" id="variable-coordinates~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -396,7 +396,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~15"></span>
+              <span class="anchor" id="variable-owner~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -411,7 +411,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~7"></span>
+              <span class="anchor" id="variable-basis_name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -441,7 +441,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~2"></span>
+              <span class="anchor" id="variable-expansion"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -486,7 +486,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~19"></span>
+              <span class="anchor" id="variable-level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -591,7 +591,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~2"></span>
+              <span class="anchor" id="variable-bond_breaking"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -606,7 +606,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~4"></span>
+              <span class="anchor" id="variable-cap_scale"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -621,7 +621,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~12"></span>
+              <span class="anchor" id="variable-energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -636,7 +636,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~117"></span>
+              <span class="anchor" id="variable-error~30"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -651,7 +651,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges~2"></span>
+              <span class="anchor" id="variable-fragment_charges"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -729,7 +729,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_fragments~2"></span>
+              <span class="anchor" id="variable-pair_fragments"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -745,7 +745,7 @@ from one, lower first</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_distance~2"></span>
+              <span class="anchor" id="variable-pair_distance"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -761,7 +761,7 @@ only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_energy~2"></span>
+              <span class="anchor" id="variable-pair_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -818,8 +818,70 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
             <td>::</td>
             <td><strong>comm</strong></td>
             <td>
-                <p>Present means distribute the fragment work over this communicator.
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-detached"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>detached</strong>(:)</td>
+            <td>
+                <p>1-based detached ends of cut bonds; see <code>fmo_options_t%detached</code>
+Present means distribute the fragment work over this communicator.
 Absent means one rank does all of it.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-afo_localization"></span>
+              character(len=*),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>afo_localization</strong></td>
+            <td>
+                <p>&ldquo;er&rdquo; or &ldquo;boys&rdquo;; see <code>fmo_options_t%afo_localization</code>. Absent keeps
+that default.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_separated"></span>
+              logical,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_separated</strong>(:)</td>
+            <td>
+                <p>(n_pairs), true where the pair lies beyond <code>resdim</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-resdim"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>resdim</strong></td>
+            <td>
+                <p>Separated-dimer cutoff; see <code>fmo_options_t%resdim</code></p>
             </td>
         </tr>
     </tbody>
@@ -1102,7 +1164,8 @@ large graphs.</div>
 <span class="w">                          </span><span class="n">bond_breaking</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_sum</span><span class="p">,</span><span class="w"> </span><span class="n">pair_sum</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">response_sum</span><span class="p">,</span><span class="w"> </span><span class="n">level_sum</span><span class="p">,</span><span class="w"> </span><span class="n">pair_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">pair_distance</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                          </span><span class="n">pair_energy</span><span class="p">,</span><span class="w"> </span><span class="n">pair_response</span><span class="p">,</span><span class="w"> </span><span class="n">pair_connected</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">)</span>
+<span class="w">                          </span><span class="n">pair_energy</span><span class="p">,</span><span class="w"> </span><span class="n">pair_response</span><span class="p">,</span><span class="w"> </span><span class="n">pair_connected</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">detached</span><span class="p">,</span><span class="w"> </span><span class="n">afo_localization</span><span class="p">,</span><span class="w"> </span><span class="n">pair_separated</span><span class="p">,</span><span class="w"> </span><span class="n">resdim</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! No-op stand-in: FMO needs the CPU integral backend</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from</span>
@@ -1155,8 +1218,17 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_connected</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! (n_pairs), true where a detached bond joins the two fragments</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">detached</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! 1-based detached ends of cut bonds; see `fmo_options_t%detached`</span>
 <span class="w">         </span><span class="c">!! Present means distribute the fragment work over this communicator.</span>
 <span class="w">         </span><span class="c">!! Absent means one rank does all of it.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">afo_localization</span>
+<span class="w">         </span><span class="c">!! "er" or "boys"; see `fmo_options_t%afo_localization`. Absent keeps</span>
+<span class="w">         </span><span class="c">!! that default.</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_separated</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! (n_pairs), true where the pair lies beyond `resdim`</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resdim</span>
+<span class="w">         </span><span class="c">!! Separated-dimer cutoff; see `fmo_options_t%resdim`</span>
 
 <span class="w">      </span><span class="n">energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">      </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1173,7 +1245,8 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">level_sum</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_fragments</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_distance</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_energy</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_response</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_connected</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">detached</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">afo_localization</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_separated</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">resdim</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_czt_fmo</span>
 </pre></div>
 
@@ -1198,7 +1271,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 23:24 +0000             </p>
+ on 2026-09-25 05:16 +0000             </p>
           </div>
         </div>
         <br>

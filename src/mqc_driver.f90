@@ -740,6 +740,10 @@ contains
             end if
             expansion%basis = config%method_config%basis_set
             expansion%bond_breaking = config%bond_breaking
+            expansion%afo_localization = config%afo_localization
+            if (allocated(config%detached_atoms)) then
+               expansion%detached_atoms = config%detached_atoms
+            end if
             expansion%cap_scale = config%cap_scale
             if (config%expansion_kind == "fmo") then
                expansion%esp = "exact"
@@ -752,12 +756,9 @@ contains
             ! expansion alone. The two are independent in the backend and only
             ! three of the four pairings were reachable from a deck before:
             ! "fmo" with point charges is FMO's own expansion with the
-            ! long-range approximation made everywhere, which is the one shape
-            ! a detached bond can be run in, since a frozen orbital and an
-            ! exact density both describe the bond region and only a
-            ! per-atom field can have the detached atom's share taken back out
-            ! of it. An unknown spelling is refused rather than ignored: it
-            ! used to pass validation and change nothing.
+            ! long-range approximation made everywhere. A detached bond runs
+            ! with every field. An unknown spelling is refused rather than
+            ! ignored: it used to pass validation and change nothing.
             if (len_trim(config%embedding) > 0) then
                select case (trim(config%embedding))
                case ("none", "ptc", "exact")
@@ -777,6 +778,23 @@ contains
             ! does for MBE: how many fragments at a time.
             expansion%level = max_level
             expansion%resppc = config%fmo_resppc
+            ! GAMESS's RESDIM default is 2.0 for FMO2 and tied to trimer
+            ! trimming, which this code does not do, for FMO3; so a deck that
+            ! says nothing gets it at level two only. It stands in for a pair
+            ! interaction energy, which only the FMO expansion has.
+            if (config%fmo_resdim < 0.0_dp) then
+               expansion%resdim = 0.0_dp
+               if (expansion%expansion == "fmo" .and. max_level == 2) expansion%resdim = 2.0_dp
+            else
+               if (config%fmo_resdim > 0.0_dp .and. expansion%expansion /= "fmo") then
+                  call logger%error("keywords.fragmentation.resdim: separated pairs are "// &
+                                    "an approximation to the FMO pair interaction "// &
+                                    "energy, and EE-MBE's pair terms are not one. "// &
+                                    "Leave resdim out, or set it to 0.")
+                  return
+               end if
+               expansion%resdim = config%fmo_resdim
+            end if
             expansion%max_outer = config%fmo_max_outer
             expansion%outer_tol = config%fmo_tolerance
             expansion%scf_max_iter = config%fmo_scf_max_iter

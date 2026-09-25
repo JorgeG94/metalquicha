@@ -201,24 +201,24 @@ The fragments that failed, with what they were built from</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_interaction_bonding.html'>mqc_interaction_bonding</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_interaction_bonding.html'>mqc_interaction_bonding</a></li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_physical_constants.html'>mqc_physical_constants</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1463,18 +1463,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M726.14,-138C680.48,-138 590.25,-138 535.36,-138"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="535.2,-134.5 525.2,-138 535.2,-141.5 535.2,-134.5"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_mbe~~UsedByGraph_node16" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_mbe~~UsedByGraph_node16"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_mbe~~UsedByGraph_node16"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="794.5,-108 716.5,-108 716.5,-84 794.5,-84 794.5,-108"/>
 <text text-anchor="middle" x="755.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_mbe~~UsedByGraph_edge7" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M716.25,-102.06C668.38,-109.65 586.47,-122.63 535.31,-130.74"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="534.52,-127.32 525.19,-132.34 535.62,-134.23 534.52,-127.32"/>
 </g>
@@ -1674,7 +1674,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx"></span>
+              <span class="anchor" id="variable-fragment_idx~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1689,7 +1689,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment"></span>
+              <span class="anchor" id="variable-fragment~37"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1704,7 +1704,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup"></span>
+              <span class="anchor" id="variable-lookup~4"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1719,7 +1719,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies"></span>
+              <span class="anchor" id="variable-energies~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1734,7 +1734,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies"></span>
+              <span class="anchor" id="variable-delta_energies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1749,7 +1749,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~6"></span>
+              <span class="anchor" id="variable-n~80"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1764,7 +1764,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm"></span>
+              <span class="anchor" id="variable-world_comm~23"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1831,7 +1831,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status"></span>
+              <span class="anchor" id="variable-scf_status~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1846,7 +1846,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~23"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1861,7 +1861,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1876,7 +1876,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ids"></span>
+              <span class="anchor" id="variable-ids~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -1891,7 +1891,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~3"></span>
+              <span class="anchor" id="variable-monomers~13"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -1931,7 +1931,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~5"></span>
+              <span class="anchor" id="variable-monomers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1946,7 +1946,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~2"></span>
+              <span class="anchor" id="variable-n_monomers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1976,7 +1976,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections"></span>
+              <span class="anchor" id="variable-n_intersections~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1991,7 +1991,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results"></span>
+              <span class="anchor" id="variable-intersection_results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2006,7 +2006,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets"></span>
+              <span class="anchor" id="variable-intersection_sets~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2021,7 +2021,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels"></span>
+              <span class="anchor" id="variable-intersection_levels~5"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2036,7 +2036,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~2"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2051,7 +2051,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~89"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2066,7 +2066,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~2"></span>
+              <span class="anchor" id="variable-total_gradient~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2081,7 +2081,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian"></span>
+              <span class="anchor" id="variable-total_hessian~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2096,7 +2096,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds"></span>
+              <span class="anchor" id="variable-bonds~17"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2111,7 +2111,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~28"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2151,7 +2151,7 @@ expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers~25"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2166,7 +2166,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~6"></span>
+              <span class="anchor" id="variable-fragment_count~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2181,7 +2181,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~32"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2196,7 +2196,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~2"></span>
+              <span class="anchor" id="variable-results~12"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2211,7 +2211,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~5"></span>
+              <span class="anchor" id="variable-mbe_result~6"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2226,7 +2226,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~5"></span>
+              <span class="anchor" id="variable-sys_geom~88"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2241,7 +2241,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
+              <span class="anchor" id="variable-world_comm~27"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2256,7 +2256,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data"></span>
+              <span class="anchor" id="variable-json_data~33"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2271,7 +2271,7 @@ expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reference~2"></span>
+              <span class="anchor" id="variable-reference~8"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2312,7 +2312,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ids~2"></span>
+              <span class="anchor" id="variable-ids~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2327,7 +2327,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~4"></span>
+              <span class="anchor" id="variable-monomers~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2342,7 +2342,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~2"></span>
+              <span class="anchor" id="variable-delta_energies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2387,7 +2387,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-counts"></span>
+              <span class="anchor" id="variable-counts~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(out),</td>
@@ -2427,7 +2427,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_result"></span>
+              <span class="anchor" id="variable-frag_result~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2442,7 +2442,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers"></span>
+              <span class="anchor" id="variable-monomers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2457,7 +2457,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~85"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2472,7 +2472,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coeff"></span>
+              <span class="anchor" id="variable-coeff~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2487,7 +2487,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result"></span>
+              <span class="anchor" id="variable-mbe_result~2"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2547,7 +2547,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~2"></span>
+              <span class="anchor" id="variable-world_comm~24"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2587,7 +2587,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_result~2"></span>
+              <span class="anchor" id="variable-frag_result~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2602,7 +2602,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~2"></span>
+              <span class="anchor" id="variable-monomers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2617,7 +2617,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~86"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2632,7 +2632,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coeff~2"></span>
+              <span class="anchor" id="variable-coeff~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2647,7 +2647,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~2"></span>
+              <span class="anchor" id="variable-mbe_result~3"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2732,7 +2732,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~24"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2747,7 +2747,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~5"></span>
+              <span class="anchor" id="variable-fragment_count~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2762,7 +2762,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~4"></span>
+              <span class="anchor" id="variable-max_level~30"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2777,7 +2777,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reference"></span>
+              <span class="anchor" id="variable-reference~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2792,7 +2792,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2807,7 +2807,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~3"></span>
+              <span class="anchor" id="variable-delta_energies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2822,7 +2822,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~3"></span>
+              <span class="anchor" id="variable-mbe_result~4"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2837,7 +2837,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2877,7 +2877,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~2"></span>
+              <span class="anchor" id="variable-polymers~22"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2892,7 +2892,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2907,7 +2907,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~2"></span>
+              <span class="anchor" id="variable-max_level~28"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2922,7 +2922,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~4"></span>
+              <span class="anchor" id="variable-lookup~7"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2937,7 +2937,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~26"></span>
+              <span class="anchor" id="variable-error~216"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2977,7 +2977,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers"></span>
+              <span class="anchor" id="variable-polymers~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2992,7 +2992,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
+              <span class="anchor" id="variable-fragment_count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3007,7 +3007,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level"></span>
+              <span class="anchor" id="variable-max_level~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3022,7 +3022,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~2"></span>
+              <span class="anchor" id="variable-lookup~5"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3077,7 +3077,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~2"></span>
+              <span class="anchor" id="variable-fragment_idx~11"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3092,7 +3092,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~3"></span>
+              <span class="anchor" id="variable-fragment~39"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3107,7 +3107,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~3"></span>
+              <span class="anchor" id="variable-lookup~6"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3122,7 +3122,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results"></span>
+              <span class="anchor" id="variable-results~11"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3152,7 +3152,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~7"></span>
+              <span class="anchor" id="variable-n~81"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3167,7 +3167,7 @@ number, 1-based. Absent or 0 is the ordinary expansion.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~3"></span>
+              <span class="anchor" id="variable-world_comm~25"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -3223,7 +3223,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~4"></span>
+              <span class="anchor" id="variable-mbe_result~5"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3238,7 +3238,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level~31"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3278,7 +3278,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level"></span>
+              <span class="anchor" id="variable-sum_by_level~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3293,7 +3293,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~3"></span>
+              <span class="anchor" id="variable-max_level~29"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3308,7 +3308,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy"></span>
+              <span class="anchor" id="variable-total_energy~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3348,7 +3348,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient"></span>
+              <span class="anchor" id="variable-total_gradient~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3363,7 +3363,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom~87"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3378,7 +3378,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level"></span>
+              <span class="anchor" id="variable-current_log_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3433,7 +3433,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~7"></span>
+              <span class="anchor" id="variable-k~76"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3448,7 +3448,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sign_factor~2"></span>
+              <span class="anchor" id="variable-sign_factor~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3463,7 +3463,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~2"></span>
+              <span class="anchor" id="variable-intersection_results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3478,7 +3478,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~2"></span>
+              <span class="anchor" id="variable-intersection_sets~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3493,7 +3493,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~90"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3508,7 +3508,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~3"></span>
+              <span class="anchor" id="variable-total_gradient~6"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -3523,7 +3523,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~2"></span>
+              <span class="anchor" id="variable-total_hessian~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout),</td>
@@ -3538,7 +3538,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~2"></span>
+              <span class="anchor" id="variable-bonds~18"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -3583,7 +3583,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~3"></span>
+              <span class="anchor" id="variable-hess_dim~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3598,7 +3598,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~29"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -3638,7 +3638,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_status~2"></span>
+              <span class="anchor" id="variable-scf_status~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3653,7 +3653,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3696,7 +3696,7 @@ the ordinary expansion, matching <code>compute_mbe_delta</code>.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-24 23:24 +0000             </p>
+ on 2026-09-25 05:16 +0000             </p>
           </div>
         </div>
         <br>

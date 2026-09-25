@@ -605,6 +605,12 @@ module mqc_config_types
       real(dp) :: fmo_resppc = 2.0_dp
          !! Separation past which a fragment becomes point charges; negative
          !! turns the approximation off and makes every neighbour exact
+      real(dp) :: fmo_resdim = -1.0_dp
+         !! `keywords.fragmentation.resdim`: separation past which an FMO pair
+         !! is taken as its monomers' electrostatic interaction instead of
+         !! solved. Negative means the deck did not say, which the driver
+         !! resolves to GAMESS's 2.0 for FMO2 and to zero, every pair solved,
+         !! otherwise. Zero turns the approximation off.
       integer :: fmo_max_outer = 50
       real(dp) :: fmo_tolerance = 1.0e-7_dp
          !! Outer (monomer) SCF convergence, on the monomer energy sum
@@ -648,6 +654,14 @@ module mqc_config_types
          !! `mqc_czt_afo.f90` and `mqc_docs/source/fmo.rst`. An FMO
          !! expansion accepts `"none"` and `"afo"`; it refuses `"caps"` as not
          !! implemented for that expansion.
+      character(len=8) :: afo_localization = "er"
+         !! How the model system around a cut bond is localized when
+         !! `bond_breaking = "afo"`: `"er"` for Edmiston-Ruedenberg, GAMESS's
+         !! default, or `"boys"` for Foster-Boys.
+      integer, allocatable :: detached_atoms(:)
+         !! `keywords.fragmentation.detached_atoms`: 0-based atoms that are the
+         !! detached ends of cut bonds, GAMESS's `$FMOBND` sign. Unallocated
+         !! lets each cut take its sp3 end, else its lower-numbered one.
          !!
          !! Independent of `embedding`, but not every pairing of the two is
          !! sound: a cap puts an electron where an exact embedding already
@@ -739,6 +753,7 @@ contains
       if (allocated(this%frag_method)) deallocate (this%frag_method)
       if (allocated(this%embedding)) deallocate (this%embedding)
       if (allocated(this%bond_breaking)) deallocate (this%bond_breaking)
+      if (allocated(this%detached_atoms)) deallocate (this%detached_atoms)
       if (allocated(this%cutoff_method)) deallocate (this%cutoff_method)
       if (allocated(this%distance_metric)) deallocate (this%distance_metric)
       if (allocated(this%fragment_cutoffs)) deallocate (this%fragment_cutoffs)

@@ -59,6 +59,11 @@ module mqc_config_adapter
          !! field only -- which expansion is summed still follows `method`.
       character(len=16) :: bond_breaking = "none"
          !! How a cut covalent bond is represented; "none" refuses one
+      character(len=8) :: afo_localization = "er"
+         !! How a cut bond's model system is localized; "er" or "boys"
+      integer, allocatable :: detached_atoms(:)
+         !! Detached ends of cut bonds, **1-based** here, converted from the
+         !! deck's 0-based list
       real(dp) :: cap_scale = 1.0_dp
          !! Where a cap sits along the bond it closes
       character(len=16) :: counterpoise = "none"   !! "none" or "vmfc"
@@ -69,6 +74,7 @@ module mqc_config_adapter
          !! was given; -1 means one was given that no fragment can have.
       character(len=16) :: fmo_far_field = "mulliken"  !! mulliken, chelpg or ignore
       real(dp) :: fmo_resppc = 2.0_dp    !! Point-charge cutoff; negative disables it
+      real(dp) :: fmo_resdim = -1.0_dp   !! Separated-dimer cutoff; negative is "not given"
       integer :: fmo_max_outer = 50
       real(dp) :: fmo_tolerance = 1.0e-7_dp
       integer :: fmo_scf_max_iter = 100         !! Inner per-fragment SCF iteration cap
@@ -232,6 +238,10 @@ contains
       if (allocated(mqc_config%bond_breaking)) then
          driver_config%bond_breaking = mqc_config%bond_breaking
       end if
+      driver_config%afo_localization = mqc_config%afo_localization
+      if (allocated(mqc_config%detached_atoms)) then
+         driver_config%detached_atoms = mqc_config%detached_atoms + 1
+      end if
       driver_config%cap_scale = mqc_config%cap_scale
       ! `expansion_kind` is NOT copied from the deck here any more --
       ! `resolve_fragmentation_method` above derives it from `method` and has
@@ -241,6 +251,7 @@ contains
          driver_config%fmo_far_field = mqc_config%fmo_far_field
       end if
       driver_config%fmo_resppc = mqc_config%fmo_resppc
+      driver_config%fmo_resdim = mqc_config%fmo_resdim
       driver_config%fmo_max_outer = mqc_config%fmo_max_outer
       driver_config%fmo_tolerance = mqc_config%fmo_tolerance
       driver_config%fmo_scf_max_iter = mqc_config%fmo_scf_max_iter

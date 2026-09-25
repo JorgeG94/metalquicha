@@ -1510,6 +1510,15 @@ contains
                        "pair's delta_energy is a correction and not an interaction "// &
                        "energy. No interaction_energy is written.")
       end if
+      if (allocated(data%fmo_pair_separated)) then
+         if (any(data%fmo_pair_separated)) then
+            call json%add(parent, "separated_pair_note", &
+                          "Pairs marked separated lie beyond resdim. No pair SCF was "// &
+                          "run: their delta_energy is the electrostatic interaction "// &
+                          "of the two monomers (GAMESS's ES dimer), and their "// &
+                          "response is zero.")
+         end if
+      end if
       if (any(data%fmo_pair_connected)) then
          call json%add(parent, "connected_pair_note", &
                        "Pairs marked connected are joined by a detached bond. Their "// &
@@ -1537,6 +1546,9 @@ contains
             call json%add(frags_arr, "", data%fmo_pair_fragments(2, p))
             call json%add(pair_obj, "distance", data%fmo_pair_distance(p))
             call json%add(pair_obj, "connected", data%fmo_pair_connected(p))
+            if (allocated(data%fmo_pair_separated)) then
+               call json%add(pair_obj, "separated", data%fmo_pair_separated(p))
+            end if
             call json%add(pair_obj, "delta_energy", data%fmo_pair_energy(p))
             if (interactions .and. .not. joined) then
                call json%add(pair_obj, "interaction_energy", data%fmo_pair_energy(p))
