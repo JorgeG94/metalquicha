@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/int_to_text.html#variable-buffer~12">buffer</a>
+            <a class="list-group-item" href="../proc/int_to_text.html#variable-buffer~2">buffer</a>
         </div>
       </div>
     </div>
@@ -192,7 +192,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~21"></span>
+              <span class="anchor" id="variable-value~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -210,7 +210,7 @@
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-text~40"></span>
+          <span class="anchor" id="variable-text~6"></span>
           character(len=:), allocatable
         </small>
       </h3>
@@ -1027,20 +1027,20 @@
 <path fill="none" stroke="#00ff3f" d="M348.82,-508.04C375.84,-513.52 407.82,-520.01 435.09,-525.54"/>
 <polygon fill="#00ff3f" stroke="#00ff3f" points="434.41,-528.97 444.91,-527.53 435.81,-522.11 434.41,-528.97"/>
 </g>
-<!-- proc~worker_loop~2 -->
-<g id="proc~~int_to_text~~CalledByGraph_node46" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~int_to_text~~CalledByGraph_node46"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<!-- proc~worker_loop -->
+<g id="proc~~int_to_text~~CalledByGraph_node45" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node45"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="536.5,-508 458.5,-508 458.5,-484 536.5,-484 536.5,-508"/>
 <text text-anchor="middle" x="497.5" y="-493.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2 -->
-<g id="proc~~int_to_text~~CalledByGraph_edge74" class="edge">
-<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop~2</title>
-<path fill="none" stroke="#7f00ff" d="M368.05,-496C394.95,-496 424.24,-496 448.05,-496"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="448.24,-499.5 458.24,-496 448.24,-492.5 448.24,-499.5"/>
+<!-- proc~run_geometry_optimization&#45;&gt;proc~worker_loop -->
+<g id="proc~~int_to_text~~CalledByGraph_edge73" class="edge">
+<title>proc~run_geometry_optimization&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#003fff" d="M368.05,-496C394.95,-496 424.24,-496 448.05,-496"/>
+<polygon fill="#003fff" stroke="#003fff" points="448.24,-499.5 458.24,-496 448.24,-492.5 448.24,-499.5"/>
 </g>
 <!-- proc~write_final_single_point -->
 <g id="proc~~int_to_text~~CalledByGraph_node47" class="node">
@@ -1057,26 +1057,26 @@
 <path fill="none" stroke="#ff00bf" d="M348.82,-483.96C373.29,-479 401.81,-473.21 427.23,-468.05"/>
 <polygon fill="#ff00bf" stroke="#ff00bf" points="428.07,-471.46 437.17,-466.04 426.68,-464.6 428.07,-471.46"/>
 </g>
-<!-- proc~worker_loop -->
-<g id="proc~~int_to_text~~CalledByGraph_node45" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~int_to_text~~CalledByGraph_node45"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<!-- proc~worker_loop&#45;&gt;proc~run_step -->
+<g id="proc~~int_to_text~~CalledByGraph_edge66" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~run_step</title>
+<path fill="none" stroke="#5c00ff" d="M536.77,-501.62C553.8,-504.89 573.83,-509.82 591,-517 608.52,-524.32 609.8,-531.95 627,-540 640.93,-546.52 656.93,-552 671.07,-556.23"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="670.41,-559.68 680.99,-559.08 672.34,-552.95 670.41,-559.68"/>
+</g>
+<!-- proc~worker_loop~2 -->
+<g id="proc~~int_to_text~~CalledByGraph_node46" class="node">
+<title>proc~worker_loop~2</title>
+<g id="a_proc~~int_to_text~~CalledByGraph_node46"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="327.5,-260 249.5,-260 249.5,-236 327.5,-236 327.5,-260"/>
 <text text-anchor="middle" x="288.5" y="-245.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
 <g id="proc~~int_to_text~~CalledByGraph_edge68" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#e700ff" d="M327.95,-252.09C362.68,-255.78 413.85,-261.22 450.69,-265.13"/>
 <polygon fill="#e700ff" stroke="#e700ff" points="450.36,-268.62 460.68,-266.19 451.1,-261.66 450.36,-268.62"/>
-</g>
-<!-- proc~worker_loop~2&#45;&gt;proc~run_step -->
-<g id="proc~~int_to_text~~CalledByGraph_edge66" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~run_step</title>
-<path fill="none" stroke="#5c00ff" d="M536.77,-501.62C553.8,-504.89 573.83,-509.82 591,-517 608.52,-524.32 609.8,-531.95 627,-540 640.93,-546.52 656.93,-552 671.07,-556.23"/>
-<polygon fill="#5c00ff" stroke="#5c00ff" points="670.41,-559.68 680.99,-559.08 672.34,-552.95 670.41,-559.68"/>
 </g>
 <!-- proc~write_final_single_point&#45;&gt;proc~run_step -->
 <g id="proc~~int_to_text~~CalledByGraph_edge67" class="edge">
@@ -1123,11 +1123,11 @@
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~int_to_text~~CalledByGraph_edge73" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#003fff" d="M173.19,-248C195.85,-248 219.51,-248 239.39,-248"/>
-<polygon fill="#003fff" stroke="#003fff" points="239.42,-251.5 249.42,-248 239.42,-244.5 239.42,-251.5"/>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<g id="proc~~int_to_text~~CalledByGraph_edge74" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<path fill="none" stroke="#7f00ff" d="M173.19,-248C195.85,-248 219.51,-248 239.39,-248"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="239.42,-251.5 249.42,-248 239.42,-244.5 239.42,-251.5"/>
 </g>
 </g>
 </svg>
@@ -1233,7 +1233,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~12"></span>
+              <span class="anchor" id="variable-buffer~2"></span>
               character(len=32),
             </td>
               <td>private</td>
@@ -1297,7 +1297,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-25 17:59 +0000             </p>
+ on 2026-09-25 21:23 +0000             </p>
           </div>
         </div>
         <br>

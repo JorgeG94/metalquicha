@@ -1506,6 +1506,17 @@ contains
          !! no significant figures. There is no deck key for these yet, since a
          !! looser EFMO is not a cheaper EFMO -- the cost is MAKEFP.
 
+      ! Energies only, and said so: left to fall through, a Gradient or Hessian
+      ! deck would run this energy and report it under a driver it never ran.
+      ! With detached bonds the gradient needs the frozen orbitals' own
+      ! response, since the model systems' caps move with the atoms.
+      if (config%calc_type /= CALC_TYPE_ENERGY) then
+         call refuse(result_out, "EFMO computes energies only, and driver is '"// &
+                     trim(calc_type_to_string(config%calc_type))//"'. EFMO gradients "// &
+                     "are not implemented, with or without detached bonds.")
+         return
+      end if
+
       ! Hartree-Fock, MP2 or RI-MP2 fragments. The correlation runs on the same
       ! orbitals the reference converged to and turns `E_I^0` and `E_IJ^0`
       ! correlated, which is the whole of what a correlated EFMO is; the far
@@ -1637,7 +1648,8 @@ contains
                         pair_fragments=pair_fragments, pair_distance=pair_distance, &
                         pair_qm=pair_qm, pair_energy=pair_energy, &
                         pair_terms=pair_terms, &
-                        comm=comm)
+                        comm=comm, bond_breaking=trim(config%bond_breaking), &
+                        detached=config%detached_atoms)
       if (err%has_error()) then
          call refuse(result_out, "EFMO: "//err%get_message())
          return

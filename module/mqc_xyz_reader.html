@@ -135,7 +135,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/mqc_xyz_reader.html#variable-max_element_symbol_len~2">MAX_ELEMENT_SYMBOL_LEN</a>
+            <a class="list-group-item" href="../module/mqc_xyz_reader.html#variable-max_element_symbol_len~3">MAX_ELEMENT_SYMBOL_LEN</a>
         </div>
       </div>
     </div>
@@ -189,10 +189,10 @@ Split text into lines (for testing)</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2438,18 +2438,18 @@ large graphs.</div>
 <path fill="none" stroke="#b8ff00" stroke-dasharray="5,2" d="M1882.36,-629.65C1859.77,-632.91 1827.4,-638.56 1800,-647.12 1783.29,-652.35 1780.64,-657.66 1764,-663.12 1740.31,-670.9 1713.19,-677.04 1690.88,-681.4"/>
 <polygon fill="#b8ff00" stroke="#b8ff00" points="1690.17,-677.97 1681,-683.28 1691.48,-684.85 1690.17,-677.97"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="module~~mqc_xyz_reader~~UsedByGraph_node101" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_module~~mqc_xyz_reader~~UsedByGraph_node101"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_module~~mqc_xyz_reader~~UsedByGraph_node101"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1950.5,-764.12 1872.5,-764.12 1872.5,-740.12 1950.5,-740.12 1950.5,-764.12"/>
 <text text-anchor="middle" x="1911.5" y="-749.72" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_xyz_reader~~UsedByGraph_edge112" class="edge">
-<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#b8ff00" stroke-dasharray="5,2" d="M1872.25,-745.61C1850.9,-741.79 1823.88,-736.63 1800,-731.12 1763.13,-722.62 1721.79,-711.29 1691.16,-702.54"/>
 <polygon fill="#b8ff00" stroke="#b8ff00" points="1691.78,-699.07 1681.2,-699.68 1689.85,-705.8 1691.78,-699.07"/>
 </g>
@@ -2583,7 +2583,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_element_symbol_len~2"></span>
+              <span class="anchor" id="variable-max_element_symbol_len~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -2631,7 +2631,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~6"></span>
+              <span class="anchor" id="variable-filename~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2646,7 +2646,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~7"></span>
+              <span class="anchor" id="variable-geom~4"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(out)</td>
@@ -2661,7 +2661,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~173"></span>
+              <span class="anchor" id="variable-error~91"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2716,7 +2716,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~8"></span>
+              <span class="anchor" id="variable-geom~5"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(out)</td>
@@ -2731,7 +2731,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~174"></span>
+              <span class="anchor" id="variable-error~92"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2772,7 +2772,7 @@ Trailing newlines do not create empty lines</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text~42"></span>
+              <span class="anchor" id="variable-text~24"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2802,7 +2802,7 @@ Trailing newlines do not create empty lines</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nlines~3"></span>
+              <span class="anchor" id="variable-nlines~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2845,7 +2845,7 @@ Trailing newlines do not create empty lines</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-25 17:59 +0000             </p>
+ on 2026-09-25 21:23 +0000             </p>
           </div>
         </div>
         <br>
