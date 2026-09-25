@@ -41,7 +41,14 @@ jobs:
     # Not a third raise: the cost is gcov instrumentation rather than work the
     # suite could shed -- `mqc_quao` is 12 s in a release build and 704 s under
     # coverage -- so the ceiling stops being the thing to move.
-    timeout-minutes: 60
+    #
+    # Raised to ninety anyway, by decision rather than by drift: EFMO with
+    # covalent cuts added `mqc_czt_efmo_covalent`, 383 s single-threaded in a
+    # release build and 1343 s under -O1 coverage, and the job that fitted in
+    # 57 minutes before it was killed at sixty in the CPU manifest. -O1 alone
+    # would not have covered that test, and splitting the job is still the
+    # lever after this one.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
