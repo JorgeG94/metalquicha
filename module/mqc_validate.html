@@ -203,13 +203,13 @@ Check a term list can actually be assembled</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
                   <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_string_utils.html'>mqc_string_utils</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1014,7 +1014,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~8"></span>
+              <span class="anchor" id="variable-terms~4"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1044,7 +1044,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~5"></span>
+              <span class="anchor" id="variable-level~7"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1089,7 +1089,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~7"></span>
+              <span class="anchor" id="variable-terms~3"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1119,7 +1119,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~4"></span>
+              <span class="anchor" id="variable-level~6"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1164,7 +1164,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~2"></span>
+              <span class="anchor" id="variable-value~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1209,7 +1209,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_declared~4"></span>
+              <span class="anchor" id="variable-n_declared~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1259,7 +1259,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~15"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1274,7 +1274,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~2"></span>
+              <span class="anchor" id="variable-strict"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1289,7 +1289,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~36"></span>
+              <span class="anchor" id="variable-error~35"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1364,7 +1364,7 @@ declared.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~5"></span>
+              <span class="anchor" id="variable-terms"></span>
               type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1379,7 +1379,7 @@ declared.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~29"></span>
+              <span class="anchor" id="variable-sys_geom~16"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1388,6 +1388,76 @@ declared.</p>
             </td>
             <td>::</td>
             <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strict~2"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>strict</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~36"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-check_subset_closure"></span> <h3>private  subroutine <a href='../proc/check_subset_closure.html'>check_subset_closure</a>(terms, strict, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Every proper subset of every term must itself be a term</p><a href="../proc/check_subset_closure.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~2"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong></td>
             <td>
 
             </td>
@@ -1430,11 +1500,11 @@ declared.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-check_subset_closure"></span> <h3>private  subroutine <a href='../proc/check_subset_closure.html'>check_subset_closure</a>(terms, strict, error)  
+    <div class="card-header codesum"><span class="anchor" id="proc-complain"></span> <h3>private  subroutine <a href='../proc/complain.html'>complain</a>(strict, error, message)  
 </h3></div>
     <div class="card-body">
           
-  <p>Every proper subset of every term must itself be a term</p><a href="../proc/check_subset_closure.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Record a problem as a refusal or a warning</p><a href="../proc/complain.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1447,21 +1517,6 @@ declared.</p>
         <th scope="col"></th>
     </thead>
     <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-terms~6"></span>
-              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>terms</strong></td>
-            <td>
-
-            </td>
-        </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-strict~4"></span>
@@ -1492,64 +1547,9 @@ declared.</p>
 
             </td>
         </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-complain"></span> <h3>private  subroutine <a href='../proc/complain.html'>complain</a>(strict, error, message)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Record a problem as a refusal or a warning</p><a href="../proc/complain.html" class="pull-right"><emph>Read more&hellip;</emph></a>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-strict~5"></span>
-              logical,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>strict</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-error~39"></span>
-              type(<a href='../type/error_t.html'>error_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>error</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-message~3"></span>
+              <span class="anchor" id="variable-message~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1592,7 +1592,7 @@ declared.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-25 15:03 +0000             </p>
+ on 2026-09-25 17:59 +0000             </p>
           </div>
         </div>
         <br>
