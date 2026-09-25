@@ -86,6 +86,13 @@ contains
       ! An atom is a point carrying a nuclear charge; a bond midpoint carries
       ! none. The reader tells them apart the same way rather than by counting.
       frag%n_atoms = count(frag%charge > 0.0_dp)
+      ! Which element each atom is, and what its nucleus and core present to a
+      ! valence orbital. A file has no column for either, but the potential
+      ! does, and on a fragment cut across a bond neither follows from the
+      ! charge: a detached carbon presents five and the centre across the cut
+      ! presents one.
+      if (allocated(pot%element)) frag%element = pot%element
+      if (allocated(pot%valence)) frag%valence = pot%valence
 
       allocate (frag%q_elec(frag%n_points), frag%q_nuc(frag%n_points))
       frag%q_elec = pot%q_elec

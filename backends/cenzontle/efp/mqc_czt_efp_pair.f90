@@ -82,7 +82,14 @@ contains
                            "carries no shells")
             return
          end if
-         basis%elements(at)%element = trim(element_number_to_symbol(nint(frag%charge(at))))
+         ! The element, where the fragment knows it. The nearest integer to the
+         ! charge is the same thing only for an atom presenting its whole
+         ! nucleus, which a fragment cut across a bond does not.
+         if (allocated(frag%element)) then
+            basis%elements(at)%element = trim(element_number_to_symbol(frag%element(at)))
+         else
+            basis%elements(at)%element = trim(element_number_to_symbol(nint(frag%charge(at))))
+         end if
          basis%elements(at)%angular_form = ANGULAR_FORM_CARTESIAN
          call basis%elements(at)%allocate_shells(count)
          count = 0
@@ -894,15 +901,23 @@ contains
       real(dp) :: v
 
       integer :: k
+      real(dp) :: valence
 
       v = 0.0_dp
       do k = 1, frag%n_atoms
          ! Valence charge, not the full nuclear one: the localized orbitals a
          ! potential carries are valence only, so the core electrons count as
          ! screening their own nucleus. The same number the PROJECTION BASIS SET
-         ! atom header carries.
-         v = v - (frag%charge(k) - 2.0_dp*real(frozen_core([nint(frag%charge(k))]), dp)) &
-             /sqrt(sum((point - frag%points(:, k) - offset)**2))
+         ! atom header carries. Taken from the fragment where it knows it,
+         ! because across a cut bond the core does not follow from the charge:
+         ! the centre standing in for a detached atom presents +1 and holds no
+         ! core, whatever element it is.
+         if (allocated(frag%valence)) then
+            valence = frag%valence(k)
+         else
+            valence = frag%charge(k) - 2.0_dp*real(frozen_core([nint(frag%charge(k))]), dp)
+         end if
+         v = v - valence/sqrt(sum((point - frag%points(:, k) - offset)**2))
       end do
       do k = 1, size(centroids, 2)
          v = v + 2.0_dp/sqrt(sum((point - centroids(:, k))**2))

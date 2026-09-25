@@ -81,6 +81,18 @@ module mqc_czt_efp_read
       real(dp), allocatable :: points(:, :)        !! (3, n_points), Bohr
       real(dp), allocatable :: mass(:)             !! amu, zero at a midpoint
       real(dp), allocatable :: charge(:)           !! Z, zero at a midpoint
+         !! The nuclear charge a point presents, which on a fragment cut across
+         !! a covalent bond is not its element's; see `element`.
+      integer, allocatable :: element(:)           !! (n_atoms), atomic number
+         !! Which element each atom is. Filled only for a potential made in
+         !! memory: a `.efp` file carries `charge` and no element column, so a
+         !! fragment read from one leaves this unallocated and falls back on
+         !! the nearest integer to `charge`, which for a whole molecule is the
+         !! same thing.
+      real(dp), allocatable :: valence(:)          !! (n_atoms)
+         !! `charge` less two per core orbital the atom holds -- what a valence
+         !! orbital sees of that nucleus. Filled with `element`, for the same
+         !! reason, and derived the same way when absent.
       real(dp), allocatable :: q_elec(:)           !! Electronic monopole
       real(dp), allocatable :: q_nuc(:)            !! Nuclear monopole
       real(dp), allocatable :: dipole(:, :)        !! (3, n_points)
@@ -163,6 +175,8 @@ contains
       if (allocated(self%points)) deallocate (self%points)
       if (allocated(self%mass)) deallocate (self%mass)
       if (allocated(self%charge)) deallocate (self%charge)
+      if (allocated(self%element)) deallocate (self%element)
+      if (allocated(self%valence)) deallocate (self%valence)
       if (allocated(self%q_elec)) deallocate (self%q_elec)
       if (allocated(self%q_nuc)) deallocate (self%q_nuc)
       if (allocated(self%dipole)) deallocate (self%dipole)

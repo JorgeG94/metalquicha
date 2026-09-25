@@ -256,6 +256,11 @@ Keywords
      - :math:`R_{\rm cut}`, unitless. Sits here rather than under ``efmo``
        because it decides which pairs are solved quantum mechanically, which is
        a property of the partition -- the same place FMO's ``resppc`` lives.
+   * - ``keywords.fragmentation.bond_breaking``
+     - ``"none"``
+     - ``"none"`` refuses a partition that cuts a covalent bond, naming the two
+       atoms. ``"afo"`` detaches each cut bond with an adjusted frozen orbital;
+       see *Cutting covalent bonds*. The same key FMO reads.
    * - ``keywords.efmo.charge_transfer``
      - ``true``
      - Include :math:`E_{IJ}^{\rm CT}` in the far pairs. GAMESS's library default
@@ -276,7 +281,9 @@ Keywords
        (``POLAB``, set from ``$FMO SCREEN``); above 2.0 the factor is one
        again, which is GAMESS's own guard. **The default is off rather than
        0.6** -- see the induction paragraph under *Against GAMESS*, which
-       measures what the key does and what it does not.
+       measures what the key does and what it does not. **With detached bonds
+       zero means 0.1**, GAMESS's value for that case, because undamped the
+       induction across a cut does not converge.
    * - ``model.method``
      - --
      - ``"hf"``, ``"mp2"`` or ``"ri-mp2"``. The correlation runs on the
@@ -583,6 +590,177 @@ carries up to 2.5 kcal/mol at :math:`R_{\rm cut} = 2.0`. The most stable isomer
 not preserved: the prism rises from fifth to second. Read EFMO energies of
 different isomers against each other with that in mind.
 
+Cutting covalent bonds
+----------------------
+
+``keywords.fragmentation.bond_breaking: "afo"`` lets a partition cut covalent
+bonds, a protein by residue being the case it exists for:
+
+.. code-block:: json
+
+   "keywords": {
+     "fragmentation": {"method": "efmo", "level": 2, "rcut": 2.0,
+                       "bond_breaking": "afo"}
+   }
+
+Each cut bond is detached exactly as FMO detaches it, by FMO's own code, which
+is GAMESS's adjusted frozen orbitals: the bond orbital of a small model system
+is frozen empty in the fragment owning the detached atom and frozen occupied in
+the fragment across the bond, which carries the atom's functions as a ghost with
+the atom's core and other bonds frozen empty. **The nucleus is always
+split**, ``Z - 1`` with the owner and ``+1`` on the ghost, so every fragment is a
+neutral closed shell; GAMESS splits too. The cut atoms are perceived from the
+geometry; the detached end of each is its sp3 end, else its lower-numbered
+atom, unless ``keywords.fragmentation.detached_atoms`` names it.
+
+Every SCF the method runs sees the cuts: each monomer's, which is also the one
+its potential is made from, and each near group's. **A cut belongs to a group,
+not a fragment** -- a group holding both ends of a bond has it whole, with no
+ghost, no frozen orbital and both halves of the nucleus back together.
+
+Three rules the cuts add:
+
+* **A covalently joined pair is always quantum**, whatever ``rcut`` says.
+  Joined means a cut runs between the two, or both hold centres at one cut atom
+  or a bond apart -- a ghost sits a bond length from every fragment its atom is
+  bonded to. No multipole expansion describes a pair that close: propane in
+  three pieces, its two ends joined only through a ghost of the middle carbon,
+  gave -0.336 Hartree effective against +0.274 quantum before this rule. Along a
+  peptide backbone cut at C\ :sub:`alpha`--C it joins exactly the neighbouring
+  residues.
+* **The split is decided over the ghosts too**, since a ghost carries a charge
+  and a bond pair where it sits. The reported ``distance`` stays atom to atom.
+* **The induction is damped at a = 0.1** when ``keywords.efmo.induction_damping``
+  is left at zero -- GAMESS's own value for a run with detached bonds. Undamped,
+  the induced dipoles of two fragments sharing a bond region do not converge at
+  all. A value set in the deck is used as given.
+
+Refused by name: MP2 and RI-MP2 across a cut (the frozen virtual would be
+correlated like any other); everything FMO's detachment refuses -- a cut through
+a ring, a bond detached at a hydrogen, a bond carrying more than one localized
+orbital; and gradients, for EFMO as a whole.
+
+What it gives
+~~~~~~~~~~~~~
+
+**At level equal to the fragment count, with rcut huge, the total is the
+molecule's own RHF energy**, whatever was cut: 1.8e-13 Hartree on propane cut
+once, 3.1e-13 cut twice, 9.9e-14 numbered so the middle carbon is detached twice,
+1.5e-12 on butane in four pieces and 1.1e-13 on methylcyclopropane cut at its
+exocyclic bond, RHF/6-31G, in ``test/test_mqc_czt_efmo_covalent.f90``. Each
+fragment's potential sums to its charge to about 1e-14.
+
+**Far pairs of a cut fragment are as good as those of a whole molecule** from a
+few angstrom out. Propane with a water beyond its first methyl, the effective
+pair against the same pair solved as a quantum dimer:
+
+=========  ================  ================
+O to C     uncut, error      cut, error
+=========  ================  ================
+3.5 A      -7.1e-4           -2.3e-3
+4.5 A      +3.2e-5           -2.3e-5
+6.0 A      -9.3e-6           -6.0e-6
+=========  ================  ================
+
+At 3.5 A the pair is quantum at the default ``rcut`` anyway. **Pairs two cuts
+apart are poor at short range**: butane's two end carbons, at
+:math:`R_{IJ} = 0.85`, give +0.0081 effective against +0.0519 quantum. Keep
+``rcut`` at 1 or above with cuts.
+
+**Against GAMESS.** Butane cut at its middle C-C bond with a water 4.5 A beyond
+one end, RHF/STO-3G, level 2, against the unfragmented -230.415265709:
+
+======================  =================  =================
+                        this code          GAMESS
+======================  =================  =================
+every pair quantum      -230.415258725     -230.415264851
+rcut 1.0                -230.415278030     -230.415231748
+error, every pair QM    +7.0e-6            +8.6e-7
+======================  =================  =================
+
+The fragments agree: the three monomer energies to 5e-9, 6e-9 and 5e-8 and the
+quantum pair corrections, summed, to 1e-8. What is left is induction. The two
+codes' pair and total induction differ by about a third on this system --
+-0.00152 here against -0.00218 in GAMESS for the total -- and almost all of it
+cancels between the two, leaving the 6e-6. At ``rcut`` 1.0 the effective pairs
+add GAMESS's unscreened electrostatics against this code's screened ones, the
+difference noted for whole molecules under *Against GAMESS* above.
+
+Before the frozen set was matched to GAMESS's (see :doc:`fmo`), the same row
+read -230.416556977, an error of -1.29e-3: the two cut monomers came out 0.127
+and 0.298 Hartree high.
+
+How the potential of a cut fragment is made
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A fragment cut across a covalent bond is detached the way FMO detaches it (see
+:doc:`fmo`): the detached atom keeps ``Z - 1`` of its nucleus and the bond
+orbital frozen empty, and the fragment across the bond carries a centre at the
+same point with the same basis, ``+1`` of charge, the bond orbital frozen
+occupied and the atom's other orbitals frozen empty.
+Both fragments are neutral closed shells, which is what a fragment *potential*
+needs -- nothing in a far pair takes a net charge back out.
+
+That makes the charge a centre presents and the element it is two different
+things, and the effective-fragment path used to read one off the other. What
+reads which, now:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 33 33
+
+   * - Where
+     - Element (``atomic_numbers``, ``element``)
+     - Charge presented (``nuclear_charge``, ``charge``)
+   * - ``make_efp_potential``: the molecule
+     - the basis looked up
+     - the nuclear attraction and repulsion; the electron count is their sum
+   * - core orbitals left out of the localization
+     - the frozen core of the element; **none on a ghost**, whose core stays
+       with the atom's owner
+     - --
+   * - ``distributed_multipoles``
+     - bonds, so the midpoints, and the labels
+     - the nuclear monopole
+   * - screening grid, masses for the centre of mass
+     - radii and masses
+     - --
+   * - projection basis header, exchange-repulsion potential
+     - --
+     - the *valence* charge, charge less two per core orbital: ``+3`` on a
+       detached carbon, ``+1`` on the centre across the cut
+   * - a fragment's basis in the pair terms
+     - the element symbol
+     - the charge the molecule is built with (overlap and kinetic only)
+
+A potential made in memory carries ``element`` and ``valence`` per atom through
+to the fragment and across ranks. A ``.efp`` file carries neither, and a
+fragment read from one falls back on the nearest integer to its charge, which
+for a whole molecule is the same number -- so nothing read from a file moves.
+
+**The centre across the cut is an ordinary atom of the potential.** It has
+basis functions, so the distributed multipoles need an expansion point there;
+it is bonded to the attached atom, so it gets a midpoint; and it carries ``+1``.
+Summed over the two fragments of a cut, the monopoles put the whole nucleus back
+exactly once.
+
+The frozen occupied bond orbital is localized, polarized and written with the rest of
+the valence orbitals, on the constrained determinant as it stands. That is what
+GAMESS's EFMO does, including its own acknowledgement that the Fock matrix is
+not diagonal in the unfrozen space.
+
+Every quantum mechanical step an EFMO run takes, with or without cuts:
+
+* each fragment's SCF, inside ``make_efp_potential``, which is also its
+  :math:`E_I^0`;
+* each near group's SCF;
+* with a correlated method, MP2 on both;
+* with cuts, one small SCF per cut bond, on the model system its frozen orbitals come
+  from.
+
+All of them go through the same group assembly: a cut belongs to a group, not a
+fragment, so a group holding both ends of a bond has it whole.
+
 What is not here yet
 --------------------
 
@@ -595,9 +773,11 @@ What is not here yet
   missing feature: it puts the induction inside each group's SCF, which makes a
   group's energy depend on its environment and stops the many-body differences
   telescoping. Nothing in EFMO as implemented here embeds anything.
-* **Whole molecules only.** A partition that cuts a covalent bond is refused: a
-  hydrogen cap's multipoles would act on the partner across the cut, and the
-  adjusted frozen orbital route FMO uses is not wired in here.
+* **Gradients**, with or without cuts; refused by name. Across a cut they
+  need the frozen orbitals' own response, since the model systems' caps move
+  with the atoms.
+* **Correlated fragments across a cut**; the frozen empties would be
+  correlated like any other virtual.
 * **The rest of the induction difference.** With
   ``keywords.efmo.induction_damping`` set to GAMESS's 0.6 the two codes'
   induction still differ by about two per cent, in the other direction; what is

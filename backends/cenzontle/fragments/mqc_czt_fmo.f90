@@ -134,6 +134,13 @@ module mqc_czt_fmo
    public :: fmo_result_t
    public :: fmo_pair_t
    public :: run_fmo2
+   ! The cut-bond assembly, for EFMO, which detaches a bond exactly as FMO
+   ! does and must decide a group's boundaries by the same rule.
+   public :: afo_context_t
+   public :: group_t
+   public :: build_cut_context
+   public :: assemble_cut_group
+   public :: group_projector
 
    type :: fmo_options_t
       !! What to run, and how hard
@@ -870,7 +877,76 @@ contains
       frag(which)%mol_atom = group%atom_of
    end subroutine fragment_layout
 
-   subroutine build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
+   subroutine build_cut_context(z, symbols, coords, owner, basis, scf, scf_max_iter, &
+                                scf_energy_tol, scf_density_tol, afo, error, comm, &
+                                detached)
+      !! Every cut bond's frozen orbital, for a caller that is not FMO
+      !!
+      !! EFMO's entry into `build_afo_context`: the same model systems, the same
+      !! refusals and the same hybrids shared from one rank, built Cartesian
+      !! because every EFMO molecule is, and with the nucleus always split.
+      !! Split because an EFMO fragment's potential is an expansion about its
+      !! own charge distribution with nothing to take a net charge back out,
+      !! so both sides of a cut have to come out neutral; GAMESS splits too.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: owner(:)
+      character(len=*), intent(in) :: basis
+      type(scf_numerics_t), intent(in) :: scf
+      integer, intent(in) :: scf_max_iter
+      real(dp), intent(in) :: scf_energy_tol, scf_density_tol
+      type(afo_context_t), intent(out) :: afo
+      type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+      integer, intent(in), optional :: detached(:)
+         !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
+
+      type(fmo_options_t) :: opts
+
+      opts%basis = basis
+      opts%bond_breaking = "afo"
+      opts%cut_nucleus = "split"
+      opts%scf = scf
+      opts%scf_max_iter = scf_max_iter
+      opts%scf_energy_tol = scf_energy_tol
+      opts%scf_density_tol = scf_density_tol
+      if (present(detached)) opts%detached = detached
+      call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm, &
+                             cartesian=.true.)
+   end subroutine build_cut_context
+
+   subroutine assemble_cut_group(z, symbols, coords, owner, members, afo, group, error)
+      !! One group of fragments, its ghosts, split nuclei and boundaries
+      !!
+      !! `assemble_group` for a caller holding a partition rather than FMO's
+      !! fragment records, so the rule that a cut belongs to a group and not to
+      !! a fragment is applied by the one routine that already applies it.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: owner(:)          !! Fragment of each atom, from one
+      integer, intent(in) :: members(:)        !! The fragments of the group
+      type(afo_context_t), intent(in) :: afo
+      type(group_t), intent(out) :: group
+      type(error_t), intent(inout) :: error
+
+      type(fragment_t), allocatable :: frag(:)
+      integer :: m, f, i
+
+      allocate (frag(maxval(owner)))
+      do m = 1, size(members)
+         f = members(m)
+         frag(f)%atoms = pack([(i, i=1, size(owner))], owner == f)
+         frag(f)%z = z(frag(f)%atoms)
+         frag(f)%sym = symbols(frag(f)%atoms)
+         frag(f)%xyz = coords(:, frag(f)%atoms)
+      end do
+      call assemble_group(frag, members, afo, z, coords, group, error)
+   end subroutine assemble_cut_group
+
+   subroutine build_afo_context(z, symbols, coords, owner, opts, afo, error, comm, &
+                                cartesian)
       !! Every cut bond's frozen orbital, worked out once for the system
       !!
       !! A hybrid belongs to a bond and its surroundings, not to whoever is being
@@ -900,6 +976,8 @@ contains
       type(afo_context_t), intent(out) :: afo
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
+      logical, intent(in), optional :: cartesian
+         !! Solve the model systems Cartesian; see `afo_options_t%cartesian`
 
       type(system_geometry_t) :: geom
       type(afo_model_t) :: model
@@ -957,6 +1035,7 @@ contains
       ! how its SCF is driven follows the fragments'.
       afo_opts%basis = opts%basis
       afo_opts%scf = opts%scf
+      if (present(cartesian)) afo_opts%cartesian = cartesian
       afo_opts%localization = opts%afo_localization
       afo_opts%show_scf = show_inner_scf()
       allocate (afo%sets(afo%n_cuts))

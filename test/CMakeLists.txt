@@ -275,6 +275,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_efmo)
   target_link_libraries(test_mqc_czt_efmo PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # EFMO across detached covalent bonds: at full level the expansion is the
+  # molecule's own RHF energy whatever the partition cut, a bonded pair is
+  # quantum at any cutoff, and every cut fragment's potential is neutral.
+  addtest(mqc_czt_efmo_covalent)
+  target_link_libraries(test_mqc_czt_efmo_covalent
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Placing a fragment in an arbitrary orientation, piece by piece: the frame
   # construction, the Cartesian shell rotation as a group representation, and
   # the invariants a rotated fragment must keep. The energy test asserts the

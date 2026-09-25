@@ -85,9 +85,12 @@ module mqc_czt_efmo
    !! a group's energy depend on its environment, so the many-body differences
    !! no longer telescope and the level = N identity above stops holding.
    !!
-   !! **Closed shell, whole molecules.** Covalent fragments are Phase 5; a
-   !! partition that cuts a bond is refused here rather than capped, since a
-   !! cap's multipoles would act on the partner across the cut.
+   !! **Closed shell. A cut bond is detached, never capped**, and only when
+   !! `bond_breaking = "afo"` asks for it: each monomer, its potential and each
+   !! near group are solved with FMO's adjusted frozen orbitals and split
+   !! nuclei, so every fragment stays neutral, and a covalently joined pair is
+   !! always quantum. A cap's multipoles would act on the partner across the
+   !! cut, which is why capping is not offered. Energies only.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -100,6 +103,9 @@ module mqc_czt_efmo
    use mqc_czt_atomic_guess, only: build_restricted_guess
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential
+   use mqc_czt_fmo, only: afo_context_t, group_t, build_cut_context, &
+                          assemble_cut_group, group_projector
+   use mqc_fock_projector, only: fock_projector_t
    use mqc_czt_efp_read, only: efp_fragment_t
    use mqc_czt_efp_convert, only: potential_to_fragment
    use mqc_czt_efp_energy, only: efp_pair_energy_t, efp_pair_terms, &
@@ -125,6 +131,14 @@ module mqc_czt_efmo
    public :: efmo_pair_contribution
    public :: efmo_result_t
    public :: run_efmo
+
+   real(dp), parameter :: COVALENT_INDUCTION_DAMPING = 0.1_dp
+      !! The induction damping a run with detached bonds gets when the deck set
+      !! none. Undamped, the induced dipoles of two fragments sharing a bond
+      !! region -- the frozen bond orbital's centroid sits on the bond, a bohr
+      !! or so from the other side's orbitals -- do not converge at all. 0.1 is
+      !! GAMESS's own value for exactly this case (`$FMO SCREEN`, set in
+      !! `EFMOSCREENSETUP` whenever a bond is detached).
 
    type :: efmo_options_t
       !! What to run, and how hard
@@ -158,6 +172,19 @@ module mqc_czt_efmo
          !! before the near criterion thins them, so level three on twenty
          !! fragments is up to 1140 SCFs against 190 for level two. No level is
          !! refused; the count is reported before any of them is computed.
+      character(len=16) :: bond_breaking = "none"
+         !! `keywords.fragmentation.bond_breaking`. `"none"` refuses a partition
+         !! that cuts a covalent bond. `"afo"` detaches each cut bond with an
+         !! adjusted frozen orbital, through FMO's own assembly: the detached
+         !! atom's nucleus split `Z-1` / `+1` so every fragment is neutral, the
+         !! bond orbital frozen empty on one side and occupied on the other --
+         !! the ghost's other orbitals frozen empty with it -- and the
+         !! boundary decided per group so a group holding both ends has none.
+         !! Every monomer, its potential and every near group are solved that
+         !! way, and a covalently joined pair is always a quantum one.
+      integer, allocatable :: detached(:)
+         !! 1-based detached ends of cut bonds, from
+         !! `keywords.fragmentation.detached_atoms`; see `orient_cut`
       logical :: charge_transfer = .true.
          !! Include `E_IJ^CT` in the far pairs. GAMESS's EFMO has it; the 2012
          !! method left it out, so it is switchable rather than assumed.
@@ -292,6 +319,13 @@ module mqc_czt_efmo
       integer :: n_qm_groups = 0
          !! Near groups of two or more fragments -- the SCFs the near half
          !! cost. Equal to `n_qm_pairs` at level two.
+      integer :: n_cuts = 0
+         !! Covalent bonds the partition detached, each with a frozen orbital
+      real(dp), allocatable :: potential_charge(:)
+         !! Each fragment's potential summed, nuclear and electronic monopoles
+         !! together. Equal to the deck's fragment charge to SCF convergence,
+         !! across a detached bond included: that is what splitting the
+         !! nucleus buys, and what the far pairs need.
    end type efmo_result_t
 
 contains
@@ -360,6 +394,12 @@ contains
       integer, allocatable :: count_of(:)
       real(dp), allocatable :: monomer_corr(:)
       integer :: n_terms
+      type(afo_context_t) :: afo
+      type(efmo_options_t) :: run_opts
+         !! `opts` with the induction damping a detached bond needs, when the
+         !! deck left it at zero; see `COVALENT_INDUCTION_DAMPING`
+      real(dp), allocatable :: decide(:, :), centre_xyz(:, :)
+      integer, allocatable :: centre_owner(:), centre_z(:)
       type(timing_report_t) :: clk
          !! Where an EFMO run's wall time goes, stage by stage. The paper's Fig
          !! 7 makes the same split and the claim it supports -- that the
@@ -401,8 +441,38 @@ contains
       call fragment_counts(owner, n_frag, count_of, error)
       if (error%has_error()) return
 
-      call refuse_covalent_cuts(atomic_numbers, coordinates, owner, n_atoms, error)
+      select case (trim(opts%bond_breaking))
+      case ("none")
+         call refuse_covalent_cuts(atomic_numbers, coordinates, owner, n_atoms, error)
+      case ("afo")
+         ! Every cut bond's frozen orbitals, before any fragment is solved:
+         ! they belong to the bond and its surroundings, not to who uses them.
+         call build_cut_context(atomic_numbers, symbols, coordinates, owner, &
+                                trim(opts%basis), opts%scf, opts%scf_max_iter, &
+                                opts%scf_energy_tol, opts%scf_density_tol, afo, &
+                                error, comm, detached=opts%detached)
+         if (error%has_error()) return
+         if (afo%active) res%n_cuts = afo%n_cuts
+         if (afo%active .and. opts%correlation /= EFMO_CORR_NONE) then
+            ! The frozen virtual is held at a shift rather than removed, which a
+            ! Hartree-Fock energy does not see and a correlation energy does:
+            ! it would be correlated into like any other virtual.
+            call error%set(ERROR_VALIDATION, "efmo: a partition that detaches "// &
+                           "covalent bonds runs Hartree-Fock fragments only. The "// &
+                           "frozen orbitals at a cut are not yet excluded from the "// &
+                           "correlation, so an MP2 energy there would be a "// &
+                           "different and wrong method; set model.method to 'hf'.")
+            return
+         end if
+      case default
+         call error%set(ERROR_VALIDATION, "efmo: bond_breaking='"// &
+                        trim(opts%bond_breaking)//"' is not one of 'none' or 'afo'")
+      end select
       if (error%has_error()) return
+      run_opts = opts
+      if (afo%active .and. opts%induction_damping <= 0.0_dp) then
+         run_opts%induction_damping = COVALENT_INDUCTION_DAMPING
+      end if
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
       allocate (monomer_corr(n_frag), source=0.0_dp)
@@ -415,23 +485,41 @@ contains
       call clk%start()
       call clk%begin("monomers (MAKEFP)")
       call build_potentials(atomic_numbers, symbols, coordinates, owner, count_of, &
-                            fragment_charges, opts, frags, res%monomer_energy, &
+                            fragment_charges, opts, afo, frags, res%monomer_energy, &
                             monomer_corr, error, comm)
       call clk%lap("monomers (MAKEFP)")
       if (error%has_error()) return
       res%monomer_sum = sum(res%monomer_energy)
       res%monomer_correlation = sum(monomer_corr)
+      allocate (res%potential_charge(n_frag))
+      do k = 1, n_frag
+         res%potential_charge(k) = frags(k)%net_charge()
+      end do
 
       ! One matrix of separations decides both halves: which pairs are far, and
       ! which groups are near enough to be solved quantum mechanically.
       call efmo_split_pairs(owner, atomic_numbers, coordinates, opts%rcut, &
                             qm_pairs, efp_pairs, error, r=separation)
       if (error%has_error()) return
+      decide = separation
+      if (afo%active) then
+         ! With cuts the split is decided over every centre a fragment's
+         ! potential has, so a ghost counts where it sits -- it carries a
+         ! charge and a bond pair there -- and a covalently joined pair is
+         ! quantum whatever its separation. `separation` stays the distance
+         ! between the fragments' own atoms, which is what the report shows.
+         call with_ghosts(afo, owner, atomic_numbers, coordinates, centre_owner, &
+                          centre_z, centre_xyz)
+         call efmo_split_pairs(centre_owner, centre_z, centre_xyz, opts%rcut, &
+                               qm_pairs, efp_pairs, error, r=decide)
+         if (error%has_error()) return
+         call force_joined_near(afo, opts%rcut, decide, qm_pairs, efp_pairs)
+      end if
       res%n_qm_pairs = size(qm_pairs, 2)
       res%n_efp_pairs = size(efp_pairs, 2)
       allocate (res%pairs(res%n_qm_pairs + res%n_efp_pairs))
 
-      call efmo_near_subsets(separation, opts%rcut, opts%level, terms, term_size, &
+      call efmo_near_subsets(decide, opts%rcut, opts%level, terms, term_size, &
                              n_terms, error)
       if (error%has_error()) return
       res%n_qm_groups = count(term_size(1:n_terms) >= 2)
@@ -440,7 +528,7 @@ contains
       call clk%begin("quantum groups")
       call quantum_subsets(atomic_numbers, symbols, coordinates, owner, &
                            fragment_charges, terms, term_size, n_terms, separation, &
-                           frags, shifts, opts, monomer_corr, res, error, comm)
+                           frags, shifts, run_opts, afo, monomer_corr, res, error, comm)
       call clk%lap("quantum groups")
       if (error%has_error()) return
 
@@ -473,7 +561,7 @@ contains
       call clk%lap("effective-fragment pairs")
 
       call clk%begin("induction over all fragments")
-      call total_polarization(frags, shifts, opts%induction_damping, &
+      call total_polarization(frags, shifts, run_opts%induction_damping, &
                               res%polarization_total, error)
       call clk%lap("induction over all fragments")
       call clk%finish()
@@ -485,7 +573,7 @@ contains
                    + res%polarization_total
 
       if (is_leader(comm)) then
-         call report(res, opts)
+         call report(res, run_opts)
          call clk%report("EFMO")
       end if
    end subroutine run_efmo
@@ -683,7 +771,7 @@ contains
       end do
    end function gather
 
-   subroutine build_potentials(z, symbols, xyz, owner, count_of, charges, opts, &
+   subroutine build_potentials(z, symbols, xyz, owner, count_of, charges, opts, afo, &
                                frags, monomer_energy, correlation, error, comm)
       !! One MAKEFP per fragment, and `E_I^0` off the same SCF
       !!
@@ -696,6 +784,9 @@ contains
       real(dp), intent(in) :: xyz(:, :)
       integer, intent(in) :: owner(:), count_of(:), charges(:)
       type(efmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
+         !! The detached bonds. Inactive when there are none, and then every
+         !! fragment is built exactly as it was before cuts were possible.
       type(efp_fragment_t), intent(out) :: frags(:)
       real(dp), intent(out) :: monomer_energy(:)
       real(dp), intent(out) :: correlation(:)
@@ -707,8 +798,9 @@ contains
 
       type(efp_potential_t) :: pot
       type(rhf_result_t) :: scf
+      type(group_t) :: group
+      type(fock_projector_t) :: proj
       integer, allocatable :: idx(:)
-      character(len=:), allocatable :: aux
       real(dp) :: e_corr
       integer :: k
 
@@ -721,40 +813,21 @@ contains
          idx = gather(owner, k)
          call logger%verbose("  efmo: fragment "//to_char(k)//" of "// &
                              to_char(size(count_of))//", "//to_char(size(idx))//" atoms")
-         ! One call whether or not an auxiliary basis was named: an absent
-         ! optional passed on as an actual argument arrives absent.
-         if (len_trim(opts%aux_basis) > 0) then
-            aux = trim(opts%aux_basis)
-            call make_efp_potential(z(idx), symbols(idx), xyz(:, idx), trim(opts%basis), &
-                                    "FRAG"//to_char(k), pot, error, charge=charges(k), &
-                                    verbose=opts%verbose, aux_basis=aux, &
-                                    guess=trim(opts%guess), &
-                                    energy_tol=opts%scf_energy_tol, &
-                                    density_tol=opts%scf_density_tol, &
-                                    grad_tol_in=opts%scf_grad_tol, scf_in=opts%scf, &
-                                    max_iter_in=opts%scf_max_iter, &
-                                    vdwscl=opts%vdw_scale, &
-                                    quadrupole_blocks=opts%quadrupole_blocks, &
-                                    dynamic_tol=opts%dynamic_tolerance, &
-                                    dynamic_maxiter=opts%dynamic_maxiter, &
-                                    response=opts%response, &
-                                    allow_crap_response=opts%allow_crap_response, &
-                                    response_batch=opts%response_batch, scf_out=scf)
+         if (afo%active) then
+            ! A fragment of one, through FMO's assembly: its own atoms, a ghost
+            ! for each detached atom across a boundary it holds the attached
+            ! end of, the nucleus split at each, and the frozen orbitals.
+            call assemble_cut_group(z, symbols, xyz, owner, [k], afo, group, error)
+            if (error%has_error()) return
+            call cut_projector(group, afo, opts, proj, error)
+            if (error%has_error()) return
+            call fragment_potential(group%z, group%sym, group%xyz, k, charges(k), &
+                                    opts, pot, scf, error, &
+                                    nuclear_charge=group%nuc_charge, &
+                                    ghost=group%ghost, projector=proj)
          else
-            call make_efp_potential(z(idx), symbols(idx), xyz(:, idx), trim(opts%basis), &
-                                    "FRAG"//to_char(k), pot, error, charge=charges(k), &
-                                    verbose=opts%verbose, guess=trim(opts%guess), &
-                                    energy_tol=opts%scf_energy_tol, &
-                                    density_tol=opts%scf_density_tol, &
-                                    grad_tol_in=opts%scf_grad_tol, scf_in=opts%scf, &
-                                    max_iter_in=opts%scf_max_iter, &
-                                    vdwscl=opts%vdw_scale, &
-                                    quadrupole_blocks=opts%quadrupole_blocks, &
-                                    dynamic_tol=opts%dynamic_tolerance, &
-                                    dynamic_maxiter=opts%dynamic_maxiter, &
-                                    response=opts%response, &
-                                    allow_crap_response=opts%allow_crap_response, &
-                                    response_batch=opts%response_batch, scf_out=scf)
+            call fragment_potential(z(idx), symbols(idx), xyz(:, idx), k, charges(k), &
+                                    opts, pot, scf, error)
          end if
          if (error%has_error()) return
 
@@ -787,6 +860,208 @@ contains
       end if
       call exchange_potentials(frags, opts, error, comm)
    end subroutine build_potentials
+
+   subroutine fragment_potential(z, symbols, xyz, k, charge, opts, pot, scf, error, &
+                                 nuclear_charge, ghost, projector)
+      !! One fragment's MAKEFP, with whatever the cut bonds add passed through
+      !!
+      !! The three optionals are absent for a fragment of whole molecules and
+      !! arrive absent in `make_efp_potential`, so that call is unchanged by
+      !! their existence.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, intent(in) :: k, charge
+      type(efmo_options_t), intent(in) :: opts
+      type(efp_potential_t), intent(out) :: pot
+      type(rhf_result_t), intent(out) :: scf
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: nuclear_charge(:)
+      logical, intent(in), optional :: ghost(:)
+      type(fock_projector_t), intent(in), optional :: projector
+
+      character(len=:), allocatable :: aux
+
+      ! Two calls rather than one because `aux_basis` is a string that may be
+      ! empty, and an empty string is not an absent argument.
+      if (len_trim(opts%aux_basis) > 0) then
+         aux = trim(opts%aux_basis)
+         call make_efp_potential(z, symbols, xyz, trim(opts%basis), &
+                                 "FRAG"//to_char(k), pot, error, charge=charge, &
+                                 verbose=opts%verbose, aux_basis=aux, &
+                                 guess=trim(opts%guess), &
+                                 energy_tol=opts%scf_energy_tol, &
+                                 density_tol=opts%scf_density_tol, &
+                                 grad_tol_in=opts%scf_grad_tol, scf_in=opts%scf, &
+                                 max_iter_in=opts%scf_max_iter, &
+                                 vdwscl=opts%vdw_scale, &
+                                 quadrupole_blocks=opts%quadrupole_blocks, &
+                                 dynamic_tol=opts%dynamic_tolerance, &
+                                 dynamic_maxiter=opts%dynamic_maxiter, &
+                                 response=opts%response, &
+                                 allow_crap_response=opts%allow_crap_response, &
+                                 response_batch=opts%response_batch, scf_out=scf, &
+                                 nuclear_charge=nuclear_charge, ghost=ghost, &
+                                 projector=projector)
+      else
+         call make_efp_potential(z, symbols, xyz, trim(opts%basis), &
+                                 "FRAG"//to_char(k), pot, error, charge=charge, &
+                                 verbose=opts%verbose, guess=trim(opts%guess), &
+                                 energy_tol=opts%scf_energy_tol, &
+                                 density_tol=opts%scf_density_tol, &
+                                 grad_tol_in=opts%scf_grad_tol, scf_in=opts%scf, &
+                                 max_iter_in=opts%scf_max_iter, &
+                                 vdwscl=opts%vdw_scale, &
+                                 quadrupole_blocks=opts%quadrupole_blocks, &
+                                 dynamic_tol=opts%dynamic_tolerance, &
+                                 dynamic_maxiter=opts%dynamic_maxiter, &
+                                 response=opts%response, &
+                                 allow_crap_response=opts%allow_crap_response, &
+                                 response_batch=opts%response_batch, scf_out=scf, &
+                                 nuclear_charge=nuclear_charge, ghost=ghost, &
+                                 projector=projector)
+      end if
+   end subroutine fragment_potential
+
+   subroutine cut_projector(group, afo, opts, proj, error)
+      !! The frozen-orbital constraint a group's boundaries imply
+      !!
+      !! Built against a molecule opened only to be measured, Cartesian with the
+      !! ghosts and split charges the SCF will see, so the frozen orbitals land on the
+      !! same functions. A group with no boundary comes back with an inactive
+      !! projector, which constrains nothing.
+      type(group_t), intent(in) :: group
+      type(afo_context_t), intent(in) :: afo
+      type(efmo_options_t), intent(in) :: opts
+      type(fock_projector_t), intent(out) :: proj
+      type(error_t), intent(inout) :: error
+
+      type(czt_molecule_t) :: mol
+      logical :: held
+
+      call build_czt_molecule(group%z, group%sym, group%xyz, trim(opts%basis), mol, &
+                              error, force_cartesian=.true., ghost=group%ghost, &
+                              nuclear_charge=group%nuc_charge)
+      if (error%has_error()) return
+      call group_projector(group, mol, afo, proj, held, error)
+      call mol%destroy()
+   end subroutine cut_projector
+
+   subroutine with_ghosts(afo, owner, z, xyz, centre_owner, centre_z, centre_xyz)
+      !! The system's atoms, then one centre per ghost, each with its holder
+      !!
+      !! A fragment holding the attached end of a cut carries the detached
+      !! atom's functions, a `+1` and the bond pair at that atom's position, so
+      !! for the separation that decides quantum against effective the ghost is
+      !! one of its centres. One per holder and atom, as `assemble_group` makes
+      !! them; a repeat changes no minimum and is not filtered.
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: owner(:), z(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, allocatable, intent(out) :: centre_owner(:), centre_z(:)
+      real(dp), allocatable, intent(out) :: centre_xyz(:, :)
+
+      integer :: n, c
+
+      n = size(owner)
+      allocate (centre_owner(n + afo%n_cuts), centre_z(n + afo%n_cuts))
+      allocate (centre_xyz(3, n + afo%n_cuts))
+      centre_owner(:n) = owner
+      centre_z(:n) = z
+      centre_xyz(:, :n) = xyz
+      do c = 1, afo%n_cuts
+         centre_owner(n + c) = afo%cuts(c)%frag_b
+         centre_z(n + c) = z(afo%cuts(c)%atom_a)
+         centre_xyz(:, n + c) = xyz(:, afo%cuts(c)%atom_a)
+      end do
+   end subroutine with_ghosts
+
+   subroutine force_joined_near(afo, rcut, decide, qm_pairs, efp_pairs)
+      !! Make every covalently joined pair quantum, and redo the split
+      !!
+      !! Joined means the two fragments hold centres at one atom of a cut bond,
+      !! or at that atom and a neighbour it is bonded to: its owner, the
+      !! fragment across each cut it takes part in, and whoever carries a
+      !! ghost of it. A cut between two fragments is the plain case; two
+      !! fragments that both ghost one detached atom share a centre; and a
+      !! fragment ghosting an atom sits a bond length from every other
+      !! fragment that atom is bonded to. No multipole expansion describes a
+      !! pair that close -- on propane in three pieces the two ends, joined
+      !! through a ghost of the middle carbon, come out at -0.34 Hartree
+      !! effective against +0.27 quantum -- so no cutoff may make one
+      !! effective. Along a peptide backbone cut at C-alpha--C this joins
+      !! exactly the neighbouring residues.
+      type(afo_context_t), intent(in) :: afo
+      real(dp), intent(in) :: rcut
+      real(dp), intent(inout) :: decide(:, :)
+      integer, allocatable, intent(inout) :: qm_pairs(:, :), efp_pairs(:, :)
+
+      integer, allocatable :: touching(:)
+      integer :: c, d, i, j, n, n_qm, n_efp, atom, n_touch, k
+
+      allocate (touching(2*afo%n_cuts))
+      do c = 1, afo%n_cuts
+         do k = 1, 2
+            atom = afo%cuts(c)%atom_a
+            if (k == 2) atom = afo%cuts(c)%atom_b
+            ! Every fragment on either side of any cut this atom takes part in:
+            ! its owner, each neighbour across a cut, and so every ghost holder.
+            n_touch = 0
+            do d = 1, afo%n_cuts
+               if (afo%cuts(d)%atom_a /= atom .and. afo%cuts(d)%atom_b /= atom) cycle
+               n_touch = n_touch + 2
+               touching(n_touch - 1) = afo%cuts(d)%frag_a
+               touching(n_touch) = afo%cuts(d)%frag_b
+            end do
+            do i = 1, n_touch - 1
+               do j = i + 1, n_touch
+                  call join(touching(i), touching(j))
+               end do
+            end do
+         end do
+      end do
+
+      ! The same order `efmo_split_pairs` builds its lists in, which is the
+      ! order the near groups are enumerated in and the pair table relies on.
+      n = size(decide, 1)
+      n_qm = 0
+      n_efp = 0
+      do i = 1, n - 1
+         do j = i + 1, n
+            if (decide(i, j) <= rcut) then
+               n_qm = n_qm + 1
+            else
+               n_efp = n_efp + 1
+            end if
+         end do
+      end do
+      deallocate (qm_pairs, efp_pairs)
+      allocate (qm_pairs(2, n_qm), efp_pairs(2, n_efp))
+      n_qm = 0
+      n_efp = 0
+      do i = 1, n - 1
+         do j = i + 1, n
+            if (decide(i, j) <= rcut) then
+               n_qm = n_qm + 1
+               qm_pairs(:, n_qm) = [i, j]
+            else
+               n_efp = n_efp + 1
+               efp_pairs(:, n_efp) = [i, j]
+            end if
+         end do
+      end do
+
+   contains
+
+      subroutine join(a, b)
+         integer, intent(in) :: a, b
+
+         if (a == b) return
+         decide(a, b) = -huge(1.0_dp)
+         decide(b, a) = -huge(1.0_dp)
+      end subroutine join
+
+   end subroutine force_joined_near
 
    subroutine fragment_correlation(z, symbols, xyz, nelec, scf, opts, energy, error)
       !! One fragment's MP2 correlation energy, on orbitals already converged
@@ -891,8 +1166,8 @@ contains
    end subroutine announce_cost
 
    subroutine quantum_subsets(z, symbols, xyz, owner, charges, terms, term_size, &
-                              n_terms, separation, frags, shifts, opts, monomer_corr, &
-                              res, error, comm)
+                              n_terms, separation, frags, shifts, opts, afo, &
+                              monomer_corr, res, error, comm)
       !! Every near group: one in-vacuo SCF, its subset induction, and the
       !! many-body difference of both
       !!
@@ -920,6 +1195,7 @@ contains
       type(efp_fragment_t), intent(in) :: frags(:)
       real(dp), intent(in) :: shifts(:, :)
       type(efmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
       real(dp), intent(in) :: monomer_corr(:)
          !! Each `E_I^0`'s correlation part, differenced the same way so the
          !! correlation inside the group corrections can be reported beside them.
@@ -952,8 +1228,13 @@ contains
          idx = group_atoms(owner, members)
          call logger%verbose("  efmo: group "//members_text(members)//", "// &
                              to_char(size(idx))//" atoms")
-         call nmer_energy(z(idx), symbols(idx), xyz(:, idx), sum(charges(members)), &
-                          opts, group_vac(task), group_corr(task), error)
+         if (afo%active) then
+            call cut_nmer_energy(z, symbols, xyz, owner, members, &
+                                 sum(charges(members)), afo, opts, group_vac(task), error)
+         else
+            call nmer_energy(z(idx), symbols(idx), xyz(:, idx), sum(charges(members)), &
+                             opts, group_vac(task), group_corr(task), error)
+         end if
          if (error%has_error()) exit
 
          ! The same induction solver on the group's fragments alone -- the same
@@ -1141,6 +1422,83 @@ contains
       energy = energy + correlation
    end subroutine nmer_energy
 
+   subroutine cut_nmer_energy(z, symbols, xyz, owner, members, charge, afo, opts, &
+                              energy, error)
+      !! One group's in-vacuo RHF energy, with the bonds it is cut across frozen
+      !!
+      !! `assemble_cut_group` decides the boundaries from the group's own
+      !! members, so a bond between two members is whole here -- no ghost, no
+      !! frozen orbital, both halves of the nucleus back together -- while a
+      !! bond to a fragment outside the group is detached exactly as the
+      !! monomers' were. Cartesian, as every SCF in this module is.
+      integer, intent(in) :: z(:)
+      character(len=2), intent(in) :: symbols(:)
+      real(dp), intent(in) :: xyz(:, :)
+      integer, intent(in) :: owner(:), members(:)
+      integer, intent(in) :: charge                !! The group's net charge
+      type(afo_context_t), intent(in) :: afo
+      type(efmo_options_t), intent(in) :: opts
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+
+      type(group_t) :: group
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(fock_projector_t) :: proj
+      real(dp), allocatable :: guess_density(:, :)
+      integer :: guess_kind, nelec
+      logical :: held
+
+      energy = 0.0_dp
+      call assemble_cut_group(z, symbols, xyz, owner, members, afo, group, error)
+      if (error%has_error()) return
+      nelec = group%nelec - charge
+      if (nelec < 2 .or. mod(nelec, 2) /= 0) then
+         call error%set(ERROR_VALIDATION, "efmo: group "//members_text(members)// &
+                        " has "//to_char(nelec)//" electrons after its cut bonds "// &
+                        "are detached, so it is not closed-shell. EFMO is restricted "// &
+                        "Hartree-Fock; check the fragment charges.")
+         return
+      end if
+
+      call build_czt_molecule(group%z, group%sym, group%xyz, trim(opts%basis), mol, &
+                              error, force_cartesian=.true., ghost=group%ghost, &
+                              nuclear_charge=group%nuc_charge)
+      if (error%has_error()) return
+      call build_restricted_guess(mol, trim(opts%guess), guess_kind, guess_density, error)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+      call group_projector(group, mol, afo, proj, held, error)
+      if (error%has_error()) then
+         call mol%destroy()
+         return
+      end if
+
+      if (held) then
+         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                          opts%scf_density_tol, opts%verbose, scf, error, &
+                          guess=guess_kind, guess_density=guess_density, &
+                          grad_tol=opts%scf_grad_tol, scf=opts%scf, projector=proj)
+      else
+         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                          opts%scf_density_tol, opts%verbose, scf, error, &
+                          guess=guess_kind, guess_density=guess_density, &
+                          grad_tol=opts%scf_grad_tol, scf=opts%scf)
+      end if
+      call mol%destroy()
+      if (error%has_error()) return
+      if (.not. scf%converged .and. .not. opts%scf%allow_crap_scf) then
+         call error%set(ERROR_VALIDATION, "efmo: the SCF of group "// &
+                        members_text(members)//" did not converge, so the many-body "// &
+                        "correction it feeds is not trustworthy. Set "// &
+                        "keywords.scf.allow_crap_scf to finish anyway.")
+         return
+      end if
+      energy = scf%energy
+   end subroutine cut_nmer_energy
+
    subroutine total_polarization(frags, shifts, damping, energy, error)
       !! `E_pol^total`: induction over every fragment at once
       !!
@@ -1177,6 +1535,10 @@ contains
       call logger%info("  EFMO, level "//to_char(min(opts%level, &
                                                      size(res%monomer_energy)))//", R_cut = "//to_char(opts%rcut)// &
                        " (unitless)")
+      if (res%n_cuts > 0) then
+         call logger%info("  "//to_char(res%n_cuts)//" covalent bond(s) detached "// &
+                          "with frozen orbitals; nuclei split, fragments neutral")
+      end if
       if (opts%induction_damping > 0.0_dp) then
          call logger%info("  induction field damped, a = "// &
                           to_char(opts%induction_damping))
@@ -1239,11 +1601,11 @@ contains
    subroutine refuse_covalent_cuts(z, coords, owner, n_atoms, error)
       !! Refuse a partition that puts one covalent molecule in two fragments
       !!
-      !! EFMO has no cap and no frozen orbital: a monomer potential is a MAKEFP
-      !! of the fragment as given, so a cut bond leaves a dangling valence that
+      !! With `bond_breaking = "none"` a monomer potential is a MAKEFP of the
+      !! fragment as given, so a cut bond would leave a dangling valence that
       !! the localization and the twelve response solves are then run on. The
       !! observed failure is not a diagnostic -- it is a full run that prints
-      !! its banner and reports NaN.
+      !! its banner and reports NaN. `"afo"` is the route that detaches it.
       !!
       !! The criterion is [[mqc_bond_perception]]'s, and the test is
       !! connectedness rather than one bond, so a cut ring is caught too: a
@@ -1272,11 +1634,10 @@ contains
             call error%set(ERROR_VALIDATION, "efmo: the partition cuts a covalent "// &
                            "molecule -- atoms "//to_char(i)//" and "//to_char(j)// &
                            " are covalently connected but were put in fragments "// &
-                           to_char(owner(i))//" and "//to_char(owner(j))//". A hydrogen "// &
-                           "cap's multipoles would act on its partner across the cut "// &
-                           "and no frozen-orbital route is wired in here, so this "// &
-                           "method cannot answer for that partition; fragment on "// &
-                           "whole molecules")
+                           to_char(owner(i))//" and "//to_char(owner(j))//". Set "// &
+                           "keywords.fragmentation.bond_breaking to 'afo' to detach "// &
+                           "each cut bond with a frozen orbital, or fragment on whole "// &
+                           "molecules")
             return
          end do
       end do

@@ -82,7 +82,8 @@ module mqc_czt_dma
 
 contains
 
-   subroutine expansion_points(atomic_numbers, coords, points, labels, nuclear, error)
+   subroutine expansion_points(atomic_numbers, coords, points, labels, nuclear, error, &
+                               nuclear_charge)
       !! Every atom, then every bond midpoint
       !!
       !! Labels follow GAMESS: `A<nn><symbol>` for atoms in input order and
@@ -98,6 +99,11 @@ contains
       character(len=8), allocatable, intent(out) :: labels(:)
       real(dp), allocatable, intent(out) :: nuclear(:)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: nuclear_charge(:)
+         !! The charge each atom presents, where that is not its element's:
+         !! `Z-1` on a bond-detached atom and `+1` on the centre standing in for
+         !! it across the cut. Only the monopole reads it; the bonds, and so the
+         !! midpoints, and the labels are decided by `atomic_numbers`.
 
       integer :: natm, i, j, n_bond, k
       real(dp) :: r, limit
@@ -136,6 +142,7 @@ contains
       do i = 1, natm
          points(:, i) = coords(:, i)
          nuclear(i) = real(atomic_numbers(i), dp)
+         if (present(nuclear_charge)) nuclear(i) = real(nuclear_charge(i), dp)
          write (labels(i), "(a,i2.2,a)") "A", i, trim(element_number_to_symbol(atomic_numbers(i)))
       end do
       do k = 1, n_bond
@@ -270,13 +277,19 @@ contains
       end do
    end subroutine uncontract
 
-   subroutine distributed_multipoles(mol, density, atomic_numbers, result, error)
+   subroutine distributed_multipoles(mol, density, atomic_numbers, result, error, &
+                                     nuclear_charge)
       !! Charge through octopole at every expansion point
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)        !! Total AO density, 2 C C^T
       integer, intent(in) :: atomic_numbers(:)
+         !! Element identity: which atoms are bonded, and so where the midpoints
+         !! go, and how each point is labelled
       type(dma_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: nuclear_charge(:)
+         !! The nuclear monopole each atom carries, when it is not its element's;
+         !! see `expansion_points`
 
       type(czt_molecule_t) :: unc
       real(dp), allocatable :: transform(:, :), shell_exponent(:)
@@ -292,7 +305,7 @@ contains
       type(error_t) :: point_error
 
       call expansion_points(atomic_numbers, mol%coords, result%points, result%labels, &
-                            result%nuclear, error)
+                            result%nuclear, error, nuclear_charge=nuclear_charge)
       if (error%has_error()) return
       n_points = size(result%points, 2)
 
