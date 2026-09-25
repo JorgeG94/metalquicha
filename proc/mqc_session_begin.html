@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mqc_session_begin.html#variable-error~213">error</a>
+            <a class="list-group-item" href="../proc/mqc_session_begin.html#variable-error~75">error</a>
         </div>
       </div>
     </div>
@@ -184,7 +184,7 @@
     <br>
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-status~43"></span>
+          <span class="anchor" id="variable-status~8"></span>
           integer(kind=c_int)
         </small>
       </h3>
@@ -296,18 +296,18 @@
 <path fill="none" stroke="#0000ff" d="M265.32,-1860.82C289.5,-1850.55 326.32,-1836.66 360,-1831 395.5,-1825.04 405.1,-1828.32 441,-1831 481.32,-1834.01 733.9,-1873.46 852.77,-1892.22"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="852.39,-1895.7 862.82,-1893.81 853.49,-1888.79 852.39,-1895.7"/>
 </g>
-<!-- proc~worker_loop~2 -->
+<!-- proc~worker_loop -->
 <g id="proc~~mqc_session_begin~~CallsGraph_node8" class="node">
-<title>proc~worker_loop~2</title>
-<g id="a_proc~~mqc_session_begin~~CallsGraph_node8"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
+<title>proc~worker_loop</title>
+<g id="a_proc~~mqc_session_begin~~CallsGraph_node8"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="439.5,-990 361.5,-990 361.5,-966 439.5,-966 439.5,-990"/>
 <text text-anchor="middle" x="400.5" y="-975.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop~2 -->
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
 <g id="proc~~mqc_session_begin~~CallsGraph_edge7" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop~2</title>
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
 <path fill="none" stroke="#0000ff" d="M240.71,-1860.69C258.09,-1764.09 372.47,-1128.26 395.47,-1000.38"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="398.98,-1000.68 397.3,-990.22 392.09,-999.44 398.98,-1000.68"/>
 </g>
@@ -329,9 +329,9 @@
 <polygon fill="#777777" stroke="#777777" points="942.5,-24 888.5,-24 888.5,0 942.5,0 942.5,-24"/>
 <text text-anchor="middle" x="915.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;bcast -->
+<!-- proc~worker_loop&#45;&gt;bcast -->
 <g id="proc~~mqc_session_begin~~CallsGraph_edge9" class="edge">
-<title>proc~worker_loop~2&#45;&gt;bcast</title>
+<title>proc~worker_loop&#45;&gt;bcast</title>
 <path fill="none" stroke="#0066ff" d="M402.99,-965.93C414.75,-872.03 495.39,-257.96 610,-117 677.17,-34.39 812.86,-16.58 877.99,-12.88"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="878.37,-16.36 888.19,-12.38 878.03,-9.37 878.37,-16.36"/>
 </g>
@@ -341,9 +341,9 @@
 <polygon fill="#777777" stroke="#777777" points="552.5,-948 498.5,-948 498.5,-924 552.5,-924 552.5,-948"/>
 <text text-anchor="middle" x="525.5" y="-933.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finalize</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;finalize -->
+<!-- proc~worker_loop&#45;&gt;finalize -->
 <g id="proc~~mqc_session_begin~~CallsGraph_edge10" class="edge">
-<title>proc~worker_loop~2&#45;&gt;finalize</title>
+<title>proc~worker_loop&#45;&gt;finalize</title>
 <path fill="none" stroke="#0066ff" d="M436.75,-965.96C452.97,-960.42 472.2,-953.86 488.51,-948.29"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="489.91,-951.51 498.24,-944.97 487.65,-944.89 489.91,-951.51"/>
 </g>
@@ -353,9 +353,9 @@
 <polygon fill="#777777" stroke="#777777" points="574,-1032 477,-1032 477,-1008 574,-1008 574,-1032"/>
 <text text-anchor="middle" x="525.5" y="-1017.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_finalize</text>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;pic_mpi_finalize -->
+<!-- proc~worker_loop&#45;&gt;pic_mpi_finalize -->
 <g id="proc~~mqc_session_begin~~CallsGraph_edge11" class="edge">
-<title>proc~worker_loop~2&#45;&gt;pic_mpi_finalize</title>
+<title>proc~worker_loop&#45;&gt;pic_mpi_finalize</title>
 <path fill="none" stroke="#0066ff" d="M436.75,-990.04C450.13,-994.6 465.55,-999.87 479.7,-1004.7"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="478.65,-1008.04 489.25,-1007.96 480.92,-1001.42 478.65,-1008.04"/>
 </g>
@@ -368,9 +368,9 @@
 </a>
 </g>
 </g>
-<!-- proc~worker_loop~2&#45;&gt;proc~worker_run -->
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
 <g id="proc~~mqc_session_begin~~CallsGraph_edge12" class="edge">
-<title>proc~worker_loop~2&#45;&gt;proc~worker_run</title>
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
 <path fill="none" stroke="#0066ff" d="M439.74,-978C452.1,-978 465.92,-978 478.76,-978"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="478.8,-981.5 488.8,-978 478.8,-974.5 478.8,-981.5"/>
 </g>
@@ -1294,7 +1294,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~213"></span>
+              <span class="anchor" id="variable-error~75"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1362,7 +1362,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-25 05:16 +0000             </p>
+ on 2026-09-25 15:03 +0000             </p>
           </div>
         </div>
         <br>

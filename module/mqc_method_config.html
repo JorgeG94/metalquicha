@@ -214,11 +214,11 @@ Re-exported from mqc_config_types</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1383,18 +1383,18 @@ large graphs.</div>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1464.14,-729.22C1418.48,-724.74 1328.25,-715.89 1273.36,-710.5"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1273.5,-707 1263.2,-709.5 1272.82,-713.96 1273.5,-707"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_method_config~~UsedByGraph_node52" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_method_config~~UsedByGraph_node52"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_method_config~~UsedByGraph_node52"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1532.5,-702 1454.5,-702 1454.5,-678 1532.5,-678 1532.5,-702"/>
 <text text-anchor="middle" x="1493.5" y="-687.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_method_config~~UsedByGraph_edge36" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M1454.25,-692.31C1406.38,-695.2 1324.47,-700.14 1273.31,-703.23"/>
 <polygon fill="#e7ff00" stroke="#e7ff00" points="1272.96,-699.75 1263.19,-703.84 1273.39,-706.74 1272.96,-699.75"/>
 </g>
@@ -1850,7 +1850,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~4"></span>
+              <span class="anchor" id="variable-use_diis~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2052,7 +2052,7 @@ See mqc_config_types for why this is the default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_scs~2"></span>
+              <span class="anchor" id="variable-use_scs"></span>
               logical,
             </td>
               <td>public</td>
@@ -2681,7 +2681,7 @@ there is no second way to turn the block on and off.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~2"></span>
+              <span class="anchor" id="variable-n_states~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2734,7 +2734,7 @@ refuses an explicit request and answers a silent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~10"></span>
+              <span class="anchor" id="variable-tolerance~13"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -3071,7 +3071,7 @@ refuses an explicit request and answers a silent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_active_orbitals~4"></span>
+              <span class="anchor" id="variable-n_active_orbitals~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -3105,7 +3105,7 @@ refuses an explicit request and answers a silent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_states~3"></span>
+              <span class="anchor" id="variable-n_states~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -3446,7 +3446,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-excited~5"></span>
+              <span class="anchor" id="variable-excited~4"></span>
               type(<a href='../type/excited_config_t.html'>excited_config_t</a>),
             </td>
               <td>public</td>
@@ -3565,7 +3565,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~11"></span>
+              <span class="anchor" id="variable-method_type~7"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -3633,7 +3633,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~4"></span>
+              <span class="anchor" id="variable-scf~5"></span>
               type(<a href='../type/scf_config_t.html'>scf_config_t</a>),
             </td>
               <td>public</td>
@@ -3755,7 +3755,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~14"></span>
+              <span class="anchor" id="variable-verbose~13"></span>
               logical,
             </td>
               <td>public</td>
@@ -3836,7 +3836,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-active~5"></span>
+              <span class="anchor" id="variable-active~7"></span>
               logical,
             </td>
               <td>public</td>
@@ -4064,7 +4064,7 @@ substituting.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~9"></span>
+              <span class="anchor" id="variable-tolerance~12"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -4131,7 +4131,7 @@ against cuEST&rsquo;s convention &ndash; see <code>DEFAULT_PCM_ZETA</code>.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_order_scheme~5"></span>
+              <span class="anchor" id="variable-bond_order_scheme~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -4779,7 +4779,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~3"></span>
+              <span class="anchor" id="variable-use_diis~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -5070,7 +5070,7 @@ pair.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-excited~4"></span>
+              <span class="anchor" id="variable-excited~3"></span>
               type(<a href='../type/excited_config_t.html'>excited_config_t</a>),
             </td>
               <td>public</td>
@@ -5499,7 +5499,7 @@ report whether the solution is a minimum. See
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~13"></span>
+              <span class="anchor" id="variable-verbose~12"></span>
               logical,
             </td>
               <td>public</td>
@@ -5753,7 +5753,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~146"></span>
+              <span class="anchor" id="variable-this~150"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5803,7 +5803,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~150"></span>
+              <span class="anchor" id="variable-this~154"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -5843,7 +5843,7 @@ report whether the solution is a minimum. See
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~149"></span>
+              <span class="anchor" id="variable-this~153"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5884,7 +5884,7 @@ a solvent or dielectric was given without one</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~147"></span>
+              <span class="anchor" id="variable-this~151"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -6029,7 +6029,7 @@ a solvent or dielectric was given without one</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~148"></span>
+              <span class="anchor" id="variable-this~152"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -6102,7 +6102,7 @@ a solvent or dielectric was given without one</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-25 05:16 +0000             </p>
+ on 2026-09-25 15:03 +0000             </p>
           </div>
         </div>
         <br>

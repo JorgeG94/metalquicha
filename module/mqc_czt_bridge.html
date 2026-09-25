@@ -198,10 +198,10 @@ refusal can name the build option.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1077,18 +1077,18 @@ large graphs.</div>
 <path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M1157.19,-318.96C1132.64,-318.75 1097.58,-322.43 1075,-342 1037.72,-374.31 1076.48,-414.92 1039,-447 1019.14,-464 990.38,-469.4 966.17,-470.48"/>
 <polygon fill="#ffda00" stroke="#ffda00" points="966.04,-466.98 956.12,-470.69 966.19,-473.98 966.04,-466.98"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_czt_bridge~~UsedByGraph_node21" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_czt_bridge~~UsedByGraph_node21"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_czt_bridge~~UsedByGraph_node21"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1225.5,-543 1147.5,-543 1147.5,-519 1225.5,-519 1225.5,-543"/>
 <text text-anchor="middle" x="1186.5" y="-528.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_czt_bridge~~UsedByGraph_edge19" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M1147.25,-524.49C1125.9,-520.66 1098.88,-515.51 1075,-510 1038.13,-501.5 996.79,-490.16 966.16,-481.41"/>
 <polygon fill="#ffda00" stroke="#ffda00" points="966.78,-477.95 956.2,-478.55 964.85,-484.68 966.78,-477.95"/>
 </g>
@@ -1508,7 +1508,7 @@ whatever libxc itself was configured to do.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~4"></span>
+              <span class="anchor" id="variable-name~38"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1523,7 +1523,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~24"></span>
+              <span class="anchor" id="variable-error~139"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1563,7 +1563,7 @@ whatever libxc itself was configured to do.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~2"></span>
+              <span class="anchor" id="variable-atomic_numbers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1578,7 +1578,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols"></span>
+              <span class="anchor" id="variable-element_symbols~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1593,7 +1593,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~9"></span>
+              <span class="anchor" id="variable-coordinates~12"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1608,7 +1608,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~4"></span>
+              <span class="anchor" id="variable-basis_name~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1623,7 +1623,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme"></span>
+              <span class="anchor" id="variable-scheme~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1653,7 +1653,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges~3"></span>
+              <span class="anchor" id="variable-charges~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1668,7 +1668,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~27"></span>
+              <span class="anchor" id="variable-error~142"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1708,7 +1708,7 @@ whatever libxc itself was configured to do.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~5"></span>
+              <span class="anchor" id="variable-atomic_numbers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1723,7 +1723,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~4"></span>
+              <span class="anchor" id="variable-element_symbols~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1738,7 +1738,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~13"></span>
+              <span class="anchor" id="variable-coordinates~16"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1753,7 +1753,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~4"></span>
+              <span class="anchor" id="variable-owner~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1768,7 +1768,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges~2"></span>
+              <span class="anchor" id="variable-fragment_charges~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1783,7 +1783,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~7"></span>
+              <span class="anchor" id="variable-basis_name~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1813,7 +1813,7 @@ whatever libxc itself was configured to do.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~6"></span>
+              <span class="anchor" id="variable-level~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1859,7 +1859,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive~2"></span>
+              <span class="anchor" id="variable-scf_drive~3"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1874,7 +1874,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter~2"></span>
+              <span class="anchor" id="variable-scf_max_iter~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1889,7 +1889,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol~2"></span>
+              <span class="anchor" id="variable-scf_energy_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1904,7 +1904,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol~2"></span>
+              <span class="anchor" id="variable-scf_density_tol~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1934,7 +1934,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~2"></span>
+              <span class="anchor" id="variable-guess~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1949,7 +1949,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~6"></span>
+              <span class="anchor" id="variable-energy~25"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1964,7 +1964,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~10"></span>
+              <span class="anchor" id="variable-terms~21"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2024,7 +2024,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~31"></span>
+              <span class="anchor" id="variable-error~146"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2039,7 +2039,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~2"></span>
+              <span class="anchor" id="variable-verbose~8"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2054,7 +2054,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis"></span>
+              <span class="anchor" id="variable-aux_basis~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -2174,7 +2174,7 @@ field, pair and total alike. Zero is undamped.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-correlation"></span>
+              <span class="anchor" id="variable-correlation~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2236,7 +2236,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_fragments~2"></span>
+              <span class="anchor" id="variable-pair_fragments~4"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2251,7 +2251,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_distance~2"></span>
+              <span class="anchor" id="variable-pair_distance~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2266,7 +2266,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_qm"></span>
+              <span class="anchor" id="variable-pair_qm~2"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -2281,7 +2281,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_energy~2"></span>
+              <span class="anchor" id="variable-pair_energy~4"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2296,7 +2296,7 @@ Absent is none, which is the Phase 3 energy exactly.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_terms"></span>
+              <span class="anchor" id="variable-pair_terms~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2312,7 +2312,7 @@ zero: there is no backend here to have produced any pairs.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~12"></span>
+              <span class="anchor" id="variable-comm~21"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2368,7 +2368,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_sizes"></span>
+              <span class="anchor" id="variable-fragment_sizes~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2383,7 +2383,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_atoms"></span>
+              <span class="anchor" id="variable-fragment_atoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2398,7 +2398,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~11"></span>
+              <span class="anchor" id="variable-coordinates~14"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2413,7 +2413,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~9"></span>
+              <span class="anchor" id="variable-terms~20"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2428,7 +2428,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~29"></span>
+              <span class="anchor" id="variable-error~144"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2468,7 +2468,7 @@ communicator. Every rank gets the same total back.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~4"></span>
+              <span class="anchor" id="variable-atomic_numbers~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2483,7 +2483,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~3"></span>
+              <span class="anchor" id="variable-element_symbols~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2498,7 +2498,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~12"></span>
+              <span class="anchor" id="variable-coordinates~15"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2513,7 +2513,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~3"></span>
+              <span class="anchor" id="variable-owner~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2528,7 +2528,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~6"></span>
+              <span class="anchor" id="variable-basis_name~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2543,7 +2543,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp"></span>
+              <span class="anchor" id="variable-esp~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2558,7 +2558,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion"></span>
+              <span class="anchor" id="variable-expansion~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2573,7 +2573,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field"></span>
+              <span class="anchor" id="variable-far_field~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2588,7 +2588,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc"></span>
+              <span class="anchor" id="variable-resppc~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2603,7 +2603,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~5"></span>
+              <span class="anchor" id="variable-level~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2618,7 +2618,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer"></span>
+              <span class="anchor" id="variable-max_outer~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2633,7 +2633,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol"></span>
+              <span class="anchor" id="variable-outer_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2648,7 +2648,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter"></span>
+              <span class="anchor" id="variable-scf_max_iter~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2663,7 +2663,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol"></span>
+              <span class="anchor" id="variable-scf_energy_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2678,7 +2678,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol"></span>
+              <span class="anchor" id="variable-scf_density_tol~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2693,7 +2693,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive"></span>
+              <span class="anchor" id="variable-scf_drive~2"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2708,7 +2708,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking"></span>
+              <span class="anchor" id="variable-bond_breaking~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2723,7 +2723,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale"></span>
+              <span class="anchor" id="variable-cap_scale~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2738,7 +2738,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~5"></span>
+              <span class="anchor" id="variable-energy~24"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -2753,7 +2753,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~30"></span>
+              <span class="anchor" id="variable-error~145"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2768,7 +2768,7 @@ communicator. Every rank gets the same total back.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_charges"></span>
+              <span class="anchor" id="variable-fragment_charges~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -2784,7 +2784,7 @@ means every fragment is neutral.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_sum"></span>
+              <span class="anchor" id="variable-monomer_sum~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2799,7 +2799,7 @@ means every fragment is neutral.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_sum"></span>
+              <span class="anchor" id="variable-pair_sum~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2815,7 +2815,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response_sum"></span>
+              <span class="anchor" id="variable-response_sum~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2830,7 +2830,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_sum"></span>
+              <span class="anchor" id="variable-level_sum~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2846,7 +2846,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_fragments"></span>
+              <span class="anchor" id="variable-pair_fragments~3"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -2862,7 +2862,7 @@ from one, lower first</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_distance"></span>
+              <span class="anchor" id="variable-pair_distance~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2878,7 +2878,7 @@ only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_energy"></span>
+              <span class="anchor" id="variable-pair_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2895,7 +2895,7 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_response"></span>
+              <span class="anchor" id="variable-pair_response~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -2910,7 +2910,7 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_connected"></span>
+              <span class="anchor" id="variable-pair_connected~2"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -2925,7 +2925,7 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~11"></span>
+              <span class="anchor" id="variable-comm~20"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -2957,7 +2957,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-afo_localization"></span>
+              <span class="anchor" id="variable-afo_localization~4"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -2973,7 +2973,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_separated"></span>
+              <span class="anchor" id="variable-pair_separated~2"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -2988,7 +2988,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resdim"></span>
+              <span class="anchor" id="variable-resdim~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -3028,7 +3028,7 @@ that default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~4"></span>
+              <span class="anchor" id="variable-settings~11"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3043,7 +3043,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~7"></span>
+              <span class="anchor" id="variable-fragment~26"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3058,7 +3058,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~19"></span>
+              <span class="anchor" id="variable-result~47"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3073,7 +3073,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~2"></span>
+              <span class="anchor" id="variable-want_gradient~5"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3088,7 +3088,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_hessian"></span>
+              <span class="anchor" id="variable-want_hessian~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3128,7 +3128,7 @@ that default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~6"></span>
+              <span class="anchor" id="variable-atomic_numbers~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3143,7 +3143,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~5"></span>
+              <span class="anchor" id="variable-element_symbols~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3158,7 +3158,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~14"></span>
+              <span class="anchor" id="variable-coordinates~17"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3173,7 +3173,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~8"></span>
+              <span class="anchor" id="variable-basis_name~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3188,7 +3188,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~5"></span>
+              <span class="anchor" id="variable-name~39"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3203,7 +3203,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~2"></span>
+              <span class="anchor" id="variable-path~18"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3218,7 +3218,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~32"></span>
+              <span class="anchor" id="variable-error~147"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3233,7 +3233,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~2"></span>
+              <span class="anchor" id="variable-charge~10"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -3248,7 +3248,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose~9"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3263,7 +3263,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis~2"></span>
+              <span class="anchor" id="variable-aux_basis~3"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -3278,7 +3278,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~3"></span>
+              <span class="anchor" id="variable-guess~8"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -3498,7 +3498,7 @@ that default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~3"></span>
+              <span class="anchor" id="variable-atomic_numbers~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3513,7 +3513,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~2"></span>
+              <span class="anchor" id="variable-element_symbols~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3528,7 +3528,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~10"></span>
+              <span class="anchor" id="variable-coordinates~13"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3543,7 +3543,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~5"></span>
+              <span class="anchor" id="variable-basis_name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3573,7 +3573,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-orders"></span>
+              <span class="anchor" id="variable-orders~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -3603,7 +3603,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~28"></span>
+              <span class="anchor" id="variable-error~143"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3643,7 +3643,7 @@ that default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~5"></span>
+              <span class="anchor" id="variable-settings~12"></span>
               type(<a href='../type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3658,7 +3658,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~8"></span>
+              <span class="anchor" id="variable-fragment~27"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3673,7 +3673,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~20"></span>
+              <span class="anchor" id="variable-result~48"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3688,7 +3688,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-want_gradient~3"></span>
+              <span class="anchor" id="variable-want_gradient~6"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3728,7 +3728,7 @@ that default.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~7"></span>
+              <span class="anchor" id="variable-atomic_numbers~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3743,7 +3743,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~6"></span>
+              <span class="anchor" id="variable-element_symbols~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3758,7 +3758,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~15"></span>
+              <span class="anchor" id="variable-coordinates~18"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -3773,7 +3773,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~9"></span>
+              <span class="anchor" id="variable-basis_name~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3803,7 +3803,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-quantum"></span>
+              <span class="anchor" id="variable-quantum~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -3818,7 +3818,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~3"></span>
+              <span class="anchor" id="variable-charge~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3833,7 +3833,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~7"></span>
+              <span class="anchor" id="variable-energy~26"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -3848,7 +3848,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~33"></span>
+              <span class="anchor" id="variable-error~148"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3863,7 +3863,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~4"></span>
+              <span class="anchor" id="variable-verbose~10"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -3923,7 +3923,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~4"></span>
+              <span class="anchor" id="variable-functional~9"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -3938,7 +3938,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-grid_level~2"></span>
+              <span class="anchor" id="variable-grid_level~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -3994,196 +3994,6 @@ that default.</p>
     <div class="card-body">
           
   <p>No-op stand-in: SAPT0 needs the CPU integral backend</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-z_a"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>z_a</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sym_a"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>sym_a</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-xyz_a"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>xyz_a</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-z_b"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>z_b</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sym_b"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>sym_b</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-xyz_b"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>xyz_b</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-basis_name~2"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>basis_name</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-charge_a"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>charge_a</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-charge_b"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>charge_b</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-terms~7"></span>
-              real(kind=dp),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>terms</strong>(N_SAPT_TERMS)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-error~25"></span>
-              type(<a href='../type/error_t.html'>error_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>error</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-run_czt_sapt2"></span> <h3>public  subroutine <a href='../proc/run_czt_sapt2.html'>run_czt_sapt2</a>(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, charge_a, charge_b, terms, error)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>No-op stand-in: SAPT2 needs the CPU integral backend</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -4288,7 +4098,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~3"></span>
+              <span class="anchor" id="variable-basis_name~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4333,7 +4143,197 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~8"></span>
+              <span class="anchor" id="variable-terms~18"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong>(N_SAPT_TERMS)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~140"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-run_czt_sapt2"></span> <h3>public  subroutine <a href='../proc/run_czt_sapt2.html'>run_czt_sapt2</a>(z_a, sym_a, xyz_a, z_b, sym_b, xyz_b, basis_name, charge_a, charge_b, terms, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>No-op stand-in: SAPT2 needs the CPU integral backend</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-z_a~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>z_a</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sym_a~3"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sym_a</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-xyz_a~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>xyz_a</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-z_b~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>z_b</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sym_b~3"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sym_b</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-xyz_b~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>xyz_b</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basis_name~5"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basis_name</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-charge_a~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>charge_a</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-charge_b~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>charge_b</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~19"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -4348,7 +4348,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~26"></span>
+              <span class="anchor" id="variable-error~141"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4391,7 +4391,7 @@ that default.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-25 05:16 +0000             </p>
+ on 2026-09-25 15:03 +0000             </p>
           </div>
         </div>
         <br>
