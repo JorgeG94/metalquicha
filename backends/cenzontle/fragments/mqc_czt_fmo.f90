@@ -937,6 +937,8 @@ contains
          end if
       end do
 
+      if (is_leader(comm)) call warn_adjacent_cuts(afo, z, coords)
+
       ! The model's convergence is its own, `afo_options_t`'s defaults; only
       ! how its SCF is driven follows the fragments'.
       afo_opts%basis = opts%basis
@@ -1018,6 +1020,45 @@ contains
                              "is no field to do it.")
       end if
    end subroutine build_afo_context
+
+   subroutine warn_adjacent_cuts(afo, z, coords)
+      !! Warn where one fragment's two detached atoms are bonded to each other
+      !!
+      !! A residue cut at both C-alpha--C and C-beta--C-gamma is one. The two
+      !! fragments across the cuts each hold one of the pair as a ghost, and
+      !! their pair term then carries a three-body term with the fragment
+      !! between them that FMO2 leaves out: on 2lty about +0.9 Hartree a pair,
+      !! which FMO3's trimer takes back to within 3e-2. Not refused, since the
+      !! expansion is still well defined; said, since a pair that large reads
+      !! as a failed SCF.
+      use mqc_atomic_radii, only: covalent_radius_emsley
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+
+      integer :: i, j, a, b
+      real(dp) :: reach
+
+      do i = 1, afo%n_cuts
+         do j = i + 1, afo%n_cuts
+            a = afo%cuts(i)%atom_a
+            b = afo%cuts(j)%atom_a
+            if (a == b .or. afo%cuts(i)%frag_a /= afo%cuts(j)%frag_a) cycle
+            if (afo%cuts(i)%frag_b == afo%cuts(j)%frag_b) cycle
+            reach = 1.2_dp*(covalent_radius_emsley(z(a)) + covalent_radius_emsley(z(b)))
+            if (to_angstrom(norm2(coords(:, a) - coords(:, b))) >= reach) cycle
+            call logger%warning("  fmo: fragment "//to_char(afo%cuts(i)%frag_a)// &
+                                " is detached from fragments "// &
+                                to_char(afo%cuts(i)%frag_b)//" and "// &
+                                to_char(afo%cuts(j)%frag_b)//" at two bonded atoms (counting from one, "// &
+                                to_char(a)//" and "//to_char(b)//"). Their pair term "// &
+                                "carries a three-body term with fragment "// &
+                                to_char(afo%cuts(i)%frag_a)//" that FMO2 omits, of "// &
+                                "the order of a Hartree; level 3, or a cut one bond "// &
+                                "further out, avoids it")
+         end do
+      end do
+   end subroutine warn_adjacent_cuts
 
    pure function splits_nucleus(opts) result(split)
       !! Does a boundary move a unit of nuclear charge as well as the electron?
