@@ -573,6 +573,12 @@ contains
       scf_numerics%energy_tol = opts%scf_energy_tol
       scf_numerics%density_tol = opts%scf_density_tol
       scf_numerics%grad_tol = opts%scf_grad_tol
+      ! Full Fock builds: an incremental one accumulates error the size of its
+      ! screening, which leaves the energy wandering by 1e-10 to 1e-9 once the
+      ! model is converged -- above `scf_energy_tol`, so whether it is ever
+      ! met depends on the thread count. Propane in 6-31G ran 200 iterations
+      ! that way on libcint and failed; with full builds it converges in 14.
+      scf_numerics%incremental_fock = .false.
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                        opts%scf_density_tol, opts%show_scf, scf, error, scf=scf_numerics, &
                        grad_tol=opts%scf_grad_tol)
@@ -1105,6 +1111,12 @@ contains
       scf_numerics%energy_tol = opts%scf_energy_tol
       scf_numerics%density_tol = opts%scf_density_tol
       scf_numerics%grad_tol = opts%scf_grad_tol
+      ! Full Fock builds: an incremental one accumulates error the size of its
+      ! screening, which leaves the energy wandering by 1e-10 to 1e-9 once the
+      ! model is converged -- above `scf_energy_tol`, so whether it is ever
+      ! met depends on the thread count. Propane in 6-31G ran 200 iterations
+      ! that way on libcint and failed; with full builds it converges in 14.
+      scf_numerics%incremental_fock = .false.
       call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
                        opts%scf_density_tol, opts%show_scf, scf, error, scf=scf_numerics, &
                        grad_tol=opts%scf_grad_tol)
