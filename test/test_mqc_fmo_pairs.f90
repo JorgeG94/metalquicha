@@ -42,7 +42,11 @@ contains
                   new_unittest("level_three_pairs_fall_short_by_the_three_body_sum", &
                                test_level_three), &
                   new_unittest("a_peptide_flags_its_joined_pairs_and_keeps_the_ligand", &
-                               test_peptide) &
+                               test_peptide), &
+                  new_unittest("separated_water_pairs_match_gamess_es_dimers", &
+                               test_separated_waters), &
+                  new_unittest("an_unconverged_fragment_scf_is_refused_by_name", &
+                               test_unconverged_refused) &
                   ]
    end subroutine collect_mqc_fmo_pairs
 
@@ -199,6 +203,233 @@ contains
       call check(error, sum(res%pairs%energy), res%pair_sum, thr=SUM_TOL, &
                  message="the pairs do not add up to the pair sum at level two")
    end subroutine test_peptide
+
+   subroutine test_separated_waters(error)
+      !! Twenty waters, FMO2 with separated pairs, against GAMESS
+      !!
+      !! `sample_inputs/w20_isomer1.xyz`, a water per fragment, RHF/STO-3G in
+      !! the exact field. GAMESS 2026 `$FMO NBODY=2 RESDIM=2.0` with its other
+      !! defaults, which are `RESPPC=2.0` and `RESPAP=0`, `$SCF CONV=1D-8`: 64
+      !! of the 190 pairs separated, and -1499.603170330. Each separated pair's
+      !! `E"IJ-E"I-E"J`, printed to eight decimals, is listed below; it has no
+      !! response term, so it is the whole of the pair's energy.
+      !!
+      !! With `RESDIM=0` GAMESS gives -1499.603176697, which is what this code
+      !! gave before separated pairs existed, and still gives at `resdim` zero.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: N_ES = 64
+      integer, parameter :: ES_I(N_ES) = [2, 4, 4, 5, 6, 2, 5, 6, 2, 5, 5, 6, 8, 9, 7, 10, &
+                                          5, 6, 4, 7, 8, 9, 10, 12, 4, 6, 8, 9, 11, 13, 4, 6, &
+                                          8, 9, 11, 4, 7, 10, 12, 14, 15, 2, 5, 6, 13, 14, 15, 16, &
+                                          4, 8, 9, 17, 5, 6, 8, 9, 11, 13, 16, 17, 10, 14, 15, 19]
+      integer, parameter :: ES_J(N_ES) = [4, 5, 6, 7, 7, 8, 8, 8, 9, 9, 10, 10, 10, 10, 11, 11, &
+                                          12, 12, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 15, 15, &
+                                          15, 15, 15, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 17, &
+                                          18, 18, 18, 18, 19, 19, 19, 19, 19, 19, 19, 19, 20, 20, 20, 20]
+      real(dp), parameter :: ES_E(N_ES) = [-0.00026283_dp, 0.00010071_dp, -0.00012010_dp, 0.00004412_dp, &
+                                           0.00014818_dp, 0.00019615_dp, -0.00014373_dp, -0.00000383_dp, &
+                                           0.00009161_dp, -0.00004211_dp, -0.00008450_dp, -0.00014765_dp, &
+                                           -0.00013899_dp, 0.00018447_dp, -0.00029092_dp, -0.00014250_dp, &
+                                           -0.00008697_dp, -0.00027936_dp, -0.00001436_dp, -0.00010456_dp, &
+                                           -0.00002696_dp, -0.00011125_dp, 0.00006651_dp, 0.00005598_dp, &
+                                           -0.00012878_dp, -0.00015869_dp, 0.00005897_dp, -0.00001511_dp, &
+                                           -0.00013229_dp, 0.00051170_dp, -0.00003657_dp, 0.00012355_dp, &
+                                           0.00001580_dp, 0.00009799_dp, 0.00007224_dp, 0.00018470_dp, &
+                                           -0.00014432_dp, 0.00008857_dp, 0.00028586_dp, 0.00007309_dp, &
+                                           -0.00009295_dp, -0.00012413_dp, 0.00001655_dp, 0.00014023_dp, &
+                                           0.00005259_dp, -0.00002717_dp, -0.00014763_dp, -0.00013955_dp, &
+                                           -0.00000044_dp, 0.00000881_dp, 0.00030791_dp, -0.00031591_dp, &
+                                           0.00011565_dp, 0.00009779_dp, 0.00013096_dp, -0.00011885_dp, &
+                                           0.00014039_dp, -0.00015564_dp, -0.00014492_dp, -0.00001086_dp, &
+                                           0.00026863_dp, 0.00003409_dp, -0.00007594_dp, -0.00024506_dp]
+      real(dp), parameter :: GAMESS_RESDIM2 = -1499.603170330_dp
+      real(dp), parameter :: GAMESS_RESDIM0 = -1499.603176697_dp
+      type(fmo_result_t) :: res
+      integer :: p, k
+      real(dp) :: worst
+
+      call water20_run(2.0_dp, res, error)
+      if (allocated(error)) return
+      write (*, *) "   FMO2 w20, resdim 2 - GAMESS =", res%energy - GAMESS_RESDIM2
+      call check(error, abs(res%energy - GAMESS_RESDIM2) < 1.0e-7_dp, &
+                 "FMO2 with separated pairs does not match GAMESS")
+      if (allocated(error)) return
+      call check(error, count(res%pairs%separated), N_ES, &
+                 "a different set of pairs is separated than GAMESS's")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do p = 1, N_ES
+         k = findloc(res%pairs%i == ES_I(p) .and. res%pairs%j == ES_J(p), .true., dim=1)
+         call check(error, k > 0, "a pair GAMESS separates is missing")
+         if (allocated(error)) return
+         call check(error, res%pairs(k)%separated, "a pair GAMESS separates was solved")
+         if (allocated(error)) return
+         call check(error, res%pairs(k)%response == 0.0_dp, &
+                    "a separated pair carries a response term")
+         if (allocated(error)) return
+         worst = max(worst, abs(res%pairs(k)%energy - ES_E(p)))
+      end do
+      write (*, *) "   worst separated pair - GAMESS =", worst
+      ! Eight printed decimals, so half a unit of the last is rounding.
+      call check(error, worst < 1.0e-8_dp, &
+                 "a separated pair's energy does not match GAMESS's ES dimer")
+      if (allocated(error)) return
+
+      call water20_run(0.0_dp, res, error)
+      if (allocated(error)) return
+      write (*, *) "   FMO2 w20, resdim 0 - GAMESS =", res%energy - GAMESS_RESDIM0
+      call check(error,.not. any(res%pairs%separated), "resdim 0 separated a pair")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_RESDIM0) < 1.0e-7_dp, &
+                 "FMO2 solving every pair does not match GAMESS at RESDIM=0")
+   end subroutine test_separated_waters
+
+   subroutine test_unconverged_refused(error)
+      !! A fragment SCF that does not converge stops the run where it happens
+      !!
+      !! Two SCF iterations are too few for any water of the trimer, so the
+      !! first fragment of the in-vacuo pass fails and nothing after it runs:
+      !! the error names that fragment, the stage and how far the SCF got, and
+      !! no pair or total is formed. `allow_crap_scf` does not change that --
+      !! under FMO every later number stands on every fragment's SCF. With a
+      !! field and more iterations the same holds for a pair.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      character(len=:), allocatable :: message
+      real(dp) :: ang(3, 9)
+      integer :: z(9)
+      character(len=2) :: sym(9)
+
+      z = [8, 1, 1, 8, 1, 1, 8, 1, 1]
+      sym = ["O ", "H ", "H ", "O ", "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                     0.0_dp, -0.7572_dp, 0.5865_dp, &
+                     0.0_dp, 0.7572_dp, 0.5865_dp, &
+                     0.0_dp, 0.0_dp, 2.9_dp, &
+                     0.0_dp, -0.7572_dp, 3.4865_dp, &
+                     0.0_dp, 0.7572_dp, 3.4865_dp, &
+                     0.0_dp, 0.0_dp, 5.8_dp, &
+                     0.0_dp, -0.7572_dp, 6.3865_dp, &
+                     0.0_dp, 0.7572_dp, 6.3865_dp], [3, 9])
+
+      opts%basis = "sto-3g"
+      opts%level = 2
+      opts%scf_max_iter = 2
+      opts%scf%allow_crap_scf = .true.
+      call run_fmo2(z, sym, to_bohr(ang), [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error, err%has_error(), "an unconverged fragment SCF was not refused")
+      if (allocated(error)) return
+      message = err%get_message()
+      write (*, *) "   ", message
+      call check(error, index(message, "fragment 1 ") > 0 .and. &
+                 index(message, "in vacuo") > 0 .and. index(message, "2 iterations") > 0, &
+                 "the refusal does not name the fragment, the stage and the iterations")
+      if (allocated(error)) return
+      call check(error,.not. allocated(res%pairs), "pairs were formed after a failure")
+      if (allocated(error)) return
+      call check(error, res%energy == 0.0_dp, "a total was formed after a failure")
+   end subroutine test_unconverged_refused
+
+   subroutine water20_run(resdim, res, error)
+      !! `sample_inputs/w20_isomer1.xyz`, a water per fragment, STO-3G, exact field
+      real(dp), intent(in) :: resdim
+      type(fmo_result_t), intent(out) :: res
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      real(dp) :: ang(3, 60)
+      integer :: z(60), owner(60), k
+      character(len=2) :: sym(60)
+
+      do k = 1, 60
+         owner(k) = (k - 1)/3 + 1
+         if (mod(k - 1, 3) == 0) then
+            z(k) = 8
+            sym(k) = "O "
+         else
+            z(k) = 1
+            sym(k) = "H "
+         end if
+      end do
+      ang = reshape([ &
+                    2.19756413_dp, 2.30645657_dp, 2.12398648_dp, &
+                    1.30374396_dp, 2.67852998_dp, 2.14887738_dp, &
+                    2.77602649_dp, 2.98882961_dp, 2.48710012_dp, &
+                    -0.446642250_dp, 3.18157983_dp, -0.553412318_dp, &
+                    -0.294790566_dp, 4.09050608_dp, -0.841292858_dp, &
+                    0.405002892_dp, 2.72651124_dp, -0.635274589_dp, &
+                    -0.371120274_dp, 3.40200686_dp, 2.21183610_dp, &
+                    -0.776223004_dp, 2.65618086_dp, 2.67454791_dp, &
+                    -0.552393317_dp, 3.32637596_dp, 1.26568747_dp, &
+                    -0.344809651_dp, 2.19895148_dp, 6.16216040_dp, &
+                    -0.799917400_dp, 1.92929876_dp, 5.35409737_dp, &
+                    -0.216623634_dp, 3.15416622_dp, 6.11619949_dp, &
+                    2.97632003_dp, 4.44283104_dp, -1.21666169_dp, &
+                    2.13466644_dp, 4.88871813_dp, -1.37117922_dp, &
+                    2.76599479_dp, 3.50445747_dp, -1.12249064_dp, &
+                    4.16477871_dp, 5.80204582_dp, 0.813909113_dp, &
+                    3.81304598_dp, 5.27708006_dp, 7.27024004E-02_dp, &
+                    4.95197010_dp, 6.23447180_dp, 0.493922502_dp, &
+                    -1.12275231_dp, 1.15836358_dp, 3.63779879_dp, &
+                    -1.67120850_dp, 0.587195158_dp, 3.08564949_dp, &
+                    -0.245801628_dp, 0.747786403_dp, 3.66580105_dp, &
+                    0.566819966_dp, 4.92840958_dp, 6.15334225_dp, &
+                    1.46272981_dp, 4.54431629_dp, 6.13453388_dp, &
+                    0.518503189_dp, 5.47743940_dp, 6.93166018_dp, &
+                    2.99093223_dp, 3.72968745_dp, 5.88431597_dp, &
+                    3.32716727_dp, 3.93724680_dp, 5.00251436_dp, &
+                    2.86334229_dp, 2.77451253_dp, 5.92706394_dp, &
+                    0.381184578_dp, -1.53543997_dp, 1.63772929_dp, &
+                    -0.556514800_dp, -1.34652114_dp, 1.76359665_dp, &
+                    0.843591511_dp, -1.10289204_dp, 2.36837602_dp, &
+                    3.40574169_dp, 4.54636431_dp, 3.20606375_dp, &
+                    2.53101349_dp, 4.95308876_dp, 3.30422902_dp, &
+                    3.81790257_dp, 4.97632933_dp, 2.44633842_dp, &
+                    1.49123096_dp, 0.106784083_dp, 3.62084031_dp, &
+                    1.85748398_dp, 0.819141865_dp, 3.07536340_dp, &
+                    1.79046202_dp, 0.273016363_dp, 4.52292490_dp, &
+                    0.409543365_dp, 5.76687193_dp, -1.21077549_dp, &
+                    9.09162611E-02_dp, 6.45845699_dp, -1.78449512_dp, &
+                    0.723045111_dp, 6.20045519_dp, -0.396752506_dp, &
+                    0.965811729_dp, -0.716764033_dp, -0.878285229_dp, &
+                    0.826097012_dp, -1.06112885_dp, 2.22627297E-02_dp, &
+                    1.20147121_dp, -1.46186376_dp, -1.42444563_dp, &
+                    -1.57260728_dp, 0.603498220_dp, -0.564730942_dp, &
+                    -0.767514944_dp, 0.135007307_dp, -0.818493128_dp, &
+                    -1.36242235_dp, 1.54356337_dp, -0.635614216_dp, &
+                    1.48347354_dp, 6.85378027_dp, 1.03128028_dp, &
+                    2.42572093_dp, 6.64860678_dp, 1.00056386_dp, &
+                    1.17456794_dp, 6.55655336_dp, 1.89760959_dp, &
+                    2.09537220_dp, 1.00540781_dp, 6.21120834_dp, &
+                    1.20502126_dp, 1.39716053_dp, 6.27762365_dp, &
+                    2.25407863_dp, 0.541421950_dp, 7.02924109_dp, &
+                    2.02927136_dp, 1.86724663_dp, -0.597557843_dp, &
+                    1.77290356_dp, 0.952067673_dp, -0.764892220_dp, &
+                    2.20549679_dp, 1.94485366_dp, 0.352207899_dp, &
+                    -2.32855034_dp, -0.538468540_dp, 1.77467108_dp, &
+                    -3.16010594_dp, -0.993369758_dp, 1.67372715_dp, &
+                    -2.13997388_dp, -0.103332303_dp, 0.923533261_dp, &
+                    0.792866886_dp, 5.56255627_dp, 3.42352605_dp, &
+                    0.296446860_dp, 4.84693289_dp, 2.99636626_dp, &
+                    0.622788429_dp, 5.48711681_dp, 4.36984348_dp &
+                    ], [3, 60])
+
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%resppc = 2.0_dp
+      opts%resdim = resdim
+      opts%level = 2
+      call run_fmo2(z, sym, to_bohr(ang), owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the twenty-water run failed")
+      if (allocated(error)) write (*, *) "   message: ", trim(err%get_message())
+   end subroutine water20_run
 
    subroutine water_trimer_run(level, res, error)
       !! `sample_inputs/w3.xyz`, three waters stacked 2.9 A apart, STO-3G

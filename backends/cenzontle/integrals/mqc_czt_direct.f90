@@ -48,6 +48,7 @@ module mqc_czt_direct
    public :: omp_threads
    public :: build_fock
    public :: build_fock_direct
+   public :: coulomb_from_blocks
    public :: build_fock_direct_many
    public :: build_fock_direct_nosym
    public :: build_fock_direct_uhf
@@ -723,6 +724,272 @@ contains
 
       deallocate (g, d_half, dims, offs, pair_i, pair_j, env_local)
    end subroutine build_fock_direct
+
+   subroutine coulomb_from_blocks(mol, bra_nao, ket_first, density, j_bra, error, &
+                                  screen_tol, stats)
+      !! The Coulomb operator of block-diagonal densities, on a leading bra block
+      !!
+      !! `J_mn = sum_b sum_{ls in b} (mn|ls) D_ls`, for `m, n` in the first
+      !! `bra_nao` functions of `mol` and `l, s` both in the same ket block `b`.
+      !! Only the diagonal blocks of `density` are read; everything else in it,
+      !! the bra block included, is taken to be zero.
+      !!
+      !! Equal to the bra block of `build_fock_direct` with `k_scale = 0` over
+      !! the same molecule and a density zero off those blocks, and screened by
+      !! the same test, but it touches only the quartets that can contribute:
+      !! bra pairs on the bra block and ket pairs inside one ket block. That is
+      !! `n_bra^2 sum_b n_b^2` against `n^4`.
+      !!
+      !! The Schwarz bounds are computed here for those pairs only, so the
+      !! caller builds none.
+      type(czt_molecule_t), intent(in) :: mol
+      integer, intent(in) :: bra_nao
+         !! The bra is functions `1..bra_nao`
+      integer, intent(in) :: ket_first(:)
+         !! First function of each ket block, 0-based, with a sentinel one past
+         !! the last block's end: block `b` is `ket_first(b)+1 .. ket_first(b+1)`.
+         !! Blocks must not overlap the bra or each other, and must start and
+         !! end on shell boundaries.
+      real(dp), intent(in) :: density(:, :)   !! (nao, nao), D = 2 C_occ C_occ^T
+      real(dp), allocatable, intent(out) :: j_bra(:, :)  !! (bra_nao, bra_nao)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
+      type(direct_stats_t), intent(out), optional :: stats
+
+      type(eri_shell_table_t) :: tab
+      type(c_ptr) :: opt
+      real(dp), allocatable :: split_bounds(:, :), bq(:, :), g(:, :), buf(:), dvec(:)
+      integer, allocatable :: region(:), split_region(:)
+      integer, allocatable :: bra_i(:), bra_j(:), ket_i(:), ket_j(:)
+      real(dp), allocatable :: ket_q(:), ket_d(:)
+      integer :: n, nblk, s, t, ish, jsh, di, dj, ret, block_max
+      integer :: nbra, nket, ib, ik, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4
+      integer :: f1, f2, f3, f4, base
+      integer :: shls(4)
+      integer(int64) :: n_total, n_computed, n_screened
+      real(dp) :: tol, deg, qbra, acc, largest
+
+      n = mol%nao
+      nblk = size(ket_first) - 1
+      if (size(density, 1) /= n .or. size(density, 2) /= n) then
+         call error%set(ERROR_VALIDATION, "block Coulomb: the density does not match the basis")
+         return
+      end if
+      if (bra_nao < 0 .or. nblk < 0) then
+         call error%set(ERROR_VALIDATION, "block Coulomb: no bra or no block layout")
+         return
+      end if
+      if (nblk > 0) then
+         if (ket_first(1) < bra_nao .or. ket_first(nblk + 1) > n .or. &
+             any(ket_first(2:) < ket_first(:nblk))) then
+            call error%set(ERROR_VALIDATION, "block Coulomb: the ket blocks overlap the "// &
+                           "bra, each other, or run past the basis")
+            return
+         end if
+      end if
+
+      tol = DEFAULT_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+
+      allocate (j_bra(bra_nao, bra_nao), source=0.0_dp)
+      if (bra_nao == 0 .or. nblk == 0) return
+
+      ! Which region each shell lies in: 0 the bra, b a ket block, -1 neither.
+      ! Once over the split shells, which the bounds are computed on, and once
+      ! over the table the quartet loop runs on, which may be the fused view.
+      call shell_regions(mol%shell_offset, mol%nbas, bra_nao, ket_first, split_region, error)
+      if (error%has_error()) return
+      call eri_shell_table(mol, tab)
+      call shell_regions(tab%offs, tab%nbas, bra_nao, ket_first, region, error)
+      if (error%has_error()) return
+
+      ! Schwarz bounds for pairs within one region, which are all the loop
+      ! below reads; the rest stay zero. The same integrals `schwarz_bounds`
+      ! evaluates for those pairs, collapsed onto the loop's table the same way.
+      block_max = 1
+      do ish = 1, mol%nbas
+         block_max = max(block_max, mol%shell_offset(ish + 1) - mol%shell_offset(ish))
+      end do
+      allocate (split_bounds(mol%nbas, mol%nbas), source=0.0_dp)
+      !$omp parallel default(none) shared(mol, split_region, split_bounds, block_max) &
+      !$omp    private(ish, jsh, di, dj, shls, ret, largest, buf)
+      allocate (buf(block_max**4))
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         if (split_region(ish) < 0) cycle
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         do jsh = 1, ish
+            if (split_region(jsh) /= split_region(ish)) cycle
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            shls = [ish - 1, jsh - 1, ish - 1, jsh - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     mol%bas, mol%nbas, mol%env)
+            largest = 0.0_dp
+            if (ret /= 0) largest = maxval(abs(buf(1:(di*dj)**2)))
+            split_bounds(ish, jsh) = sqrt(largest)
+            split_bounds(jsh, ish) = split_bounds(ish, jsh)
+         end do
+      end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
+      call eri_schwarz_collapse(mol, split_bounds, bq)
+      deallocate (split_bounds)
+
+      ! Bra pairs, and ket pairs inside one block with the largest element of
+      ! the halved density on each. A ket pair whose density block is zero can
+      ! contribute nothing and is dropped here rather than tested per quartet.
+      nbra = 0
+      nket = 0
+      allocate (bra_i(tab%nbas*(tab%nbas + 1)/2), bra_j(tab%nbas*(tab%nbas + 1)/2))
+      allocate (ket_i(size(bra_i)), ket_j(size(bra_i)), ket_q(size(bra_i)), ket_d(size(bra_i)))
+      do s = 1, tab%nbas
+         do t = 1, s
+            if (region(s) < 0 .or. region(t) /= region(s)) cycle
+            if (region(s) == 0) then
+               nbra = nbra + 1
+               bra_i(nbra) = s
+               bra_j(nbra) = t
+            else
+               largest = 0.5_dp*maxval(abs(density(tab%offs(s) + 1:tab%offs(s) + tab%dims(s), &
+                                                   tab%offs(t) + 1:tab%offs(t) + tab%dims(t))))
+               if (largest <= 0.0_dp) cycle
+               nket = nket + 1
+               ket_i(nket) = s
+               ket_j(nket) = t
+               ket_q(nket) = bq(s, t)
+               ket_d(nket) = largest
+            end if
+         end do
+      end do
+
+      opt = c_null_ptr
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, tab%bas, &
+                                  tab%nbas, tab%env)
+
+      ! Threaded over bra pairs. A bra pair owns its block of the accumulator
+      ! outright, so nothing is shared between threads and the sum over ket
+      ! pairs runs in the same order whatever the thread count. The quartet is
+      ! handed to the integral library ket-pair first, the order the full build
+      ! evaluates it in, and the screening test is that build's with no
+      ! exchange: the bound times the degeneracy times the largest density
+      ! element the quartet multiplies.
+      n_total = 0_int64
+      n_computed = 0_int64
+      n_screened = 0_int64
+      allocate (g(bra_nao, bra_nao), source=0.0_dp)
+      !$omp parallel default(none) &
+      !$omp    shared(mol, tab, bq, density, g, bra_i, bra_j, ket_i, ket_j, ket_q, ket_d, &
+      !$omp           nbra, nket, tol, opt) &
+      !$omp    private(ib, ik, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, f1, f2, f3, f4, &
+      !$omp            base, shls, ret, deg, qbra, acc, buf, dvec) &
+      !$omp    reduction(+:n_total, n_computed, n_screened)
+      allocate (buf(tab%block_max**4), dvec(tab%block_max**2))
+      !$omp do schedule(dynamic)
+      do ib = 1, nbra
+         s3 = bra_i(ib)
+         s4 = bra_j(ib)
+         d3 = tab%dims(s3)
+         o3 = tab%offs(s3)
+         d4 = tab%dims(s4)
+         o4 = tab%offs(s4)
+         qbra = bq(s3, s4)
+         do ik = 1, nket
+            s1 = ket_i(ik)
+            s2 = ket_j(ik)
+            n_total = n_total + 1_int64
+            deg = pair_degeneracy(s1, s2, s3, s4)
+            if (qbra*ket_q(ik)*deg*ket_d(ik) < tol) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+            shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     tab%bas, tab%nbas, tab%env, opt)
+            if (ret == 0) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+            n_computed = n_computed + 1_int64
+
+            d1 = tab%dims(s1)
+            o1 = tab%offs(s1)
+            d2 = tab%dims(s2)
+            o2 = tab%offs(s2)
+            do f2 = 1, d2
+               do f1 = 1, d1
+                  dvec(f1 + (f2 - 1)*d1) = 0.5_dp*deg*density(o1 + f1, o2 + f2)
+               end do
+            end do
+            do f4 = 1, d4
+               do f3 = 1, d3
+                  base = (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                  acc = 0.0_dp
+                  do f1 = 1, d1*d2
+                     acc = acc + buf(base + f1)*dvec(f1)
+                  end do
+                  g(o3 + f3, o4 + f4) = g(o3 + f3, o4 + f4) + acc
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf, dvec)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+
+      ! Each bra pair was taken once, `s3 >= s4`, with the degeneracy standing in
+      ! for its transpose; symmetrising is what adds that transpose back.
+      j_bra = 0.5_dp*(g + transpose(g))
+
+      if (present(stats)) then
+         stats%quartets_total = n_total
+         stats%quartets_computed = n_computed
+         stats%quartets_screened = n_screened
+         stats%screened_schwarz = n_screened
+      end if
+   end subroutine coulomb_from_blocks
+
+   subroutine shell_regions(offs, nbas, bra_nao, ket_first, region, error)
+      !! Which region of a `coulomb_from_blocks` layout each shell lies in
+      !!
+      !! 0 for the bra, `b` for ket block `b`, -1 for neither. A shell that
+      !! straddles a boundary is an error: the layout is meant to be atom by
+      !! atom, and a shell never spans two atoms.
+      integer, intent(in) :: offs(:)       !! (nbas+1) first function per shell, 0-based
+      integer, intent(in) :: nbas
+      integer, intent(in) :: bra_nao
+      integer, intent(in) :: ket_first(:)
+      integer, allocatable, intent(out) :: region(:)
+      type(error_t), intent(inout) :: error
+
+      integer :: s, b, lo, hi
+
+      allocate (region(nbas), source=-1)
+      do s = 1, nbas
+         lo = offs(s)
+         hi = offs(s + 1)
+         if (hi <= bra_nao) then
+            region(s) = 0
+            cycle
+         end if
+         if (lo < bra_nao) then
+            call error%set(ERROR_VALIDATION, "block Coulomb: a shell straddles the end of the bra")
+            return
+         end if
+         do b = 1, size(ket_first) - 1
+            if (lo >= ket_first(b) .and. hi <= ket_first(b + 1)) then
+               region(s) = b
+               exit
+            end if
+            if (lo < ket_first(b + 1) .and. hi > ket_first(b)) then
+               call error%set(ERROR_VALIDATION, "block Coulomb: a shell straddles a ket block's edge")
+               return
+            end if
+         end do
+      end do
+   end subroutine shell_regions
 
    subroutine build_fock_direct_many(mol, h, densities, bounds, focks, stats, error, &
                                      screen_tol, k_scale, j_scale, omega, density_screen, &

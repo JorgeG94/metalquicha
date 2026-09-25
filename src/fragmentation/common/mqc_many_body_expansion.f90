@@ -4,6 +4,7 @@ module mqc_many_body_expansion
    !! concrete ones: standard MBE, generalized MBE, and FMO2 with the
    !! electrostatically embedded MBE beside it.
    use pic_types, only: int32, int64, dp
+   use pic_mpi_lib, only: abort_comm
    use mqc_method_config, only: method_config_t
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_resources, only: resources_t
@@ -187,16 +188,23 @@ module mqc_many_body_expansion
          !! silently produced 6-31G numbers.
       character(len=16) :: esp = "exact"
       character(len=16) :: expansion = "fmo"
+      integer, allocatable :: detached_atoms(:)
+         !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
       character(len=16) :: bond_breaking = "none"
          !! How a cut covalent bond is represented on this expansion; "none"
          !! refuses a partition that cuts one, which is the default and was the
          !! only behaviour before caps existed.
+      character(len=8) :: afo_localization = "er"
+         !! How a cut bond's model system is localized; "er" or "boys"
       real(dp) :: cap_scale = 1.0_dp
          !! Where a cap sits along the bond it closes.
       character(len=16) :: far_field = "mulliken"
       real(dp) :: resppc = 2.0_dp
          !! Separation past which a neighbour becomes point charges. Negative
          !! disables the approximation.
+      real(dp) :: resdim = 0.0_dp
+         !! Separation past which a pair is taken as electrostatics instead of
+         !! solved; zero solves every pair. Resolved from the deck by the driver.
       integer :: level = 2
          !! Fragments at a time: 2 is FMO2, 3 is FMO3. Taken from the
          !! fragmentation level the deck already gives, since it means the same
@@ -230,6 +238,8 @@ module mqc_many_body_expansion
       real(dp), allocatable :: pair_response(:)    !! Hartree, inside `pair_energy`
       logical, allocatable :: pair_connected(:)
          !! The two-member terms and their sums, as `run_czt_fmo` returns them
+      logical, allocatable :: pair_separated(:)
+         !! Pairs beyond `resdim`, whose term is electrostatics and not an SCF
 
    contains
       procedure :: run_serial => fmo_run_serial
@@ -351,6 +361,7 @@ contains
       if (allocated(this%pair_energy)) deallocate (this%pair_energy)
       if (allocated(this%pair_response)) deallocate (this%pair_response)
       if (allocated(this%pair_connected)) deallocate (this%pair_connected)
+      if (allocated(this%pair_separated)) deallocate (this%pair_separated)
       this%n_fragments = 0
       this%energy = 0.0_dp
       this%monomer_sum = 0.0_dp
@@ -407,14 +418,50 @@ contains
                        pair_fragments=this%pair_fragments, &
                        pair_distance=this%pair_distance, pair_energy=this%pair_energy, &
                        pair_response=this%pair_response, &
-                       pair_connected=this%pair_connected)
+                       pair_connected=this%pair_connected, &
+                       pair_separated=this%pair_separated, resdim=this%resdim, &
+                       detached=this%detached_atoms, &
+                       afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
-         call logger%error("fmo_run_serial: "//error%get_message())
+         call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
          return
       end if
       call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
       call fmo_report(this, json_data)
    end subroutine fmo_run_serial
+
+   subroutine fmo_refuse(this, message)
+      !! Report an FMO refusal once and end the run with a failing status
+      !!
+      !! Reached by whichever rank failed, which need not be the first, so
+      !! that rank says why; an error every rank reaches is said once per
+      !! rank. `abort_comm` and not a return: the expansion interface carries
+      !! no error, and a return let the run finish with exit status zero and,
+      !! on the ranks that had not failed, a total. MPI_ABORT ends the ranks
+      !! still waiting on the failed one, wherever they are waiting.
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+      use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
+      class(fmo_context_t), intent(inout) :: this
+      character(len=*), intent(in) :: message
+
+      if (.not. this%has_mpi()) then
+         call logger%error(message)
+         error stop 1
+      end if
+      if (this%resources%mpi_comms%world_comm%size() > 1) then
+         call logger%error("rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
+                           ": "//message)
+      else
+         call logger%error(message)
+      end if
+      ! Flushed by hand: MPI_ABORT ends the process without closing units, so
+      ! with standard output redirected to a file the reason was lost and
+      ! only Open MPI's own notice remained.
+      flush (output_unit)
+      flush (error_unit)
+      call abort_comm(this%resources%mpi_comms%world_comm, 1)
+   end subroutine fmo_refuse
 
    subroutine fmo_report(this, json_data)
       !! Hand the total, its sums and the pairs to whatever writes the output
@@ -445,6 +492,7 @@ contains
          json_data%fmo_pair_energy = this%pair_energy
          json_data%fmo_pair_response = this%pair_response
          json_data%fmo_pair_connected = this%pair_connected
+         json_data%fmo_pair_separated = this%pair_separated
       end if
    end subroutine fmo_report
 
@@ -505,9 +553,12 @@ contains
                        pair_distance=this%pair_distance, pair_energy=this%pair_energy, &
                        pair_response=this%pair_response, &
                        pair_connected=this%pair_connected, &
-                       comm=this%resources%mpi_comms%world_comm)
+                       pair_separated=this%pair_separated, resdim=this%resdim, &
+                       comm=this%resources%mpi_comms%world_comm, &
+                       detached=this%detached_atoms, &
+                       afo_localization=trim(this%afo_localization))
       if (error%has_error()) then
-         call logger%error("fmo_run_distributed: "//error%get_message())
+         call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())
          return
       end if
       if (this%resources%mpi_comms%world_comm%leader()) then

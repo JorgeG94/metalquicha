@@ -22,7 +22,8 @@
     "keywords": {
         "fragmentation": {
             "method": "fmo",
-            "level": 2
+            "level": 2,
+            "resdim": 0
         },
         "scf": {
             "maxiter": 100,

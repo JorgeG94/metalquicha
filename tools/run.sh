@@ -187,7 +187,26 @@ if [[ -n ${SLURM_JOB_ID:-} ]] && command -v srun >/dev/null 2>&1; then
 elif (( NTASKS > 1 )); then
     command -v mpirun >/dev/null 2>&1 ||
         fail "$NTASKS ranks asked for, but there is no SLURM job and no mpirun"
-    CMD=(mpirun -np "$NTASKS" "$BINARY" "$INPUT")
+    # Each rank gets its own run of cores. Left to itself Open MPI 5 binds a
+    # rank to a single core -- two ranks sit on 0,20 and 1,21 of a 40-thread
+    # node -- and every thread of its OpenMP team shares that core, which
+    # looks like a hang. MPICH's Hydra spells the same thing -bind-to
+    # core:N; Intel MPI takes it from I_MPI_PIN_DOMAIN.
+    MPI_FLAVOUR=$(mpirun --version 2>&1 | head -n 3)
+    if [[ $MPI_FLAVOUR == *"Open MPI"* ]]; then
+        CMD=(mpirun -np "$NTASKS" --map-by "slot:PE=$NTHREADS" --bind-to core
+             -x OMP_NUM_THREADS -x OMP_PROC_BIND -x OMP_PLACES -x OMP_STACKSIZE
+             -x MKL_NUM_THREADS -x OPENBLAS_NUM_THREADS -x CRAYBLAS_NUM_THREADS)
+    elif [[ $MPI_FLAVOUR == *"Intel"* ]]; then
+        export I_MPI_PIN_DOMAIN=omp
+        CMD=(mpirun -np "$NTASKS")
+    elif [[ $MPI_FLAVOUR == *"HYDRA"* ]]; then
+        CMD=(mpirun -np "$NTASKS" -bind-to "core:$NTHREADS")
+    else
+        warn "unrecognised mpirun; ranks are not bound to separate cores"
+        CMD=(mpirun -np "$NTASKS")
+    fi
+    CMD+=("$BINARY" "$INPUT")
 else
     CMD=("$BINARY" "$INPUT")
 fi

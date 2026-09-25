@@ -723,6 +723,8 @@ contains
       if (error%has_error()) return
       call optional_string(json, "keywords.fragmentation.far_field", config%fmo_far_field)
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
+      call read_resdim(json, config, error)
+      if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.rcut", config%efmo_rcut)
       ! Unitless and a *ratio* of a distance to a van der Waals contact, so
       ! zero or negative is not "no cutoff" the way a negative `resppc` is: it
@@ -743,6 +745,10 @@ contains
       call optional_real(json, "keywords.fragmentation.scf_density_tolerance", config%fmo_scf_density_tol)
       call optional_string(json, "keywords.fragmentation.embedding", config%embedding)
       call optional_string(json, "keywords.fragmentation.bond_breaking", config%bond_breaking)
+      call read_afo_localization(json, config, error)
+      if (error%has_error()) return
+      call read_detached_atoms(json, config, error)
+      if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.cap_scale", config%cap_scale)
       call optional_string(json, "keywords.fragmentation.cutoff_method", config%cutoff_method)
       call optional_string(json, "keywords.fragmentation.distance_metric", config%distance_metric)
@@ -751,6 +757,48 @@ contains
 
       call read_cutoffs(json, config, error)
    end subroutine read_fragmentation
+
+   subroutine read_afo_localization(json, config, error)
+      !! `keywords.fragmentation.afo_localization`, "er" or "boys"
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      logical :: found
+
+      call json%get("keywords.fragmentation.afo_localization", text, found)
+      if (.not. found .or. .not. allocated(text)) return
+      select case (to_lower(trim(adjustl(text))))
+      case ("er", "boys")
+         config%afo_localization = to_lower(trim(adjustl(text)))
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.afo_localization: '"// &
+                        trim(text)//"' is not a localization; expected 'er' "// &
+                        "(Edmiston-Ruedenberg) or 'boys' (Foster-Boys)")
+      end select
+   end subroutine read_afo_localization
+
+   subroutine read_detached_atoms(json, config, error)
+      !! `keywords.fragmentation.detached_atoms`, 0-based as every atom index
+      !! in a deck
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: indices(:)
+      logical :: found
+
+      call json%get("keywords.fragmentation.detached_atoms", indices, found)
+      if (.not. found) return
+      if (.not. allocated(indices)) return
+      if (any(indices < 0)) then
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.detached_atoms: atom "// &
+                        "indices are 0-based and cannot be negative")
+         return
+      end if
+      config%detached_atoms = indices
+   end subroutine read_detached_atoms
 
    subroutine read_efmo(json, config, error)
       !! The keywords.efmo block
@@ -1933,6 +1981,32 @@ contains
 
       call json%get(path, ignored, was_named)
    end subroutine named
+
+   subroutine read_resdim(json, config, error)
+      !! `keywords.fragmentation.resdim`, refused if negative
+      !!
+      !! Absent leaves `fmo_resdim` at its negative "not given", which the
+      !! driver resolves by method and level. A deck cannot write that itself:
+      !! a negative separation means nothing, and zero already says "no
+      !! approximation".
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: value
+      logical :: found
+
+      call json%get("keywords.fragmentation.resdim", value, found)
+      if (.not. found) return
+      if (value < 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.resdim must be zero "// &
+                        "or positive. It is a separation in units of van der Waals "// &
+                        "contact past which an FMO pair is taken as electrostatics "// &
+                        "instead of solved; 0 solves every pair.")
+         return
+      end if
+      config%fmo_resdim = value
+   end subroutine read_resdim
 
    subroutine optional_real(json, path, value)
       !! Fetch a real if present, leaving `value` at its default otherwise

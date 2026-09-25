@@ -117,7 +117,11 @@ contains
                               - model%xyz(:, model%baa_local))**2))
       half = 0.5_dp*bond_length
 
-      n_at_half = count(abs(distance - half) < 1.0e-4_dp)
+      ! Within 1e-3 Bohr rather than exactly: an Edmiston-Ruedenberg core
+      ! mixes in a little of its atom's valence and sits a few 1e-4 Bohr off
+      ! the nucleus -- 1.6e-4 for ethane's in STO-3G -- where a Boys core is
+      ! well inside 1e-4. The reach is a third of a bond away either way.
+      n_at_half = count(abs(distance - half) < 1.0e-3_dp)
       call check(error, n_at_half, 2, &
                  "the two carbon cores are not sitting on their nuclei")
       if (allocated(error)) return

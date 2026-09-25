@@ -21,6 +21,7 @@ module test_mqc_afo_fmo
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: to_bohr
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
@@ -51,7 +52,7 @@ contains
 
       testsuite = [ &
                   new_unittest("two_fragments_across_a_cut_bond_are_exact", test_exact), &
-                  new_unittest("afo_is_refused_with_an_exact_embedding", test_refuse_esp), &
+                  new_unittest("three_fragments_are_exact_under_an_exact_field", test_exact_field), &
                   new_unittest("a_ring_cut_is_refused_by_name", test_refuse_ring), &
                   new_unittest("three_fragments_at_full_order_are_exact", test_three_exact), &
                   new_unittest("truncating_at_pairs_costs_the_three_body_term", test_three_pairs), &
@@ -61,7 +62,25 @@ contains
                   new_unittest("embedded_truncation_at_pairs_costs_the_three_body_term", test_ptc_pairs), &
                   new_unittest("a_ring_kept_whole_takes_a_field_and_a_frozen_orbital", test_ptc_ring_kept), &
                   new_unittest("the_charge_convention_does_not_move_an_embedded_total", test_convention), &
-                  new_unittest("a_charged_fragment_keeps_the_identity", test_charged_fragment) &
+                  new_unittest("a_charged_fragment_keeps_the_identity", test_charged_fragment), &
+                  new_unittest("butane_and_water_match_gamess_afo", test_gamess_butane_water), &
+                  new_unittest("butane_and_water_match_gamess_fmo2_exact_field", &
+                               test_gamess_butane_water_exact), &
+                  new_unittest("butane_and_water_match_gamess_with_a_separated_pair", &
+                               test_gamess_butane_water_separated), &
+                  new_unittest("butane_and_water_match_gamess_fmo2_exact_field_er", &
+                               test_gamess_butane_water_exact_er), &
+                  new_unittest("glycine_tripeptide_and_water_match_gamess_fmo2_exact_field_er", &
+                               test_gamess_gly3_water_exact_er), &
+                  new_unittest("glycine_tripeptide_and_water_match_gamess_fmo2_exact_field", &
+                               test_gamess_gly3_water_exact_boys), &
+                  new_unittest("butane_and_water_match_gamess_afo_er", test_gamess_butane_water_er), &
+                  new_unittest("glycine_tripeptide_and_water_match_gamess_afo_er", &
+                               test_gamess_gly3_water_er), &
+                  new_unittest("field_free_pairs_under_both_nucleus_conventions", &
+                               test_field_free_conventions), &
+                  new_unittest("glycine_tripeptide_and_water_across_two_cuts", &
+                               test_gly3_water) &
                   ]
    end subroutine collect_mqc_afo_fmo
 
@@ -110,6 +129,595 @@ contains
          write (*, *) "   difference  =", res%energy - whole%energy
       end if
    end subroutine test_exact
+
+   subroutine test_gamess_butane_water(error)
+      !! Butane cut at C2-C3 with a water off one end, against GAMESS
+      !!
+      !! GAMESS 2026 (`../mgga/gamess`), `$FMO NBODY=2 RAFO(1)=1,1,1`,
+      !! `$FMOBND -2 3`, RHF/STO-3G, Cartesian, run as the in-vacuo EFMO it
+      !! prints the in-vacuo monomer and dimer energies of: ethyl owning the
+      !! detached C2 at `Z-1`, -63.7464859666; ethyl across the cut carrying the
+      !! ghost at `+1`, -77.4085157350; water -74.9620085207; and the dimers
+      !! 1-2 -155.4534214272, 1-3 -138.7089277335, 2-3 -152.3698614874. Their
+      !! MBE(2) is -230.4152004258.
+      !!
+      !! What this pins is the frozen *set*: the bond orbital frozen on both
+      !! sides and, where the detached atom is a ghost, its core and its other
+      !! three bonds frozen empty too -- GAMESS's "1 occupied and 4 virtual".
+      !! Freezing the bond orbital alone left the two ethyls 0.127 and 0.298
+      !! Hartree above these.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17), owner(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      real(dp), parameter :: GAMESS_MONOMER(3) = [-63.7464859666_dp, -77.4085157350_dp, &
+                                                  -74.9620085207_dp]
+      real(dp), parameter :: GAMESS_MBE2 = -230.4152004258_dp
+      real(dp), parameter :: AGREE = 2.0e-6_dp
+         !! GAMESS converges the model system to 1e-6 and prints ten decimals
+
+      call butane_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3]
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "boys"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      ! Not the 1e-11 / 1e-9 the other cases use: at 1e-9 the commutator gate
+      ! sits on the threading noise floor for the 30-function butane, and one
+      ! run in three on two threads stopped short at 1.4e-10. What is compared
+      ! here is 2e-6.
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   monomers - GAMESS =", res%monomer_energy - GAMESS_MONOMER
+      write (*, *) "   MBE(2) - GAMESS   =", res%energy - GAMESS_MBE2
+      call check(error, maxval(abs(res%monomer_energy - GAMESS_MONOMER)) < AGREE, &
+                 "the cut monomers do not match GAMESS's, so the frozen set differs")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_MBE2) < AGREE, &
+                 "the in-vacuo MBE(2) does not match GAMESS's")
+   end subroutine test_gamess_butane_water
+
+   subroutine test_gamess_butane_water_er(error)
+      !! The same butane and water, with the model system ER-localized
+      !!
+      !! GAMESS as for the Boys case but `LOCAL=RUEDNBRG`, `$LOCAL CVGLOC=1D-10`,
+      !! and `RESDIM=100 MODEFM(1)=0,1,0,0,0` so that every pair is an SCF in
+      !! vacuo and nothing else is computed: ethyl owning C2 -63.6608350059,
+      !! ethyl holding its ghost -77.5130688706, water -74.9620085207, MBE(2)
+      !! -230.4152073207. At GAMESS's own FMO default, `CVGLOC=1D-7`, the two
+      !! ethyls come out 1.1e-8 and 6e-9 lower: the localization is only
+      !! converged that far.
+      !!
+      !! The monomers moved 0.086 and -0.105 Hartree from Boys, in GAMESS and
+      !! here alike, while MBE(2) moved 6.9e-6 -- the frozen set is a
+      !! different split of the same carbon's five orbitals, and the pair
+      !! holding the whole bond does not see it.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17), owner(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      real(dp), parameter :: GAMESS_MONOMER(3) = [-63.6608350059_dp, -77.5130688706_dp, &
+                                                  -74.9620085207_dp]
+      real(dp), parameter :: GAMESS_MBE2 = -230.4152073207_dp
+      real(dp), parameter :: AGREE = 5.0e-8_dp
+         !! Measured 3.3e-8 on the ghost-holding ethyl and 1.8e-8 on MBE(2).
+         !! GAMESS stops the model system's SCF at a density change of 1e-6,
+         !! and an ER frozen set follows the model's orbitals about four
+         !! times as closely as a Boys one does: loosening the model here from
+         !! 1e-10 to 1e-7 in the energy moves these monomers 1.3e-7 with ER
+         !! and 3e-8 with Boys.
+
+      call butane_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3]
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "er"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   ER monomers - GAMESS =", res%monomer_energy - GAMESS_MONOMER
+      write (*, *) "   ER MBE(2) - GAMESS   =", res%energy - GAMESS_MBE2
+      call check(error, maxval(abs(res%monomer_energy - GAMESS_MONOMER)) < AGREE, &
+                 "the ER-localized cut monomers do not match GAMESS's")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_MBE2) < AGREE, &
+                 "the ER-localized in-vacuo MBE(2) does not match GAMESS's")
+   end subroutine test_gamess_butane_water_er
+
+   subroutine test_gamess_gly3_water_er(error)
+      !! Glycine tripeptide and water, two C-alpha--C cuts, ER model, against GAMESS
+      !!
+      !! GAMESS 2026, `$FMOBND -2 3 / -10 11`, `RAFO(1)=1,1,1`, RHF/STO-3G,
+      !! `LOCAL=RUEDNBRG`, `$LOCAL CVGLOC=1D-10`, EFMO with `RESDIM=100
+      !! MODEFM(1)=0,1,0,0,0` for its in-vacuo monomers and pairs: -79.4153710175,
+      !! -189.8789505643, -389.5611493535, -74.9629282601, and MBE(2)
+      !! -762.3153911672.
+      !!
+      !! In vacuo, which isolates the frozen set from the field; the exact-field
+      !! FMO2 is compared on its own below.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(27), owner(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+      real(dp), parameter :: GAMESS_MONOMER(4) = [-79.4153710175_dp, -189.8789505643_dp, &
+                                                  -389.5611493535_dp, -74.9629282601_dp]
+      real(dp), parameter :: GAMESS_MBE2 = -762.3153911672_dp
+      real(dp), parameter :: AGREE_MONOMER = 3.0e-7_dp
+         !! Measured 1.8e-7 at worst. **Not an ER disagreement**: the Boys
+         !! run against GAMESS's Boys run, printed first, is 2.0e-7 on the
+         !! same monomers, and both are GAMESS converging its model systems to
+         !! a density change of 1e-6 -- its orbital gradient stops at 2e-7.
+      real(dp), parameter :: AGREE_TOTAL = 1.0e-7_dp
+         !! Measured 4.1e-8, with ER and with Boys
+
+      call gly3_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4]
+      opts%basis = "sto-3g"
+      opts%esp = "none"
+      opts%expansion = "mbe"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "boys"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      write (*, *) "   Boys monomers - GAMESS =", res%monomer_energy - &
+         [-79.4968941332_dp, -189.8605453888_dp, -389.4556268227_dp, -74.9629282601_dp]
+      write (*, *) "   Boys MBE(2) - GAMESS   =", res%energy - (-762.3147713386_dp)
+      call err%clear()
+      opts%afo_localization = "er"
+      opts%cut_nucleus = "split"
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "the frozen-orbital expansion failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   ER monomers - GAMESS =", res%monomer_energy - GAMESS_MONOMER
+      write (*, *) "   ER MBE(2) - GAMESS   =", res%energy - GAMESS_MBE2
+      call check(error, maxval(abs(res%monomer_energy - GAMESS_MONOMER)) < AGREE_MONOMER, &
+                 "the ER-localized cut monomers do not match GAMESS's")
+      if (allocated(error)) return
+      call check(error, abs(res%energy - GAMESS_MBE2) < AGREE_TOTAL, &
+                 "the ER-localized in-vacuo MBE(2) does not match GAMESS's")
+   end subroutine test_gamess_gly3_water_er
+
+   subroutine test_field_free_conventions(error)
+      !! Propane's field-free MBE(2) error with the nucleus split and kept whole
+      !!
+      !! Both numberings: carbons in chain order, and the middle carbon first
+      !! so that it is the detached end of both bonds. Measured and reported,
+      !! since which convention a field-free run should use is decided from
+      !! these numbers; only a sanity bound is asserted.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: whole
+      integer :: z(11), numbering, c
+      character(len=2) :: sym(11)
+      real(dp) :: xyz(3, 11)
+      character(len=5), parameter :: CONVENTION(2) = ["split", "whole"]
+
+      do numbering = 1, 2
+         if (numbering == 1) call propane(z, sym, xyz)
+         if (numbering == 2) call propane_middle_first(z, sym, xyz)
+         call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+         call run_czt_rhf(mol, 26, 200, 1.0e-11_dp, 1.0e-9_dp, .false., whole, err)
+         call mol%destroy()
+         do c = 1, 2
+            opts%basis = "sto-3g"
+            opts%esp = "none"
+            opts%expansion = "mbe"
+            opts%bond_breaking = "afo"
+            opts%cut_nucleus = CONVENTION(c)
+            opts%level = 2
+            opts%scf_energy_tol = 1.0e-11_dp
+            opts%scf_density_tol = 1.0e-9_dp
+            if (numbering == 1) then
+               call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], opts, res, err)
+            else
+               call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+            end if
+            call check(error,.not. err%has_error(), "the expansion failed: "// &
+                       err%get_message())
+            if (allocated(error)) return
+            write (*, "(a,i2,a,a,a,f12.6)") "    numbering", numbering, "  nucleus ", &
+               CONVENTION(c), "  MBE(2) error (hartree) =", res%energy - whole%energy
+            call check(error, abs(res%energy - whole%energy) < 10.0_dp, &
+                       "field-free MBE(2) on propane is off by more than ten hartree")
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_field_free_conventions
+
+   subroutine test_gly3_water(error)
+      !! Glycine tripeptide cut at both C-alpha--C(=O) bonds, with a water
+      !!
+      !! Four fragments, RHF/STO-3G, `gly3_water_pair.xyz`. At full order the
+      !! expansion is the molecule; at pairs it is compared with the molecule
+      !! and reported, with point charges and in vacuo under each nucleus
+      !! convention.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: whole
+      integer :: z(27), owner(27), run
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+      character(len=5), parameter :: ESP(4) = ["none ", "none ", "ptc  ", "none "]
+      character(len=5), parameter :: NUC(4) = ["split", "whole", "auto ", "split"]
+      integer, parameter :: LEVEL(4) = [2, 2, 2, 4]
+
+      call gly3_water(z, sym, xyz)
+      owner = [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4]
+      call build_czt_molecule(z, sym, xyz, "sto-3g", mol, err)
+      call run_czt_rhf(mol, sum(z), 200, 1.0e-10_dp, 1.0e-8_dp, .false., whole, err)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "the whole-molecule RHF failed")
+      if (allocated(error)) return
+      do run = 1, size(ESP)
+         opts%basis = "sto-3g"
+         opts%esp = trim(ESP(run))
+         opts%expansion = merge("mbe", "fmo", ESP(run) == "none")
+         opts%bond_breaking = "afo"
+         opts%cut_nucleus = trim(NUC(run))
+         opts%level = LEVEL(run)
+         opts%scf_energy_tol = 1.0e-10_dp
+         opts%scf_density_tol = 1.0e-8_dp
+         call run_fmo2(z, sym, xyz, owner, opts, res, err)
+         if (err%has_error()) then
+            write (*, *) "   ", ESP(run), NUC(run), LEVEL(run), " failed: ", &
+               trim(err%get_message())
+            call err%clear()
+            cycle
+         end if
+         write (*, "(a,a,a,a,a,i2,a,es12.4)") "    esp ", ESP(run), " nucleus ", NUC(run), &
+            " level", LEVEL(run), "  error (hartree) =", res%energy - whole%energy
+         if (LEVEL(run) == 4) then
+            call check(error, abs(res%energy - whole%energy) < 1.0e-8_dp, &
+                       "full order over two detached peptide bonds is not the molecule")
+            if (allocated(error)) return
+         end if
+      end do
+   end subroutine test_gly3_water
+
+   subroutine gly3_water(z, sym, xyz)
+      !! `validation/inputs/sample_inputs/gly3_water_pair.xyz`
+      integer, intent(out) :: z(27)
+      character(len=2), intent(out) :: sym(27)
+      real(dp), intent(out) :: xyz(3, 27)
+      real(dp) :: ang(3, 27)
+      integer :: i
+
+      z = [7, 6, 6, 8, 1, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 8, 1, 8, 1, 1]
+      do i = 1, 27
+         select case (z(i))
+         case (1)
+            sym(i) = "H "
+         case (6)
+            sym(i) = "C "
+         case (7)
+            sym(i) = "N "
+         case default
+            sym(i) = "O "
+         end select
+      end do
+      ang = reshape([ &
+                    0.0171625298_dp, -0.4776667709_dp, -0.0077801388_dp, &   ! N
+                    1.3251492481_dp, 0.1638239831_dp, 0.0713249069_dp, &   ! C
+                    1.8818395599_dp, 0.1764813685_dp, 1.4667973423_dp, &   ! C
+                    1.1563644386_dp, 0.4758564459_dp, 2.4030731780_dp, &   ! O
+                    2.0041403197_dp, -0.3893217244_dp, -0.6156078332_dp, &   ! H
+                    1.2933738676_dp, 1.2140808724_dp, -0.2903017566_dp, &   ! H
+                    -0.6557592247_dp, -0.0682256808_dp, 0.6785523482_dp, &   ! H
+                    -0.3826962098_dp, -0.2691894812_dp, -0.9506317163_dp, &   ! H
+                    3.2093591995_dp, -0.0780774266_dp, 1.6702200732_dp, &   ! N
+                    3.8489825798_dp, -0.0589263473_dp, 2.9842578467_dp, &   ! C
+                    5.3502343581_dp, -0.0788662970_dp, 2.9476716562_dp, &   ! C
+                    5.9543074560_dp, -0.1656759551_dp, 1.8893430618_dp, &   ! O
+                    3.5421254604_dp, 0.8561169960_dp, 3.5393994122_dp, &   ! H
+                    3.4986665918_dp, -0.9402544817_dp, 3.5643998498_dp, &   ! H
+                    3.7845901118_dp, -0.3119789206_dp, 0.8286081985_dp, &   ! H
+                    6.0352251963_dp, 0.0003525130_dp, 4.1282386693_dp, &   ! N
+                    7.4955375902_dp, -0.0138802141_dp, 4.2014382315_dp, &   ! C
+                    8.0730347718_dp, 0.0277800836_dp, 5.5909529457_dp, &   ! C
+                    7.3557278976_dp, 0.0641983810_dp, 6.5759347789_dp, &   ! O
+                    7.8694940865_dp, -0.9353711779_dp, 3.7021749317_dp, &   ! H
+                    7.8868335534_dp, 0.8596348618_dp, 3.6344677391_dp, &   ! H
+                    5.4670886620_dp, 0.0786510231_dp, 5.0034540291_dp, &   ! H
+                    9.3768940878_dp, 0.0221621974_dp, 5.7818296269_dp, &   ! O
+                    9.9376629532_dp, -0.0106298905_dp, 4.9380771002_dp, &   ! H
+                    7.3635223930_dp, -0.3681902986_dp, -0.5795840740_dp, &   ! O
+                    6.8902239587_dp, -0.3001739023_dp, 0.2496289275_dp, &   ! H
+                    6.6876213700_dp, -0.2710584500_dp, -1.2503709636_dp &   ! H
+                    ], [3, 27])
+      xyz = to_bohr(ang)
+   end subroutine gly3_water
+
+   subroutine test_gamess_butane_water_exact(error)
+      !! The same butane and water, FMO2 in the exact field, against GAMESS
+      !!
+      !! GAMESS 2026, `$FMO NBODY=2 RAFO(1)=1,1,1 RESPPC=2.0 RESDIM=0 RESPAP=0`,
+      !! `LOCAL=BOYS`, RHF/STO-3G: -230.415265994, printed to nine decimals.
+      !! `RESPPC` is the same vdW-scaled distance as `resppc` here, so the
+      !! water is exact to the ethyl it hydrogen-bonds and point charges to
+      !! the other; `RESDIM=0` computes every dimer, which is what `resdim`
+      !! zero, `fmo_options_t`'s default, does here. The molecule is
+      !! -230.415265709.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      real(dp), parameter :: GAMESS_FMO2 = -230.415265994_dp
+
+      call butane_water(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "boys"
+      opts%resppc = 2.0_dp
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      opts%outer_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                    opts, res, err)
+      call check(error,.not. err%has_error(), "FMO2 in the exact field failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   FMO2 exact - GAMESS =", res%energy - GAMESS_FMO2
+      call check(error, abs(res%energy - GAMESS_FMO2) < 1.0e-7_dp, &
+                 "FMO2 in the exact field does not match GAMESS")
+   end subroutine test_gamess_butane_water_exact
+
+   subroutine test_gamess_butane_water_separated(error)
+      !! Butane and water in the exact field, the far pair separated, against GAMESS
+      !!
+      !! GAMESS 2026, `$FMO NBODY=2 RAFO(1)=1,1,1` with its defaults otherwise
+      !! -- `RESDIM=2.0`, `RESPPC=2.0`, `RESPAP=0` -- RHF/STO-3G. The water sits
+      !! 2.33 contact units from the ethyl it does not hydrogen-bond, so that
+      !! pair is an ES dimer, `D=S` in GAMESS's table, and the other two are
+      !! solved. Both monomers of it carry a detached bond: the ethyl holds a
+      !! ghost for the carbon across the cut, which is what makes this the
+      !! test of the separated pair's boundary handling.
+      !!
+      !! Totals -230.415265534 with `LOCAL=BOYS` and -230.415265548 with
+      !! `LOCAL=RUEDNBRG`; the separated pair's `E"IJ-E"I-E"J` -0.00024981 and
+      !! -0.00025100, printed to eight decimals.
+      type(error_type), allocatable, intent(out) :: error
+      character(len=4), parameter :: LOCALIZATION(2) = ["boys", "er  "]
+      real(dp), parameter :: GAMESS_FMO2(2) = [-230.415265534_dp, -230.415265548_dp]
+      real(dp), parameter :: GAMESS_ES(2) = [-0.00024981_dp, -0.00025100_dp]
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(17), run, k
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+
+      call butane_water(z, sym, xyz)
+      do run = 1, 2
+         opts%basis = "sto-3g"
+         opts%esp = "exact"
+         opts%expansion = "fmo"
+         opts%bond_breaking = "afo"
+         opts%afo_localization = trim(LOCALIZATION(run))
+         opts%resppc = 2.0_dp
+         opts%resdim = 2.0_dp
+         opts%level = 2
+         opts%scf_energy_tol = 1.0e-10_dp
+         opts%scf_density_tol = 1.0e-8_dp
+         opts%outer_tol = 1.0e-9_dp
+         call run_fmo2(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                       opts, res, err)
+         call check(error,.not. err%has_error(), "FMO2 with a separated pair failed: "// &
+                    err%get_message())
+         if (allocated(error)) return
+         write (*, *) "   FMO2 separated ("//trim(LOCALIZATION(run))//") - GAMESS =", &
+            res%energy - GAMESS_FMO2(run)
+         call check(error, abs(res%energy - GAMESS_FMO2(run)) < 1.0e-7_dp, &
+                    "FMO2 with a separated pair does not match GAMESS")
+         if (allocated(error)) return
+
+         call check(error, count(res%pairs%separated), 1, "not exactly one pair separated")
+         if (allocated(error)) return
+         k = findloc(res%pairs%separated, .true., dim=1)
+         call check(error, res%pairs(k)%i == 1 .and. res%pairs(k)%j == 3, &
+                    "the separated pair is not the water and the far ethyl")
+         if (allocated(error)) return
+         write (*, *) "   separated pair - GAMESS =", res%pairs(k)%energy - GAMESS_ES(run)
+         call check(error, abs(res%pairs(k)%energy - GAMESS_ES(run)) < 1.0e-8_dp, &
+                    "the separated pair does not match GAMESS's ES dimer")
+         if (allocated(error)) return
+      end do
+   end subroutine test_gamess_butane_water_separated
+
+   subroutine test_gamess_butane_water_exact_er(error)
+      !! Butane and water, FMO2 in the exact field with the ER model, against GAMESS
+      !!
+      !! As the Boys case above, with `LOCAL=RUEDNBRG`: -230.415266004, and the
+      !! same at `$LOCAL CVGLOC=1D-10`. Pair interaction energies, kcal/mol, as
+      !! GAMESS's PIEDA prints them: water with the ethyl it hydrogen-bonds
+      !! 0.302, with the far one -0.158, and the cut pair -9122.246.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: GAMESS_FMO2 = -230.415266004_dp
+      integer, parameter :: PAIR_I(3) = [1, 1, 2], PAIR_J(3) = [2, 3, 3]
+      real(dp), parameter :: GAMESS_PAIR(3) = [-9122.246_dp, -0.158_dp, 0.302_dp]
+      integer :: z(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+
+      call butane_water(z, sym, xyz)
+      call exact_field_against_gamess(z, sym, xyz, &
+                                      [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
+                                      "er", GAMESS_FMO2, PAIR_I, PAIR_J, GAMESS_PAIR, error)
+   end subroutine test_gamess_butane_water_exact_er
+
+   subroutine test_gamess_gly3_water_exact_er(error)
+      !! Glycine tripeptide and water, two C-alpha--C cuts, FMO2 in the exact field, ER
+      !!
+      !! GAMESS 2026, `$FMO NBODY=2 RAFO(1)=1,1,1 RESPPC=2.0 RESDIM=0 RESPAP=0`,
+      !! `$FMOBND -2 3 / -10 11`, `LOCAL=RUEDNBRG`, RHF/STO-3G: -762.311281570,
+      !! the same at `$LOCAL CVGLOC=1D-10` and the same again at GAMESS's
+      !! default `RESDIM`. The molecule is -762.311670856. PIEDA totals,
+      !! kcal/mol, pairs ordered 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: GAMESS_FMO2 = -762.311281570_dp
+      integer, parameter :: PAIR_I(6) = [1, 1, 1, 2, 2, 3], PAIR_J(6) = [2, 3, 4, 3, 4, 4]
+      real(dp), parameter :: GAMESS_PAIR(6) = [-9109.379_dp, 1.899_dp, 0.075_dp, &
+                                               -9105.133_dp, 1.265_dp, -5.475_dp]
+      integer :: z(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+
+      call gly3_water(z, sym, xyz)
+      call exact_field_against_gamess(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, &
+                                                    3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4], &
+                                      "er", GAMESS_FMO2, PAIR_I, PAIR_J, GAMESS_PAIR, error)
+   end subroutine test_gamess_gly3_water_exact_er
+
+   subroutine test_gamess_gly3_water_exact_boys(error)
+      !! The same, with the Boys model: GAMESS -762.311027578 at `$LOCAL
+      !! CVGLOC=1D-10` (-762.311027577 at its default)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: GAMESS_FMO2 = -762.311027578_dp
+      integer, parameter :: PAIR_I(6) = [1, 1, 1, 2, 2, 3], PAIR_J(6) = [2, 3, 4, 3, 4, 4]
+      real(dp), parameter :: GAMESS_PAIR(6) = [-9120.121_dp, 1.856_dp, 0.074_dp, &
+                                               -9116.422_dp, 1.237_dp, -5.504_dp]
+      integer :: z(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+
+      call gly3_water(z, sym, xyz)
+      call exact_field_against_gamess(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, &
+                                                    3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4], &
+                                      "boys", GAMESS_FMO2, PAIR_I, PAIR_J, GAMESS_PAIR, error)
+   end subroutine test_gamess_gly3_water_exact_boys
+
+   subroutine exact_field_against_gamess(z, sym, xyz, owner, localization, gamess_total, &
+                                         pair_i, pair_j, gamess_pair, error)
+      !! FMO2 in the exact field against a GAMESS total and its PIEDA pair totals
+      !!
+      !! A pair not joined by a cut bond has to match GAMESS's printed kcal/mol
+      !! to its last digit, within 1.5e-3 for the rounding. **A cut pair is held
+      !! only to 2e-2.** Ours is the term the total is built from; GAMESS's
+      !! printed one is not -- its monomers plus its printed pairs miss its own
+      !! total by 1.3e-5 Hartree per cut, 8e-3 kcal/mol, with ER and with Boys
+      !! alike, and that is exactly how far each cut pair here sits from it.
+      integer, intent(in) :: z(:), owner(:)
+      character(len=2), intent(in) :: sym(:)
+      real(dp), intent(in) :: xyz(:, :)
+      character(len=*), intent(in) :: localization
+      real(dp), intent(in) :: gamess_total
+      integer, intent(in) :: pair_i(:), pair_j(:)
+      real(dp), intent(in) :: gamess_pair(:)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      real(dp) :: ours, bound
+      integer :: p, k
+
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = localization
+      opts%resppc = 2.0_dp
+      opts%level = 2
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      opts%outer_tol = 1.0e-9_dp
+      call run_fmo2(z, sym, xyz, owner, opts, res, err)
+      call check(error,.not. err%has_error(), "FMO2 in the exact field failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      write (*, *) "   FMO2 exact ("//localization//") - GAMESS =", res%energy - gamess_total
+      call check(error, abs(res%energy - gamess_total) < 1.0e-7_dp, &
+                 "FMO2 in the exact field does not match GAMESS")
+      if (allocated(error)) return
+
+      call check(error, allocated(res%pairs), "no pair terms came back")
+      if (allocated(error)) return
+      do p = 1, size(pair_i)
+         ours = huge(1.0_dp)
+         do k = 1, size(res%pairs)
+            if (res%pairs(k)%i == pair_i(p) .and. res%pairs(k)%j == pair_j(p)) then
+               ours = res%pairs(k)%energy*HARTREE_TO_KCALMOL
+               bound = merge(2.0e-2_dp, 1.5e-3_dp, res%pairs(k)%connected)
+            end if
+         end do
+         write (*, "(a,i2,a,i2,a,f14.4,a,f12.4)") "    pair", pair_i(p), "-", pair_j(p), &
+            "  here", ours, "  - GAMESS", ours - gamess_pair(p)
+         call check(error, abs(ours - gamess_pair(p)) < bound, &
+                    "a pair interaction energy does not match GAMESS's PIEDA")
+         if (allocated(error)) return
+      end do
+   end subroutine exact_field_against_gamess
+
+   subroutine butane_water(z, sym, xyz)
+      !! Anti butane and a water 4.5 A beyond C4, as the GAMESS deck has them
+      integer, intent(out) :: z(17)
+      character(len=2), intent(out) :: sym(17)
+      real(dp), intent(out) :: xyz(3, 17)
+      real(dp) :: ang(3, 17)
+
+      z = [6, 6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 8, 1, 1]
+      sym = ["C ", "C ", "C ", "C ", "H ", "H ", "H ", "H ", "H ", "H ", "H ", "H ", &
+             "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([0.000000_dp, 0.000000_dp, 0.000000_dp, &
+                     1.268400_dp, 0.855600_dp, 0.000000_dp, &
+                     2.536900_dp, 0.000000_dp, 0.000000_dp, &
+                     3.805300_dp, 0.855600_dp, 0.000000_dp, &
+                     0.272900_dp, -1.055300_dp, 0.000000_dp, &
+                     -0.588900_dp, 0.222400_dp, -0.889800_dp, &
+                     -0.588900_dp, 0.222400_dp, 0.889800_dp, &
+                     1.268400_dp, 1.484700_dp, 0.890100_dp, &
+                     1.268400_dp, 1.484700_dp, -0.890100_dp, &
+                     2.536900_dp, -0.629100_dp, -0.890100_dp, &
+                     2.536900_dp, -0.629100_dp, 0.890100_dp, &
+                     3.532400_dp, 1.910800_dp, 0.000000_dp, &
+                     4.394200_dp, 0.633100_dp, -0.889800_dp, &
+                     4.394200_dp, 0.633100_dp, 0.889800_dp, &
+                     7.535896_dp, 3.372076_dp, 0.000000_dp, &
+                     7.575283_dp, 4.330466_dp, 0.000000_dp, &
+                     8.439273_dp, 3.049628_dp, 0.000000_dp], [3, 17])
+      xyz = to_bohr(ang)
+   end subroutine butane_water
 
    subroutine test_three_exact(error)
       !! Three fragments, two detached bonds, expanded to full order
@@ -607,6 +1215,12 @@ contains
       opts%level = 2
       opts%scf_energy_tol = 1.0e-11_dp
       opts%scf_density_tol = 1.0e-9_dp
+      ! The monomer loop to 1e-10 rather than its 1e-7 default: the two
+      ! conventions polarise the monomers differently on the way in, so at
+      ! the default what separates the totals is that loop's own stopping
+      ! point, 5.6e-9, and not the physics this test is about.
+      opts%outer_tol = 1.0e-10_dp
+      opts%max_outer = 100
 
       call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], opts, res, err)
       call check(error,.not. err%has_error(), "the expansion failed")
@@ -730,32 +1344,20 @@ contains
       xyz = to_bohr(ang)
    end subroutine propane_middle_first
 
-   subroutine test_refuse_esp(error)
-      !! An exact embedding stays refused, and for a reason that has not moved
+   subroutine test_exact_field(error)
+      !! Propane in three pieces at full order, each fragment in the exact
+      !! field of its neighbours
       !!
-      !! Point charges now run alongside a detached bond because the detached
-      !! atom's share of the field is one number per atom there and comes back
-      !! out exactly. The exact embedding builds a Coulomb contraction over the
-      !! neighbour's whole density matrix, which has no per-atom part to remove,
-      !! so there is nothing to subtract that would not be the point-charge
-      !! approximation under another name.
+      !! Each neighbour acts through its own nuclei as it presents them and its
+      !! own density over its own basis, ghost functions included; see
+      !! `cut_embedding`. At full order the expansion is the molecule whatever
+      !! the field did to the pieces.
       type(error_type), allocatable, intent(out) :: error
-      type(error_t) :: err
-      type(fmo_options_t) :: opts
-      type(fmo_result_t) :: res
-      integer :: z(8)
-      character(len=2) :: sym(8)
-      real(dp) :: xyz(3, 8)
 
-      call ethane(z, sym, xyz)
-      opts%basis = "sto-3g"
-      opts%esp = "exact"
-      opts%bond_breaking = "afo"
-
-      call run_fmo2(z, sym, xyz, [1, 1, 1, 1, 2, 2, 2, 2], opts, res, err)
-      call check(error, err%has_error(), &
-                 "a detached bond was accepted alongside an embedding field")
-   end subroutine test_refuse_esp
+      call three_fragment_error(3, error, 1.0e-12_dp, "exact", &
+                                "a full-order expansion over detached bonds in an "// &
+                                "exact field did not reproduce the whole molecule")
+   end subroutine test_exact_field
 
    subroutine test_refuse_ring(error)
       !! Cyclopropane into three CH2 joins each pair of fragments twice

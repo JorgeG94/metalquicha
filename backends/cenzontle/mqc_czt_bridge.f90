@@ -652,7 +652,8 @@ contains
                           bond_breaking, &
                           cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, &
                           response_sum, level_sum, pair_fragments, pair_distance, &
-                          pair_energy, pair_response, pair_connected, comm)
+                          pair_energy, pair_response, pair_connected, comm, &
+                          detached, afo_localization, pair_separated, resdim)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -710,8 +711,19 @@ contains
       logical, intent(out), optional, allocatable :: pair_connected(:)
          !! (n_pairs), true where a detached bond joins the two fragments
       type(comm_t), intent(in), optional :: comm
+      integer, intent(in), optional :: detached(:)
+         !! 1-based detached ends of cut bonds; see `fmo_options_t%detached`
          !! Present means distribute the fragment work over this communicator.
          !! Absent means one rank does all of it.
+      character(len=*), intent(in), optional :: afo_localization
+         !! "er" or "boys"; see `fmo_options_t%afo_localization`. Absent keeps
+         !! that default.
+      logical, intent(out), optional, allocatable :: pair_separated(:)
+         !! (n_pairs), true where the pair lies beyond `resdim` and its energy
+         !! is electrostatics rather than an SCF
+      real(dp), intent(in), optional :: resdim
+         !! See `fmo_options_t%resdim`. Absent keeps its default, every pair
+         !! solved.
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -739,6 +751,9 @@ contains
       opts%bond_breaking = bond_breaking
       opts%cap_scale = cap_scale
       if (present(fragment_charges)) opts%net_charge = fragment_charges
+      if (present(detached)) opts%detached = detached
+      if (present(afo_localization)) opts%afo_localization = afo_localization
+      if (present(resdim)) opts%resdim = resdim
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return
@@ -788,6 +803,12 @@ contains
          allocate (pair_connected(n_pairs))
          do k = 1, n_pairs
             pair_connected(k) = res%pairs(k)%connected
+         end do
+      end if
+      if (present(pair_separated)) then
+         allocate (pair_separated(n_pairs))
+         do k = 1, n_pairs
+            pair_separated(k) = res%pairs(k)%separated
          end do
       end if
    end subroutine run_czt_fmo

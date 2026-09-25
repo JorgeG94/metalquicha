@@ -65,8 +65,9 @@ module mqc_czt_fmo
    !!
    !! **Whole molecules by default, and a covalent cut has to be asked for.**
    !! `bond_breaking = "none"` refuses a partition that severs a bond;
-   !! `"afo"` detaches it with an adjusted frozen orbital instead, and runs
-   !! with `esp = "none"` or `esp = "ptc"` but not with `esp = "exact"`. The
+   !! `"afo"` detaches it with an adjusted frozen orbital instead, under any
+   !! field; with the exact one each neighbour acts as itself, ghost and
+   !! split nucleus included (`cut_embedding`). The
    !! refusal of a cut is not a formality either: cut
    !! an even number of bonds per fragment -- a ring, a double bond -- and every
    !! electron count stays even, so nothing else objects, and cyclopropane split
@@ -84,13 +85,13 @@ module mqc_czt_fmo
    !! **A detached atom is described by two fragments**, which is what a field
    !! on top of a frozen orbital has to account for. Its owner holds it with
    !! the hybrid there frozen empty; the fragment across the bond holds the
-   !! same functions as a ghost with the bond pair in that hybrid. **Its
-   !! nucleus is split to match** wherever there is a field -- `Z-1` with the
-   !! owner, `+1` on the ghost -- so both fragments come out neutral closed
-   !! shells and the two charges add back to `Z` in any group holding the
-   !! whole bond. That leaves an embedded total exactly unchanged, and with
-   !! `esp = "none"` it is not done at all, because nothing would supply the
-   !! other half; see `nuc_charge` on `group_t` and `splits_nucleus`. So its
+   !! same functions as a ghost with the bond pair in that hybrid, and the
+   !! detached atom's core and other bonds projected out. **Its nucleus is
+   !! split to match** -- `Z-1` with the owner, `+1` on the ghost -- so both
+   !! fragments come out neutral closed shells and the two charges add back
+   !! to `Z` in any group holding the whole bond. That leaves an embedded
+   !! total exactly unchanged; see `nuc_charge` on `group_t` and
+   !! `splits_nucleus`. So its
    !! density block and its atomic population both arrive twice and are added
    !! -- summing is the only apportionment that leaves the charges adding to the
    !! molecular charge -- and a group is then told not to feel its own share of
@@ -101,7 +102,7 @@ module mqc_czt_fmo
    !! **Cost.** There are C(N,n) n-mers, so level three on twenty fragments is
    !! 1140 SCFs against 190 for level two. No level is refused, but the binomial
    !! is the whole story.
-   use pic_types, only: dp, int_index
+   use pic_types, only: dp, int_index, int64
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
    use mqc_convergence_report, only: convergence_header, convergence_footer
@@ -111,16 +112,18 @@ module mqc_czt_fmo
    use mqc_czt_subsets, only: enumerate_subsets, subtract_subsets
    use mqc_physical_fragment, only: system_geometry_t, to_angstrom
    use mqc_bond_perception, only: connected_components, find_severed_bonds, severed_bond_t
-   use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_hybrid_t, build_afo_model, &
-                          bond_hybrid, cuts_outside_group, group_electron_shift, &
-                          build_group_frozen, peptide_bond_advice
+   use mqc_czt_afo, only: afo_model_t, afo_options_t, afo_lmo_set_t, &
+                          build_bonded_model, bond_lmo_set, build_group_frozen_set, &
+                          lmo_set_pack_size, lmo_set_pack, lmo_set_unpack, orient_cut, &
+                          cuts_outside_group, group_electron_shift, &
+                          peptide_bond_advice
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 atom_ao_blocks
-   use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
+   use mqc_czt_direct, only: schwarz_bounds, coulomb_from_blocks
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_PROJ
    use mqc_scf_types, only: scf_numerics_t
    use pic_sorting, only: sort_index
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
@@ -174,41 +177,28 @@ module mqc_czt_fmo
          !! electron count even, so nothing else objects, and cyclopropane split
          !! into three CH2 comes back 0.28 Hartree low.
          !!
-         !! `"afo"` detaches the bond with an adjusted frozen orbital. A model
-         !! system around the bond is solved and localized, the orbital on the
-         !! bond is reduced to the detached atom's own functions, and that
-         !! hybrid is frozen -- empty in the fragment that gets nothing of the
-         !! bond, occupied in the one that gets all of it. See
-         !! [[mqc_czt_afo]].
-         !!
-         !! **`"afo"` is refused with `esp = "exact"`.** A frozen orbital and a
-         !! field both describe the bond region, so the detached atom's share
-         !! has to come out of the field first. With `esp = "ptc"` that share is
-         !! one number per atom -- the population that put it there -- and is
-         !! removed exactly, so the two run together. With an exact density the
-         !! neighbour term is a contraction over a whole density matrix and has
-         !! no per-atom part to remove, so there is nothing to subtract that
-         !! would not be the point-charge approximation under another name.
+         !! `"afo"` detaches the bond with GAMESS's adjusted frozen orbitals:
+         !! the bond orbital of a small model system frozen empty in the
+         !! fragment that gets nothing of the bond and occupied in the one that
+         !! gets all of it, with the detached atom's other orbitals frozen
+         !! empty there too. See [[mqc_czt_afo]]. It runs under every `esp`.
       integer, allocatable :: net_charge(:)
          !! Each fragment's net charge, as the deck declares it for the
          !! fragment with its cut bonds closed: a lysine residue +1, an
          !! aspartate -1. The electron a detached bond moves is counted on top
          !! of it. Unallocated means every fragment is neutral.
+      integer, allocatable :: detached(:)
+         !! Atoms, 1-based, a deck names as the detached ends of cut bonds --
+         !! GAMESS's `$FMOBND` sign. A cut with neither end named takes the sp3
+         !! end, else the lower-numbered one; see `orient_cut`.
       character(len=16) :: cut_nucleus = "auto"
          !! Whether a detached bond's nucleus is split between the two
          !! fragments that describe it, or stays whole with the one that owns
          !! the atom.
          !!
-         !! `"auto"`, the default, splits it wherever there is an embedding
-         !! field and keeps it whole where there is not. **A split nucleus is
-         !! only defined when something supplies the other half.** With a field
-         !! the fragment across the bond supplies it -- it holds the `+1` and
-         !! the bond pair, and the group on the other side feels both through
-         !! the field -- so the split is free, and it is what leaves each
-         !! fragment a neutral closed shell. With `esp = "none"` nothing
-         !! supplies it, and the owner would be solved around a nucleus short
-         !! by one proton: a worse model of a methyl group than the cation
-         !! whole nuclei produce, and measurably so.
+         !! `"auto"`, the default, splits it, field or no field -- GAMESS's
+         !! convention, and what leaves each fragment a neutral closed shell;
+         !! `splits_nucleus` has the measurements that decided it.
          !!
          !! `"split"` and `"whole"` force either convention. They exist because
          !! the embedded total is *exactly* invariant to the choice and that is
@@ -266,6 +256,16 @@ module mqc_czt_fmo
          !! Negative disables the approximation and makes every fragment exact.
          !! Zero makes every fragment distant, which is then identical to
          !! `esp = "ptc"` -- and is asserted to be, in `check_fmo`.
+      real(dp) :: resdim = 0.0_dp
+         !! Separation past which a pair is not solved but taken as the
+         !! electrostatic interaction of its two monomers, the separated-dimer
+         !! (ES-dimer) approximation. Measured as `resppc` is; zero, the
+         !! default here, solves every pair. GAMESS's RESDIM, whose FMO2
+         !! default of 2.0 the deck layer applies.
+         !!
+         !! Read only under `expansion = "fmo"` with a field, where a pair's
+         !! term is an interaction energy for the approximation to stand in
+         !! for.
       integer :: level = 2
          !! How many fragments at a time. Two is FMO2, three is FMO3, and the
          !! expansion is truncated there.
@@ -322,6 +322,9 @@ module mqc_czt_fmo
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
+      character(len=8) :: afo_localization = "er"
+         !! How a cut bond's model system is localized, "er" or "boys"; see
+         !! `afo_options_t%localization`.
    end type fmo_options_t
 
    type :: fmo_pair_t
@@ -344,6 +347,9 @@ module mqc_czt_fmo
          !! A detached bond joins the two fragments, so `energy` carries the
          !! bond itself and reads in Hartree where its neighbours read in
          !! kcal/mol.
+      logical :: separated = .false.
+         !! Beyond `resdim`: no pair SCF was run, and `energy` is the
+         !! electrostatic interaction of the two monomers, `response` zero.
    end type fmo_pair_t
 
    type :: fmo_result_t
@@ -381,6 +387,13 @@ module mqc_czt_fmo
          !! just as neatly -- and neither does the telescoping identity, which
          !! has no field to be wrong about.
    end type fmo_result_t
+
+   type :: scf_block_t
+      !! An SCF table being written to a file, to be printed whole
+      logical :: active = .false.
+      integer :: console_level = 0
+      character(len=:), allocatable :: path
+   end type scf_block_t
 
    type :: fragment_t
       !! One fragment: what persists between passes, and nothing that does not
@@ -438,7 +451,8 @@ module mqc_czt_fmo
          !! assembly has to work it out again.
       integer :: n_cuts = 0
       type(severed_bond_t), allocatable :: cuts(:)
-      type(afo_hybrid_t), allocatable :: hybrid(:)
+      type(afo_lmo_set_t), allocatable :: sets(:)
+         !! Each cut bond's frozen orbitals; see `afo_lmo_set_t`
       character(len=2), allocatable :: sym(:)
          !! System-wide symbols. A group holding the attached end of a bond has
          !! to name the detached atom to ghost it, and that atom is one it does
@@ -533,7 +547,6 @@ contains
       type(fragment_t), allocatable :: frag(:)
       type(afo_context_t) :: afo
       integer :: n_atoms, n_frag, i
-      logical :: all_converged
 
       n_atoms = size(atomic_numbers)
       if (size(owner) /= n_atoms .or. size(coordinates, 2) /= n_atoms) then
@@ -555,10 +568,9 @@ contains
       if (error%has_error()) return
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
-      all_converged = .true.
 
       call calculate_monomers(frag, n_frag, atomic_numbers, coordinates, opts, afo, res, &
-                              all_converged, error, comm)
+                              error, comm)
       if (error%has_error()) return
 
       do i = 1, n_frag
@@ -571,7 +583,7 @@ contains
       res%monomer_sum = sum(res%monomer_energy)
 
       call calculate_polymers(frag, n_frag, atomic_numbers, coordinates, opts, afo, res, &
-                              all_converged, error, comm)
+                              error, comm)
       if (error%has_error()) return
 
       ! `response_sum` is inside `pair_sum` already; it is reported, not added.
@@ -584,23 +596,49 @@ contains
          call log_fragment_charges(res%fragment_charge, real(frag%charge, dp), &
                                    .not. afo%active .or. afo%split_nucleus)
       end if
-
-      res%converged = res%converged .and. all_converged
-      if (.not. all_converged) then
-         ! Refused unless the deck said otherwise. `allow_crap_scf` means the
-         ! same here as everywhere else: keep a total built partly from
-         ! unconverged pieces, as a result to follow up rather than to trust.
-         if (.not. opts%scf%allow_crap_scf) then
-            call error%set(ERROR_VALIDATION, "fmo: at least one fragment SCF did not "// &
-                           "converge, so the total is not trustworthy. Set "// &
-                           "keywords.scf.allow_crap_scf to finish anyway.")
-            return
-         end if
-         call logger%warning("  fmo: at least one fragment SCF did not converge, and "// &
-                             "allow_crap_scf kept the run. The total is built partly "// &
-                             "from unconverged fragments.")
-      end if
    end subroutine run_fmo2
+
+   function term_name(members) result(text)
+      !! A term as a reader names it: "fragment 3", "pair 10-18", "n-mer 1-2-3"
+      integer, intent(in) :: members(:)
+      character(len=:), allocatable :: text
+
+      integer :: m
+
+      select case (size(members))
+      case (1)
+         text = "fragment "
+      case (2)
+         text = "pair "
+      case default
+         text = "n-mer "
+      end select
+      do m = 1, size(members)
+         if (m > 1) text = text//"-"
+         text = text//to_char(members(m))
+      end do
+   end function term_name
+
+   subroutine refuse_unconverged(what, stage, scf, error)
+      !! Stop the run because one fragment SCF did not converge
+      !!
+      !! Every other number an FMO run produces is built on every fragment's
+      !! SCF, so one that failed is fatal where it happens: no later pass, no
+      !! pairs, no total. The error names the term, the stage, how far the SCF
+      !! got and the gradient it stopped at. It is set on the rank that failed
+      !! and on no other; the layer above ends every rank from there.
+      character(len=*), intent(in) :: what, stage
+      type(rhf_result_t), intent(in) :: scf
+      type(error_t), intent(inout) :: error
+
+      character(len=16) :: grad
+
+      write (grad, "(es10.3)") scf%commutator
+      call error%set(ERROR_VALIDATION, "fmo: the SCF of "//what//" did not converge "// &
+                     stage//": "//to_char(scf%iterations)//" iterations, orbital "// &
+                     "gradient "//trim(adjustl(grad))//" at the last. Every fragment "// &
+                     "of an FMO run has to converge; nothing past this is computed.")
+   end subroutine refuse_unconverged
 
    subroutine fmo_guess_kind(opts, kind)
       !! The deck's initial guess for a fragment SCF, as an `SCF_GUESS_*` kind
@@ -727,30 +765,13 @@ contains
          call refuse_severed_bonds(z, coords, owner, n_atoms, error)
          if (error%has_error()) return
       else if (opts%bond_breaking == "afo") then
-         ! Adjusted frozen orbitals. A frozen orbital and an embedding field both
-         ! describe the detached bond, so the two can only be used together
-         ! where the detached atom's share of the field can be said exactly.
-         ! With point charges it can: the share is one number per atom, it is
-         ! the population that put it there, and taking it back out is
-         ! `group_own_charge`. With an exact density it cannot: the neighbour
-         ! term is a Coulomb contraction over a whole density matrix with no
-         ! per-atom part in it to remove, and inventing one would be the
-         ! point-charge approximation smuggled into the path defined by not
-         ! making it.
-         if (opts%esp == "exact") then
-            call error%set(ERROR_VALIDATION, "fmo: bond_breaking='afo' is implemented "// &
-                           "for esp='none' and esp='ptc'. A frozen orbital and an "// &
-                           "embedding field both describe the detached bond, so the "// &
-                           "detached atom's share of the field has to come out before "// &
-                           "the two can be used together. With point charges that "// &
-                           "share is the population that put it there and is removed "// &
-                           "exactly; with an exact density the neighbour term is a "// &
-                           "contraction over a whole density matrix with no per-atom "// &
-                           "part to remove, and inventing one would make this the "// &
-                           "point-charge method under another name. Set "// &
-                           "keywords.fragmentation.embedding to 'ptc' or 'none'")
-            return
-         end if
+         ! Adjusted frozen orbitals, under any field. With an exact field each
+         ! neighbour acts through its own nuclei as it presents them -- `Z-1`
+         ! and `+1` at a detached atom -- and its own density over its own
+         ! basis, ghost functions included, so a detached atom's two shares
+         ! arrive from the two fragments that hold them and nothing has to be
+         ! taken back out; see `cut_embedding`. That is how GAMESS's FMOESP
+         ! builds it (fmoint.src).
          if (trim(opts%cut_nucleus) /= "auto" .and. trim(opts%cut_nucleus) /= "split" &
              .and. trim(opts%cut_nucleus) /= "whole") then
             call error%set(ERROR_VALIDATION, "fmo: cut_nucleus='"// &
@@ -804,8 +825,15 @@ contains
          call near_fragments(frag, n_frag, [f], effective_resppc(opts), frag(f)%near, error)
          if (error%has_error()) return
       end do
-      call logger%verbose("  fmo: fragment 1 treats "//to_char(size(frag(1)%near))// &
-                          " of "//to_char(n_frag - 1)//" neighbours exactly")
+      if (is_leader(comm) .and. opts%esp == "exact" .and. n_frag > 1) then
+         ! One line for the whole partition: which fragment "fragment 1" was
+         ! depended on nothing, and every rank printed it.
+         call logger%info("  fmo: each fragment's field holds "// &
+                          to_char(minval([(size(frag(f)%near), f=1, n_frag)]))//" to "// &
+                          to_char(maxval([(size(frag(f)%near), f=1, n_frag)]))// &
+                          " neighbours exactly (of "//to_char(n_frag - 1)//"), the rest "// &
+                          "as point charges")
+      end if
    end subroutine build_fragments
 
    subroutine fragment_layout(frag, which, afo, z, coords, opts, error)
@@ -877,7 +905,7 @@ contains
       type(afo_model_t) :: model
       type(afo_options_t) :: afo_opts
       type(error_t) :: local
-      real(dp), allocatable :: hyb(:), flat(:)
+      real(dp), allocatable :: flat(:)
       integer, allocatable :: lengths(:)
       integer :: status(3)
       integer :: i, n_on_bond, at, total
@@ -890,6 +918,17 @@ contains
       allocate (geom%coordinates(3, size(z)), source=coords)
       call find_severed_bonds(geom, owner, afo%cuts, afo%n_cuts)
       if (afo%n_cuts == 0) return
+      ! Which end is detached, before anything is built from the cut: the
+      ! electron shift, the split nucleus, the ghost and the frozen roles all
+      ! read `atom_a` as the detached end and `frag_a` as its owner.
+      do i = 1, afo%n_cuts
+         if (allocated(opts%detached)) then
+            call orient_cut(z, coords, afo%cuts(i), error, detached=opts%detached)
+         else
+            call orient_cut(z, coords, afo%cuts(i), error)
+         end if
+         if (error%has_error()) return
+      end do
 
       do i = 1, afo%n_cuts
          if (afo%cuts(i)%in_ring) then
@@ -912,12 +951,15 @@ contains
          end if
       end do
 
+      if (is_leader(comm)) call warn_adjacent_cuts(afo, z, coords)
+
+      ! The model's convergence is its own, `afo_options_t`'s defaults; only
+      ! how its SCF is driven follows the fragments'.
       afo_opts%basis = opts%basis
-      afo_opts%scf_max_iter = opts%scf_max_iter
-      afo_opts%scf_energy_tol = opts%scf_energy_tol
-      afo_opts%scf_density_tol = opts%scf_density_tol
       afo_opts%scf = opts%scf
-      allocate (afo%hybrid(afo%n_cuts))
+      afo_opts%localization = opts%afo_localization
+      afo_opts%show_scf = show_inner_scf()
+      allocate (afo%sets(afo%n_cuts))
       allocate (afo%sym(size(symbols)), source=symbols)
       allocate (lengths(afo%n_cuts), source=0)
       status = 0
@@ -927,12 +969,19 @@ contains
       ! message every rank raises is the same one.
       if (is_leader(comm)) then
          do i = 1, afo%n_cuts
-            call build_afo_model(z, coords, afo%cuts(i), model, local)
+            call build_bonded_model(z, coords, afo%cuts(i), model, local)
             if (local%has_error()) then
                status = [1, i, 0]
                exit
             end if
-            call bond_hybrid(model, afo_opts, hyb, n_on_bond, local)
+            if (afo_opts%show_scf) then
+               call logger%verbose("  fmo: model system for the bond between atoms "// &
+                                   to_char(afo%cuts(i)%atom_a)//" and "// &
+                                   to_char(afo%cuts(i)%atom_b)//", fragments "// &
+                                   to_char(afo%cuts(i)%frag_a)//" and "// &
+                                   to_char(afo%cuts(i)%frag_b))
+            end if
+            call bond_lmo_set(model, afo_opts, afo%sets(i), n_on_bond, local)
             if (local%has_error()) then
                status = [2, i, 0]
                exit
@@ -941,8 +990,7 @@ contains
                status = [3, i, n_on_bond]
                exit
             end if
-            afo%hybrid(i)%coeff = hyb
-            lengths(i) = size(hyb)
+            lengths(i) = lmo_set_pack_size(afo%sets(i))
          end do
       end if
 
@@ -960,16 +1008,14 @@ contains
          if (is_leader(comm)) then
             at = 0
             do i = 1, afo%n_cuts
-               flat(at + 1:at + lengths(i)) = afo%hybrid(i)%coeff
+               call lmo_set_pack(afo%sets(i), flat(at + 1:at + lengths(i)))
                at = at + lengths(i)
             end do
          end if
          call allreduce(comm, flat, total, MPI_SUM)
          at = 0
          do i = 1, afo%n_cuts
-            if (allocated(afo%hybrid(i)%coeff)) deallocate (afo%hybrid(i)%coeff)
-            allocate (afo%hybrid(i)%coeff(lengths(i)))
-            afo%hybrid(i)%coeff = flat(at + 1:at + lengths(i))
+            call lmo_set_unpack(flat(at + 1:at + lengths(i)), afo%sets(i))
             at = at + lengths(i)
          end do
          deallocate (flat)
@@ -977,43 +1023,84 @@ contains
 
       afo%active = .true.
       afo%split_nucleus = splits_nucleus(opts)
-      call logger%verbose("  fmo: "//to_char(afo%n_cuts)//" detached bond(s), one "// &
-                          "frozen orbital each")
+      if (.not. is_leader(comm)) return
+      call logger%info("  fmo: "//to_char(afo%n_cuts)//" detached bond(s); each "// &
+                       "freezes its bond orbital on both sides and the detached "// &
+                       "atom's other orbitals where it is a ghost")
       if (afo%split_nucleus) then
-         call logger%verbose("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
-                             "fragment that owns the atom, +1 on the ghost its "// &
-                             "neighbour carries there -- so every fragment is a "// &
-                             "closed shell carrying only its declared charge. The "// &
-                             "field supplies the other half, "// &
-                             "and the total is unchanged by the choice.")
+         call logger%info("  fmo: a detached bond's nucleus is split -- Z-1 with the "// &
+                          "fragment that owns the atom, +1 on the ghost its "// &
+                          "neighbour carries there -- so every fragment is a "// &
+                          "closed shell carrying only its declared charge. The "// &
+                          "field supplies the other half, "// &
+                          "and the total is unchanged by the choice.")
       else
-         call logger%verbose("  fmo: a detached bond's nucleus is kept whole with the "// &
-                             "fragment that owns the atom, so the two sides of a cut "// &
-                             "carry about +1 and -1 beyond their declared charges. "// &
-                             "Splitting it needs something to "// &
-                             "supply the other half, and with embedding 'none' there "// &
-                             "is no field to do it.")
+         call logger%info("  fmo: a detached bond's nucleus is kept whole with the "// &
+                          "fragment that owns the atom, so the two sides of a cut "// &
+                          "carry about +1 and -1 beyond their declared charges. "// &
+                          "Splitting it needs something to "// &
+                          "supply the other half, and with embedding 'none' there "// &
+                          "is no field to do it.")
       end if
    end subroutine build_afo_context
+
+   subroutine warn_adjacent_cuts(afo, z, coords)
+      !! Warn where one fragment's two detached atoms are bonded to each other
+      !!
+      !! A residue cut at both C-alpha--C and C-beta--C-gamma is one. The two
+      !! fragments across the cuts each hold one of the pair as a ghost, and
+      !! their pair term then carries a three-body term with the fragment
+      !! between them that FMO2 leaves out: on 2lty about +0.9 Hartree a pair,
+      !! which FMO3's trimer takes back to within 3e-2. Not refused, since the
+      !! expansion is still well defined; said, since a pair that large reads
+      !! as a failed SCF.
+      use mqc_atomic_radii, only: covalent_radius_emsley
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+
+      integer :: i, j, a, b
+      real(dp) :: reach
+
+      do i = 1, afo%n_cuts
+         do j = i + 1, afo%n_cuts
+            a = afo%cuts(i)%atom_a
+            b = afo%cuts(j)%atom_a
+            if (a == b .or. afo%cuts(i)%frag_a /= afo%cuts(j)%frag_a) cycle
+            if (afo%cuts(i)%frag_b == afo%cuts(j)%frag_b) cycle
+            reach = 1.2_dp*(covalent_radius_emsley(z(a)) + covalent_radius_emsley(z(b)))
+            if (to_angstrom(norm2(coords(:, a) - coords(:, b))) >= reach) cycle
+            call logger%warning("  fmo: fragment "//to_char(afo%cuts(i)%frag_a)// &
+                                " is detached from fragments "// &
+                                to_char(afo%cuts(i)%frag_b)//" and "// &
+                                to_char(afo%cuts(j)%frag_b)//" at two bonded atoms (counting from one, "// &
+                                to_char(a)//" and "//to_char(b)//"). Their pair term "// &
+                                "carries a three-body term with fragment "// &
+                                to_char(afo%cuts(i)%frag_a)//" that FMO2 omits, of "// &
+                                "the order of a Hartree; level 3, or a cut one bond "// &
+                                "further out, avoids it")
+         end do
+      end do
+   end subroutine warn_adjacent_cuts
 
    pure function splits_nucleus(opts) result(split)
       !! Does a boundary move a unit of nuclear charge as well as the electron?
       !!
-      !! `"auto"` is the answer to a physical question rather than a
-      !! preference. A split nucleus is only defined when something supplies
-      !! the other half: with a field, the fragment across the bond holds the
-      !! `+1` and the bond pair and the group on this side feels both, so the
-      !! split costs nothing and leaves both fragments neutral. With
-      !! `esp = "none"` nothing supplies it and the owner is solved around a
-      !! nucleus short by one proton, which on propane in STO-3G takes the
-      !! MBE(2) error from 0.180 to 0.304 Hartree and, on the same molecule
-      !! numbered so that one carbon is the detached end of both bonds, from
-      !! 0.125 to 1.549.
+      !! `"auto"` splits, with or without a field, which is GAMESS's
+      !! convention and the one the frozen set is built for.
       !!
-      !! GAMESS splits unconditionally, and that does not settle it: GAMESS
-      !! never runs this without a field, and its own field-free reference
-      !! state is built with methyl caps instead, which is a third
-      !! construction again.
+      !! It used to keep the nucleus whole when `esp = "none"`, on the grounds
+      !! that nothing supplies the other half, and with the bond orbital alone
+      !! frozen that was measured better: propane's MBE(2) error in STO-3G was
+      !! 0.180 whole against 0.304 split. With GAMESS's frozen set -- the
+      !! detached atom's core and other bonds projected out of the ghost too --
+      !! the same numbers are 0.2200 whole and 0.2186 split, and on the
+      !! glycine tripeptide with a water, cut at both C-alpha--C bonds, the
+      !! whole convention's C-terminal fragment is an anion whose SCF does not
+      !! converge while the split one lands 3.1 mHa from the molecule. Only
+      !! an atom detached from two neighbours still favours whole nuclei in
+      !! vacuo (propane numbered middle-first: 0.046 whole, 0.868 split), and
+      !! GAMESS refuses that case outright. `"whole"` remains for it.
       type(fmo_options_t), intent(in) :: opts
       logical :: split
 
@@ -1023,7 +1110,7 @@ contains
       case ("whole")
          split = .false.
       case default
-         split = trim(opts%esp) /= "none"
+         split = .true.
       end select
    end function splits_nucleus
 
@@ -1067,8 +1154,11 @@ contains
                         "frozen orbital stands in for one electron pair; cut at a "// &
                         "single bond."//advice)
       end select
+      ! The rank that solved the models knows why; the others only that it
+      ! failed.
       if (local%has_error()) then
-         call logger%verbose("  fmo: "//trim(local%get_message()))
+         call error%set(ERROR_VALIDATION, error%get_message()//" ("// &
+                        trim(local%get_message())//")")
       end if
    end subroutine afo_failure
 
@@ -1231,28 +1321,33 @@ contains
       logical, intent(out) :: active
       type(error_t), intent(inout) :: error
 
-      type(afo_hybrid_t), allocatable :: hybrids(:)
+      type(afo_lmo_set_t), allocatable :: sets(:)
       real(dp), allocatable :: frozen(:, :), basis(:, :), s(:, :)
-      integer :: i, n_frozen_occ, n_mo
+      integer, allocatable :: bda(:), baa(:)
+      integer :: i, n_frozen_occ, n_mo, n
 
       active = .false.
       if (error%has_error()) return
       if (group%n_bound == 0) return
 
-      allocate (hybrids(group%n_bound))
-      do i = 1, group%n_bound
-         hybrids(i)%coeff = afo%hybrid(group%cut_of(i))%coeff
+      n = group%n_bound
+      allocate (sets(n), bda(n), baa(n))
+      do i = 1, n
+         sets(i) = afo%sets(group%cut_of(i))
+         bda(i) = afo%cuts(group%cut_of(i))%atom_a
+         baa(i) = afo%cuts(group%cut_of(i))%atom_b
       end do
 
-      call build_group_frozen(mol, group%bda_slot(:group%n_bound), &
-                              group%occupied(:group%n_bound), hybrids, frozen, &
-                              n_frozen_occ, error)
+      ! GAMESS's frozen set: the bond orbital on both sides, and the detached
+      ! atom's other orbitals frozen empty where it is a ghost.
+      call build_group_frozen_set(mol, group%atom_of, bda, baa, group%occupied(:n), &
+                                  sets, frozen, n_frozen_occ, error)
       if (error%has_error()) return
 
       call mol%overlap(s)
       call build_frozen_basis(frozen, n_frozen_occ, s, basis, n_mo, error)
       if (error%has_error()) return
-      call proj%init(basis, s, n_frozen_occ, group%n_bound, AFO_SHIFT, error)
+      call proj%init(basis, s, n_frozen_occ, size(frozen, 2), AFO_SHIFT, error)
       if (error%has_error()) return
       active = .true.
    end subroutine group_projector
@@ -1498,9 +1593,9 @@ contains
             weight(g) = real(z(i), dp)      !! nucleus only; electrons via J below
          else
             ! A shared atom keeps only what the fragments outside this group put
-            ! there. Nothing shared ever reaches the near branch above: a
-            ! detached bond and an exact embedding are refused together, so
-            ! `own_q` is zero throughout whenever `near` has anything in it.
+            ! there. Nothing shared ever reaches the near branch above: with a
+            ! detached bond and an exact field `cut_embedding` builds the field
+            ! instead, so `own_q` is zero whenever `near` has anything in it.
             weight(g) = q_all(i) - own_q(i)  !! nucleus and electrons, approximated
          end if
       end do
@@ -1527,8 +1622,158 @@ contains
       u = u + j_near
    end subroutine embedding_operator
 
+   subroutine cut_embedding(mol, group, members, near, frag, n_frag, afo, z, coords, &
+                            opts, u, error)
+      !! The field a group sits in when bonds are detached, fragment by fragment
+      !!
+      !! Every fragment outside the group contributes as itself. A near one --
+      !! within `resppc`, which a bonded neighbour always is -- through its
+      !! nuclei as its own monomer presents them, `Z-1` on a detached atom it
+      !! owns and `+1` on a ghost it holds, and through the Coulomb operator of
+      !! its density over its full basis, ghost functions included. A distant
+      !! one through its atomic charges, ghost included, at its own centres.
+      !! That is GAMESS's construction (`FMOESP` in `fmoint.src`: a connected
+      !! pair is at distance zero and so always exact, and each neighbour is
+      !! built by `MAKEMOL` with its own split charges and density).
+      !!
+      !! Nothing is taken back out, because nothing of the group's own is put
+      !! in: a detached atom's two shares come from the two fragments that hold
+      !! them, and where one of those is a member it is simply not outside.
+      !! Comes back unallocated when there is no field.
+      type(czt_molecule_t), intent(in) :: mol
+      type(group_t), intent(in) :: group     !! This group, ghosts included
+      integer, intent(in) :: members(:)
+      integer, intent(in) :: near(:)
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: n_frag
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: u(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(group_t), allocatable :: nb(:)
+      real(dp), allocatable :: points(:, :), weight(:), matrices(:, :, :), j_near(:, :)
+      integer :: k, s, g, n_max, kn
+
+      n_max = 0
+      do k = 1, n_frag
+         if (any(members == k)) cycle
+         n_max = n_max + size(frag(k)%mol_atom)
+      end do
+      if (n_max == 0) return
+
+      allocate (points(3, n_max), weight(n_max), nb(size(near)))
+      g = 0
+      do k = 1, n_frag
+         if (any(members == k)) cycle
+         kn = findloc(near, k, dim=1)
+         if (kn > 0) then
+            call assemble_group(frag, [k], afo, z, coords, nb(kn), error)
+            if (error%has_error()) return
+            do s = 1, size(nb(kn)%nuc_charge)
+               if (nb(kn)%nuc_charge(s) == 0) cycle
+               g = g + 1
+               points(:, g) = nb(kn)%xyz(:, s)
+               weight(g) = real(nb(kn)%nuc_charge(s), dp)
+            end do
+         else
+            if (opts%far_field == "ignore") cycle
+            if (.not. allocated(frag(k)%charges)) then
+               call error%set(ERROR_VALIDATION, "fmo: a distant fragment has no charges "// &
+                              "to stand in for it")
+               return
+            end if
+            do s = 1, size(frag(k)%mol_atom)
+               g = g + 1
+               points(:, g) = coords(:, frag(k)%mol_atom(s))
+               weight(g) = frag(k)%charges(s)
+            end do
+         end if
+      end do
+      if (g == 0 .and. size(near) == 0) return
+
+      allocate (u(mol%nao, mol%nao), source=0.0_dp)
+      if (g > 0) then
+         call esp_matrices(mol, points(:, 1:g), matrices, error)
+         if (error%has_error()) return
+         do s = 1, g
+            u = u - weight(s)*matrices(:, :, s)
+         end do
+      end if
+      if (size(near) == 0) return
+
+      call full_local_coulomb(frag, group, mol%nao, near, nb, opts, j_near, error)
+      if (error%has_error()) return
+      u = u + j_near
+   end subroutine cut_embedding
+
+   subroutine full_local_coulomb(frag, group, group_nao, near, nb, opts, j_near, error)
+      !! The Coulomb operator of the near fragments' densities over the group
+      !!
+      !! `local_coulomb` for fragments that carry ghosts: each near fragment is
+      !! laid out as the molecule its SCF saw, ghosts and all, and brings the
+      !! density that SCF produced, at that full size.
+      type(fragment_t), intent(in) :: frag(:)
+      type(group_t), intent(in) :: group
+      integer, intent(in) :: group_nao
+      integer, intent(in) :: near(:)
+      type(group_t), intent(in) :: nb(:)        !! Each near fragment as a group of one
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), allocatable, intent(out) :: j_near(:, :)
+      type(error_t), intent(inout) :: error
+
+      type(czt_molecule_t) :: local
+      integer, allocatable :: zl(:), ket_first(:)
+      character(len=2), allocatable :: sym(:)
+      real(dp), allocatable :: xyz(:, :), d(:, :)
+      integer :: k, at, nao_k, expect
+
+      allocate (j_near(group_nao, group_nao), source=0.0_dp)
+      if (size(near) == 0) return
+
+      zl = group%z
+      sym = group%sym
+      xyz = group%xyz
+      expect = group_nao
+      do k = 1, size(near)
+         zl = [zl, nb(k)%z]
+         sym = [sym, nb(k)%sym]
+         xyz = reshape([xyz, nb(k)%xyz], [3, size(zl)])
+         expect = expect + frag(near(k))%nao_full
+      end do
+
+      call build_czt_molecule(zl, sym, xyz, trim(opts%basis), local, error)
+      if (error%has_error()) return
+      if (local%nao /= expect) then
+         call error%set(ERROR_VALIDATION, "fmo: the local supersystem has "// &
+                        to_char(local%nao)//" basis functions where its parts, ghosts "// &
+                        "included, have "//to_char(expect))
+         return
+      end if
+
+      allocate (d(local%nao, local%nao), source=0.0_dp)
+      allocate (ket_first(size(near) + 1))
+      at = group_nao
+      do k = 1, size(near)
+         nao_k = frag(near(k))%nao_full
+         if (size(frag(near(k))%density, 1) /= nao_k) then
+            call error%set(ERROR_VALIDATION, "fmo: a near fragment's density is not the "// &
+                           "size of the molecule its SCF saw")
+            return
+         end if
+         ket_first(k) = at
+         d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
+         at = at + nao_k
+      end do
+      ket_first(size(near) + 1) = at
+
+      call coulomb_from_blocks(local, group_nao, ket_first, d, j_near, error)
+   end subroutine full_local_coulomb
+
    subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
-                        e_internal, e_resp, all_converged, error)
+                        e_internal, e_resp, error, comm)
       !! One n-mer, in the field of every fragment outside it
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag
@@ -1539,15 +1784,21 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
       real(dp), intent(out) :: e_internal, e_resp
-      logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+         !! Only for how the SCF table is printed
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       integer, allocatable :: deck_guess
       type(group_t) :: group
       type(fock_projector_t) :: proj
-      real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:)
+      real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:), d_start(:, :)
+      type(scf_numerics_t) :: drive
+      type(scf_block_t) :: block
+      logical :: show_table
+      integer :: attempt
+      real(dp), parameter :: RETRY_LEVEL_SHIFT = 0.5_dp
       logical, allocatable :: inside(:), shared(:)
       integer, allocatable :: near(:), ao_off(:), ao_count(:)
       integer :: m, at, nao_m, expect, nelec
@@ -1607,9 +1858,14 @@ contains
       call near_fragments(frag, n_frag, members, effective_resppc(opts), near, error)
       if (error%has_error()) return
 
-      call group_own_charge(frag, members, afo, size(z), shared, own_q)
-      call embedding_operator(mol, group%z, group%sym, group%xyz, near, frag, n_frag, &
-                              inside, shared, own_q, z, coords, q_all, opts, u, error)
+      if (afo%active .and. opts%esp == "exact") then
+         call cut_embedding(mol, group, members, near, frag, n_frag, afo, z, coords, &
+                            opts, u, error)
+      else
+         call group_own_charge(frag, members, afo, size(z), shared, own_q)
+         call embedding_operator(mol, group%z, group%sym, group%xyz, near, frag, n_frag, &
+                                 inside, shared, own_q, z, coords, q_all, opts, u, error)
+      end if
       if (error%has_error()) return
 
       call group_projector(group, mol, afo, proj, held, error)
@@ -1624,23 +1880,56 @@ contains
       ! the decks that asked for a specific guess.
       call fmo_guess_kind(opts, deck_guess)
 
-      if (allocated(u) .and. held) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
-                          h_extra=u, projector=proj)
-      else if (allocated(u)) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
-      else if (held) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
-                          projector=proj)
-      else
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess)
+      ! Started from its members, as GAMESS starts a dimer: their densities
+      ! side by side, which is `d_split`, ghosts and detached atoms placed by
+      ! atom. A deck that names a guess keeps it. The backend's own default,
+      ! a Wolfsberg-Helmholz Fock matrix, knows nothing of the field or of the
+      ! frozen orbitals, and five of 2lty's pairs never left it: a hundred
+      ! iterations with occupied orbitals above zero. `d_start` stays
+      ! unallocated, and so arrives absent, when the deck's guess is used.
+      if (.not. allocated(deck_guess)) then
+         allocate (deck_guess, source=SCF_GUESS_PROJ)
+         d_start = d_split
       end if
+
+      ! One retry with a level shift, from the same start, if the first did
+      ! not converge. Second-order convergence would be the usual fallback,
+      ! but it refuses a Fock projector, which every fragment next to a
+      ! detached bond has.
+      drive = opts%scf
+      show_table = show_inner_scf()
+      call open_scf_block("  fmo: "//term_name(members)//" SCF, n-mer phase", comm, block)
+      do attempt = 1, 2
+         if (allocated(u) .and. held) then
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start, h_extra=u, projector=proj)
+         else if (allocated(u)) then
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start, h_extra=u)
+         else if (held) then
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start, projector=proj)
+         else
+            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
+                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
+                             guess_density=d_start)
+         end if
+         if (error%has_error()) exit
+         if (scf%converged .or. attempt == 2) exit
+         call logger%verbose("  fmo: "//term_name(members)//" did not converge; "// &
+                             "retrying with a level shift")
+         drive%level_shift = max(drive%level_shift, RETRY_LEVEL_SHIFT)
+      end do
+      call close_scf_block(block)
       if (error%has_error()) return
-      if (.not. scf%converged) all_converged = .false.
+      if (.not. scf%converged) then
+         call refuse_unconverged(term_name(members), "in the n-mer phase, after a "// &
+                                 "level-shifted retry", scf, error)
+         return
+      end if
 
       e_internal = scf%energy
       e_resp = 0.0_dp
@@ -1732,7 +2021,7 @@ contains
 
       logical, allocatable :: keep(:)
       real(dp) :: r, best
-      integer :: k, g, ia, ib
+      integer :: k, g
 
       allocate (keep(n_frag), source=.false.)
       do k = 1, n_frag
@@ -1744,13 +2033,9 @@ contains
 
          best = huge(1.0_dp)
          do g = 1, size(group)
-            do ia = 1, size(frag(group(g))%atoms)
-               do ib = 1, size(frag(k)%atoms)
-                  call unitless_distance(frag(group(g)), ia, frag(k), ib, r, error)
-                  if (error%has_error()) return
-                  best = min(best, r)
-               end do
-            end do
+            call fragment_separation(frag(group(g)), frag(k), r, error)
+            if (error%has_error()) return
+            best = min(best, r)
          end do
          keep(k) = best <= resppc
       end do
@@ -1782,10 +2067,10 @@ contains
       !! The exact Coulomb operator of the near fragments, on the group's basis
       !!
       !! Built over a molecule holding the group and its near neighbours only,
-      !! with the group's own density zeroed, so what comes back on the group's
-      !! block is `sum_{K near} sum_{ls in K} D^K_ls (mn|ls)` and nothing else.
-      !! No subtraction, and no dependence on the system beyond the
-      !! neighbourhood.
+      !! and only from quartets with `mn` on the group and `ls` inside one
+      !! neighbour, so what comes back is `sum_{K near} sum_{ls in K} D^K_ls
+      !! (mn|ls)` and nothing else. No subtraction, and no dependence on the
+      !! system beyond the neighbourhood.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: group_z(:)
       character(len=2), intent(in) :: group_sym(:)
@@ -1797,10 +2082,9 @@ contains
       type(error_t), intent(inout) :: error
 
       type(czt_molecule_t) :: local
-      type(direct_stats_t) :: stats
-      integer, allocatable :: z(:)
+      integer, allocatable :: z(:), ket_first(:)
       character(len=2), allocatable :: sym(:)
-      real(dp), allocatable :: xyz(:, :), d(:, :), zero_h(:, :), bounds(:, :), j_full(:, :)
+      real(dp), allocatable :: xyz(:, :), d(:, :)
       integer :: k, at, nao_k, expect
 
       allocate (j_near(group_nao, group_nao), source=0.0_dp)
@@ -1826,29 +2110,26 @@ contains
                         "layout assumes")
          return
       end if
-      call schwarz_bounds(local, bounds, error)
-      if (error%has_error()) return
 
-      ! Only the neighbours carry density. The group's own block stays zero, so
-      ! its own Coulomb contribution never enters and needs no removing.
+      ! Only the neighbours carry density, each on its own diagonal block, and
+      ! only those blocks are contracted: the group's own density never enters
+      ! and needs no removing.
       allocate (d(local%nao, local%nao), source=0.0_dp)
+      allocate (ket_first(size(near) + 1))
       at = group_nao
       do k = 1, size(near)
          nao_k = frag(near(k))%nao
+         ket_first(k) = at
          d(at + 1:at + nao_k, at + 1:at + nao_k) = frag(near(k))%density
          at = at + nao_k
       end do
+      ket_first(size(near) + 1) = at
 
-      allocate (zero_h(local%nao, local%nao), source=0.0_dp)
-      allocate (j_full(local%nao, local%nao))
-      call build_fock_direct(local, zero_h, d, bounds, j_full, stats, error, &
-                             k_scale=0.0_dp, j_scale=1.0_dp)
-      if (error%has_error()) return
-      j_near = j_full(1:group_nao, 1:group_nao)
+      call coulomb_from_blocks(local, group_nao, ket_first, d, j_near, error)
    end subroutine local_coulomb
 
    subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, afo, &
-                             all_converged, error, bare)
+                             stage, error, bare, comm)
       !! One monomer: build it, field it, solve it, read its charges, drop it
       !!
       !! The whole of a fragment's work for one outer pass, and the unit a rank
@@ -1861,12 +2142,14 @@ contains
       real(dp), allocatable, intent(in) :: q_all(:)
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
-      logical, intent(inout) :: all_converged
+      character(len=*), intent(in) :: stage   !! Which pass, for the error if it fails
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: bare
          !! Solve it in vacuum. True only for the very first pass, where no
          !! fragment has a density yet and so there is no field to solve
          !! against.
+      type(comm_t), intent(in), optional :: comm
+         !! Only for how the SCF table is printed
 
       type(czt_molecule_t) :: mol
       type(group_t) :: group
@@ -1893,14 +2176,20 @@ contains
       if (.not. isolated) then
          allocate (inside(size(z)), source=.false.)
          inside(frag(which)%atoms) = .true.
-         call group_own_charge(frag, [which], afo, size(z), shared, own_q)
-         call embedding_operator(mol, frag(which)%z, frag(which)%sym, frag(which)%xyz, &
-                                 frag(which)%near, frag, n_frag, inside, shared, own_q, &
-                                 z, coords, q_all, opts, u, error)
+         if (afo%active .and. opts%esp == "exact") then
+            call cut_embedding(mol, group, [which], frag(which)%near, frag, n_frag, afo, &
+                               z, coords, opts, u, error)
+         else
+            call group_own_charge(frag, [which], afo, size(z), shared, own_q)
+            call embedding_operator(mol, frag(which)%z, frag(which)%sym, frag(which)%xyz, &
+                                    frag(which)%near, frag, n_frag, inside, shared, own_q, &
+                                    z, coords, q_all, opts, u, error)
+         end if
          if (error%has_error()) return
       end if
 
-      call inner_scf(frag(which), mol, opts, error, u, all_converged, proj, held)
+      call inner_scf(frag(which), mol, opts, error, term_name([which]), stage, u, proj, &
+                     held, comm)
       if (error%has_error()) return
 
       ! The density stays the size the SCF produced it, ghost block and all.
@@ -1915,7 +2204,7 @@ contains
       end if
    end subroutine solve_fragment
 
-   subroutine calculate_monomers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
+   subroutine calculate_monomers(frag, n_frag, z, coords, opts, afo, res, error, comm)
       !! The outer SCF: every monomer in the field of all the others, iterated
       !!
       !! One pass solves every fragment against the field the previous pass
@@ -1932,25 +2221,31 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
       type(fmo_result_t), intent(inout) :: res
-      logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
 
       real(dp), allocatable :: q_all(:)
       real(dp) :: e_sum, e_prev
-      integer :: i, outer
+      integer, allocatable :: owner(:)
+      type(fragment_t), allocatable :: prev(:)
+      integer :: i, outer, me
       logical :: show_conv
+
+      call monomer_owners(frag, n_frag, comm, owner)
+      me = 0
+      if (spread_over(comm)) me = comm%rank()
 
       ! Isolated fragments, to start the field from something.
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return
       do i = 1, n_frag
-         if (.not. mine(i, comm)) cycle
-         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, all_converged, &
-                             error, bare=.true.)
+         if (owner(i) /= me) cycle
+         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
+                             "in vacuo, before the first pass", error, bare=.true., &
+                             comm=comm)
          if (error%has_error()) return
       end do
-      call exchange_monomers(frag, n_frag, comm)
+      call exchange_monomers(frag, n_frag, owner, comm)
 
       if (opts%esp == "none") then
          res%converged = .true.
@@ -1968,13 +2263,21 @@ contains
 
          ! Independent within a pass, so who computes which is free. The
          ! exchange after is the barrier.
+         !
+         ! Each fragment is solved against `prev`, the pass as it began, and
+         ! its result swapped into `frag`. Solving in `frag` itself let a
+         ! fragment read the densities its rank had already updated this
+         ! pass, so the passes depended on the rank count and the order: 2lty's
+         ! first pass came out 0.44 Hartree apart on one rank and on four.
+         prev = frag
          do i = 1, n_frag
-            if (.not. mine(i, comm)) cycle
-            call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
-                                all_converged, error)
+            if (owner(i) /= me) cycle
+            call solve_fragment(prev, n_frag, i, z, coords, q_all, opts, afo, &
+                                "in SCC pass "//to_char(outer), error, comm=comm)
             if (error%has_error()) return
+            call swap_solution(prev(i), frag(i))
          end do
-         call exchange_monomers(frag, n_frag, comm)
+         call exchange_monomers(frag, n_frag, owner, comm)
 
          e_sum = sum(frag(:)%energy)
          res%outer_iterations = outer
@@ -1994,7 +2297,31 @@ contains
                      "moving by "//to_char(res%outer_change)//" Hartree")
    end subroutine calculate_monomers
 
-   subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, all_converged, error, comm)
+   subroutine swap_solution(a, b)
+      !! Exchange what a fragment's SCF produced between two copies of it
+      !!
+      !! The density, the charges and both energies -- the fields
+      !! `solve_fragment` writes and `exchange_monomers` shares.
+      type(fragment_t), intent(inout) :: a, b
+
+      real(dp), allocatable :: tmp(:, :), tmp_q(:)
+      real(dp) :: e
+
+      call move_alloc(a%density, tmp)
+      call move_alloc(b%density, a%density)
+      call move_alloc(tmp, b%density)
+      call move_alloc(a%charges, tmp_q)
+      call move_alloc(b%charges, a%charges)
+      call move_alloc(tmp_q, b%charges)
+      e = a%energy
+      a%energy = b%energy
+      b%energy = e
+      e = a%energy_total
+      a%energy_total = b%energy_total
+      b%energy_total = e
+   end subroutine swap_solution
+
+   subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, error, comm)
       !! Every n-mer from pairs up to the truncation level
       !!
       !! Independent of each other once the monomers have settled, so one bag of
@@ -2022,14 +2349,14 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
       type(fmo_result_t), intent(inout) :: res
-      logical, intent(inout) :: all_converged
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
 
       real(dp), allocatable :: q_all(:), totals(:)
       integer, allocatable :: terms(:, :), term_size(:)
       real(dp), allocatable :: correction(:), response(:)
-      real(dp) :: e_internal, e_resp
+      logical, allocatable :: separated(:)
+      real(dp) :: e_internal, e_resp, e_es
       integer :: n_terms, t, task, level, n_nmers
 
       level = min(opts%level, n_frag)
@@ -2048,6 +2375,16 @@ contains
       if (is_leader(comm)) then
          call logger%info("  fmo: "//to_char(n_nmers)//" n-mers up to level "// &
                           to_char(level))
+      end if
+
+      ! Decided on every rank from the geometry alone, so every rank agrees on
+      ! which pairs are separated without being told.
+      call separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
+      if (error%has_error()) return
+      if (is_leader(comm) .and. any(separated)) then
+         call logger%info("  fmo: "//to_char(count(separated))//" of "// &
+                          to_char(count(term_size(1:n_terms) == 2))//" pairs are "// &
+                          "separated beyond resdim and taken as electrostatics")
       end if
 
       ! Monomers are level one and already solved; their correction is their
@@ -2076,8 +2413,20 @@ contains
 
          if (.not. mine(task, comm)) cycle
 
+         if (separated(t)) then
+            ! No pair SCF, so no response either: the correction is the two
+            ! monomers' energies plus their electrostatic interaction, and the
+            ! subtraction below leaves the interaction alone.
+            call es_dimer_energy(frag, terms(1, t), terms(2, t), afo, z, coords, opts, &
+                                 e_es, error)
+            if (error%has_error()) return
+            correction(t) = frag(terms(1, t))%energy + frag(terms(2, t))%energy + e_es
+            response(t) = 0.0_dp
+            cycle
+         end if
+
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
-                        opts, afo, e_internal, e_resp, all_converged, error)
+                        opts, afo, e_internal, e_resp, error, comm)
          if (error%has_error()) return
          ! The response goes inside the correction, not alongside it: a larger
          ! n-mer subtracts its subsets' corrections whole, so a response left
@@ -2127,13 +2476,146 @@ contains
       ! Every rank holds the reduced terms, so every rank builds the same
       ! pairs from them and nothing about a pair is ever sent.
       call collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
-                         response, res%pairs)
+                         response, separated, res%pairs)
       call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
    end subroutine calculate_polymers
 
+   subroutine separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
+      !! Which terms are pairs beyond `resdim`, to be taken as electrostatics
+      !!
+      !! Only under the FMO expansion with a field, where a pair's term is an
+      !! interaction energy; everywhere else, and at `resdim` zero, none are.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: terms(:, :), term_size(:)
+      integer, intent(in) :: n_terms
+      type(fmo_options_t), intent(in) :: opts
+      logical, allocatable, intent(out) :: separated(:)   !! (n_terms)
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: r
+      integer :: t
+
+      allocate (separated(n_terms), source=.false.)
+      if (opts%resdim <= 0.0_dp) return
+      if (opts%expansion /= "fmo" .or. opts%esp == "none") return
+      do t = 1, n_terms
+         if (term_size(t) /= 2) cycle
+         call fragment_separation(frag(terms(1, t)), frag(terms(2, t)), r, error)
+         if (error%has_error()) return
+         separated(t) = r > opts%resdim
+      end do
+   end subroutine separated_pairs
+
+   subroutine fragment_separation(fa, fb, r, error)
+      !! FMO's separation of two fragments: the least unitless distance over
+      !! every pair of their atoms
+      type(fragment_t), intent(in) :: fa, fb
+      real(dp), intent(out) :: r
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: this
+      integer :: ia, ib
+
+      r = huge(1.0_dp)
+      do ia = 1, size(fa%atoms)
+         do ib = 1, size(fb%atoms)
+            call unitless_distance(fa, ia, fb, ib, this, error)
+            if (error%has_error()) return
+            r = min(r, this)
+         end do
+      end do
+   end subroutine fragment_separation
+
+   subroutine es_dimer_energy(frag, i, j, afo, z, coords, opts, e_es, error)
+      !! The electrostatic interaction of two monomers, standing in for their
+      !! pair SCF
+      !!
+      !! `E = Tr(D_I u_J) + Tr(D_J u_I) + sum D_I D_J (mn|ls) + E_nn`: each
+      !! monomer's density in the other's nuclei, the two densities' exact
+      !! Coulomb repulsion, and the nuclei's. Each monomer enters as its own
+      !! SCF saw it -- its density over its full basis, ghosts included, and
+      !! its nuclei as it presented them -- which is how the field built them.
+      !!
+      !! GAMESS's `esdim` in fmo.src. Its point-charge form of the repulsion
+      !! is a separate cutoff, the second element of RESPPC, that is off by
+      !! default, and is not offered here.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: i, j
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), intent(out) :: e_es                 !! Hartree
+      type(error_t), intent(inout) :: error
+
+      type(group_t) :: g(2)
+      type(czt_molecule_t) :: mol
+      real(dp), allocatable :: matrices(:, :, :), u(:, :), d(:, :), j_mat(:, :)
+      integer :: members(2), n_ao(2)
+      integer :: side, a, b, s, t
+
+      e_es = 0.0_dp
+      members = [i, j]
+      do side = 1, 2
+         call assemble_group(frag, [members(side)], afo, z, coords, g(side), error)
+         if (error%has_error()) return
+      end do
+
+      ! Each density in the other monomer's nuclei, on its own basis.
+      do side = 1, 2
+         a = side
+         b = 3 - side
+         call build_czt_molecule(g(a)%z, g(a)%sym, g(a)%xyz, trim(opts%basis), mol, error, &
+                                 ghost=g(a)%ghost, nuclear_charge=g(a)%nuc_charge)
+         if (error%has_error()) return
+         n_ao(a) = mol%nao
+         if (size(frag(members(a))%density, 1) /= n_ao(a)) then
+            call error%set(ERROR_VALIDATION, "fmo: a separated monomer's density is not "// &
+                           "the size of the molecule its SCF saw")
+            return
+         end if
+         call esp_matrices(mol, g(b)%xyz, matrices, error)
+         if (error%has_error()) return
+         allocate (u(n_ao(a), n_ao(a)), source=0.0_dp)
+         do s = 1, size(g(b)%nuc_charge)
+            u = u - real(g(b)%nuc_charge(s), dp)*matrices(:, :, s)
+         end do
+         e_es = e_es + sum(frag(members(a))%density*u)
+         deallocate (u, matrices)
+      end do
+
+      ! The two densities' repulsion, once: J's density in the ket, I's basis
+      ! in the bra, over a molecule holding both.
+      call build_czt_molecule([g(1)%z, g(2)%z], [g(1)%sym, g(2)%sym], &
+                              reshape([g(1)%xyz, g(2)%xyz], &
+                                      [3, size(g(1)%z) + size(g(2)%z)]), &
+                              trim(opts%basis), mol, error)
+      if (error%has_error()) return
+      if (mol%nao /= n_ao(1) + n_ao(2)) then
+         call error%set(ERROR_VALIDATION, "fmo: a separated pair's basis is not its "// &
+                        "monomers' end to end")
+         return
+      end if
+      allocate (d(mol%nao, mol%nao), source=0.0_dp)
+      d(n_ao(1) + 1:, n_ao(1) + 1:) = frag(j)%density
+      call coulomb_from_blocks(mol, n_ao(1), [n_ao(1), mol%nao], d, j_mat, error)
+      if (error%has_error()) return
+      e_es = e_es + sum(frag(i)%density*j_mat)
+
+      ! The nuclei, as each monomer presented them.
+      do s = 1, size(g(1)%nuc_charge)
+         if (g(1)%nuc_charge(s) == 0) cycle
+         do t = 1, size(g(2)%nuc_charge)
+            if (g(2)%nuc_charge(t) == 0) cycle
+            e_es = e_es + real(g(1)%nuc_charge(s)*g(2)%nuc_charge(t), dp)/ &
+                   norm2(g(1)%xyz(:, s) - g(2)%xyz(:, t))
+         end do
+      end do
+   end subroutine es_dimer_energy
+
    subroutine collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
-                            response, pairs)
+                            response, separated, pairs)
       !! The two-member terms, with the distance and connectivity a reader needs
       !!
       !! `correction` must already have had its subsets subtracted.
@@ -2143,6 +2625,7 @@ contains
       integer, intent(in) :: terms(:, :), term_size(:)
       integer, intent(in) :: n_terms
       real(dp), intent(in) :: correction(:), response(:)
+      logical, intent(in) :: separated(:)   !! From [[separated_pairs]]
       type(fmo_pair_t), allocatable, intent(out) :: pairs(:)
 
       integer :: t, k, c, a, b, fi, fj
@@ -2159,6 +2642,7 @@ contains
          pairs(k)%j = max(fi, fj)
          pairs(k)%energy = correction(t)
          pairs(k)%response = response(t)
+         pairs(k)%separated = separated(t)
 
          r2 = huge(1.0_dp)
          do a = 1, size(frag(fi)%atoms)
@@ -2217,8 +2701,14 @@ contains
          write (line, "(a,i5,'-',i0,t17,f10.3,es20.10,f14.4,es20.10)") "  fmo: ", &
             pairs(p)%i, pairs(p)%j, pairs(p)%distance, pairs(p)%energy, &
             pairs(p)%energy*HARTREE_TO_KCALMOL, pairs(p)%response
+         ! GAMESS's `D=S`: no pair SCF, the term is electrostatics alone.
+         if (pairs(p)%separated) line = trim(line)//"  ES"
          call logger%info(trim(line))
       end do
+      if (any(pairs%separated)) then
+         call logger%info("  fmo: ES marks a separated pair, taken as the electrostatic "// &
+                          "interaction of its monomers")
+      end if
 
       order = pairs_by_strength(pairs, .true.)
       if (size(order) == 0) return
@@ -2299,14 +2789,14 @@ contains
       if (.not. any(term_size(1:n_terms) >= 3)) return
 
       if (opts%expansion == "mbe" .and. opts%esp /= "none") then
-         call logger%verbose("  fmo: n-mer terms of the embedded expansion, Hartree "// &
-                             "-- corrections, not interaction energies: a monomer's "// &
-                             "own energy already holds its electrostatics with every "// &
-                             "other fragment")
+         call logger%info("  fmo: n-mer terms of the embedded expansion, Hartree "// &
+                          "-- corrections, not interaction energies: a monomer's "// &
+                          "own energy already holds its electrostatics with every "// &
+                          "other fragment")
       else
-         call logger%verbose("  fmo: many-body terms above pairs, Hartree")
+         call logger%info("  fmo: many-body terms above pairs, Hartree")
       end if
-      call logger%verbose("  fmo:   fragments                     dE")
+      call logger%info("  fmo:   fragments                     dE")
       do t = 1, n_terms
          if (term_size(t) < 3) cycle
          members = to_char(terms(1, t))
@@ -2314,7 +2804,7 @@ contains
             members = members//"-"//to_char(terms(m, t))
          end do
          write (line, "(a,a20,f24.12)") "  fmo: ", adjustl(members), correction(t)
-         call logger%verbose(trim(line))
+         call logger%info(trim(line))
       end do
    end subroutine log_interaction_table
 
@@ -2328,11 +2818,64 @@ contains
       many = comm%size() > 1
    end function spread_over
 
-   function mine(task, comm) result(owned)
-      !! Whether this rank owns a task, round robin
+   subroutine monomer_owners(frag, n_frag, comm, owner)
+      !! The rank that solves each monomer: costliest first, each onto the least
+      !! loaded rank
       !!
-      !! Static rather than handed out on demand: FMO's tasks are all much of a
-      !! size, so there is no imbalance for a task server to absorb.
+      !! A pass is one bag of monomers with a barrier after it, so its wall time
+      !! is the busiest rank's, and a protein's fragments differ in cost by more
+      !! than an order of magnitude. The cost is estimated from the partition
+      !! alone, identically on every rank, so the table needs no communication
+      !! and which rank solves a fragment changes nothing in its answer.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: n_frag
+      type(comm_t), intent(in), optional :: comm
+      integer, allocatable, intent(out) :: owner(:)   !! 0-based rank per fragment
+
+      ! What one unit of n^3, the fragment's own SCF, costs against one unit of
+      ! n^2 n_K^2, its near-field Coulomb build: 1e-5 s against 2.5e-8 s on
+      ! 2lty in HF/STO-3G, a fit that follows the measured monomer times to a
+      ! correlation of 0.997.
+      integer(int64), parameter :: SCF_WEIGHT = 400_int64
+      integer(int64), allocatable :: cost(:), key(:), load(:)
+      integer(int_index), allocatable :: order(:)
+      integer(int64) :: n, near_sq
+      integer :: f, k, n_rank, pick
+
+      allocate (owner(n_frag), source=0)
+      if (.not. spread_over(comm)) return
+      n_rank = comm%size()
+
+      allocate (cost(n_frag), order(n_frag), load(0:n_rank - 1))
+      do f = 1, n_frag
+         n = int(frag(f)%nao_full, int64)
+         near_sq = 0_int64
+         if (allocated(frag(f)%near)) then
+            do k = 1, size(frag(f)%near)
+               near_sq = near_sq + int(frag(frag(f)%near(k))%nao_full, int64)**2
+            end do
+         end if
+         cost(f) = n*n*near_sq + SCF_WEIGHT*n**3
+      end do
+      ! A copy is sorted, because `sort_index` reorders its argument in place.
+      key = cost
+      call sort_index(key, order, reverse=.true.)
+
+      load = 0_int64
+      do k = 1, n_frag
+         f = int(order(k))
+         pick = minloc(load, dim=1) - 1
+         owner(f) = pick
+         load(pick) = load(pick) + cost(f)
+      end do
+   end subroutine monomer_owners
+
+   function mine(task, comm) result(owned)
+      !! Whether this rank owns an n-mer, round robin
+      !!
+      !! Static rather than handed out on demand. The n-mers are many against
+      !! the ranks, which evens their sizes out; the monomers are few, and are
+      !! placed by [[monomer_owners]] instead.
       integer, intent(in) :: task
       type(comm_t), intent(in), optional :: comm
       logical :: owned
@@ -2357,38 +2900,85 @@ contains
       leads = comm%rank() == 0
    end function is_leader
 
+   subroutine open_scf_block(header, comm, block)
+      !! Start a fragment SCF's verbose output: its header, and on more than one
+      !! rank a place to hold the table until it is complete
+      !!
+      !! A rank prints only what it computed. With several ranks printing at
+      !! once their tables would interleave line by line, so each one is
+      !! written to a file of the rank's own through the logger's file output,
+      !! the console silenced meanwhile, and [[close_scf_block]] prints it as
+      !! one write. Always paired with that, before any return: the console
+      !! stays silent until it is called.
+      use pic_logger, only: error_level
+      character(len=*), intent(in) :: header
+      type(comm_t), intent(in), optional :: comm
+      type(scf_block_t), intent(out) :: block
+
+      if (.not. show_inner_scf()) return
+      if (.not. spread_over(comm)) then
+         call logger%verbose(header)
+         return
+      end if
+      block%active = .true.
+      call logger%configuration(level=block%console_level)
+      block%path = "mqc_fmo_scf_rank"//to_char(comm%rank())//".tmp"
+      call logger%configure_file_output(block%path, level=block%console_level)
+      call logger%configure(level=error_level - 1)
+      call logger%verbose(header)
+   end subroutine open_scf_block
+
+   subroutine close_scf_block(block)
+      !! Print a held SCF table in one write, and give the console back
+      character(len=:), allocatable :: text
+      type(scf_block_t), intent(inout) :: block
+
+      character(len=512) :: line
+      integer :: unit, ios
+
+      if (.not. block%active) return
+      call logger%close_log_file()
+      call logger%configure(level=block%console_level)
+      block%active = .false.
+
+      text = ""
+      open (newunit=unit, file=block%path, status="old", action="read", iostat=ios)
+      if (ios /= 0) return
+      do
+         read (unit, "(a)", iostat=ios) line
+         if (ios /= 0) exit
+         if (len(text) > 0) text = text//new_line("a")
+         text = text//trim(line)
+      end do
+      close (unit, status="delete")
+      if (len(text) > 0) call logger%verbose(text)
+   end subroutine close_scf_block
+
    function show_inner_scf() result(show)
       !! Whether to print each fragment's per-iteration SCF table
       !!
-      !! The individual monomer and n-mer SCFs are the finest thing this method
-      !! prints and there are a great many of them, so they sit at the deepest
-      !! level.
-      ! TODO(mqc): replace debug_level with verbose_level once pic defines large_info;
-      !      the outer convergence (see calculate_monomers) drops to large_info at
-      !      the same time, so inner SCF and outer stay one level apart.
+      !! At verbose, as an unfragmented SCF prints its own table, each headed by
+      !! the term and the stage it belongs to; see [[open_scf_block]].
       logical :: show
       integer :: level
 
       call logger%configuration(level=level)
-      show = level >= debug_level
+      show = level >= verbose_level
    end function show_inner_scf
 
    function show_outer(comm) result(show)
       !! Whether to print the FMO outer-loop (monomer SCF) convergence table
       !!
-      !! Leader-guarded -- the monomer sum is a reduced total -- and gated at
-      !! verbose: one level above the info progress lines and one below the debug
-      !! per-fragment SCF tables. The level travels in this flag rather than in
-      !! the logger call because the shared table frame prints through
-      !! `logger%info`.
-      ! TODO(mqc): replace verbose_level with large_info once pic defines it, so the
-      !      outer table sits just below the inner SCF tables (see show_inner_scf).
+      !! Leader-guarded -- the monomer sum is a reduced total -- and shown at
+      !! info, with the pair table and the totals. The level travels in this
+      !! flag rather than in the logger call because the shared table frame
+      !! prints through `logger%info`.
       type(comm_t), intent(in), optional :: comm
       logical :: show
       integer :: level
 
       call logger%configuration(level=level)
-      show = is_leader(comm) .and. level >= verbose_level
+      show = is_leader(comm) .and. level >= info_level
    end function show_outer
 
    subroutine fmo_outer_row(show, iter, monomer_sum, change)
@@ -2407,7 +2997,7 @@ contains
       call logger%info(trim(line))
    end subroutine fmo_outer_row
 
-   subroutine exchange_monomers(frag, n_frag, comm)
+   subroutine exchange_monomers(frag, n_frag, owner, comm)
       !! Share what each rank computed this pass with every other
       !!
       !! A sum-reduce over buffers that are zero where a rank computed nothing,
@@ -2416,6 +3006,7 @@ contains
       !! next pass reads.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
+      integer, intent(in) :: owner(:)   !! From [[monomer_owners]]
       type(comm_t), intent(in), optional :: comm
 
       real(dp), allocatable :: buf(:)
@@ -2436,7 +3027,7 @@ contains
       at = 0
       do f = 1, n_frag
          n = frag(f)%nao_full*frag(f)%nao_full
-         if (mine(f, comm)) then
+         if (owner(f) == comm%rank()) then
             if (allocated(frag(f)%density)) buf(at + 1:at + n) = reshape(frag(f)%density, [n])
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
@@ -2469,21 +3060,25 @@ contains
       end do
    end subroutine exchange_monomers
 
-   subroutine inner_scf(f, mol, opts, error, u, all_converged, proj, held)
+   subroutine inner_scf(f, mol, opts, error, what, stage, u, proj, held, comm)
       !! The inner SCF: this fragment's orbitals, against a fixed external field
       type(fragment_t), intent(inout) :: f
       type(czt_molecule_t), intent(in) :: mol
       type(fmo_options_t), intent(in) :: opts
       type(error_t), intent(inout) :: error
+      character(len=*), intent(in) :: what, stage   !! For the error if it fails
       real(dp), allocatable, intent(in), optional :: u(:, :)
-      logical, intent(inout), optional :: all_converged
       type(fock_projector_t), intent(in), optional :: proj
          !! The boundary constraint, when this fragment has a detached bond
       logical, intent(in), optional :: held
          !! Whether `proj` carries anything. Separate from its presence because
          !! a fragment with no boundary still has a projector object.
+      type(comm_t), intent(in), optional :: comm
+         !! Only for how the SCF table is printed; see [[open_scf_block]]
 
       type(rhf_result_t) :: scf
+      type(scf_block_t) :: block
+      logical :: show_table
       integer, allocatable :: deck_guess
       logical :: embedded, constrained
 
@@ -2501,24 +3096,30 @@ contains
       ! the decks that asked for a specific guess.
       call fmo_guess_kind(opts, deck_guess)
 
+      ! Asked before the block opens: it silences the console, which is what
+      ! `show_inner_scf` reads.
+      show_table = show_inner_scf()
+      call open_scf_block("  fmo: "//what//" SCF, "//stage, comm, block)
       if (embedded .and. constrained) then
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, &
                           h_extra=u, projector=proj)
       else if (embedded) then
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
       else if (constrained) then
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess, &
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, &
                           projector=proj)
       else
          call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_inner_scf(), scf, error, scf=opts%scf, guess=deck_guess)
+                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess)
       end if
+      call close_scf_block(block)
       if (error%has_error()) return
-      if (present(all_converged)) then
-         if (.not. scf%converged) all_converged = .false.
+      if (.not. scf%converged) then
+         call refuse_unconverged(what, stage, scf, error)
+         return
       end if
 
       ! The internal energy: what the SCF reported, less its interaction with

@@ -6,7 +6,8 @@ module test_mqc_afo_model
    use mqc_physical_fragment, only: system_geometry_t, to_bohr, to_angstrom
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
    use mqc_czt_afo, only: afo_model_t, build_afo_model, cuts_outside_group, &
-                          group_electron_shift, peptide_bond_advice
+                          group_electron_shift, peptide_bond_advice, &
+                          build_bonded_model, orient_cut
    implicit none
 
    !! Geometries are quoted to four decimals in Angstrom, so a distance
@@ -29,6 +30,10 @@ contains
                   new_unittest("model_keeps_a_carbonyl_oxygen_rather_than_capping_it", &
                                test_terminal_oxygen), &
                   new_unittest("a_backbone_cut_gives_a_closed_shell_model", test_backbone_model), &
+                  new_unittest("the_bonded_model_is_closed_shell_on_a_backbone", &
+                               test_bonded_backbone_model), &
+                  new_unittest("the_detached_end_is_the_sp3_one_unless_named", &
+                               test_orient_cut), &
                   new_unittest("a_charged_terminus_is_counted_into_the_model", &
                                test_charged_termini), &
                   new_unittest("a_peptide_bond_names_the_c_alpha_cut_instead", test_peptide_advice), &
@@ -405,6 +410,63 @@ contains
          if (allocated(error)) return
       end do
    end subroutine test_backbone_model
+
+   subroutine test_bonded_backbone_model(error)
+      !! GAMESS's model -- the bond's two atoms and everything bonded to either
+      !! -- on every C-alpha--C(=O) cut of a peptide
+      !!
+      !! C-alpha first and the carbonyl carbon second, closed shell, and the
+      !! carbonyl oxygen in it: it is bonded to the carbonyl carbon, which is
+      !! one end of the bond.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      type(afo_model_t) :: model
+      integer :: n_cuts, c, n_o
+
+      call glycine_tripeptide(sys)
+      call find_severed_bonds(sys, owner_c_alpha(), cuts, n_cuts)
+      do c = 1, n_cuts
+         call orient_cut(sys%element_numbers, sys%coordinates, cuts(c), err)
+         call build_bonded_model(sys%element_numbers, sys%coordinates, cuts(c), model, err)
+         call check(error,.not. err%has_error(), "a bonded backbone model could not be built")
+         if (allocated(error)) return
+         call check(error, mod(model%nelec, 2), 0, "a bonded model has an odd count")
+         if (allocated(error)) return
+         call check(error, model%z(1), 6, "the detached end is not first")
+         if (allocated(error)) return
+         n_o = count(model%z(:model%n_atoms - model%n_caps) == 8)
+         call check(error, n_o >= 1, "the carbonyl oxygen is not in the model")
+         if (allocated(error)) return
+      end do
+   end subroutine test_bonded_backbone_model
+
+   subroutine test_orient_cut(error)
+      !! C-alpha is detached whichever end the bond was handed over with, and
+      !! a named atom wins
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(system_geometry_t) :: sys
+      type(severed_bond_t) :: cut
+
+      call glycine_tripeptide(sys)
+      ! Atom 2 is the first C-alpha, atom 3 its carbonyl carbon.
+      cut%atom_a = 3
+      cut%atom_b = 2
+      cut%frag_a = 2
+      cut%frag_b = 1
+      call orient_cut(sys%element_numbers, sys%coordinates, cut, err)
+      call check(error, cut%atom_a, 2, "the sp3 C-alpha was not made the detached end")
+      if (allocated(error)) return
+      call check(error, cut%frag_a, 1, "the owner did not follow the detached end")
+      if (allocated(error)) return
+      call orient_cut(sys%element_numbers, sys%coordinates, cut, err, detached=[3])
+      call check(error, cut%atom_a, 3, "a named detached atom was not followed")
+      if (allocated(error)) return
+      call orient_cut(sys%element_numbers, sys%coordinates, cut, err, detached=[2, 3])
+      call check(error, err%has_error(), "naming both ends should be refused")
+   end subroutine test_orient_cut
 
    subroutine test_charged_termini(error)
       !! The ammonium and carboxylate a zwitterionic peptide ends in
