@@ -4889,7 +4889,14 @@
             "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l2_vmfc.json",
             "expected_interaction_energy": -0.001228150957,
             "type": "fragmented",
-            "reference_note": "reference is the sum of the five counterpoise-corrected water-5 dimer corrections of the ordinary VMFC(2) run of the same deck. 21 of 51 rows are computed: each pair builds its own two ghosted rows, so the reduction carries over unchanged. Level 2 only: above it the counterpoise recursion is not the Valiron-Mayer expression (see the TODO in compute_mbe_delta) and the driver refuses the pairing."
+            "reference_note": "reference is the sum of the five counterpoise-corrected water-5 dimer corrections of the ordinary VMFC(2) run of the same deck. 21 of 51 rows are computed: each pair builds its own two ghosted rows, so the reduction carries over unchanged. Level 3 is the next entry."
+        },
+        {
+            "name": "InteractionEnergy water prism STO-3G, VMFC(3), last water (CPU)",
+            "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l3_vmfc.json",
+            "expected_interaction_energy": -0.003221678201,
+            "type": "fragmented",
+            "reference_note": "reference is the Valiron-Mayer sum over the fifteen terms holding water 5 -- five dimers and ten trimers -- each term's increment the alternating sum of its subsets' energies all in that term's own basis, evaluated in Python from the 191-row fragment table of the ordinary VMFC(3) run of the same deck rather than by the code's own recursion. 121 of 191 rows are computed. Before the ghosted-row subset keys kept their ghosts, a VMFC(3) trimer subtracted its pairs' monomers in the pair basis instead of its own, and this driver refused counterpoise above level 2."
         },
         {
             "name": "InteractionEnergy glycine tripeptide + water STO-3G, MBE(3), water as reference (CPU)",

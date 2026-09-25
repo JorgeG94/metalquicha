@@ -162,10 +162,12 @@ export OMP_NUM_THREADS="$NTHREADS"
 export OMP_PROC_BIND=spread
 export OMP_PLACES=cores
 export OMP_STACKSIZE="${OMP_STACKSIZE:-64M}"
-# The BLAS is sequential on purpose: fragment paths pin themselves to one OpenMP
-# thread and parallelise over MPI, so a threaded BLAS competes with the ranks
-# instead of helping them -- measured at 31 per cent slower on four ranks. See
-# AGENTS.md, "Performance". Both are overridable for a single-molecule run.
+# The BLAS is sequential on purpose: the program threads its own loops, and a
+# BLAS that starts threads of its own inside them contends with them rather
+# than helping. With a pthreads OpenBLAS left threaded, the DFT exchange-
+# correlation quadrature did not speed up at all from one OpenMP thread to four
+# (33 s either way, PBE on ten waters); held to one it took 8 s. See AGENTS.md,
+# "Performance". All three are overridable.
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
 export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 # Cray libsci reads its own knob and ignores OPENBLAS_NUM_THREADS. Left threaded

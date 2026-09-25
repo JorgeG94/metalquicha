@@ -154,3 +154,7 @@ Testing/
 scratch/*
 !scratch/README.md
 !scratch/build.sh
+
+# Per-host performance baselines. Recorded by benchmarks/run_benchmarks.py on
+# the machine that ran it, and meaningless anywhere else.
+benchmarks/baseline-*.json
