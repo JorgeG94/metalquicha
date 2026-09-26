@@ -151,6 +151,14 @@ module mqc_program_limits
       !! validation suite compares total energies at 1e-9 and a fitted energy
       !! has already spent its error budget on the fit.
 
+   real(dp), parameter, public :: ERI_PACKED_SCREEN = 1.0e-12_dp
+      !! Below this Schwarz bound a shell quartet is left out of the stored
+      !! packed four-centre tensor, and stays zero.
+      !!
+      !! `|(MN|PQ)| <= Q_MN Q_PQ`, so nothing skipped can be larger than this.
+      !! 1e-12 for the reason `DF_PAIR_SCREEN` gives: a correlated energy built
+      !! from the tensor is compared at 1e-9 by the validation suite.
+
    integer, parameter, public :: DF_AUX_CHUNK = 32
       !! Auxiliary functions per thread chunk in the fitted Coulomb build.
       !!
