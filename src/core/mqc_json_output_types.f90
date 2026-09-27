@@ -315,6 +315,17 @@ module mqc_json_output_types
          !! Beyond `resdim`: the pair's energy is its monomers' electrostatic
          !! interaction, and no pair SCF was run
          !! A detached bond joins the pair
+      logical, allocatable :: fmo_pair_pieda(:)
+         !! Whether `fmo_pair_ees`/`fmo_pair_eex`/`fmo_pair_ect_mix` are
+         !! meaningful for this pair. False for a connected pair even when
+         !! `keywords.fragmentation.pieda` is on; absent when it is off.
+      real(dp), allocatable :: fmo_pair_ees(:)
+         !! Electrostatics, `es_dimer_energy` on the two converged monomers
+      real(dp), allocatable :: fmo_pair_eex(:)
+         !! Exact exchange of the pair's higher-level (union) state
+      real(dp), allocatable :: fmo_pair_ect_mix(:)
+         !! Residual: charge transfer, mixing and the density response, not
+         !! plain "charge transfer" on its own
 
    contains
       procedure :: destroy => json_output_data_destroy
@@ -447,6 +458,10 @@ contains
       if (allocated(this%fmo_pair_response)) deallocate (this%fmo_pair_response)
       if (allocated(this%fmo_pair_connected)) deallocate (this%fmo_pair_connected)
       if (allocated(this%fmo_pair_separated)) deallocate (this%fmo_pair_separated)
+      if (allocated(this%fmo_pair_pieda)) deallocate (this%fmo_pair_pieda)
+      if (allocated(this%fmo_pair_ees)) deallocate (this%fmo_pair_ees)
+      if (allocated(this%fmo_pair_eex)) deallocate (this%fmo_pair_eex)
+      if (allocated(this%fmo_pair_ect_mix)) deallocate (this%fmo_pair_ect_mix)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)

@@ -725,6 +725,9 @@ contains
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
       call read_resdim(json, config, error)
       if (error%has_error()) return
+      call optional_logical(json, "keywords.fragmentation.pieda", config%fmo_pieda)
+      call read_pieda_hl(json, config, error)
+      if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.rcut", config%efmo_rcut)
       ! Unitless and a *ratio* of a distance to a van der Waals contact, so
       ! zero or negative is not "no cutoff" the way a negative `resppc` is: it
@@ -2007,6 +2010,29 @@ contains
       end if
       config%fmo_resdim = value
    end subroutine read_resdim
+
+   subroutine read_pieda_hl(json, config, error)
+      !! `keywords.fragmentation.pieda_hl`: "gamess" (default) or "projected"
+      !!
+      !! Read whatever `pieda` says, so a deck can set it before turning PIEDA
+      !! on without the value being silently dropped.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: value
+      logical :: found
+
+      call json%get("keywords.fragmentation.pieda_hl", value, found)
+      if (.not. found .or. .not. allocated(value)) return
+      select case (trim(value))
+      case ("gamess", "projected")
+         config%fmo_pieda_hl = trim(value)
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.pieda_hl must be "// &
+                        "'gamess' or 'projected', not '"//trim(value)//"'.")
+      end select
+   end subroutine read_pieda_hl
 
    subroutine optional_real(json, path, value)
       !! Fetch a real if present, leaving `value` at its default otherwise

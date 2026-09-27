@@ -664,6 +664,8 @@ contains
       call allow(keys, "far_field")
       call allow(keys, "resppc")
       call allow(keys, "resdim")
+      call allow(keys, "pieda")
+      call allow(keys, "pieda_hl")
       call allow(keys, "rcut")
       call allow(keys, "max_outer")
       call allow(keys, "outer_tolerance")

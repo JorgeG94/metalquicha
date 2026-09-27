@@ -1556,6 +1556,13 @@ contains
             if (allocated(data%fmo_pair_response)) then
                call json%add(pair_obj, "response", data%fmo_pair_response(p))
             end if
+            if (allocated(data%fmo_pair_pieda)) then
+               if (data%fmo_pair_pieda(p)) then
+                  call json%add(pair_obj, "ees", data%fmo_pair_ees(p))
+                  call json%add(pair_obj, "eex", data%fmo_pair_eex(p))
+                  call json%add(pair_obj, "ect_mix", data%fmo_pair_ect_mix(p))
+               end if
+            end if
          end do
       end do
    end subroutine write_fmo_pairs

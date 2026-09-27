@@ -329,7 +329,7 @@ jobs:
           conda activate mqc
           ctest --test-dir build -V -R "mqc" -LE LONG
 
-      # The four `LONG` tests, on the build the step above already made rather
+      # The `LONG` tests, on the build the step above already made rather
       # than in a job of their own -- a separate job would rebuild everything to
       # run twenty-five minutes of tests.
       #

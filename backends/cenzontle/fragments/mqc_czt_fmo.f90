@@ -121,6 +121,8 @@ module mqc_czt_fmo
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 atom_ao_blocks
    use mqc_czt_direct, only: schwarz_bounds, coulomb_from_blocks
+   use mqc_czt_pieda, only: pieda_pair_terms_t, cholesky_occupied_orbitals, &
+                            hl_density_from_orbitals, hl_prime_energy, combine_pieda_terms
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_PROJ
@@ -332,6 +334,23 @@ module mqc_czt_fmo
       character(len=8) :: afo_localization = "er"
          !! How a cut bond's model system is localized, "er" or "boys"; see
          !! `afo_options_t%localization`.
+      logical :: pieda = .false.
+         !! Decompose each near, unconnected pair's interaction energy into
+         !! electrostatics, exchange and a charge-transfer-plus-mixing
+         !! residual -- GAMESS's `IPIEDA=1`. Read only under
+         !! `expansion = "fmo"`; refused otherwise before any fragment runs.
+         !!
+         !! A pair joined by a detached bond is reported undecomposed, as
+         !! without PIEDA. A pair that is not itself connected but still
+         !! holds a frozen virtual -- one of its monomers cut elsewhere -- is
+         !! refused by name: the projected and unprojected higher-level
+         !! states this needs next to a cut are not implemented yet.
+      character(len=16) :: pieda_hl = "gamess"
+         !! How the pair's higher-level (union) state is built next to a
+         !! frozen virtual. `"gamess"` or `"projected"`; see
+         !! `mqc_czt_pieda`. Not reachable yet: every cut pair PIEDA would
+         !! need this for is refused instead. Parsed and validated now so a
+         !! deck can set it ahead of that support landing.
    end type fmo_options_t
 
    type :: fmo_pair_t
@@ -357,6 +376,22 @@ module mqc_czt_fmo
       logical :: separated = .false.
          !! Beyond `resdim`: no pair SCF was run, and `energy` is the
          !! electrostatic interaction of the two monomers, `response` zero.
+      logical :: pieda = .false.
+         !! Whether `ees`, `eex` and `ect_mix` are meaningful for this pair.
+         !! False whenever `fmo_options_t%pieda` is off, and for a connected
+         !! pair even when it is on.
+      real(dp) :: ees = 0.0_dp
+         !! Electrostatics: `es_dimer_energy` on the two converged monomers.
+         !! Zero unless `pieda` is true.
+      real(dp) :: eex = 0.0_dp
+         !! Exact exchange of the pair's higher-level (union) state against
+         !! its monomers'. Zero unless `pieda` is true, and exactly zero for
+         !! a separated pair.
+      real(dp) :: ect_mix = 0.0_dp
+         !! The residual, `energy - ees - eex`: charge transfer, orbital
+         !! mixing and the density response together, not charge transfer on
+         !! its own. Zero unless `pieda` is true, and exactly zero for a
+         !! separated pair.
    end type fmo_pair_t
 
    type :: fmo_result_t
@@ -2433,8 +2468,9 @@ contains
 
       real(dp), allocatable :: q_all(:), totals(:)
       integer, allocatable :: terms(:, :), term_size(:)
-      real(dp), allocatable :: correction(:), response(:)
+      real(dp), allocatable :: correction(:), response(:), ees(:), eex(:)
       logical, allocatable :: separated(:)
+      type(pieda_pair_terms_t) :: pd
       real(dp) :: e_internal, e_resp, e_es
       integer :: n_terms, t, task, level, n_nmers
 
@@ -2447,6 +2483,8 @@ contains
       call enumerate_subsets(n_frag, level, terms, term_size, n_terms)
       allocate (correction(n_terms), source=0.0_dp)
       allocate (response(n_terms), source=0.0_dp)
+      allocate (ees(n_terms), source=0.0_dp)
+      allocate (eex(n_terms), source=0.0_dp)
 
       ! Count the n-mers (size >= 2) so the progress below has a denominator;
       ! the monomers are already solved.
@@ -2514,6 +2552,18 @@ contains
          correction(t) = e_internal + e_resp
          response(t) = e_resp
          res%response_sum = res%response_sum + e_resp
+
+         ! PIEDA is pair-only (design §3), and a connected pair's term
+         ! carries the bond itself, so it is reported undecomposed rather
+         ! than split into electrostatics and exchange.
+         if (opts%pieda .and. term_size(t) == 2 .and. &
+             .not. pair_is_connected(afo, terms(1, t), terms(2, t))) then
+            call pieda_pair_term(frag, terms(1, t), terms(2, t), z, coords, opts, afo, &
+                                 pd, error)
+            if (error%has_error()) return
+            ees(t) = pd%ees
+            eex(t) = pd%eex
+         end if
       end do
 
       if (spread_over(comm)) then
@@ -2525,17 +2575,21 @@ contains
                if (term_size(t) == 1) correction(t) = 0.0_dp
             end do
          end if
-         ! The per-term responses ride along after the total, so the
-         ! elements the energy is made of are reduced exactly as before.
-         ! Monomers carry no response, so nothing needs zeroing there.
-         allocate (totals(2*n_terms + 1))
+         ! The per-term responses, and PIEDA's ees/eex, ride along after the
+         ! total: each is zero everywhere but the owning rank, so a sum
+         ! gathers them exactly as it gathers `correction`.
+         allocate (totals(4*n_terms + 1))
          totals(1:n_terms) = correction
          totals(n_terms + 1) = res%response_sum
-         totals(n_terms + 2:) = response
+         totals(n_terms + 2:2*n_terms + 1) = response
+         totals(2*n_terms + 2:3*n_terms + 1) = ees
+         totals(3*n_terms + 2:4*n_terms + 1) = eex
          call allreduce(comm, totals, size(totals), MPI_SUM)
          correction = totals(1:n_terms)
          res%response_sum = totals(n_terms + 1)
-         response = totals(n_terms + 2:)
+         response = totals(n_terms + 2:2*n_terms + 1)
+         ees = totals(2*n_terms + 2:3*n_terms + 1)
+         eex = totals(3*n_terms + 2:4*n_terms + 1)
       end if
 
       ! Subtract what the subsets already covered. Ordered by size, so every
@@ -2554,10 +2608,11 @@ contains
 
       ! Every rank holds the reduced terms, so every rank builds the same
       ! pairs from them and nothing about a pair is ever sent.
-      call collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
-                         response, separated, res%pairs)
+      call collect_pairs(frag, coords, afo, opts, terms, term_size, n_terms, correction, &
+                         response, separated, ees, eex, res%pairs)
       call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
+      if (opts%pieda) call log_pieda_table(res%pairs, comm)
    end subroutine calculate_polymers
 
    subroutine separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
@@ -2693,21 +2748,125 @@ contains
       end do
    end subroutine es_dimer_energy
 
-   subroutine collect_pairs(frag, coords, afo, terms, term_size, n_terms, correction, &
-                            response, separated, pairs)
+   pure function pair_is_connected(afo, fi, fj) result(joined)
+      !! Whether a detached bond joins fragments `fi` and `fj` directly
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: fi, fj
+      logical :: joined
+
+      integer :: c
+
+      joined = .false.
+      if (.not. afo%active) return
+      do c = 1, afo%n_cuts
+         if ((afo%cuts(c)%frag_a == fi .and. afo%cuts(c)%frag_b == fj) .or. &
+             (afo%cuts(c)%frag_a == fj .and. afo%cuts(c)%frag_b == fi)) then
+            joined = .true.
+            return
+         end if
+      end do
+   end function pair_is_connected
+
+   subroutine pieda_pair_term(frag, i, j, z, coords, opts, afo, terms, error)
+      !! Ees and Eex for one near, unconnected pair -- GAMESS's `IPIEDA=1`
+      !!
+      !! Read-only: nothing `nmer_term` produced is touched. `terms%ect_mix` is
+      !! left for `combine_pieda_terms`, once the pair's `dE_IJ` is final.
+      !! Refuses a pair holding a frozen virtual (a monomer cut elsewhere).
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: i, j
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
+      type(pieda_pair_terms_t), intent(out) :: terms
+      type(error_t), intent(inout) :: error
+
+      type(group_t) :: group
+      type(czt_molecule_t) :: mol
+      type(fock_projector_t) :: proj
+      real(dp), allocatable :: bounds(:, :)
+      real(dp), allocatable :: c_i(:, :), c_j(:, :), c_union(:, :), s(:, :), d_hl(:, :)
+      integer :: members(2)
+      integer :: n_i, n_j, n_occ_i, n_occ_j
+      logical :: held
+      real(dp) :: e_hl, e_es
+
+      members = [i, j]
+
+      call assemble_group(frag, members, afo, z, coords, group, error)
+      if (error%has_error()) return
+
+      call open_fragment(group%z, group%sym, group%xyz, opts, mol, bounds, error, &
+                         ghost=group%ghost, nuc_charge=group%nuc_charge)
+      if (error%has_error()) return
+
+      call group_projector(group, mol, afo, proj, held, error)
+      if (error%has_error()) return
+      if (held) then
+         call error%set(ERROR_VALIDATION, "fmo: PIEDA on cut systems is not implemented "// &
+                        "yet, and pair "//to_char(i)//"-"//to_char(j)//" holds a frozen "// &
+                        "virtual -- one of its monomers is cut elsewhere. Turn "// &
+                        "keywords.fragmentation.pieda off, or exclude this pair.")
+         return
+      end if
+
+      n_i = frag(i)%nao
+      n_j = frag(j)%nao
+      if (mol%nao /= n_i + n_j) then
+         call error%set(ERROR_VALIDATION, "fmo: pieda pair "//to_char(i)//"-"// &
+                        to_char(j)//"'s basis is not its two monomers' end to end")
+         return
+      end if
+
+      call cholesky_occupied_orbitals(frag(i)%density, frag(i)%nelec/2, &
+                                      "fragment "//to_char(i), c_i, error)
+      if (error%has_error()) return
+      call cholesky_occupied_orbitals(frag(j)%density, frag(j)%nelec/2, &
+                                      "fragment "//to_char(j), c_j, error)
+      if (error%has_error()) return
+
+      n_occ_i = size(c_i, 2)
+      n_occ_j = size(c_j, 2)
+      allocate (c_union(mol%nao, n_occ_i + n_occ_j), source=0.0_dp)
+      c_union(1:n_i, 1:n_occ_i) = c_i
+      c_union(n_i + 1:n_i + n_j, n_occ_i + 1:) = c_j
+
+      call mol%overlap(s)
+      call hl_density_from_orbitals(c_union, s, d_hl, error)
+      if (error%has_error()) return
+      call hl_prime_energy(mol, bounds, d_hl, e_hl, error)
+      if (error%has_error()) return
+
+      call es_dimer_energy(frag, i, j, afo, z, coords, opts, e_es, error)
+      if (error%has_error()) return
+
+      terms%ees = e_es
+      terms%eex = e_hl - frag(i)%energy - frag(j)%energy - e_es
+   end subroutine pieda_pair_term
+
+   subroutine collect_pairs(frag, coords, afo, opts, terms, term_size, n_terms, correction, &
+                            response, separated, ees, eex, pairs)
       !! The two-member terms, with the distance and connectivity a reader needs
       !!
-      !! `correction` must already have had its subsets subtracted.
+      !! `correction` must already have had its subsets subtracted, so it is
+      !! `dE_IJ` for every pair -- what `ees`/`eex`, filled during the n-mer
+      !! phase for a decomposed pair, are closed against here.
       type(fragment_t), intent(in) :: frag(:)
       real(dp), intent(in) :: coords(:, :)         !! (3, n_atoms), Bohr
       type(afo_context_t), intent(in) :: afo
+      type(fmo_options_t), intent(in) :: opts
       integer, intent(in) :: terms(:, :), term_size(:)
       integer, intent(in) :: n_terms
       real(dp), intent(in) :: correction(:), response(:)
       logical, intent(in) :: separated(:)   !! From [[separated_pairs]]
+      real(dp), intent(in) :: ees(:), eex(:)
+         !! Filled during the n-mer phase for every decomposed pair, zero
+         !! elsewhere; meaningless unless `opts%pieda` is true.
       type(fmo_pair_t), allocatable, intent(out) :: pairs(:)
 
-      integer :: t, k, c, a, b, fi, fj
+      type(pieda_pair_terms_t) :: pieda_terms
+      integer :: t, k, a, b, fi, fj
       real(dp) :: r2
 
       allocate (pairs(count(term_size(1:n_terms) == 2)))
@@ -2722,6 +2881,7 @@ contains
          pairs(k)%energy = correction(t)
          pairs(k)%response = response(t)
          pairs(k)%separated = separated(t)
+         pairs(k)%connected = pair_is_connected(afo, fi, fj)
 
          r2 = huge(1.0_dp)
          do a = 1, size(frag(fi)%atoms)
@@ -2732,14 +2892,19 @@ contains
          end do
          pairs(k)%distance = to_angstrom(sqrt(r2))
 
-         if (afo%active) then
-            do c = 1, afo%n_cuts
-               if ((afo%cuts(c)%frag_a == fi .and. afo%cuts(c)%frag_b == fj) .or. &
-                   (afo%cuts(c)%frag_a == fj .and. afo%cuts(c)%frag_b == fi)) then
-                  pairs(k)%connected = .true.
-                  exit
-               end if
-            end do
+         if (opts%pieda .and. .not. pairs(k)%connected) then
+            ! A separated pair's term is its electrostatics and nothing else;
+            ! taken whole, so Eex and Ect+mix are zero exactly rather than
+            ! the round-off of subtracting the monomers back out.
+            if (separated(t)) then
+               call combine_pieda_terms(correction(t), correction(t), 0.0_dp, pieda_terms)
+            else
+               call combine_pieda_terms(correction(t), ees(t), eex(t), pieda_terms)
+            end if
+            pairs(k)%pieda = pieda_terms%decomposed
+            pairs(k)%ees = pieda_terms%ees
+            pairs(k)%eex = pieda_terms%eex
+            pairs(k)%ect_mix = pieda_terms%ect_mix
          end if
       end do
    end subroutine collect_pairs
@@ -2801,6 +2966,40 @@ contains
          call logger%info(trim(line))
       end do
    end subroutine log_pair_table
+
+   subroutine log_pieda_table(pairs, comm)
+      !! Ees, Eex and Ect+mix at info level, in the same order as the pair table
+      !!
+      !! kcal/mol, as the interaction-energy table already reports; a pair not
+      !! marked `pieda` is skipped rather than printed with zeros that would
+      !! read as a real result. Named `ect_mix` throughout: the residual holds
+      !! the response term and orbital mixing along with any charge transfer,
+      !! and is never called plain "charge transfer".
+      type(fmo_pair_t), intent(in) :: pairs(:)
+      type(comm_t), intent(in), optional :: comm
+
+      character(len=160) :: line
+      integer, allocatable :: order(:)
+      integer :: k, p
+
+      if (.not. is_leader(comm)) return
+      if (.not. any(pairs%pieda)) return
+
+      call logger%info("  fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact "// &
+                       "exchange, Ect+mix the residual (charge transfer, mixing "// &
+                       "and the response together)")
+      call logger%info("  fmo:     pair            Ees            Eex        Ect+mix")
+
+      order = pairs_by_strength(pairs, .false.)
+      do k = 1, size(order)
+         p = order(k)
+         if (.not. pairs(p)%pieda) cycle
+         write (line, "(a,i5,'-',i0,t17,f14.4,f15.4,f15.4)") "  fmo: ", &
+            pairs(p)%i, pairs(p)%j, pairs(p)%ees*HARTREE_TO_KCALMOL, &
+            pairs(p)%eex*HARTREE_TO_KCALMOL, pairs(p)%ect_mix*HARTREE_TO_KCALMOL
+         call logger%info(trim(line))
+      end do
+   end subroutine log_pieda_table
 
    function pairs_by_strength(pairs, connected) result(order)
       !! Positions of the pairs whose `connected` matches, largest `|energy|` first

@@ -733,10 +733,62 @@ on the hydrogen bond. The ranking of residues agrees.
   distant ligand pair reads tens of kcal/mol from nothing. The rows are written
   with ``delta_energy`` only, and a ``pair_note`` says so. Use
   ``method: "fmo"`` for pair analysis.
-* **Not decomposed.** There is no electrostatics, exchange, charge-transfer or
-  dispersion split of an FMO pair; that is PIEDA, and it is not implemented.
-  EFMO's far pairs do carry four terms.
+* **Not decomposed, unless ``pieda`` is on.** See below. EFMO's far pairs
+  always carry four terms; an FMO pair does not unless asked.
 * **Not counterpoise-corrected.**
+
+.. _fmo-pieda:
+
+PIEDA: decomposing a pair
+--------------------------
+
+``keywords.fragmentation.pieda`` (default ``false``), FMO only (refused under
+EE-MBE, EFMO, GMBE and plain MBE, and under any driver but ``Energy``),
+splits each near, unconnected pair's ``delta_energy`` into three parts --
+GAMESS's ``IPIEDA=1``:
+
+``ees``
+   Electrostatics: the two converged monomer densities' Coulomb interaction,
+   in each other's own nuclei and each other's own basis, plus their nuclear
+   repulsion -- GAMESS's ``esdim``. The same quantity a separated pair's whole
+   term already is.
+``eex``
+   Exact exchange of the pair's higher-level (union) state against its two
+   monomers: the monomers' occupied orbitals, recovered from their converged
+   densities by a pivoted Cholesky rather than re-diagonalized, laid side by
+   side and reduced to one density with ``D_HL = 2 C (C^T S C)^-1 C^T``. One
+   extra Fock build, no extra SCF.
+``ect_mix``
+   The residual, ``delta_energy - ees - eex``: charge transfer, orbital
+   mixing and the pair's density response together, so never plain "charge
+   transfer".
+
+.. code-block:: json
+
+   {"fragments": [3, 4], "distance": 1.893, "connected": false,
+    "delta_energy": -0.0055, "interaction_energy": -0.0055,
+    "response": 0.0003, "ees": -0.0072, "eex": 0.0034, "ect_mix": -0.0017}
+
+The three fields are written only on a pair that was decomposed. **A
+connected pair is never decomposed**: ``ect_mix`` would carry the bond itself,
+which is not what the residual means. **A pair beyond ``resdim``** is
+decomposed for free -- ``ees`` is its whole term, ``eex`` and ``ect_mix``
+exactly zero, no extra Fock build. **A pair next to a cut bond** -- not itself
+connected, but one of its monomers is cut elsewhere and so holds a frozen
+virtual -- is refused by name rather than given a number: the projected and
+unprojected higher-level states that scheme needs are not implemented yet.
+``keywords.fragmentation.pieda_hl`` (``"gamess"`` or ``"projected"``) is
+parsed and validated ahead of that landing, but read by nothing yet.
+
+At info level a second table follows the pair one, in kcal/mol::
+
+   fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact exchange, Ect+mix the residual (charge transfer, mixing and the response together)
+   fmo:     pair            Ees            Eex        Ect+mix
+   fmo:     1-2        -11.3175         5.2805        -2.6241
+
+The analysis is read-only: turning ``pieda`` on changes nothing about
+``total_energy`` or any ``delta_energy``, only what else is reported beside
+them.
 
 The pairs are built on every rank from the reduced terms, so an MPI run reports
 the same pairs as a serial one and no pair crosses a wire.

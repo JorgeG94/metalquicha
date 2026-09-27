@@ -621,6 +621,15 @@ module mqc_config_types
          !! convergence each monomer and n-mer SCF is held to. Independent of the
          !! outer loop above, and of a top-level `keywords.scf`, so a fragment run
          !! can be converged more loosely than a whole-system one would be.
+      logical :: fmo_pieda = .false.
+         !! `keywords.fragmentation.pieda`: decompose each FMO2 pair's
+         !! interaction energy into electrostatics, exchange and a
+         !! charge-transfer-plus-mixing residual (GAMESS's `IPIEDA=1`).
+      character(len=:), allocatable :: fmo_pieda_hl
+         !! `keywords.fragmentation.pieda_hl`: `"gamess"` (default) or
+         !! `"projected"`. Only meaningful next to a detached bond, where a
+         !! pair's union state can hold a frozen virtual; both modes are the
+         !! same pair everywhere else. Read only when `fmo_pieda` is true.
       real(dp) :: efmo_rcut = 2.0_dp
          !! `keywords.fragmentation.rcut`: where EFMO stops solving a dimer.
          !!
