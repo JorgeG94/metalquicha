@@ -1563,6 +1563,11 @@ contains
                   call json%add(pair_obj, "ect_mix", data%fmo_pair_ect_mix(p))
                end if
             end if
+            if (allocated(data%fmo_pair_doubly_cut_neighbor)) then
+               if (data%fmo_pair_doubly_cut_neighbor(p)) then
+                  call json%add(pair_obj, "doubly_cut_neighbor", .true.)
+               end if
+            end if
          end do
       end do
    end subroutine write_fmo_pairs

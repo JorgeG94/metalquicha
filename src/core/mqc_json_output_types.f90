@@ -326,6 +326,9 @@ module mqc_json_output_types
       real(dp), allocatable :: fmo_pair_ect_mix(:)
          !! Residual: charge transfer, mixing and the density response, not
          !! plain "charge transfer" on its own
+      logical, allocatable :: fmo_pair_doubly_cut_neighbor(:)
+         !! True where the pair sits either side of a third fragment cut at
+         !! two bonded atoms, so its own term omits a three-body correction
 
    contains
       procedure :: destroy => json_output_data_destroy
@@ -462,6 +465,9 @@ contains
       if (allocated(this%fmo_pair_ees)) deallocate (this%fmo_pair_ees)
       if (allocated(this%fmo_pair_eex)) deallocate (this%fmo_pair_eex)
       if (allocated(this%fmo_pair_ect_mix)) deallocate (this%fmo_pair_ect_mix)
+      if (allocated(this%fmo_pair_doubly_cut_neighbor)) then
+         deallocate (this%fmo_pair_doubly_cut_neighbor)
+      end if
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)

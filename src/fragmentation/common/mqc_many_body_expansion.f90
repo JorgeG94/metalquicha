@@ -250,6 +250,9 @@ module mqc_many_body_expansion
       real(dp), allocatable :: pair_ees(:)      !! Hartree
       real(dp), allocatable :: pair_eex(:)      !! Hartree
       real(dp), allocatable :: pair_ect_mix(:)  !! Hartree
+      logical, allocatable :: pair_doubly_cut_neighbor(:)
+         !! True where the pair sits either side of a third fragment cut at
+         !! two bonded atoms; see `warn_adjacent_cuts`
 
    contains
       procedure :: run_serial => fmo_run_serial
@@ -376,6 +379,7 @@ contains
       if (allocated(this%pair_ees)) deallocate (this%pair_ees)
       if (allocated(this%pair_eex)) deallocate (this%pair_eex)
       if (allocated(this%pair_ect_mix)) deallocate (this%pair_ect_mix)
+      if (allocated(this%pair_doubly_cut_neighbor)) deallocate (this%pair_doubly_cut_neighbor)
       this%n_fragments = 0
       this%energy = 0.0_dp
       this%monomer_sum = 0.0_dp
@@ -438,7 +442,8 @@ contains
                        afo_localization=trim(this%afo_localization), &
                        pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
-                       pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix)
+                       pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
+                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
          return
@@ -510,6 +515,9 @@ contains
          json_data%fmo_pair_response = this%pair_response
          json_data%fmo_pair_connected = this%pair_connected
          json_data%fmo_pair_separated = this%pair_separated
+         if (allocated(this%pair_doubly_cut_neighbor)) then
+            json_data%fmo_pair_doubly_cut_neighbor = this%pair_doubly_cut_neighbor
+         end if
          if (allocated(this%pair_pieda)) then
             json_data%fmo_pair_pieda = this%pair_pieda
             json_data%fmo_pair_ees = this%pair_ees
@@ -582,7 +590,8 @@ contains
                        afo_localization=trim(this%afo_localization), &
                        pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
-                       pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix)
+                       pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
+                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())
          return

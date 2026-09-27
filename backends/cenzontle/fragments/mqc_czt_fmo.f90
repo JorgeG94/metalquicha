@@ -343,14 +343,13 @@ module mqc_czt_fmo
          !! A pair joined by a detached bond is reported undecomposed, as
          !! without PIEDA. A pair that is not itself connected but still
          !! holds a frozen virtual -- one of its monomers cut elsewhere -- is
-         !! refused by name: the projected and unprojected higher-level
-         !! states this needs next to a cut are not implemented yet.
+         !! decomposed too, the way `pieda_hl` says to.
       character(len=16) :: pieda_hl = "gamess"
-         !! How the pair's higher-level (union) state is built next to a
-         !! frozen virtual. `"gamess"` or `"projected"`; see
-         !! `mqc_czt_pieda`. Not reachable yet: every cut pair PIEDA would
-         !! need this for is refused instead. Parsed and validated now so a
-         !! deck can set it ahead of that support landing.
+         !! How a pair's union state treats a frozen virtual it holds:
+         !! `"gamess"`, GAMESS's `IPIEDA=1` (see `hl_prime_energy`), or
+         !! `"projected"`, which removes the union orbitals' frozen-virtual
+         !! components first (`project_out_frozen_virtuals`). Identical where
+         !! a pair holds none.
    end type fmo_options_t
 
    type :: fmo_pair_t
@@ -392,6 +391,12 @@ module mqc_czt_fmo
          !! mixing and the density response together, not charge transfer on
          !! its own. Zero unless `pieda` is true, and exactly zero for a
          !! separated pair.
+      logical :: doubly_cut_neighbor = .false.
+         !! `i` and `j` are the two fragments either side of a third one cut
+         !! at two bonded atoms -- see `warn_adjacent_cuts`. FMO2 omits a
+         !! three-body term of about a Hartree between the three, so this
+         !! pair's own term (decomposed or not) is the partition's artefact
+         !! and not a number chemistry assigns to it.
    end type fmo_pair_t
 
    type :: fmo_result_t
@@ -2608,7 +2613,7 @@ contains
 
       ! Every rank holds the reduced terms, so every rank builds the same
       ! pairs from them and nothing about a pair is ever sent.
-      call collect_pairs(frag, coords, afo, opts, terms, term_size, n_terms, correction, &
+      call collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
                          response, separated, ees, eex, res%pairs)
       call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
@@ -2767,12 +2772,53 @@ contains
       end do
    end function pair_is_connected
 
+   pure function pair_is_doubly_cut_neighbor(afo, z, coords, fi, fj) result(flagged)
+      !! Whether `fi` and `fj` are the two fragments either side of a third
+      !! one cut at two bonded atoms -- `warn_adjacent_cuts`' condition,
+      !! evaluated for one candidate pair instead of logged for every one
+      use mqc_atomic_radii, only: covalent_radius_emsley
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: fi, fj
+      logical :: flagged
+
+      integer :: i, j, a, b
+      real(dp) :: reach
+
+      flagged = .false.
+      if (.not. afo%active) return
+      do i = 1, afo%n_cuts
+         do j = i + 1, afo%n_cuts
+            a = afo%cuts(i)%atom_a
+            b = afo%cuts(j)%atom_a
+            if (a == b .or. afo%cuts(i)%frag_a /= afo%cuts(j)%frag_a) cycle
+            if (afo%cuts(i)%frag_b == afo%cuts(j)%frag_b) cycle
+            if (.not. ((afo%cuts(i)%frag_b == fi .and. afo%cuts(j)%frag_b == fj) .or. &
+                       (afo%cuts(i)%frag_b == fj .and. afo%cuts(j)%frag_b == fi))) cycle
+            reach = 1.2_dp*(covalent_radius_emsley(z(a)) + covalent_radius_emsley(z(b)))
+            if (to_angstrom(norm2(coords(:, a) - coords(:, b))) >= reach) cycle
+            flagged = .true.
+            return
+         end do
+      end do
+   end function pair_is_doubly_cut_neighbor
+
    subroutine pieda_pair_term(frag, i, j, z, coords, opts, afo, terms, error)
       !! Ees and Eex for one near, unconnected pair -- GAMESS's `IPIEDA=1`
       !!
       !! Read-only: nothing `nmer_term` produced is touched. `terms%ect_mix` is
       !! left for `combine_pieda_terms`, once the pair's `dE_IJ` is final.
-      !! Refuses a pair holding a frozen virtual (a monomer cut elsewhere).
+      !!
+      !! **Next to a cut**, one or both monomers may carry a ghost block, so
+      !! the group's basis is not the two monomers' bases end to end; each
+      !! monomer's occupied orbitals are scattered into it atom by atom, the
+      !! same map `scatter_members` places a density with, and for the same
+      !! reason added rather than assigned: a detached atom's functions
+      !! belong to two fragments at once.
+      !!
+      !! `pieda_hl = "gamess"` uses the union as it is; `"projected"` first
+      !! removes its frozen-virtual components.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: i, j
       integer, intent(in) :: z(:)
@@ -2787,8 +2833,9 @@ contains
       type(fock_projector_t) :: proj
       real(dp), allocatable :: bounds(:, :)
       real(dp), allocatable :: c_i(:, :), c_j(:, :), c_union(:, :), s(:, :), d_hl(:, :)
+      integer, allocatable :: ao_off(:), ao_count(:), slot_of(:)
       integer :: members(2)
-      integer :: n_i, n_j, n_occ_i, n_occ_j
+      integer :: n_occ_i, n_occ_j, p
       logical :: held
       real(dp) :: e_hl, e_es
 
@@ -2803,21 +2850,6 @@ contains
 
       call group_projector(group, mol, afo, proj, held, error)
       if (error%has_error()) return
-      if (held) then
-         call error%set(ERROR_VALIDATION, "fmo: PIEDA on cut systems is not implemented "// &
-                        "yet, and pair "//to_char(i)//"-"//to_char(j)//" holds a frozen "// &
-                        "virtual -- one of its monomers is cut elsewhere. Turn "// &
-                        "keywords.fragmentation.pieda off, or exclude this pair.")
-         return
-      end if
-
-      n_i = frag(i)%nao
-      n_j = frag(j)%nao
-      if (mol%nao /= n_i + n_j) then
-         call error%set(ERROR_VALIDATION, "fmo: pieda pair "//to_char(i)//"-"// &
-                        to_char(j)//"'s basis is not its two monomers' end to end")
-         return
-      end if
 
       call cholesky_occupied_orbitals(frag(i)%density, frag(i)%nelec/2, &
                                       "fragment "//to_char(i), c_i, error)
@@ -2828,11 +2860,28 @@ contains
 
       n_occ_i = size(c_i, 2)
       n_occ_j = size(c_j, 2)
+
+      allocate (ao_off(mol%natm), ao_count(mol%natm))
+      call atom_ao_blocks(mol, ao_off, ao_count)
+      allocate (slot_of(size(z)), source=0)
+      do p = 1, size(group%atom_of)
+         slot_of(group%atom_of(p)) = p
+      end do
+
       allocate (c_union(mol%nao, n_occ_i + n_occ_j), source=0.0_dp)
-      c_union(1:n_i, 1:n_occ_i) = c_i
-      c_union(n_i + 1:n_i + n_j, n_occ_i + 1:) = c_j
+      call scatter_orbital_block(frag(i), slot_of, ao_off, ao_count, c_i, &
+                                 c_union(:, 1:n_occ_i), error)
+      if (error%has_error()) return
+      call scatter_orbital_block(frag(j), slot_of, ao_off, ao_count, c_j, &
+                                 c_union(:, n_occ_i + 1:), error)
+      if (error%has_error()) return
 
       call mol%overlap(s)
+      if (held .and. trim(opts%pieda_hl) == "projected") then
+         call project_out_frozen_virtuals(proj, s, c_union, error)
+         if (error%has_error()) return
+      end if
+
       call hl_density_from_orbitals(c_union, s, d_hl, error)
       if (error%has_error()) return
       call hl_prime_energy(mol, bounds, d_hl, e_hl, error)
@@ -2845,7 +2894,84 @@ contains
       terms%eex = e_hl - frag(i)%energy - frag(j)%energy - e_es
    end subroutine pieda_pair_term
 
-   subroutine collect_pairs(frag, coords, afo, opts, terms, term_size, n_terms, correction, &
+   subroutine scatter_orbital_block(frag, slot_of, ao_off, ao_count, c_local, c_group, error)
+      !! One fragment's occupied orbitals placed into the group's basis,
+      !! atom block by atom block -- `scatter_members`'s map, for one factor
+      !! of a density rather than the density itself
+      !!
+      !! Rows scatter; columns (the occupied index) do not, so this is the
+      !! same placement with no inner loop over a second atom. Blocks are
+      !! added, not assigned: a detached atom's functions belong to two
+      !! fragments at once, and the group's row for it must hold both.
+      type(fragment_t), intent(in) :: frag
+      integer, intent(in) :: slot_of(:)    !! System atom -> group slot, 0 if outside
+      integer, intent(in) :: ao_off(:)     !! First AO of each group atom, 0-based
+      integer, intent(in) :: ao_count(:)   !! How many each of them has
+      real(dp), intent(in) :: c_local(:, :)     !! This fragment's own basis, x n_occ
+      real(dp), intent(inout) :: c_group(:, :)  !! The group's basis, x n_occ
+      type(error_t), intent(inout) :: error
+
+      integer :: p, gp, np
+
+      do p = 1, size(frag%mol_atom)
+         gp = slot_of(frag%mol_atom(p))
+         np = frag%ao_count(p)
+         if (gp == 0) then
+            call error%set(ERROR_VALIDATION, "pieda: a fragment was solved over an atom "// &
+                           "the pair holding it does not have, so its orbitals have "// &
+                           "nowhere to go")
+            return
+         end if
+         if (ao_count(gp) /= np) then
+            call error%set(ERROR_VALIDATION, "pieda: one atom has "//to_char(np)// &
+                           " basis functions in a fragment and "//to_char(ao_count(gp))// &
+                           " in the pair containing it")
+            return
+         end if
+         c_group(ao_off(gp) + 1:ao_off(gp) + np, :) = &
+            c_group(ao_off(gp) + 1:ao_off(gp) + np, :) + &
+            c_local(frag%ao_off(p) + 1:frag%ao_off(p) + np, :)
+      end do
+   end subroutine scatter_orbital_block
+
+   subroutine project_out_frozen_virtuals(proj, s, c, error)
+      !! `pieda_hl = "projected"`: `C <- C - V (V^T S C)`, `V` the group's
+      !! frozen virtuals
+      !!
+      !! `V` is `proj%basis`'s frozen-virtual block, S-orthonormal by
+      !! construction (`build_frozen_basis`), so `V V^T S` projects onto its
+      !! span. A residual `V^T S C` above 1e-8 afterwards is an error.
+      type(fock_projector_t), intent(in) :: proj
+      real(dp), intent(in) :: s(:, :)
+      real(dp), intent(inout) :: c(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: sv(:, :), vsc(:, :), residual(:, :)
+      real(dp) :: worst
+      integer :: nfo, nfr, nv
+
+      nfo = proj%n_frozen_occ
+      nfr = proj%n_frozen
+      nv = nfr - nfo
+      if (nv <= 0) return
+
+      sv = proj%sc(:, nfo + 1:nfr)
+      allocate (vsc(nv, size(c, 2)))
+      vsc = matmul(transpose(sv), c)
+      c = c - matmul(proj%basis(:, nfo + 1:nfr), vsc)
+
+      allocate (residual(nv, size(c, 2)))
+      residual = matmul(transpose(sv), c)
+      worst = maxval(abs(residual))
+      if (worst > 1.0e-8_dp) then
+         call error%set(ERROR_VALIDATION, "pieda: projecting the frozen virtuals out "// &
+                        "of the union orbitals left a residual occupation of "// &
+                        to_char(worst)//" -- V is not S-orthonormal, or the "// &
+                        "projection above is wrong")
+      end if
+   end subroutine project_out_frozen_virtuals
+
+   subroutine collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
                             response, separated, ees, eex, pairs)
       !! The two-member terms, with the distance and connectivity a reader needs
       !!
@@ -2853,6 +2979,7 @@ contains
       !! `dE_IJ` for every pair -- what `ees`/`eex`, filled during the n-mer
       !! phase for a decomposed pair, are closed against here.
       type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)         !! (3, n_atoms), Bohr
       type(afo_context_t), intent(in) :: afo
       type(fmo_options_t), intent(in) :: opts
@@ -2882,6 +3009,7 @@ contains
          pairs(k)%response = response(t)
          pairs(k)%separated = separated(t)
          pairs(k)%connected = pair_is_connected(afo, fi, fj)
+         pairs(k)%doubly_cut_neighbor = pair_is_doubly_cut_neighbor(afo, z, coords, fi, fj)
 
          r2 = huge(1.0_dp)
          do a = 1, size(frag(fi)%atoms)

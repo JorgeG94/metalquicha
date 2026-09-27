@@ -773,12 +773,33 @@ The three fields are written only on a pair that was decomposed. **A
 connected pair is never decomposed**: ``ect_mix`` would carry the bond itself,
 which is not what the residual means. **A pair beyond ``resdim``** is
 decomposed for free -- ``ees`` is its whole term, ``eex`` and ``ect_mix``
-exactly zero, no extra Fock build. **A pair next to a cut bond** -- not itself
-connected, but one of its monomers is cut elsewhere and so holds a frozen
-virtual -- is refused by name rather than given a number: the projected and
-unprojected higher-level states that scheme needs are not implemented yet.
-``keywords.fragmentation.pieda_hl`` (``"gamess"`` or ``"projected"``) is
-parsed and validated ahead of that landing, but read by nothing yet.
+exactly zero, no extra Fock build.
+
+**A pair next to a cut bond** -- not itself connected, but one of its
+monomers is cut elsewhere and so holds a frozen virtual -- is decomposed too,
+and ``keywords.fragmentation.pieda_hl`` picks how the union state accounts for
+that virtual:
+
+``"gamess"`` (the default)
+   The union of the two monomers' occupied orbitals as it is. This is what
+   GAMESS's ``IPIEDA=1`` computes once its ``EPROJ`` correction is applied,
+   and it matches GAMESS's printed Ees, Eex and Ect+mix for every unconnected
+   pair on butane cut into two ethyls and on glycine tripeptide cut at both
+   peptide bonds, each with a water.
+``"projected"``
+   The union's components along the pair's frozen virtuals are removed first,
+   so ``D_HL`` is a state the constrained pair could itself reach. A
+   departure from GAMESS.
+
+The two coincide exactly on a pair holding no frozen virtual. On the cut
+systems above they differ by at most about 1e-7 Hartree, below GAMESS's own
+agreement on cut systems, so neither is preferred on the evidence so far.
+
+A pair on either side of a **doubly-cut fragment** -- one cut at two atoms
+bonded to each other -- also carries ``"doubly_cut_neighbor": true``. FMO2
+omits a three-body term of about a Hartree there, so that pair's number,
+decomposed or not, reflects the partition rather than the chemistry; see the
+warning FMO prints for such a fragment.
 
 At info level a second table follows the pair one, in kcal/mol::
 

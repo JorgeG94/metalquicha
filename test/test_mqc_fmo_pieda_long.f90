@@ -1,6 +1,6 @@
 !! PIEDA on glycine tripeptide with a water, against PySCF
 module test_mqc_fmo_pieda_long
-   !! Gate 4 of `PIEDA_LAYER3_DESIGN.md`, split from `test_mqc_fmo_pieda` and
+   !! Gate 4 (glycine tripeptide and water against PySCF), split from `test_mqc_fmo_pieda` and
    !! labelled `LONG`: the tripeptide's monomer SCFs at tight tolerances take
    !! several minutes, against seconds for every other PIEDA case.
    use testdrive, only: new_unittest, unittest_type, error_type, check

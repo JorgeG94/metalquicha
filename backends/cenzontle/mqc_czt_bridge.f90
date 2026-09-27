@@ -654,7 +654,8 @@ contains
                           response_sum, level_sum, pair_fragments, pair_distance, &
                           pair_energy, pair_response, pair_connected, comm, &
                           detached, afo_localization, pair_separated, resdim, &
-                          pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix)
+                          pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, &
+                          pair_doubly_cut_neighbor)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -738,6 +739,11 @@ contains
          !! (n_pairs), exact exchange of the pair's union state
       real(dp), intent(out), optional, allocatable :: pair_ect_mix(:)
          !! (n_pairs), the residual: charge transfer, mixing and the response
+      logical, intent(out), optional, allocatable :: pair_doubly_cut_neighbor(:)
+         !! (n_pairs), true where `i` and `j` sit either side of a third
+         !! fragment cut at two bonded atoms, so this pair's own term omits a
+         !! three-body correction FMO2 does not supply -- see
+         !! `warn_adjacent_cuts`
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -849,6 +855,12 @@ contains
          allocate (pair_ect_mix(n_pairs))
          do k = 1, n_pairs
             pair_ect_mix(k) = res%pairs(k)%ect_mix
+         end do
+      end if
+      if (present(pair_doubly_cut_neighbor)) then
+         allocate (pair_doubly_cut_neighbor(n_pairs))
+         do k = 1, n_pairs
+            pair_doubly_cut_neighbor(k) = res%pairs(k)%doubly_cut_neighbor
          end do
       end if
    end subroutine run_czt_fmo

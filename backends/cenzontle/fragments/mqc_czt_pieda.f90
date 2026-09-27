@@ -160,7 +160,9 @@ contains
       !! `E'^HL`, the union state's internal energy, from one Fock build
       !!
       !! Hartree, nuclear repulsion of `mol` included. `bounds` are `mol`'s
-      !! Schwarz bounds.
+      !! Schwarz bounds. No frozen-orbital projector enters: this is GAMESS's
+      !! iteration-1 PIEDA energy after its `EPROJ` correction, which removes
+      !! exactly the projector's contribution.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: bounds(:, :)
       real(dp), intent(in) :: d_hl(:, :)

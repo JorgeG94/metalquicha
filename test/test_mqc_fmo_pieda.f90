@@ -1,7 +1,6 @@
 !! PIEDA: an FMO2 pair's interaction energy split into Ees, Eex and a residual
 module test_mqc_fmo_pieda
-   !! Phase A of PIEDA Layer 3 -- FMO only, no cut bonds -- against
-   !! `PIEDA_LAYER3_DESIGN.md`'s gates:
+   !! The gates PIEDA is held to:
    !!
    !! 1. the sum identity, asserted for every decomposed pair;
    !! 2. the total is bit-identical with the analysis on and off;
@@ -10,25 +9,27 @@ module test_mqc_fmo_pieda
    !!    probe) and GAMESS's printed kcal/mol;
    !! 4. glycine tripeptide with a water: `test_mqc_fmo_pieda_long`, labelled
    !!    `LONG` for its ten-minute runtime;
+   !! 5. butane cut into two ethyls, water 4.5 A beyond C4, against GAMESS's
+   !!    own `IPIEDA=1` table, `pieda_hl = "gamess"`;
+   !! 6. `pieda_hl = "projected"` on the same cut system -- checked rather
+   !!    than assumed for the frozen-virtual occupation, inside
+   !!    `project_out_frozen_virtuals` itself -- and the two modes agreeing
+   !!    wherever there is no frozen virtual to project;
    !! 7. a separated pair's Ees is its whole energy, Eex and Ect+mix exactly
    !!    zero;
    !! 9. the pivoted-Cholesky recovery: rank equals the occupied count, and a
    !!    mismatch is an error rather than a warning;
-   !! 10. a connected pair comes back flagged and undecomposed, and a pair
-   !!     that is not itself connected but still holds a frozen virtual --
-   !!     one of its monomers cut elsewhere -- is refused by name, since
-   !!     Phase A does not implement PIEDA next to a cut.
+   !! 10. a connected pair comes back flagged and undecomposed.
    !!
-   !! Gate 5/6 (cut systems, `pieda_hl = "projected"`) and gate 8 (rank
-   !! independence, which needs MPI and so a test-drive unit test cannot
-   !! reach) are outside Phase A; the refusal that stands in for 5 is covered
-   !! here.
+   !! Gate 8 (rank independence) needs MPI, which a test-drive unit test
+   !! cannot reach; 1 and 2 ranks were compared by hand on the water trimer.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_physical_fragment, only: to_bohr
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_czt_pieda, only: cholesky_occupied_orbitals
+   use mqc_physical_constants, only: HARTREE_TO_KCALMOL
 !$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    implicit none
    private
@@ -61,8 +62,16 @@ contains
                                test_separated_pair), &
                   new_unittest("a_connected_pair_is_reported_undecomposed", &
                                test_connected_pair), &
-                  new_unittest("a_pair_next_to_a_cut_is_refused_by_name", &
-                               test_cut_pair_refused), &
+                  new_unittest("a_pair_next_to_a_cut_matches_gamess_ipieda", &
+                               test_cut_pair_matches_gamess), &
+                  new_unittest("two_cut_glycine_water_pairs_match_gamess_ipieda", &
+                               test_two_cut_glycine_water_matches_gamess), &
+                  new_unittest("pairs_across_a_doubly_cut_fragment_are_flagged", &
+                               test_doubly_cut_neighbor_flag), &
+                  new_unittest("pieda_hl_projected_is_safe_and_variational", &
+                               test_projected_mode_is_safe_and_variational), &
+                  new_unittest("pieda_hl_modes_coincide_with_no_frozen_virtual", &
+                               test_pieda_hl_modes_coincide_with_no_frozen_virtual), &
                   new_unittest("cholesky_recovers_the_occupied_orbitals", &
                                test_cholesky_recovery), &
                   new_unittest("cholesky_refuses_a_rank_mismatch", &
@@ -145,8 +154,7 @@ contains
       !!   python3 tools/cpu_validation/gen_pieda_refs.py \
       !!     water3_cyclic.xyz 6-31g w3 '[[0,1,2],[3,4,5],[6,7,8]]'
       !!
-      !! which agrees with GAMESS's PIEDA table (`PIEDA_LAYER3_DESIGN.md`
-      !! section 2) to its printed kcal/mol: Eex 5.280/5.291/4.807,
+      !! which agrees with GAMESS's PIEDA table to its printed kcal/mol: Eex 5.280/5.291/4.807,
       !! Ect+mix -2.624/-2.549/-2.381 for pairs 1-2/1-3/2-3.
       type(error_type), allocatable, intent(out) :: error
 
@@ -282,13 +290,269 @@ contains
                  "an undecomposed pair's term columns must stay at their default")
    end subroutine test_connected_pair
 
-   subroutine test_cut_pair_refused(error)
-      !! Gate 5/10: a pair next to a cut -- not itself connected, but one of
-      !! its monomers still carries a frozen virtual from a cut elsewhere --
-      !! is refused by name, Phase A's stand-in for the `pieda_hl` support
-      !! that would otherwise be needed to give it a number
+   subroutine test_cut_pair_matches_gamess(error)
+      !! Gate 5: a pair next to a cut -- not itself connected, but one of its
+      !! monomers still carries a frozen virtual from a cut elsewhere --
+      !! against GAMESS's own PIEDA table, `pieda_hl = "gamess"` (the default)
+      !!
+      !! GAMESS 2026, `erloc_xbut2w_er.inp`/`.log`
+      !! (`~/dev/mqc_worktrees/er_localize/er_gamess/`): butane cut into two
+      !! ethyls, water 4.5 A beyond C4, RHF/STO-3G, `LOCAL=RUEDNBRG`,
+      !! `$FMO RESPPC=2.0 RESDIM=0`, `$FMOPRP IPIEDA=1`. Printed table,
+      !! kcal/mol (`I J`, `Ees`, `Eex`, `Ect+mix`):
+      !!
+      !!   3 1  -0.158  -0.000  -0.000
+      !!   3 2   0.303   0.000  -0.001
+      !!
+      !! The connected pair 1-2 is not decomposed here; its own total,
+      !! -9122.246 kcal/mol, is what `test_gamess_butane_water_exact_er` in
+      !! `test_mqc_afo_fmo.f90` already checks `energy` against.
+      type(error_type), allocatable, intent(out) :: error
+      integer, parameter :: PAIR_I(2) = [1, 2], PAIR_J(2) = [3, 3]
+      real(dp), parameter :: GAMESS_EES(2) = [-0.158_dp, 0.303_dp]
+      real(dp), parameter :: GAMESS_EEX(2) = [-0.000_dp, 0.000_dp]
+      real(dp), parameter :: GAMESS_ECT(2) = [-0.000_dp, -0.001_dp]
+      real(dp), parameter :: GAMESS_TOL = 2.0e-3_dp
+         !! GAMESS prints three decimals in kcal/mol; this clears the
+         !! rounding with room for its own ~1e-6 Ha model-SCF floor (design
+         !! risk 6) besides.
+      type(fmo_result_t) :: res
+      integer :: p, k
+
+      call cut_pair_run("gamess", res, error)
+      if (allocated(error)) return
+
+      do p = 1, 2
+         k = findloc(res%pairs%i == PAIR_I(p) .and. res%pairs%j == PAIR_J(p), .true., dim=1)
+         call check(error, k > 0, "a pair is missing")
+         if (allocated(error)) return
+         call check(error, res%pairs(k)%pieda, "a pair next to a cut should be decomposed")
+         if (allocated(error)) return
+         call check(error, &
+                    abs(res%pairs(k)%ees*HARTREE_TO_KCALMOL - GAMESS_EES(p)) < GAMESS_TOL, &
+                    "Ees does not match GAMESS's PIEDA")
+         if (allocated(error)) then
+            write (*, *) "   pair", PAIR_I(p), PAIR_J(p), "Ees =", &
+               res%pairs(k)%ees*HARTREE_TO_KCALMOL
+            return
+         end if
+         call check(error, &
+                    abs(res%pairs(k)%eex*HARTREE_TO_KCALMOL - GAMESS_EEX(p)) < GAMESS_TOL, &
+                    "Eex does not match GAMESS's PIEDA")
+         if (allocated(error)) then
+            write (*, *) "   pair", PAIR_I(p), PAIR_J(p), "Eex =", &
+               res%pairs(k)%eex*HARTREE_TO_KCALMOL
+            return
+         end if
+         call check(error, &
+                    abs(res%pairs(k)%ect_mix*HARTREE_TO_KCALMOL - GAMESS_ECT(p)) < GAMESS_TOL, &
+                    "Ect+mix does not match GAMESS's PIEDA")
+         if (allocated(error)) then
+            write (*, *) "   pair", PAIR_I(p), PAIR_J(p), "Ect+mix =", &
+               res%pairs(k)%ect_mix*HARTREE_TO_KCALMOL
+            return
+         end if
+      end do
+   end subroutine test_cut_pair_matches_gamess
+
+   subroutine test_two_cut_glycine_water_matches_gamess(error)
+      !! Gate 5 where it bites: glycine tripeptide and water, two C-alpha--C
+      !! cuts, so fragments 1, 2 and 3 all carry frozen orbitals and pair 3-4
+      !! has a large exchange term
+      !!
+      !! GAMESS 2026, `erloc_xg3w_er.inp`/`.log`
+      !! (`~/dev/mqc_worktrees/er_localize/er_gamess/`), RHF/STO-3G,
+      !! `LOCAL=RUEDNBRG`, `$FMO NBODY=2 RAFO(1)=1,1,1 RESPPC=2.0 RESDIM=0
+      !! RESPAP=0`, `$FMOPRP IPIEDA=1`. Its unconnected PIEDA rows, kcal/mol
+      !! (`I J`, `Ees`, `Eex`, `Ect+mix`):
+      !!
+      !!   3 1   1.872  -0.000   0.027
+      !!   4 1   0.075  -0.000   0.000
+      !!   4 2   1.265   0.012  -0.012
+      !!   4 3  -6.795   6.048  -4.728
+      type(error_type), allocatable, intent(out) :: error
+      integer, parameter :: PAIR_I(4) = [1, 1, 2, 3], PAIR_J(4) = [3, 4, 4, 4]
+      real(dp), parameter :: GAMESS_EES(4) = [1.872_dp, 0.075_dp, 1.265_dp, -6.795_dp]
+      real(dp), parameter :: GAMESS_EEX(4) = [-0.000_dp, -0.000_dp, 0.012_dp, 6.048_dp]
+      real(dp), parameter :: GAMESS_ECT(4) = [0.027_dp, 0.000_dp, -0.012_dp, -4.728_dp]
+      real(dp), parameter :: GAMESS_TOL = 2.0e-3_dp
+         !! Three printed decimals, plus GAMESS's ~1e-6 Hartree model-SCF floor
+      type(fmo_result_t) :: res
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(27)
+      character(len=2) :: sym(27)
+      real(dp) :: xyz(3, 27)
+      real(dp) :: ours(3), ref(3)
+      integer :: p, k, c
+
+      call gly3_water_cut(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%afo_localization = "er"
+      opts%resppc = 2.0_dp
+      opts%resdim = 0.0_dp
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      opts%outer_tol = 1.0e-9_dp
+      opts%pieda = .true.
+      call run_fmo2(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 3, 3, 2, 2, 2, &
+                                  3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4], opts, res, err)
+      call check(error,.not. err%has_error(), "two-cut glycine and water failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      do p = 1, 4
+         k = findloc(res%pairs%i == PAIR_I(p) .and. res%pairs%j == PAIR_J(p), .true., dim=1)
+         call check(error, k > 0, "a pair is missing")
+         if (allocated(error)) return
+         call check(error, res%pairs(k)%pieda, "an unconnected pair should be decomposed")
+         if (allocated(error)) return
+         ours = [res%pairs(k)%ees, res%pairs(k)%eex, res%pairs(k)%ect_mix]*HARTREE_TO_KCALMOL
+         ref = [GAMESS_EES(p), GAMESS_EEX(p), GAMESS_ECT(p)]
+         write (*, "(a,2i3,3f12.4)") "   pair, Ees Eex Ect+mix (kcal/mol):", &
+            PAIR_I(p), PAIR_J(p), ours
+         do c = 1, 3
+            call check(error, abs(ours(c) - ref(c)) < GAMESS_TOL, &
+                       "a PIEDA term does not match GAMESS's IPIEDA=1 table")
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_two_cut_glycine_water_matches_gamess
+
+   subroutine test_doubly_cut_neighbor_flag(error)
+      !! Butane as CH3 | CH2CH2 | CH3, with the middle fragment holding both
+      !! detached atoms (C2 and C3, bonded to each other): the pair of methyls
+      !! either side of it is flagged, and neither pair touching it is
       type(error_type), allocatable, intent(out) :: error
       type(fmo_result_t) :: res
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(17)
+      character(len=2) :: sym(17)
+      real(dp) :: xyz(3, 17)
+      integer :: k
+
+      call butane_water(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%detached = [2, 3]
+      opts%resdim = 0.0_dp
+      opts%pieda = .true.
+      opts%scf_energy_tol = 1.0e-10_dp
+      opts%scf_density_tol = 1.0e-8_dp
+      call run_fmo2(z(1:14), sym(1:14), xyz(:, 1:14), &
+                    [1, 2, 2, 3, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "butane in three failed: "//err%get_message())
+      if (allocated(error)) return
+
+      do k = 1, size(res%pairs)
+         write (*, "(a,2i3,2l3)") "   pair, connected, doubly_cut_neighbor:", &
+            res%pairs(k)%i, res%pairs(k)%j, res%pairs(k)%connected, &
+            res%pairs(k)%doubly_cut_neighbor
+         call check(error, res%pairs(k)%doubly_cut_neighbor .eqv. &
+                    (res%pairs(k)%i == 1 .and. res%pairs(k)%j == 3), &
+                    "only the methyl-methyl pair should be flagged")
+         if (allocated(error)) return
+      end do
+   end subroutine test_doubly_cut_neighbor_flag
+
+   subroutine test_projected_mode_is_safe_and_variational(error)
+      !! Gate 6: `pieda_hl = "projected"` on the same cut system
+      !!
+      !! `project_out_frozen_virtuals` checks its own residual occupation
+      !! internally (design gate 6's "0 to 1e-12", measured at 2-4e-17 on
+      !! this system and on Gly3+water's two cuts) and would refuse rather
+      !! than silently carry on if it ever failed, so a clean run already
+      !! covers that half. What is asserted here is the other half: on a
+      !! pair whose union state variationally cannot do better than the
+      !! constrained pair SCF, `Ect+mix` is not meaningfully positive -- the
+      !! measured values are -0.0002 and -0.0002 Hartree here, comfortably
+      !! inside the tolerance.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: NOT_POSITIVE_TOL = 1.0e-6_dp
+      type(fmo_result_t) :: res
+      integer :: k
+
+      call cut_pair_run("projected", res, error)
+      if (allocated(error)) return
+
+      do k = 1, size(res%pairs)
+         if (.not. res%pairs(k)%pieda) cycle
+         call check(error, res%pairs(k)%ect_mix < NOT_POSITIVE_TOL, &
+                    "a projected pair's Ect+mix should not be meaningfully positive")
+         if (allocated(error)) then
+            write (*, *) "   pair", res%pairs(k)%i, res%pairs(k)%j, "Ect+mix =", &
+               res%pairs(k)%ect_mix
+            return
+         end if
+      end do
+   end subroutine test_projected_mode_is_safe_and_variational
+
+   subroutine test_pieda_hl_modes_coincide_with_no_frozen_virtual(error)
+      !! Gate 6: the two `pieda_hl` modes are identical wherever a pair holds
+      !! no frozen virtual -- the water trimer has no cut at all, so every
+      !! pair is such a pair, and `"projected"`'s extra step never runs
+      !!
+      !! Forced to one OpenMP thread, as `test_bit_identical` is: the two
+      !! modes run the identical code path here, so any difference between
+      !! them would only be the Fock build's own unordered-critical-section
+      !! scatter under threading (AGENTS.md, "OpenMP merge order is not a
+      !! race"), which is not what this gate is asking about.
+      type(error_type), allocatable, intent(out) :: error
+      type(fmo_result_t) :: gamess_res, projected_res
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(9), p
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      integer :: saved
+
+      saved = 1
+!$    saved = omp_get_max_threads()
+!$    call omp_set_num_threads(1)
+
+      call cyclic_water_trimer(z, sym, xyz)
+
+      call pieda_options(opts, pieda=.true.)
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, gamess_res, err)
+      call check(error,.not. err%has_error(), "the gamess-mode run failed: "// &
+                 err%get_message())
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
+
+      opts%pieda_hl = "projected"
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, projected_res, err)
+      call check(error,.not. err%has_error(), "the projected-mode run failed: "// &
+                 err%get_message())
+!$    call omp_set_num_threads(saved)
+      if (allocated(error)) return
+
+      call check(error, projected_res%energy == gamess_res%energy, &
+                 "the two modes must give the same total with no frozen virtual anywhere")
+      if (allocated(error)) return
+      do p = 1, size(gamess_res%pairs)
+         call check(error, projected_res%pairs(p)%eex == gamess_res%pairs(p)%eex .and. &
+                    projected_res%pairs(p)%ect_mix == gamess_res%pairs(p)%ect_mix, &
+                    "the two modes must agree pair by pair with no frozen virtual anywhere")
+         if (allocated(error)) return
+      end do
+   end subroutine test_pieda_hl_modes_coincide_with_no_frozen_virtual
+
+   subroutine cut_pair_run(pieda_hl, res, error)
+      !! Butane cut into two ethyls, water 4.5 A beyond C4 -- the system
+      !! `cut_pair_matches_gamess` and `projected_mode_is_safe_and_variational`
+      !! both run, at the `pieda_hl` named
+      character(len=*), intent(in) :: pieda_hl
+      type(fmo_result_t), intent(out) :: res
+      type(error_type), allocatable, intent(out) :: error
+
       type(error_t) :: err
       type(fmo_options_t) :: opts
       integer :: z(17)
@@ -300,19 +564,20 @@ contains
       opts%esp = "exact"
       opts%expansion = "fmo"
       opts%bond_breaking = "afo"
+      opts%afo_localization = "er"
+      opts%resppc = 2.0_dp
+      opts%resdim = 0.0_dp
       opts%pieda = .true.
+      opts%pieda_hl = pieda_hl
       opts%scf_energy_tol = 1.0e-10_dp
       opts%scf_density_tol = 1.0e-8_dp
+      opts%outer_tol = 1.0e-9_dp
 
       call run_fmo2(z, sym, xyz, [1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3], &
                     opts, res, err)
-      call check(error, err%has_error(), &
-                 "PIEDA next to a cut must be refused, not silently wrong")
-      if (allocated(error)) return
-      call check(error, index(err%get_message(), "not implemented yet") > 0, &
-                 "the refusal should say this is not implemented yet, not that it "// &
-                 "is impossible")
-   end subroutine test_cut_pair_refused
+      call check(error,.not. err%has_error(), "butane cut into two ethyls, with water, "// &
+                 "failed: "//err%get_message())
+   end subroutine cut_pair_run
 
    subroutine test_cholesky_recovery(error)
       !! Gate 9: `C_occ` recovered from `D = 2 C C^T` reproduces `D`, and the
@@ -398,9 +663,7 @@ contains
 
    subroutine cyclic_water_trimer(z, sym, xyz)
       !! GAMESS's `3h2o.pieda.inp`, RHF/6-31G* optimised, Angstrom; fragment
-      !! `k` is atoms `3k-2..3k`. The geometry `gen_pieda_refs.py` and the
-      !! design's own reference table (`PIEDA_LAYER3_DESIGN.md` section 2)
-      !! were both taken against.
+      !! `k` is atoms `3k-2..3k`; `sample_inputs/water3_cyclic.xyz`.
       integer, intent(out) :: z(9)
       character(len=2), intent(out) :: sym(9)
       real(dp), intent(out) :: xyz(3, 9)
@@ -477,6 +740,59 @@ contains
                      8.439273_dp, 3.049628_dp, 0.000000_dp], [3, 17])
       xyz = to_bohr(ang)
    end subroutine butane_water
+
+   subroutine gly3_water_cut(z, sym, xyz)
+      !! `validation/inputs/sample_inputs/gly3_water_pair.xyz`, as `test_mqc_afo_fmo` builds it
+      integer, intent(out) :: z(27)
+      character(len=2), intent(out) :: sym(27)
+      real(dp), intent(out) :: xyz(3, 27)
+      real(dp) :: ang(3, 27)
+      integer :: i
+
+      z = [7, 6, 6, 8, 1, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 7, 6, 6, 8, 1, 1, 1, 8, 1, 8, 1, 1]
+      do i = 1, 27
+         select case (z(i))
+         case (1)
+            sym(i) = "H "
+         case (6)
+            sym(i) = "C "
+         case (7)
+            sym(i) = "N "
+         case default
+            sym(i) = "O "
+         end select
+      end do
+      ang = reshape([ &
+                    0.0171625298_dp, -0.4776667709_dp, -0.0077801388_dp, &   ! N
+                    1.3251492481_dp, 0.1638239831_dp, 0.0713249069_dp, &   ! C
+                    1.8818395599_dp, 0.1764813685_dp, 1.4667973423_dp, &   ! C
+                    1.1563644386_dp, 0.4758564459_dp, 2.4030731780_dp, &   ! O
+                    2.0041403197_dp, -0.3893217244_dp, -0.6156078332_dp, &   ! H
+                    1.2933738676_dp, 1.2140808724_dp, -0.2903017566_dp, &   ! H
+                    -0.6557592247_dp, -0.0682256808_dp, 0.6785523482_dp, &   ! H
+                    -0.3826962098_dp, -0.2691894812_dp, -0.9506317163_dp, &   ! H
+                    3.2093591995_dp, -0.0780774266_dp, 1.6702200732_dp, &   ! N
+                    3.8489825798_dp, -0.0589263473_dp, 2.9842578467_dp, &   ! C
+                    5.3502343581_dp, -0.0788662970_dp, 2.9476716562_dp, &   ! C
+                    5.9543074560_dp, -0.1656759551_dp, 1.8893430618_dp, &   ! O
+                    3.5421254604_dp, 0.8561169960_dp, 3.5393994122_dp, &   ! H
+                    3.4986665918_dp, -0.9402544817_dp, 3.5643998498_dp, &   ! H
+                    3.7845901118_dp, -0.3119789206_dp, 0.8286081985_dp, &   ! H
+                    6.0352251963_dp, 0.0003525130_dp, 4.1282386693_dp, &   ! N
+                    7.4955375902_dp, -0.0138802141_dp, 4.2014382315_dp, &   ! C
+                    8.0730347718_dp, 0.0277800836_dp, 5.5909529457_dp, &   ! C
+                    7.3557278976_dp, 0.0641983810_dp, 6.5759347789_dp, &   ! O
+                    7.8694940865_dp, -0.9353711779_dp, 3.7021749317_dp, &   ! H
+                    7.8868335534_dp, 0.8596348618_dp, 3.6344677391_dp, &   ! H
+                    5.4670886620_dp, 0.0786510231_dp, 5.0034540291_dp, &   ! H
+                    9.3768940878_dp, 0.0221621974_dp, 5.7818296269_dp, &   ! O
+                    9.9376629532_dp, -0.0106298905_dp, 4.9380771002_dp, &   ! H
+                    7.3635223930_dp, -0.3681902986_dp, -0.5795840740_dp, &   ! O
+                    6.8902239587_dp, -0.3001739023_dp, 0.2496289275_dp, &   ! H
+                    6.6876213700_dp, -0.2710584500_dp, -1.2503709636_dp &   ! H
+                    ], [3, 27])
+      xyz = to_bohr(ang)
+   end subroutine gly3_water_cut
 
 end module test_mqc_fmo_pieda
 
