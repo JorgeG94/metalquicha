@@ -873,10 +873,25 @@ than quietly paired up. A detached bond moves an electron between the two
 fragments it joins, and the count checked here is the one after that move: ethane
 split into two methyls is 9 and 9 before it and 8 and 10 after.
 
-**Hartree-Fock only, for now.** Every fragment and n-mer is solved with
-restricted Hartree-Fock; other methods are not yet wired into these fragment
-calculations, and any other ``model.method`` is refused by name. It used to be
-ignored: a B3LYP deck ran as Hartree-Fock and reported that total.
+**Hartree-Fock or restricted Kohn-Sham.** Every fragment and n-mer is solved
+restricted. ``model.method`` is ``"hf"``, or ``"dft"`` with any
+``model.functional`` the CPU backend supports, from LDA to meta-GGA hybrids,
+range-separated hybrids and VV10. The settings are exactly those an
+unfragmented run of the deck would use.
+
+* A double hybrid is refused by name, because its perturbative correlation is
+  not added to the embedded fragments.
+* The ESP, the charges and the density-response term all come from the
+  reference's own density.
+* Any other method is refused by name. It used to be ignored: a B3LYP deck ran
+  as Hartree-Fock and reported that total.
+
+**Empirical dispersion (D3/D4) is refused under FMO and EE-MBE for now.**
+Whether it belongs once for the whole system or per fragment and n-mer is
+still to be checked against GAMESS.
+
+``keywords.fragmentation.pieda`` is refused with a Kohn-Sham reference, because
+PIEDA's decomposition exists for Hartree-Fock only so far.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.

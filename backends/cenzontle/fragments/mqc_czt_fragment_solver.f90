@@ -1,13 +1,14 @@
-!! One fragment or n-mer, solved for whatever HF/MP2 method the deck asked for
+!! One fragment or n-mer, solved for whatever HF/DFT/MP2 method the deck asked for
 module mqc_czt_fragment_solver
    !! The one fragment-solver interface FMO, EE-MBE and EFMO call: a fragment
    !! or n-mer, an optional embedding operator and Fock projector in, an energy
    !! and a density out. See `mqc_docs/source/developer_fragment_solver.rst`.
    !!
-   !! Restricted Hartree-Fock, and MP2 or RI-MP2 on top of it, are the whole of
-   !! what runs here; anything else is refused before this module is reached
-   !! (`mqc_fragment_capabilities`), and arriving here regardless is an
-   !! internal-consistency error rather than a silent Hartree-Fock answer.
+   !! Restricted Hartree-Fock, restricted Kohn-Sham, and MP2 or RI-MP2 on top
+   !! of Hartree-Fock, are the whole of what runs here; anything else is
+   !! refused before this module is reached (`mqc_fragment_capabilities`), and
+   !! arriving here regardless is an internal-consistency error rather than a
+   !! silent Hartree-Fock answer.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -16,6 +17,7 @@ module mqc_czt_fragment_solver
    use mqc_fock_projector, only: fock_projector_t
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
    implicit none
@@ -72,14 +74,18 @@ contains
 
    subroutine solve_fragment_method(method, mol, nelec, real_z, request, outcome, error, &
                                     reference, aux, label)
-      !! Solve one fragment or n-mer for `method`: Hartree-Fock, or MP2 or
-      !! RI-MP2 on it
+      !! Solve one fragment or n-mer for `method`: Hartree-Fock or Kohn-Sham,
+      !! plus MP2 or RI-MP2 on top of a Hartree-Fock reference
       !!
       !! An unconverged SCF is not an error here: `outcome%converged` says so
       !! and the caller decides.
+      !!
+      !! For either reference, `outcome%internal` is `outcome%energy` less
+      !! `Tr(D u)` with the SCF's own density.
       type(cuest_scf_settings_t), intent(in) :: method
-         !! What runs: `functional == "" .and. .not. run_cc` is Hartree-Fock,
-         !! plus MP2 or RI-MP2 when `run_mp2` is set. Anything else is an
+         !! What runs: an empty `functional` is Hartree-Fock and a non-empty
+         !! one is restricted Kohn-Sham, plus MP2 or RI-MP2 on a Hartree-Fock
+         !! reference when `run_mp2` is set. `run_cc` is an
          !! internal-consistency error.
       type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -99,16 +105,19 @@ contains
          !! Names the term in the retry's log line. "fragment" when absent.
 
       type(scf_numerics_t) :: drive
+      type(xc_context_t) :: xc
       character(len=:), allocatable :: retry_label
       integer :: attempt, max_attempt
+      logical :: kohn_sham
 
-      if (len_trim(method%functional) > 0 .or. method%run_cc) then
-         call error%set(ERROR_VALIDATION, "fragment solver: only Hartree-Fock and an "// &
-                        "MP2 correction on top of it run here; this request should "// &
-                        "have been refused by fragment_refusal before it reached the "// &
-                        "backend.")
+      if (method%run_cc) then
+         call error%set(ERROR_VALIDATION, "fragment solver: coupled-cluster fragments "// &
+                        "are not implemented; this request should have been refused "// &
+                        "by fragment_refusal before it reached the backend.")
          return
       end if
+
+      kohn_sham = len_trim(method%functional) > 0
 
       if (present(reference)) then
          outcome%scf = reference
@@ -118,19 +127,58 @@ contains
          drive = request%drive
          max_attempt = 1
          if (request%retry_level_shift) max_attempt = 2
+
+         if (kohn_sham) then
+            if (.not. xc_available()) then
+               call error%set(ERROR_VALIDATION, "a functional was requested ('"// &
+                              trim(method%functional)//"') but this build has no "// &
+                              "libxc: configure with -DMQC_ENABLE_LIBXC=ON")
+               return
+            end if
+            call xc_context_create(mol, trim(method%functional), xc, error, &
+                                   level=method%grid_level, polarized=.false., &
+                                   nlc_level=method%nlc_grid_level, &
+                                   screen_tol=method%screening_tolerance, &
+                                   point_block=method%block_size, &
+                                   n_radial=method%radial_points, &
+                                   n_angular=method%angular_points)
+            if (error%has_error()) return
+            if (xc%pt2_fraction /= 0.0_dp) then
+               call error%set(ERROR_VALIDATION, "fragment solver: model.functional '"// &
+                              trim(method%functional)//"' is a double hybrid, whose "// &
+                              "perturbative correlation this solver does not add; this "// &
+                              "request should have been refused by fragment_refusal.")
+               call xc%destroy()
+               return
+            end if
+         end if
+
          do attempt = 1, max_attempt
-            ! An unallocated component of `request` arrives absent.
-            call run_czt_rhf(mol, nelec, request%max_iter, request%energy_tol, &
-                             request%density_tol, request%verbose, outcome%scf, error, &
-                             scf=drive, guess=request%guess, &
-                             guess_density=request%guess_density, h_extra=request%h_extra, &
-                             projector=request%projector, grad_tol=request%grad_tol)
+            ! An unallocated component of `request` arrives absent. `xc`
+            ! arrives absent for Hartree-Fock too: it is passed only in the
+            ! Kohn-Sham branch, so a Hartree-Fock fragment calls `run_czt_rhf`
+            ! exactly as it did before this branch existed.
+            if (kohn_sham) then
+               call run_czt_rhf(mol, nelec, request%max_iter, request%energy_tol, &
+                                request%density_tol, request%verbose, outcome%scf, error, &
+                                scf=drive, guess=request%guess, &
+                                guess_density=request%guess_density, xc=xc, &
+                                h_extra=request%h_extra, projector=request%projector, &
+                                grad_tol=request%grad_tol)
+            else
+               call run_czt_rhf(mol, nelec, request%max_iter, request%energy_tol, &
+                                request%density_tol, request%verbose, outcome%scf, error, &
+                                scf=drive, guess=request%guess, &
+                                guess_density=request%guess_density, h_extra=request%h_extra, &
+                                projector=request%projector, grad_tol=request%grad_tol)
+            end if
             if (error%has_error()) exit
             if (outcome%scf%converged .or. attempt == max_attempt) exit
             call logger%verbose("  fmo: "//retry_label//" did not converge; retrying "// &
                                 "with a level shift")
             drive%level_shift = max(drive%level_shift, RETRY_LEVEL_SHIFT)
          end do
+         if (kohn_sham) call xc%destroy()
          if (error%has_error()) return
       end if
 

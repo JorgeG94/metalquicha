@@ -7,7 +7,10 @@ module mqc_fragment_capabilities
    !! away. See `mqc_docs/source/developer_fragment_solver.rst`.
    use mqc_calc_types, only: CALC_TYPE_ENERGY, calc_type_to_string
    use mqc_method_config, only: method_config_t
-   use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_MP2, method_type_to_string
+   use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_DFT, METHOD_TYPE_MP2, &
+                               method_type_to_string
+   use mqc_error, only: error_t
+   use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name
    implicit none
    private
 
@@ -31,6 +34,9 @@ module mqc_fragment_capabilities
          !! The deck's driver, as a `CALC_TYPE_*` constant
       logical :: pieda = .false.
          !! `keywords.fragmentation.pieda`
+      logical :: dispersion = .false.
+         !! `keywords.dft.dispersion` (`method_config%dft%use_dispersion`).
+         !! Meaningless off a Kohn-Sham method, where it is always false.
    end type fragment_needs_t
 
    type :: fragment_capabilities_t
@@ -47,14 +53,21 @@ module mqc_fragment_capabilities
       logical :: pieda = .false.
          !! The method's own PIEDA terms exist. Which schemes offer PIEDA at
          !! all is decided by `check_pieda_support` in `mqc_config_adapter`.
+      logical :: dispersion = .false.
+         !! Empirical dispersion runs alongside this method under this
+         !! scheme. False for every method: where D3/D4 belongs under FMO is
+         !! not settled.
    end type fragment_capabilities_t
 
 contains
 
-   pure function fragment_capabilities(scheme, config) result(cap)
+   function fragment_capabilities(scheme, config) result(cap)
       !! What `config%method_type` may do under `scheme`
       !!
-      !! FMO and EE-MBE: Hartree-Fock, with or without a detached bond.
+      !! FMO and EE-MBE: Hartree-Fock or Kohn-Sham, with or without a detached
+      !! bond. A double hybrid does not run: its PT2 part is not added. Neither
+      !! carries PIEDA for Kohn-Sham yet, and neither carries empirical
+      !! dispersion for either method yet.
       !! EFMO: Hartree-Fock, and MP2 or RI-MP2 without a detached bond (the
       !! frozen virtual at a cut would be correlated) and without spin-component
       !! scaling. Nothing runs unrestricted or with a gradient.
@@ -68,6 +81,9 @@ contains
             cap%runs = .true.
             cap%cut = .true.
             cap%pieda = .true.
+         else if (config%method_type == METHOD_TYPE_DFT) then
+            cap%runs = .not. double_hybrid(config%dft%functional)
+            cap%cut = cap%runs
          end if
       case (FRAGMENT_SCHEME_EFMO)
          select case (config%method_type)
@@ -89,7 +105,8 @@ contains
       !! Why this deck cannot run under `scheme`, or "" when it can
       !!
       !! Reports the first unmet need, checked in this order: the method at
-      !! all, a non-Energy driver, `unrestricted`, a detached bond, PIEDA.
+      !! all, a non-Energy driver, `unrestricted`, a detached bond,
+      !! dispersion, PIEDA.
       integer, intent(in) :: scheme
       type(method_config_t), intent(in) :: config
       type(fragment_needs_t), intent(in) :: needs
@@ -108,6 +125,8 @@ contains
          message = unrestricted_refusal(scheme)
       else if (needs%cut .and. .not. cap%cut) then
          message = cut_refusal(scheme, config)
+      else if (needs%dispersion .and. .not. cap%dispersion) then
+         message = dispersion_refusal(scheme)
       else if (needs%pieda .and. .not. cap%pieda) then
          message = "keywords.fragmentation.pieda has no decomposition for "// &
                    "model.method '"//trim(method_type_to_string(config%method_type))// &
@@ -135,11 +154,16 @@ contains
                       "restricted to a Hartree-Fock reference, and coupled-cluster "// &
                       "fragments are not implemented."
          end if
+      else if (config%method_type == METHOD_TYPE_DFT) then
+         message = "model.functional '"//trim(config%dft%functional)//"' is a double "// &
+                   "hybrid, and FMO and EE-MBE do not add its perturbative "// &
+                   "correlation. Choose a functional with no PT2 part."
       else
          message = "The fragment calculations of FMO and EE-MBE currently run "// &
-                   "Hartree-Fock only, and model.method is '"// &
+                   "Hartree-Fock and Kohn-Sham, and model.method is '"// &
                    trim(method_type_to_string(config%method_type))//"', which is "// &
-                   "not yet wired into them. Set model.method to 'hf'."
+                   "not yet wired into them. Set model.method to 'hf' or a "// &
+                   "functional."
       end if
    end function runs_refusal
 
@@ -175,6 +199,48 @@ contains
                    "model.unrestricted cannot be honoured."
       end if
    end function unrestricted_refusal
+
+   function double_hybrid(functional) result(is_dh)
+      !! Whether `functional` names a double hybrid
+      !!
+      !! A name `xc_spec_from_name` rejects is not a double hybrid here; the
+      !! backend reports it when it builds the functional.
+      character(len=*), intent(in) :: functional
+      logical :: is_dh
+
+      type(xc_spec_t) :: spec
+      type(error_t) :: error
+
+      call xc_spec_from_name(functional, spec, error)
+      is_dh = .false.
+      if (.not. error%has_error()) is_dh = spec%is_double_hybrid()
+   end function double_hybrid
+
+   function dispersion_refusal(scheme) result(message)
+      !! Why `keywords.dft.dispersion` is refused under `scheme`
+      integer, intent(in) :: scheme
+      character(len=:), allocatable :: message
+
+      message = trim(scheme_name(scheme))//" does not add empirical dispersion "// &
+                "yet: where it belongs -- once for the whole system, or per "// &
+                "fragment and n-mer -- is still to be checked against GAMESS. "// &
+                "Drop keywords.dft.dispersion."
+   end function dispersion_refusal
+
+   function scheme_name(scheme) result(name)
+      !! `scheme` in a sentence: "FMO", "EE-MBE" or "EFMO"
+      integer, intent(in) :: scheme
+      character(len=:), allocatable :: name
+
+      select case (scheme)
+      case (FRAGMENT_SCHEME_FMO)
+         name = "FMO"
+      case (FRAGMENT_SCHEME_EE_MBE)
+         name = "EE-MBE"
+      case default
+         name = "EFMO"
+      end select
+   end function scheme_name
 
    function cut_refusal(scheme, config) result(message)
       !! Why a detached bond is refused for `config%method_type` under `scheme`

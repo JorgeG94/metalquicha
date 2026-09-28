@@ -26,7 +26,12 @@ contains
                   new_unittest("fmo_hf_energy_ok", test_fmo_hf_ok), &
                   new_unittest("fmo_hf_pieda_ok", test_fmo_hf_pieda_ok), &
                   new_unittest("efmo_mp2_pieda_refused", test_efmo_mp2_pieda_refused), &
-                  new_unittest("fmo_dft_refused", test_fmo_dft_refused), &
+                  new_unittest("fmo_dft_ok", test_fmo_dft_ok), &
+                  new_unittest("fmo_double_hybrid_refused", test_fmo_double_hybrid_refused), &
+                  new_unittest("fmo_dft_cut_ok", test_fmo_dft_cut_ok), &
+                  new_unittest("eembe_dft_ok", test_eembe_dft_ok), &
+                  new_unittest("fmo_dft_dispersion_refused", test_fmo_dft_dispersion_refused), &
+                  new_unittest("fmo_dft_pieda_refused", test_fmo_dft_pieda_refused), &
                   new_unittest("fmo_mp2_refused", test_fmo_mp2_refused), &
                   new_unittest("fmo_hf_gradient_refused", test_fmo_gradient_refused), &
                   new_unittest("fmo_hf_hessian_refused", test_fmo_hessian_refused), &
@@ -82,15 +87,82 @@ contains
                  "the refusal does not name the key to change")
    end subroutine test_efmo_mp2_pieda_refused
 
-   subroutine test_fmo_dft_refused(error)
+   subroutine test_fmo_dft_ok(error)
       type(error_type), allocatable, intent(out) :: error
       type(method_config_t) :: config
       type(fragment_needs_t) :: needs
 
       config%method_type = METHOD_TYPE_DFT
-      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)) > 0, &
-                 "FMO+DFT was not refused")
-   end subroutine test_fmo_dft_refused
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+DFT energy was refused")
+   end subroutine test_fmo_dft_ok
+
+   subroutine test_fmo_double_hybrid_refused(error)
+      !! A double hybrid's PT2 part is not added under FMO, so it is refused
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_DFT
+      config%dft%functional = "b2plyp"
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
+      call check(error, len(why) > 0, "FMO+B2PLYP was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "model.functional") > 0, &
+                 "the refusal does not name the key to change")
+   end subroutine test_fmo_double_hybrid_refused
+
+   subroutine test_fmo_dft_cut_ok(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_DFT
+      needs%cut = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+DFT with a detached bond was refused")
+   end subroutine test_fmo_dft_cut_ok
+
+   subroutine test_eembe_dft_ok(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_DFT
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_EE_MBE, config, needs)), 0, &
+                 "EE-MBE+DFT was refused")
+   end subroutine test_eembe_dft_ok
+
+   subroutine test_fmo_dft_dispersion_refused(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_DFT
+      needs%dispersion = .true.
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
+      call check(error, len(why) > 0, "FMO+DFT with dispersion was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "keywords.dft.dispersion") > 0, &
+                 "the refusal does not name the key to change")
+   end subroutine test_fmo_dft_dispersion_refused
+
+   subroutine test_fmo_dft_pieda_refused(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_DFT
+      needs%pieda = .true.
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
+      call check(error, len(why) > 0, "FMO+DFT with pieda was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "keywords.fragmentation.pieda") > 0, &
+                 "the refusal does not name the key to change")
+   end subroutine test_fmo_dft_pieda_refused
 
    subroutine test_fmo_mp2_refused(error)
       type(error_type), allocatable, intent(out) :: error

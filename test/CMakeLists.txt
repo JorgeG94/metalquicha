@@ -509,6 +509,12 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_fmo_pieda)
   addlongtest(mqc_fmo_pieda_long)
 
+  # Kohn-Sham fragments through the fragment solver: FMO2 and FMO3 water against
+  # the supermolecule, an EE-MBE dimer, a range-separated hybrid, and propane
+  # cut across one C-C bond -- the DFT counterpart of `mqc_afo_fmo`.
+  addtest(mqc_fmo_dft)
+  target_link_libraries(test_mqc_fmo_dft PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
   # backends/cenzontle/, which is only added when an integrals backend is
   # enabled -- registering it beside the src/ tests built fine here and broke

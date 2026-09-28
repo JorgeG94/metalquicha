@@ -14,8 +14,10 @@ module test_mqc_czt_fragment_solver
    !!      is that reference, exactly, with no arithmetic done to it -- and
    !!      `correlation` matches a direct `run_czt_mp2` call on its orbitals,
    !!      same-spin plus opposite-spin.
-   !!   4. A functional is refused, by an internal-consistency message, rather
-   !!      than answered as Hartree-Fock.
+   !!   4. A functional runs restricted Kohn-Sham and matches a direct
+   !!      `run_czt_rhf(..., xc=)` call, the same way plain Hartree-Fock does.
+   !!   5. Coupled cluster is refused, by an internal-consistency message,
+   !!      rather than answered as Hartree-Fock.
    !!
    !! **"Matches" rather than "to the bit" wherever two SCFs or two MP2s are
    !! run separately** -- the solver's own and a direct call made again here to
@@ -32,6 +34,7 @@ module test_mqc_czt_fragment_solver
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2
+   use mqc_czt_xc, only: xc_context_t, xc_context_create
    use mqc_czt_esp, only: esp_matrices
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_czt_fragment_solver, only: fragment_request_t, fragment_outcome_t, &
@@ -65,7 +68,11 @@ contains
                                test_embedded_hf), &
                   new_unittest("solver_mp2_from_a_reference_runs_no_scf", &
                                test_mp2_reference), &
-                  new_unittest("solver_refuses_a_functional", test_refuses_functional) &
+                  new_unittest("solver_dft_matches_run_czt_rhf_with_xc_to_the_bit", test_dft), &
+                  new_unittest("solver_refuses_coupled_cluster", test_refuses_cc), &
+                  new_unittest("embedded_energy_obeys_hellmann_feynman_hf", test_hf_hf), &
+                  new_unittest("embedded_energy_obeys_hellmann_feynman_pbe", test_hf_pbe), &
+                  new_unittest("embedded_energy_obeys_hellmann_feynman_rsh", test_hf_rsh) &
                   ]
    end subroutine collect_mqc_czt_fragment_solver_tests
 
@@ -265,8 +272,72 @@ contains
       call mol%destroy()
    end subroutine test_mp2_reference
 
-   subroutine test_refuses_functional(error)
-      !! A functional request is an internal-consistency error, not DFT
+   subroutine test_dft(error)
+      !! A functional runs restricted Kohn-Sham through the solver, matching a
+      !! direct `run_czt_rhf(..., xc=)` call
+      type(error_type), allocatable, intent(out) :: error
+
+      integer :: z(3)
+      character(len=2) :: symbols(3)
+      real(dp) :: xyz(3, 3)
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(cuest_scf_settings_t) :: method
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
+      type(rhf_result_t) :: direct
+      type(xc_context_t) :: xc
+
+      call water_geometry(z, symbols, xyz)
+      call build_czt_molecule(z, symbols, xyz, BASIS, mol, err)
+      call check(error,.not. err%has_error(), "building the molecule failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      method%functional = "pbe"
+      request%max_iter = 100
+      request%energy_tol = 1.0e-10_dp
+      request%density_tol = 1.0e-8_dp
+
+      call solve_fragment_method(method, mol, NELEC, z, request, outcome, err)
+      call check(error,.not. err%has_error(), "solve_fragment_method failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, outcome%converged, "the solver's SCF did not converge")
+      if (allocated(error)) return
+
+      call xc_context_create(mol, "pbe", xc, err, polarized=.false.)
+      call check(error,.not. err%has_error(), "building the reference xc context failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call run_czt_rhf(mol, NELEC, request%max_iter, request%energy_tol, &
+                       request%density_tol, request%verbose, direct, err, &
+                       scf=request%drive, guess=request%guess, &
+                       guess_density=request%guess_density, xc=xc, &
+                       h_extra=request%h_extra, projector=request%projector, &
+                       grad_tol=request%grad_tol)
+      call xc%destroy()
+      call check(error,.not. err%has_error(), "the direct Kohn-Sham SCF failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call check(error, outcome%energy, direct%energy, thr=SCF_TOL, &
+                 message="the solver's PBE energy is not run_czt_rhf's")
+      if (allocated(error)) return
+      call check(error, outcome%reference, outcome%energy, thr=0.0_dp, &
+                 message="reference should equal energy on a plain Kohn-Sham request")
+      if (allocated(error)) return
+      call check(error, outcome%internal, outcome%energy, thr=0.0_dp, &
+                 message="internal should equal energy with no h_extra")
+      if (allocated(error)) return
+      call check(error, maxval(abs(outcome%density - direct%density)) < SCF_TOL, &
+                 "the solver's PBE density is not run_czt_rhf's")
+      if (allocated(error)) return
+      call mol%destroy()
+   end subroutine test_dft
+
+   subroutine test_refuses_cc(error)
+      !! A coupled-cluster request is an internal-consistency error
       type(error_type), allocatable, intent(out) :: error
 
       integer :: z(3)
@@ -278,19 +349,110 @@ contains
       character(len=:), allocatable :: message
 
       z = [8, 1, 1]
-      method%functional = "pbe"
+      method%run_cc = .true.
 
       ! `mol` is never read on this path -- the refusal comes before it would
       ! be -- so it is passed unbuilt.
       call solve_fragment_method(method, mol, NELEC, z, request, outcome, err)
       call check(error, err%has_error(), &
-                 "a functional request should be refused rather than run as Hartree-Fock")
+                 "a coupled-cluster request should be refused rather than run as "// &
+                 "Hartree-Fock")
       if (allocated(error)) return
 
       message = err%get_message()
       call check(error, index(message, "fragment_refusal") > 0, &
                  "the refusal should point at fragment_refusal: "//message)
-   end subroutine test_refuses_functional
+   end subroutine test_refuses_cc
+
+   subroutine test_hf_hf(error)
+      !! Hartree-Fock: dE/dlambda for h + lambda u is Tr(D u), by finite difference
+      type(error_type), allocatable, intent(out) :: error
+
+      call hellmann_feynman("", error)
+   end subroutine test_hf_hf
+
+   subroutine test_hf_pbe(error)
+      !! PBE: dE/dlambda for h + lambda u is Tr(D u), by finite difference
+      type(error_type), allocatable, intent(out) :: error
+
+      call hellmann_feynman("pbe", error)
+   end subroutine test_hf_pbe
+
+   subroutine test_hf_rsh(error)
+      !! CAM-B3LYP: dE/dlambda for h + lambda u is Tr(D u), by finite difference
+      type(error_type), allocatable, intent(out) :: error
+
+      call hellmann_feynman("cam-b3lyp", error)
+   end subroutine test_hf_rsh
+
+   subroutine hellmann_feynman(functional, error)
+      !! The embedded SCF energy is stationary in the density
+      !!
+      !! FMO's internal energy `E' = E - Tr(D u)` and its response term
+      !! `Tr(dD u)` both rest on this: with `h + lambda u`, the SCF energy's
+      !! derivative in lambda is `Tr(D u)` at the unperturbed density and
+      !! nothing more. It holds for any variational reference, Kohn-Sham on a
+      !! fixed grid included, and fails if the embedding enters the Fock
+      !! matrix and the energy inconsistently. The full-level FMO identities
+      !! cannot see such a fault: when the fragment count equals the level,
+      !! every embedded term cancels out of the total.
+      character(len=*), intent(in) :: functional
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: STEP = 1.0e-3_dp
+      real(dp), parameter :: TOL = 1.0e-7_dp
+      integer :: z(3), sgn
+      character(len=2) :: symbols(3)
+      real(dp) :: xyz(3, 3), points(3, 1), e_side(2), slope, trace
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(cuest_scf_settings_t) :: method
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
+      real(dp), allocatable :: matrices(:, :, :)
+
+      method%functional = functional
+      call water_geometry(z, symbols, xyz)
+      call build_czt_molecule(z, symbols, xyz, BASIS, mol, err)
+      call check(error,.not. err%has_error(), "building the molecule failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      points(:, 1) = [3.0_dp, 0.0_dp, 0.0_dp]*ANG
+      call esp_matrices(mol, points, matrices, err)
+      call check(error,.not. err%has_error(), "building u failed: "//err%get_message())
+      if (allocated(error)) return
+
+      request%max_iter = 200
+      request%energy_tol = 1.0e-12_dp
+      request%density_tol = 1.0e-10_dp
+
+      ! Tr(D u) at lambda = 0.
+      call solve_fragment_method(method, mol, NELEC, z, request, outcome, err)
+      call check(error,.not. err%has_error(), "the unperturbed solve failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, outcome%converged, "the unperturbed SCF did not converge")
+      if (allocated(error)) return
+      trace = sum(outcome%density*matrices(:, :, 1))
+
+      do sgn = 1, 2
+         request%h_extra = real(3 - 2*sgn, dp)*STEP*matrices(:, :, 1)
+         call solve_fragment_method(method, mol, NELEC, z, request, outcome, err)
+         call check(error,.not. err%has_error(), "a perturbed solve failed: "// &
+                    err%get_message())
+         if (allocated(error)) return
+         call check(error, outcome%converged, "a perturbed SCF did not converge")
+         if (allocated(error)) return
+         e_side(sgn) = outcome%energy
+      end do
+      slope = (e_side(1) - e_side(2))/(2.0_dp*STEP)
+      print '(a,a,a,es12.4,a,es12.4)', "  hellmann-feynman '", functional, &
+         "': dE/dlambda - Tr(D u) = ", slope - trace, ", Tr(D u) = ", trace
+      call check(error, abs(slope - trace) < TOL, &
+                 "dE/dlambda is not Tr(D u): the embedded energy is not stationary")
+      call mol%destroy()
+   end subroutine hellmann_feynman
 
 end module test_mqc_czt_fragment_solver
 

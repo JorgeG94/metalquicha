@@ -2,7 +2,7 @@
 The fragment solver: design and progress
 ========================================
 
-**Status: design agreed (see Decisions at the end); phase 1 built.**
+**Status: design agreed (see Decisions at the end); phases 1 and 2 built, except dispersion.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -125,7 +125,8 @@ The design
 Where it lives
 --------------
 
-``backends/cenzontle/fragments/mqc_czt_fragment_solver.f90`` (phase 1b, built).
+``backends/cenzontle/fragments/mqc_czt_fragment_solver.f90`` (phases 1b and 2,
+built).
 It has to be in the backend because the embedding operator, the projector and
 the molecule are all backend objects built over the fragment's own basis. FMO,
 EE-MBE and EFMO call it; nothing in those three calls ``run_czt_rhf`` any
@@ -186,8 +187,11 @@ adds correlation. Inside the routine:
 
 * **HF:** ``run_czt_rhf`` with exactly the arguments the call sites pass
   today.
-* **DFT:** the same call with an ``xc_context_t`` built from ``settings``.
-  Dispersion is handled according to the answer to question 2 below.
+* **DFT:** built. The same call with an ``xc_context_t`` built from
+  ``settings``, restricted only. ``fragment_refusal`` refuses a double
+  hybrid, which it identifies by name through ``xc_spec_from_name``, so its
+  PT2 part is never silently dropped. The solver has a guard for the same
+  case. Dispersion stays refused (Decision 2).
 * **MP2, SCS/SOS-MP2 and RI-MP2:** HF as above, then ``run_czt_mp2`` or
   ``run_czt_ri_mp2`` on the embedded orbitals, scaled by ``scs_ss`` and
   ``scs_os``. The frozen core is counted from ``real_z``, so ghosts do not
@@ -222,9 +226,9 @@ with GAMESS references.
 The capability query and the one refusal site
 ---------------------------------------------
 
-``src/methods/dispatch/mqc_fragment_capabilities.f90`` (phase 1a, built). It
-is in ``src`` because the refusal must happen in the driver, before any backend
-work:
+``src/methods/dispatch/mqc_fragment_capabilities.f90`` (phases 1a and 2,
+built). It is in ``src`` because the refusal must happen in the driver, before
+any backend work:
 
 .. code-block:: fortran
 
@@ -233,10 +237,11 @@ work:
       logical :: unrestricted        ! model.unrestricted
       integer :: calc_type
       logical :: pieda
+      logical :: dispersion          ! keywords.dft.dispersion
    end type
 
    type :: fragment_capabilities_t   ! what the method can do under the scheme
-      logical :: runs, cut, unrestricted, gradient, pieda
+      logical :: runs, cut, unrestricted, gradient, pieda, dispersion
    end type
 
    pure function fragment_capabilities(scheme, method_config) result(cap)
@@ -245,6 +250,7 @@ work:
 Every method that runs at all accepts an embedding operator, so embedding is
 not a capability. ``pieda`` says whether the method has its own PIEDA terms.
 Which schemes offer PIEDA is still decided by ``check_pieda_support``.
+``dispersion`` is false for every method for now -- see Decision 2.
 
 ``fragment_refusal`` is the single refusal site. ``run_fragmented_calculation``
 calls it for FMO and EE-MBE, and ``run_efmo_energy`` calls it for EFMO. It
@@ -264,31 +270,43 @@ is. An odd electron count after a cut is one example.
      - with a cut (AFO)
      - EFMO
      - PIEDA
+     - D3/D4
    * - HF
      - yes (phase 1)
      - yes
      - yes
      - yes
-   * - DFT, including RSH, D3/D4
+     - refused (Decision 2)
+   * - DFT, including RSH
      - yes (phase 2)
      - yes (phase 2)
      - no: MAKEFP is HF
      - phase 4
+     - refused (Decision 2)
+   * - DFT, double hybrid
+     - no: PT2 fraction not added
+     - no
+     - no: MAKEFP is HF
+     - no
+     - refused
    * - MP2, SCS/SOS, RI-MP2
      - yes (phase 3)
      - no: frozen virtuals would be correlated
      - yes, as now (SCS/SOS still refused)
      - phase 4
+     - n/a
    * - CC
      - later
      - no
      - later
      - no
+     - n/a
    * - MCSCF, xTB, SAPT, EFP
      - no
      - no
      - no
      - no
+     - n/a
 
 Unrestricted is refused everywhere, because ``run_czt_uhf`` has no embedding
 or projector. A gradient is refused everywhere. Both gaps above are closed.
@@ -312,11 +330,29 @@ Phases and gates
    in the last bit of EFMO's far-pair EFP terms, because link-time
    optimisation's partitioning can inline them differently. A reference
    built at another time is therefore not a valid comparison.
-2. **DFT under FMO**, including range-separated hybrids and D3/D4.
+2. **DFT under FMO**, including range-separated hybrids. Built, restricted
+   only, for FMO and EE-MBE, with or without a detached bond; D3/D4 stays
+   refused by name (``mqc_fragment_capabilities``'s ``dispersion`` field),
+   pending the GAMESS check in Decision 2. A double hybrid is refused by
+   ``fragment_refusal``.
 
    Gate: two fragments at full level reproduce the supermolecule, the same
-   identity the covalent EFMO tests use. An FMO2 water trimer matches an
-   independent reference.
+   identity the covalent EFMO tests use -- ``test/test_mqc_fmo_dft.f90``, on
+   a GGA, a global hybrid and a range-separated hybrid, under FMO and
+   EE-MBE, with and without a detached bond, and a three-fragment FMO3 water
+   trimer at full level.
+
+   A full-level identity cannot see the embedding. When the fragment count
+   equals the level, every embedded term cancels out of the total. What
+   checks embedded Kohn-Sham is the Hellmann-Feynman test in
+   ``test/test_mqc_czt_fragment_solver.f90``: with ``h + lambda u``, dE/dlambda
+   equals Tr(D u) to about 1e-10 for HF, PBE and CAM-B3LYP.
+
+   End to end through the driver, the FMO3 water-trimer deck with
+   ``"dft"``/``"pbe"`` gives the unfragmented PBE energy to 5e-12 Eh.
+
+   Still owed: an FMO2 comparison against an independent reference, which
+   needs GAMESS.
 3. **The MP2 family** as correlation on embedded HF.
 
    Gate: the same full-level identity, and an FMO2 reference from GAMESS.
