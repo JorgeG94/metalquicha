@@ -14,7 +14,7 @@ module test_mqc_fmo_dft
    use mqc_physical_fragment, only: to_bohr
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
-   use mqc_czt_xc, only: xc_context_t, xc_context_create
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    implicit none
    private
@@ -63,6 +63,8 @@ contains
       real(dp) :: xyz(3, 6)
       real(dp) :: whole
 
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
       call water_dimer(z, sym, xyz)
 
       opts%basis = "sto-3g"
@@ -105,6 +107,8 @@ contains
       real(dp) :: xyz(3, 6)
       real(dp) :: whole
 
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
       call water_dimer(z, sym, xyz)
 
       opts%basis = "sto-3g"
@@ -146,6 +150,8 @@ contains
       real(dp) :: xyz(3, 9)
       real(dp) :: whole
 
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
       call water_trimer(z, sym, xyz)
 
       opts%basis = "sto-3g"
@@ -186,6 +192,8 @@ contains
       character(len=2) :: sym(6)
       real(dp) :: xyz(3, 6)
       real(dp) :: whole
+
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
 
       call water_dimer(z, sym, xyz)
 
@@ -236,6 +244,8 @@ contains
       real(dp) :: xyz(3, 11)
       real(dp) :: whole
 
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
       call propane(z, sym, xyz)
 
       opts%basis = "sto-3g"
@@ -285,6 +295,8 @@ contains
       character(len=2) :: sym(9)
       real(dp) :: xyz(3, 9)
       real(dp) :: whole
+
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
 
       call water_trimer(z, sym, xyz)
 

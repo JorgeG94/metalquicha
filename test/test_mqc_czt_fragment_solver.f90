@@ -34,7 +34,7 @@ module test_mqc_czt_fragment_solver
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2
-   use mqc_czt_xc, only: xc_context_t, xc_context_create
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_esp, only: esp_matrices
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_czt_fragment_solver, only: fragment_request_t, fragment_outcome_t, &
@@ -288,6 +288,8 @@ contains
       type(rhf_result_t) :: direct
       type(xc_context_t) :: xc
 
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
       call water_geometry(z, symbols, xyz)
       call build_czt_molecule(z, symbols, xyz, BASIS, mol, err)
       call check(error,.not. err%has_error(), "building the molecule failed: "// &
@@ -411,6 +413,8 @@ contains
       type(fragment_outcome_t) :: outcome
       real(dp), allocatable :: matrices(:, :, :)
 
+      ! No libxc in this build: only the Hartree-Fock case can run.
+      if (len(functional) > 0 .and. .not. xc_available()) return
       method%functional = functional
       call water_geometry(z, symbols, xyz)
       call build_czt_molecule(z, symbols, xyz, BASIS, mol, err)
