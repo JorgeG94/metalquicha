@@ -23,8 +23,13 @@ module test_mqc_czt_efmo_covalent
    !!      the nucleus is for.
    !!   4. Correlation across a cut is refused by name.
    !!
-   !! 6-31G throughout: s and p only, so the Cartesian molecules EFMO builds
-   !! and the reference here are the same basis.
+   !! STO-3G throughout: s and p only, so the Cartesian molecules EFMO builds
+   !! and the reference here are the same basis. The identities hold in any
+   !! basis, and 6-31G took three times as long for no more coverage.
+   !!
+   !! What is only measured and printed, the far pairs at every separation and
+   !! the effective end pair of butane, is in `test_mqc_czt_efmo_covalent_long`:
+   !! it is most of the cost and asserts nothing this file does not.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, EFMO_CORR_MP2, &
@@ -41,7 +46,7 @@ module test_mqc_czt_efmo_covalent
 
    real(dp), parameter :: ANG = ANGSTROM_TO_BOHR
 
-   character(len=*), parameter :: BASIS = "6-31g"
+   character(len=*), parameter :: BASIS = "sto-3g"
 
    real(dp), parameter :: TOL = 1.0e-8_dp
       !! The identities are exact. What this clears is SCF convergence, 1e-10
@@ -193,11 +198,12 @@ contains
       if (allocated(error)) return
 
       ! Butane in four: the first and last share no centre and no bond, so
-      ! that one pair alone is effective; its two numbers are reported.
+      ! that one pair alone is effective. Its effective and quantum values are
+      ! measured in `test_mqc_czt_efmo_covalent_long`.
       pair_one_four: block
          integer :: zb(14)
          character(len=2) :: sb(14)
-         real(dp) :: xb(3, 14), efp_value, qm_value
+         real(dp) :: xb(3, 14)
          call butane(zb, sb, xb)
          call run_efmo(zb, sb, xb, [1, 2, 3, 4, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4], [0, 0, 0, 0], &
                        opts, res, err)
@@ -206,13 +212,6 @@ contains
          call check(error, res%n_qm_pairs, 5, message="butane's joined pairs are not quantum")
          if (allocated(error)) return
          call check(error, res%n_efp_pairs, 1, message="butane's end pair is not effective")
-         if (allocated(error)) return
-         call far_and_near(zb, sb, xb, [1, 2, 3, 4, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4], [1, 4], &
-                           "afo", efp_value, qm_value, err)
-         call check(error,.not. err%has_error(), "the end pair failed: "// &
-                    err%get_full_trace())
-         if (allocated(error)) return
-         write (*, *) "   butane end pair (1,4): efp", efp_value, " qm", qm_value
       end block pair_one_four
    end subroutine test_joined_pairs_quantum
 
@@ -256,11 +255,15 @@ contains
       !! uncut molecule is the baseline: the effective-fragment approximation
       !! has an error of its own there, and what a cut must not do is make it
       !! materially worse.
+      !!
+      !! At 3.5 Angstrom only, the separation where both errors are largest and
+      !! so the one the assertion turns on. The sweep out to 6 Angstrom is in
+      !! `test_mqc_czt_efmo_covalent_long`, with the same assertion.
       type(error_type), allocatable, intent(out) :: error
       integer :: z(14), k
       character(len=2) :: sym(14)
       real(dp) :: xyz(3, 14), gap(3), efp_w, qm_w, efp_c, qm_c, worst_whole, worst_cut
-      real(dp), parameter :: SEPARATION(3) = [3.5_dp, 4.5_dp, 6.0_dp]
+      real(dp), parameter :: SEPARATION(1) = [3.5_dp]
       type(error_t) :: err
 
       worst_whole = 0.0_dp

@@ -644,27 +644,29 @@ What it gives
 ~~~~~~~~~~~~~
 
 **At level equal to the fragment count, with rcut huge, the total is the
-molecule's own RHF energy**, whatever was cut: 1.8e-13 Hartree on propane cut
-once, 3.1e-13 cut twice, 9.9e-14 numbered so the middle carbon is detached twice,
-1.5e-12 on butane in four pieces and 1.1e-13 on methylcyclopropane cut at its
-exocyclic bond, RHF/6-31G, in ``test/test_mqc_czt_efmo_covalent.f90``. Each
-fragment's potential sums to its charge to about 1e-14.
+molecule's own RHF energy**, whatever was cut: 2.7e-13 Hartree on propane cut
+once, 1.1e-13 cut twice, 4.3e-14 numbered so the middle carbon is detached twice,
+2.3e-13 on butane in four pieces and 1.7e-13 on methylcyclopropane cut at its
+exocyclic bond, RHF/STO-3G, in ``test/test_mqc_czt_efmo_covalent.f90``. In
+6-31G they held to 1.5e-12 or better. Each fragment's potential sums to its
+charge to about 1e-14.
 
 **Far pairs of a cut fragment are as good as those of a whole molecule** from a
 few angstrom out. Propane with a water beyond its first methyl, the effective
-pair against the same pair solved as a quantum dimer:
+pair against the same pair solved as a quantum dimer, RHF/6-31G, in
+``test/test_mqc_czt_efmo_covalent_long.f90``:
 
 =========  ================  ================
 O to C     uncut, error      cut, error
 =========  ================  ================
 3.5 A      -7.1e-4           -2.3e-3
-4.5 A      +3.2e-5           -2.3e-5
-6.0 A      -9.3e-6           -6.0e-6
+4.5 A      +3.2e-5           -2.2e-5
+6.0 A      -9.3e-6           -5.9e-6
 =========  ================  ================
 
 At 3.5 A the pair is quantum at the default ``rcut`` anyway. **Pairs two cuts
 apart are poor at short range**: butane's two end carbons, at
-:math:`R_{IJ} = 0.85`, give +0.0081 effective against +0.0519 quantum. Keep
+:math:`R_{IJ} = 0.85`, give +0.0077 effective against +0.0541 quantum. Keep
 ``rcut`` at 1 or above with cuts.
 
 **Against GAMESS.** Butane cut at its middle C-C bond with a water 4.5 A beyond
