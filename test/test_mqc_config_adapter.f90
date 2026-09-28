@@ -1,10 +1,13 @@
 module test_mqc_config_adapter
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_config_types, only: input_fragment_t, mqc_config_t
-   use mqc_config_adapter, only: check_fragment_overlap, config_to_driver, driver_config_t
+   use mqc_config_adapter, only: check_fragment_overlap, config_to_driver, driver_config_t, &
+                                 check_pieda_support
    use mqc_optimizer_types, only: OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
    use mqc_method_types, only: METHOD_TYPE_GFN2
-   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_OPTIMIZE
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_OPTIMIZE, CALC_TYPE_GRADIENT, &
+                             CALC_TYPE_HESSIAN
+   use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
    use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
@@ -34,7 +37,20 @@ contains
                   new_unittest("driver_carries_maxiter_named_flag", test_driver_maxiter_named), &
                   new_unittest("fragmentation_method_selects_the_expansion", test_frag_method), &
                   new_unittest("fragmentation_method_refuses_nonsense", test_frag_method_bad), &
-                  new_unittest("excited_states_reach_the_method", test_excited_states) &
+                  new_unittest("excited_states_reach_the_method", test_excited_states), &
+                  new_unittest("pieda_is_silent_when_off", test_pieda_off_is_silent), &
+                  new_unittest("pieda_allowed_under_fmo_energy", test_pieda_allowed), &
+                  new_unittest("pieda_refuses_efmo", test_pieda_refuses_efmo), &
+                  new_unittest("pieda_refuses_ee_mbe", test_pieda_refuses_ee_mbe), &
+                  new_unittest("pieda_refuses_plain_mbe", test_pieda_refuses_mbe), &
+                  new_unittest("pieda_refuses_gradient_and_hessian", &
+                               test_pieda_refuses_gradient_hessian), &
+                  new_unittest("pieda_dispersion_needs_pieda_itself", &
+                               test_pieda_dispersion_needs_pieda), &
+                  new_unittest("pieda_dispersion_is_silent_when_none", &
+                               test_pieda_dispersion_none_is_silent), &
+                  new_unittest("pieda_dispersion_refuses_a_build_without_the_library", &
+                               test_pieda_dispersion_refuses_missing_library) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -256,6 +272,219 @@ contains
       if (allocated(error)) return
       call err%clear()
    end subroutine test_frag_method_bad
+
+   subroutine test_pieda_off_is_silent(error)
+      !! `pieda` false raises nothing, whatever the expansion or driver --
+      !! there is nothing for it to conflict with
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("efmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .false.
+      call check_pieda_support(dc, support_error)
+      call check(error,.not. support_error%has_error(), &
+                 "pieda off must never be refused: "//support_error%get_message())
+   end subroutine test_pieda_off_is_silent
+
+   subroutine test_pieda_allowed(error)
+      !! `pieda` under FMO with an energy driver is not refused
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error,.not. support_error%has_error(), &
+                 "pieda under FMO with driver Energy must be allowed: "// &
+                 support_error%get_message())
+   end subroutine test_pieda_allowed
+
+   subroutine test_pieda_refuses_efmo(error)
+      !! `pieda` under EFMO is refused by name, as "not yet supported"
+      !!
+      !! EFMO never reaches `mqc_czt_fmo`'s own refusal (it returns from
+      !! `run_calculation` before that expansion is even built), so this
+      !! earlier check is the only one that catches it.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("efmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under EFMO must be refused")
+      if (allocated(error)) return
+      call check(error, index(support_error%get_message(), "EFMO") > 0, &
+                 "the refusal should name EFMO")
+      if (allocated(error)) return
+      call check(error, index(support_error%get_message(), "not yet supported") > 0, &
+                 "the refusal should say EFMO is not yet supported")
+   end subroutine test_pieda_refuses_efmo
+
+   subroutine test_pieda_refuses_ee_mbe(error)
+      !! `pieda` under EE-MBE is refused by name: its pair term counts the
+      !! I-J point-charge interaction twice
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("ee-mbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under EE-MBE must be refused")
+      if (allocated(error)) return
+      call check(error, index(support_error%get_message(), "EE-MBE") > 0, &
+                 "the refusal should name EE-MBE")
+   end subroutine test_pieda_refuses_ee_mbe
+
+   subroutine test_pieda_refuses_mbe(error)
+      !! `pieda` under plain MBE (or GMBE) is refused: neither reaches
+      !! `mqc_czt_fmo`, so the flag would otherwise be silently ignored
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("mbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under plain MBE must be refused")
+      if (allocated(error)) return
+      call err%clear()
+      call support_error%clear()
+
+      call frag_driver("gmbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under GMBE must be refused")
+   end subroutine test_pieda_refuses_mbe
+
+   subroutine test_pieda_refuses_gradient_hessian(error)
+      !! `pieda` decomposes an energy term and is refused under Gradient or
+      !! Hessian
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_GRADIENT
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under Gradient must be refused")
+      if (allocated(error)) return
+      call err%clear()
+      call support_error%clear()
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_HESSIAN
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under Hessian must be refused")
+      if (allocated(error)) return
+      call err%clear()
+      call support_error%clear()
+
+      ! An optimisation runs gradients too, so it is refused the same way.
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_OPTIMIZE
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), "pieda under Optimize must be refused")
+   end subroutine test_pieda_refuses_gradient_hessian
+
+   subroutine test_pieda_dispersion_needs_pieda(error)
+      !! `pieda_dispersion` set with `pieda` off is refused, even though
+      !! `pieda` off alone never is -- there is no pair term to add Edi to
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .false.
+      dc%fmo_pieda_dispersion = "d4"
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), &
+                 "pieda_dispersion with pieda off must be refused")
+      if (allocated(error)) return
+      call check(error, index(support_error%get_message(), "pieda_dispersion") > 0, &
+                 "the refusal should name pieda_dispersion")
+   end subroutine test_pieda_dispersion_needs_pieda
+
+   subroutine test_pieda_dispersion_none_is_silent(error)
+      !! `pieda_dispersion = "none"` (the default) never triggers the checks
+      !! above, on or off `pieda`
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .false.
+      dc%fmo_pieda_dispersion = "none"
+      call check_pieda_support(dc, support_error)
+      call check(error,.not. support_error%has_error(), &
+                 "pieda_dispersion 'none' with pieda off must never be refused: "// &
+                 support_error%get_message())
+   end subroutine test_pieda_dispersion_none_is_silent
+
+   subroutine test_pieda_dispersion_refuses_missing_library(error)
+      !! A build without the library `pieda_dispersion` names is refused, and
+      !! the refusal names the CMake option that would fix it; a build with it
+      !! runs the same request clean, which is checked instead since the two
+      !! cannot both be true of one build
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_ENERGY
+      dc%fmo_pieda_dispersion = "d4"
+      call check_pieda_support(dc, support_error)
+
+      if (.not. dispersion_kind_available("d4")) then
+         call check(error, support_error%has_error(), &
+                    "a build without dftd4 must refuse pieda_dispersion: 'd4'")
+         if (allocated(error)) return
+         call check(error, index(support_error%get_message(), &
+                                 trim(dispersion_kind_option("d4"))) > 0, &
+                    "the refusal should name the CMake option that would fix it")
+         return
+      end if
+
+      call check(error,.not. support_error%has_error(), &
+                 "pieda_dispersion: 'd4' on a build with dftd4 must not be refused: "// &
+                 support_error%get_message())
+   end subroutine test_pieda_dispersion_refuses_missing_library
 
    subroutine test_driver_maxiter_named(error)
       !! `keywords.scf.maxiter` and the flag saying the deck named it

@@ -1556,6 +1556,21 @@ contains
             if (allocated(data%fmo_pair_response)) then
                call json%add(pair_obj, "response", data%fmo_pair_response(p))
             end if
+            if (allocated(data%fmo_pair_pieda)) then
+               if (data%fmo_pair_pieda(p)) then
+                  call json%add(pair_obj, "ees", data%fmo_pair_ees(p))
+                  call json%add(pair_obj, "eex", data%fmo_pair_eex(p))
+                  call json%add(pair_obj, "ect_mix", data%fmo_pair_ect_mix(p))
+                  if (allocated(data%fmo_pair_edi)) then
+                     call json%add(pair_obj, "edi", data%fmo_pair_edi(p))
+                  end if
+               end if
+            end if
+            if (allocated(data%fmo_pair_doubly_cut_neighbor)) then
+               if (data%fmo_pair_doubly_cut_neighbor(p)) then
+                  call json%add(pair_obj, "doubly_cut_neighbor", .true.)
+               end if
+            end if
          end do
       end do
    end subroutine write_fmo_pairs

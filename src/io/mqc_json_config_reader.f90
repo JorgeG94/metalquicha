@@ -725,6 +725,11 @@ contains
       call optional_real(json, "keywords.fragmentation.resppc", config%fmo_resppc)
       call read_resdim(json, config, error)
       if (error%has_error()) return
+      call optional_logical(json, "keywords.fragmentation.pieda", config%fmo_pieda)
+      call read_pieda_hl(json, config, error)
+      if (error%has_error()) return
+      call read_pieda_dispersion(json, config, error)
+      if (error%has_error()) return
       call optional_real(json, "keywords.fragmentation.rcut", config%efmo_rcut)
       ! Unitless and a *ratio* of a distance to a van der Waals contact, so
       ! zero or negative is not "no cutoff" the way a negative `resppc` is: it
@@ -2007,6 +2012,66 @@ contains
       end if
       config%fmo_resdim = value
    end subroutine read_resdim
+
+   subroutine read_pieda_hl(json, config, error)
+      !! `keywords.fragmentation.pieda_hl`: "gamess" (default) or "projected"
+      !!
+      !! Read whatever `pieda` says, so a deck can set it before turning PIEDA
+      !! on without the value being silently dropped.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: value
+      logical :: found
+
+      call json%get("keywords.fragmentation.pieda_hl", value, found)
+      if (.not. found .or. .not. allocated(value)) return
+      select case (trim(value))
+      case ("gamess", "projected")
+         config%fmo_pieda_hl = trim(value)
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.fragmentation.pieda_hl must be "// &
+                        "'gamess' or 'projected', not '"//trim(value)//"'.")
+      end select
+   end subroutine read_pieda_hl
+
+   subroutine read_pieda_dispersion(json, config, error)
+      !! `keywords.fragmentation.pieda_dispersion`: "none" (default), or a
+      !! known dispersion kind ("d3bj", "d4")
+      !!
+      !! Spelling only, checked against the same vocabulary
+      !! `keywords.dft.dispersion` uses. Whether `pieda` is on and whether
+      !! this build has the library the kind needs are `check_pieda_support`'s
+      !! to refuse, once both keys have been read.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text, lowered
+      integer :: i
+
+      call optional_string(json, "keywords.fragmentation.pieda_dispersion", text)
+      if (.not. allocated(text)) return
+
+      lowered = trim(adjustl(text))
+      do i = 1, len(lowered)
+         if (lowered(i:i) >= "A" .and. lowered(i:i) <= "Z") then
+            lowered(i:i) = achar(iachar(lowered(i:i)) + 32)
+         end if
+      end do
+
+      if (lowered == "none") then
+         config%fmo_pieda_dispersion = "none"
+         return
+      end if
+      if (.not. dispersion_kind_is_known(lowered)) then
+         call error%set(ERROR_VALIDATION, "unknown keywords.fragmentation.pieda_dispersion '"// &
+                        trim(text)//"'. Accepted: "//DISPERSION_KINDS//", none")
+         return
+      end if
+      config%fmo_pieda_dispersion = lowered
+   end subroutine read_pieda_dispersion
 
    subroutine optional_real(json, path, value)
       !! Fetch a real if present, leaving `value` at its default otherwise

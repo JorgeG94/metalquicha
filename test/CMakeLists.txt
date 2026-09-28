@@ -484,6 +484,18 @@ if(MQC_ENABLE_CZT)
   # bond joins are flagged while every ligand row is present.
   addtest(mqc_fmo_pairs)
 
+  # PIEDA: each near, unconnected pair's interaction energy split into
+  # electrostatics, exchange and a charge-transfer-plus-mixing residual. Against
+  # PySCF fed this repository's own basis JSON (water trimer, cyclic, and
+  # glycine tripeptide with a water), against GAMESS's printed kcal/mol, and the
+  # bookkeeping identities that hold whatever the numbers are: the sum closes
+  # the pair term exactly, a separated pair's Ees is its whole energy, a
+  # connected pair is reported undecomposed, and a pair next to a cut is refused
+  # by name rather than given a number the projected or unprojected higher-level
+  # state has not been taught to account for.
+  addtest(mqc_fmo_pieda)
+  addlongtest(mqc_fmo_pieda_long)
+
   # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
   # backends/cenzontle/, which is only added when an integrals backend is
   # enabled -- registering it beside the src/ tests built fine here and broke

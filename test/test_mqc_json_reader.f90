@@ -84,6 +84,7 @@ contains
                   new_unittest("efmo_rcut_must_be_positive", test_efmo_rcut_refused), &
                   new_unittest("fmo_resdim_is_read_and_left_unset_by_silence", &
                                test_fmo_resdim), &
+                  new_unittest("fmo_pieda_and_pieda_hl", test_fmo_pieda), &
                   new_unittest("cutoffs_must_decrease", test_cutoffs_monotonic), &
                   new_unittest("global_groups", test_global_groups), &
                   new_unittest("nodes_per_group", test_nodes_per_group), &
@@ -1202,6 +1203,94 @@ contains
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), "a negative resdim should be refused")
    end subroutine test_fmo_resdim
+
+   subroutine test_fmo_pieda(error)
+      !! `pieda` defaults false, `pieda_hl` defaults unset ("gamess" is the
+      !! driver's own default) and `pieda_dispersion` defaults to "none"; all
+      !! three are read when given, and an unknown `pieda_hl` or
+      !! `pieda_dispersion` spelling is refused by name
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%fmo_pieda, "pieda should default to off")
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%fmo_pieda_hl), &
+                 "silence should leave pieda_hl unset")
+      if (allocated(error)) return
+      call check(error, config%fmo_pieda_dispersion == "none", &
+                 "pieda_dispersion should default to none")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, "pieda": true}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fmo_pieda, "pieda: true should reach the config")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, "pieda": true, '// &
+                      '"pieda_hl": "projected"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%fmo_pieda_hl), "pieda_hl should be read")
+      if (allocated(error)) return
+      call check(error, config%fmo_pieda_hl == "projected", &
+                 "pieda_hl: projected should reach the config")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, "pieda": true, '// &
+                      '"pieda_hl": "wibble"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown pieda_hl should be refused")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "pieda_hl") > 0, &
+                 "the refusal should name the key")
+      if (allocated(error)) return
+
+      ! `pieda_dispersion`: spelling only here -- whether `pieda` itself is on
+      ! and whether the build has the library are `check_pieda_support`'s
+      ! (test_mqc_config_adapter.f90), not the reader's.
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, "pieda": true, '// &
+                      '"pieda_dispersion": "d4"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fmo_pieda_dispersion == "d4", &
+                 "pieda_dispersion: d4 should reach the config")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, "pieda": true, '// &
+                      '"pieda_dispersion": "d3bj"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%fmo_pieda_dispersion == "d3bj", &
+                 "pieda_dispersion: d3bj should reach the config")
+      if (allocated(error)) return
+
+      call write_deck('"method": "HF", "basis": "sto-3g"', "Energy", &
+                      '"fragmentation": {"method": "fmo", "level": 2, "pieda": true, '// &
+                      '"pieda_dispersion": "wibble"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown pieda_dispersion should be refused")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "pieda_dispersion") > 0, &
+                 "the refusal should name the key")
+   end subroutine test_fmo_pieda
 
    subroutine test_efmo_rcut_refused(error)
       !! `rcut` at or below zero is refused rather than run

@@ -8,6 +8,7 @@ module mqc_config_adapter
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_string_utils, only: int_to_text
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_INTERACTION_ENERGY, calc_type_to_string
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   coordinates_from_string, algorithm_from_string, &
@@ -22,6 +23,7 @@ module mqc_config_adapter
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
                                METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
+   use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -31,6 +33,7 @@ module mqc_config_adapter
    public :: get_logger_level  !! Convert log level string to integer
    public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
    public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
+   public :: check_pieda_support  !! Refuse a PIEDA request this expansion or driver cannot honour
    public :: check_interaction_energy_support
       !! Refuse an interaction-energy run the reduced expansion cannot honour
 
@@ -80,6 +83,9 @@ module mqc_config_adapter
       integer :: fmo_scf_max_iter = 100         !! Inner per-fragment SCF iteration cap
       real(dp) :: fmo_scf_energy_tol = 1.0e-9_dp   !! Inner SCF energy convergence
       real(dp) :: fmo_scf_density_tol = 1.0e-7_dp  !! Inner SCF density convergence
+      logical :: fmo_pieda = .false.     !! Decompose each FMO2 pair (GAMESS's IPIEDA=1)
+      character(len=16) :: fmo_pieda_hl = "gamess"  !! "gamess" or "projected"
+      character(len=16) :: fmo_pieda_dispersion = "none"  !! "none", "d4" or "d3bj"
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
       integer :: global_groups = 0
@@ -257,6 +263,11 @@ contains
       driver_config%fmo_scf_max_iter = mqc_config%fmo_scf_max_iter
       driver_config%fmo_scf_energy_tol = mqc_config%fmo_scf_energy_tol
       driver_config%fmo_scf_density_tol = mqc_config%fmo_scf_density_tol
+      driver_config%fmo_pieda = mqc_config%fmo_pieda
+      if (allocated(mqc_config%fmo_pieda_hl)) then
+         driver_config%fmo_pieda_hl = mqc_config%fmo_pieda_hl
+      end if
+      driver_config%fmo_pieda_dispersion = mqc_config%fmo_pieda_dispersion
 
       ! Set GMBE maximum intersection level
       driver_config%max_intersection_level = mqc_config%max_intersection_level
@@ -867,6 +878,83 @@ contains
 
    end subroutine check_counterpoise_support
 
+   subroutine check_pieda_support(driver_config, error)
+      !! Refuse a PIEDA request the chosen expansion or driver cannot honour
+      !!
+      !! `keywords.fragmentation.pieda` is read only inside `mqc_czt_fmo`'s own
+      !! `expansion = "fmo"` path, so a deck that turns it on under plain MBE,
+      !! GMBE or EFMO would have it silently ignored -- the same failure mode
+      !! `check_counterpoise_support` guards against, and refused the same way,
+      !! before any fragment is solved.
+      !!
+      !! EE-MBE reaches `mqc_czt_fmo` (as `expansion = "mbe"`) and is refused
+      !! there too, by name; the check here is the earlier, cheaper one.
+      !!
+      !! `keywords.fragmentation.pieda_dispersion` piggybacks on the same
+      !! call: it needs `pieda` itself to be on -- there is no pair term to
+      !! add Edi to otherwise -- checked before the early return below so it
+      !! still fires when `pieda` is off, and it needs the library that would
+      !! serve it, checked last so a deck that also fails an earlier gate is
+      !! told about that first.
+      type(driver_config_t), intent(in) :: driver_config
+      type(error_t), intent(inout) :: error
+
+      if (trim(driver_config%fmo_pieda_dispersion) /= "none" .and. &
+          .not. driver_config%fmo_pieda) then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.pieda_dispersion needs "// &
+                        "keywords.fragmentation.pieda to be on -- there is no pair "// &
+                        "interaction energy to add Edi to otherwise. Turn pieda on, "// &
+                        "or drop pieda_dispersion.")
+         return
+      end if
+
+      if (.not. driver_config%fmo_pieda) return
+
+      if (trim(driver_config%expansion_kind) == "efmo") then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.pieda is not yet supported for EFMO.")
+         return
+      end if
+
+      if (trim(driver_config%expansion_kind) == "ee-mbe") then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.pieda needs FMO2's own pair term. "// &
+                        "EE-MBE's pair term counts the I-J point-charge interaction "// &
+                        "twice, once with each monomer's embedded energy, so it is not "// &
+                        "an interaction energy PIEDA can decompose. Set "// &
+                        "keywords.fragmentation.method to 'fmo', or drop pieda.")
+         return
+      end if
+
+      if (trim(driver_config%expansion_kind) /= "fmo") then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.pieda needs the FMO expansion. Set "// &
+                        "keywords.fragmentation.method to 'fmo', or drop pieda.")
+         return
+      end if
+
+      if (driver_config%calc_type /= CALC_TYPE_ENERGY) then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.pieda decomposes an energy term and "// &
+                        "is not available under driver '"// &
+                        trim(calc_type_to_string(driver_config%calc_type))// &
+                        "'. Set driver to 'Energy', or drop pieda.")
+         return
+      end if
+
+      if (trim(driver_config%fmo_pieda_dispersion) /= "none") then
+         if (.not. dispersion_kind_available(driver_config%fmo_pieda_dispersion)) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.fragmentation.pieda_dispersion asked for '"// &
+                           trim(driver_config%fmo_pieda_dispersion)//"', and this build "// &
+                           "has no library for it. Configure with -D"// &
+                           trim(dispersion_kind_option(driver_config%fmo_pieda_dispersion))// &
+                           "=ON.")
+         end if
+      end if
+   end subroutine check_pieda_support
+
    subroutine check_interaction_energy_support(driver_config, n_fragments, error)
       !! Refuse an interaction-energy run the reduced expansion cannot honour
       !!
@@ -876,7 +964,6 @@ contains
       !! Called by `config_to_driver` for a deck, and by the driver again for
       !! every caller that builds a `driver_config_t` some other way. Silent for
       !! any other driver that names no reference.
-      use mqc_calc_types, only: CALC_TYPE_INTERACTION_ENERGY, calc_type_to_string
       use mqc_method_types, only: METHOD_TYPE_SAPT0, METHOD_TYPE_SAPT2
       type(driver_config_t), intent(in) :: driver_config
       integer, intent(in) :: n_fragments

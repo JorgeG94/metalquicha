@@ -24,7 +24,8 @@ module mqc_driver
                                     check_system_geometry, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, &
-                                 check_counterpoise_support, check_interaction_energy_support
+                                 check_counterpoise_support, check_interaction_energy_support, &
+                                 check_pieda_support
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
@@ -199,6 +200,9 @@ contains
                                    "holding the reference fragment, and cannot take a supplied "// &
                                    "one: a list closed for the full expansion is not the "// &
                                    "reduced list, and the reduction is where the saving is.")
+         end if
+         if (.not. support_error%has_error()) then
+            call check_pieda_support(config, support_error)
          end if
          if (support_error%has_error()) then
             if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -800,6 +804,9 @@ contains
             expansion%scf_max_iter = config%fmo_scf_max_iter
             expansion%scf_energy_tol = config%fmo_scf_energy_tol
             expansion%scf_density_tol = config%fmo_scf_density_tol
+            expansion%pieda = config%fmo_pieda
+            expansion%pieda_hl = config%fmo_pieda_hl
+            expansion%pieda_dispersion = config%fmo_pieda_dispersion
             ! From `keywords.scf`, the same source the unfragmented path reads.
             ! The three above stay on `keywords.fragmentation`, being
             ! per-fragment by intent.

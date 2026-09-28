@@ -653,7 +653,9 @@ contains
                           cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, &
                           response_sum, level_sum, pair_fragments, pair_distance, &
                           pair_energy, pair_response, pair_connected, comm, &
-                          detached, afo_localization, pair_separated, resdim)
+                          detached, afo_localization, pair_separated, resdim, &
+                          pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, &
+                          pair_doubly_cut_neighbor, pieda_dispersion, pair_edi)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -724,6 +726,30 @@ contains
       real(dp), intent(in), optional :: resdim
          !! See `fmo_options_t%resdim`. Absent keeps its default, every pair
          !! solved.
+      logical, intent(in), optional :: pieda
+         !! See `fmo_options_t%pieda`. Absent keeps its default, off.
+      character(len=*), intent(in), optional :: pieda_hl
+         !! See `fmo_options_t%pieda_hl`. Absent keeps its default, "gamess".
+      logical, intent(out), optional, allocatable :: pair_pieda(:)
+         !! (n_pairs), whether `pair_ees`/`pair_eex`/`pair_ect_mix` are
+         !! meaningful for that pair
+      real(dp), intent(out), optional, allocatable :: pair_ees(:)
+         !! (n_pairs), electrostatics; meaningless where `pair_pieda` is false
+      real(dp), intent(out), optional, allocatable :: pair_eex(:)
+         !! (n_pairs), exact exchange of the pair's union state
+      real(dp), intent(out), optional, allocatable :: pair_ect_mix(:)
+         !! (n_pairs), the residual: charge transfer, mixing and the response
+      logical, intent(out), optional, allocatable :: pair_doubly_cut_neighbor(:)
+         !! (n_pairs), true where `i` and `j` sit either side of a third
+         !! fragment cut at two bonded atoms, so this pair's own term omits a
+         !! three-body correction FMO2 does not supply -- see
+         !! `warn_adjacent_cuts`
+      character(len=*), intent(in), optional :: pieda_dispersion
+         !! See `fmo_options_t%pieda_dispersion`. Absent keeps its default,
+         !! "none".
+      real(dp), intent(out), optional, allocatable :: pair_edi(:)
+         !! (n_pairs), the empirical dispersion interaction, meaningless where
+         !! `pair_pieda` is false or `pieda_dispersion` is "none"
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -754,6 +780,9 @@ contains
       if (present(detached)) opts%detached = detached
       if (present(afo_localization)) opts%afo_localization = afo_localization
       if (present(resdim)) opts%resdim = resdim
+      if (present(pieda)) opts%pieda = pieda
+      if (present(pieda_hl)) opts%pieda_hl = pieda_hl
+      if (present(pieda_dispersion)) opts%pieda_dispersion = pieda_dispersion
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return
@@ -809,6 +838,48 @@ contains
          allocate (pair_separated(n_pairs))
          do k = 1, n_pairs
             pair_separated(k) = res%pairs(k)%separated
+         end do
+      end if
+      if (present(pair_pieda)) then
+         allocate (pair_pieda(n_pairs))
+         do k = 1, n_pairs
+            pair_pieda(k) = res%pairs(k)%pieda
+         end do
+      end if
+      if (present(pair_ees)) then
+         allocate (pair_ees(n_pairs))
+         do k = 1, n_pairs
+            pair_ees(k) = res%pairs(k)%ees
+         end do
+      end if
+      if (present(pair_eex)) then
+         allocate (pair_eex(n_pairs))
+         do k = 1, n_pairs
+            pair_eex(k) = res%pairs(k)%eex
+         end do
+      end if
+      if (present(pair_ect_mix)) then
+         allocate (pair_ect_mix(n_pairs))
+         do k = 1, n_pairs
+            pair_ect_mix(k) = res%pairs(k)%ect_mix
+         end do
+      end if
+      if (present(pair_doubly_cut_neighbor)) then
+         allocate (pair_doubly_cut_neighbor(n_pairs))
+         do k = 1, n_pairs
+            pair_doubly_cut_neighbor(k) = res%pairs(k)%doubly_cut_neighbor
+         end do
+      end if
+      ! Allocated only when dispersion actually ran: unlike `pair_ees` and its
+      ! neighbours, whose meaning turns on the per-pair `pair_pieda`, `edi`'s
+      ! turns on a second, run-wide switch, and a decomposed pair's `edi` is
+      ! genuinely 0 either way -- allocated-but-zero and "not asked for" are
+      ! not the same fact and only the allocation state can carry it to the
+      ! JSON layer.
+      if (present(pair_edi) .and. trim(opts%pieda_dispersion) /= "none") then
+         allocate (pair_edi(n_pairs))
+         do k = 1, n_pairs
+            pair_edi(k) = res%pairs(k)%edi
          end do
       end if
    end subroutine run_czt_fmo

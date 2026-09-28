@@ -733,13 +733,137 @@ on the hydrogen bond. The ranking of residues agrees.
   distant ligand pair reads tens of kcal/mol from nothing. The rows are written
   with ``delta_energy`` only, and a ``pair_note`` says so. Use
   ``method: "fmo"`` for pair analysis.
-* **Not decomposed.** There is no electrostatics, exchange, charge-transfer or
-  dispersion split of an FMO pair; that is PIEDA, and it is not implemented.
-  EFMO's far pairs do carry four terms.
+* **Not decomposed, unless ``pieda`` is on.** See below. EFMO's far pairs
+  always carry four terms; an FMO pair does not unless asked.
 * **Not counterpoise-corrected.**
+
+.. _fmo-pieda:
+
+PIEDA: decomposing a pair
+--------------------------
+
+``keywords.fragmentation.pieda`` (default ``false``), FMO only (refused under
+EE-MBE, EFMO, GMBE and plain MBE, and under any driver but ``Energy``),
+splits each near, unconnected pair's ``delta_energy`` into three parts --
+GAMESS's ``IPIEDA=1``:
+
+``ees``
+   Electrostatics: the two converged monomer densities' Coulomb interaction,
+   in each other's own nuclei and each other's own basis, plus their nuclear
+   repulsion -- GAMESS's ``esdim``. The same quantity a separated pair's whole
+   term already is.
+``eex``
+   Exact exchange of the pair's higher-level (union) state against its two
+   monomers: the monomers' occupied orbitals, recovered from their converged
+   densities by a pivoted Cholesky rather than re-diagonalized, laid side by
+   side and reduced to one density with ``D_HL = 2 C (C^T S C)^-1 C^T``. One
+   extra Fock build, no extra SCF.
+``ect_mix``
+   The residual, ``delta_energy - ees - eex``: charge transfer, orbital
+   mixing and the pair's density response together, so never plain "charge
+   transfer".
+
+.. code-block:: json
+
+   {"fragments": [3, 4], "distance": 1.893, "connected": false,
+    "delta_energy": -0.0055, "interaction_energy": -0.0055,
+    "response": 0.0003, "ees": -0.0072, "eex": 0.0034, "ect_mix": -0.0017}
+
+The three fields are written only on a pair that was decomposed. **A
+connected pair is never decomposed**: ``ect_mix`` would carry the bond itself,
+which is not what the residual means. **A pair beyond ``resdim``** is
+decomposed for free -- ``ees`` is its whole term, ``eex`` and ``ect_mix``
+exactly zero, no extra Fock build.
+
+**A pair next to a cut bond** -- not itself connected, but one of its
+monomers is cut elsewhere and so holds a frozen virtual -- is decomposed too,
+and ``keywords.fragmentation.pieda_hl`` picks how the union state accounts for
+that virtual:
+
+``"gamess"`` (the default)
+   The union of the two monomers' occupied orbitals as it is. This is what
+   GAMESS's ``IPIEDA=1`` computes once its ``EPROJ`` correction is applied,
+   and it matches GAMESS's printed Ees, Eex and Ect+mix for every unconnected
+   pair on butane cut into two ethyls and on glycine tripeptide cut at both
+   peptide bonds, each with a water.
+``"projected"``
+   The union's components along the pair's frozen virtuals are removed first,
+   so ``D_HL`` is a state the constrained pair could itself reach. A
+   departure from GAMESS.
+
+The two coincide exactly on a pair holding no frozen virtual. On the cut
+systems above they differ by at most about 1e-7 Hartree, below GAMESS's own
+agreement on cut systems, so neither is preferred on the evidence so far.
+
+A pair on either side of a **doubly-cut fragment** -- one cut at two atoms
+bonded to each other -- also carries ``"doubly_cut_neighbor": true``. FMO2
+omits a three-body term of about a Hartree there, so that pair's number,
+decomposed or not, reflects the partition rather than the chemistry; see the
+warning FMO prints for such a fragment.
+
+At info level a second table follows the pair one, in kcal/mol::
+
+   fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact exchange, Ect+mix the residual (charge transfer, mixing and the response together)
+   fmo:     pair            Ees            Eex        Ect+mix
+   fmo:     1-2        -11.3175         5.2805        -2.6241
+
+The analysis is read-only: turning ``pieda`` on changes nothing about
+``total_energy`` or any ``delta_energy``, only what else is reported beside
+them.
 
 The pairs are built on every rank from the reduced terms, so an MPI run reports
 the same pairs as a serial one and no pair crosses a wire.
+
+Edi: an empirical dispersion column
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At Hartree-Fock PIEDA has no dispersion term: GAMESS's ``Edi`` is a
+correlation contribution, and there is no correlation in the reference.
+``keywords.fragmentation.pieda_dispersion`` (``"none"`` by default, or
+``"d4"`` or ``"d3bj"``) adds an *empirical* one in its place, as a fourth
+column ``edi``:
+
+.. code-block:: text
+
+   Edi = E_D(I+J) - E_D(I) - E_D(J)
+
+with ``E_D`` the HF-D4 (dftd4, three-body term included) or HF-D3(BJ)
+(s-dftd3) dispersion energy of the atoms named, at those libraries' own
+Hartree-Fock damping parameters. It is a pairwise difference of a
+geometry-only correction, not correlation energy, and needs no SCF result.
+
+* Each fragment is its **real atoms**, each atom once, where the partition
+  puts it -- no ghost, no cap, no split nucleus. The charge given to D4 is the
+  fragment's declared net charge, and the sum of the two for the pair; D3 has
+  no charge dependence.
+* A **separated pair** gets an ``edi`` too: dispersion does not vanish at
+  ``resdim``, and its ``ees`` is still its whole HF term.
+* A **connected pair** stays undecomposed and gets none.
+* ``pieda_dispersion`` needs ``pieda`` on and is refused by name otherwise. A
+  build without the library the kind needs refuses it before any fragment
+  runs, naming the option that supplies it (``MQC_ENABLE_DFTD4`` or
+  ``MQC_ENABLE_DFTD3``).
+
+**The Hartree-Fock numbers do not move.** ``total_energy``, every
+``delta_energy`` and the identity ``ees + eex + ect_mix = delta_energy`` are
+bit-identical with ``pieda_dispersion`` on and off; ``edi`` is read beside
+them and is in none of them. The info-level table gains ``Edi`` and ``Total``,
+where ``Total`` is ``delta_energy + edi``, the pair's interaction with
+dispersion counted, and a line after it sums ``Edi`` over the decomposed
+pairs. The water trimer above at 6-31G with ``"d4"``::
+
+   fmo: Edi is empirical HF-d4 dispersion, in no HF number; Total = Ees + Eex + Ect+mix + Edi
+   fmo:     pair            Ees            Eex        Ect+mix            Edi          Total
+   fmo:     1-3        -11.4462         5.2915        -2.5489        -1.2029        -9.9066
+   fmo:     1-2        -11.3175         5.2805        -2.6241        -1.2025        -9.8636
+   fmo:     2-3        -10.1003         4.8074        -2.3811        -1.1841        -8.8581
+   fmo: sum of Edi over 3 decomposed pair(s): -3.5895 kcal/mol
+
+``Total`` is the number to compare with a dispersion-corrected supermolecular
+interaction energy; ``Ees + Eex + Ect+mix`` is still the HF one. In the JSON,
+``edi`` (Hartree) is written beside ``ees``/``eex``/``ect_mix`` on each
+decomposed pair, and only when ``pieda_dispersion`` ran; ``interaction_energy``
+stays the HF ``delta_energy``.
 
 Limits
 ------
