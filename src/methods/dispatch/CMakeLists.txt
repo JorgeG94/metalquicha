@@ -2,8 +2,13 @@
 # implementation extends. It decides which backend runs; it does not do physics.
 target_sources(
   ${main_lib}
-  PRIVATE mqc_method_base.f90 mqc_method_config.f90 mqc_method_hf.F90
-          mqc_method_dft.F90 mqc_method_mcscf.f90 mqc_cuest_iface.f90)
+  PRIVATE mqc_method_base.f90
+          mqc_method_config.f90
+          mqc_method_hf.F90
+          mqc_method_dft.F90
+          mqc_method_mcscf.f90
+          mqc_cuest_iface.f90
+          mqc_fragment_capabilities.f90)
 
 if(MQC_ENABLE_TBLITE)
   target_sources(${main_lib} PRIVATE mqc_method_xtb.f90)

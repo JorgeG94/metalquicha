@@ -25,8 +25,9 @@ module test_mqc_fmo_partitions
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_error, only: error_t
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
-   use mqc_many_body_expansion, only: fmo_method_refusal
+   use mqc_fragment_capabilities, only: fragment_refusal, fragment_needs_t, FRAGMENT_SCHEME_FMO
    use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_DFT, METHOD_TYPE_MP2
+   use mqc_method_config, only: method_config_t
    implicit none
    private
 
@@ -152,12 +153,16 @@ contains
       !! refused, and with a message that says this is not wired in yet.
       type(error_type), allocatable, intent(out) :: error
       character(len=:), allocatable :: why
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
 
-      why = fmo_method_refusal(METHOD_TYPE_HF)
+      config%method_type = METHOD_TYPE_HF
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
       call check(error, len(why), 0, "Hartree-Fock was refused")
       if (allocated(error)) return
 
-      why = fmo_method_refusal(METHOD_TYPE_DFT)
+      config%method_type = METHOD_TYPE_DFT
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
       call check(error, len(why) > 0, "DFT was not refused")
       if (allocated(error)) return
       call check(error, index(why, "model.method") > 0, &
@@ -167,7 +172,8 @@ contains
                  "the refusal reads as a limit in principle rather than one of now")
       if (allocated(error)) return
 
-      why = fmo_method_refusal(METHOD_TYPE_MP2)
+      config%method_type = METHOD_TYPE_MP2
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
       call check(error, len(why) > 0, "MP2 was not refused")
    end subroutine test_method
 

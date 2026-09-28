@@ -7,6 +7,7 @@ module mqc_method_factory
                                METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T, &
                                method_type_to_string
    use mqc_method_config, only: scf_options_t, method_config_t
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_method_base, only: qc_method_t
    use mqc_method_hf, only: hf_method_t
    use mqc_method_dft, only: dft_method_t
@@ -21,6 +22,7 @@ module mqc_method_factory
    public :: method_factory_t
    public :: create_method  !! Convenience function
    public :: method_backend_built  !! Whether this build can run a method at all
+   public :: scf_numerics_from_config  !! The deck's SCF settings, as `scf_numerics_t` alone
 
    type :: method_factory_t
       !! Factory for creating quantum chemistry method instances
@@ -208,6 +210,20 @@ contains
       options%properties = config%properties
       options%excited = config%excited
    end subroutine configure_scf
+
+   function scf_numerics_from_config(config) result(numerics)
+      !! The deck's `keywords.scf` as `scf_numerics_t`: how an SCF is driven
+      !!
+      !! The parent component of what `configure_scf` builds, for the SCFs
+      !! run outside `qc_method_t` (FMO, EE-MBE, EFMO, MAKEFP, NEO).
+      type(method_config_t), intent(in) :: config
+      type(scf_numerics_t) :: numerics
+
+      type(scf_options_t) :: options
+
+      call configure_scf(options, config)
+      numerics = options%scf_numerics_t
+   end function scf_numerics_from_config
 
    subroutine configure_hf(m, config, with_mp2, with_cc)
       !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)

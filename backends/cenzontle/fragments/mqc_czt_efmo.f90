@@ -456,12 +456,14 @@ contains
          if (afo%active .and. opts%correlation /= EFMO_CORR_NONE) then
             ! The frozen virtual is held at a shift rather than removed, which a
             ! Hartree-Fock energy does not see and a correlation energy does:
-            ! it would be correlated into like any other virtual.
-            call error%set(ERROR_VALIDATION, "efmo: a partition that detaches "// &
-                           "covalent bonds runs Hartree-Fock fragments only. The "// &
-                           "frozen orbitals at a cut are not yet excluded from the "// &
-                           "correlation, so an MP2 energy there would be a "// &
-                           "different and wrong method; set model.method to 'hf'.")
+            ! it would be correlated into like any other virtual. A defensive
+            ! guard rather than the user-facing text: `fragment_refusal` in
+            ! `mqc_fragment_capabilities` is what a deck actually sees, and it
+            ! refuses this combination before any backend work starts.
+            call error%set(ERROR_VALIDATION, "efmo: correlation with detached "// &
+                           "bonds reached the backend, where only Hartree-Fock "// &
+                           "should ever arrive; fragment_refusal should have "// &
+                           "refused this deck.")
             return
          end if
       case default

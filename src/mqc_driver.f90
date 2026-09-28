@@ -12,8 +12,12 @@ module mqc_driver
    use mqc_method_types, only: needs_serial_execution
    use mqc_mbe_fragment_distribution_scheme, only: unfragmented_calculation, distributed_unfragmented_hessian
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t, &
-                                      fmo_context_t, fmo_method_refusal
+                                      fmo_context_t
    use mqc_method_config, only: method_config_t
+   use mqc_method_factory, only: scf_numerics_from_config
+   use mqc_fragment_capabilities, only: fragment_needs_t, fragment_refusal, &
+                                        FRAGMENT_SCHEME_FMO, FRAGMENT_SCHEME_EE_MBE, &
+                                        FRAGMENT_SCHEME_EFMO
    ! GMBE functions are now called via type-bound procedures in gmbe_context_t
    use mqc_validate, only: validate_system, validate_terms
    use mqc_fraglist, only: fraglist_t
@@ -26,7 +30,6 @@ module mqc_driver
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, &
                                  check_counterpoise_support, check_interaction_energy_support, &
                                  check_pieda_support
-   use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP, &
@@ -453,6 +456,9 @@ contains
       ! Polymorphic expansion context for unified MBE/GMBE handling
       class(many_body_expansion_t), allocatable :: expansion
 
+      type(fragment_needs_t) :: fmo_needs  !! What the deck asks of FMO/EE-MBE, for fragment_refusal
+      character(len=:), allocatable :: fmo_refusal
+
       ! GMBE PIE-based variables
       integer :: n_primaries  !! Number of primary polymers
       integer(int64) :: n_primaries_i64  !! For binomial calculation
@@ -703,11 +709,17 @@ contains
          ! FMO or electrostatically embedded MBE. Both are the same machinery,
          ! differing only in what a fragment sees of its neighbours and how the
          ! pieces are added up, so one context serves both.
-         ! The one check for both schemes, since both are built here and both
-         ! reach the backend through `run_czt_fmo`. EFMO does not, and refuses
-         ! its own methods in `run_efmo_energy`.
-         if (len(fmo_method_refusal(config%method_config%method_type)) > 0) then
-            call logger%error(fmo_method_refusal(config%method_config%method_type))
+         ! Whether this method can run here at all, asked of
+         ! `fragment_refusal`, which `run_efmo_energy` asks for EFMO too.
+         fmo_needs%cut = trim(config%bond_breaking) == "afo"
+         fmo_needs%unrestricted = config%method_config%scf%unrestricted
+         fmo_needs%calc_type = config%calc_type
+         fmo_needs%pieda = config%fmo_pieda
+         fmo_refusal = fragment_refusal( &
+                       merge(FRAGMENT_SCHEME_FMO, FRAGMENT_SCHEME_EE_MBE, config%expansion_kind == "fmo"), &
+                       config%method_config, fmo_needs)
+         if (len(fmo_refusal) > 0) then
+            call logger%error(fmo_refusal)
             return
          end if
          allocate (fmo_context_t :: expansion)
@@ -810,16 +822,7 @@ contains
             ! From `keywords.scf`, the same source the unfragmented path reads.
             ! The three above stay on `keywords.fragmentation`, being
             ! per-fragment by intent.
-            expansion%scf_drive%level_shift = config%method_config%scf%level_shift
-            expansion%scf_drive%linear_dependence = config%method_config%scf%linear_dependence
-            expansion%scf_drive%use_diis = config%method_config%scf%use_diis
-            expansion%scf_drive%diis_size = config%method_config%scf%diis_size
-            expansion%scf_drive%incremental_fock = config%method_config%scf%incremental_fock
-            expansion%scf_drive%accelerator = config%method_config%scf%accelerator
-            expansion%scf_drive%convergence_metric = config%method_config%scf%convergence_metric
-            expansion%scf_drive%guess = config%method_config%scf%guess
-            expansion%scf_drive%allow_crap_scf = config%method_config%scf%allow_crap_scf
-            expansion%scf_drive%grad_tol = config%method_config%scf%gradient_convergence
+            expansion%scf_drive = scf_numerics_from_config(config%method_config)
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
@@ -1468,7 +1471,7 @@ contains
       !! key MBE and FMO read, but is defaulted **here**, to two: the shared
       !! `DEFAULT_FRAG_LEVEL` is one, which for EFMO would drop every near pair.
       use mqc_czt_bridge, only: run_czt_efmo
-      use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_MP2
+      use mqc_method_types, only: METHOD_TYPE_HF
       use mqc_elements, only: element_number_to_symbol
       use mqc_program_limits, only: N_EFMO_TERMS, EFMO_CORR_NONE, EFMO_CORR_MP2, &
                                     EFMO_CORR_RI_MP2
@@ -1487,6 +1490,8 @@ contains
       real(dp) :: terms(N_EFMO_TERMS)
       real(dp) :: energy
       type(scf_numerics_t) :: efmo_scf
+      type(fragment_needs_t) :: efmo_needs  !! What the deck asks, for fragment_refusal
+      character(len=:), allocatable :: efmo_refusal
       integer :: correlation
       integer :: i, n_frag, n_qm, n_efp, n_groups, level
       integer, allocatable :: pair_fragments(:, :)
@@ -1516,11 +1521,15 @@ contains
       ! Energies only, and said so: left to fall through, a Gradient or Hessian
       ! deck would run this energy and report it under a driver it never ran.
       ! With detached bonds the gradient needs the frozen orbitals' own
-      ! response, since the model systems' caps move with the atoms.
-      if (config%calc_type /= CALC_TYPE_ENERGY) then
-         call refuse(result_out, "EFMO computes energies only, and driver is '"// &
-                     trim(calc_type_to_string(config%calc_type))//"'. EFMO gradients "// &
-                     "are not implemented, with or without detached bonds.")
+      ! response, since the model systems' caps move with the atoms. This one
+      ! call also refuses anything but Hartree-Fock, MP2 or RI-MP2 fragments,
+      ! SCS/SOS-MP2 and `unrestricted`; see `fragment_refusal`.
+      efmo_needs%calc_type = config%calc_type
+      efmo_needs%unrestricted = config%method_config%scf%unrestricted
+      efmo_needs%cut = trim(config%bond_breaking) == "afo"
+      efmo_refusal = fragment_refusal(FRAGMENT_SCHEME_EFMO, config%method_config, efmo_needs)
+      if (len(efmo_refusal) > 0) then
+         call refuse(result_out, efmo_refusal)
          return
       end if
 
@@ -1528,13 +1537,12 @@ contains
       ! orbitals the reference converged to and turns `E_I^0` and `E_IJ^0`
       ! correlated, which is the whole of what a correlated EFMO is; the far
       ! pairs and the induction come from the fragment potentials either way,
-      ! MAKEFP being a Hartree-Fock construction. Anything else -- Kohn-Sham
-      ! fragments, coupled cluster -- is refused by name rather than silently
-      ! run as Hartree-Fock.
+      ! MAKEFP being a Hartree-Fock construction. Anything `fragment_refusal`
+      ! did not already stop above is one of the two cases below.
       select case (config%method_config%method_type)
       case (METHOD_TYPE_HF)
          correlation = EFMO_CORR_NONE
-      case (METHOD_TYPE_MP2)
+      case default
          ! `ri-mp2` and `mp2` parse to one method type, and which was written is
          ! recovered from `corr%use_df` -- the same recovery every other MP2
          ! path here makes.
@@ -1543,28 +1551,7 @@ contains
          else
             correlation = EFMO_CORR_MP2
          end if
-         if (config%method_config%corr%use_scs) then
-            call refuse(result_out, "EFMO does not scale the spin components of "// &
-                        "its fragment MP2 energies. SCS-MP2 fragments would be a "// &
-                        "different method from the one the paper runs, so it is "// &
-                        "refused rather than quietly given plain MP2.")
-            return
-         end if
-      case default
-         call refuse(result_out, "EFMO runs Hartree-Fock, MP2 or RI-MP2 fragments, "// &
-                     "and model.method is '"// &
-                     trim(method_type_to_string(config%method_config%method_type))// &
-                     "'. Kohn-Sham fragments would need a MAKEFP that is not "// &
-                     "restricted to a Hartree-Fock reference, and coupled-cluster "// &
-                     "fragments are not implemented.")
-         return
       end select
-      if (config%method_config%scf%unrestricted) then
-         call refuse(result_out, "EFMO is closed-shell for now: every fragment and "// &
-                     "every dimer is solved with restricted Hartree-Fock, so "// &
-                     "keywords.scf.unrestricted cannot be honoured.")
-         return
-      end if
 
       ! The level EFMO's near groups are expanded to. Read from the same key
       ! MBE and FMO read -- there is no EFMO-specific level -- but defaulted
@@ -1607,14 +1594,7 @@ contains
       ! against it is an interaction energy are converged tighter than a
       ! whole-system run would be, and `make_efp_potential` already holds those
       ! defaults.
-      efmo_scf%level_shift = config%method_config%scf%level_shift
-      efmo_scf%linear_dependence = config%method_config%scf%linear_dependence
-      efmo_scf%use_diis = config%method_config%scf%use_diis
-      efmo_scf%diis_size = config%method_config%scf%diis_size
-      efmo_scf%incremental_fock = config%method_config%scf%incremental_fock
-      efmo_scf%accelerator = config%method_config%scf%accelerator
-      efmo_scf%convergence_metric = config%method_config%scf%convergence_metric
-      efmo_scf%allow_crap_scf = config%method_config%scf%allow_crap_scf
+      efmo_scf = scf_numerics_from_config(config%method_config)
 
       if (comm%leader()) then
          call logger%info("Running EFMO over "//to_char(n_frag)//" fragments, "// &
@@ -1758,12 +1738,7 @@ contains
       end if
       ! Everything else about how the SCF runs goes down whole. These are the
       ! settings a MakeFP deck could set and then watch do nothing.
-      makefp_scf%level_shift = config%method_config%scf%level_shift
-      makefp_scf%linear_dependence = config%method_config%scf%linear_dependence
-      makefp_scf%use_diis = config%method_config%scf%use_diis
-      makefp_scf%diis_size = config%method_config%scf%diis_size
-      makefp_scf%incremental_fock = config%method_config%scf%incremental_fock
-      makefp_scf%accelerator = config%method_config%scf%accelerator
+      makefp_scf = scf_numerics_from_config(config%method_config)
       if (config%method_config%scf%density_fitting) then
          ! TODO(mqc): make good
          call run_czt_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
@@ -1910,12 +1885,7 @@ contains
       end if
       ! Everything else about how the SCF runs goes down whole, as MAKEFP does
       ! it: a deck could set these and otherwise watch them do nothing.
-      neo_scf%level_shift = config%method_config%scf%level_shift
-      neo_scf%linear_dependence = config%method_config%scf%linear_dependence
-      neo_scf%use_diis = config%method_config%scf%use_diis
-      neo_scf%diis_size = config%method_config%scf%diis_size
-      neo_scf%incremental_fock = config%method_config%scf%incremental_fock
-      neo_scf%accelerator = config%method_config%scf%accelerator
+      neo_scf = scf_numerics_from_config(config%method_config)
       call run_czt_neo(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
                        config%method_config%basis_set, &
                        trim(config%method_config%neo%nuclear_basis), quantum, &

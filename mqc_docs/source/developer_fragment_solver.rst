@@ -1,8 +1,8 @@
-===========================================
-The fragment solver (design, not yet built)
-===========================================
+========================================
+The fragment solver: design and progress
+========================================
 
-**Status: design agreed (see Decisions at the end); not yet built.**
+**Status: design agreed (see Decisions at the end); phase 1a built.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -79,7 +79,7 @@ Refusals and gaps in ``src``
 * **Gap:** an FMO or EE-MBE deck with ``driver: "Gradient"`` is not refused.
   ``fmo_run_serial`` and ``fmo_run_distributed`` ignore ``calc_type`` and
   report an energy.
-* **Gap:** ``keywords.scf.unrestricted`` is silently ignored under FMO.
+* **Gap:** ``model.unrestricted`` is silently ignored under FMO.
 
 The SCF settings drift
 ----------------------
@@ -213,28 +213,36 @@ with GAMESS references.
 The capability query and the one refusal site
 ---------------------------------------------
 
-A new ``src`` module, ``src/methods/dispatch/mqc_fragment_capabilities.f90``.
-It has to be in ``src`` because the refusal must happen in the driver, before
-any backend work:
+``src/methods/dispatch/mqc_fragment_capabilities.f90`` (phase 1a, built). It
+is in ``src`` because the refusal must happen in the driver, before any backend
+work:
 
 .. code-block:: fortran
 
-   type :: fragment_capabilities_t
-      logical :: embedding     ! accepts h_extra
-      logical :: projector     ! accepts an AFO projector (cuts)
-      logical :: unrestricted
-      logical :: gradient
+   type :: fragment_needs_t          ! what the deck asks
+      logical :: cut                 ! bond_breaking = "afo"
+      logical :: unrestricted        ! model.unrestricted
+      integer :: calc_type
       logical :: pieda
    end type
 
-   function fragment_capabilities(scheme, method_config) result(cap)
-   function fragment_refusal(scheme, method_config, calc_type, needs) result(message)
+   type :: fragment_capabilities_t   ! what the method can do under the scheme
+      logical :: runs, cut, unrestricted, gradient, pieda
+   end type
 
-``fragment_refusal`` is the single refusal site. It replaces
-``fmo_method_refusal``, the method refusals in ``run_efmo_energy``, and the
-backend's MP2-across-a-cut refusal. ``needs`` says what the deck requires:
-embedding, a cut, unrestricted, a gradient, PIEDA. The message names the
-method, the scheme and the missing capability.
+   pure function fragment_capabilities(scheme, method_config) result(cap)
+   function fragment_refusal(scheme, method_config, needs) result(message)
+
+Every method that runs at all accepts an embedding operator, so embedding is
+not a capability. ``pieda`` says whether the method has its own PIEDA terms.
+Which schemes offer PIEDA is still decided by ``check_pieda_support``.
+
+``fragment_refusal`` is the single refusal site. ``run_fragmented_calculation``
+calls it for FMO and EE-MBE, and ``run_efmo_energy`` calls it for EFMO. It
+replaced ``fmo_method_refusal`` and the method refusals in
+``run_efmo_energy``. The backend's MP2-across-a-cut check in ``run_efmo`` is
+now only a guard against a caller that skipped it. The message names the
+method, the scheme and the key to change.
 
 Refusals that depend on the data rather than the method stay where the data
 is. An odd electron count after a cut is one example.
@@ -274,20 +282,21 @@ is. An odd electron count after a cut is one example.
      - no
 
 Unrestricted is refused everywhere, because ``run_czt_uhf`` has no embedding
-or projector. A gradient is refused everywhere, which closes the gap above.
+or projector. A gradient is refused everywhere. Both gaps above are closed.
 
 Phases and gates
 ================
 
 0. **This page.** Approved before any code is written.
-1. **The interface, with HF through it.** FMO, EE-MBE and EFMO call the
-   solver. Settings arrive as ``cuest_scf_settings_t``. ``fragment_refusal``
-   replaces the refusals listed above, and the driver's four
-   ``scf_numerics_t`` copies become one.
+1. **The interface, with HF through it.** Phase 1a, done: the capability
+   query and refusal site, and ``scf_numerics_from_config`` in place of the
+   driver's four copies, bit-identical on the FMO, EFMO, NEO and MAKEFP decks.
+   Phase 1b: FMO, EE-MBE and EFMO call the solver, and settings arrive as
+   ``cuest_scf_settings_t``.
 
    Gate: every existing FMO, EFMO, EE-MBE, AFO and PIEDA test passes
    unchanged, and totals are bit-identical to ``main`` at one thread on the
-   FMO and EFMO decks in ``validation/inputs/cpu/mqc/{fmo,efmo}``.
+   FMO, EFMO, NEO and MAKEFP decks in ``validation/inputs/cpu/mqc/``.
 2. **DFT under FMO**, including range-separated hybrids and D3/D4.
 
    Gate: two fragments at full level reproduce the supermolecule, the same

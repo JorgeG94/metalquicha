@@ -164,6 +164,11 @@ if(MQC_ENABLE_CZT)
   # The refactor removed three hand-copied blocks; this is what keeps them gone.
   addtest(mqc_scf_options)
 
+  # `fragment_refusal`'s table: which method runs under FMO, EE-MBE and EFMO,
+  # and which combination -- a non-Energy driver, unrestricted, a cut, PIEDA --
+  # each of those refuses. No SCF, so milliseconds like `mqc_fmo_partitions`.
+  addtest(mqc_fragment_capabilities)
+
   # Unrestricted MP2, whose closed-shell limit is the restricted one.
   addtest(mqc_ump2)
   target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)
