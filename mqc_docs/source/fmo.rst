@@ -880,6 +880,11 @@ backend supports (LDA to meta-GGA hybrids, range-separated hybrids and VV10),
 or one of the MP2 family. The settings are exactly those an unfragmented run
 of the deck would use.
 
+To compare B3LYP with GAMESS, note that the two define it differently.
+``"b3lyp"`` here is libxc's VWN-RPA B3LYP. GAMESS's ``DFTTYP=B3LYP`` is the
+VWN5 one, which is ``"hyb_gga_xc_b3lyp5"`` here. See
+``tools/fmo_validation/README.md``.
+
 * A double hybrid is refused by name, because its perturbative correlation is
   not added to the embedded fragments.
 * **For Hartree-Fock and Kohn-Sham**, the ESP, the charges and the
