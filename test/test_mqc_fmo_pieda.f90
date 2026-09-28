@@ -19,7 +19,11 @@ module test_mqc_fmo_pieda
    !!    zero;
    !! 9. the pivoted-Cholesky recovery: rank equals the occupied count, and a
    !!    mismatch is an error rather than a warning;
-   !! 10. a connected pair comes back flagged and undecomposed.
+   !! 10. a connected pair comes back flagged and undecomposed;
+   !! 11. `pieda_dispersion`: Edi on the water trimer against dftd4's and
+   !!     s-dftd3's own programs, HF numbers bit-identical with it on and off,
+   !!     nonzero on a separated pair, absent on a connected one. Skipped
+   !!     where the build lacks the library, as `test_mqc_dispersion` is.
    !!
    !! Gate 8 (rank independence) needs MPI, which a test-drive unit test
    !! cannot reach; 1 and 2 ranks were compared by hand on the water trimer.
@@ -30,6 +34,7 @@ module test_mqc_fmo_pieda
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
    use mqc_czt_pieda, only: cholesky_occupied_orbitals
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
+   use mqc_dispersion_apply, only: dispersion_kind_available
 !$ use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    implicit none
    private
@@ -75,7 +80,15 @@ contains
                   new_unittest("cholesky_recovers_the_occupied_orbitals", &
                                test_cholesky_recovery), &
                   new_unittest("cholesky_refuses_a_rank_mismatch", &
-                               test_cholesky_rank_mismatch) &
+                               test_cholesky_rank_mismatch), &
+                  new_unittest("water_trimer_edi_matches_an_independent_reference", &
+                               test_water_trimer_edi), &
+                  new_unittest("pieda_dispersion_leaves_the_hf_numbers_bit_identical", &
+                               test_pieda_dispersion_bit_identical), &
+                  new_unittest("a_separated_pairs_edi_is_not_zero", &
+                               test_separated_pair_edi), &
+                  new_unittest("a_connected_pairs_edi_is_zero", &
+                               test_connected_pair_edi) &
                   ]
    end subroutine collect_mqc_fmo_pieda
 
@@ -643,6 +656,21 @@ contains
       opts%pieda = pieda
    end subroutine pieda_options
 
+   subroutine edi_options(opts, kind)
+      !! PIEDA on, STO-3G, exact field, every pair solved, default SCF
+      !! tolerances, and `pieda_dispersion = kind` -- the cheap settings the
+      !! Edi tests use, where the HF part only has to finish
+      character(len=*), intent(in) :: kind
+      type(fmo_options_t), intent(out) :: opts
+
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%resdim = 0.0_dp
+      opts%pieda = .true.
+      opts%pieda_dispersion = kind
+   end subroutine edi_options
+
    subroutine water_trimer_pieda_run(res, error)
       !! The cyclic water trimer, PIEDA on, at gate 3's tolerances
       type(fmo_result_t), intent(out) :: res
@@ -660,6 +688,234 @@ contains
       call check(error,.not. err%has_error(), "the water trimer PIEDA run failed: "// &
                  err%get_message())
    end subroutine water_trimer_pieda_run
+
+   subroutine test_water_trimer_edi(error)
+      !! Edi on the cyclic water trimer, D4 and D3(BJ), against the two
+      !! libraries' own command-line programs
+      !!
+      !! Independent reference: xtb's standalone builds, dftd4 3.7.0 and
+      !! s-dftd3 1.2.1 (not the libraries this program links), run on the
+      !! three monomers and three dimers of `water3_cyclic.xyz` split as
+      !! `cyclic_water_trimer` splits it, each written as its own .xyz in
+      !! Angstrom:
+      !!
+      !!   dftd4 -c 0 -f hf  monoK.xyz / dimerIJ.xyz
+      !!   s-dftd3 --bj hf   monoK.xyz / dimerIJ.xyz
+      !!
+      !! and `Edi = E(dimerIJ) - E(monoI) - E(monoJ)` from the printed
+      !! "Dispersion energy" lines. The pinned dftd4 4.2.0 and s-dftd3 1.4.0
+      !! programs print the same energies to all fourteen digits.
+      !!
+      !! STO-3G and loose SCF tolerances: Edi depends on the geometry and the
+      !! charges alone, so the HF part only has to finish.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: PAIR_I(3) = [1, 1, 2], PAIR_J(3) = [2, 3, 3]
+      real(dp), parameter :: REF_D4(3) = &
+                             [-1.9162492975e-3_dp, -1.9169965590e-3_dp, -1.8870430470e-3_dp]
+      real(dp), parameter :: REF_D3BJ(3) = &
+                             [-3.0888832909e-3_dp, -3.0630954919e-3_dp, -2.9867146243e-3_dp]
+      real(dp), parameter :: EDI_TOL = 1.0e-12_dp
+         !! The reference is quoted to 1e-13 Hartree; the programs read
+         !! Angstrom and convert with their own constant, which moves Edi by
+         !! well under this. A wrong atom list or charge moves it by 1e-5 and
+         !! more.
+      character(len=4), parameter :: KINDS(2) = ["d4  ", "d3bj"]
+      real(dp) :: ref(3)
+      type(fmo_result_t) :: res
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(9)
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      integer :: p, k, m
+
+      call cyclic_water_trimer(z, sym, xyz)
+      do m = 1, size(KINDS)
+         if (.not. dispersion_kind_available(trim(KINDS(m)))) cycle
+         if (m == 1) then
+            ref = REF_D4
+         else
+            ref = REF_D3BJ
+         end if
+
+         call edi_options(opts, trim(KINDS(m)))
+         call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+         call check(error,.not. err%has_error(), "the water trimer Edi run ("// &
+                    trim(KINDS(m))//") failed: "//err%get_message())
+         if (allocated(error)) return
+         call check(error, size(res%pairs), 3, "the water trimer should have three pairs")
+         if (allocated(error)) return
+
+         do p = 1, 3
+            k = findloc(res%pairs%i == PAIR_I(p) .and. res%pairs%j == PAIR_J(p), .true., &
+                        dim=1)
+            call check(error, k > 0, "a pair is missing")
+            if (allocated(error)) return
+            call check(error, res%pairs(k)%pieda, "every unconnected pair should be decomposed")
+            if (allocated(error)) return
+            call check(error, abs(res%pairs(k)%edi - ref(p)) < EDI_TOL, &
+                       "Edi ("//trim(KINDS(m))//") does not match the library's own program")
+            if (allocated(error)) then
+               write (*, *) "   ", trim(KINDS(m)), " pair", PAIR_I(p), PAIR_J(p), &
+                  "Edi =", res%pairs(k)%edi, " Edi - ref =", res%pairs(k)%edi - ref(p)
+               return
+            end if
+         end do
+      end do
+   end subroutine test_water_trimer_edi
+
+   subroutine test_pieda_dispersion_bit_identical(error)
+      !! `pieda_dispersion` changes no HF number by so much as an ulp:
+      !! the total, every pair's own `energy`, and Ees/Eex/Ect+mix are
+      !! bit-identical with it on and off. Edi is read beside them, never
+      !! folded into any of them.
+      !!
+      !! Forced to one OpenMP thread, as `test_bit_identical` is. STO-3G,
+      !! since bit-identity does not care which basis.
+      type(error_type), allocatable, intent(out) :: error
+      type(fmo_result_t) :: res_on, res_off
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(9)
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      integer :: p, saved
+
+      if (.not. dispersion_kind_available("d4")) return
+
+      saved = 1
+!$    saved = omp_get_max_threads()
+!$    call omp_set_num_threads(1)
+
+      call cyclic_water_trimer(z, sym, xyz)
+      call edi_options(opts, "none")
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res_off, err)
+      call check(error,.not. err%has_error(), "the dispersion-off run failed: "// &
+                 err%get_message())
+      if (allocated(error)) then
+!$       call omp_set_num_threads(saved)
+         return
+      end if
+
+      call edi_options(opts, "d4")
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res_on, err)
+!$    call omp_set_num_threads(saved)
+      call check(error,.not. err%has_error(), "the dispersion-on run failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      call check(error, res_on%energy == res_off%energy, &
+                 "pieda_dispersion must not change the total by so much as an ulp")
+      if (allocated(error)) return
+      call check(error, size(res_on%pairs), size(res_off%pairs), "the pair lists differ")
+      if (allocated(error)) return
+      do p = 1, size(res_off%pairs)
+         call check(error, res_on%pairs(p)%energy == res_off%pairs(p)%energy .and. &
+                    res_on%pairs(p)%ees == res_off%pairs(p)%ees .and. &
+                    res_on%pairs(p)%eex == res_off%pairs(p)%eex .and. &
+                    res_on%pairs(p)%ect_mix == res_off%pairs(p)%ect_mix, &
+                    "pieda_dispersion must not change a pair's HF terms")
+         if (allocated(error)) return
+         call check(error, res_off%pairs(p)%edi == 0.0_dp, &
+                    "Edi must stay at its default with pieda_dispersion off")
+         if (allocated(error)) return
+         call check(error, res_on%pairs(p)%edi /= 0.0_dp, &
+                    "Edi should be nonzero on the water trimer with pieda_dispersion on")
+         if (allocated(error)) return
+      end do
+   end subroutine test_pieda_dispersion_bit_identical
+
+   subroutine test_separated_pair_edi(error)
+      !! A separated pair still gets a nonzero Edi: dispersion does not
+      !! vanish at the range `resdim` cuts the pair SCF off at
+      !!
+      !! Only nonzero is asserted, not negative. With the three-body term
+      !! "-D4" includes, dftd4's own program gives this pair a tiny positive
+      !! Edi: `dftd4 -c 0 -f hf` on the two waters and their union prints
+      !! -9.8088920013418E-04 twice and -1.9616201546051E-03, so
+      !! Edi = +1.58e-7 Hartree. s-dftd3 (`--bj hf`, two-body only) gives
+      !! -8.7e-8.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: REF_D4 = 1.5824566326e-7_dp
+      type(fmo_result_t) :: res
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(6)
+      character(len=2) :: sym(6)
+      real(dp) :: ang(3, 6)
+
+      if (.not. dispersion_kind_available("d4")) return
+
+      z = [8, 1, 1, 8, 1, 1]
+      sym = ["O ", "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                     0.0_dp, -0.7572_dp, 0.5865_dp, &
+                     0.0_dp, 0.7572_dp, 0.5865_dp, &
+                     0.0_dp, 0.0_dp, 15.0_dp, &
+                     0.0_dp, -0.7572_dp, 15.5865_dp, &
+                     0.0_dp, 0.7572_dp, 15.5865_dp], [3, 6])
+
+      opts%basis = "sto-3g"
+      opts%pieda = .true.
+      opts%pieda_dispersion = "d4"
+      opts%resdim = 2.0_dp
+      call run_fmo2(z, sym, to_bohr(ang), [1, 1, 1, 2, 2, 2], opts, res, err)
+      call check(error,.not. err%has_error(), "two distant waters failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, size(res%pairs), 1, "there should be exactly one pair")
+      if (allocated(error)) return
+      call check(error, res%pairs(1)%separated, "the pair should be separated")
+      if (allocated(error)) return
+      call check(error, res%pairs(1)%pieda, "a separated pair is still decomposed")
+      if (allocated(error)) return
+      call check(error, res%pairs(1)%edi /= 0.0_dp, &
+                 "a separated pair's Edi should be nonzero")
+      if (allocated(error)) return
+      call check(error, abs(res%pairs(1)%edi - REF_D4) < 1.0e-12_dp, &
+                 "a separated pair's Edi does not match dftd4's own program")
+      if (allocated(error)) write (*, *) "   Edi =", res%pairs(1)%edi
+   end subroutine test_separated_pair_edi
+
+   subroutine test_connected_pair_edi(error)
+      !! A connected pair's Edi stays at its default: its term already
+      !! carries the bond itself, so nothing here decomposes it further
+      !!
+      !! Ethane's only pair is that connected one, so `pieda_dispersion_term`
+      !! is never called and this run needs no dispersion library at all --
+      !! unlike the other Edi tests, this one is not skipped on a build
+      !! without dftd4, and asking for `d4` here must not be refused either.
+      type(error_type), allocatable, intent(out) :: error
+      type(fmo_result_t) :: res
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      integer :: z(8)
+      character(len=2) :: sym(8)
+      real(dp) :: xyz(3, 8)
+
+      call ethane(z, sym, xyz)
+      opts%basis = "sto-3g"
+      opts%esp = "exact"
+      opts%expansion = "fmo"
+      opts%bond_breaking = "afo"
+      opts%pieda = .true.
+      opts%pieda_dispersion = "d4"
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 1, 2, 2, 2, 2], opts, res, err)
+
+      call check(error,.not. err%has_error(), "ethane across a detached bond failed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+      call check(error, size(res%pairs), 1, "ethane has exactly one pair")
+      if (allocated(error)) return
+      call check(error, res%pairs(1)%connected, "the pair should be connected")
+      if (allocated(error)) return
+      call check(error, res%pairs(1)%edi == 0.0_dp, &
+                 "a connected pair's Edi must stay at its default")
+   end subroutine test_connected_pair_edi
 
    subroutine cyclic_water_trimer(z, sym, xyz)
       !! GAMESS's `3h2o.pieda.inp`, RHF/6-31G* optimised, Angstrom; fragment

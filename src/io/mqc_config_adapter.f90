@@ -23,6 +23,7 @@ module mqc_config_adapter
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
                                METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
+   use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -84,6 +85,7 @@ module mqc_config_adapter
       real(dp) :: fmo_scf_density_tol = 1.0e-7_dp  !! Inner SCF density convergence
       logical :: fmo_pieda = .false.     !! Decompose each FMO2 pair (GAMESS's IPIEDA=1)
       character(len=16) :: fmo_pieda_hl = "gamess"  !! "gamess" or "projected"
+      character(len=16) :: fmo_pieda_dispersion = "none"  !! "none", "d4" or "d3bj"
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
       integer :: global_groups = 0
@@ -265,6 +267,7 @@ contains
       if (allocated(mqc_config%fmo_pieda_hl)) then
          driver_config%fmo_pieda_hl = mqc_config%fmo_pieda_hl
       end if
+      driver_config%fmo_pieda_dispersion = mqc_config%fmo_pieda_dispersion
 
       ! Set GMBE maximum intersection level
       driver_config%max_intersection_level = mqc_config%max_intersection_level
@@ -886,8 +889,25 @@ contains
       !!
       !! EE-MBE reaches `mqc_czt_fmo` (as `expansion = "mbe"`) and is refused
       !! there too, by name; the check here is the earlier, cheaper one.
+      !!
+      !! `keywords.fragmentation.pieda_dispersion` piggybacks on the same
+      !! call: it needs `pieda` itself to be on -- there is no pair term to
+      !! add Edi to otherwise -- checked before the early return below so it
+      !! still fires when `pieda` is off, and it needs the library that would
+      !! serve it, checked last so a deck that also fails an earlier gate is
+      !! told about that first.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
+
+      if (trim(driver_config%fmo_pieda_dispersion) /= "none" .and. &
+          .not. driver_config%fmo_pieda) then
+         call error%set(ERROR_VALIDATION, &
+                        "keywords.fragmentation.pieda_dispersion needs "// &
+                        "keywords.fragmentation.pieda to be on -- there is no pair "// &
+                        "interaction energy to add Edi to otherwise. Turn pieda on, "// &
+                        "or drop pieda_dispersion.")
+         return
+      end if
 
       if (.not. driver_config%fmo_pieda) return
 
@@ -920,6 +940,18 @@ contains
                         "is not available under driver '"// &
                         trim(calc_type_to_string(driver_config%calc_type))// &
                         "'. Set driver to 'Energy', or drop pieda.")
+         return
+      end if
+
+      if (trim(driver_config%fmo_pieda_dispersion) /= "none") then
+         if (.not. dispersion_kind_available(driver_config%fmo_pieda_dispersion)) then
+            call error%set(ERROR_VALIDATION, &
+                           "keywords.fragmentation.pieda_dispersion asked for '"// &
+                           trim(driver_config%fmo_pieda_dispersion)//"', and this build "// &
+                           "has no library for it. Configure with -D"// &
+                           trim(dispersion_kind_option(driver_config%fmo_pieda_dispersion))// &
+                           "=ON.")
+         end if
       end if
    end subroutine check_pieda_support
 

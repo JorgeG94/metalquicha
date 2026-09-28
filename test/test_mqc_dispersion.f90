@@ -103,6 +103,14 @@ contains
 
       call d3_functional_alias("b2gp-plyp", alias, err)
       call check(error, trim(alias), "b2gpplyp")
+      if (allocated(error)) return
+
+      ! Hartree-Fock: PIEDA's Edi is evaluated at "hf", and s-dftd3's own
+      ! parameters.toml carries a [parameter.hf] d3.bj entry.
+      call d3_functional_alias("hf", alias, err)
+      call check(error,.not. err%has_error(), "hf must have D3 parameters")
+      if (allocated(error)) return
+      call check(error, trim(alias), "hf")
    end subroutine test_aliases
 
    subroutine test_refusals(error)
@@ -282,6 +290,15 @@ contains
 
       call d4_functional_alias("b2gp-plyp", alias, err)
       call check(error, trim(alias), "b2gpplyp")
+      if (allocated(error)) return
+
+      ! Hartree-Fock: PIEDA's Edi is evaluated at "hf", and dftd4's own
+      ! parameter table (src/dftd4/param.f90) carries a case('hf'); its
+      ! command line, `dftd4 -f hf`, loads it as hf-D4-ATM.
+      call d4_functional_alias("hf", alias, err)
+      call check(error,.not. err%has_error(), "hf must have D4 parameters")
+      if (allocated(error)) return
+      call check(error, trim(alias), "hf")
    end subroutine test_d4_aliases
 
    subroutine test_d4_refusals(error)
@@ -450,11 +467,11 @@ contains
       !! s-dftd3 has no counterpart for, so the lists can part company.
       type(error_type), allocatable, intent(out) :: error
 
-      integer, parameter :: N_FUNCTIONALS = 16
+      integer, parameter :: N_FUNCTIONALS = 17
       character(len=12), parameter :: OURS(N_FUNCTIONALS) = [character(len=12) :: &
                                                     "b3lyp", "blyp", "pbe", "pbe0", "tpss", "scan", "r2scan", "r2scan0", &
                                                       "r2scanh", "r2scan50", "wb97x", "b2plyp", "mpw2plyp", "cam-b3lyp", &
-                                                             "m06-l", "b2gp-plyp"]
+                                                             "m06-l", "b2gp-plyp", "hf"]
 
       integer(default_int) :: numbers(4)
       real(dp) :: coordinates(3, 4), energy

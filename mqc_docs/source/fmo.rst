@@ -814,6 +814,57 @@ them.
 The pairs are built on every rank from the reduced terms, so an MPI run reports
 the same pairs as a serial one and no pair crosses a wire.
 
+Edi: an empirical dispersion column
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At Hartree-Fock PIEDA has no dispersion term: GAMESS's ``Edi`` is a
+correlation contribution, and there is no correlation in the reference.
+``keywords.fragmentation.pieda_dispersion`` (``"none"`` by default, or
+``"d4"`` or ``"d3bj"``) adds an *empirical* one in its place, as a fourth
+column ``edi``:
+
+.. code-block:: text
+
+   Edi = E_D(I+J) - E_D(I) - E_D(J)
+
+with ``E_D`` the HF-D4 (dftd4, three-body term included) or HF-D3(BJ)
+(s-dftd3) dispersion energy of the atoms named, at those libraries' own
+Hartree-Fock damping parameters. It is a pairwise difference of a
+geometry-only correction, not correlation energy, and needs no SCF result.
+
+* Each fragment is its **real atoms**, each atom once, where the partition
+  puts it -- no ghost, no cap, no split nucleus. The charge given to D4 is the
+  fragment's declared net charge, and the sum of the two for the pair; D3 has
+  no charge dependence.
+* A **separated pair** gets an ``edi`` too: dispersion does not vanish at
+  ``resdim``, and its ``ees`` is still its whole HF term.
+* A **connected pair** stays undecomposed and gets none.
+* ``pieda_dispersion`` needs ``pieda`` on and is refused by name otherwise. A
+  build without the library the kind needs refuses it before any fragment
+  runs, naming the option that supplies it (``MQC_ENABLE_DFTD4`` or
+  ``MQC_ENABLE_DFTD3``).
+
+**The Hartree-Fock numbers do not move.** ``total_energy``, every
+``delta_energy`` and the identity ``ees + eex + ect_mix = delta_energy`` are
+bit-identical with ``pieda_dispersion`` on and off; ``edi`` is read beside
+them and is in none of them. The info-level table gains ``Edi`` and ``Total``,
+where ``Total`` is ``delta_energy + edi``, the pair's interaction with
+dispersion counted, and a line after it sums ``Edi`` over the decomposed
+pairs. The water trimer above at 6-31G with ``"d4"``::
+
+   fmo: Edi is empirical HF-d4 dispersion, in no HF number; Total = Ees + Eex + Ect+mix + Edi
+   fmo:     pair            Ees            Eex        Ect+mix            Edi          Total
+   fmo:     1-3        -11.4462         5.2915        -2.5489        -1.2029        -9.9066
+   fmo:     1-2        -11.3175         5.2805        -2.6241        -1.2025        -9.8636
+   fmo:     2-3        -10.1003         4.8074        -2.3811        -1.1841        -8.8581
+   fmo: sum of Edi over 3 decomposed pair(s): -3.5895 kcal/mol
+
+``Total`` is the number to compare with a dispersion-corrected supermolecular
+interaction energy; ``Ees + Eex + Ect+mix`` is still the HF one. In the JSON,
+``edi`` (Hartree) is written beside ``ees``/``eex``/``ect_mix`` on each
+decomposed pair, and only when ``pieda_dispersion`` ran; ``interaction_energy``
+stays the HF ``delta_energy``.
+
 Limits
 ------
 

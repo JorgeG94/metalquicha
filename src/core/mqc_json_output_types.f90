@@ -326,6 +326,10 @@ module mqc_json_output_types
       real(dp), allocatable :: fmo_pair_ect_mix(:)
          !! Residual: charge transfer, mixing and the density response, not
          !! plain "charge transfer" on its own
+      real(dp), allocatable :: fmo_pair_edi(:)
+         !! Empirical dispersion interaction, `E_D(IJ) - E_D(I) - E_D(J)` at
+         !! `functional = "hf"`, not part of `fmo_pair_energy`. Allocated only
+         !! when `keywords.fragmentation.pieda_dispersion` ran.
       logical, allocatable :: fmo_pair_doubly_cut_neighbor(:)
          !! True where the pair sits either side of a third fragment cut at
          !! two bonded atoms, so its own term omits a three-body correction
@@ -465,6 +469,7 @@ contains
       if (allocated(this%fmo_pair_ees)) deallocate (this%fmo_pair_ees)
       if (allocated(this%fmo_pair_eex)) deallocate (this%fmo_pair_eex)
       if (allocated(this%fmo_pair_ect_mix)) deallocate (this%fmo_pair_ect_mix)
+      if (allocated(this%fmo_pair_edi)) deallocate (this%fmo_pair_edi)
       if (allocated(this%fmo_pair_doubly_cut_neighbor)) then
          deallocate (this%fmo_pair_doubly_cut_neighbor)
       end if

@@ -806,6 +806,7 @@ contains
             expansion%scf_density_tol = config%fmo_scf_density_tol
             expansion%pieda = config%fmo_pieda
             expansion%pieda_hl = config%fmo_pieda_hl
+            expansion%pieda_dispersion = config%fmo_pieda_dispersion
             ! From `keywords.scf`, the same source the unfragmented path reads.
             ! The three above stay on `keywords.fragmentation`, being
             ! per-fragment by intent.

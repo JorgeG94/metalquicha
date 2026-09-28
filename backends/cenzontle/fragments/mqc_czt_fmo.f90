@@ -123,6 +123,7 @@ module mqc_czt_fmo
    use mqc_czt_direct, only: schwarz_bounds, coulomb_from_blocks
    use mqc_czt_pieda, only: pieda_pair_terms_t, cholesky_occupied_orbitals, &
                             hl_density_from_orbitals, hl_prime_energy, combine_pieda_terms
+   use mqc_dispersion_apply, only: dispersion_apply
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_PROJ
@@ -350,6 +351,12 @@ module mqc_czt_fmo
          !! `"projected"`, which removes the union orbitals' frozen-virtual
          !! components first (`project_out_frozen_virtuals`). Identical where
          !! a pair holds none.
+      character(len=16) :: pieda_dispersion = "none"
+         !! `"none"` (the default), `"d4"` or `"d3bj"`: add `Edi`, the
+         !! empirical dispersion interaction `E_D(IJ) - E_D(I) - E_D(J)` at
+         !! `functional = "hf"`, to every pair `pieda` decomposes, separated
+         !! pairs included and connected pairs never. Read only when `pieda`
+         !! is true. See `pieda_dispersion_term`.
    end type fmo_options_t
 
    type :: fmo_pair_t
@@ -391,6 +398,11 @@ module mqc_czt_fmo
          !! mixing and the density response together, not charge transfer on
          !! its own. Zero unless `pieda` is true, and exactly zero for a
          !! separated pair.
+      real(dp) :: edi = 0.0_dp
+         !! Empirical dispersion interaction, `E_D(IJ) - E_D(I) - E_D(J)`, in
+         !! Hartree, from `fmo_options_t%pieda_dispersion`. Zero when that is
+         !! `"none"` and for a connected pair. Not part of `energy`;
+         !! `energy + edi` is the dispersion-inclusive interaction.
       logical :: doubly_cut_neighbor = .false.
          !! `i` and `j` are the two fragments either side of a third one cut
          !! at two bonded atoms -- see `warn_adjacent_cuts`. FMO2 omits a
@@ -2612,12 +2624,15 @@ contains
       end do
 
       ! Every rank holds the reduced terms, so every rank builds the same
-      ! pairs from them and nothing about a pair is ever sent.
+      ! pairs from them and nothing about a pair is ever sent. `Edi` needs
+      ! only the geometry and the declared charges, which every rank holds,
+      ! so it is computed here on every rank alike rather than reduced.
       call collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
-                         response, separated, ees, eex, res%pairs)
+                         response, separated, ees, eex, res%pairs, error)
+      if (error%has_error()) return
       call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
-      if (opts%pieda) call log_pieda_table(res%pairs, comm)
+      if (opts%pieda) call log_pieda_table(res%pairs, opts, comm)
    end subroutine calculate_polymers
 
    subroutine separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
@@ -2972,7 +2987,7 @@ contains
    end subroutine project_out_frozen_virtuals
 
    subroutine collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
-                            response, separated, ees, eex, pairs)
+                            response, separated, ees, eex, pairs, error)
       !! The two-member terms, with the distance and connectivity a reader needs
       !!
       !! `correction` must already have had its subsets subtracted, so it is
@@ -2991,6 +3006,7 @@ contains
          !! Filled during the n-mer phase for every decomposed pair, zero
          !! elsewhere; meaningless unless `opts%pieda` is true.
       type(fmo_pair_t), allocatable, intent(out) :: pairs(:)
+      type(error_t), intent(inout) :: error
 
       type(pieda_pair_terms_t) :: pieda_terms
       integer :: t, k, a, b, fi, fj
@@ -3033,9 +3049,81 @@ contains
             pairs(k)%ees = pieda_terms%ees
             pairs(k)%eex = pieda_terms%eex
             pairs(k)%ect_mix = pieda_terms%ect_mix
+
+            ! A separated pair too: dispersion does not vanish at `resdim`.
+            if (trim(opts%pieda_dispersion) /= "none") then
+               call pieda_dispersion_term(frag, fi, fj, z, coords, opts, pairs(k)%edi, error)
+               if (error%has_error()) return
+            end if
          end if
       end do
    end subroutine collect_pairs
+
+   subroutine pieda_dispersion_term(frag, i, j, z, coords, opts, edi, error)
+      !! `Edi = E_D(I union J) - E_D(I) - E_D(J)` at `functional = "hf"`, in
+      !! Hartree
+      !!
+      !! Evaluated on the fragments' real atoms (`frag(*)%atoms`: no ghost, no
+      !! cap, element numbers unsplit, taken from the system's `z`), each atom
+      !! once. The charge given to
+      !! the library is each fragment's declared net charge, `frag(*)%charge`,
+      !! and their sum for the union. Needs no SCF result.
+      type(fragment_t), intent(in) :: frag(:)
+      integer, intent(in) :: i, j
+      integer, intent(in) :: z(:)             !! (n_atoms), the system's atomic numbers
+      real(dp), intent(in) :: coords(:, :)   !! (3, n_atoms), Bohr
+      type(fmo_options_t), intent(in) :: opts
+      real(dp), intent(out) :: edi
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: z_ij(:)
+      real(dp), allocatable :: xyz_ij(:, :)
+      real(dp) :: e_i, e_j, e_ij, q_i, q_j
+      type(error_t) :: derr
+      integer :: ni, nj
+
+      edi = 0.0_dp
+      ! A fragment holding one end of a detached bond is still given its
+      ! declared charge, not that plus the electron the bond moves: under the
+      ! split nucleus its own atoms' populations sum to the declared charge
+      ! (`fmo_result_t%fragment_charge`), and D4's charge is a statement about
+      ! those atoms.
+      q_i = real(frag(i)%charge, dp)
+      q_j = real(frag(j)%charge, dp)
+
+      call dispersion_apply(opts%pieda_dispersion, "hf", q_i, z(frag(i)%atoms), &
+                            coords(:, frag(i)%atoms), e_i, error=derr)
+      if (derr%has_error()) then
+         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on fragment "// &
+                        to_char(i)//": "//derr%get_message())
+         return
+      end if
+      call dispersion_apply(opts%pieda_dispersion, "hf", q_j, z(frag(j)%atoms), &
+                            coords(:, frag(j)%atoms), e_j, error=derr)
+      if (derr%has_error()) then
+         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on fragment "// &
+                        to_char(j)//": "//derr%get_message())
+         return
+      end if
+
+      ni = size(frag(i)%atoms)
+      nj = size(frag(j)%atoms)
+      allocate (z_ij(ni + nj))
+      z_ij(1:ni) = z(frag(i)%atoms)
+      z_ij(ni + 1:) = z(frag(j)%atoms)
+      allocate (xyz_ij(3, ni + nj))
+      xyz_ij(:, 1:ni) = coords(:, frag(i)%atoms)
+      xyz_ij(:, ni + 1:) = coords(:, frag(j)%atoms)
+      call dispersion_apply(opts%pieda_dispersion, "hf", q_i + q_j, z_ij, xyz_ij, e_ij, &
+                            error=derr)
+      if (derr%has_error()) then
+         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on pair "// &
+                        to_char(i)//"-"//to_char(j)//": "//derr%get_message())
+         return
+      end if
+
+      edi = e_ij - e_i - e_j
+   end subroutine pieda_dispersion_term
 
    subroutine log_pair_table(pairs, opts, comm)
       !! The pairs at info level, strongest first, connected pairs apart
@@ -3095,7 +3183,7 @@ contains
       end do
    end subroutine log_pair_table
 
-   subroutine log_pieda_table(pairs, comm)
+   subroutine log_pieda_table(pairs, opts, comm)
       !! Ees, Eex and Ect+mix at info level, in the same order as the pair table
       !!
       !! kcal/mol, as the interaction-energy table already reports; a pair not
@@ -3103,30 +3191,63 @@ contains
       !! read as a real result. Named `ect_mix` throughout: the residual holds
       !! the response term and orbital mixing along with any charge transfer,
       !! and is never called plain "charge transfer".
+      !!
+      !! With `opts%pieda_dispersion` on, two more columns, `Edi` and
+      !! `Total = energy + edi`, and a line summing `Edi` over the pairs shown.
       type(fmo_pair_t), intent(in) :: pairs(:)
+      type(fmo_options_t), intent(in) :: opts
       type(comm_t), intent(in), optional :: comm
 
       character(len=160) :: line
       integer, allocatable :: order(:)
+      real(dp) :: edi_sum
       integer :: k, p
+      logical :: has_edi
 
       if (.not. is_leader(comm)) return
       if (.not. any(pairs%pieda)) return
 
-      call logger%info("  fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact "// &
-                       "exchange, Ect+mix the residual (charge transfer, mixing "// &
-                       "and the response together)")
-      call logger%info("  fmo:     pair            Ees            Eex        Ect+mix")
+      has_edi = trim(opts%pieda_dispersion) /= "none"
 
+      if (has_edi) then
+         call logger%info("  fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact "// &
+                          "exchange, Ect+mix the residual (charge transfer, mixing "// &
+                          "and the response together)")
+         call logger%info("  fmo: Edi is empirical HF-"//trim(opts%pieda_dispersion)// &
+                          " dispersion, in no HF number; Total = Ees + Eex + Ect+mix + Edi")
+         call logger%info("  fmo:     pair            Ees            Eex        "// &
+                          "Ect+mix            Edi          Total")
+      else
+         call logger%info("  fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact "// &
+                          "exchange, Ect+mix the residual (charge transfer, mixing "// &
+                          "and the response together)")
+         call logger%info("  fmo:     pair            Ees            Eex        Ect+mix")
+      end if
+
+      edi_sum = 0.0_dp
       order = pairs_by_strength(pairs, .false.)
       do k = 1, size(order)
          p = order(k)
          if (.not. pairs(p)%pieda) cycle
-         write (line, "(a,i5,'-',i0,t17,f14.4,f15.4,f15.4)") "  fmo: ", &
-            pairs(p)%i, pairs(p)%j, pairs(p)%ees*HARTREE_TO_KCALMOL, &
-            pairs(p)%eex*HARTREE_TO_KCALMOL, pairs(p)%ect_mix*HARTREE_TO_KCALMOL
+         if (has_edi) then
+            edi_sum = edi_sum + pairs(p)%edi
+            write (line, "(a,i5,'-',i0,t17,f14.4,f15.4,f15.4,f15.4,f15.4)") "  fmo: ", &
+               pairs(p)%i, pairs(p)%j, pairs(p)%ees*HARTREE_TO_KCALMOL, &
+               pairs(p)%eex*HARTREE_TO_KCALMOL, pairs(p)%ect_mix*HARTREE_TO_KCALMOL, &
+               pairs(p)%edi*HARTREE_TO_KCALMOL, &
+               (pairs(p)%energy + pairs(p)%edi)*HARTREE_TO_KCALMOL
+         else
+            write (line, "(a,i5,'-',i0,t17,f14.4,f15.4,f15.4)") "  fmo: ", &
+               pairs(p)%i, pairs(p)%j, pairs(p)%ees*HARTREE_TO_KCALMOL, &
+               pairs(p)%eex*HARTREE_TO_KCALMOL, pairs(p)%ect_mix*HARTREE_TO_KCALMOL
+         end if
          call logger%info(trim(line))
       end do
+      if (has_edi) then
+         write (line, "(f14.4)") edi_sum*HARTREE_TO_KCALMOL
+         call logger%info("  fmo: sum of Edi over "//to_char(count(pairs%pieda))// &
+                          " decomposed pair(s): "//trim(adjustl(line))//" kcal/mol")
+      end if
    end subroutine log_pieda_table
 
    function pairs_by_strength(pairs, connected) result(order)

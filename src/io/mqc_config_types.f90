@@ -630,6 +630,12 @@ module mqc_config_types
          !! `"projected"`. Only meaningful next to a detached bond, where a
          !! pair's union state can hold a frozen virtual; both modes are the
          !! same pair everywhere else. Read only when `fmo_pieda` is true.
+      character(len=16) :: fmo_pieda_dispersion = "none"
+         !! `keywords.fragmentation.pieda_dispersion`: `"none"` (default),
+         !! `"d4"` or `"d3bj"`. Adds Edi -- an empirical dispersion
+         !! interaction, `E_D(IJ) - E_D(I) - E_D(J)` at `functional = "hf"` --
+         !! beside every pair PIEDA decomposes. Read only when `fmo_pieda` is
+         !! true; refused by name otherwise.
       real(dp) :: efmo_rcut = 2.0_dp
          !! `keywords.fragmentation.rcut`: where EFMO stops solving a dimer.
          !!

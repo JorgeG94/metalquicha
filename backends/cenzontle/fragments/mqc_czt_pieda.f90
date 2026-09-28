@@ -11,8 +11,9 @@ module mqc_czt_pieda
    !!     Ect+mix  = dE_IJ - Ees - Eex        (a residual, not charge transfer alone)
    !!
    !! with `E'` an internal energy, `E - Tr(D u)`, and
-   !! `D_HL = 2 C (C^T S C)^-1 C^T` for `C = [C_I, C_J]`. `Edi` is reserved and
-   !! zero at HF.
+   !! `D_HL = 2 C (C^T S C)^-1 C^T` for `C = [C_I, C_J]`. `pieda_pair_terms_t%edi`
+   !! stays zero here; the empirical `Edi` (`fmo_options_t%pieda_dispersion`)
+   !! is computed in [[mqc_czt_fmo]] by `pieda_dispersion_term`.
    use pic_types, only: dp, default_int
    use pic_io, only: to_char
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
