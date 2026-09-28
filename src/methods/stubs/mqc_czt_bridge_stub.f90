@@ -179,7 +179,7 @@ contains
       if (size(coordinates) < 0) return
    end subroutine run_czt_efp
    subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, &
-                          basis_name, esp, expansion, far_field, resppc, &
+                          settings, esp, expansion, far_field, resppc, &
                           level, max_outer, outer_tol, scf_max_iter, &
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
@@ -197,11 +197,13 @@ contains
       use mqc_error, only: error_t
       use pic_mpi_lib, only: comm_t
       use mqc_scf_types, only: scf_numerics_t
+      use mqc_cuest_iface, only: cuest_scf_settings_t
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
       integer, intent(in) :: owner(:)
-      character(len=*), intent(in) :: basis_name, esp, expansion, far_field
+      type(cuest_scf_settings_t), intent(in) :: settings
+      character(len=*), intent(in) :: esp, expansion, far_field
       real(dp), intent(in) :: resppc
       integer, intent(in) :: level
       integer, intent(in) :: max_outer
@@ -268,7 +270,8 @@ contains
                      "-DMQC_ENABLE_CZT=ON")
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(owner) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
-      if (len_trim(basis_name)*len_trim(esp)*len_trim(expansion)*len_trim(far_field) < 0) return
+      if (len_trim(settings%basis_set)*len_trim(esp)*len_trim(expansion)* &
+          len_trim(far_field) < 0) return
       if (resppc < -huge(1.0_dp) .or. level < 0 .or. max_outer < 0) return
       if (outer_tol < 0.0_dp .or. scf_max_iter < 0 .or. scf_energy_tol < 0.0_dp) return
       if (scf_density_tol < 0.0_dp) return
@@ -287,7 +290,7 @@ contains
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
-                           fragment_charges, basis_name, rcut, level, charge_transfer, &
+                           fragment_charges, settings, rcut, level, charge_transfer, &
                            induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
@@ -295,7 +298,6 @@ contains
                            quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
-                           correlation, corr_aux_basis, freeze_core, n_frozen_core, &
                            pair_fragments, pair_distance, pair_qm, pair_energy, &
                            pair_terms, comm, bond_breaking, &
                            detached)
@@ -308,12 +310,13 @@ contains
       use mqc_scf_types, only: scf_numerics_t
       use pic_mpi_lib, only: comm_t
       use mqc_program_limits, only: N_EFMO_TERMS
+      use mqc_cuest_iface, only: cuest_scf_settings_t
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
       integer, intent(in) :: owner(:)
       integer, intent(in) :: fragment_charges(:)
-      character(len=*), intent(in) :: basis_name
+      type(cuest_scf_settings_t), intent(in) :: settings
       real(dp), intent(in) :: rcut
       integer, intent(in) :: level
       logical, intent(in) :: charge_transfer
@@ -338,14 +341,6 @@ contains
       integer, intent(in), optional :: response
       logical, intent(in), optional :: allow_crap_response
       integer, intent(in), optional :: response_batch
-      integer, intent(in), optional :: correlation
-         !! `EFMO_CORR_NONE`, `EFMO_CORR_MP2` or `EFMO_CORR_RI_MP2`: what runs
-         !! on top of every monomer and near-dimer Hartree-Fock reference.
-         !! Absent is none, which is the Phase 3 energy exactly.
-      character(len=*), intent(in), optional :: corr_aux_basis
-         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
-      logical, intent(in), optional :: freeze_core
-      integer, intent(in), optional :: n_frozen_core
       integer, intent(out), optional, allocatable :: pair_fragments(:, :)
       real(dp), intent(out), optional, allocatable :: pair_distance(:)
       logical, intent(out), optional, allocatable :: pair_qm(:)
@@ -373,7 +368,7 @@ contains
       if (size(atomic_numbers) < 0 .or. size(coordinates) < 0 .or. size(owner) < 0) return
       if (size(fragment_charges) < 0) return
       if (len_trim(element_symbols(1)) < 0) return
-      if (len_trim(basis_name)*len_trim(guess) < 0) return
+      if (len_trim(settings%basis_set)*len_trim(guess) < 0) return
       if (rcut < -huge(1.0_dp) .or. charge_transfer .or. level < 0) return
       if (induction_damping < -huge(1.0_dp)) return
       if (scf_drive%max_iter < 0 .or. scf_max_iter < 0) return
@@ -383,8 +378,6 @@ contains
       if (present(quadrupole_blocks) .or. present(dynamic_tol)) return
       if (present(dynamic_maxiter) .or. present(response)) return
       if (present(allow_crap_response) .or. present(response_batch)) return
-      if (present(correlation) .or. present(freeze_core)) return
-      if (present(corr_aux_basis) .or. present(n_frozen_core)) return
       if (present(pair_fragments) .or. present(pair_distance)) return
       if (present(pair_qm) .or. present(pair_energy)) return
       if (present(pair_terms)) return

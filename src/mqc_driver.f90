@@ -14,7 +14,8 @@ module mqc_driver
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t, &
                                       fmo_context_t
    use mqc_method_config, only: method_config_t
-   use mqc_method_factory, only: scf_numerics_from_config
+   use mqc_method_factory, only: scf_numerics_from_config, method_backend_settings
+   use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_fragment_capabilities, only: fragment_needs_t, fragment_refusal, &
                                         FRAGMENT_SCHEME_FMO, FRAGMENT_SCHEME_EE_MBE, &
                                         FRAGMENT_SCHEME_EFMO
@@ -458,6 +459,8 @@ contains
 
       type(fragment_needs_t) :: fmo_needs  !! What the deck asks of FMO/EE-MBE, for fragment_refusal
       character(len=:), allocatable :: fmo_refusal
+      type(cuest_scf_settings_t) :: fmo_settings  !! What an unfragmented run of this deck would build
+      type(error_t) :: settings_error  !! Error from building it
 
       ! GMBE PIE-based variables
       integer :: n_primaries  !! Number of primary polymers
@@ -722,6 +725,14 @@ contains
             call logger%error(fmo_refusal)
             return
          end if
+         ! What an unfragmented run of this deck would build: the settings
+         ! every fragment and n-mer is solved with. Built once `fragment_refusal`
+         ! has passed, so a method it lets through here always has one.
+         call method_backend_settings(config%method_config, fmo_settings, settings_error)
+         if (settings_error%has_error()) then
+            call logger%error("fmo: "//settings_error%get_message())
+            return
+         end if
          allocate (fmo_context_t :: expansion)
          select type (expansion)
          type is (fmo_context_t)
@@ -754,7 +765,7 @@ contains
                                  "fragment with its own charge.")
                return
             end if
-            expansion%basis = config%method_config%basis_set
+            expansion%settings = fmo_settings
             expansion%bond_breaking = config%bond_breaking
             expansion%afo_localization = config%afo_localization
             if (allocated(config%detached_atoms)) then
@@ -1471,10 +1482,8 @@ contains
       !! key MBE and FMO read, but is defaulted **here**, to two: the shared
       !! `DEFAULT_FRAG_LEVEL` is one, which for EFMO would drop every near pair.
       use mqc_czt_bridge, only: run_czt_efmo
-      use mqc_method_types, only: METHOD_TYPE_HF
       use mqc_elements, only: element_number_to_symbol
-      use mqc_program_limits, only: N_EFMO_TERMS, EFMO_CORR_NONE, EFMO_CORR_MP2, &
-                                    EFMO_CORR_RI_MP2
+      use mqc_program_limits, only: N_EFMO_TERMS
       use mqc_json_output_types, only: OUTPUT_MODE_UNFRAGMENTED
       use pic_logger, only: verbose_level
       type(driver_config_t), intent(in) :: config
@@ -1492,7 +1501,8 @@ contains
       type(scf_numerics_t) :: efmo_scf
       type(fragment_needs_t) :: efmo_needs  !! What the deck asks, for fragment_refusal
       character(len=:), allocatable :: efmo_refusal
-      integer :: correlation
+      type(cuest_scf_settings_t) :: efmo_settings  !! What an unfragmented run of this deck would build
+      type(error_t) :: settings_error
       integer :: i, n_frag, n_qm, n_efp, n_groups, level
       integer, allocatable :: pair_fragments(:, :)
       real(dp), allocatable :: pair_distance(:), pair_energy(:), pair_terms(:, :)
@@ -1533,25 +1543,18 @@ contains
          return
       end if
 
-      ! Hartree-Fock, MP2 or RI-MP2 fragments. The correlation runs on the same
-      ! orbitals the reference converged to and turns `E_I^0` and `E_IJ^0`
-      ! correlated, which is the whole of what a correlated EFMO is; the far
-      ! pairs and the induction come from the fragment potentials either way,
-      ! MAKEFP being a Hartree-Fock construction. Anything `fragment_refusal`
-      ! did not already stop above is one of the two cases below.
-      select case (config%method_config%method_type)
-      case (METHOD_TYPE_HF)
-         correlation = EFMO_CORR_NONE
-      case default
-         ! `ri-mp2` and `mp2` parse to one method type, and which was written is
-         ! recovered from `corr%use_df` -- the same recovery every other MP2
-         ! path here makes.
-         if (config%method_config%corr%use_df) then
-            correlation = EFMO_CORR_RI_MP2
-         else
-            correlation = EFMO_CORR_MP2
-         end if
-      end select
+      ! What an unfragmented run of this deck would build: the settings every
+      ! monomer and near group is solved with. Hartree-Fock, MP2 or RI-MP2 --
+      ! anything else is refused above by `fragment_refusal`. The correlation
+      ! runs on the same orbitals the reference converged to and turns `E_I^0`
+      ! and `E_IJ^0` correlated, which is the whole of what a correlated EFMO
+      ! is; the far pairs and the induction come from the fragment potentials
+      ! either way, MAKEFP being a Hartree-Fock construction.
+      call method_backend_settings(config%method_config, efmo_settings, settings_error)
+      if (settings_error%has_error()) then
+         call refuse(result_out, "EFMO: "//settings_error%get_message())
+         return
+      end if
 
       ! The level EFMO's near groups are expanded to. Read from the same key
       ! MBE and FMO read -- there is no EFMO-specific level -- but defaulted
@@ -1605,15 +1608,15 @@ contains
          end if
       end if
       if (comm%leader()) then
-         if (correlation == EFMO_CORR_RI_MP2) then
+         if (efmo_settings%run_mp2 .and. efmo_settings%corr_density_fitting) then
             call logger%info("  RI-MP2 on every monomer and every quantum dimer")
-         else if (correlation == EFMO_CORR_MP2) then
+         else if (efmo_settings%run_mp2) then
             call logger%info("  MP2 on every monomer and every quantum dimer")
          end if
       end if
 
       call run_czt_efmo(sys_geom%element_numbers, symbols, sys_geom%coordinates, owner, &
-                        charges, config%method_config%basis_set, &
+                        charges, efmo_settings, &
                         config%method_config%efmo%rcut, level, &
                         config%method_config%efmo%charge_transfer, &
                         config%method_config%efmo%induction_damping, efmo_scf, &
@@ -1628,10 +1631,6 @@ contains
                         response=config%method_config%efp%response, &
                         allow_crap_response=config%method_config%efp%allow_crap_response, &
                         response_batch=config%method_config%efp%response_batch, &
-                        correlation=correlation, &
-                        corr_aux_basis=trim(config%method_config%scf%aux_basis_set), &
-                        freeze_core=config%method_config%corr%freeze_core, &
-                        n_frozen_core=config%method_config%corr%n_frozen_core, &
                         pair_fragments=pair_fragments, pair_distance=pair_distance, &
                         pair_qm=pair_qm, pair_energy=pair_energy, &
                         pair_terms=pair_terms, &

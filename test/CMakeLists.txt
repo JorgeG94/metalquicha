@@ -280,6 +280,14 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_efmo)
   target_link_libraries(test_mqc_czt_efmo PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The fragment-solver interface FMO, EE-MBE and EFMO now go through: plain
+  # Hartree-Fock against a direct `run_czt_rhf`, an embedded solve against the
+  # same with `h_extra=`, MP2 from an already-converged reference against a
+  # direct `run_czt_mp2`, and the internal-consistency refusal of a functional.
+  addtest(mqc_czt_fragment_solver)
+  target_link_libraries(test_mqc_czt_fragment_solver
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # EFMO across detached covalent bonds: at full level the expansion is the
   # molecule's own RHF energy whatever the partition cut, a bonded pair is
   # quantum at any cutoff, and every cut fragment's potential is neutral.

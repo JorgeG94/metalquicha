@@ -646,7 +646,7 @@ contains
    end subroutine run_czt_neo
 
    subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, &
-                          basis_name, esp, expansion, far_field, resppc, &
+                          settings, esp, expansion, far_field, resppc, &
                           level, max_outer, outer_tol, scf_max_iter, &
                           scf_energy_tol, scf_density_tol, scf_drive, &
                           bond_breaking, &
@@ -660,8 +660,10 @@ contains
       !!
       !! Options arrive as plain scalars rather than the backend's own options
       !! type, so the layer above never has to see a type it cannot compile
-      !! without the backend. Coordinates are Bohr; `owner(i)` is atom i's
-      !! fragment, numbered from one with no gaps.
+      !! without the backend -- except `settings`, which already lives in
+      !! `src`, is what an unfragmented run of the same deck would build, and
+      !! is what every fragment and n-mer is solved with. Coordinates are
+      !! Bohr; `owner(i)` is atom i's fragment, numbered from one with no gaps.
       use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -670,7 +672,11 @@ contains
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)
       integer, intent(in) :: owner(:)
-      character(len=*), intent(in) :: basis_name, esp, expansion, far_field
+      type(cuest_scf_settings_t), intent(in) :: settings
+         !! What every fragment and n-mer is solved for -- the method, basis
+         !! and correlation settings an unfragmented run of this deck would
+         !! build. `method_backend_settings` builds it.
+      character(len=*), intent(in) :: esp, expansion, far_field
       real(dp), intent(in) :: resppc
       integer, intent(in) :: level
       integer, intent(in) :: max_outer
@@ -762,7 +768,8 @@ contains
          symbols(i) = adjustl(element_symbols(i))
       end do
 
-      opts%basis = basis_name
+      opts%basis = trim(settings%basis_set)
+      opts%method = settings
       opts%esp = esp
       opts%expansion = expansion
       opts%far_field = far_field
@@ -885,7 +892,7 @@ contains
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &
-                           fragment_charges, basis_name, rcut, level, charge_transfer, &
+                           fragment_charges, settings, rcut, level, charge_transfer, &
                            induction_damping, &
                            scf_drive, scf_max_iter, scf_energy_tol, scf_density_tol, &
                            scf_grad_tol, guess, energy, terms, n_qm_pairs, n_efp_pairs, &
@@ -893,7 +900,6 @@ contains
                            quadrupole_blocks, &
                            dynamic_tol, dynamic_maxiter, response, &
                            allow_crap_response, response_batch, &
-                           correlation, corr_aux_basis, freeze_core, n_frozen_core, &
                            pair_fragments, pair_distance, pair_qm, pair_energy, &
                            pair_terms, comm, bond_breaking, &
                            detached)
@@ -901,7 +907,10 @@ contains
       !!
       !! Options arrive as plain scalars rather than the backend's own type, so
       !! the layer above never has to see a type it cannot compile without the
-      !! backend. Coordinates are Bohr; `owner(i)` is atom i's fragment,
+      !! backend -- except `settings`, which already lives in `src`, is what an
+      !! unfragmented run of the same deck would build, and is what every
+      !! monomer and near group is solved with (Hartree-Fock, or MP2/RI-MP2 on
+      !! top of it). Coordinates are Bohr; `owner(i)` is atom i's fragment,
       !! numbered from one with no gaps; `fragment_charges(k)` is fragment k's
       !! net charge.
       !!
@@ -920,7 +929,10 @@ contains
       real(dp), intent(in) :: coordinates(:, :)     !! (3, natm), Bohr
       integer, intent(in) :: owner(:)
       integer, intent(in) :: fragment_charges(:)
-      character(len=*), intent(in) :: basis_name
+      type(cuest_scf_settings_t), intent(in) :: settings
+         !! What every monomer and near group is solved for -- the method,
+         !! basis and correlation settings an unfragmented run of this deck
+         !! would build. `method_backend_settings` builds it.
       real(dp), intent(in) :: rcut
          !! `R_cut` of eq 2, unitless. See `efmo_config_t`.
       integer, intent(in) :: level
@@ -958,14 +970,6 @@ contains
       integer, intent(in), optional :: response
       logical, intent(in), optional :: allow_crap_response
       integer, intent(in), optional :: response_batch
-      integer, intent(in), optional :: correlation
-         !! `EFMO_CORR_NONE`, `EFMO_CORR_MP2` or `EFMO_CORR_RI_MP2`: what runs
-         !! on top of every monomer and near-dimer Hartree-Fock reference.
-         !! Absent is none, which is the Phase 3 energy exactly.
-      character(len=*), intent(in), optional :: corr_aux_basis
-         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` needs.
-      logical, intent(in), optional :: freeze_core
-      integer, intent(in), optional :: n_frozen_core
       integer, intent(out), optional, allocatable :: pair_fragments(:, :)
          !! (2, n_pairs), the two fragments of each pair, **numbered from one**
          !! as the printed table and the MBE output number them. Quantum pairs
@@ -1013,7 +1017,8 @@ contains
          symbols(i) = adjustl(element_symbols(i))
       end do
 
-      opts%basis = basis_name
+      opts%basis = trim(settings%basis_set)
+      opts%method = settings
       opts%rcut = rcut
       opts%level = level
       opts%charge_transfer = charge_transfer
@@ -1033,10 +1038,6 @@ contains
       if (present(response)) opts%response = response
       if (present(allow_crap_response)) opts%allow_crap_response = allow_crap_response
       if (present(response_batch)) opts%response_batch = response_batch
-      if (present(correlation)) opts%correlation = correlation
-      if (present(corr_aux_basis)) opts%corr_aux_basis = corr_aux_basis
-      if (present(freeze_core)) opts%freeze_core = freeze_core
-      if (present(n_frozen_core)) opts%n_frozen_core = n_frozen_core
       if (present(bond_breaking)) opts%bond_breaking = bond_breaking
       if (present(detached)) opts%detached = detached
 

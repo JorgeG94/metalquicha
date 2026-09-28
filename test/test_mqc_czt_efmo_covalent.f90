@@ -32,7 +32,7 @@ module test_mqc_czt_efmo_covalent
    !! it is most of the cost and asserts nothing this file does not.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, EFMO_CORR_MP2, &
+   use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, &
                            efmo_pair_contribution
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
@@ -370,7 +370,7 @@ contains
 
       call propane(z, sym, xyz)
       call settings(opts)
-      opts%correlation = EFMO_CORR_MP2
+      opts%method%run_mp2 = .true.
       call run_efmo(z, sym, xyz, [1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2], [0, 0], opts, res, err)
       call check(error, err%has_error(), "MP2 across a detached bond should be refused")
       if (allocated(error)) return

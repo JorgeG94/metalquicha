@@ -12,6 +12,7 @@ module mqc_many_body_expansion
    use mqc_json_output_types, only: json_output_data_t
    use mqc_checkpoint, only: checkpoint_t
    use mqc_scf_types, only: scf_numerics_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_method_types, only: needs_serial_execution
    implicit none
    private
@@ -177,14 +178,12 @@ module mqc_many_body_expansion
       integer, allocatable :: fragment_charges(:)
          !! Each fragment's net charge, as the deck declares it. Unallocated
          !! means every fragment is neutral.
-      character(len=64) :: basis = ""
-         !! **Empty on purpose, and refused rather than defaulted.** This field
-         !! used to start at "6-31g", which no run ever saw: every caller
-         !! overwrites it from the deck, and a deck that omits `model.basis`
-         !! gets "sto-3g" from `mqc_method_config`. So the initialiser named a
-         !! basis nothing was ever computed in, which is worse than no default
-         !! at all -- a plumbing bug that lost the deck's basis would have
-         !! silently produced 6-31G numbers.
+      type(cuest_scf_settings_t), allocatable :: settings
+         !! What every fragment and n-mer is solved for: the method, basis and
+         !! correlation settings an unfragmented run of this deck would build,
+         !! from `method_backend_settings`. Unallocated until the driver sets
+         !! it, and a run without it is refused rather than given the type's
+         !! default basis.
       character(len=16) :: esp = "exact"
       character(len=16) :: expansion = "fmo"
       integer, allocatable :: detached_atoms(:)
@@ -394,10 +393,10 @@ contains
          call logger%error("fmo_run_serial: no fragment partition set")
          return
       end if
-      if (len_trim(this%basis) == 0) then
-         call logger%error("fmo_run_serial: no orbital basis set. The caller fills "// &
-                           "this from the deck, so an empty one is a plumbing fault "// &
-                           "rather than a request for a default.")
+      if (.not. allocated(this%settings)) then
+         call logger%error("fmo_run_serial: no method settings set. The driver fills "// &
+                           "these from the deck, so their absence is a plumbing "// &
+                           "fault rather than a request for a default.")
          return
       end if
 
@@ -408,7 +407,7 @@ contains
 
       call run_czt_fmo(this%sys_geom%element_numbers, symbols, &
                        this%sys_geom%coordinates, this%owner, &
-                       trim(this%basis), trim(this%esp), trim(this%expansion), &
+                       this%settings, trim(this%esp), trim(this%expansion), &
                        trim(this%far_field), this%resppc, this%level, &
                        this%max_outer, this%outer_tol, this%scf_max_iter, &
                        this%scf_energy_tol, this%scf_density_tol, &
@@ -544,9 +543,9 @@ contains
          call logger%error("fmo_run_distributed: no fragment partition set")
          return
       end if
-      if (len_trim(this%basis) == 0) then
-         call logger%error("fmo_run_distributed: no orbital basis set. The caller "// &
-                           "fills this from the deck, so an empty one is a plumbing "// &
+      if (.not. allocated(this%settings)) then
+         call logger%error("fmo_run_distributed: no method settings set. The driver fills "// &
+                           "these from the deck, so their absence is a plumbing "// &
                            "fault rather than a request for a default.")
          return
       end if
@@ -558,7 +557,7 @@ contains
 
       call run_czt_fmo(this%sys_geom%element_numbers, symbols, &
                        this%sys_geom%coordinates, this%owner, &
-                       trim(this%basis), trim(this%esp), trim(this%expansion), &
+                       this%settings, trim(this%esp), trim(this%expansion), &
                        trim(this%far_field), this%resppc, this%level, &
                        this%max_outer, this%outer_tol, this%scf_max_iter, &
                        this%scf_energy_tol, this%scf_density_tol, &

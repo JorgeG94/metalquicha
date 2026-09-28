@@ -1,3 +1,9 @@
 target_sources(
-  ${main_lib} PRIVATE mqc_czt_fmo.f90 mqc_czt_afo.f90 mqc_czt_efmo_pairs.f90
-                      mqc_czt_efmo.f90 mqc_czt_subsets.f90 mqc_czt_pieda.f90)
+  ${main_lib}
+  PRIVATE mqc_czt_fragment_solver.f90
+          mqc_czt_fmo.f90
+          mqc_czt_afo.f90
+          mqc_czt_efmo_pairs.f90
+          mqc_czt_efmo.f90
+          mqc_czt_subsets.f90
+          mqc_czt_pieda.f90)

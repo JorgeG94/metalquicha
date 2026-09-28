@@ -126,8 +126,11 @@ module mqc_czt_fmo
    use mqc_dispersion_apply, only: dispersion_apply
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_PROJ
+   use mqc_czt_rhf, only: rhf_result_t, SCF_GUESS_PROJ
    use mqc_scf_types, only: scf_numerics_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_czt_fragment_solver, only: fragment_request_t, fragment_outcome_t, &
+                                      solve_fragment_method
    use pic_sorting, only: sort_index
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
@@ -332,6 +335,10 @@ module mqc_czt_fmo
       integer :: scf_max_iter = 100
       real(dp) :: scf_energy_tol = 1.0e-9_dp
       real(dp) :: scf_density_tol = 1.0e-7_dp
+      type(cuest_scf_settings_t) :: method
+         !! What every fragment and n-mer runs: `functional == ""` and
+         !! `.not. run_cc` selects Hartree-Fock, its default. The fragment
+         !! solver refuses anything else.
       character(len=8) :: afo_localization = "er"
          !! How a cut bond's model system is localized, "er" or "boys"; see
          !! `afo_options_t%localization`.
@@ -1920,16 +1927,14 @@ contains
          !! Only for how the SCF table is printed
 
       type(czt_molecule_t) :: mol
-      type(rhf_result_t) :: scf
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
       integer, allocatable :: deck_guess
       type(group_t) :: group
       type(fock_projector_t) :: proj
       real(dp), allocatable :: bounds(:, :), d_split(:, :), u(:, :), own_q(:), d_start(:, :)
-      type(scf_numerics_t) :: drive
       type(scf_block_t) :: block
       logical :: show_table
-      integer :: attempt
-      real(dp), parameter :: RETRY_LEVEL_SHIFT = 0.5_dp
       logical, allocatable :: inside(:), shared(:)
       integer, allocatable :: near(:), ao_off(:), ao_count(:)
       integer :: m, at, nao_m, expect, nelec
@@ -2002,13 +2007,7 @@ contains
       call group_projector(group, mol, afo, proj, held, error)
       if (error%has_error()) return
 
-      ! Resolved before the branch, not inside it. `deck_guess` is passed on all
-      ! four, but only one used to fill it -- and an unallocated allocatable
-      ! arrives at an optional dummy as *absent*, so `keywords.scf.guess` was
-      ! silently dropped on every path but the embedded-and-constrained one.
-      ! `fmo_guess_kind` leaves it unallocated when the deck said nothing or
-      ! said `auto`, which is the intended "absent", so hoisting changes only
-      ! the decks that asked for a specific guess.
+      ! Unallocated when the deck said nothing or said `auto`.
       call fmo_guess_kind(opts, deck_guess)
 
       ! Started from its members, as GAMESS starts a dimer: their densities
@@ -2023,51 +2022,38 @@ contains
          d_start = d_split
       end if
 
-      ! One retry with a level shift, from the same start, if the first did
-      ! not converge. Second-order convergence would be the usual fallback,
-      ! but it refuses a Fock projector, which every fragment next to a
-      ! detached bond has.
-      drive = opts%scf
+      ! One retry with a level shift, from the same start, if the first does
+      ! not converge (`retry_level_shift`). Second-order convergence would be
+      ! the usual fallback, but it refuses a Fock projector, which every
+      ! fragment next to a detached bond has.
+      if (allocated(deck_guess)) request%guess = deck_guess
+      if (allocated(d_start)) request%guess_density = d_start
+      if (allocated(u)) call move_alloc(u, request%h_extra)
+      if (held) request%projector = proj
+      request%drive = opts%scf
+      request%max_iter = opts%scf_max_iter
+      request%energy_tol = opts%scf_energy_tol
+      request%density_tol = opts%scf_density_tol
+      request%retry_level_shift = .true.
       show_table = show_inner_scf()
+      request%verbose = show_table
       call open_scf_block("  fmo: "//term_name(members)//" SCF, n-mer phase", comm, block)
-      do attempt = 1, 2
-         if (allocated(u) .and. held) then
-            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
-                             guess_density=d_start, h_extra=u, projector=proj)
-         else if (allocated(u)) then
-            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
-                             guess_density=d_start, h_extra=u)
-         else if (held) then
-            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
-                             guess_density=d_start, projector=proj)
-         else
-            call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                             opts%scf_density_tol, show_table, scf, error, scf=drive, guess=deck_guess, &
-                             guess_density=d_start)
-         end if
-         if (error%has_error()) exit
-         if (scf%converged .or. attempt == 2) exit
-         call logger%verbose("  fmo: "//term_name(members)//" did not converge; "// &
-                             "retrying with a level shift")
-         drive%level_shift = max(drive%level_shift, RETRY_LEVEL_SHIFT)
-      end do
+      call solve_fragment_method(opts%method, mol, nelec, group%z(1:group%n_real), request, &
+                                 outcome, error, label=term_name(members))
       call close_scf_block(block)
       if (error%has_error()) return
-      if (.not. scf%converged) then
+      if (.not. outcome%converged) then
          call refuse_unconverged(term_name(members), "in the n-mer phase, after a "// &
-                                 "level-shifted retry", scf, error)
+                                 "level-shifted retry", outcome%scf, error)
          return
       end if
 
-      e_internal = scf%energy
+      e_internal = outcome%energy
       e_resp = 0.0_dp
-      if (allocated(u)) then
+      if (allocated(request%h_extra)) then
          if (opts%expansion /= "mbe") then
-            e_internal = e_internal - sum(scf%density*u)
-            e_resp = sum((scf%density - d_split)*u)
+            e_internal = outcome%internal
+            e_resp = sum((outcome%density - d_split)*request%h_extra)
          end if
       end if
    end subroutine nmer_term
@@ -3603,7 +3589,8 @@ contains
       type(comm_t), intent(in), optional :: comm
          !! Only for how the SCF table is printed; see [[open_scf_block]]
 
-      type(rhf_result_t) :: scf
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
       type(scf_block_t) :: block
       logical :: show_table
       integer, allocatable :: deck_guess
@@ -3614,48 +3601,37 @@ contains
       constrained = .false.
       if (present(held)) constrained = held
 
-      ! Resolved before the branch, not inside it. `deck_guess` is passed on all
-      ! four, but only one used to fill it -- and an unallocated allocatable
-      ! arrives at an optional dummy as *absent*, so `keywords.scf.guess` was
-      ! silently dropped on every path but the embedded-and-constrained one.
-      ! `fmo_guess_kind` leaves it unallocated when the deck said nothing or
-      ! said `auto`, which is the intended "absent", so hoisting changes only
-      ! the decks that asked for a specific guess.
+      ! `fmo_guess_kind` leaves `deck_guess` unallocated when the deck said
+      ! nothing or said `auto`, and then the backend's own default is used.
       call fmo_guess_kind(opts, deck_guess)
+      if (allocated(deck_guess)) request%guess = deck_guess
+      if (embedded) request%h_extra = u
+      if (constrained) request%projector = proj
+      request%drive = opts%scf
+      request%max_iter = opts%scf_max_iter
+      request%energy_tol = opts%scf_energy_tol
+      request%density_tol = opts%scf_density_tol
 
       ! Asked before the block opens: it silences the console, which is what
       ! `show_inner_scf` reads.
       show_table = show_inner_scf()
+      request%verbose = show_table
       call open_scf_block("  fmo: "//what//" SCF, "//stage, comm, block)
-      if (embedded .and. constrained) then
-         call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, &
-                          h_extra=u, projector=proj)
-      else if (embedded) then
-         call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, h_extra=u)
-      else if (constrained) then
-         call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess, &
-                          projector=proj)
-      else
-         call run_czt_rhf(mol, f%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, show_table, scf, error, scf=opts%scf, guess=deck_guess)
-      end if
+      call solve_fragment_method(opts%method, mol, f%nelec, f%z, request, outcome, error, &
+                                 label=what)
       call close_scf_block(block)
       if (error%has_error()) return
-      if (.not. scf%converged) then
-         call refuse_unconverged(what, stage, scf, error)
+      if (.not. outcome%converged) then
+         call refuse_unconverged(what, stage, outcome%scf, error)
          return
       end if
 
       ! The internal energy: what the SCF reported, less its interaction with
       ! the field. `h_extra` enters H linearly, so that interaction is exactly
       ! Tr(D u) and nothing else has to be unpicked.
-      f%energy_total = scf%energy
-      f%energy = scf%energy
-      if (embedded) f%energy = f%energy - sum(scf%density*u)
-      f%density = scf%density
+      f%energy_total = outcome%energy
+      f%energy = outcome%internal
+      f%density = outcome%density
    end subroutine inner_scf
 
    subroutine fragment_charges(mol, density, scheme, q, error)

@@ -110,20 +110,15 @@ contains
       !! **The context carries the basis twice, and `init` fills only one.**
       !!
       !! `init` copies the whole `method_config`, whose `basis_set` is where a
-      !! deck's basis lands -- and leaves `context%basis`, which is what the FMO
-      !! run actually reads, empty. The driver bridges them by hand, one line
-      !! after the `init` call.
+      !! deck's basis lands -- and leaves `context%settings`, which is what the
+      !! FMO run actually reads, unallocated. The driver builds it with
+      !! `method_backend_settings` after the `init` call, and `run_serial`
+      !! refuses a context without it rather than running the type's default
+      !! basis.
       !!
-      !! **A caller that forgets is now refused rather than answered.** That
-      !! field used to start at "6-31g", so a forgotten copy gave an FMO in a
-      !! basis nobody asked for, which converged and reported a number; it is
-      !! empty now and `run_serial` says so. The initialiser was dead either
-      !! way -- every real caller overwrites it, and a deck that omits
-      !! `model.basis` gets "sto-3g" from `mqc_method_config`, never 6-31G.
-      !!
-      !! This test does not assert that the two fields agree, because they do
-      !! not. It pins the shape as it is, so that a change making `init` carry
-      !! the basis through breaks here and gets noticed, rather than silently
+      !! This test does not assert that the two agree, because they do not. It
+      !! pins the shape as it is, so that a change making `init` carry the
+      !! basis through breaks here and gets noticed, rather than silently
       !! double-setting a field the driver is already setting.
       type(error_type), allocatable, intent(out) :: error
 
@@ -136,9 +131,9 @@ contains
       call check(error, trim(context%method_config%basis_set) == "cc-pvdz", &
                  "init did not copy the method configuration")
       if (allocated(error)) return
-      call check(error, len_trim(context%basis) == 0, &
-                 "init now sets the context basis; the driver's copy of that "// &
-                 "line is redundant and this test should say so")
+      call check(error,.not. allocated(context%settings), &
+                 "init now sets the context settings from the deck; the driver's "// &
+                 "copy of that line is redundant and this test should say so")
       if (allocated(error)) return
 
       ! `init` is `intent(out)`, so everything it does not touch is the type's

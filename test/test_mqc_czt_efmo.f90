@@ -53,8 +53,7 @@ module test_mqc_czt_efmo
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_czt_efmo, only: efmo_options_t, efmo_result_t, run_efmo, &
-                           efmo_pair_contribution, &
-                           EFMO_CORR_NONE, EFMO_CORR_RI_MP2
+                           efmo_pair_contribution
    use mqc_czt_mp2, only: mp2_result_t, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
@@ -643,8 +642,9 @@ contains
       call water_chain(2, z, symbols, xyz, owner)
       call efmo_settings(opts)
       opts%rcut = 1.0e6_dp
-      opts%correlation = EFMO_CORR_RI_MP2
-      opts%corr_aux_basis = AUX
+      opts%method%run_mp2 = .true.
+      opts%method%corr_density_fitting = .true.
+      opts%method%aux_basis_set = AUX
       call run_efmo(z, symbols, xyz, owner, [0, 0], opts, res, err)
       call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
       if (allocated(error)) return
@@ -666,7 +666,7 @@ contains
       if (allocated(error)) return
       ! And switching it off has to give the Hartree-Fock answer back exactly,
       ! not nearly: the correlated path must not have moved an SCF.
-      opts%correlation = EFMO_CORR_NONE
+      opts%method%run_mp2 = .false.
       call run_efmo(z, symbols, xyz, owner, [0, 0], opts, res, err)
       call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
       if (allocated(error)) return
@@ -716,8 +716,9 @@ contains
       call water_chain(3, z, symbols, xyz, owner)
       call efmo_settings(opts)
       opts%rcut = 1.0e6_dp
-      opts%correlation = EFMO_CORR_RI_MP2
-      opts%corr_aux_basis = AUX
+      opts%method%run_mp2 = .true.
+      opts%method%corr_density_fitting = .true.
+      opts%method%aux_basis_set = AUX
       call run_efmo(z, symbols, xyz, owner, [0, 0, 0], opts, res, err)
       call check(error,.not. err%has_error(), "run_efmo failed: "//err%get_full_trace())
       if (allocated(error)) return

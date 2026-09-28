@@ -2,7 +2,7 @@
 The fragment solver: design and progress
 ========================================
 
-**Status: design agreed (see Decisions at the end); phase 1a built.**
+**Status: design agreed (see Decisions at the end); phase 1 built.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -125,7 +125,7 @@ The design
 Where it lives
 --------------
 
-A new backend module, ``backends/cenzontle/fragments/mqc_czt_fragment_solver.f90``.
+``backends/cenzontle/fragments/mqc_czt_fragment_solver.f90`` (phase 1b, built).
 It has to be in the backend because the embedding operator, the projector and
 the molecule are all backend objects built over the fragment's own basis. FMO,
 EE-MBE and EFMO call it; nothing in those three calls ``run_czt_rhf`` any
@@ -151,27 +151,34 @@ The interface
 .. code-block:: fortran
 
    type :: fragment_request_t
-      real(dp), allocatable :: h_extra(:, :)          ! embedding u over the fragment's AOs
-      type(fock_projector_t), allocatable :: projector ! AFO frozen orbitals
-      real(dp), allocatable :: guess_density(:, :)    ! total density, e.g. D_I (+) D_J
-      integer :: guess = SCF_GUESS_DEFAULT
-      logical :: retry_level_shift = .false.          ! the n-mer retry, 0.5 Eh
-      integer :: max_iter                              ! fragment tolerances (fmo_scf_*)
+      real(dp), allocatable :: h_extra(:, :)           ! embedding u over mol's AOs
+      type(fock_projector_t), allocatable :: projector  ! allocated only when it holds frozen orbitals
+      integer, allocatable :: guess                      ! SCF_GUESS_*; unallocated = backend default
+      real(dp), allocatable :: guess_density(:, :)      ! total density, e.g. D_I (+) D_J
+      type(scf_numerics_t) :: drive                      ! how the SCF is driven
+      integer :: max_iter                                ! fragment tolerances (fmo_scf_*)
       real(dp) :: energy_tol, density_tol
+      real(dp), allocatable :: grad_tol
+      logical :: retry_level_shift                       ! one retry at >= 0.5 Eh if unconverged
+      logical :: verbose
    end type
 
    type :: fragment_outcome_t
-      real(dp) :: energy        ! E, including Tr(D u)
-      real(dp) :: internal      ! E' = E - Tr(D_esp u), see below
-      real(dp) :: reference     ! the SCF part of E
-      real(dp) :: correlation   ! zero for HF and DFT
-      real(dp), allocatable :: density(:, :)  ! D_esp, total, over the fragment's AOs
+      real(dp) :: energy        ! E: reference + correlation, including Tr(D u)
+      real(dp) :: internal      ! E' = E - Tr(D_esp u); energy when there is no u
+      real(dp) :: reference     ! the SCF energy
+      real(dp) :: correlation   ! zero for HF (and DFT)
+      real(dp), allocatable :: density(:, :)  ! D_esp: the reference SCF's total density
+      type(rhf_result_t) :: scf                ! the reference SCF itself
       logical :: converged
-      integer :: iterations
-      real(dp) :: commutator
    end type
 
-   subroutine solve_fragment_method(settings, mol, nelec, request, outcome, error, reference)
+   subroutine solve_fragment_method(method, mol, nelec, real_z, request, outcome, error, &
+                                    reference, aux, label)
+
+``method`` is the ``cuest_scf_settings_t``. The caller builds ``mol``, plus
+``aux`` for RI-MP2. ``real_z`` holds the atomic numbers of the real atoms, for
+the frozen-core count.
 
 ``reference`` is an optional, already converged ``rhf_result_t``. EFMO passes
 MAKEFP's own SCF, so that the monomer is not solved twice; the solver then only
@@ -182,13 +189,15 @@ adds correlation. Inside the routine:
 * **DFT:** the same call with an ``xc_context_t`` built from ``settings``.
   Dispersion is handled according to the answer to question 2 below.
 * **MP2, SCS/SOS-MP2 and RI-MP2:** HF as above, then ``run_czt_mp2`` or
-  ``run_czt_ri_mp2`` on the embedded orbitals. The frozen-core rule is the
-  one ``run_czt_hf`` uses, applied to real atoms only; ghosts do not count.
+  ``run_czt_ri_mp2`` on the embedded orbitals, scaled by ``scs_ss`` and
+  ``scs_os``. The frozen core is counted from ``real_z``, so ghosts do not
+  count. This is built, and EFMO uses it.
 * **CC:** later, the same shape as MP2.
 
-The level-shifted n-mer retry, the refusal of an unconverged SCF (which now
-honours ``allow_crap_scf``) and the calculation of E' move into the solver. The
-callers then contain no SCF logic.
+The level-shifted n-mer retry and E' are computed in the solver. An
+unconverged SCF is reported in ``outcome%converged``, and each caller keeps its
+own refusal of it. FMO still refuses regardless of ``allow_crap_scf``; EFMO
+honours it.
 
 Which density defines the ESP
 -----------------------------
@@ -291,12 +300,18 @@ Phases and gates
 1. **The interface, with HF through it.** Phase 1a, done: the capability
    query and refusal site, and ``scf_numerics_from_config`` in place of the
    driver's four copies, bit-identical on the FMO, EFMO, NEO and MAKEFP decks.
-   Phase 1b: FMO, EE-MBE and EFMO call the solver, and settings arrive as
-   ``cuest_scf_settings_t``.
+   Phase 1b, done: ``mqc_czt_fragment_solver`` is the only place FMO, EE-MBE
+   and EFMO solve a fragment or n-mer (the AFO model system and MAKEFP stay
+   Hartree-Fock by construction), and ``run_czt_fmo``/``run_czt_efmo`` take
+   the ``cuest_scf_settings_t`` that ``method_backend_settings`` builds.
 
    Gate: every existing FMO, EFMO, EE-MBE, AFO and PIEDA test passes
-   unchanged, and totals are bit-identical to ``main`` at one thread on the
-   FMO, EFMO, NEO and MAKEFP decks in ``validation/inputs/cpu/mqc/``.
+   unchanged, and totals are bit-identical at one thread on the FMO, EFMO,
+   NEO and MAKEFP decks in ``validation/inputs/cpu/mqc/``, against the parent
+   commit rebuilt in the same tree. Two builds of the *same* source can differ
+   in the last bit of EFMO's far-pair EFP terms, because link-time
+   optimisation's partitioning can inline them differently. A reference
+   built at another time is therefore not a valid comparison.
 2. **DFT under FMO**, including range-separated hybrids and D3/D4.
 
    Gate: two fragments at full level reproduce the supermolecule, the same
