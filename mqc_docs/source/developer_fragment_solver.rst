@@ -2,7 +2,7 @@
 The fragment solver (design, not yet built)
 ===========================================
 
-**Status: design for review.** Nothing on this page exists in the code yet.
+**Status: design agreed (see Decisions at the end); not yet built.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -304,15 +304,14 @@ Phases and gates
    * ``pieda_dispersion`` stays an option.
 5. **Later:** CC, and anything else the capability query allows.
 
-Open questions for review
-=========================
+Decisions
+=========
 
-1. **ESP density for correlated methods.** Use HF, as GAMESS does (above)?
-2. **D3/D4 under FMO-DFT.** Either evaluate dispersion once for the whole
-   system and add it to the FMO total, or evaluate it per fragment and n-mer
-   so that it is expanded like everything else. Once for the whole system is
-   exact and costs nothing. Per n-mer at FMO2 is exact for the pairwise part
-   but truncates the three-body ATM term. Matching GAMESS needs whichever
-   GAMESS does.
-3. **EFMO with DFT** stays refused, because MAKEFP is HF and the EFP terms
-   would then describe a different method from the QM terms. Is that right?
+1. **ESP density for correlated methods: HF**, as GAMESS does. Every ESP,
+   set of charges and ``Tr(ΔD u)`` comes from the embedded HF density.
+   Correlation is added per fragment and per n-mer.
+2. **D3/D4 under FMO-DFT: match GAMESS.** Whether that is once for the whole
+   system or per fragment and n-mer is to be checked against GAMESS before
+   phase 2. Phase 1 does not depend on it.
+3. **EFMO with DFT stays refused.** MAKEFP is HF, so EFMO allows HF and the
+   MP2 family only. It still routes through the solver.
