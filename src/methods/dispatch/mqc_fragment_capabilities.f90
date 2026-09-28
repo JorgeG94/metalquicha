@@ -65,9 +65,11 @@ contains
       !! What `config%method_type` may do under `scheme`
       !!
       !! FMO and EE-MBE: Hartree-Fock or Kohn-Sham, with or without a detached
-      !! bond. A double hybrid does not run: its PT2 part is not added. Neither
-      !! carries PIEDA for Kohn-Sham yet, and neither carries empirical
-      !! dispersion for either method yet.
+      !! bond, plus MP2, SCS/SOS-MP2 or RI-MP2 as correlation on the embedded
+      !! Hartree-Fock reference, without a detached bond (the frozen orbitals
+      !! at a cut would be correlated). A double hybrid does not run: its PT2
+      !! part is not added. None of them carries PIEDA for a correlated
+      !! method yet, and none carries empirical dispersion yet.
       !! EFMO: Hartree-Fock, and MP2 or RI-MP2 without a detached bond (the
       !! frozen virtual at a cut would be correlated) and without spin-component
       !! scaling. Nothing runs unrestricted or with a gradient.
@@ -84,6 +86,8 @@ contains
          else if (config%method_type == METHOD_TYPE_DFT) then
             cap%runs = .not. double_hybrid(config%dft%functional)
             cap%cut = cap%runs
+         else if (config%method_type == METHOD_TYPE_MP2) then
+            cap%runs = .true.
          end if
       case (FRAGMENT_SCHEME_EFMO)
          select case (config%method_type)
@@ -160,10 +164,11 @@ contains
                    "correlation. Choose a functional with no PT2 part."
       else
          message = "The fragment calculations of FMO and EE-MBE currently run "// &
-                   "Hartree-Fock and Kohn-Sham, and model.method is '"// &
+                   "Hartree-Fock, Kohn-Sham, and MP2, SCS-MP2, SOS-MP2 or RI-MP2 as "// &
+                   "correlation on top, and model.method is '"// &
                    trim(method_type_to_string(config%method_type))//"', which is "// &
-                   "not yet wired into them. Set model.method to 'hf' or a "// &
-                   "functional."
+                   "not yet wired into them. Set model.method to 'hf', a functional, "// &
+                   "or 'mp2'/'ri-mp2'."
       end if
    end function runs_refusal
 
@@ -254,10 +259,13 @@ contains
                    "not yet excluded from the correlation, so an MP2 energy there "// &
                    "would be a different and wrong method; set model.method to 'hf'."
       else
-         message = "FMO and EE-MBE cannot yet detach covalent bonds for "// &
-                   "model.method '"//trim(method_type_to_string(config%method_type))// &
-                   "'. Set keywords.fragmentation.bond_breaking to 'none', or "// &
-                   "model.method to 'hf'."
+         message = "FMO and EE-MBE: a partition that detaches covalent bonds runs "// &
+                   "Hartree-Fock and Kohn-Sham fragments only, and model.method is '"// &
+                   trim(method_type_to_string(config%method_type))//"'. The frozen "// &
+                   "orbitals at a cut are not yet excluded from the correlation, so a "// &
+                   "correlated energy there would be a different and wrong method. Set "// &
+                   "keywords.fragmentation.bond_breaking to 'none', or model.method to "// &
+                   "'hf' or a functional."
       end if
    end function cut_refusal
 

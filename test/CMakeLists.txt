@@ -515,6 +515,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_fmo_dft)
   target_link_libraries(test_mqc_fmo_dft PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # MP2, RI-MP2 and SCS-MP2 as correlation on embedded Hartree-Fock, under FMO
+  # and EE-MBE: the MP2-family counterpart of mqc_fmo_dft.
+  addtest(mqc_fmo_mp2)
+  target_link_libraries(test_mqc_fmo_mp2 PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
   # backends/cenzontle/, which is only added when an integrals backend is
   # enabled -- registering it beside the src/ tests built fine here and broke

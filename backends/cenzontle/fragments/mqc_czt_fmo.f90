@@ -849,6 +849,19 @@ contains
          end if
          call build_afo_context(z, symbols, coords, owner, opts, afo, error, comm)
          if (error%has_error()) return
+         if (afo%active .and. opts%method%run_mp2) then
+            ! The frozen virtual is held at a shift rather than removed, which a
+            ! Hartree-Fock energy does not see and a correlation energy does: it
+            ! would be correlated into like any other virtual. A defensive
+            ! guard rather than the user-facing text: `fragment_refusal` in
+            ! `mqc_fragment_capabilities` is what a deck actually sees, and it
+            ! refuses this combination before any backend work starts.
+            call error%set(ERROR_VALIDATION, "fmo: correlation with detached bonds "// &
+                           "reached the backend, where only Hartree-Fock and "// &
+                           "Kohn-Sham should ever arrive; fragment_refusal should "// &
+                           "have refused this deck.")
+            return
+         end if
       else
          call error%set(ERROR_VALIDATION, "fmo: bond_breaking='"// &
                         trim(opts%bond_breaking)//"' is not implemented for this "// &
@@ -1926,7 +1939,7 @@ contains
       type(comm_t), intent(in), optional :: comm
          !! Only for how the SCF table is printed
 
-      type(czt_molecule_t) :: mol
+      type(czt_molecule_t) :: mol, aux_mol
       type(fragment_request_t) :: request
       type(fragment_outcome_t) :: outcome
       integer, allocatable :: deck_guess
@@ -1938,7 +1951,7 @@ contains
       logical, allocatable :: inside(:), shared(:)
       integer, allocatable :: near(:), ao_off(:), ao_count(:)
       integer :: m, at, nao_m, expect, nelec
-      logical :: held
+      logical :: held, need_aux
 
       ! The n-mer's geometry: its fragments end to end in the order given, then
       ! whatever ghosts its own boundaries call for.
@@ -2037,9 +2050,30 @@ contains
       request%retry_level_shift = .true.
       show_table = show_inner_scf()
       request%verbose = show_table
+
+      ! RI-MP2's fitting basis, over the same real atoms as `mol` and read the
+      ! same way `open_fragment` reads the orbital basis -- no `force_cartesian`,
+      ! so a basis file's own declared angular form is kept. `run_mp2` never
+      ! coincides with a detached bond (`fragment_refusal`, and the guard in
+      ! `build_fragments`), so `mol` carries no ghost and `group%z(1:group%n_real)`
+      ! is every atom in it.
+      need_aux = opts%method%run_mp2 .and. opts%method%corr_density_fitting
+      if (need_aux) then
+         call build_czt_molecule(group%z(1:group%n_real), group%sym(1:group%n_real), &
+                                 group%xyz(:, 1:group%n_real), trim(opts%method%aux_basis_set), &
+                                 aux_mol, error)
+         if (error%has_error()) return
+      end if
+
       call open_scf_block("  fmo: "//term_name(members)//" SCF, n-mer phase", comm, block)
-      call solve_fragment_method(opts%method, mol, nelec, group%z(1:group%n_real), request, &
-                                 outcome, error, label=term_name(members))
+      if (need_aux) then
+         call solve_fragment_method(opts%method, mol, nelec, group%z(1:group%n_real), request, &
+                                    outcome, error, aux=aux_mol, label=term_name(members))
+         call aux_mol%destroy()
+      else
+         call solve_fragment_method(opts%method, mol, nelec, group%z(1:group%n_real), request, &
+                                    outcome, error, label=term_name(members))
+      end if
       call close_scf_block(block)
       if (error%has_error()) return
       if (.not. outcome%converged) then
@@ -2246,7 +2280,7 @@ contains
    end subroutine local_coulomb
 
    subroutine solve_fragment(frag, n_frag, which, z, coords, q_all, opts, afo, &
-                             stage, error, bare, comm)
+                             stage, error, bare, comm, start_density)
       !! One monomer: build it, field it, solve it, read its charges, drop it
       !!
       !! The whole of a fragment's work for one outer pass, and the unit a rank
@@ -2267,6 +2301,9 @@ contains
          !! against.
       type(comm_t), intent(in), optional :: comm
          !! Only for how the SCF table is printed
+      real(dp), intent(in), optional :: start_density(:, :)
+         !! Start the SCF here (`SCF_GUESS_PROJ`) instead of the deck's guess;
+         !! see [[add_monomer_correlation]].
 
       type(czt_molecule_t) :: mol
       type(group_t) :: group
@@ -2306,7 +2343,7 @@ contains
       end if
 
       call inner_scf(frag(which), mol, opts, error, term_name([which]), stage, u, proj, &
-                     held, comm)
+                     held, comm, start_density)
       if (error%has_error()) return
 
       ! The density stays the size the SCF produced it, ghost block and all.
@@ -2331,6 +2368,16 @@ contains
       !! Every fragment within a pass is independent -- they all read the
       !! previous pass's densities, none reads this pass's -- so a pass is a bag
       !! of tasks with a barrier after it.
+      !!
+      !! **Correlation is added once, after this has converged.** Every pass
+      !! below solves with `opts_hf`, `opts` with `method%run_mp2` forced off:
+      !! computing MP2 on each outer pass would be wasted work and would
+      !! perturb `res%outer_change`, the convergence test on the sum of
+      !! monomer energies. [[add_monomer_correlation]] then runs the one
+      !! correlated pass, under the field this converged to. When
+      !! `.not. opts%method%run_mp2`, `opts_hf` is a copy of `opts` with
+      !! nothing changed, so this is exactly the Hartree-Fock and Kohn-Sham
+      !! path it always was.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: z(:)
@@ -2341,12 +2388,16 @@ contains
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
 
+      type(fmo_options_t) :: opts_hf
       real(dp), allocatable :: q_all(:)
       real(dp) :: e_sum, e_prev
       integer, allocatable :: owner(:)
       type(fragment_t), allocatable :: prev(:)
       integer :: i, outer, me
       logical :: show_conv
+
+      opts_hf = opts
+      opts_hf%method%run_mp2 = .false.
 
       call monomer_owners(frag, n_frag, comm, owner)
       me = 0
@@ -2357,7 +2408,7 @@ contains
       if (error%has_error()) return
       do i = 1, n_frag
          if (owner(i) /= me) cycle
-         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
+         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts_hf, afo, &
                              "in vacuo, before the first pass", error, bare=.true., &
                              comm=comm)
          if (error%has_error()) return
@@ -2367,6 +2418,10 @@ contains
       if (opts%esp == "none") then
          res%converged = .true.
          res%outer_iterations = 1
+         if (opts%method%run_mp2) then
+            call add_monomer_correlation(frag, n_frag, z, coords, opts, afo, owner, me, &
+                                         .true., error, comm)
+         end if
          return
       end if
 
@@ -2389,7 +2444,7 @@ contains
          prev = frag
          do i = 1, n_frag
             if (owner(i) /= me) cycle
-            call solve_fragment(prev, n_frag, i, z, coords, q_all, opts, afo, &
+            call solve_fragment(prev, n_frag, i, z, coords, q_all, opts_hf, afo, &
                                 "in SCC pass "//to_char(outer), error, comm=comm)
             if (error%has_error()) return
             call swap_solution(prev(i), frag(i))
@@ -2403,6 +2458,10 @@ contains
          if (res%outer_change < opts%outer_tol) then
             res%converged = .true.
             call convergence_footer(show_conv, .true., outer, "outer iterations", 45)
+            if (opts%method%run_mp2) then
+               call add_monomer_correlation(frag, n_frag, z, coords, opts, afo, owner, me, &
+                                            .false., error, comm)
+            end if
             return
          end if
          e_prev = e_sum
@@ -2413,6 +2472,44 @@ contains
                      to_char(opts%max_outer)//" passes; the monomer sum was still "// &
                      "moving by "//to_char(res%outer_change)//" Hartree")
    end subroutine calculate_monomers
+
+   subroutine add_monomer_correlation(frag, n_frag, z, coords, opts, afo, owner, me, &
+                                      isolated, error, comm)
+      !! One more monomer pass with correlation, once the outer SCF has settled
+      !!
+      !! The field (or its absence, under `esp = "none"`) is fixed at its
+      !! converged value, and every monomer starts from its own converged
+      !! density (`SCF_GUESS_PROJ`), so this typically finishes in a few
+      !! iterations. `energy_total`, `energy`, `density` and `charges` become
+      !! the monomer's final values, exchanged across ranks exactly as the
+      !! outer loop's own passes are.
+      type(fragment_t), intent(inout) :: frag(:)
+      integer, intent(in) :: n_frag
+      integer, intent(in) :: z(:)
+      real(dp), intent(in) :: coords(:, :)
+      type(fmo_options_t), intent(in) :: opts
+      type(afo_context_t), intent(in) :: afo
+      integer, intent(in) :: owner(:)
+      integer, intent(in) :: me
+      logical, intent(in) :: isolated   !! `esp = "none"`: no field to converge against
+      type(error_t), intent(inout) :: error
+      type(comm_t), intent(in), optional :: comm
+
+      real(dp), allocatable :: q_all(:), start(:, :)
+      integer :: i
+
+      call all_charges(frag, n_frag, size(z), opts, q_all, error)
+      if (error%has_error()) return
+      do i = 1, n_frag
+         if (owner(i) /= me) cycle
+         start = frag(i)%density
+         call solve_fragment(frag, n_frag, i, z, coords, q_all, opts, afo, &
+                             "with correlation, after the outer SCF", error, &
+                             bare=isolated, comm=comm, start_density=start)
+         if (error%has_error()) return
+      end do
+      call exchange_monomers(frag, n_frag, owner, comm)
+   end subroutine add_monomer_correlation
 
    subroutine swap_solution(a, b)
       !! Exchange what a fragment's SCF produced between two copies of it
@@ -2536,7 +2633,11 @@ contains
          if (separated(t)) then
             ! No pair SCF, so no response either: the correction is the two
             ! monomers' energies plus their electrostatic interaction, and the
-            ! subtraction below leaves the interaction alone.
+            ! subtraction below leaves the interaction alone. With
+            ! `opts%method%run_mp2` that carries each monomer's own
+            ! correlation (already in `frag(*)%energy`) and adds none for the
+            ! pair itself -- a separated pair gets no pair-level correlation,
+            ! which is GAMESS's FMO-MP2 behaviour too.
             call es_dimer_energy(frag, terms(1, t), terms(2, t), afo, z, coords, opts, &
                                  e_es, error)
             if (error%has_error()) return
@@ -3573,7 +3674,7 @@ contains
       end do
    end subroutine exchange_monomers
 
-   subroutine inner_scf(f, mol, opts, error, what, stage, u, proj, held, comm)
+   subroutine inner_scf(f, mol, opts, error, what, stage, u, proj, held, comm, start_density)
       !! The inner SCF: this fragment's orbitals, against a fixed external field
       type(fragment_t), intent(inout) :: f
       type(czt_molecule_t), intent(in) :: mol
@@ -3588,13 +3689,19 @@ contains
          !! a fragment with no boundary still has a projector object.
       type(comm_t), intent(in), optional :: comm
          !! Only for how the SCF table is printed; see [[open_scf_block]]
+      real(dp), intent(in), optional :: start_density(:, :)
+         !! Present only for [[add_monomer_correlation]]'s pass: overrides the
+         !! deck's guess with `SCF_GUESS_PROJ` from this density, so a fragment
+         !! already converged without correlation re-converges in a few
+         !! iterations rather than starting over.
 
       type(fragment_request_t) :: request
       type(fragment_outcome_t) :: outcome
+      type(czt_molecule_t) :: aux_mol
       type(scf_block_t) :: block
       logical :: show_table
       integer, allocatable :: deck_guess
-      logical :: embedded, constrained
+      logical :: embedded, constrained, need_aux
 
       embedded = .false.
       if (present(u)) embedded = allocated(u)
@@ -3605,6 +3712,10 @@ contains
       ! nothing or said `auto`, and then the backend's own default is used.
       call fmo_guess_kind(opts, deck_guess)
       if (allocated(deck_guess)) request%guess = deck_guess
+      if (present(start_density)) then
+         request%guess = SCF_GUESS_PROJ
+         request%guess_density = start_density
+      end if
       if (embedded) request%h_extra = u
       if (constrained) request%projector = proj
       request%drive = opts%scf
@@ -3616,9 +3727,27 @@ contains
       ! `show_inner_scf` reads.
       show_table = show_inner_scf()
       request%verbose = show_table
+
+      ! RI-MP2's fitting basis, over this fragment's own real atoms -- `f%z`,
+      ! `f%sym` and `f%xyz`, the same atoms `f%z` already names as `real_z`
+      ! below. A monomer never carries a ghost under `run_mp2` (`fragment_refusal`,
+      ! and the guard in `build_fragments`), so those are every atom the SCF saw.
+      need_aux = opts%method%run_mp2 .and. opts%method%corr_density_fitting
+      if (need_aux) then
+         call build_czt_molecule(f%z, f%sym, f%xyz, trim(opts%method%aux_basis_set), &
+                                 aux_mol, error)
+         if (error%has_error()) return
+      end if
+
       call open_scf_block("  fmo: "//what//" SCF, "//stage, comm, block)
-      call solve_fragment_method(opts%method, mol, f%nelec, f%z, request, outcome, error, &
-                                 label=what)
+      if (need_aux) then
+         call solve_fragment_method(opts%method, mol, f%nelec, f%z, request, outcome, error, &
+                                    aux=aux_mol, label=what)
+         call aux_mol%destroy()
+      else
+         call solve_fragment_method(opts%method, mol, f%nelec, f%z, request, outcome, error, &
+                                    label=what)
+      end if
       call close_scf_block(block)
       if (error%has_error()) return
       if (.not. outcome%converged) then

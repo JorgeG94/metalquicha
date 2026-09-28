@@ -2,7 +2,7 @@
 The fragment solver: design and progress
 ========================================
 
-**Status: design agreed (see Decisions at the end); phases 1 and 2 built, except dispersion.**
+**Status: design agreed (see Decisions at the end); phases 1, 2 and 3 built, except dispersion.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -262,7 +262,7 @@ method, the scheme and the key to change.
 Refusals that depend on the data rather than the method stay where the data
 is. An odd electron count after a cut is one example.
 
-.. list-table:: Capabilities as planned, by phase
+.. list-table:: Capabilities, by phase
    :header-rows: 1
 
    * - method
@@ -292,7 +292,7 @@ is. An odd electron count after a cut is one example.
    * - MP2, SCS/SOS, RI-MP2
      - yes (phase 3)
      - no: frozen virtuals would be correlated
-     - yes, as now (SCS/SOS still refused)
+     - yes, as before (SCS/SOS still refused there)
      - phase 4
      - n/a
    * - CC
@@ -353,9 +353,35 @@ Phases and gates
 
    Still owed: an FMO2 comparison against an independent reference, which
    needs GAMESS.
-3. **The MP2 family** as correlation on embedded HF.
+3. **The MP2 family** as correlation on embedded HF. Built, for FMO and
+   EE-MBE, without a detached bond (Decision 1: the ESP, the charges and
+   ``Tr(dD u)`` stay the embedded Hartree-Fock's; correlation is added per
+   fragment and per n-mer, as GAMESS FMO-MP2 does). Restricted MP2, SCS-MP2,
+   SOS-MP2 and RI-MP2 all run; a double hybrid and PIEDA stay refused as
+   before, and a separated pair (``resdim``) gets no pair-level correlation.
 
-   Gate: the same full-level identity, and an FMO2 reference from GAMESS.
+   The outer (monomer) self-consistent-charge loop still solves plain
+   Hartree-Fock on every pass -- adding MP2 to it would be wasted work and
+   would perturb the convergence test on the sum of monomer energies. One
+   more monomer pass, with correlation, runs once the loop has settled, under
+   the field it converged to and started from each monomer's own converged
+   density (``SCF_GUESS_PROJ``), so it typically finishes in a few
+   iterations. An n-mer's correlation is added by ``solve_fragment_method``
+   in the same call as its reference, since an n-mer is solved once and not
+   iterated.
+
+   Gate: the same full-level identity as phase 2 (water dimer and trimer, FMO
+   and EE-MBE, MP2, SCS-MP2 and RI-MP2, frozen core on and off) --
+   ``test/test_mqc_fmo_mp2.f90``.
+
+   The embedding is checked independently. ``tools/fmo_validation/eembe_pyscf.py``
+   is a PySCF reimplementation of EE-MBE, fed this repository's basis JSON.
+   On the water trimer at level 2 it reproduces the Hartree-Fock total to
+   3e-11 Eh, and MP2, RI-MP2 and SCS-MP2 to 9e-9 Eh. The MP2 agreement is
+   asserted in ``test_mqc_fmo_mp2``.
+
+   Still owed: an FMO2-MP2 reference, which needs GAMESS. FMO's exact ESP is
+   not in the PySCF replica.
 4. **PIEDA.**
 
    * For MP2, Edi is ``Ec(IJ) - Ec(I) - Ec(J)``.

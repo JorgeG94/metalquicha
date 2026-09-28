@@ -873,16 +873,33 @@ than quietly paired up. A detached bond moves an electron between the two
 fragments it joins, and the count checked here is the one after that move: ethane
 split into two methyls is 9 and 9 before it and 8 and 10 after.
 
-**Hartree-Fock or restricted Kohn-Sham.** Every fragment and n-mer is solved
-restricted. ``model.method`` is ``"hf"``, or ``"dft"`` with any
-``model.functional`` the CPU backend supports, from LDA to meta-GGA hybrids,
-range-separated hybrids and VV10. The settings are exactly those an
-unfragmented run of the deck would use.
+**Hartree-Fock, restricted Kohn-Sham, or MP2/SCS-MP2/SOS-MP2/RI-MP2 as
+correlation on top.** Every fragment and n-mer is solved restricted.
+``model.method`` is ``"hf"``, ``"dft"`` with any ``model.functional`` the CPU
+backend supports (LDA to meta-GGA hybrids, range-separated hybrids and VV10),
+or one of the MP2 family. The settings are exactly those an unfragmented run
+of the deck would use.
 
 * A double hybrid is refused by name, because its perturbative correlation is
   not added to the embedded fragments.
-* The ESP, the charges and the density-response term all come from the
-  reference's own density.
+* **For Hartree-Fock and Kohn-Sham**, the ESP, the charges and the
+  density-response term all come from the reference's own density.
+* **For the MP2 family**, correlation is added on top of the *embedded
+  Hartree-Fock* reference, per fragment and per n-mer -- as GAMESS FMO-MP2
+  does. The ESP, the charges and ``Tr(dD u)`` still come from the embedded
+  Hartree-Fock density; the correlation is not relaxed into it. A pair's
+  correction gains ``Ec(IJ) - Ec(I) - Ec(J)`` on top of its Hartree-Fock
+  correction, and so on for a larger n-mer. A **separated pair** (beyond
+  ``resdim``, taken as electrostatics) gets no pair-level correlation -- only
+  its two monomers' own, already inside their energies -- again matching
+  GAMESS. See ``mqc_docs/source/developer_fragment_solver.rst`` for the
+  design and the reasons.
+* A partition that detaches a covalent bond (``bond_breaking = "afo"``) is
+  refused for the MP2 family: the frozen orbitals at the cut are not yet
+  excluded from the correlation, so a virtual held at the projector's shift
+  would be correlated into like any other one.
+* PIEDA and empirical dispersion are refused with the MP2 family, the same as
+  with Kohn-Sham; see below.
 * Any other method is refused by name. It used to be ignored: a B3LYP deck ran
   as Hartree-Fock and reported that total.
 
@@ -890,8 +907,8 @@ unfragmented run of the deck would use.
 Whether it belongs once for the whole system or per fragment and n-mer is
 still to be checked against GAMESS.
 
-``keywords.fragmentation.pieda`` is refused with a Kohn-Sham reference, because
-PIEDA's decomposition exists for Hartree-Fock only so far.
+``keywords.fragmentation.pieda`` is refused with a Kohn-Sham or MP2-family
+reference, because PIEDA's decomposition exists for Hartree-Fock only so far.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.
