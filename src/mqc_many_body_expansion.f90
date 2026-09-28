@@ -240,6 +240,23 @@ module mqc_many_body_expansion
          !! The two-member terms and their sums, as `run_czt_fmo` returns them
       logical, allocatable :: pair_separated(:)
          !! Pairs beyond `resdim`, whose term is electrostatics and not an SCF
+      logical :: pieda = .false.
+         !! `keywords.fragmentation.pieda`: decompose each near, unconnected
+         !! pair into electrostatics, exchange and a residual.
+      character(len=16) :: pieda_hl = "gamess"
+         !! `keywords.fragmentation.pieda_hl`: "gamess" or "projected"
+      character(len=16) :: pieda_dispersion = "none"
+         !! `keywords.fragmentation.pieda_dispersion`: "none", "d4" or "d3bj"
+      logical, allocatable :: pair_pieda(:)
+         !! Whether `pair_ees`/`pair_eex`/`pair_ect_mix` are meaningful
+      real(dp), allocatable :: pair_ees(:)      !! Hartree
+      real(dp), allocatable :: pair_eex(:)      !! Hartree
+      real(dp), allocatable :: pair_ect_mix(:)  !! Hartree
+      real(dp), allocatable :: pair_edi(:)
+         !! Hartree; allocated only when `pieda_dispersion` is not "none"
+      logical, allocatable :: pair_doubly_cut_neighbor(:)
+         !! True where the pair sits either side of a third fragment cut at
+         !! two bonded atoms; see `warn_adjacent_cuts`
 
    contains
       procedure :: run_serial => fmo_run_serial
@@ -362,6 +379,12 @@ contains
       if (allocated(this%pair_response)) deallocate (this%pair_response)
       if (allocated(this%pair_connected)) deallocate (this%pair_connected)
       if (allocated(this%pair_separated)) deallocate (this%pair_separated)
+      if (allocated(this%pair_pieda)) deallocate (this%pair_pieda)
+      if (allocated(this%pair_ees)) deallocate (this%pair_ees)
+      if (allocated(this%pair_eex)) deallocate (this%pair_eex)
+      if (allocated(this%pair_ect_mix)) deallocate (this%pair_ect_mix)
+      if (allocated(this%pair_edi)) deallocate (this%pair_edi)
+      if (allocated(this%pair_doubly_cut_neighbor)) deallocate (this%pair_doubly_cut_neighbor)
       this%n_fragments = 0
       this%energy = 0.0_dp
       this%monomer_sum = 0.0_dp
@@ -421,7 +444,13 @@ contains
                        pair_connected=this%pair_connected, &
                        pair_separated=this%pair_separated, resdim=this%resdim, &
                        detached=this%detached_atoms, &
-                       afo_localization=trim(this%afo_localization))
+                       afo_localization=trim(this%afo_localization), &
+                       pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
+                       pieda_dispersion=trim(this%pieda_dispersion), &
+                       pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
+                       pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
+                       pair_edi=this%pair_edi, &
+                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
          return
@@ -493,6 +522,16 @@ contains
          json_data%fmo_pair_response = this%pair_response
          json_data%fmo_pair_connected = this%pair_connected
          json_data%fmo_pair_separated = this%pair_separated
+         if (allocated(this%pair_doubly_cut_neighbor)) then
+            json_data%fmo_pair_doubly_cut_neighbor = this%pair_doubly_cut_neighbor
+         end if
+         if (allocated(this%pair_pieda)) then
+            json_data%fmo_pair_pieda = this%pair_pieda
+            json_data%fmo_pair_ees = this%pair_ees
+            json_data%fmo_pair_eex = this%pair_eex
+            json_data%fmo_pair_ect_mix = this%pair_ect_mix
+            if (allocated(this%pair_edi)) json_data%fmo_pair_edi = this%pair_edi
+         end if
       end if
    end subroutine fmo_report
 
@@ -556,7 +595,13 @@ contains
                        pair_separated=this%pair_separated, resdim=this%resdim, &
                        comm=this%resources%mpi_comms%world_comm, &
                        detached=this%detached_atoms, &
-                       afo_localization=trim(this%afo_localization))
+                       afo_localization=trim(this%afo_localization), &
+                       pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
+                       pieda_dispersion=trim(this%pieda_dispersion), &
+                       pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
+                       pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
+                       pair_edi=this%pair_edi, &
+                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())
          return

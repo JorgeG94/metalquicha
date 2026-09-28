@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 4.6% of total for modules and submodules.">1360 statements</a>
+                 title=" 4.7% of total for modules and submodules.">1404 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -195,6 +195,8 @@
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_molecule_geometry">read_molecule_geometry</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_neo">read_neo</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_ormas_partition">read_ormas_partition</a>
+            <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_pieda_dispersion">read_pieda_dispersion</a>
+            <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_pieda_hl">read_pieda_hl</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_reference_fragment">read_reference_fragment</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_resdim">read_resdim</a>
             <a class="list-group-item" href="../module/mqc_json_config_reader.html#proc-read_scf_eri_path">read_scf_eri_path</a>
@@ -250,24 +252,24 @@ Parse settings from a JSON string, no molecules</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
-                  <li class="list-inline-item"><a href='mqc_dispersion_apply.html'>mqc_dispersion_apply</a></li>
-                  <li class="list-inline-item"><a href='mqc_dispersion_names.html'>mqc_dispersion_names</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">json_module</li>
-                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_json_schema.html'>mqc_json_schema</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_names.html'>mqc_dispersion_names</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item">pic_ascii</li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_cuest_bridge.html'>mqc_cuest_bridge</a></li>
+                  <li class="list-inline-item"><a href='mqc_dispersion_apply.html'>mqc_dispersion_apply</a></li>
+                  <li class="list-inline-item"><a href='mqc_terco_bridge.html'>mqc_terco_bridge</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">json_module</li>
                   <li class="list-inline-item"><a href='mqc_cuest_iface.html'>mqc_cuest_iface</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1346,7 +1348,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i"></span>
+              <span class="anchor" id="variable-atom_i~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1361,7 +1363,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_j"></span>
+              <span class="anchor" id="variable-atom_j~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1376,7 +1378,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~4"></span>
+              <span class="anchor" id="variable-nfrag~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1391,7 +1393,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~4"></span>
+              <span class="anchor" id="variable-fragments~9"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1436,7 +1438,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~10"></span>
+              <span class="anchor" id="variable-path~30"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1481,7 +1483,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~65"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1526,7 +1528,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~9"></span>
+              <span class="anchor" id="variable-value~25"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1631,7 +1633,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~3"></span>
+              <span class="anchor" id="variable-level~26"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1681,7 +1683,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename"></span>
+              <span class="anchor" id="variable-filename~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1696,7 +1698,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config"></span>
+              <span class="anchor" id="variable-config~38"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1711,7 +1713,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error"></span>
+              <span class="anchor" id="variable-error~188"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1751,7 +1753,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-text"></span>
+              <span class="anchor" id="variable-text~37"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1766,7 +1768,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~2"></span>
+              <span class="anchor" id="variable-config~39"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1781,7 +1783,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~2"></span>
+              <span class="anchor" id="variable-error~189"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1821,7 +1823,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~6"></span>
+              <span class="anchor" id="variable-config~43"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1836,7 +1838,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~6"></span>
+              <span class="anchor" id="variable-error~193"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1876,7 +1878,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~5"></span>
+              <span class="anchor" id="variable-config~42"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1891,7 +1893,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~5"></span>
+              <span class="anchor" id="variable-error~192"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1946,7 +1948,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type"></span>
+              <span class="anchor" id="variable-method_type~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1961,7 +1963,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~12"></span>
+              <span class="anchor" id="variable-error~199"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2001,7 +2003,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~31"></span>
+              <span class="anchor" id="variable-json~65"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2016,7 +2018,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~6"></span>
+              <span class="anchor" id="variable-path~26"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2071,7 +2073,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~30"></span>
+              <span class="anchor" id="variable-json~64"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2086,7 +2088,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~5"></span>
+              <span class="anchor" id="variable-path~25"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2101,7 +2103,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~4"></span>
+              <span class="anchor" id="variable-value~19"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2159,7 +2161,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~35"></span>
+              <span class="anchor" id="variable-json~71"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2174,7 +2176,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~9"></span>
+              <span class="anchor" id="variable-path~29"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2189,7 +2191,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~8"></span>
+              <span class="anchor" id="variable-value~24"></span>
               logical,
             </td>
 <td>intent(inout)</td>
@@ -2229,7 +2231,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~34"></span>
+              <span class="anchor" id="variable-json~70"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2244,7 +2246,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~8"></span>
+              <span class="anchor" id="variable-path~28"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2259,7 +2261,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~7"></span>
+              <span class="anchor" id="variable-value~23"></span>
               logical,
             </td>
 <td>intent(inout)</td>
@@ -2274,7 +2276,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-seen"></span>
+              <span class="anchor" id="variable-seen~4"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -2314,7 +2316,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~33"></span>
+              <span class="anchor" id="variable-json~69"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2329,7 +2331,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~7"></span>
+              <span class="anchor" id="variable-path~27"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2344,7 +2346,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~6"></span>
+              <span class="anchor" id="variable-value~22"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -2384,7 +2386,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~29"></span>
+              <span class="anchor" id="variable-json~63"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2399,7 +2401,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~4"></span>
+              <span class="anchor" id="variable-path~24"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2414,7 +2416,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~3"></span>
+              <span class="anchor" id="variable-value~18"></span>
               character(len=:),
             </td>
 <td>intent(inout),</td>
@@ -2454,7 +2456,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~3"></span>
+              <span class="anchor" id="variable-json~37"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2484,7 +2486,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~3"></span>
+              <span class="anchor" id="variable-config~40"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2499,7 +2501,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~3"></span>
+              <span class="anchor" id="variable-error~190"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2514,7 +2516,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings_only"></span>
+              <span class="anchor" id="variable-settings_only~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -2554,7 +2556,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~6"></span>
+              <span class="anchor" id="variable-json~40"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2569,7 +2571,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~8"></span>
+              <span class="anchor" id="variable-config~45"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2584,7 +2586,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~8"></span>
+              <span class="anchor" id="variable-error~195"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2624,7 +2626,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~23"></span>
+              <span class="anchor" id="variable-json~57"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2639,7 +2641,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~23"></span>
+              <span class="anchor" id="variable-config~60"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2654,7 +2656,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~24"></span>
+              <span class="anchor" id="variable-error~211"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2694,7 +2696,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~26"></span>
+              <span class="anchor" id="variable-json~60"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2724,7 +2726,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~3"></span>
+              <span class="anchor" id="variable-natoms~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2739,7 +2741,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~3"></span>
+              <span class="anchor" id="variable-nfrag~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2754,7 +2756,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~3"></span>
+              <span class="anchor" id="variable-fragments~8"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2769,7 +2771,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~2"></span>
+              <span class="anchor" id="variable-nbonds~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2784,7 +2786,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~2"></span>
+              <span class="anchor" id="variable-nbroken~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2799,7 +2801,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~2"></span>
+              <span class="anchor" id="variable-bonds~21"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2814,7 +2816,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~27"></span>
+              <span class="anchor" id="variable-error~214"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2854,7 +2856,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~17"></span>
+              <span class="anchor" id="variable-json~51"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2869,7 +2871,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~19"></span>
+              <span class="anchor" id="variable-config~56"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2884,7 +2886,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~20"></span>
+              <span class="anchor" id="variable-error~207"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2924,7 +2926,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~9"></span>
+              <span class="anchor" id="variable-json~43"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2939,7 +2941,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~11"></span>
+              <span class="anchor" id="variable-config~48"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2954,7 +2956,7 @@ EFMO do for the fragmentation level &ndash; needs the difference.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~11"></span>
+              <span class="anchor" id="variable-error~198"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2995,7 +2997,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~7"></span>
+              <span class="anchor" id="variable-json~41"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3010,7 +3012,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~9"></span>
+              <span class="anchor" id="variable-config~46"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3025,7 +3027,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~9"></span>
+              <span class="anchor" id="variable-error~196"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3065,7 +3067,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~11"></span>
+              <span class="anchor" id="variable-json~45"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3080,7 +3082,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~13"></span>
+              <span class="anchor" id="variable-config~50"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3095,7 +3097,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~14"></span>
+              <span class="anchor" id="variable-error~201"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3135,7 +3137,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~8"></span>
+              <span class="anchor" id="variable-json~42"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3150,7 +3152,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~10"></span>
+              <span class="anchor" id="variable-config~47"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3165,7 +3167,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~10"></span>
+              <span class="anchor" id="variable-error~197"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3205,7 +3207,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~10"></span>
+              <span class="anchor" id="variable-json~44"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3220,7 +3222,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~12"></span>
+              <span class="anchor" id="variable-config~49"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3235,7 +3237,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~13"></span>
+              <span class="anchor" id="variable-error~200"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3275,7 +3277,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~13"></span>
+              <span class="anchor" id="variable-json~47"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3290,7 +3292,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~15"></span>
+              <span class="anchor" id="variable-config~52"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3305,7 +3307,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~16"></span>
+              <span class="anchor" id="variable-error~203"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3345,7 +3347,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~14"></span>
+              <span class="anchor" id="variable-json~48"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3360,7 +3362,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~16"></span>
+              <span class="anchor" id="variable-config~53"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3375,7 +3377,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~17"></span>
+              <span class="anchor" id="variable-error~204"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3415,7 +3417,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~19"></span>
+              <span class="anchor" id="variable-json~53"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3430,7 +3432,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key"></span>
+              <span class="anchor" id="variable-key~18"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3445,7 +3447,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-target"></span>
+              <span class="anchor" id="variable-target~2"></span>
               character(len=*),
             </td>
 <td>intent(inout)</td>
@@ -3485,7 +3487,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~5"></span>
+              <span class="anchor" id="variable-json~39"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3500,7 +3502,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~7"></span>
+              <span class="anchor" id="variable-config~44"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3515,7 +3517,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~7"></span>
+              <span class="anchor" id="variable-error~194"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3555,7 +3557,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~25"></span>
+              <span class="anchor" id="variable-json~59"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3600,7 +3602,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~2"></span>
+              <span class="anchor" id="variable-natoms~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3615,7 +3617,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~2"></span>
+              <span class="anchor" id="variable-nfrag~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3630,7 +3632,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~2"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3660,7 +3662,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~26"></span>
+              <span class="anchor" id="variable-error~213"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3700,7 +3702,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~16"></span>
+              <span class="anchor" id="variable-json~50"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3715,7 +3717,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~18"></span>
+              <span class="anchor" id="variable-config~55"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3730,7 +3732,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~19"></span>
+              <span class="anchor" id="variable-error~206"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3770,7 +3772,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~18"></span>
+              <span class="anchor" id="variable-json~52"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3785,7 +3787,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~20"></span>
+              <span class="anchor" id="variable-config~57"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3825,7 +3827,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~20"></span>
+              <span class="anchor" id="variable-json~54"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3840,7 +3842,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~21"></span>
+              <span class="anchor" id="variable-config~58"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3855,7 +3857,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~21"></span>
+              <span class="anchor" id="variable-error~208"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3895,7 +3897,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~21"></span>
+              <span class="anchor" id="variable-json~55"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -3940,7 +3942,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge"></span>
+              <span class="anchor" id="variable-charge~14"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3955,7 +3957,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity"></span>
+              <span class="anchor" id="variable-multiplicity~10"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -3970,7 +3972,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom"></span>
+              <span class="anchor" id="variable-geom~8"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -3985,7 +3987,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag"></span>
+              <span class="anchor" id="variable-nfrag~5"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -4000,7 +4002,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments"></span>
+              <span class="anchor" id="variable-fragments~6"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -4030,7 +4032,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds"></span>
+              <span class="anchor" id="variable-nbonds~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -4045,7 +4047,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken"></span>
+              <span class="anchor" id="variable-nbroken~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -4060,7 +4062,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds"></span>
+              <span class="anchor" id="variable-bonds~20"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -4075,7 +4077,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~22"></span>
+              <span class="anchor" id="variable-error~209"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4115,7 +4117,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~24"></span>
+              <span class="anchor" id="variable-json~58"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4160,7 +4162,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~2"></span>
+              <span class="anchor" id="variable-geom~9"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -4175,7 +4177,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~25"></span>
+              <span class="anchor" id="variable-error~212"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4215,7 +4217,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~15"></span>
+              <span class="anchor" id="variable-json~49"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4230,7 +4232,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~17"></span>
+              <span class="anchor" id="variable-config~54"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4245,7 +4247,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~18"></span>
+              <span class="anchor" id="variable-error~205"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4285,7 +4287,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~22"></span>
+              <span class="anchor" id="variable-json~56"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4300,7 +4302,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~22"></span>
+              <span class="anchor" id="variable-config~59"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4315,7 +4317,148 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~23"></span>
+              <span class="anchor" id="variable-error~210"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_pieda_dispersion"></span> <h3>private  subroutine <a href='../proc/read_pieda_dispersion.html'>read_pieda_dispersion</a>(json, config, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>keywords.fragmentation.pieda_dispersion</code>: &ldquo;none&rdquo; (default), or a
+known dispersion kind (&ldquo;d3bj&rdquo;, &ldquo;d4&rdquo;)</p><a href="../proc/read_pieda_dispersion.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~68"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~63"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~219"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_pieda_hl"></span> <h3>private  subroutine <a href='../proc/read_pieda_hl.html'>read_pieda_hl</a>(json, config, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p><code>keywords.fragmentation.pieda_hl</code>: &ldquo;gamess&rdquo; (default) or &ldquo;projected&rdquo;</p><a href="../proc/read_pieda_hl.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~67"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~62"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~218"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4355,7 +4498,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~4"></span>
+              <span class="anchor" id="variable-json~38"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4370,7 +4513,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~4"></span>
+              <span class="anchor" id="variable-config~41"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4385,7 +4528,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~4"></span>
+              <span class="anchor" id="variable-error~191"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4425,7 +4568,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~32"></span>
+              <span class="anchor" id="variable-json~66"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4440,7 +4583,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~24"></span>
+              <span class="anchor" id="variable-config~61"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4455,7 +4598,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~30"></span>
+              <span class="anchor" id="variable-error~217"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4495,7 +4638,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~12"></span>
+              <span class="anchor" id="variable-json~46"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4510,7 +4653,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~14"></span>
+              <span class="anchor" id="variable-config~51"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4525,7 +4668,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~15"></span>
+              <span class="anchor" id="variable-error~202"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4565,7 +4708,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~28"></span>
+              <span class="anchor" id="variable-json~62"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4580,7 +4723,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~3"></span>
+              <span class="anchor" id="variable-path~23"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4595,7 +4738,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~2"></span>
+              <span class="anchor" id="variable-value~17"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -4610,7 +4753,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~29"></span>
+              <span class="anchor" id="variable-error~216"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4650,7 +4793,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~27"></span>
+              <span class="anchor" id="variable-json~61"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -4665,7 +4808,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~2"></span>
+              <span class="anchor" id="variable-path~22"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -4680,7 +4823,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value"></span>
+              <span class="anchor" id="variable-value~16"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -4695,7 +4838,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~28"></span>
+              <span class="anchor" id="variable-error~215"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4735,7 +4878,7 @@ in a deck</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~64"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -4765,7 +4908,7 @@ in a deck</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~31"></span>
+              <span class="anchor" id="variable-error~220"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -4808,7 +4951,7 @@ in a deck</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-28 12:13 +0000             </p>
+ on 2026-09-28 14:23 +0000             </p>
           </div>
         </div>
         <br>

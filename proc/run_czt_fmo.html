@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">52 statements</a>
+                 title=" 0.3% of total for procedures.">66 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, response_sum, level_sum, pair_fragments, pair_distance, pair_energy, pair_response, pair_connected, comm, detached, afo_localization, pair_separated, resdim)  
+    <h2>public  subroutine run_czt_fmo(atomic_numbers, element_symbols, coordinates, owner, basis_name, esp, expansion, far_field, resppc, level, max_outer, outer_tol, scf_max_iter, scf_energy_tol, scf_density_tol, scf_drive, bond_breaking, cap_scale, energy, error, fragment_charges, monomer_sum, pair_sum, response_sum, level_sum, pair_fragments, pair_distance, pair_energy, pair_response, pair_connected, comm, detached, afo_localization, pair_separated, resdim, pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, pair_doubly_cut_neighbor, pieda_dispersion, pair_edi)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -169,10 +169,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_scf_types.html'>mqc_scf_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -351,7 +351,7 @@ one with no gaps.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atomic_numbers~19"></span>
+              <span class="anchor" id="variable-atomic_numbers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -366,7 +366,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_symbols~5"></span>
+              <span class="anchor" id="variable-element_symbols~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -381,7 +381,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~18"></span>
+              <span class="anchor" id="variable-coordinates~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -396,7 +396,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-owner~15"></span>
+              <span class="anchor" id="variable-owner~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -426,7 +426,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-esp~2"></span>
+              <span class="anchor" id="variable-esp"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -441,7 +441,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expansion~3"></span>
+              <span class="anchor" id="variable-expansion~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -456,7 +456,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-far_field~2"></span>
+              <span class="anchor" id="variable-far_field"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -471,7 +471,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resppc~2"></span>
+              <span class="anchor" id="variable-resppc"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -486,7 +486,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~25"></span>
+              <span class="anchor" id="variable-level~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -501,7 +501,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_outer~2"></span>
+              <span class="anchor" id="variable-max_outer"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -516,7 +516,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outer_tol~2"></span>
+              <span class="anchor" id="variable-outer_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -531,7 +531,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_max_iter~2"></span>
+              <span class="anchor" id="variable-scf_max_iter"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -546,7 +546,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_energy_tol~2"></span>
+              <span class="anchor" id="variable-scf_energy_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -561,7 +561,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_density_tol~2"></span>
+              <span class="anchor" id="variable-scf_density_tol"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -576,7 +576,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf_drive~2"></span>
+              <span class="anchor" id="variable-scf_drive"></span>
               type(<a href='../type/scf_numerics_t.html'>scf_numerics_t</a>),
             </td>
 <td>intent(in)</td>
@@ -591,7 +591,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~3"></span>
+              <span class="anchor" id="variable-bond_breaking~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -606,7 +606,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~3"></span>
+              <span class="anchor" id="variable-cap_scale~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -621,7 +621,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~28"></span>
+              <span class="anchor" id="variable-energy~20"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -636,7 +636,7 @@ one with no gaps.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~164"></span>
+              <span class="anchor" id="variable-error~84"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -667,7 +667,7 @@ means every fragment is neutral.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_sum~2"></span>
+              <span class="anchor" id="variable-monomer_sum"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -682,7 +682,7 @@ means every fragment is neutral.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_sum~2"></span>
+              <span class="anchor" id="variable-pair_sum"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -698,7 +698,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-response_sum~2"></span>
+              <span class="anchor" id="variable-response_sum"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -713,7 +713,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level_sum~2"></span>
+              <span class="anchor" id="variable-level_sum"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -729,7 +729,7 @@ above it this holds the larger terms too.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_fragments~3"></span>
+              <span class="anchor" id="variable-pair_fragments~2"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -745,7 +745,7 @@ from one, lower first</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_distance~3"></span>
+              <span class="anchor" id="variable-pair_distance~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -761,7 +761,7 @@ only</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_energy~3"></span>
+              <span class="anchor" id="variable-pair_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -778,7 +778,7 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_response~2"></span>
+              <span class="anchor" id="variable-pair_response"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -793,7 +793,7 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_connected~2"></span>
+              <span class="anchor" id="variable-pair_connected"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -808,7 +808,7 @@ EE-MBE, and neither where <code>pair_connected</code> is true.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~21"></span>
+              <span class="anchor" id="variable-comm~19"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -840,7 +840,7 @@ Absent means one rank does all of it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-afo_localization~3"></span>
+              <span class="anchor" id="variable-afo_localization~2"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -856,7 +856,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pair_separated~2"></span>
+              <span class="anchor" id="variable-pair_separated"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -871,7 +871,7 @@ that default.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resdim~2"></span>
+              <span class="anchor" id="variable-resdim"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -882,6 +882,141 @@ that default.</p>
             <td><strong>resdim</strong></td>
             <td>
                 <p>Separated-dimer cutoff; see <code>fmo_options_t%resdim</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pieda"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pieda</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pieda_hl"></span>
+              character(len=*),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pieda_hl</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_pieda"></span>
+              logical,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_pieda</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_ees"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_ees</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_eex"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_eex</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_ect_mix"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_ect_mix</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_doubly_cut_neighbor"></span>
+              logical,
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_doubly_cut_neighbor</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pieda_dispersion"></span>
+              character(len=*),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pieda_dispersion</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pair_edi"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional,</td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pair_edi</strong>(:)</td>
+            <td>
+                
             </td>
         </tr>
     </tbody>
@@ -1165,7 +1300,9 @@ large graphs.</div>
 <span class="w">                          </span><span class="n">cap_scale</span><span class="p">,</span><span class="w"> </span><span class="n">energy</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_charges</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_sum</span><span class="p">,</span><span class="w"> </span><span class="n">pair_sum</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">response_sum</span><span class="p">,</span><span class="w"> </span><span class="n">level_sum</span><span class="p">,</span><span class="w"> </span><span class="n">pair_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">pair_distance</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                          </span><span class="n">pair_energy</span><span class="p">,</span><span class="w"> </span><span class="n">pair_response</span><span class="p">,</span><span class="w"> </span><span class="n">pair_connected</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                          </span><span class="n">detached</span><span class="p">,</span><span class="w"> </span><span class="n">afo_localization</span><span class="p">,</span><span class="w"> </span><span class="n">pair_separated</span><span class="p">,</span><span class="w"> </span><span class="n">resdim</span><span class="p">)</span>
+<span class="w">                          </span><span class="n">detached</span><span class="p">,</span><span class="w"> </span><span class="n">afo_localization</span><span class="p">,</span><span class="w"> </span><span class="n">pair_separated</span><span class="p">,</span><span class="w"> </span><span class="n">resdim</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">pieda</span><span class="p">,</span><span class="w"> </span><span class="n">pieda_hl</span><span class="p">,</span><span class="w"> </span><span class="n">pair_pieda</span><span class="p">,</span><span class="w"> </span><span class="n">pair_ees</span><span class="p">,</span><span class="w"> </span><span class="n">pair_eex</span><span class="p">,</span><span class="w"> </span><span class="n">pair_ect_mix</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">pair_doubly_cut_neighbor</span><span class="p">,</span><span class="w"> </span><span class="n">pieda_dispersion</span><span class="p">,</span><span class="w"> </span><span class="n">pair_edi</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! No-op stand-in: FMO needs the CPU integral backend</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from</span>
@@ -1229,6 +1366,15 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! (n_pairs), true where the pair lies beyond `resdim`</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resdim</span>
 <span class="w">         </span><span class="c">!! Separated-dimer cutoff; see `fmo_options_t%resdim`</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pieda</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pieda_hl</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_pieda</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_ees</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_eex</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_ect_mix</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_doubly_cut_neighbor</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pieda_dispersion</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_edi</span><span class="p">(:)</span>
 
 <span class="w">      </span><span class="n">energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
 <span class="w">      </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1247,6 +1393,11 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_response</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_connected</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">comm</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">detached</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">afo_localization</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_separated</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">resdim</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pieda</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pieda_hl</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_pieda</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_ees</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_eex</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_ect_mix</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pair_doubly_cut_neighbor</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pieda_dispersion</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">pair_edi</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">   end subroutine </span><span class="n">run_czt_fmo</span>
 </pre></div>
 
@@ -1271,7 +1422,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-28 12:13 +0000             </p>
+ on 2026-09-28 14:23 +0000             </p>
           </div>
         </div>
         <br>

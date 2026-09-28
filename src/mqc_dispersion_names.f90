@@ -45,11 +45,11 @@ module mqc_dispersion_names
    integer, parameter :: MAX_NAME = 32
 
    character(len=*), parameter :: KNOWN_LIST = &
-                                  "b2gp-plyp, b2plyp, b3lyp, blyp, cam-b3lyp, m06-l, mpw2plyp, "// &
+                                  "b2gp-plyp, b2plyp, b3lyp, blyp, cam-b3lyp, hf, m06-l, mpw2plyp, "// &
                                   "pbe, pbe0, r2scan, r2scan0, r2scan50, r2scanh, scan, tpss, wb97x"
 
    character(len=*), parameter :: D4_KNOWN_LIST = &
-                                  "b2gp-plyp, b2plyp, b3lyp, blyp, cam-b3lyp, m06-l, mpw2plyp, "// &
+                                  "b2gp-plyp, b2plyp, b3lyp, blyp, cam-b3lyp, hf, m06-l, mpw2plyp, "// &
                                   "pbe, pbe0, r2scan, r2scan0, r2scan50, r2scanh, scan, tpss, wb97x"
       !! Written out separately from `KNOWN_LIST` even where the two coincide.
       !!
@@ -141,6 +141,10 @@ contains
          ! wB97X-D3(BJ), Najibi and Goerigk's reparametrisation, which is what
          ! s-dftd3 carries under this name. Not the same as wB97X-V below.
          alias = "wb97x"
+      case ("hf")
+         ! HF-D3(BJ): s-dftd3 1.4.0 loads s8=0.9171, a1=0.3385, a2=2.8830
+         ! for "hf" (its `--bj hf`). PIEDA's Edi asks for this.
+         alias = "hf"
       case ("b2plyp")
          alias = "b2plyp"
       case ("mpw2plyp", "mpw2-plyp")
@@ -217,6 +221,10 @@ contains
          ! not the same fit as s-dftd3's `wb97x` either -- which is exactly why
          ! the two tables are separate even where the spellings agree.
          alias = "wb97x"
+      case ("hf")
+         ! HF-D4-ATM: dftd4 4.2.0 loads s8=1.6168, a1=0.4496, a2=3.3574,
+         ! s9=1 for "hf" (its `-f hf`). PIEDA's Edi asks for this.
+         alias = "hf"
       case ("b2plyp")
          alias = "b2plyp"
       case ("mpw2plyp", "mpw2-plyp")
