@@ -281,6 +281,12 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_efmo_covalent)
   target_link_libraries(test_mqc_czt_efmo_covalent
                         PRIVATE ${MQC_INTEGRALS_LIBS})
+  # And the far pairs measured at every separation, with the butane end pair:
+  # each a pair run twice with a MAKEFP per monomer, which was most of the file
+  # above's time. The routine file keeps every assertion.
+  addlongtest(mqc_czt_efmo_covalent_long)
+  target_link_libraries(test_mqc_czt_efmo_covalent_long
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Placing a fragment in an arbitrary orientation, piece by piece: the frame
   # construction, the Cartesian shell rotation as a group representation, and
