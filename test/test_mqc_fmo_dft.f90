@@ -33,6 +33,13 @@ module test_mqc_fmo_dft
       !! rather than holding to 1e-8 usually means the two grids differed,
       !! not that the physics did.
 
+   integer, parameter :: GAMESS_GRID_LEVEL = 5
+      !! For the tests checked against GAMESS below, where the other side is
+      !! GAMESS's own grid (`nrad=200 nleb=1202`) rather than a grid this
+      !! build also controls -- so a larger level than `GRID_LEVEL` narrows
+      !! the quadrature disagreement instead of matching it exactly. 770
+      !! angular points on oxygen against GAMESS's 1202.
+
 contains
 
    subroutine collect_mqc_fmo_dft(testsuite)
@@ -48,7 +55,11 @@ contains
                   new_unittest("propane_cut_across_one_bond_pbe_is_the_supermolecule", &
                                test_propane_afo), &
                   new_unittest("fmo2_water_trimer_pbe_difference_from_the_supermolecule", &
-                               test_trimer_fmo2_difference) &
+                               test_trimer_fmo2_difference), &
+                  new_unittest("fmo2_water_trimer_cyclic_pbe_matches_gamess", &
+                               test_trimer_cyclic_pbe_gamess), &
+                  new_unittest("fmo2_water_trimer_cyclic_b3lyp_matches_gamess", &
+                               test_trimer_cyclic_b3lyp_gamess) &
                   ]
    end subroutine collect_mqc_fmo_dft
 
@@ -322,6 +333,152 @@ contains
       write (*, *) "   FMO2 - supermolecule (water trimer, PBE, sto-3g) =", res%energy - whole
    end subroutine test_trimer_fmo2_difference
 
+   subroutine test_trimer_cyclic_pbe_gamess(error)
+      !! FMO2-PBE, cyclic water trimer, 6-31G, exact field, against GAMESS
+      !!
+      !! GAMESS deck `tools/fmo_validation/gamess/w3_pbe.inp`
+      !! (`$fmo ... respap=0 resppc=0 resdim=0`, `$dft nrad=200 nleb=1202`,
+      !! `dfttyp=pbe`), same geometry as `water_trimer_cyclic` below. GAMESS's
+      !! total is -228.942512413 Hartree ("The best FMO energy"); the three
+      !! pair terms, `EFMOu(IJ) - EFMOu(I) - EFMOu(J) + Tr`, read off the
+      !! log's per-fragment/per-dimer `EFMOu`/`Tr` lines at full precision, are
+      !! -0.018353617 (1-2), -0.018277205 (1-3) and -0.016561905 (2-3) Hartree.
+      !! At `GAMESS_GRID_LEVEL` this build reproduces the total to 1.2e-8 and
+      !! every pair to 1.4e-7 -- grid-quadrature noise, not a disagreement in
+      !! the physics (see
+      !! `mqc_docs/source/developer_fragment_solver.rst`, phase 2, and the
+      !! module docstring's remark that a full-level identity is blind to the
+      !! embedding).
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(9)
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      real(dp), parameter :: REF_TOTAL = -228.942512413_dp
+      real(dp), parameter :: REF_PAIR(3) = [-0.018353617_dp, -0.018277205_dp, -0.016561905_dp]
+         !! Pairs (1,2), (1,3), (2,3), the order `run_fmo2` enumerates them
+      real(dp), parameter :: TOL_TOTAL = 2.0e-7_dp
+      real(dp), parameter :: TOL_PAIR = 5.0e-7_dp
+      integer :: k
+
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
+      call water_trimer_cyclic(z, sym, xyz)
+
+      opts%basis = "6-31g"
+      opts%level = 2
+      opts%resppc = -1.0_dp  ! exact field everywhere, matching GAMESS's resppc=0/respap=0
+      opts%resdim = 0.0_dp
+      opts%scf_max_iter = 200
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+      opts%outer_tol = 1.0e-10_dp
+      opts%method%functional = "pbe"
+      opts%method%grid_level = GAMESS_GRID_LEVEL
+
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "the FMO2 PBE run failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      call check(error, abs(res%energy - REF_TOTAL) < TOL_TOTAL, &
+                 "FMO2-PBE water trimer total does not match GAMESS")
+      if (allocated(error)) then
+         write (*, *) "   mqc   =", res%energy
+         write (*, *) "   GAMESS=", REF_TOTAL
+         write (*, *) "   diff  =", res%energy - REF_TOTAL
+         return
+      end if
+
+      do k = 1, size(res%pairs)
+         call check(error, abs(res%pairs(k)%energy - REF_PAIR(k)) < TOL_PAIR, &
+                    "FMO2-PBE water trimer pair IFIE does not match GAMESS")
+         if (allocated(error)) then
+            write (*, *) "   pair  =", res%pairs(k)%i, res%pairs(k)%j
+            write (*, *) "   mqc   =", res%pairs(k)%energy
+            write (*, *) "   GAMESS=", REF_PAIR(k)
+            return
+         end if
+      end do
+   end subroutine test_trimer_cyclic_pbe_gamess
+
+   subroutine test_trimer_cyclic_b3lyp_gamess(error)
+      !! FMO2, cyclic water trimer, 6-31G, exact field, against GAMESS B3LYP
+      !!
+      !! GAMESS's plain `dfttyp=b3lyp` uses VWN formula V for the local
+      !! correlation (`DATA B3LYP /8HB3LYP   / !USING VWN V` in
+      !! `dftxca.src`), not VWN-RPA; libxc's `hyb_gga_xc_b3lyp` is the
+      !! VWN-RPA variant (`XC_LDA_C_VWN_RPA` in `hyb_gga_xc_b3lyp.c`) and
+      !! `hyb_gga_xc_b3lyp5` is the VWN5 one GAMESS's name means
+      !! (`XC_LDA_C_VWN`, "B3LYP with VWN functional 5 instead of RPA"). This
+      !! test asks for `hyb_gga_xc_b3lyp5` to match GAMESS's `B3LYP`, not
+      !! mqc's own `"b3lyp"` alias.
+      !!
+      !! GAMESS deck `tools/fmo_validation/gamess/w3_b3lyp.inp`, same
+      !! settings and geometry as `test_trimer_cyclic_pbe_gamess`. GAMESS's
+      !! total is -229.088616246 Hartree; the pair terms are -0.017106306
+      !! (1-2), -0.017073134 (1-3) and -0.015386181 (2-3) Hartree. This build
+      !! reproduces the total to 5.7e-8 and every pair to 1.4e-7.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(9)
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      real(dp), parameter :: REF_TOTAL = -229.088616246_dp
+      real(dp), parameter :: REF_PAIR(3) = [-0.017106306_dp, -0.017073134_dp, -0.015386181_dp]
+      real(dp), parameter :: TOL_TOTAL = 2.0e-7_dp
+      real(dp), parameter :: TOL_PAIR = 5.0e-7_dp
+      integer :: k
+
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
+      call water_trimer_cyclic(z, sym, xyz)
+
+      opts%basis = "6-31g"
+      opts%level = 2
+      opts%resppc = -1.0_dp
+      opts%resdim = 0.0_dp
+      opts%scf_max_iter = 200
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+      opts%outer_tol = 1.0e-10_dp
+      opts%method%functional = "hyb_gga_xc_b3lyp5"
+      opts%method%grid_level = GAMESS_GRID_LEVEL
+
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "the FMO2 B3LYP5 run failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      call check(error, abs(res%energy - REF_TOTAL) < TOL_TOTAL, &
+                 "FMO2-B3LYP5 water trimer total does not match GAMESS's B3LYP")
+      if (allocated(error)) then
+         write (*, *) "   mqc   =", res%energy
+         write (*, *) "   GAMESS=", REF_TOTAL
+         write (*, *) "   diff  =", res%energy - REF_TOTAL
+         return
+      end if
+
+      do k = 1, size(res%pairs)
+         call check(error, abs(res%pairs(k)%energy - REF_PAIR(k)) < TOL_PAIR, &
+                    "FMO2-B3LYP5 water trimer pair IFIE does not match GAMESS's B3LYP")
+         if (allocated(error)) then
+            write (*, *) "   pair  =", res%pairs(k)%i, res%pairs(k)%j
+            write (*, *) "   mqc   =", res%pairs(k)%energy
+            write (*, *) "   GAMESS=", REF_PAIR(k)
+            return
+         end if
+      end do
+   end subroutine test_trimer_cyclic_b3lyp_gamess
+
    subroutine supermolecule_energy(z, sym, xyz, basis, functional, level, nelec, energy, error)
       !! An ordinary restricted Kohn-Sham energy on the whole system, for the
       !! full-level identity to be checked against
@@ -389,6 +546,30 @@ contains
                      0.0_dp, 0.7572_dp, 6.3865_dp], [3, 9])
       xyz = to_bohr(ang)
    end subroutine water_trimer
+
+   subroutine water_trimer_cyclic(z, sym, xyz)
+      !! `sample_inputs/water3_cyclic.xyz`, the hydrogen-bonded ring GAMESS's
+      !! own `3h2o.pieda.inp` optimised, RHF/6-31G*: the geometry every
+      !! GAMESS-referenced FMO2 test in this file and in `test_mqc_fmo_mp2`
+      !! is run on.
+      integer, intent(out) :: z(9)
+      character(len=2), intent(out) :: sym(9)
+      real(dp), intent(out) :: xyz(3, 9)
+      real(dp) :: ang(3, 9)
+
+      z = [8, 1, 1, 8, 1, 1, 8, 1, 1]
+      sym = ["O ", "H ", "H ", "O ", "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([-0.8309834169_dp, 1.3972845867_dp, -0.2245777899_dp, &
+                     -1.7252647239_dp, 1.0653378323_dp, -0.1532773281_dp, &
+                     -0.7392089607_dp, 2.0451809087_dp, 0.4613985156_dp, &
+                     -0.3320345076_dp, -1.3821619786_dp, 0.2567741911_dp, &
+                     -0.1833783620_dp, -0.4480121188_dp, 0.1145770742_dp, &
+                     0.1095285385_dp, -1.8294391791_dp, -0.4524662378_dp, &
+                     -3.0234372871_dp, -0.3756747342_dp, 0.2555351867_dp, &
+                     -2.2955882864_dp, -0.9880884300_dp, 0.3537585219_dp, &
+                     -3.5920719939_dp, -0.7444718872_dp, -0.4067791338_dp], [3, 9])
+      xyz = to_bohr(ang)
+   end subroutine water_trimer_cyclic
 
    subroutine propane(z, sym, xyz)
       !! Idealised propane, carbons first -- as in `test_mqc_afo_fmo`

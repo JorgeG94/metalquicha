@@ -56,7 +56,11 @@ contains
                   new_unittest("fmo2_and_eembe2_water_trimer_mp2_against_the_supermolecule", &
                                test_trimer_pair_truncated_mp2), &
                   new_unittest("plain_mbe2_water_dimer_mp2_is_the_supermolecule", &
-                               test_plain_mbe_dimer_mp2) &
+                               test_plain_mbe_dimer_mp2), &
+                  new_unittest("fmo2_water_trimer_cyclic_mp2_matches_gamess", &
+                               test_trimer_cyclic_mp2_gamess), &
+                  new_unittest("fmo2_water_trimer_cyclic_separated_pair_carries_no_correlation", &
+                               test_trimer_cyclic_separated_pair) &
                   ]
    end subroutine collect_mqc_fmo_mp2
 
@@ -330,6 +334,156 @@ contains
       end if
    end subroutine test_plain_mbe_dimer_mp2
 
+   subroutine test_trimer_cyclic_mp2_gamess(error)
+      !! FMO2-MP2, cyclic water trimer, 6-31G, exact field, frozen core,
+      !! against GAMESS
+      !!
+      !! GAMESS deck `tools/fmo_validation/gamess/w3_mp2.inp` (`mplevl=2`,
+      !! `$fmo ... respap=0 resppc=0 resdim=1000`, GAMESS's default frozen
+      !! core: 1 core orbital per water). The total, "The best FMO energy", is
+      !! -228.375055246 Hartree. The pair terms are read off the log's
+      !! per-fragment/per-dimer `EFMOc` (correlated internal energy) and `Tr`
+      !! lines at full precision, `EFMOc(IJ) - EFMOc(I) - EFMOc(J) + Tr`:
+      !! -0.015671582 (1-2), -0.015689099 (1-3), -0.014026446 (2-3) Hartree.
+      !! This build reproduces the total to 2.1e-8 and every pair to 9e-10 --
+      !! roughly the same agreement HF gets against GAMESS elsewhere in this
+      !! suite, since the MP2 family adds correlation on the already-embedded
+      !! Hartree-Fock reference (Decision 1, `developer_fragment_solver.rst`)
+      !! rather than introducing a new source of cross-code noise.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(9)
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      real(dp), parameter :: REF_TOTAL = -228.375055246_dp
+      real(dp), parameter :: REF_PAIR(3) = [-0.015671582_dp, -0.015689099_dp, -0.014026446_dp]
+      real(dp), parameter :: TOL_TOTAL = 1.0e-7_dp
+      real(dp), parameter :: TOL_PAIR = 5.0e-9_dp
+      integer :: k
+
+      call water_trimer_cyclic(z, sym, xyz)
+      call mp2_options(opts, use_ri=.false., use_scs=.false., freeze_core=.true.)
+      opts%basis = "6-31g"
+      opts%level = 2
+      opts%resppc = -1.0_dp  ! exact field everywhere, matching GAMESS's resppc=0/respap=0
+      opts%resdim = 0.0_dp
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+      opts%outer_tol = 1.0e-10_dp
+
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "the FMO2 MP2 run failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      call check(error, abs(res%energy - REF_TOTAL) < TOL_TOTAL, &
+                 "FMO2-MP2 water trimer total does not match GAMESS")
+      if (allocated(error)) then
+         write (*, *) "   mqc   =", res%energy
+         write (*, *) "   GAMESS=", REF_TOTAL
+         write (*, *) "   diff  =", res%energy - REF_TOTAL
+         return
+      end if
+
+      do k = 1, size(res%pairs)
+         call check(error, abs(res%pairs(k)%energy - REF_PAIR(k)) < TOL_PAIR, &
+                    "FMO2-MP2 water trimer pair IFIE does not match GAMESS")
+         if (allocated(error)) then
+            write (*, *) "   pair  =", res%pairs(k)%i, res%pairs(k)%j
+            write (*, *) "   mqc   =", res%pairs(k)%energy
+            write (*, *) "   GAMESS=", REF_PAIR(k)
+            return
+         end if
+      end do
+   end subroutine test_trimer_cyclic_mp2_gamess
+
+   subroutine test_trimer_cyclic_separated_pair(error)
+      !! A pair beyond `resdim` carries no MP2 correlation, HF or MP2 alike
+      !!
+      !! `water_trimer` (stacked 2.9 A apart, not the hydrogen-bonded ring) at
+      !! GAMESS's FMO2 default `RESDIM` (2.0 -- `fmo_options_t%resdim` itself
+      !! defaults to 0, solve every pair, and only the JSON deck layer applies
+      !! GAMESS's FMO2 default when a deck says nothing) separates its 1-3
+      !! pair (5.27 A apart, `check_fmo`'s own kind of measurement). Per
+      !! Decision 1
+      !! (`developer_fragment_solver.rst`) and GAMESS's own ES-dimer formula
+      !! (`mqc_docs/source/fmo.rst`), a separated pair's term is the
+      !! electrostatic interaction of its two converged Hartree-Fock monomers
+      !! with no response term and no correlation -- the same number whether
+      !! `model.method` is `hf` or `mp2`. This checks that identity directly,
+      !! since it is what the design claims and does not itself need a fresh
+      !! GAMESS run: `mqc_docs/source/fmo.rst` already pins mqc's separated-pair
+      !! formula against GAMESS's `RESDIM=2.0` to 5e-9 on a twenty-water
+      !! system, and that agreement does not depend on which reference method
+      !! produced the monomer densities.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts_hf, opts_mp2
+      type(fmo_result_t) :: res_hf, res_mp2
+      integer :: z(9)
+      character(len=2) :: sym(9)
+      real(dp) :: xyz(3, 9)
+      real(dp), parameter :: TOL = 1.0e-8_dp
+      integer :: k, k13
+
+      call water_trimer(z, sym, xyz)
+
+      opts_hf%basis = "6-31g"
+      opts_hf%level = 2
+      opts_hf%resdim = 2.0_dp  ! GAMESS's FMO2 default RESDIM, which
+      ! fmo_options_t itself does not default to
+      opts_hf%scf_max_iter = 200
+      opts_hf%scf_energy_tol = 1.0e-11_dp
+      opts_hf%scf_density_tol = 1.0e-9_dp
+      opts_hf%outer_tol = 1.0e-10_dp
+
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts_hf, res_hf, err)
+      call check(error,.not. err%has_error(), "the FMO2 HF run failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      call mp2_options(opts_mp2, use_ri=.false., use_scs=.false., freeze_core=.true.)
+      opts_mp2%basis = "6-31g"
+      opts_mp2%level = 2
+      opts_mp2%resdim = 2.0_dp
+      opts_mp2%outer_tol = 1.0e-10_dp
+
+      call run_fmo2(z, sym, xyz, [1, 1, 1, 2, 2, 2, 3, 3, 3], opts_mp2, res_mp2, err)
+      call check(error,.not. err%has_error(), "the FMO2 MP2 run failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+
+      k13 = 0
+      do k = 1, size(res_hf%pairs)
+         if (res_hf%pairs(k)%i == 1 .and. res_hf%pairs(k)%j == 3) k13 = k
+      end do
+      call check(error, k13 > 0, "pair (1,3) was not found")
+      if (allocated(error)) return
+
+      call check(error, res_hf%pairs(k13)%separated, &
+                 "pair (1,3) was expected to be separated beyond resdim")
+      if (allocated(error)) return
+      call check(error, res_mp2%pairs(k13)%separated, &
+                 "pair (1,3) was expected to be separated beyond resdim under MP2 too")
+      if (allocated(error)) return
+
+      call check(error, abs(res_hf%pairs(k13)%energy - res_mp2%pairs(k13)%energy) < TOL, &
+                 "a separated pair's term should not move when correlation is added")
+      if (allocated(error)) then
+         write (*, *) "   HF term to  =", res_hf%pairs(k13)%energy
+         write (*, *) "   MP2 term to =", res_mp2%pairs(k13)%energy
+         write (*, *) "   difference  =", res_hf%pairs(k13)%energy - res_mp2%pairs(k13)%energy
+      end if
+   end subroutine test_trimer_cyclic_separated_pair
+
    subroutine test_trimer_pair_truncated_mp2(error)
       !! The water trimer truncated at pairs, MP2, 6-31G -- printed, not
       !! asserted
@@ -556,6 +710,28 @@ contains
                      0.0_dp, 0.7572_dp, 6.3865_dp], [3, 9])
       xyz = to_bohr(ang)
    end subroutine water_trimer
+
+   subroutine water_trimer_cyclic(z, sym, xyz)
+      !! `sample_inputs/water3_cyclic.xyz`, the hydrogen-bonded ring GAMESS's
+      !! own `3h2o.pieda.inp` optimised, RHF/6-31G*, as in `test_mqc_fmo_dft`
+      integer, intent(out) :: z(9)
+      character(len=2), intent(out) :: sym(9)
+      real(dp), intent(out) :: xyz(3, 9)
+      real(dp) :: ang(3, 9)
+
+      z = [8, 1, 1, 8, 1, 1, 8, 1, 1]
+      sym = ["O ", "H ", "H ", "O ", "H ", "H ", "O ", "H ", "H "]
+      ang = reshape([-0.8309834169_dp, 1.3972845867_dp, -0.2245777899_dp, &
+                     -1.7252647239_dp, 1.0653378323_dp, -0.1532773281_dp, &
+                     -0.7392089607_dp, 2.0451809087_dp, 0.4613985156_dp, &
+                     -0.3320345076_dp, -1.3821619786_dp, 0.2567741911_dp, &
+                     -0.1833783620_dp, -0.4480121188_dp, 0.1145770742_dp, &
+                     0.1095285385_dp, -1.8294391791_dp, -0.4524662378_dp, &
+                     -3.0234372871_dp, -0.3756747342_dp, 0.2555351867_dp, &
+                     -2.2955882864_dp, -0.9880884300_dp, 0.3537585219_dp, &
+                     -3.5920719939_dp, -0.7444718872_dp, -0.4067791338_dp], [3, 9])
+      xyz = to_bohr(ang)
+   end subroutine water_trimer_cyclic
 
 end module test_mqc_fmo_mp2
 

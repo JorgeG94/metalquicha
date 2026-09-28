@@ -113,3 +113,77 @@ uses, and the one a FMO/EE-MBE MP2 branch is expected to call unchanged --
 read directly rather than approximated, so once that branch lands a real
 `ee-mbe` MP2 deck on this same system should reproduce them to about the same
 ~1e-8 to 1e-7 Eh mqc's SCF tolerances leave for Hartree-Fock above.
+
+# GAMESS references (`gamess/`)
+
+Inputs only -- run with `~/dev/mgga/gamess` (see the header of each file for
+`$fmo`/`$dft` settings); logs are not kept here. All of them use the cyclic
+water trimer `validation/inputs/sample_inputs/water3_cyclic.xyz` (GAMESS's own
+`3h2o.pieda.inp` geometry) except `gly3w_afo_pbe.inp`, which uses
+`validation/inputs/sample_inputs/gly3_water_pair.xyz`. The numbers below are
+cited in `test/test_mqc_fmo_dft.f90` and `test/test_mqc_fmo_mp2.f90`.
+
+| deck | what | GAMESS result |
+|---|---|---:|
+| `w3_hf.inp` | FMO2-HF, 6-31G, exact field (`respap=0 resppc=0 resdim=0`) | -227.989165655 Eh |
+| `w3_mp2.inp` | FMO2-MP2, 6-31G, exact field, frozen core (GAMESS's default: 1 core orbital/water) | -228.375055246 Eh |
+| `w3_pbe.inp` / `w3_pbe_super.inp` | FMO2-PBE and the supermolecule, 6-31G, exact field, `nrad=200 nleb=1202` | -228.942512413 / -228.9414854987 Eh |
+| `w3_b3lyp.inp` / `w3_b3lyp_super.inp` | FMO2 and the supermolecule with GAMESS's `dfttyp=b3lyp` (VWN5, see below) | -229.088616246 / -229.0878767518 Eh |
+| `w3_pbe_d3.inp` / `w3_pbe_d3_super.inp` | FMO2-PBE-D3(BJ) and the supermolecule, `dc=.t. idcver=3` | see "Dispersion" below |
+| `gly3w_afo_pbe.inp` | FMO2-PBE, AFO, two Cα-C cuts, STO-3G, ER localization | did not converge -- see "AFO under DFT" below |
+
+Every pair IFIE (`EFMOu`/`EFMOc` at full precision plus `Tr`, read off the
+per-fragment/per-dimer lines in the log rather than the three-decimal PIEDA
+table) is in the cited test's docstring.
+
+**B3LYP: which VWN.** GAMESS's plain `dfttyp=b3lyp` is VWN formula V, not
+VWN-RPA (`dftxca.src`: `DATA B3LYP /8HB3LYP   / !USING VWN V`; the VWN-RPA
+variant is the separate name `B3LYPV1R`). libxc's `hyb_gga_xc_b3lyp` is the
+VWN-RPA one (`XC_LDA_C_VWN_RPA` in `hyb_gga_xc_b3lyp.c`); `hyb_gga_xc_b3lyp5`
+is "B3LYP with VWN functional 5 instead of RPA" (`XC_LDA_C_VWN`) -- the
+matching name for GAMESS's `B3LYP`. `w3_b3lyp.inp` is checked against mqc's
+`hyb_gga_xc_b3lyp5`, not mqc's own `"b3lyp"` alias.
+
+**Grid.** GAMESS's `nrad=200 nleb=1202` against mqc's `grid_level = 5` (770
+angular points on oxygen) leaves totals agreeing to 1.2e-8 (PBE) and 5.7e-8
+(B3LYP) Eh and every pair IFIE to about 1e-7 Eh -- inside the 1e-6 to 1e-5
+band `mqc_docs/source/fmo.rst` expects for an unmatched grid, and tighter than
+that because the grids here are both large rather than both default-sized.
+
+**Dispersion (Decision 2, `developer_fragment_solver.rst`).** GAMESS's own
+comment names the mechanism: `dftdis.src`'s `DFTDSM`/`DFTDSMI` ("Grimme's
+dispersion correction for FMO... aim is to omit calling SETR0AB and COPYC6
+... for every fragment calc") precomputes memory once and then calls the
+ordinary D3 routine on every fragment and n-mer's own atom set, the same
+generic SCF/energy path every other additive term (nuclear repulsion
+included) goes through. `w3_pbe_d3.log` confirms it directly: a lone water
+monomer's own `GRIMME'S DISPERSION ENERGY` is -8.9e-6 Eh, a dimer's is
+-7.45e-4 Eh, and the three-water supermolecule's is -2.225e-3 Eh -- three
+different numbers, each computed on that group's own real atoms, growing with
+the group the way a pairwise-additive term should. GAMESS does **not** apply
+one dispersion correction to the whole system and distribute it; it is
+per-fragment and per-n-mer, exactly the shape mqc's own
+`keywords.fragmentation.pieda_dispersion` (`edi`) column already uses for the
+*pair* correction. `keywords.dft.dispersion` under FMO/EE-MBE is refused by
+name today (`fragment_capabilities`'s `dispersion` field is false for every
+method) pending this decision; the finding above says the refusal should lift
+by wiring dispersion into `mqc_czt_fragment_solver.f90` the same way, once per
+fragment and n-mer, not once for the assembled total.
+
+**AFO under DFT.** GAMESS does not keep the AFO model system at Hartree-Fock
+under `dfttyp=pbe`: `gly3w_afo_pbe.inp`'s log prints `EXCHANGE FUNCTIONAL
+=PBE`, `CORRELATION FUNCTIONAL=PBE` and `FINAL R-PBE ENERGY` for the model
+system's own SCF (and later `RHF monomer 2 corr= PBE` for an ordinary
+fragment), so the model is solved at the deck's functional, not at HF as mqc's
+`mqc_czt_afo.f90` does by construction (`bond_lmo_set`/`bond_hybrid` call
+`run_czt_rhf` with no `xc`). This is a genuine design difference between the
+two codes, not yet resolved either way in mqc -- report it rather than change
+it. No numeric total-energy comparison is available for this system: in this
+environment (GAMESS built `2026-08-17`, `gfortran`/`openmpi`), the model
+system's own PBE SCF failed to converge in 30 iterations
+(oscillating between roughly -220 and -260 Eh from the first iteration,
+reproduced identically at 1 and 4 MPI ranks, so not a communication artifact),
+and the ordinary fragment monomer SCF that follows, with the AFO's frozen
+orbitals applied, oscillates the same way. mqc's own FMO2-PBE/AFO/ER run on
+the same geometry and settings (`resppc=2.0`, `resdim=0`, STO-3G) converges
+and gives -765.583472743164 Eh.

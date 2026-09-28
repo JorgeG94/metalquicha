@@ -1,0 +1,25 @@
+ $contrl runtyp=energy ispher=-1 icut=12 itol=30 mplevl=0 dfttyp=pbe $end
+ $system mwords=100 $end
+ $scf dirscf=.f. conv=1d-10 diis=.t. soscf=.f. npunch=0 $end
+ $dft nrad=200 nleb=1202 dc=.t. idcver=3 $end
+ $basis gbasis=n31 ngauss=6 $end
+ $fmo nfrag=3 indat(1)=1,1,1,2,2,2,3,3,3
+      respap=0 resppc=0 resdim=0 rcorsd=0 $end
+ $fmoprp ipieda=1 modorb=3 conv=1d-10 maxit=100 nprint=0 $end
+ $fmoxyz
+ 1 O -0.8309834169 1.3972845867 -0.2245777899
+ 2 H -1.7252647239 1.0653378323 -0.1532773281
+ 3 H -0.7392089607 2.0451809087 0.4613985156
+ 4 O -0.3320345076 -1.3821619786 0.2567741911
+ 5 H -0.1833783620 -0.4480121188 0.1145770742
+ 6 H 0.1095285385 -1.8294391791 -0.4524662378
+ 7 O -3.0234372871 -0.3756747342 0.2555351867
+ 8 H -2.2955882864 -0.9880884300 0.3537585219
+ 9 H -3.5920719939 -0.7444718872 -0.4067791338
+ $end
+ $data
+w3_pbe_d3
+c1
+h-1 1
+o-1 8
+ $end
