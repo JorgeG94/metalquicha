@@ -244,7 +244,14 @@ contains
 
       class(qc_method_t), allocatable :: method
 
-      method = create_method(config)
+      ! allocate(..., source=), not `method = create_method(config)`: the
+      ! latter is intrinsic assignment from a CLASS(...), ALLOCATABLE function
+      ! result, which gfortran 13.2.0 miscompiles (see `create_method`'s own
+      ! docstring above) -- the assignment leaves `method`'s vptr pointing at
+      ! the abstract `qc_method_t` vtable instead of the concrete type's, so
+      ! neither `type is` branch below ever matches and dispatch through it
+      ! (`method%options`) jumps through a null pointer.
+      allocate (method, source=create_method(config))
       select type (method)
       type is (hf_method_t)
          call hf_backend_settings(method%options, settings, error)
