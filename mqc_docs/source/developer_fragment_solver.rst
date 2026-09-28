@@ -396,8 +396,20 @@ Decisions
 1. **ESP density for correlated methods: HF**, as GAMESS does. Every ESP,
    set of charges and ``Tr(ΔD u)`` comes from the embedded HF density.
    Correlation is added per fragment and per n-mer.
-2. **D3/D4 under FMO-DFT: match GAMESS.** Whether that is once for the whole
-   system or per fragment and n-mer is to be checked against GAMESS before
-   phase 2. Phase 1 does not depend on it.
+2. **D3/D4 under FMO-DFT: match GAMESS.** GAMESS applies D3 per fragment
+   and per n-mer (``dftdis.src``, ``DFTDSM``/``DFTDSMI``; confirmed from a
+   run), not once for the whole system. When dispersion is wired in, it
+   therefore goes through the solver per fragment and n-mer. Until then it is
+   refused.
 3. **EFMO with DFT stays refused.** MAKEFP is HF, so EFMO allows HF and the
    MP2 family only. It still routes through the solver.
+
+Open, for review
+================
+
+* **The AFO model system under Kohn-Sham.** GAMESS solves a cut bond's model
+  system with the deck's functional under FMO-DFT; its log shows
+  ``FINAL R-PBE ENERGY`` for the model. Here it stays Hartree-Fock by
+  construction (``bond_lmo_set``, ``bond_hybrid``), so cut FMO-DFT freezes
+  HF-derived orbitals. No GAMESS reference for cut FMO-DFT exists yet: its
+  own PBE model SCF did not converge on Gly3 plus water in STO-3G.
