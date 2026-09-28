@@ -34,6 +34,8 @@ module mqc_fragment_capabilities
          !! The deck's driver, as a `CALC_TYPE_*` constant
       logical :: pieda = .false.
          !! `keywords.fragmentation.pieda`
+      logical :: pieda_dispersion = .false.
+         !! `keywords.fragmentation.pieda_dispersion` is not `"none"`
       logical :: dispersion = .false.
          !! `keywords.dft.dispersion` (`method_config%dft%use_dispersion`).
          !! Meaningless off a Kohn-Sham method, where it is always false.
@@ -53,6 +55,10 @@ module mqc_fragment_capabilities
       logical :: pieda = .false.
          !! The method's own PIEDA terms exist. Which schemes offer PIEDA at
          !! all is decided by `check_pieda_support` in `mqc_config_adapter`.
+      logical :: pieda_dispersion = .false.
+         !! PIEDA's empirical `Edi` can be added beside the method's terms.
+         !! False for an MP2-family method, whose `Edi` is its correlation and
+         !! would count dispersion twice.
       logical :: dispersion = .false.
          !! Empirical dispersion runs alongside this method under this
          !! scheme. False for every method: where D3/D4 belongs under FMO is
@@ -68,8 +74,9 @@ contains
       !! bond, plus MP2, SCS/SOS-MP2 or RI-MP2 as correlation on the embedded
       !! Hartree-Fock reference, without a detached bond (the frozen orbitals
       !! at a cut would be correlated). A double hybrid does not run: its PT2
-      !! part is not added. None of them carries PIEDA for a correlated
-      !! method yet, and none carries empirical dispersion yet.
+      !! part is not added. All of them carry PIEDA, and none carries
+      !! empirical dispersion yet. PIEDA's own empirical `Edi` is offered with
+      !! Hartree-Fock and Kohn-Sham, and not with the MP2 family.
       !! EFMO: Hartree-Fock, and MP2 or RI-MP2 without a detached bond (the
       !! frozen virtual at a cut would be correlated) and without spin-component
       !! scaling. Nothing runs unrestricted or with a gradient.
@@ -83,11 +90,15 @@ contains
             cap%runs = .true.
             cap%cut = .true.
             cap%pieda = .true.
+            cap%pieda_dispersion = .true.
          else if (config%method_type == METHOD_TYPE_DFT) then
             cap%runs = .not. double_hybrid(config%dft%functional)
             cap%cut = cap%runs
+            cap%pieda = cap%runs
+            cap%pieda_dispersion = cap%runs
          else if (config%method_type == METHOD_TYPE_MP2) then
             cap%runs = .true.
+            cap%pieda = .true.
          end if
       case (FRAGMENT_SCHEME_EFMO)
          select case (config%method_type)
@@ -95,6 +106,7 @@ contains
             cap%runs = .true.
             cap%cut = .true.
             cap%pieda = .true.
+            cap%pieda_dispersion = .true.
          case (METHOD_TYPE_MP2)
             if (.not. config%corr%use_scs) cap%runs = .true.
          case default
@@ -110,7 +122,7 @@ contains
       !!
       !! Reports the first unmet need, checked in this order: the method at
       !! all, a non-Energy driver, `unrestricted`, a detached bond,
-      !! dispersion, PIEDA.
+      !! dispersion, PIEDA, PIEDA's empirical dispersion.
       integer, intent(in) :: scheme
       type(method_config_t), intent(in) :: config
       type(fragment_needs_t), intent(in) :: needs
@@ -135,6 +147,13 @@ contains
          message = "keywords.fragmentation.pieda has no decomposition for "// &
                    "model.method '"//trim(method_type_to_string(config%method_type))// &
                    "' yet. Drop pieda, or set model.method to 'hf'."
+      else if (needs%pieda_dispersion .and. .not. cap%pieda_dispersion) then
+         message = "keywords.fragmentation.pieda_dispersion adds empirical "// &
+                   "dispersion to a pair, and under model.method '"// &
+                   trim(method_type_to_string(config%method_type))// &
+                   "' the pair's Edi is its correlation energy, which already holds "// &
+                   "the dispersion: both would count it twice. Set "// &
+                   "keywords.fragmentation.pieda_dispersion to 'none'."
       end if
    end function fragment_refusal
 

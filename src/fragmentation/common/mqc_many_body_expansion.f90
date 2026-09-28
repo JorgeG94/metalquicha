@@ -251,7 +251,11 @@ module mqc_many_body_expansion
       real(dp), allocatable :: pair_eex(:)      !! Hartree
       real(dp), allocatable :: pair_ect_mix(:)  !! Hartree
       real(dp), allocatable :: pair_edi(:)
-         !! Hartree; allocated only when `pieda_dispersion` is not "none"
+         !! Hartree; allocated only when `pieda_dispersion` is not "none" or
+         !! an MP2-family method ran PIEDA
+      logical :: edi_in_energy = .false.
+         !! Whether `pair_edi` is inside `pair_energy`: true for an MP2-family
+         !! method's correlation `Edi`, false for the empirical one
       logical, allocatable :: pair_doubly_cut_neighbor(:)
          !! True where the pair sits either side of a third fragment cut at
          !! two bonded atoms; see `warn_adjacent_cuts`
@@ -362,6 +366,7 @@ contains
       if (allocated(this%pair_eex)) deallocate (this%pair_eex)
       if (allocated(this%pair_ect_mix)) deallocate (this%pair_ect_mix)
       if (allocated(this%pair_edi)) deallocate (this%pair_edi)
+      this%edi_in_energy = .false.
       if (allocated(this%pair_doubly_cut_neighbor)) deallocate (this%pair_doubly_cut_neighbor)
       this%n_fragments = 0
       this%energy = 0.0_dp
@@ -427,7 +432,7 @@ contains
                        pieda_dispersion=trim(this%pieda_dispersion), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
-                       pair_edi=this%pair_edi, &
+                       pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
                        pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
@@ -509,6 +514,7 @@ contains
             json_data%fmo_pair_eex = this%pair_eex
             json_data%fmo_pair_ect_mix = this%pair_ect_mix
             if (allocated(this%pair_edi)) json_data%fmo_pair_edi = this%pair_edi
+            json_data%fmo_edi_in_energy = this%edi_in_energy
          end if
       end if
    end subroutine fmo_report
@@ -578,7 +584,7 @@ contains
                        pieda_dispersion=trim(this%pieda_dispersion), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
-                       pair_edi=this%pair_edi, &
+                       pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
                        pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())

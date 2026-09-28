@@ -520,6 +520,14 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_fmo_mp2)
   target_link_libraries(test_mqc_fmo_mp2 PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # PIEDA under Kohn-Sham and the MP2 family: the terms close every pair energy,
+  # Eex is built from the reference's own energies, MP2's Edi is the correlation
+  # interaction, and the union state's Kohn-Sham energy is the SCF's own
+  # functional.
+  addtest(mqc_fmo_pieda_methods)
+  target_link_libraries(test_mqc_fmo_pieda_methods
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
   # backends/cenzontle/, which is only added when an integrals backend is
   # enabled -- registering it beside the src/ tests built fine here and broke

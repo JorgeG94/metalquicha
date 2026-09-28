@@ -744,8 +744,8 @@ PIEDA: decomposing a pair
 
 ``keywords.fragmentation.pieda`` (default ``false``), FMO only (refused under
 EE-MBE, EFMO, GMBE and plain MBE, and under any driver but ``Energy``),
-splits each near, unconnected pair's ``delta_energy`` into three parts --
-GAMESS's ``IPIEDA=1``:
+splits each near, unconnected pair's ``delta_energy`` into three parts (four
+under the MP2 family, see below) -- GAMESS's ``IPIEDA=1``:
 
 ``ees``
    Electrostatics: the two converged monomer densities' Coulomb interaction,
@@ -761,7 +761,27 @@ GAMESS's ``IPIEDA=1``:
 ``ect_mix``
    The residual, ``delta_energy - ees - eex``: charge transfer, orbital
    mixing and the pair's density response together, so never plain "charge
-   transfer".
+   transfer". Under the MP2 family it is ``delta_energy - ees - eex - edi``.
+
+What each term means depends on the method:
+
+* **Hartree-Fock.** As above.
+* **Kohn-Sham.** ``ees`` is the same expression on the Kohn-Sham monomer
+  densities. ``eex`` takes ``E'^HL`` from the Kohn-Sham energy functional
+  evaluated at ``D_HL``: the exchange-correlation energy of the union density,
+  the functional's exact-exchange fraction and its range separation, on the
+  grid the deck's grid settings give the pair. That is one exchange-correlation
+  quadrature more per decomposed pair, and no extra SCF. The monomers' ``E'``
+  are their Kohn-Sham energies. A detached bond changes only how ``D_HL`` is
+  built (``pieda_hl``), not the functional.
+* **MP2, SCS-MP2, SOS-MP2, RI-MP2.** GAMESS's PIEDA/MP2. ``ees``, ``eex`` and
+  ``ect_mix`` are Hartree-Fock-level terms, built exactly as at Hartree-Fock
+  from the embedded Hartree-Fock densities and the monomers' Hartree-Fock
+  internal energies, without their correlation. ``edi`` is the pair's
+  correlation interaction ``Ec(IJ) - Ec(I) - Ec(J)``, each an embedded
+  correlation energy, scaled for SCS and SOS. It is inside ``delta_energy``, so
+  ``ees + eex + ect_mix + edi = delta_energy``. A separated pair has no
+  pair-level correlation and its ``edi`` is zero.
 
 .. code-block:: json
 
@@ -769,7 +789,8 @@ GAMESS's ``IPIEDA=1``:
     "delta_energy": -0.0055, "interaction_energy": -0.0055,
     "response": 0.0003, "ees": -0.0072, "eex": 0.0034, "ect_mix": -0.0017}
 
-The three fields are written only on a pair that was decomposed. **A
+The three fields (four, with ``edi``) are written only on a pair that was
+decomposed. **A
 connected pair is never decomposed**: ``ect_mix`` would carry the bond itself,
 which is not what the residual means. **A pair beyond ``resdim``** is
 decomposed for free -- ``ees`` is its whole term, ``eex`` and ``ect_mix``
@@ -817,19 +838,22 @@ the same pairs as a serial one and no pair crosses a wire.
 Edi: an empirical dispersion column
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-At Hartree-Fock PIEDA has no dispersion term: GAMESS's ``Edi`` is a
-correlation contribution, and there is no correlation in the reference.
+At Hartree-Fock and under Kohn-Sham PIEDA has no dispersion term: GAMESS's
+``Edi`` is a correlation contribution, and the reference has none to give.
 ``keywords.fragmentation.pieda_dispersion`` (``"none"`` by default, or
 ``"d4"`` or ``"d3bj"``) adds an *empirical* one in its place, as a fourth
-column ``edi``:
+column ``edi``. It is refused with the MP2 family, whose ``edi`` is its
+correlation energy and already holds the dispersion:
 
 .. code-block:: text
 
    Edi = E_D(I+J) - E_D(I) - E_D(J)
 
-with ``E_D`` the HF-D4 (dftd4, three-body term included) or HF-D3(BJ)
-(s-dftd3) dispersion energy of the atoms named, at those libraries' own
-Hartree-Fock damping parameters. It is a pairwise difference of a
+with ``E_D`` the D4 (dftd4, three-body term included) or D3(BJ) (s-dftd3)
+dispersion energy of the atoms named, at those libraries' own damping
+parameters for the deck's functional -- the Hartree-Fock ones when
+``model.method`` is ``"hf"``. A functional with no published parameters is
+refused by the library, by name. It is a pairwise difference of a
 geometry-only correction, not correlation energy, and needs no SCF result.
 
 * Each fragment is its **real atoms**, each atom once, where the partition
@@ -844,9 +868,9 @@ geometry-only correction, not correlation energy, and needs no SCF result.
   runs, naming the option that supplies it (``MQC_ENABLE_DFTD4`` or
   ``MQC_ENABLE_DFTD3``).
 
-**The Hartree-Fock numbers do not move.** ``total_energy``, every
-``delta_energy`` and the identity ``ees + eex + ect_mix = delta_energy`` are
-bit-identical with ``pieda_dispersion`` on and off; ``edi`` is read beside
+**The Hartree-Fock and Kohn-Sham numbers do not move.** ``total_energy``,
+every ``delta_energy`` and the identity ``ees + eex + ect_mix = delta_energy``
+are bit-identical with ``pieda_dispersion`` on and off; ``edi`` is read beside
 them and is in none of them. The info-level table gains ``Edi`` and ``Total``,
 where ``Total`` is ``delta_energy + edi``, the pair's interaction with
 dispersion counted, and a line after it sums ``Edi`` over the decomposed
@@ -862,8 +886,20 @@ pairs. The water trimer above at 6-31G with ``"d4"``::
 ``Total`` is the number to compare with a dispersion-corrected supermolecular
 interaction energy; ``Ees + Eex + Ect+mix`` is still the HF one. In the JSON,
 ``edi`` (Hartree) is written beside ``ees``/``eex``/``ect_mix`` on each
-decomposed pair, and only when ``pieda_dispersion`` ran; ``interaction_energy``
-stays the HF ``delta_energy``.
+decomposed pair, and only when ``pieda_dispersion`` ran or the method is in the
+MP2 family; ``interaction_energy`` stays the reference's ``delta_energy``.
+
+**Whether Edi is inside the pair energy.** The empirical ``edi`` is in no
+energy; the MP2 family's is in ``delta_energy``. The JSON says which, as
+``edi_in_energy`` beside ``pairs`` (written when ``pieda`` decomposed a pair): ``true``
+for the MP2 family, ``false`` otherwise. Where it is true, ``Total`` in the
+info-level table is ``delta_energy`` itself and not ``delta_energy + edi``,
+so the correlation is not added twice. The hydrogen-bonded water dimer at
+STO-3G with ``"mp2"``::
+
+   fmo: Edi is the correlation interaction Ec(IJ) - Ec(I) - Ec(J), inside the pair energy; Total = Ees + Eex + Ect+mix + Edi = dE
+   fmo:     pair            Ees            Eex        Ect+mix            Edi          Total
+   fmo:     1-2         -5.2041         5.2582        -5.7357        -0.7178        -6.3993
 
 Limits
 ------
@@ -903,8 +939,9 @@ VWN5 one, which is ``"hyb_gga_xc_b3lyp5"`` here. See
   refused for the MP2 family: the frozen orbitals at the cut are not yet
   excluded from the correlation, so a virtual held at the projector's shift
   would be correlated into like any other one.
-* PIEDA and empirical dispersion are refused with the MP2 family, the same as
-  with Kohn-Sham; see below.
+* PIEDA runs with the MP2 family, with ``edi`` its correlation interaction;
+  PIEDA's *empirical* dispersion is refused with it, by name, because it would
+  count dispersion twice. See :ref:`fmo-pieda`.
 * Any other method is refused by name. It used to be ignored: a B3LYP deck ran
   as Hartree-Fock and reported that total.
 
@@ -912,8 +949,9 @@ VWN5 one, which is ``"hyb_gga_xc_b3lyp5"`` here. See
 Whether it belongs once for the whole system or per fragment and n-mer is
 still to be checked against GAMESS.
 
-``keywords.fragmentation.pieda`` is refused with a Kohn-Sham or MP2-family
-reference, because PIEDA's decomposition exists for Hartree-Fock only so far.
+``keywords.fragmentation.pieda`` runs with Hartree-Fock, Kohn-Sham and the
+MP2 family, under FMO only: EE-MBE and EFMO refuse it by name, and a double
+hybrid is refused as it is without PIEDA.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.

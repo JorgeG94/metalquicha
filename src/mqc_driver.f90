@@ -718,6 +718,7 @@ contains
          fmo_needs%unrestricted = config%method_config%scf%unrestricted
          fmo_needs%calc_type = config%calc_type
          fmo_needs%pieda = config%fmo_pieda
+         fmo_needs%pieda_dispersion = trim(config%fmo_pieda_dispersion) /= "none"
          fmo_needs%dispersion = config%method_config%dft%use_dispersion
          fmo_refusal = fragment_refusal( &
                        merge(FRAGMENT_SCHEME_FMO, FRAGMENT_SCHEME_EE_MBE, config%expansion_kind == "fmo"), &

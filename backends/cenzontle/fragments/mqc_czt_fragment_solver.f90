@@ -26,6 +26,7 @@ module mqc_czt_fragment_solver
    public :: fragment_request_t
    public :: fragment_outcome_t
    public :: solve_fragment_method
+   public :: fragment_xc_context
 
    real(dp), parameter :: RETRY_LEVEL_SHIFT = 0.5_dp
       !! Hartree, the least shift the retry of `retry_level_shift` uses
@@ -129,28 +130,8 @@ contains
          if (request%retry_level_shift) max_attempt = 2
 
          if (kohn_sham) then
-            if (.not. xc_available()) then
-               call error%set(ERROR_VALIDATION, "a functional was requested ('"// &
-                              trim(method%functional)//"') but this build has no "// &
-                              "libxc: configure with -DMQC_ENABLE_LIBXC=ON")
-               return
-            end if
-            call xc_context_create(mol, trim(method%functional), xc, error, &
-                                   level=method%grid_level, polarized=.false., &
-                                   nlc_level=method%nlc_grid_level, &
-                                   screen_tol=method%screening_tolerance, &
-                                   point_block=method%block_size, &
-                                   n_radial=method%radial_points, &
-                                   n_angular=method%angular_points)
+            call fragment_xc_context(method, mol, xc, error)
             if (error%has_error()) return
-            if (xc%pt2_fraction /= 0.0_dp) then
-               call error%set(ERROR_VALIDATION, "fragment solver: model.functional '"// &
-                              trim(method%functional)//"' is a double hybrid, whose "// &
-                              "perturbative correlation this solver does not add; this "// &
-                              "request should have been refused by fragment_refusal.")
-               call xc%destroy()
-               return
-            end if
          end if
 
          do attempt = 1, max_attempt
@@ -201,6 +182,41 @@ contains
          outcome%internal = outcome%energy
       end if
    end subroutine solve_fragment_method
+
+   subroutine fragment_xc_context(method, mol, xc, error)
+      !! The Kohn-Sham functional `method` names, on `mol`'s grid
+      !!
+      !! Built with the functional, grid, non-local, screening and blocking
+      !! settings of `method`, so the energy of any density evaluated with it
+      !! is the one the SCF of a fragment solved for `method` minimises. A
+      !! double hybrid is refused. The caller destroys `xc`.
+      type(cuest_scf_settings_t), intent(in) :: method
+      type(czt_molecule_t), intent(in) :: mol
+      type(xc_context_t), intent(inout) :: xc
+      type(error_t), intent(inout) :: error
+
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "a functional was requested ('"// &
+                        trim(method%functional)//"') but this build has no "// &
+                        "libxc: configure with -DMQC_ENABLE_LIBXC=ON")
+         return
+      end if
+      call xc_context_create(mol, trim(method%functional), xc, error, &
+                             level=method%grid_level, polarized=.false., &
+                             nlc_level=method%nlc_grid_level, &
+                             screen_tol=method%screening_tolerance, &
+                             point_block=method%block_size, &
+                             n_radial=method%radial_points, &
+                             n_angular=method%angular_points)
+      if (error%has_error()) return
+      if (xc%pt2_fraction /= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "fragment solver: model.functional '"// &
+                        trim(method%functional)//"' is a double hybrid, whose "// &
+                        "perturbative correlation this solver does not add; this "// &
+                        "request should have been refused by fragment_refusal.")
+         call xc%destroy()
+      end if
+   end subroutine fragment_xc_context
 
    subroutine fragment_correlation(method, mol, nelec, real_z, scf, aux, correlation, error)
       !! MP2 or RI-MP2 on `scf`'s orbitals, EFMO's rule for the frozen core

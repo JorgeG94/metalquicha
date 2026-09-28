@@ -188,7 +188,8 @@ contains
                           pair_energy, pair_response, pair_connected, comm, &
                           detached, afo_localization, pair_separated, resdim, &
                           pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, &
-                          pair_doubly_cut_neighbor, pieda_dispersion, pair_edi)
+                          pair_doubly_cut_neighbor, pieda_dispersion, pair_edi, &
+                          edi_in_energy)
       !! No-op stand-in: FMO needs the CPU integral backend
       !!
       !! Coordinates are Bohr; `owner(i)` is atom i's fragment, numbered from
@@ -263,6 +264,7 @@ contains
       logical, intent(out), optional, allocatable :: pair_doubly_cut_neighbor(:)
       character(len=*), intent(in), optional :: pieda_dispersion
       real(dp), intent(out), optional, allocatable :: pair_edi(:)
+      logical, intent(out), optional :: edi_in_energy
 
       energy = 0.0_dp
       call error%set(ERROR_VALIDATION, &
@@ -287,6 +289,7 @@ contains
       if (present(pair_eex) .or. present(pair_ect_mix)) return
       if (present(pair_doubly_cut_neighbor)) return
       if (present(pieda_dispersion) .or. present(pair_edi)) return
+      if (present(edi_in_energy)) return
    end subroutine run_czt_fmo
 
    subroutine run_czt_efmo(atomic_numbers, element_symbols, coordinates, owner, &

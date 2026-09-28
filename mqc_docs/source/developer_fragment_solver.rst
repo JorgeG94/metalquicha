@@ -2,7 +2,7 @@
 The fragment solver: design and progress
 ========================================
 
-**Status: design agreed (see Decisions at the end); phases 1, 2 and 3 built, except dispersion.**
+**Status: design agreed (see Decisions at the end); phases 1 to 4 built, except dispersion.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -237,11 +237,12 @@ any backend work:
       logical :: unrestricted        ! model.unrestricted
       integer :: calc_type
       logical :: pieda
+      logical :: pieda_dispersion    ! keywords.fragmentation.pieda_dispersion
       logical :: dispersion          ! keywords.dft.dispersion
    end type
 
    type :: fragment_capabilities_t   ! what the method can do under the scheme
-      logical :: runs, cut, unrestricted, gradient, pieda, dispersion
+      logical :: runs, cut, unrestricted, gradient, pieda, pieda_dispersion, dispersion
    end type
 
    pure function fragment_capabilities(scheme, method_config) result(cap)
@@ -250,7 +251,10 @@ any backend work:
 Every method that runs at all accepts an embedding operator, so embedding is
 not a capability. ``pieda`` says whether the method has its own PIEDA terms.
 Which schemes offer PIEDA is still decided by ``check_pieda_support``.
-``dispersion`` is false for every method for now -- see Decision 2.
+``pieda_dispersion`` says whether PIEDA's empirical ``Edi`` can be added beside
+the method's terms: it can for Hartree-Fock and Kohn-Sham, and not for the MP2
+family, whose ``Edi`` is its correlation. ``dispersion`` is false for every
+method for now -- see Decision 2.
 
 ``fragment_refusal`` is the single refusal site. ``run_fragmented_calculation``
 calls it for FMO and EE-MBE, and ``run_efmo_energy`` calls it for EFMO. It
@@ -281,7 +285,7 @@ is. An odd electron count after a cut is one example.
      - yes (phase 2)
      - yes (phase 2)
      - no: MAKEFP is HF
-     - phase 4
+     - yes (phase 4), FMO only
      - refused (Decision 2)
    * - DFT, double hybrid
      - no: PT2 fraction not added
@@ -293,7 +297,7 @@ is. An odd electron count after a cut is one example.
      - yes (phase 3)
      - no: frozen virtuals would be correlated
      - yes, as before (SCS/SOS still refused there)
-     - phase 4
+     - yes (phase 4), FMO only; Edi is the correlation interaction
      - n/a
    * - CC
      - later
@@ -357,7 +361,7 @@ Phases and gates
    EE-MBE, without a detached bond (Decision 1: the ESP, the charges and
    ``Tr(dD u)`` stay the embedded Hartree-Fock's; correlation is added per
    fragment and per n-mer, as GAMESS FMO-MP2 does). Restricted MP2, SCS-MP2,
-   SOS-MP2 and RI-MP2 all run; a double hybrid and PIEDA stay refused as
+   SOS-MP2 and RI-MP2 all run; a double hybrid stays refused as
    before, and a separated pair (``resdim``) gets no pair-level correlation.
 
    The outer (monomer) self-consistent-charge loop still solves plain
@@ -382,12 +386,37 @@ Phases and gates
 
    Still owed: an FMO2-MP2 reference, which needs GAMESS. FMO's exact ESP is
    not in the PySCF replica.
-4. **PIEDA.**
+4. **PIEDA.** Built, for FMO only (``check_pieda_support`` still refuses
+   EE-MBE and EFMO).
 
-   * For MP2, Edi is ``Ec(IJ) - Ec(I) - Ec(J)``.
-   * For DFT, ``E'^HL`` takes ``E_XC[D_HL]``, which costs one extra
-     quadrature per pair.
-   * ``pieda_dispersion`` stays an option.
+   * **MP2 family.** As GAMESS's PIEDA/MP2: ``Ees``, ``Eex`` and ``Ect+mix``
+     are the Hartree-Fock terms from the embedded Hartree-Fock densities and
+     the monomers' Hartree-Fock internal energies (``fragment_t%energy -
+     fragment_t%correlation``). ``Edi = Ec(IJ) - Ec(I) - Ec(J)`` is inside
+     ``dE_IJ``, and ``Ect+mix = dE_IJ - Ees - Eex - Edi``. The pair's own
+     correlation is carried out of ``nmer_term`` before ``subtract_subsets``.
+     ``fmo_result_t%edi_in_energy`` (JSON ``edi_in_energy``) says that ``Edi``
+     is in ``dE_IJ``, so the printed ``Total`` is not ``dE_IJ + Edi``.
+   * **Kohn-Sham.** ``E'^HL`` is the Kohn-Sham functional at ``D_HL``,
+     ``E_XC[D_HL]``, its exact-exchange fraction and its range separation,
+     which costs one extra quadrature per pair. It is ``density_energy`` in
+     ``mqc_czt_rhf``, the ``assemble_fock`` the SCF's own energy comes from,
+     with the ``xc_context_t`` that ``fragment_xc_context`` builds on the
+     pair's molecule from the same settings the solver uses. A detached bond
+     enters only through the construction of ``D_HL`` (``pieda_hl``).
+   * ``pieda_dispersion`` stays an option at Hartree-Fock and under Kohn-Sham,
+     with the functional's damping parameters, and is refused with the MP2
+     family (``fragment_refusal``, ``pieda_dispersion`` need): its ``Edi``
+     already holds the dispersion.
+
+   Gate: ``test/test_mqc_fmo_pieda_methods.f90``. The four terms close every
+   pair energy for PBE, PBE0, CAM-B3LYP, MP2, SCS-MP2 and RI-MP2; an MP2 run's
+   ``Ees`` and ``Eex`` equal Hartree-Fock's to 1e-10; the ``Edi`` of MP2, RI-MP2
+   and SCS-MP2 equals separately computed correlation energies; the union
+   energy at one fragment's density is that fragment's Kohn-Sham energy for
+   PBE, B3LYP and CAM-B3LYP; Kohn-Sham ``Eex`` vanishes with distance and
+   repels at contact; and PBE decomposes the pairs next to a detached bond in
+   both ``pieda_hl`` modes.
 5. **Later:** CC, and anything else the capability query allows.
 
 Decisions

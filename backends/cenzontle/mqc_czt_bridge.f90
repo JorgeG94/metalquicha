@@ -655,7 +655,8 @@ contains
                           pair_energy, pair_response, pair_connected, comm, &
                           detached, afo_localization, pair_separated, resdim, &
                           pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, &
-                          pair_doubly_cut_neighbor, pieda_dispersion, pair_edi)
+                          pair_doubly_cut_neighbor, pieda_dispersion, pair_edi, &
+                          edi_in_energy)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -754,8 +755,12 @@ contains
          !! See `fmo_options_t%pieda_dispersion`. Absent keeps its default,
          !! "none".
       real(dp), intent(out), optional, allocatable :: pair_edi(:)
-         !! (n_pairs), the empirical dispersion interaction, meaningless where
-         !! `pair_pieda` is false or `pieda_dispersion` is "none"
+         !! (n_pairs), `Edi`: the correlation interaction under an MP2-family
+         !! method, else the empirical dispersion interaction. Allocated only
+         !! when one of them ran; meaningless where `pair_pieda` is false
+      logical, intent(out), optional :: edi_in_energy
+         !! Whether `pair_edi` is inside `pair_energy`; see
+         !! `fmo_result_t%edi_in_energy`
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -883,7 +888,9 @@ contains
       ! genuinely 0 either way -- allocated-but-zero and "not asked for" are
       ! not the same fact and only the allocation state can carry it to the
       ! JSON layer.
-      if (present(pair_edi) .and. trim(opts%pieda_dispersion) /= "none") then
+      if (present(edi_in_energy)) edi_in_energy = res%edi_in_energy
+      if (present(pair_edi) .and. (trim(opts%pieda_dispersion) /= "none" .or. &
+                                   res%edi_in_energy)) then
          allocate (pair_edi(n_pairs))
          do k = 1, n_pairs
             pair_edi(k) = res%pairs(k)%edi

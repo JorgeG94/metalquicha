@@ -35,13 +35,20 @@ contains
                   new_unittest("fmo_dft_cut_ok", test_fmo_dft_cut_ok), &
                   new_unittest("eembe_dft_ok", test_eembe_dft_ok), &
                   new_unittest("fmo_dft_dispersion_refused", test_fmo_dft_dispersion_refused), &
-                  new_unittest("fmo_dft_pieda_refused", test_fmo_dft_pieda_refused), &
+                  new_unittest("fmo_dft_pieda_ok", test_fmo_dft_pieda_ok), &
+                  new_unittest("fmo_dft_pieda_dispersion_ok", test_fmo_dft_pieda_dispersion_ok), &
                   new_unittest("fmo_mp2_ok", test_fmo_mp2_ok), &
                   new_unittest("fmo_ri_mp2_ok", test_fmo_ri_mp2_ok), &
                   new_unittest("fmo_scs_mp2_ok", test_fmo_scs_mp2_ok), &
                   new_unittest("eembe_mp2_ok", test_eembe_mp2_ok), &
                   new_unittest("fmo_mp2_cut_refused", test_fmo_mp2_cut_refused), &
-                  new_unittest("fmo_mp2_pieda_refused", test_fmo_mp2_pieda_refused), &
+                  new_unittest("fmo_mp2_pieda_ok", test_fmo_mp2_pieda_ok), &
+                  new_unittest("fmo_scs_mp2_pieda_ok", test_fmo_scs_mp2_pieda_ok), &
+                  new_unittest("fmo_mp2_pieda_dispersion_refused", &
+                               test_fmo_mp2_pieda_dispersion_refused), &
+                  new_unittest("fmo_hf_pieda_dispersion_ok", test_fmo_hf_pieda_dispersion_ok), &
+                  new_unittest("fmo_double_hybrid_pieda_refused", &
+                               test_fmo_double_hybrid_pieda_refused), &
                   new_unittest("fmo_ccsd_refused", test_fmo_ccsd_refused), &
                   new_unittest("fmo_hf_gradient_refused", test_fmo_gradient_refused), &
                   new_unittest("fmo_hf_hessian_refused", test_fmo_hessian_refused), &
@@ -159,20 +166,30 @@ contains
                  "the refusal does not name the key to change")
    end subroutine test_fmo_dft_dispersion_refused
 
-   subroutine test_fmo_dft_pieda_refused(error)
+   subroutine test_fmo_dft_pieda_ok(error)
+      !! PIEDA under a functional: the union state takes the functional's energy
       type(error_type), allocatable, intent(out) :: error
       type(method_config_t) :: config
       type(fragment_needs_t) :: needs
-      character(len=:), allocatable :: why
 
       config%method_type = METHOD_TYPE_DFT
       needs%pieda = .true.
-      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
-      call check(error, len(why) > 0, "FMO+DFT with pieda was not refused")
-      if (allocated(error)) return
-      call check(error, index(why, "keywords.fragmentation.pieda") > 0, &
-                 "the refusal does not name the key to change")
-   end subroutine test_fmo_dft_pieda_refused
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+DFT with pieda was refused")
+   end subroutine test_fmo_dft_pieda_ok
+
+   subroutine test_fmo_dft_pieda_dispersion_ok(error)
+      !! Empirical Edi beside a functional's terms, at that functional's damping
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_DFT
+      needs%pieda = .true.
+      needs%pieda_dispersion = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+DFT with pieda and pieda_dispersion was refused")
+   end subroutine test_fmo_dft_pieda_dispersion_ok
 
    subroutine test_fmo_mp2_ok(error)
       !! Plain MP2, correlation on the embedded Hartree-Fock reference, with
@@ -289,7 +306,33 @@ contains
                  "excluded from the correlation")
    end subroutine test_fmo_mp2_cut_refused
 
-   subroutine test_fmo_mp2_pieda_refused(error)
+   subroutine test_fmo_mp2_pieda_ok(error)
+      !! PIEDA under the MP2 family: Edi is the pair's correlation
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_MP2
+      needs%pieda = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+MP2 with pieda was refused")
+   end subroutine test_fmo_mp2_pieda_ok
+
+   subroutine test_fmo_scs_mp2_pieda_ok(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_MP2
+      config%corr%use_scs = .true.
+      needs%pieda = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+SCS-MP2 with pieda was refused")
+   end subroutine test_fmo_scs_mp2_pieda_ok
+
+   subroutine test_fmo_mp2_pieda_dispersion_refused(error)
+      !! An MP2 pair's Edi already holds its dispersion, so an empirical one
+      !! would count it twice
       type(error_type), allocatable, intent(out) :: error
       type(method_config_t) :: config
       type(fragment_needs_t) :: needs
@@ -297,12 +340,39 @@ contains
 
       config%method_type = METHOD_TYPE_MP2
       needs%pieda = .true.
+      needs%pieda_dispersion = .true.
       why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
-      call check(error, len(why) > 0, "FMO+MP2 with pieda was not refused")
+      call check(error, len(why) > 0, "FMO+MP2 with pieda_dispersion was not refused")
       if (allocated(error)) return
-      call check(error, index(why, "keywords.fragmentation.pieda") > 0, &
+      call check(error, index(why, "keywords.fragmentation.pieda_dispersion") > 0, &
                  "the refusal does not name the key to change")
-   end subroutine test_fmo_mp2_pieda_refused
+   end subroutine test_fmo_mp2_pieda_dispersion_refused
+
+   subroutine test_fmo_hf_pieda_dispersion_ok(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_HF
+      needs%pieda = .true.
+      needs%pieda_dispersion = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+HF with pieda and pieda_dispersion was refused")
+   end subroutine test_fmo_hf_pieda_dispersion_ok
+
+   subroutine test_fmo_double_hybrid_pieda_refused(error)
+      !! A double hybrid stays refused, PIEDA or not
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_DFT
+      config%dft%functional = "b2plyp"
+      needs%pieda = .true.
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
+      call check(error, len(why) > 0, "FMO+B2PLYP with pieda was not refused")
+   end subroutine test_fmo_double_hybrid_pieda_refused
 
    subroutine test_fmo_ccsd_refused(error)
       !! CCSD is not wired into FMO/EE-MBE yet, unlike MP2

@@ -74,6 +74,7 @@ module mqc_czt_rhf
    public :: run_czt_uhf
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
    public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
+   public :: density_energy            !! The closed-shell energy functional of a given density
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
 
    type :: incremental_state_t
@@ -2283,6 +2284,34 @@ contains
 
       if (present(screening)) screening = stats
    end subroutine assemble_fock
+
+   subroutine density_energy(mol, h, density, bounds, xc, energy, error)
+      !! The closed-shell energy functional evaluated at `density`, no SCF
+      !!
+      !! `E[D; h]` in Hartree, `mol`'s nuclear repulsion included, for the
+      !! functional `xc` names: the same [[assemble_fock]] the SCF's own final
+      !! energy comes from, so the exact-exchange fraction, the range-separated
+      !! exchange and `E_xc` are the SCF's. Direct Coulomb and exchange only.
+      !! `h` is the one-electron matrix the energy is taken against and
+      !! `bounds` are `mol`'s Schwarz bounds.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :), density(:, :)
+      real(dp), intent(in) :: bounds(:, :)
+      type(xc_context_t), intent(inout) :: xc
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: fock(:, :), coeff(:, :), bnd(:, :)
+      real(dp), allocatable :: no_bmat(:, :), no_eri(:, :, :, :)
+      real(dp) :: e_elec
+
+      energy = 0.0_dp
+      allocate (fock(size(h, 1), size(h, 2)), coeff(0, 0))
+      bnd = bounds
+      call assemble_fock(mol, h, density, coeff, 0, no_bmat, no_eri, bnd, xc, fock, e_elec, error)
+      if (error%has_error()) return
+      energy = e_elec + mol%nuclear_repulsion()
+   end subroutine density_energy
 
    subroutine assemble_fock_uhf(mol, h, d_alpha, d_beta, eri, bounds, xc, &
                                 fock_a, fock_b, e_elec, error, clk, incr)

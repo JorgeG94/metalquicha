@@ -130,7 +130,8 @@ module mqc_czt_fmo
    use mqc_scf_types, only: scf_numerics_t
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_czt_fragment_solver, only: fragment_request_t, fragment_outcome_t, &
-                                      solve_fragment_method
+                                      solve_fragment_method, fragment_xc_context
+   use mqc_czt_xc, only: xc_context_t
    use pic_sorting, only: sort_index
    use mqc_physical_constants, only: HARTREE_TO_KCALMOL
    implicit none
@@ -360,10 +361,12 @@ module mqc_czt_fmo
          !! a pair holds none.
       character(len=16) :: pieda_dispersion = "none"
          !! `"none"` (the default), `"d4"` or `"d3bj"`: add `Edi`, the
-         !! empirical dispersion interaction `E_D(IJ) - E_D(I) - E_D(J)` at
-         !! `functional = "hf"`, to every pair `pieda` decomposes, separated
-         !! pairs included and connected pairs never. Read only when `pieda`
-         !! is true. See `pieda_dispersion_term`.
+         !! empirical dispersion interaction `E_D(IJ) - E_D(I) - E_D(J)` at the
+         !! damping parameters of `method%functional` (`"hf"` when empty), to
+         !! every pair `pieda` decomposes, separated pairs included and
+         !! connected pairs never. Read only when `pieda` is true. Not
+         !! available with an MP2-family method, whose `Edi` is its
+         !! correlation. See `pieda_dispersion_term`.
    end type fmo_options_t
 
    type :: fmo_pair_t
@@ -401,15 +404,17 @@ module mqc_czt_fmo
          !! its monomers'. Zero unless `pieda` is true, and exactly zero for
          !! a separated pair.
       real(dp) :: ect_mix = 0.0_dp
-         !! The residual, `energy - ees - eex`: charge transfer, orbital
+         !! The residual, `energy - ees - eex - edi`: charge transfer, orbital
          !! mixing and the density response together, not charge transfer on
          !! its own. Zero unless `pieda` is true, and exactly zero for a
          !! separated pair.
       real(dp) :: edi = 0.0_dp
-         !! Empirical dispersion interaction, `E_D(IJ) - E_D(I) - E_D(J)`, in
-         !! Hartree, from `fmo_options_t%pieda_dispersion`. Zero when that is
-         !! `"none"` and for a connected pair. Not part of `energy`;
-         !! `energy + edi` is the dispersion-inclusive interaction.
+         !! Hartree. Under an MP2-family method the correlation interaction
+         !! `Ec(IJ) - Ec(I) - Ec(J)`, which is part of `energy`. Otherwise the
+         !! empirical dispersion interaction `E_D(IJ) - E_D(I) - E_D(J)` from
+         !! `fmo_options_t%pieda_dispersion`, which is not part of `energy`
+         !! (`energy + edi` is the dispersion-inclusive interaction). Zero when
+         !! that is `"none"` and for a connected pair.
       logical :: doubly_cut_neighbor = .false.
          !! `i` and `j` are the two fragments either side of a third one cut
          !! at two bonded atoms -- see `warn_adjacent_cuts`. FMO2 omits a
@@ -436,6 +441,10 @@ module mqc_czt_fmo
       integer :: outer_iterations = 0            !! passes of the monomer SCF
       real(dp) :: outer_change = 0.0_dp          !! last movement of the monomer sum
       logical :: converged = .false.
+      logical :: edi_in_energy = .false.
+         !! Whether each pair's `edi` is inside its `energy`: true for PIEDA
+         !! under an MP2-family method, false otherwise. Then `ees + eex +
+         !! ect_mix + edi` is `energy`; otherwise `edi` is read beside it.
       real(dp), allocatable :: monomer_energy(:)     !! E'_I
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
       real(dp), allocatable :: fragment_charge(:)
@@ -492,6 +501,9 @@ module mqc_czt_fmo
       real(dp), allocatable :: xyz(:, :)
       real(dp) :: energy = 0.0_dp                !! internal, E'
       real(dp) :: energy_total = 0.0_dp          !! as the SCF reported it, with the field
+      real(dp) :: correlation = 0.0_dp
+         !! The MP2-family correlation inside `energy`; zero for Hartree-Fock
+         !! and Kohn-Sham. `energy - correlation` is the reference's E'.
       integer :: nelec = 0
       integer :: charge = 0                      !! declared net charge
       integer :: n_caps = 0
@@ -626,6 +638,15 @@ contains
                         "fault rather than a request for a default -- and guessing a "// &
                         "basis here would return plausible numbers for a basis "// &
                         "nobody asked for.")
+         return
+      end if
+
+      if (opts%pieda .and. opts%method%run_mp2 .and. trim(opts%pieda_dispersion) /= "none") then
+         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion adds empirical dispersion "// &
+                        "to a pair, and the pair's Edi under an MP2-family method is its "// &
+                        "correlation energy, which already holds the dispersion. Both "// &
+                        "would count it twice: set keywords.fragmentation.pieda_dispersion "// &
+                        "to 'none'.")
          return
       end if
 
@@ -1924,7 +1945,7 @@ contains
    end subroutine full_local_coulomb
 
    subroutine nmer_term(frag, n_frag, members, z, coords, q_all, opts, afo, &
-                        e_internal, e_resp, error, comm)
+                        e_internal, e_resp, e_corr, error, comm)
       !! One n-mer, in the field of every fragment outside it
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: n_frag
@@ -1935,6 +1956,9 @@ contains
       type(fmo_options_t), intent(in) :: opts
       type(afo_context_t), intent(in) :: afo
       real(dp), intent(out) :: e_internal, e_resp
+      real(dp), intent(out) :: e_corr
+         !! The n-mer's own MP2-family correlation, inside `e_internal`; zero
+         !! for Hartree-Fock and Kohn-Sham
       type(error_t), intent(inout) :: error
       type(comm_t), intent(in), optional :: comm
          !! Only for how the SCF table is printed
@@ -2084,6 +2108,7 @@ contains
 
       e_internal = outcome%energy
       e_resp = 0.0_dp
+      e_corr = outcome%correlation
       if (allocated(request%h_extra)) then
          if (opts%expansion /= "mbe") then
             e_internal = outcome%internal
@@ -2514,8 +2539,8 @@ contains
    subroutine swap_solution(a, b)
       !! Exchange what a fragment's SCF produced between two copies of it
       !!
-      !! The density, the charges and both energies -- the fields
-      !! `solve_fragment` writes and `exchange_monomers` shares.
+      !! The density, the charges, both energies and the correlation -- the
+      !! fields `solve_fragment` writes and `exchange_monomers` shares.
       type(fragment_t), intent(inout) :: a, b
 
       real(dp), allocatable :: tmp(:, :), tmp_q(:)
@@ -2533,6 +2558,9 @@ contains
       e = a%energy_total
       a%energy_total = b%energy_total
       b%energy_total = e
+      e = a%correlation
+      a%correlation = b%correlation
+      b%correlation = e
    end subroutine swap_solution
 
    subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, error, comm)
@@ -2568,10 +2596,10 @@ contains
 
       real(dp), allocatable :: q_all(:), totals(:)
       integer, allocatable :: terms(:, :), term_size(:)
-      real(dp), allocatable :: correction(:), response(:), ees(:), eex(:)
+      real(dp), allocatable :: correction(:), response(:), ees(:), eex(:), pair_corr(:)
       logical, allocatable :: separated(:)
       type(pieda_pair_terms_t) :: pd
-      real(dp) :: e_internal, e_resp, e_es
+      real(dp) :: e_internal, e_resp, e_es, e_corr
       integer :: n_terms, t, task, level, n_nmers
 
       level = min(opts%level, n_frag)
@@ -2585,6 +2613,7 @@ contains
       allocate (response(n_terms), source=0.0_dp)
       allocate (ees(n_terms), source=0.0_dp)
       allocate (eex(n_terms), source=0.0_dp)
+      allocate (pair_corr(n_terms), source=0.0_dp)
 
       ! Count the n-mers (size >= 2) so the progress below has a denominator;
       ! the monomers are already solved.
@@ -2647,7 +2676,7 @@ contains
          end if
 
          call nmer_term(frag, n_frag, terms(1:term_size(t), t), z, coords, q_all, &
-                        opts, afo, e_internal, e_resp, error, comm)
+                        opts, afo, e_internal, e_resp, e_corr, error, comm)
          if (error%has_error()) return
          ! The response goes inside the correction, not alongside it: a larger
          ! n-mer subtracts its subsets' corrections whole, so a response left
@@ -2667,6 +2696,7 @@ contains
             if (error%has_error()) return
             ees(t) = pd%ees
             eex(t) = pd%eex
+            pair_corr(t) = e_corr
          end if
       end do
 
@@ -2679,21 +2709,23 @@ contains
                if (term_size(t) == 1) correction(t) = 0.0_dp
             end do
          end if
-         ! The per-term responses, and PIEDA's ees/eex, ride along after the
-         ! total: each is zero everywhere but the owning rank, so a sum
-         ! gathers them exactly as it gathers `correction`.
-         allocate (totals(4*n_terms + 1))
+         ! The per-term responses, and PIEDA's ees/eex and pair correlation,
+         ! ride along after the total: each is zero everywhere but the owning
+         ! rank, so a sum gathers them exactly as it gathers `correction`.
+         allocate (totals(5*n_terms + 1))
          totals(1:n_terms) = correction
          totals(n_terms + 1) = res%response_sum
          totals(n_terms + 2:2*n_terms + 1) = response
          totals(2*n_terms + 2:3*n_terms + 1) = ees
          totals(3*n_terms + 2:4*n_terms + 1) = eex
+         totals(4*n_terms + 2:5*n_terms + 1) = pair_corr
          call allreduce(comm, totals, size(totals), MPI_SUM)
          correction = totals(1:n_terms)
          res%response_sum = totals(n_terms + 1)
          response = totals(n_terms + 2:2*n_terms + 1)
          ees = totals(2*n_terms + 2:3*n_terms + 1)
          eex = totals(3*n_terms + 2:4*n_terms + 1)
+         pair_corr = totals(4*n_terms + 2:5*n_terms + 1)
       end if
 
       ! Subtract what the subsets already covered. Ordered by size, so every
@@ -2714,12 +2746,13 @@ contains
       ! pairs from them and nothing about a pair is ever sent. `Edi` needs
       ! only the geometry and the declared charges, which every rank holds,
       ! so it is computed here on every rank alike rather than reduced.
+      res%edi_in_energy = opts%pieda .and. opts%method%run_mp2
       call collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
-                         response, separated, ees, eex, res%pairs, error)
+                         response, separated, ees, eex, pair_corr, res%pairs, error)
       if (error%has_error()) return
       call log_pair_table(res%pairs, opts, comm)
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
-      if (opts%pieda) call log_pieda_table(res%pairs, opts, comm)
+      if (opts%pieda) call log_pieda_table(res%pairs, opts, res%edi_in_energy, comm)
    end subroutine calculate_polymers
 
    subroutine separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
@@ -2912,6 +2945,11 @@ contains
       !! Read-only: nothing `nmer_term` produced is touched. `terms%ect_mix` is
       !! left for `combine_pieda_terms`, once the pair's `dE_IJ` is final.
       !!
+      !! The reference's own energies enter `Eex`: for Kohn-Sham `E'^HL` is the
+      !! functional's, from an exchange-correlation quadrature over the pair's
+      !! grid, and for an MP2-family method the monomers' `E'` are the
+      !! Hartree-Fock ones, `energy - correlation`.
+      !!
       !! **Next to a cut**, one or both monomers may carry a ghost block, so
       !! the group's basis is not the two monomers' bases end to end; each
       !! monomer's occupied orbitals are scattered into it atom by atom, the
@@ -2933,6 +2971,7 @@ contains
       type(group_t) :: group
       type(czt_molecule_t) :: mol
       type(fock_projector_t) :: proj
+      type(xc_context_t) :: xc
       real(dp), allocatable :: bounds(:, :)
       real(dp), allocatable :: c_i(:, :), c_j(:, :), c_union(:, :), s(:, :), d_hl(:, :)
       integer, allocatable :: ao_off(:), ao_count(:), slot_of(:)
@@ -2986,14 +3025,22 @@ contains
 
       call hl_density_from_orbitals(c_union, s, d_hl, error)
       if (error%has_error()) return
-      call hl_prime_energy(mol, bounds, d_hl, e_hl, error)
+      if (len_trim(opts%method%functional) > 0) then
+         call fragment_xc_context(opts%method, mol, xc, error)
+         if (error%has_error()) return
+         call hl_prime_energy(mol, bounds, d_hl, e_hl, error, xc=xc)
+         call xc%destroy()
+      else
+         call hl_prime_energy(mol, bounds, d_hl, e_hl, error)
+      end if
       if (error%has_error()) return
 
       call es_dimer_energy(frag, i, j, afo, z, coords, opts, e_es, error)
       if (error%has_error()) return
 
       terms%ees = e_es
-      terms%eex = e_hl - frag(i)%energy - frag(j)%energy - e_es
+      terms%eex = e_hl - (frag(i)%energy - frag(i)%correlation) &
+                  - (frag(j)%energy - frag(j)%correlation) - e_es
    end subroutine pieda_pair_term
 
    subroutine scatter_orbital_block(frag, slot_of, ao_off, ao_count, c_local, c_group, error)
@@ -3074,12 +3121,14 @@ contains
    end subroutine project_out_frozen_virtuals
 
    subroutine collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
-                            response, separated, ees, eex, pairs, error)
+                            response, separated, ees, eex, pair_corr, pairs, error)
       !! The two-member terms, with the distance and connectivity a reader needs
       !!
       !! `correction` must already have had its subsets subtracted, so it is
       !! `dE_IJ` for every pair -- what `ees`/`eex`, filled during the n-mer
-      !! phase for a decomposed pair, are closed against here.
+      !! phase for a decomposed pair, are closed against here. Under an
+      !! MP2-family method `Edi = Ec(IJ) - Ec(I) - Ec(J)` is closed against it
+      !! too.
       type(fragment_t), intent(in) :: frag(:)
       integer, intent(in) :: z(:)
       real(dp), intent(in) :: coords(:, :)         !! (3, n_atoms), Bohr
@@ -3092,6 +3141,9 @@ contains
       real(dp), intent(in) :: ees(:), eex(:)
          !! Filled during the n-mer phase for every decomposed pair, zero
          !! elsewhere; meaningless unless `opts%pieda` is true.
+      real(dp), intent(in) :: pair_corr(:)
+         !! Each pair's own correlation `Ec(IJ)`, filled beside `ees`/`eex`;
+         !! read only when `opts%method%run_mp2` is true.
       type(fmo_pair_t), allocatable, intent(out) :: pairs(:)
       type(error_t), intent(inout) :: error
 
@@ -3127,8 +3179,14 @@ contains
             ! A separated pair's term is its electrostatics and nothing else;
             ! taken whole, so Eex and Ect+mix are zero exactly rather than
             ! the round-off of subtracting the monomers back out.
+            ! A separated pair has no pair-level correlation to split off either:
+            ! its two monomers' own cancel out of `correction`.
             if (separated(t)) then
                call combine_pieda_terms(correction(t), correction(t), 0.0_dp, pieda_terms)
+            else if (opts%method%run_mp2) then
+               call combine_pieda_terms(correction(t), ees(t), eex(t), pieda_terms, &
+                                        edi=pair_corr(t) - frag(fi)%correlation &
+                                        - frag(fj)%correlation)
             else
                call combine_pieda_terms(correction(t), ees(t), eex(t), pieda_terms)
             end if
@@ -3136,6 +3194,7 @@ contains
             pairs(k)%ees = pieda_terms%ees
             pairs(k)%eex = pieda_terms%eex
             pairs(k)%ect_mix = pieda_terms%ect_mix
+            pairs(k)%edi = pieda_terms%edi
 
             ! A separated pair too: dispersion does not vanish at `resdim`.
             if (trim(opts%pieda_dispersion) /= "none") then
@@ -3147,8 +3206,8 @@ contains
    end subroutine collect_pairs
 
    subroutine pieda_dispersion_term(frag, i, j, z, coords, opts, edi, error)
-      !! `Edi = E_D(I union J) - E_D(I) - E_D(J)` at `functional = "hf"`, in
-      !! Hartree
+      !! `Edi = E_D(I union J) - E_D(I) - E_D(J)` at the damping parameters of
+      !! `opts%method%functional`, `"hf"` when it is empty, in Hartree
       !!
       !! Evaluated on the fragments' real atoms (`frag(*)%atoms`: no ghost, no
       !! cap, element numbers unsplit, taken from the system's `z`), each atom
@@ -3167,9 +3226,12 @@ contains
       real(dp), allocatable :: xyz_ij(:, :)
       real(dp) :: e_i, e_j, e_ij, q_i, q_j
       type(error_t) :: derr
+      character(len=:), allocatable :: functional
       integer :: ni, nj
 
       edi = 0.0_dp
+      functional = "hf"
+      if (len_trim(opts%method%functional) > 0) functional = trim(opts%method%functional)
       ! A fragment holding one end of a detached bond is still given its
       ! declared charge, not that plus the electron the bond moves: under the
       ! split nucleus its own atoms' populations sum to the declared charge
@@ -3178,14 +3240,14 @@ contains
       q_i = real(frag(i)%charge, dp)
       q_j = real(frag(j)%charge, dp)
 
-      call dispersion_apply(opts%pieda_dispersion, "hf", q_i, z(frag(i)%atoms), &
+      call dispersion_apply(opts%pieda_dispersion, functional, q_i, z(frag(i)%atoms), &
                             coords(:, frag(i)%atoms), e_i, error=derr)
       if (derr%has_error()) then
          call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on fragment "// &
                         to_char(i)//": "//derr%get_message())
          return
       end if
-      call dispersion_apply(opts%pieda_dispersion, "hf", q_j, z(frag(j)%atoms), &
+      call dispersion_apply(opts%pieda_dispersion, functional, q_j, z(frag(j)%atoms), &
                             coords(:, frag(j)%atoms), e_j, error=derr)
       if (derr%has_error()) then
          call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on fragment "// &
@@ -3201,7 +3263,7 @@ contains
       allocate (xyz_ij(3, ni + nj))
       xyz_ij(:, 1:ni) = coords(:, frag(i)%atoms)
       xyz_ij(:, ni + 1:) = coords(:, frag(j)%atoms)
-      call dispersion_apply(opts%pieda_dispersion, "hf", q_i + q_j, z_ij, xyz_ij, e_ij, &
+      call dispersion_apply(opts%pieda_dispersion, functional, q_i + q_j, z_ij, xyz_ij, e_ij, &
                             error=derr)
       if (derr%has_error()) then
          call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on pair "// &
@@ -3270,7 +3332,7 @@ contains
       end do
    end subroutine log_pair_table
 
-   subroutine log_pieda_table(pairs, opts, comm)
+   subroutine log_pieda_table(pairs, opts, edi_in_energy, comm)
       !! Ees, Eex and Ect+mix at info level, in the same order as the pair table
       !!
       !! kcal/mol, as the interaction-energy table already reports; a pair not
@@ -3279,29 +3341,46 @@ contains
       !! the response term and orbital mixing along with any charge transfer,
       !! and is never called plain "charge transfer".
       !!
-      !! With `opts%pieda_dispersion` on, two more columns, `Edi` and
-      !! `Total = energy + edi`, and a line summing `Edi` over the pairs shown.
+      !! With `opts%pieda_dispersion` on, or `edi_in_energy`, two more columns,
+      !! `Edi` and `Total`, and a line summing `Edi` over the pairs shown.
+      !! `Total` is `energy + edi` for the empirical `Edi`, which is in no
+      !! energy, and `energy` for a correlation `Edi`, which is already in it.
       type(fmo_pair_t), intent(in) :: pairs(:)
       type(fmo_options_t), intent(in) :: opts
+      logical, intent(in) :: edi_in_energy   !! `fmo_result_t%edi_in_energy`
       type(comm_t), intent(in), optional :: comm
 
       character(len=160) :: line
+      character(len=:), allocatable :: label, reference
       integer, allocatable :: order(:)
-      real(dp) :: edi_sum
+      real(dp) :: edi_sum, total
       integer :: k, p
       logical :: has_edi
 
       if (.not. is_leader(comm)) return
       if (.not. any(pairs%pieda)) return
 
-      has_edi = trim(opts%pieda_dispersion) /= "none"
+      has_edi = edi_in_energy .or. trim(opts%pieda_dispersion) /= "none"
 
       if (has_edi) then
          call logger%info("  fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact "// &
                           "exchange, Ect+mix the residual (charge transfer, mixing "// &
                           "and the response together)")
-         call logger%info("  fmo: Edi is empirical HF-"//trim(opts%pieda_dispersion)// &
-                          " dispersion, in no HF number; Total = Ees + Eex + Ect+mix + Edi")
+         if (edi_in_energy) then
+            call logger%info("  fmo: Edi is the correlation interaction Ec(IJ) - Ec(I) - "// &
+                             "Ec(J), inside the pair energy; Total = Ees + Eex + Ect+mix "// &
+                             "+ Edi = dE")
+         else
+            label = "HF"
+            reference = "HF"
+            if (len_trim(opts%method%functional) > 0) then
+               label = trim(opts%method%functional)
+               reference = "Kohn-Sham"
+            end if
+            call logger%info("  fmo: Edi is empirical "//label//"-"// &
+                             trim(opts%pieda_dispersion)//" dispersion, in no "// &
+                             reference//" number; Total = Ees + Eex + Ect+mix + Edi")
+         end if
          call logger%info("  fmo:     pair            Ees            Eex        "// &
                           "Ect+mix            Edi          Total")
       else
@@ -3318,11 +3397,12 @@ contains
          if (.not. pairs(p)%pieda) cycle
          if (has_edi) then
             edi_sum = edi_sum + pairs(p)%edi
+            total = pairs(p)%energy
+            if (.not. edi_in_energy) total = total + pairs(p)%edi
             write (line, "(a,i5,'-',i0,t17,f14.4,f15.4,f15.4,f15.4,f15.4)") "  fmo: ", &
                pairs(p)%i, pairs(p)%j, pairs(p)%ees*HARTREE_TO_KCALMOL, &
                pairs(p)%eex*HARTREE_TO_KCALMOL, pairs(p)%ect_mix*HARTREE_TO_KCALMOL, &
-               pairs(p)%edi*HARTREE_TO_KCALMOL, &
-               (pairs(p)%energy + pairs(p)%edi)*HARTREE_TO_KCALMOL
+               pairs(p)%edi*HARTREE_TO_KCALMOL, total*HARTREE_TO_KCALMOL
          else
             write (line, "(a,i5,'-',i0,t17,f14.4,f15.4,f15.4)") "  fmo: ", &
                pairs(p)%i, pairs(p)%j, pairs(p)%ees*HARTREE_TO_KCALMOL, &
@@ -3616,8 +3696,8 @@ contains
       !!
       !! A sum-reduce over buffers that are zero where a rank computed nothing,
       !! which makes it a gather needing no displacements for fragments of
-      !! different sizes. Densities, energies and charges only -- the things the
-      !! next pass reads.
+      !! different sizes. Densities, energies, correlations and charges only --
+      !! the things the next pass reads.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
       integer, intent(in) :: owner(:)   !! From [[monomer_owners]]
@@ -3634,7 +3714,7 @@ contains
       ! answer -- independent of how many ranks filled it.
       total = 0
       do f = 1, n_frag
-         total = total + frag(f)%nao_full*frag(f)%nao_full + 2 + size(frag(f)%mol_atom)
+         total = total + frag(f)%nao_full*frag(f)%nao_full + 3 + size(frag(f)%mol_atom)
       end do
       allocate (buf(total), source=0.0_dp)
 
@@ -3645,14 +3725,15 @@ contains
             if (allocated(frag(f)%density)) buf(at + 1:at + n) = reshape(frag(f)%density, [n])
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
+            buf(at + n + 3) = frag(f)%correlation
             ! A charge per atom of the molecule the SCF saw, ghosts included:
             ! the ghost block is where a detached bond's pair lives, and
             ! `all_charges` needs its share to make the charges add up.
             if (allocated(frag(f)%charges)) then
-               buf(at + n + 3:at + n + 2 + size(frag(f)%mol_atom)) = frag(f)%charges
+               buf(at + n + 4:at + n + 3 + size(frag(f)%mol_atom)) = frag(f)%charges
             end if
          end if
-         at = at + n + 2 + size(frag(f)%mol_atom)
+         at = at + n + 3 + size(frag(f)%mol_atom)
       end do
 
       call allreduce(comm, buf, size(buf), MPI_SUM)
@@ -3666,11 +3747,12 @@ contains
          frag(f)%density = reshape(buf(at + 1:at + n), [frag(f)%nao_full, frag(f)%nao_full])
          frag(f)%energy = buf(at + n + 1)
          frag(f)%energy_total = buf(at + n + 2)
+         frag(f)%correlation = buf(at + n + 3)
          if (.not. allocated(frag(f)%charges)) then
             allocate (frag(f)%charges(size(frag(f)%mol_atom)))
          end if
-         frag(f)%charges = buf(at + n + 3:at + n + 2 + size(frag(f)%mol_atom))
-         at = at + n + 2 + size(frag(f)%mol_atom)
+         frag(f)%charges = buf(at + n + 4:at + n + 3 + size(frag(f)%mol_atom))
+         at = at + n + 3 + size(frag(f)%mol_atom)
       end do
    end subroutine exchange_monomers
 
@@ -3760,6 +3842,7 @@ contains
       ! Tr(D u) and nothing else has to be unpicked.
       f%energy_total = outcome%energy
       f%energy = outcome%internal
+      f%correlation = outcome%correlation
       f%density = outcome%density
    end subroutine inner_scf
 
