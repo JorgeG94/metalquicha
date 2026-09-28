@@ -109,10 +109,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   #
   # Amdahl caps what this can buy: `mqc_quao` alone is 704 s under -O0 coverage,
   # so the phase cannot go below that however many jobs it is given.
+  #
+  # `-LE LONG` leaves out the tests `addlongtest` labels slow. At -O0 with gcov
+  # they are the long poles of this phase: `mqc_czt_efmo_covalent_long` alone is
+  # 1183 s, against 505 s for the routine file whose checks it repeats at more
+  # separations. What only those tests reach is given up from the report.
   add_custom_target(
     coverage
     COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=1 ${CMAKE_CTEST_COMMAND} -j
-            2 -R "mqc" --output-on-failure
+            2 -R "mqc" -LE LONG --output-on-failure
     COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
             run_validation.py
     COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
