@@ -140,22 +140,22 @@
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-bonding_terms">bonding_terms</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-coeffs~2">coeffs</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole">compute_dipole</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole_derivs~2">compute_dipole_derivs</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_dipole_derivs">compute_dipole_derivs</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_grad">compute_grad</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-compute_hess">compute_hess</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~5">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~3">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_e~2">delta_E</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_dipoles~2">delta_dipoles</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~5">delta_energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~6">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-do_detailed_print">do_detailed_print</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~3">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~3">fragment_size</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-hess_dim~3">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~87">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~6">energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~12">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-hess_dim">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~106">i</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-interaction">interaction</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-ir_intensities~5">ir_intensities</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-joined_pairs">joined_pairs</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~6">lookup</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~7">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-nlevel~4">nlevel</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-pair_members">pair_members</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-row_width">row_width</a>
@@ -204,8 +204,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -435,7 +435,7 @@ assembled. Energies only; a derivative is refused.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-polymers~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -450,7 +450,7 @@ assembled. Energies only; a derivative is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~7"></span>
+              <span class="anchor" id="variable-fragment_count~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -465,7 +465,7 @@ assembled. Energies only; a derivative is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~15"></span>
+              <span class="anchor" id="variable-max_level~21"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -495,7 +495,7 @@ assembled. Energies only; a derivative is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~5"></span>
+              <span class="anchor" id="variable-mbe_result~6"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -510,7 +510,7 @@ assembled. Energies only; a derivative is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~55"></span>
+              <span class="anchor" id="variable-sys_geom~46"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -525,7 +525,7 @@ assembled. Energies only; a derivative is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~15"></span>
+              <span class="anchor" id="variable-world_comm~18"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -540,7 +540,7 @@ assembled. Energies only; a derivative is refused.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~16"></span>
+              <span class="anchor" id="variable-json_data~27"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2970,7 +2970,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-compute_dipole_derivs~2"></span>
+              <span class="anchor" id="variable-compute_dipole_derivs"></span>
               logical,
             </td>
               <td>private</td>
@@ -3021,7 +3021,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~5"></span>
+              <span class="anchor" id="variable-current_log_level~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -3072,7 +3072,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~5"></span>
+              <span class="anchor" id="variable-delta_energies~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -3106,7 +3106,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~3"></span>
+              <span class="anchor" id="variable-energies~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -3123,7 +3123,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~3"></span>
+              <span class="anchor" id="variable-fragment_size~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -3140,7 +3140,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~3"></span>
+              <span class="anchor" id="variable-hess_dim"></span>
               integer,
             </td>
               <td>private</td>
@@ -3157,7 +3157,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~87"></span>
+              <span class="anchor" id="variable-i~106"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -3225,7 +3225,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~6"></span>
+              <span class="anchor" id="variable-lookup~7"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
               <td>private</td>
@@ -3954,7 +3954,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-26 04:46 +0000             </p>
+ on 2026-09-28 12:13 +0000             </p>
           </div>
         </div>
         <br>
