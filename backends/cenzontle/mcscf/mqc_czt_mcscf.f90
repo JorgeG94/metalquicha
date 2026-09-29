@@ -46,7 +46,7 @@ module mqc_czt_mcscf
    !! formula above. Nothing here can have a Hessian that disagrees with its
    !! gradient.
    use pic_types, only: dp
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_blas_interfaces, only: pic_gemm, pic_dgemm_x
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
@@ -79,6 +79,8 @@ module mqc_czt_mcscf
    public :: natural_orbitals
    public :: one_index_fock
    public :: transformed_potential
+   public :: transformed_potential_many
+   public :: one_index_fock_many
    public :: sa_density_matrices
       !! The three above were private until the SA Hessian-vector product
       !! (`mqc_czt_sa_hessian.f90`) needed to reuse them rather than
@@ -403,180 +405,6 @@ contains
       end do
    end subroutine rotation_parameters
 
-   subroutine transformed_potential(a_block, b_block, n_occ, density, potential)
-      !! `J - K/2` of a differentiated density, in the MO basis
-      !!
-      !! Only the occupied columns are produced, because those are the only ones
-      !! the generalised Fock reads: its virtual rows are zero, so nothing ever
-      !! asks what the potential does between two empty orbitals.
-      !!
-      !! **The density must vanish on the virtual-virtual block**, which is what
-      !! makes the two integral blocks sufficient. Both densities this is used
-      !! for are one-index transforms of a density carried by occupied orbitals,
-      !! so one index is always occupied. A density without that structure would
-      !! need `(virtual virtual|virtual virtual)` integrals, which are not here.
-      real(dp), intent(in) :: a_block(:, :, :, :)   !! `(p q|r s)`, `q` and `s` occupied
-      real(dp), intent(in) :: b_block(:, :, :, :)   !! `(p q|r s)`, `r` and `s` occupied
-      integer, intent(in) :: n_occ
-      real(dp), intent(in) :: density(:, :)         !! (n_mo, n_mo), symmetric
-      real(dp), intent(out) :: potential(:, :)      !! (n_mo, n_occ)
-
-      real(dp), allocatable :: weight(:, :), exchange(:, :)
-      integer :: n_mo, q, r, s
-
-      n_mo = size(density, 1)
-      allocate (weight(n_mo, n_occ), exchange(n_mo, n_occ))
-
-      ! The block on hand has only the second density index occupied. A pair
-      ! with the *first* index occupied is the same integral read the other way
-      ! round, so doubling the rows that are not occupied covers both.
-      weight = density(:, 1:n_occ)
-      weight(n_occ + 1:n_mo, :) = 2.0_dp*weight(n_occ + 1:n_mo, :)
-
-      potential = 0.0_dp
-      do s = 1, n_occ
-         do r = 1, n_mo
-            potential = potential + weight(r, s)*a_block(:, :, r, s)
-         end do
-      end do
-
-      exchange = 0.0_dp
-      do q = 1, n_occ
-         do s = 1, n_occ
-            do r = 1, n_mo
-               exchange(:, q) = exchange(:, q) + density(r, s)*b_block(:, r, s, q)
-            end do
-         end do
-         ! The exchange cannot be folded the same way: swapping the density
-         ! indices moves them to different slots of the integral, so the half
-         ! with a virtual second index comes from the other block.
-         do s = n_occ + 1, n_mo
-            do r = 1, n_occ
-               exchange(:, q) = exchange(:, q) + density(r, s)*a_block(s, q, :, r)
-            end do
-         end do
-      end do
-
-      potential = potential - 0.5_dp*exchange
-      deallocate (weight, exchange)
-   end subroutine transformed_potential
-
-   subroutine one_index_fock(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
-                             kappa, transformed)
-      !! The generalised Fock matrix differentiated along one orbital rotation
-      !!
-      !!     (H kappa)_pq = 2 (Ft_qp - Ft_pq)
-      !!
-      !! with `Ft` built exactly as `generalized_fock` builds `F`, but with each
-      !! orbital in turn replaced by `C kappa`. Differentiating an integral is
-      !! the product rule over its coefficient matrices, so every term below is
-      !! one of `generalized_fock`'s with one coefficient swapped.
-      !!
-      !! The density matrices are the ones the CI produced and are held fixed:
-      !! this is the orbital-orbital block at fixed CI, not the full second
-      !! derivative of the two-step energy. The difference is a Schur complement
-      !! that only makes eigenvalues smaller, so a negative direction found here
-      !! is a genuine one.
-      real(dp), intent(in) :: a_block(:, :, :, :)   !! `(p q|r s)`, `q` and `s` occupied
-      real(dp), intent(in) :: b_block(:, :, :, :)   !! `(p q|r s)`, `r` and `s` occupied
-      type(mcscf_fock_t), intent(in) :: fock
-      real(dp), intent(in) :: dm1(:, :), dm2(:, :, :, :)
-      integer, intent(in) :: n_inactive, n_active
-      real(dp), intent(in) :: kappa(:, :)           !! (n_mo, n_mo), antisymmetric
-      real(dp), intent(out) :: transformed(:, :)    !! (n_mo, n_mo)
-
-      real(dp), allocatable :: d_inactive(:, :), d_active(:, :), occupations(:, :)
-      real(dp), allocatable :: left(:, :), right(:, :)
-      real(dp), allocatable :: v_inactive(:, :), v_active(:, :)
-      real(dp), allocatable :: f_inactive(:, :), f_active(:, :), eri_gaaa(:, :, :, :)
-      real(dp) :: accumulated
-      integer :: n_mo, n_occ, i, t, u, v, w, n, ua, va, wa
-
-      n_mo = size(kappa, 1)
-      n_occ = n_inactive + n_active
-
-      ! The inactive density is C_i C_i^T, so its derivative replaces one factor
-      ! at a time and is non-zero only where exactly one index is inactive --
-      ! which is also why a rotation between two inactive orbitals moves
-      ! nothing.
-      allocate (d_inactive(n_mo, n_mo), d_active(n_mo, n_mo), occupations(n_mo, n_mo))
-      d_inactive = 0.0_dp
-      d_inactive(:, 1:n_inactive) = 2.0_dp*kappa(:, 1:n_inactive)
-      d_inactive(1:n_inactive, :) = d_inactive(1:n_inactive, :) &
-                                    - 2.0_dp*kappa(1:n_inactive, :)
-
-      occupations = 0.0_dp
-      occupations(n_inactive + 1:n_occ, n_inactive + 1:n_occ) = dm1
-      allocate (left(n_mo, n_mo), right(n_mo, n_mo))
-      call pic_gemm(kappa, occupations, left)
-      call pic_gemm(occupations, kappa, right)
-      d_active = left - right
-
-      allocate (v_inactive(n_mo, n_occ), v_active(n_mo, n_occ))
-      call transformed_potential(a_block, b_block, n_occ, d_inactive, v_inactive)
-      call transformed_potential(a_block, b_block, n_occ, d_active, v_active)
-
-      ! Two contributions to each Fock matrix: the orbitals it is expressed in,
-      ! which give a commutator, and the orbitals its density was built from,
-      ! which give the potential above.
-      allocate (f_inactive(n_mo, n_occ), f_active(n_mo, n_occ))
-      call pic_gemm(fock%inactive, kappa, left)
-      call pic_gemm(kappa, fock%inactive, right)
-      f_inactive = left(:, 1:n_occ) - right(:, 1:n_occ) + v_inactive
-      call pic_gemm(fock%active, kappa, left)
-      call pic_gemm(kappa, fock%active, right)
-      f_active = left(:, 1:n_occ) - right(:, 1:n_occ) + v_active
-
-      ! (nu|vw) has four orbitals in it and so four terms, one per index.
-      allocate (eri_gaaa(n_mo, n_active, n_active, n_active))
-      do w = 1, n_active
-         wa = n_inactive + w
-         do v = 1, n_active
-            va = n_inactive + v
-            do u = 1, n_active
-               ua = n_inactive + u
-               do n = 1, n_mo
-                  eri_gaaa(n, u, v, w) = &
-                     dot_product(kappa(:, n), a_block(:, ua, va, wa)) &
-                     + dot_product(kappa(:, ua), b_block(n, :, va, wa)) &
-                     + dot_product(kappa(:, va), a_block(n, ua, :, wa)) &
-                     + dot_product(kappa(:, wa), a_block(n, ua, :, va))
-               end do
-            end do
-         end do
-      end do
-
-      ! The rows, assembled exactly as `generalized_fock` assembles them. The
-      ! virtual rows stay zero because the density is, and the density is not
-      ! what is being differentiated.
-      transformed = 0.0_dp
-      do i = 1, n_inactive
-         do n = 1, n_mo
-            transformed(i, n) = 2.0_dp*(f_inactive(n, i) + f_active(n, i))
-         end do
-      end do
-
-      do t = 1, n_active
-         do n = 1, n_mo
-            accumulated = 0.0_dp
-            do u = 1, n_active
-               accumulated = accumulated + dm1(t, u)*f_inactive(n, n_inactive + u)
-            end do
-            do w = 1, n_active
-               do v = 1, n_active
-                  do u = 1, n_active
-                     accumulated = accumulated + dm2(t, u, v, w)*eri_gaaa(n, u, v, w)
-                  end do
-               end do
-            end do
-            transformed(n_inactive + t, n) = accumulated
-         end do
-      end do
-
-      deallocate (d_inactive, d_active, occupations, left, right)
-      deallocate (v_inactive, v_active, f_inactive, f_active, eri_gaaa)
-   end subroutine one_index_fock
-
    subroutine orbital_hessian(mol, orbitals, n_inactive, n_active, dm1, dm2, fock, &
                               rows, cols, hessian, error)
       !! The exact orbital Hessian at fixed CI, over the non-redundant rotations
@@ -599,9 +427,14 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: eri_packed(:, :)
-      real(dp), allocatable :: a_block(:, :, :, :), b_block(:, :, :, :)
-      real(dp), allocatable :: kappa(:, :), transformed(:, :)
-      integer :: n_mo, n_occ, n_param, k, l
+      real(dp), allocatable :: a_mo(:, :, :, :), b_mo(:, :, :, :)
+      real(dp), allocatable :: kappa_block(:, :, :), transformed(:, :, :)
+      integer :: n_mo, n_occ, n_param, k, l, k0, k1, nk
+
+      integer, parameter :: COLUMN_BLOCK = 48
+         !! Columns per `one_index_fock_many` call: enough that its products
+         !! are matrix-matrix, small enough that one thread's stack of
+         !! `(n_mo, n_mo)` matrices stays a few megabytes.
 
       if (error%has_error()) return
       n_mo = size(orbitals, 2)
@@ -613,23 +446,33 @@ contains
 
       call mol%eris_packed(eri_packed)
       call transform_block(eri_packed, orbitals, orbitals(:, 1:n_occ), orbitals, &
-                           orbitals(:, 1:n_occ), a_block)
+                           orbitals(:, 1:n_occ), a_mo)
       call transform_block(eri_packed, orbitals, orbitals, orbitals(:, 1:n_occ), &
-                           orbitals(:, 1:n_occ), b_block)
+                           orbitals(:, 1:n_occ), b_mo)
       deallocate (eri_packed)
 
-      allocate (kappa(n_mo, n_mo), transformed(n_mo, n_mo))
-      do k = 1, n_param
-         kappa = 0.0_dp
-         kappa(rows(k), cols(k)) = 1.0_dp
-         kappa(cols(k), rows(k)) = -1.0_dp
-         call one_index_fock(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
-                             kappa, transformed)
-         do l = 1, n_param
-            hessian(l, k) = 2.0_dp*(transformed(cols(l), rows(l)) &
-                                    - transformed(rows(l), cols(l)))
+      !$omp parallel do schedule(dynamic) default(shared) &
+      !$omp    private(k0, k1, nk, k, l, kappa_block, transformed)
+      do k0 = 1, n_param, COLUMN_BLOCK
+         k1 = min(k0 + COLUMN_BLOCK - 1, n_param)
+         nk = k1 - k0 + 1
+         allocate (kappa_block(n_mo, n_mo, nk), transformed(n_mo, n_mo, nk))
+         kappa_block = 0.0_dp
+         do k = k0, k1
+            kappa_block(rows(k), cols(k), k - k0 + 1) = 1.0_dp
+            kappa_block(cols(k), rows(k), k - k0 + 1) = -1.0_dp
          end do
+         call one_index_fock_many(a_mo, b_mo, fock, dm1, dm2, n_inactive, n_active, &
+                                  kappa_block, transformed)
+         do k = k0, k1
+            do l = 1, n_param
+               hessian(l, k) = 2.0_dp*(transformed(cols(l), rows(l), k - k0 + 1) &
+                                       - transformed(rows(l), cols(l), k - k0 + 1))
+            end do
+         end do
+         deallocate (kappa_block, transformed)
       end do
+      !$omp end parallel do
 
       ! Symmetric in exact arithmetic. Away from a stationary point the two
       ! triangles differ by rounding and by the antisymmetric term that
@@ -637,8 +480,309 @@ contains
       ! energy twice, which this average removes.
       hessian = 0.5_dp*(hessian + transpose(hessian))
 
-      deallocate (a_block, b_block, kappa, transformed)
+      deallocate (a_mo, b_mo)
    end subroutine orbital_hessian
+
+   subroutine one_index_fock(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
+                             kappa, transformed)
+      !! The generalised Fock matrix differentiated along one orbital rotation
+      !!
+      !!     (H kappa)_pq = 2 (Ft_qp - Ft_pq)
+      !!
+      !! with `Ft` built exactly as `generalized_fock` builds `F`, but with each
+      !! orbital in turn replaced by `C kappa`. `one_index_fock_many` for one
+      !! rotation.
+      !!
+      !! The density matrices are the ones the CI produced and are held fixed:
+      !! this is the orbital-orbital block at fixed CI, not the full second
+      !! derivative of the two-step energy. The difference is a Schur complement
+      !! that only makes eigenvalues smaller, so a negative direction found here
+      !! is a genuine one.
+      real(dp), intent(in), contiguous :: a_block(:, :, :, :)
+         !! `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in), contiguous :: b_block(:, :, :, :)
+         !! `(p q|r s)`, `r` and `s` occupied
+      type(mcscf_fock_t), intent(in) :: fock
+      real(dp), intent(in) :: dm1(:, :), dm2(:, :, :, :)
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in) :: kappa(:, :)           !! (n_mo, n_mo), antisymmetric
+      real(dp), intent(out) :: transformed(:, :)    !! (n_mo, n_mo)
+
+      real(dp), allocatable :: kappa_stack(:, :, :), fock_stack(:, :, :)
+      integer :: n_mo
+
+      n_mo = size(kappa, 1)
+      allocate (kappa_stack(n_mo, n_mo, 1), fock_stack(n_mo, n_mo, 1))
+      kappa_stack(:, :, 1) = kappa
+      call one_index_fock_many(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
+                               kappa_stack, fock_stack)
+      transformed = fock_stack(:, :, 1)
+   end subroutine one_index_fock
+
+   subroutine one_index_fock_many(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
+                                  kappas, transformed)
+      !! `one_index_fock` for a stack of rotations, with the integral
+      !! contractions done as matrix products over the whole stack
+      !!
+      !! Uses that each `kappa` is antisymmetric and that the Fock and
+      !! occupation matrices are symmetric, so `kappa M = -(M kappa)^T`.
+      real(dp), intent(in), contiguous :: a_block(:, :, :, :)
+         !! `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in), contiguous :: b_block(:, :, :, :)
+         !! `(p q|r s)`, `r` and `s` occupied
+      type(mcscf_fock_t), intent(in) :: fock
+      real(dp), intent(in) :: dm1(:, :), dm2(:, :, :, :)
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in), contiguous :: kappas(:, :, :)
+         !! (n_mo, n_mo, n_set), each antisymmetric
+      real(dp), intent(out), contiguous :: transformed(:, :, :)    !! (n_mo, n_mo, n_set)
+
+      call fock_kernel(size(kappas, 1), n_inactive, n_active, size(kappas, 3), a_block, &
+                       b_block, fock, dm1, dm2, kappas, transformed)
+   end subroutine one_index_fock_many
+
+   subroutine fock_kernel(n_mo, n_inactive, n_active, n_set, a_block, b_block, fock, dm1, &
+                          dm2, kappas, transformed)
+      !! `one_index_fock_many`, with explicit shapes so that slices of the
+      !! integral blocks go to BLAS as an element and a leading dimension
+      integer, intent(in) :: n_mo, n_inactive, n_active, n_set
+      real(dp), intent(in) :: a_block(n_mo, n_inactive + n_active, n_mo, n_inactive + n_active)
+      real(dp), intent(in) :: b_block(n_mo, n_mo, n_inactive + n_active, n_inactive + n_active)
+      type(mcscf_fock_t), intent(in) :: fock
+      real(dp), intent(in) :: dm1(n_active, n_active)
+      real(dp), intent(in) :: dm2(n_active, n_active, n_active, n_active)
+      real(dp), intent(in) :: kappas(n_mo, n_mo, n_set)
+      real(dp), intent(out) :: transformed(n_mo, n_mo, n_set)
+
+      real(dp), allocatable :: occupations(:, :), product(:, :)
+      real(dp), allocatable :: rotated_densities(:, :, :), rotated_potentials(:, :, :)
+      real(dp), allocatable :: fi_kappa(:, :), fa_kappa(:, :)
+      real(dp), allocatable :: f_inactive(:, :), f_active(:, :)
+      real(dp), allocatable :: a_gaaa(:, :), eri_gaaa(:, :, :, :, :)
+      real(dp), allocatable :: active_rows(:, :), dm2_rows(:, :)
+      integer :: n_occ, n_act3, k, i, u, v, w, lo, hi, ia
+
+      n_occ = n_inactive + n_active
+      n_act3 = n_active**3
+      ia = n_inactive + 1
+
+      ! The inactive density is C_i C_i^T, so its derivative replaces one factor
+      ! at a time and is non-zero only where exactly one index is inactive --
+      ! which is also why a rotation between two inactive orbitals moves
+      ! nothing. The active one is `kappa D - D kappa`.
+      allocate (occupations(n_mo, n_mo), product(n_mo, n_mo*n_set))
+      occupations = 0.0_dp
+      occupations(n_inactive + 1:n_occ, n_inactive + 1:n_occ) = dm1
+      call pic_dgemm_x("N", "N", n_mo, n_mo*n_set, n_mo, 1.0_dp, occupations, n_mo, &
+                       kappas, n_mo, 0.0_dp, product, n_mo)
+      allocate (rotated_densities(n_mo, n_mo, 2*n_set))
+      do k = 1, n_set
+         lo = (k - 1)*n_mo + 1
+         hi = k*n_mo
+         rotated_densities(:, :, 2*k - 1) = 0.0_dp
+         rotated_densities(:, 1:n_inactive, 2*k - 1) = 2.0_dp*kappas(:, 1:n_inactive, k)
+         rotated_densities(1:n_inactive, :, 2*k - 1) = rotated_densities(1:n_inactive, :, 2*k - 1) &
+                                                       - 2.0_dp*kappas(1:n_inactive, :, k)
+         rotated_densities(:, :, 2*k) = -transpose(product(:, lo:hi)) - product(:, lo:hi)
+      end do
+      deallocate (product)
+
+      allocate (rotated_potentials(n_mo, n_occ, 2*n_set))
+      call potential_kernel(n_mo, n_occ, 2*n_set, a_block, b_block, rotated_densities, rotated_potentials)
+      deallocate (rotated_densities)
+
+      ! Two contributions to each Fock matrix: the orbitals it is expressed in,
+      ! which give a commutator, and the orbitals its density was built from,
+      ! which give the potential above.
+      allocate (fi_kappa(n_mo, n_mo*n_set), fa_kappa(n_mo, n_mo*n_set))
+      call pic_dgemm_x("N", "N", n_mo, n_mo*n_set, n_mo, 1.0_dp, fock%inactive, n_mo, &
+                       kappas, n_mo, 0.0_dp, fi_kappa, n_mo)
+      call pic_dgemm_x("N", "N", n_mo, n_mo*n_set, n_mo, 1.0_dp, fock%active, n_mo, &
+                       kappas, n_mo, 0.0_dp, fa_kappa, n_mo)
+
+      ! (nu|vw) has four orbitals in it and so four terms, one per index, each
+      ! a product of `kappa` with a slice of an integral block written straight
+      ! into a strided view of `eri_gaaa(n, u, v, w, k)`.
+      allocate (a_gaaa(n_mo, n_act3), eri_gaaa(n_mo, n_active, n_active, n_active, n_set))
+      a_gaaa = reshape(a_block(:, ia:n_occ, ia:n_occ, ia:n_occ), [n_mo, n_act3])
+      do k = 1, n_set
+         ! sum_m kappa_mn (m u|v w): the first index transformed
+         call pic_dgemm_x("T", "N", n_mo, n_act3, n_mo, 1.0_dp, kappas(1, 1, k), n_mo, &
+                          a_gaaa, n_mo, 0.0_dp, eri_gaaa(1, 1, 1, 1, k), n_mo)
+         do w = 1, n_active
+            do v = 1, n_active
+               ! sum_m (n m|v w) kappa_mu: the second index
+               call pic_dgemm_x("N", "N", n_mo, n_active, n_mo, 1.0_dp, &
+                                b_block(1, 1, n_inactive + v, n_inactive + w), n_mo, &
+                                kappas(1, ia, k), n_mo, 1.0_dp, eri_gaaa(1, 1, v, w, k), n_mo)
+            end do
+         end do
+         do w = 1, n_active
+            do u = 1, n_active
+               ! sum_m (n u|m w) kappa_mv: the third index
+               call pic_dgemm_x("N", "N", n_mo, n_active, n_mo, 1.0_dp, &
+                                a_block(1, n_inactive + u, 1, n_inactive + w), n_mo*n_occ, &
+                                kappas(1, ia, k), n_mo, 1.0_dp, eri_gaaa(1, u, 1, w, k), &
+                                n_mo*n_active)
+            end do
+         end do
+         do v = 1, n_active
+            do u = 1, n_active
+               ! sum_m (n u|v m) kappa_mw = sum_m (n u|m v) kappa_mw: the fourth
+               call pic_dgemm_x("N", "N", n_mo, n_active, n_mo, 1.0_dp, &
+                                a_block(1, n_inactive + u, 1, n_inactive + v), n_mo*n_occ, &
+                                kappas(1, ia, k), n_mo, 1.0_dp, eri_gaaa(1, u, v, 1, k), &
+                                n_mo*n_active*n_active)
+            end do
+         end do
+      end do
+      deallocate (a_gaaa)
+
+      ! The rows, assembled exactly as `generalized_fock` assembles them. The
+      ! virtual rows stay zero because the density is, and the density is not
+      ! what is being differentiated.
+      allocate (f_inactive(n_mo, n_occ), f_active(n_mo, n_occ))
+      allocate (active_rows(n_mo, n_active), dm2_rows(n_active, n_act3))
+      dm2_rows = reshape(dm2, [n_active, n_act3])
+      do k = 1, n_set
+         lo = (k - 1)*n_mo + 1
+         hi = k*n_mo
+         f_inactive = fi_kappa(:, lo:lo + n_occ - 1) &
+                      + transpose(fi_kappa(1:n_occ, lo:hi)) + rotated_potentials(:, :, 2*k - 1)
+         f_active = fa_kappa(:, lo:lo + n_occ - 1) &
+                    + transpose(fa_kappa(1:n_occ, lo:hi)) + rotated_potentials(:, :, 2*k)
+
+         transformed(:, :, k) = 0.0_dp
+         do i = 1, n_inactive
+            transformed(i, :, k) = 2.0_dp*(f_inactive(:, i) + f_active(:, i))
+         end do
+         if (n_active > 0) then
+            call pic_gemm(f_inactive(:, n_inactive + 1:n_occ), dm1, active_rows, transb="T")
+            call pic_dgemm_x("N", "T", n_mo, n_active, n_act3, 1.0_dp, eri_gaaa(1, 1, 1, 1, k), &
+                             n_mo, dm2_rows, n_active, 1.0_dp, active_rows, n_mo)
+            transformed(n_inactive + 1:n_occ, :, k) = transpose(active_rows)
+         end if
+      end do
+
+      deallocate (occupations, rotated_potentials, fi_kappa, fa_kappa, f_inactive, f_active)
+      deallocate (eri_gaaa, active_rows, dm2_rows)
+   end subroutine fock_kernel
+
+   subroutine transformed_potential(a_block, b_block, n_occ, density, potential)
+      !! `J - K/2` of a differentiated density, in the MO basis
+      !!
+      !! Only the occupied columns are produced, because those are the only ones
+      !! the generalised Fock reads: its virtual rows are zero, so nothing ever
+      !! asks what the potential does between two empty orbitals.
+      !!
+      !! **The density must vanish on the virtual-virtual block**, which is what
+      !! makes the two integral blocks sufficient. Both densities this is used
+      !! for are one-index transforms of a density carried by occupied orbitals,
+      !! so one index is always occupied. A density without that structure would
+      !! need `(virtual virtual|virtual virtual)` integrals, which are not here.
+      real(dp), intent(in), contiguous :: a_block(:, :, :, :)
+         !! `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in), contiguous :: b_block(:, :, :, :)
+         !! `(p q|r s)`, `r` and `s` occupied
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: density(:, :)         !! (n_mo, n_mo), symmetric
+      real(dp), intent(out) :: potential(:, :)      !! (n_mo, n_occ)
+
+      real(dp), allocatable :: density_stack(:, :, :), potential_stack(:, :, :)
+      integer :: n_mo
+
+      n_mo = size(density, 1)
+      allocate (density_stack(n_mo, n_mo, 1), potential_stack(n_mo, n_occ, 1))
+      density_stack(:, :, 1) = density
+      call transformed_potential_many(a_block, b_block, n_occ, density_stack, potential_stack)
+      potential = potential_stack(:, :, 1)
+   end subroutine transformed_potential
+
+   subroutine transformed_potential_many(a_block, b_block, n_occ, densities, potentials)
+      !! `transformed_potential` for a stack of densities, as matrix products
+      !! over the whole stack
+      real(dp), intent(in), contiguous :: a_block(:, :, :, :)
+         !! (n_mo, n_occ, n_mo, n_occ): `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in), contiguous :: b_block(:, :, :, :)
+         !! (n_mo, n_mo, n_occ, n_occ): `(p q|r s)`, `r` and `s` occupied
+      integer, intent(in) :: n_occ
+      real(dp), intent(in), contiguous :: densities(:, :, :)
+         !! (n_mo, n_mo, n_set), each symmetric
+      real(dp), intent(out), contiguous :: potentials(:, :, :)   !! (n_mo, n_occ, n_set)
+
+      call potential_kernel(size(densities, 1), n_occ, size(densities, 3), a_block, b_block, &
+                            densities, potentials)
+   end subroutine transformed_potential_many
+
+   subroutine potential_kernel(n_mo, n_occ, n_set, a_block, b_block, densities, potentials)
+      !! `transformed_potential_many`, with explicit shapes so that slices of
+      !! the integral blocks go to BLAS as an element and a leading dimension
+      integer, intent(in) :: n_mo, n_occ, n_set
+      real(dp), intent(in) :: a_block(n_mo, n_occ, n_mo, n_occ)
+      real(dp), intent(in) :: b_block(n_mo, n_mo, n_occ, n_occ)
+      real(dp), intent(in) :: densities(n_mo, n_mo, n_set)
+      real(dp), intent(out) :: potentials(n_mo, n_occ, n_set)
+
+      real(dp), allocatable :: occupied(:, :), weight(:, :), coulomb(:, :)
+      real(dp), allocatable :: exchange(:, :, :), virtual(:, :, :), product(:, :)
+      integer :: m, n_virt, k, q, r, s, p
+
+      m = n_mo*n_occ
+      n_virt = n_mo - n_occ
+
+      ! Coulomb. As a matrix, `a_block` is `(p q|r s)` with rows `(p q)` and
+      ! columns `(r s)`. The block has only the second density index occupied;
+      ! a pair with the first index occupied is the same integral read the
+      ! other way round, so doubling the rows that are not occupied covers both.
+      allocate (occupied(m, n_set), weight(m, n_set), coulomb(m, n_set))
+      do k = 1, n_set
+         occupied(:, k) = reshape(densities(:, 1:n_occ, k), [m])
+         weight(:, k) = occupied(:, k)
+         do s = 1, n_occ
+            weight((s - 1)*n_mo + n_occ + 1:s*n_mo, k) = &
+               2.0_dp*weight((s - 1)*n_mo + n_occ + 1:s*n_mo, k)
+         end do
+      end do
+      call pic_dgemm_x("N", "N", m, n_set, m, 1.0_dp, a_block, m, weight, m, 0.0_dp, &
+                       coulomb, m)
+
+      ! Exchange, the half with both density indices in the occupied columns:
+      ! `b_block(:, :, :, q)` is `(p r|s q)` with columns `(r s)`.
+      allocate (exchange(n_mo, n_occ, n_set))
+      do q = 1, n_occ
+         call pic_dgemm_x("N", "N", n_mo, n_set, m, 1.0_dp, b_block(1, 1, 1, q), n_mo, &
+                          occupied, m, 0.0_dp, exchange(1, q, 1), n_mo*n_occ)
+      end do
+
+      ! Exchange, the half with a virtual second density index. Swapping the
+      ! density indices moves them to different slots of the integral, so it
+      ! comes from the other block: sum over occupied r and virtual s of
+      ! D_rs (s q|p r). The virtual rows of `a_block(:, :, :, r)` are a matrix
+      ! over `(q p)` with leading dimension `n_mo`.
+      if (n_virt > 0) then
+         allocate (virtual(n_virt, n_set, n_occ), product(m, n_set))
+         do r = 1, n_occ
+            do k = 1, n_set
+               virtual(:, k, r) = densities(r, n_occ + 1:n_mo, k)
+            end do
+         end do
+         do r = 1, n_occ
+            call pic_dgemm_x("T", "N", m, n_set, n_virt, 1.0_dp, a_block(n_occ + 1, 1, 1, r), &
+                             n_mo, virtual(1, 1, r), n_virt, 0.0_dp, product, m)
+            do k = 1, n_set
+               do p = 1, n_mo
+                  exchange(p, :, k) = exchange(p, :, k) + product((p - 1)*n_occ + 1:p*n_occ, k)
+               end do
+            end do
+         end do
+         deallocate (virtual, product)
+      end if
+
+      do k = 1, n_set
+         potentials(:, :, k) = reshape(coulomb(:, k), [n_mo, n_occ]) - 0.5_dp*exchange(:, :, k)
+      end do
+      deallocate (occupied, weight, coulomb, exchange)
+   end subroutine potential_kernel
 
    subroutine newton_step(hessian, gradient, rows, cols, escape, kappa, lowest, &
                           predicted, error)
