@@ -70,8 +70,8 @@ module mqc_czt_sa_hessian
    use mqc_czt_casci, only: active_space_integrals
    use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
                             rotation_parameters, rotation_matrix, &
-                            one_index_fock, transformed_potential, sa_density_matrices
-   use mqc_czt_mp2, only: transform_block
+                            one_index_fock, transformed_potential, sa_density_matrices, &
+                            mo_integral_blocks, fock_from_blocks
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_ci, only: absorb_one_electron, sigma_vector, ci_diagonal
    use mqc_rdm, only: active_space_rdms, transition_rdms
@@ -152,7 +152,6 @@ contains
       type(sa_hessian_t), intent(out) :: state
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: eri_packed(:, :)
       integer :: n_occ, j, l, p, q
 
       if (error%has_error()) return
@@ -200,16 +199,9 @@ contains
                                state%dm1_sa, state%dm2_sa, error)
       if (error%has_error()) return
 
-      call generalized_fock(mol, orbitals, n_inactive, n_active, state%dm1_sa, &
-                            state%dm2_sa, state%fock_sa, error)
-      if (error%has_error()) return
-
-      call mol%eris_packed(eri_packed)
-      call transform_block(eri_packed, orbitals, orbitals(:, 1:n_occ), orbitals, &
-                           orbitals(:, 1:n_occ), state%a_block)
-      call transform_block(eri_packed, orbitals, orbitals, orbitals(:, 1:n_occ), &
-                           orbitals(:, 1:n_occ), state%b_block)
-      deallocate (eri_packed)
+      call mo_integral_blocks(mol, orbitals, n_occ, state%a_block, state%b_block)
+      call fock_from_blocks(mol, orbitals, n_inactive, n_active, state%dm1_sa, state%dm2_sa, &
+                            state%a_block, state%b_block, state%fock_sa)
 
       call active_space_integrals(mol, orbitals, n_inactive, n_active, state%h_eff, &
                                   state%eri_act, state%core_energy, error)

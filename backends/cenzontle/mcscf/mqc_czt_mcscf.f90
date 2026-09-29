@@ -74,6 +74,9 @@ module mqc_czt_mcscf
    public :: subspace_of
    public :: rotation_parameters
    public :: orbital_hessian
+   public :: orbital_hessian_from_blocks
+   public :: mo_integral_blocks
+   public :: fock_from_blocks
    public :: run_czt_casscf
    public :: casscf_result_t
    public :: natural_orbitals
@@ -225,9 +228,10 @@ contains
    subroutine generalized_fock(mol, orbitals, n_inactive, n_active, dm1, dm2, &
                                fock, error)
       !! Build `F_mn`, and the inactive and active Fock matrices with it
-      ! TODO(mqc): calls `mol%eris_packed`, which recomputes the whole packed AO
-      ! integral list rather than caching it. `orbital_hessian` does the same,
-      ! so a CASSCF macro-iteration builds them twice.
+      ! TODO(mqc): calls `mol%eris_packed` for its (n u|v w) block and makes two
+      ! direct AO Fock builds. A caller that also needs the orbital Hessian
+      ! should use `mo_integral_blocks` and `fock_from_blocks` instead, as
+      ! `run_czt_casscf` does.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
       integer, intent(in) :: n_inactive, n_active
@@ -423,30 +427,43 @@ contains
       real(dp), allocatable, intent(out) :: hessian(:, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: eri_packed(:, :)
       real(dp), allocatable :: a_mo(:, :, :, :), b_mo(:, :, :, :)
+
+      if (error%has_error()) return
+      if (size(rows) == 0) then
+         allocate (hessian(0, 0))
+         return
+      end if
+      call mo_integral_blocks(mol, orbitals, n_inactive + n_active, a_mo, b_mo)
+      call orbital_hessian_from_blocks(a_mo, b_mo, n_inactive, n_active, dm1, dm2, fock, &
+                                       rows, cols, hessian)
+   end subroutine orbital_hessian
+
+   subroutine orbital_hessian_from_blocks(a_block, b_block, n_inactive, n_active, dm1, dm2, &
+                                          fock, rows, cols, hessian)
+      !! `orbital_hessian`, from MO integral blocks the caller already holds
+      real(dp), intent(in), contiguous :: a_block(:, :, :, :)
+         !! (n_mo, n_occ, n_mo, n_occ): `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in), contiguous :: b_block(:, :, :, :)
+         !! (n_mo, n_mo, n_occ, n_occ): `(p q|r s)`, `r` and `s` occupied
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in) :: dm1(:, :), dm2(:, :, :, :)
+      type(mcscf_fock_t), intent(in) :: fock
+      integer, intent(in) :: rows(:), cols(:)     !! From `rotation_parameters`
+      real(dp), allocatable, intent(out) :: hessian(:, :)
+
       real(dp), allocatable :: kappa_block(:, :, :), transformed(:, :, :)
-      integer :: n_mo, n_occ, n_param, k, l, k0, k1, nk
+      integer :: n_mo, n_param, k, l, k0, k1, nk
 
       integer, parameter :: COLUMN_BLOCK = 48
          !! Columns per `one_index_fock_many` call: enough that its products
          !! are matrix-matrix, small enough that one thread's stack of
          !! `(n_mo, n_mo)` matrices stays a few megabytes.
 
-      if (error%has_error()) return
-      n_mo = size(orbitals, 2)
-      n_occ = n_inactive + n_active
+      n_mo = size(a_block, 1)
       n_param = size(rows)
-
       allocate (hessian(n_param, n_param))
       if (n_param == 0) return
-
-      call mol%eris_packed(eri_packed)
-      call transform_block(eri_packed, orbitals, orbitals(:, 1:n_occ), orbitals, &
-                           orbitals(:, 1:n_occ), a_mo)
-      call transform_block(eri_packed, orbitals, orbitals, orbitals(:, 1:n_occ), &
-                           orbitals(:, 1:n_occ), b_mo)
-      deallocate (eri_packed)
 
       !$omp parallel do schedule(dynamic) default(shared) &
       !$omp    private(k0, k1, nk, k, l, kappa_block, transformed)
@@ -459,7 +476,7 @@ contains
             kappa_block(rows(k), cols(k), k - k0 + 1) = 1.0_dp
             kappa_block(cols(k), rows(k), k - k0 + 1) = -1.0_dp
          end do
-         call one_index_fock_many(a_mo, b_mo, fock, dm1, dm2, n_inactive, n_active, &
+         call one_index_fock_many(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
                                   kappa_block, transformed)
          do k = k0, k1
             do l = 1, n_param
@@ -476,9 +493,103 @@ contains
       ! distinguishes differentiating the gradient from differentiating the
       ! energy twice, which this average removes.
       hessian = 0.5_dp*(hessian + transpose(hessian))
+   end subroutine orbital_hessian_from_blocks
 
-      deallocate (a_mo, b_mo)
-   end subroutine orbital_hessian
+   subroutine mo_integral_blocks(mol, orbitals, n_occ, a_block, b_block)
+      !! The two MO integral blocks the orbital Hessian and the generalised
+      !! Fock matrix are built from, from one pass over the AO integrals
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: a_block(:, :, :, :)
+         !! (n_mo, n_occ, n_mo, n_occ): `(p q|r s)`, `q` and `s` occupied
+      real(dp), allocatable, intent(out) :: b_block(:, :, :, :)
+         !! (n_mo, n_mo, n_occ, n_occ): `(p q|r s)`, `r` and `s` occupied
+
+      real(dp), allocatable :: eri_packed(:, :)
+
+      call mol%eris_packed(eri_packed)
+      call transform_block(eri_packed, orbitals, orbitals(:, 1:n_occ), orbitals, &
+                           orbitals(:, 1:n_occ), a_block)
+      call transform_block(eri_packed, orbitals, orbitals, orbitals(:, 1:n_occ), &
+                           orbitals(:, 1:n_occ), b_block)
+   end subroutine mo_integral_blocks
+
+   subroutine fock_from_blocks(mol, orbitals, n_inactive, n_active, dm1, dm2, a_block, &
+                               b_block, fock)
+      !! `generalized_fock`, from the MO integral blocks instead of direct AO
+      !! Fock builds
+      !!
+      !! `FI = h + sum_i [2 (pq|ii) - (pi|qi)]` and
+      !! `FA = sum_tu D_tu [(pq|tu) - (pt|qu)/2]` over every orbital pair, and
+      !! `(n u|v w)` is a slice of `a_block`.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)      !! (n_ao, n_mo)
+      integer, intent(in) :: n_inactive, n_active
+      real(dp), intent(in) :: dm1(:, :)           !! Active one-particle density
+      real(dp), intent(in) :: dm2(:, :, :, :)     !! Active two-particle density
+      real(dp), intent(in) :: a_block(:, :, :, :)
+         !! (n_mo, n_occ, n_mo, n_occ): `(p q|r s)`, `q` and `s` occupied
+      real(dp), intent(in) :: b_block(:, :, :, :)
+         !! (n_mo, n_mo, n_occ, n_occ): `(p q|r s)`, `r` and `s` occupied
+      type(mcscf_fock_t), intent(out) :: fock
+
+      real(dp), allocatable :: h_ao(:, :), work(:, :)
+      real(dp) :: accumulated
+      integer :: n_ao, n_mo, n_occ, i, t, u, v, w, n, ta, ua
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      n_occ = n_inactive + n_active
+
+      call mol%core_hamiltonian(h_ao)
+      allocate (fock%inactive(n_mo, n_mo), fock%active(n_mo, n_mo), work(n_ao, n_mo))
+      call pic_gemm(h_ao, orbitals, work)
+      call pic_gemm(orbitals, work, fock%inactive, transa="T")
+      do i = 1, n_inactive
+         fock%inactive = fock%inactive + 2.0_dp*b_block(:, :, i, i) - a_block(:, i, :, i)
+      end do
+
+      fock%active = 0.0_dp
+      do u = 1, n_active
+         ua = n_inactive + u
+         do t = 1, n_active
+            ta = n_inactive + t
+            fock%active = fock%active + dm1(t, u)*(b_block(:, :, ta, ua) &
+                                                   - 0.5_dp*a_block(:, ta, :, ua))
+         end do
+      end do
+
+      allocate (fock%general(n_mo, n_mo), fock%occupation(n_mo))
+      fock%general = 0.0_dp
+      fock%occupation = 0.0_dp
+
+      do i = 1, n_inactive
+         fock%occupation(i) = 2.0_dp
+         do n = 1, n_mo
+            fock%general(i, n) = 2.0_dp*(fock%inactive(n, i) + fock%active(n, i))
+         end do
+      end do
+
+      do t = 1, n_active
+         fock%occupation(n_inactive + t) = dm1(t, t)
+         do n = 1, n_mo
+            accumulated = 0.0_dp
+            do u = 1, n_active
+               accumulated = accumulated + dm1(t, u)*fock%inactive(n, n_inactive + u)
+            end do
+            do w = 1, n_active
+               do v = 1, n_active
+                  do u = 1, n_active
+                     accumulated = accumulated + dm2(t, u, v, w)* &
+                                   a_block(n, n_inactive + u, n_inactive + v, n_inactive + w)
+                  end do
+               end do
+            end do
+            fock%general(n_inactive + t, n) = accumulated
+         end do
+      end do
+   end subroutine fock_from_blocks
 
    subroutine one_index_fock(a_block, b_block, fock, dm1, dm2, n_inactive, n_active, &
                              kappa, transformed)
@@ -887,6 +998,7 @@ contains
       type(casci_result_t) :: ci, trial_ci
       type(mcscf_fock_t) :: fock
       type(link_table_t) :: alpha, beta
+      real(dp), allocatable :: a_mo(:, :, :, :), b_mo(:, :, :, :)
       real(dp), allocatable :: current(:, :), updated(:, :)
       real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
       real(dp), allocatable :: gradient(:, :), hessian(:, :), kappa(:, :), rotation(:, :)
@@ -1017,8 +1129,10 @@ contains
          end if
          if (error%has_error()) return
 
-         call generalized_fock(mol, current, n_inactive, n_active, dm1, dm2, fock, error)
-         if (error%has_error()) return
+         ! One AO integral pass per macro-iteration: the generalised Fock
+         ! matrix and the Hessian are both read out of these blocks.
+         call mo_integral_blocks(mol, current, n_inactive + n_active, a_mo, b_mo)
+         call fock_from_blocks(mol, current, n_inactive, n_active, dm1, dm2, a_mo, b_mo, fock)
          if (allocated(gradient)) deallocate (gradient)
          if (restricted) then
             call orbital_gradient(fock, n_inactive, n_active, gradient, subspaces)
@@ -1032,9 +1146,9 @@ contains
          ! still a zero gradient.
          if (allocated(hessian)) deallocate (hessian)
          if (allocated(kappa)) deallocate (kappa)
-         call orbital_hessian(mol, current, n_inactive, n_active, dm1, dm2, fock, &
-                              rows, cols, hessian, error)
-         if (error%has_error()) return
+         call orbital_hessian_from_blocks(a_mo, b_mo, n_inactive, n_active, dm1, dm2, fock, &
+                                          rows, cols, hessian)
+         deallocate (a_mo, b_mo)
          call newton_step(hessian, gradient, rows, cols, MAX_ROTATION, kappa, &
                           lowest, predicted, error)
          if (error%has_error()) return
