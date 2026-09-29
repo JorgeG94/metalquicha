@@ -291,14 +291,60 @@ Hamiltonian shifted by that state's own energy, scaled by its weight, and
 talks to itself through this block; the Hessian couples states only through
 the orbital-CI block below and through the redundancy projector).
 
-**Orbital-CI coupling.** The mixed second derivative
-:math:`\partial^2 E_{SA}/\partial\kappa\,\partial c_J`, weighted by :math:`w_J`
-and summed over :math:`J`. This is the one block with no existing mqc
-counterpart at all: it is what ``one_index_fock`` becomes when *one* of the
-transformed quantities is a transition density between :math:`c_J` and a CI
-trial vector rather than a one-index-rotated density -- i.e. it needs
-transition RDMs (phase 2) composed with the ``one_index_fock``-style
-machinery (phase 3).
+**Orbital-CI coupling (into the orbital output, from** :math:`x_J`\ **).** The
+mixed second derivative :math:`\partial^2 E_{SA}/\partial\kappa\,\partial c_J`,
+weighted by :math:`w_J` and summed over :math:`J`. **Not**
+``one_index_fock`` -- that routine differentiates a Fock built at a *fixed*
+density along an *additional* rotation :math:`\kappa`, which is the
+orbital-orbital block's question, not this one. This block instead
+differentiates the *density* at fixed :math:`\kappa = 0`: since
+:math:`D_{SA}(\{c_J\}) = \sum_J w_J D_J(c_J)` and
+:math:`\partial D_J/\partial x_J` is exactly the symmetrised transition
+density between :math:`c_J` and the trial vector :math:`x_J` (``transition_rdms``,
+phase 2), the same linearity of ``generalized_fock``/``orbital_gradient`` in
+:math:`(D, d)` used for the SA gradient applies again: this block is
+``orbital_gradient`` of ``generalized_fock`` fed that transition density,
+weighted by :math:`w_J`, summed over :math:`J` -- no differentiation along
+:math:`\kappa` anywhere in it. (``mqc_czt_sa_hessian.f90``'s
+``cheap_generalized_fock`` reuses ``a_block``/``b_block``/the inactive Fock
+instead of a fresh AO pass; see its ``delta_only`` flag below.)
+
+**CI-orbital (into the CI output, from** :math:`\kappa`\ **).** The same mixed
+derivative read the other way: :math:`2 w_J\,(H[\kappa] - \langle
+c_J|H[\kappa]|c_J\rangle)\,c_J`, with :math:`H[\kappa]` the active-space
+Hamiltonian's *own* one-index transform along :math:`\kappa` -- ``h_eff`` and
+``eri_act`` (``active_space_integrals``) differentiated, not the generalised
+Fock. Built by ``one_index_active_hamiltonian``, folded with the existing
+``absorb_one_electron`` (linear, so folding the derivative is the derivative
+of the folded tensor) and applied with the existing ``sigma_vector``.
+
+**A trap worth naming, because it cost a wrong first version of this block.**
+``h_eff`` (`active_space_integrals`) is *already* the active-active block of
+the *whole* inactive Fock, :math:`C_{\text{active}}^T\,(h_{ao} +
+J(D_{\text{inactive}}) - K(D_{\text{inactive}})/2)\,C_{\text{active}}` -- not
+a bare one-electron integral with the mean field added on top as a second,
+separate term. Differentiating a *separate* ``C^T h_{ao} C`` commutator in
+addition to the inactive Fock's own one-index transform double-counts the
+:math:`h_{ao}` piece, which is already inside that Fock's commutator (`h_ao`
+does not depend on the inactive density, so it needs no potential term of its
+own, but its re-expression in rotating orbitals is not a separate event from
+the whole Fock's). The finite-difference gate this document specifies is
+exactly what catches it -- ``test_one_index_active_hamiltonian`` in
+``test/test_mqc_sa_hessian.f90`` checks ``dh_eff``/``deri_act`` against a
+central difference of ``active_space_integrals`` directly, isolated from the
+folding/sigma/projection around it.
+
+**A second trap, in the orbital-CI direction above.** ``generalized_fock`` is
+*affine*, not linear, in :math:`(D, d)`: its inactive row is :math:`2(F_I +
+F_A(D))`, and :math:`F_I` does not depend on the density fed in at all, so it
+survives even at :math:`D = d = 0`. That is exactly right for a genuine
+state's density (which is what makes the SA-averaging identity work: weights
+summing to one preserve the shared :math:`F_I` term correctly), and exactly
+wrong for a *transition* density, which is a perturbation rather than a state
+and whose own derivative through the orbital-independent :math:`F_I` constant
+is zero. ``cheap_generalized_fock``'s ``delta_only`` flag drops that constant
+for exactly this call; caught by the orbital-orbital gate (below) reporting a
+spurious non-zero orbital output at zero CI input.
 
 **Redundancy projection.** With equal weights, :math:`E_{SA}` is the trace of
 :math:`H` over :math:`\mathrm{span}\{c_1,\dots,c_N\}`, so rotations that mix
@@ -594,19 +640,61 @@ against the ket's rather than a vector against itself. Gate: ``bra = ket``
 reproduces ``active_space_rdms`` bit for bit; orthogonal states give trace
 zero; compare against PySCF's ``trans_rdm12``.
 
-Phase 3 -- matrix-free SA Hessian-vector product
-----------------------------------------------------
+Phase 3 -- matrix-free SA Hessian-vector product [done]
+----------------------------------------------------------
 
-New module (proposed ``mqc_czt_sa_hessian.f90``), building the HVP described
-above: orbital-orbital block via ``one_index_fock`` at SA densities (reuse
-unchanged), orbital-CI coupling via ``one_index_fock``-style transforms fed a
-transition density from phase 2, CI-CI block via the existing
-``sigma_operator_t``/Davidson machinery in ``mqc_ci``/``mqc_davidson.f90``
-(the :math:`(H-E_J)` action is exactly what a sigma build already computes),
-and the redundancy projector exactly as read out of PySCF's ``project_Aop``
-above. Gate: the orbital block matches ``orbital_hessian`` (at SA densities) on
-random vectors; the full HVP matches a finite difference of the SA gradient
-(orbital+CI) to about :math:`10^{-7}`.
+``mqc_czt_sa_hessian.f90``, building the HVP described above. A joint flat
+parameter vector ``[kappa (n_rot) ; x_1 (n_det) ; ... ; x_N (n_det)]``, one
+``sa_hessian_t`` built once (``build_sa_hessian``) off a converged SA-CASSCF
+result -- ``a_block``/``b_block``, the SA generalised Fock, the folded active
+Hamiltonian and the CI diagonal, all reused rather than rebuilt per
+application. Orbital-orbital via ``one_index_fock`` at the SA densities
+(reused, unchanged); CI-CI via the existing ``sigma_vector``/
+``absorb_one_electron`` machinery; orbital-CI **not** via ``one_index_fock``
+as first planned but via ``generalized_fock``/``orbital_gradient`` fed a
+symmetrised transition density (see the corrected "Orbital-CI coupling"
+section above); CI-orbital via a new ``one_index_active_hamiltonian``,
+differentiating ``h_eff``/``eri_act`` themselves along :math:`\kappa`. The
+redundancy projector is PySCF's ``project_Aop``, applied to both the input and
+the output of every CI block, plus a plain
+:math:`v \to (v + v^T)/2` in place of ``symmetrize_singlet_vector`` (the same
+identity for a square array, so no export from ``mqc_davidson`` was needed
+after all).
+
+Two bugs were found only by the finite-difference gate, both recorded above
+where they belong (the double-counted bare integral, and the affine-vs-linear
+``generalized_fock`` trap) -- the reason this document calls the gate
+load-bearing rather than a formality.
+
+**Gates, on LiH/STO-3G SA-2-CAS(2,2), gradient_tol** :math:`10^{-10}`:
+orbital-orbital block vs ``orbital_hessian`` at the SA densities, and again at
+:math:`n_{states}=1`, to :math:`10^{-10}` relative, on a random (not unit)
+rotation; the full HVP symmetric to :math:`10^{-10}`; the explicit
+:math:`19\times 19` Hessian's null space exactly
+:math:`n_{states}(n_{states} + n_a(n_a-1)/2)` near-zero eigenvalues (state
+mixing, **plus** the antisymmetric-CI directions this parametrisation's own
+singlet symmetrisation excludes by construction -- not :math:`n_{states}^2`
+alone, which undercounts by the antisymmetric term whenever the active space
+has more than one determinant per spin) and every other eigenvalue positive;
+the full HVP vs central difference (:math:`h=10^{-4}`) of ``sa_gradient``,
+orbital-only/CI-only/mixed directions, :math:`3\times 10^{-10}` to
+:math:`3\times 10^{-8}` relative -- **the finite-difference side must itself be
+projected** onto the complement of every reference state before comparing:
+PySCF's ``project_Aop`` gauge is a convention the raw ``sa_gradient`` does not
+itself impose, so a component of the true derivative along another state is
+real but gauge-dependent, and comparing an un-gauge-fixed finite difference
+against the gauge-fixed analytic HVP is comparing two different (if both
+individually correct) objects.
+
+Cost of the new CI-orbital block, per state per :math:`\kappa` vector: no
+fresh AO integral pass at all -- :math:`O(n_{active}^4\,n_{mo})` to build
+``dh_eff``/``deri_act`` from the already-held ``a_block``/``b_block`` (a strict
+subset of what one ``one_index_fock`` call already costs, since the outer
+index is restricted from every MO to the active range alone), plus one
+ordinary CI sigma build to apply the folded result. The orbital-CI block costs
+one ``transition_rdms`` pair and one ``cheap_generalized_fock``/
+``orbital_gradient`` pair per state, all off ``a_block``/``b_block`` rather
+than a fresh Fock build.
 
 Phase 4 -- single-root gradient via Z-vector
 ------------------------------------------------

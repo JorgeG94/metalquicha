@@ -203,6 +203,24 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_sa_casscf)
   target_link_libraries(test_mqc_sa_casscf PRIVATE cint_fortran cint)
 
+  # Matrix-free SA-CASSCF Hessian-vector product (phase 3).
+  addtest(mqc_sa_hessian)
+  target_link_libraries(test_mqc_sa_hessian PRIVATE cint_fortran cint)
+
+  # Same HVP, but on a CI space with more than one non-redundant direction per
+  # state (LiH/6-31G CAS(4,4) SA-3), which the CAS(2,2) case above cannot
+  # exercise.
+  addtest(mqc_sa_hessian_multistate)
+  target_link_libraries(test_mqc_sa_hessian_multistate PRIVATE cint_fortran
+                                                               cint)
+
+  # The same system's explicit dense Hessian and its eigenvalues -- correct, but
+  # 136 unit-vector applies, slow enough next to the routine suite to be long
+  # rather than routine.
+  addlongtest(mqc_sa_hessian_redundancy_long)
+  target_link_libraries(test_mqc_sa_hessian_redundancy_long PRIVATE cint_fortran
+                                                                    cint)
+
   # `incremental_fock` changes no number the SCF reports, so it is tested by the
   # count of full Fock builds rather than by timing -- see the module's own note
   # for the measurements that ruled timing out.
