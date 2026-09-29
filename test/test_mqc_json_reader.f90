@@ -99,6 +99,7 @@ contains
                   new_unittest("cc_spin_adapted_keyword", test_cc_spin_adapted), &
                   new_unittest("mcscf_keywords", test_mcscf_keywords), &
                   new_unittest("mcscf_state_averaging", test_mcscf_state_averaging), &
+                  new_unittest("mcscf_gradient_roots", test_mcscf_gradient_roots), &
                   new_unittest("casci_spelling_fixes_the_orbitals", test_casci_spelling), &
                   new_unittest("backend_keyword", test_backend_keyword), &
                   new_unittest("system_gpu_keyword", test_gpu_keyword), &
@@ -2196,6 +2197,95 @@ contains
       call check(error, parse_error%has_error(), &
                  "a negative weight must be refused")
    end subroutine test_mcscf_state_averaging
+
+   subroutine test_mcscf_gradient_roots(error)
+      !! keywords.mcscf.gradient_roots: "all", an explicit list, or absent
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      ! Absent: unallocated, meaning every state.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%mcscf_gradient_roots), &
+                 "an absent gradient_roots key should stay unallocated")
+      if (allocated(error)) return
+
+      ! The string "all" resolves the same way as absent.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": "all"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%mcscf_gradient_roots), &
+                 "'all' should resolve to unallocated, same as absent")
+      if (allocated(error)) return
+
+      ! An explicit list of 1-based roots.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": [1, 3]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%mcscf_gradient_roots), &
+                 "an explicit gradient_roots list should be read")
+      if (allocated(error)) return
+      call check(error, size(config%mcscf_gradient_roots), 2)
+      if (allocated(error)) return
+      call check(error, config%mcscf_gradient_roots(1), 1)
+      if (allocated(error)) return
+      call check(error, config%mcscf_gradient_roots(2), 3)
+      if (allocated(error)) return
+
+      ! Any other string is refused.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": "none"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a string other than 'all' must be refused")
+      if (allocated(error)) return
+
+      ! A root outside 1..n_states is refused.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": [0, 2]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "root 0 is out of range (roots are 1-based)")
+      if (allocated(error)) return
+
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": [1, 4]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "root 4 is out of range when only 3 states are averaged")
+      if (allocated(error)) return
+
+      ! A duplicated root is refused.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": [1, 1]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a duplicated root must be refused")
+      if (allocated(error)) return
+
+      ! An empty list is refused.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 3, "gradient_roots": []}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an empty gradient_roots list must be refused")
+   end subroutine test_mcscf_gradient_roots
 
    subroutine test_casci_spelling(error)
       !! "casci" and "casscf" are one method type and differ by this boolean

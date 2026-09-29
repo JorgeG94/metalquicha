@@ -38,13 +38,18 @@ module mqc_czt_mcscf_gradient
    !! closed-shell gradient.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_integrals, only: czt_molecule_t, shell_dim, atom_ao_blocks
+   use mqc_czt_integrals, only: czt_molecule_t, shell_dim, atom_ao_blocks, max_block, &
+                                eri_grad_dispatch_t, build_eri_grad_dispatch, &
+                                two_electron_ip1_block
    use mqc_czt_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                iprinv_deriv_at, two_electron_deriv, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_mp2_gradient, only: two_electron_mp2_terms
    use mqc_czt_mcscf, only: generalized_fock, mcscf_fock_t
    use pic_blas_interfaces, only: pic_gemm
+   use libcint_fortran, only: libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
+                              libcint_del_optimizer
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
 
@@ -56,6 +61,14 @@ module mqc_czt_mcscf_gradient
       !! contraction, fed the one-index-transformed cumulant (`deri_act`) and,
       !! one leg at a time, the kappa-bar-rotated coefficient matrix rather than
       !! `c_active` on every leg -- the optional `c2`/`c3`/`c4` arguments below.
+   public :: active_two_electron_gradient_response
+      !! Exposed for `mqc_czt_sa_gradient`: the sum of the four one-index-
+      !! transformed legs `active_two_electron_gradient` would otherwise take
+      !! four separate derivative-integral sweeps to add up, built here as one.
+   public :: gamma_block   !! Exposed for `mqc_czt_sa_gradient`'s cross-root fusion
+   public :: active_two_electron_gradient_many
+      !! Exposed for `mqc_czt_sa_gradient`: several roots' AO Gamma tensors,
+      !! contracted against the same derivative integrals in one sweep.
 
    real(dp), parameter :: BLOCK_TARGET = 2.0e8_dp
       !! Bytes the first-index block of the AO two-particle density may reach, so
@@ -315,6 +328,80 @@ contains
       deallocate (dummy_vhf1, hf_density)
    end subroutine active_two_electron_gradient
 
+   subroutine active_two_electron_gradient_response(mol, c_active, cbar_active, dm2, &
+                                                    gradient, error)
+      !! The sum of the four one-index-transformed legs of `dm2` -- `cbar_active`
+      !! on exactly one leg at a time, `c_active` on the other three -- added
+      !! into `gradient` from **one** sweep over the derivative integrals
+      !! rather than the four `active_two_electron_gradient` calls that sum
+      !! (linearity of the contraction) would otherwise repeat: each of those
+      !! four AO Gamma tensors is cheap to build (`gamma_block`'s four gemms
+      !! are bounded by `n_active`), and it is the shell-quartet loop that
+      !! costs, so building all four and summing them before that loop turns
+      !! four sweeps into one.
+      !!
+      !! `orbital_response_gradient`'s own docstring has the physics; this is
+      !! its four `active_two_electron_gradient` calls fused.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: c_active(:, :)       !! (n_ao, n_active)
+      real(dp), intent(in) :: cbar_active(:, :)    !! (n_ao, n_active)
+      real(dp), intent(in) :: dm2(:, :, :, :)
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: gamma_blk(:, :, :, :), leg_blk(:, :, :, :), eri_blk(:, :, :, :)
+      real(dp), allocatable :: dummy_vhf1(:, :, :, :), hf_density(:, :)
+      integer :: n_ao, ish, ish_lo, ish_hi, p_lo, p_hi, np, per_block
+
+      if (error%has_error()) return
+      n_ao = size(c_active, 1)
+
+      allocate (dummy_vhf1(1, 1, 1, 1), hf_density(n_ao, n_ao))
+      dummy_vhf1 = 0.0_dp
+      hf_density = 0.0_dp
+
+      per_block = max(1, int(BLOCK_TARGET/(2.0_dp*real(n_ao, dp)**3*8.0_dp)))
+
+      ish_lo = 1
+      do while (ish_lo <= mol%nbas)
+         p_lo = mol%shell_offset(ish_lo) + 1
+         ish_hi = ish_lo
+         do ish = ish_lo, mol%nbas
+            p_hi = mol%shell_offset(ish) + shell_dim(mol%cartesian, ish - 1, mol%bas)
+            if (ish > ish_lo .and. p_hi - p_lo + 1 > per_block) exit
+            ish_hi = ish
+         end do
+         p_hi = mol%shell_offset(ish_hi) + shell_dim(mol%cartesian, ish_hi - 1, mol%bas)
+         np = p_hi - p_lo + 1
+
+         call gamma_block(cbar_active, dm2, p_lo, p_hi, gamma_blk, c2=c_active, c3=c_active, &
+                          c4=c_active)
+         call gamma_block(c_active, dm2, p_lo, p_hi, leg_blk, c2=cbar_active, c3=c_active, &
+                          c4=c_active)
+         gamma_blk = gamma_blk + leg_blk
+         deallocate (leg_blk)
+         call gamma_block(c_active, dm2, p_lo, p_hi, leg_blk, c2=c_active, c3=cbar_active, &
+                          c4=c_active)
+         gamma_blk = gamma_blk + leg_blk
+         deallocate (leg_blk)
+         call gamma_block(c_active, dm2, p_lo, p_hi, leg_blk, c2=c_active, c3=c_active, &
+                          c4=cbar_active)
+         gamma_blk = gamma_blk + leg_blk
+         deallocate (leg_blk)
+
+         allocate (eri_blk(np, n_ao, n_ao, n_ao))
+         eri_blk = 0.0_dp
+         call two_electron_mp2_terms(mol, gamma_blk, hf_density, gradient, dummy_vhf1, &
+                                     ish_lo=ish_lo, ish_hi=ish_hi, &
+                                     p_offset=p_lo - 1, eri_blk=eri_blk, &
+                                     with_gamma=.true., with_reference=.false.)
+         deallocate (eri_blk, gamma_blk)
+         ish_lo = ish_hi + 1
+      end do
+
+      deallocate (dummy_vhf1, hf_density)
+   end subroutine active_two_electron_gradient_response
+
    subroutine gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk, c2, c3, c4)
       !! `ddm2` transformed to the AO basis over one range of the first index
       !!
@@ -384,5 +471,136 @@ contains
       nullify (src, dst, leg2, leg3, leg4)
       deallocate (buf1, buf2)
    end subroutine gamma_block
+
+   subroutine active_two_electron_gradient_many(mol, gamma_stack, ish_lo, ish_hi, p_offset, &
+                                                gradients, error)
+      !! `active_two_electron_gradient`'s derivative-integral contraction, for
+      !! a stack of `n_root` AO Gamma tensors sharing one first-index block
+      !! (`ish_lo..ish_hi`, offset `p_offset` into the AO numbering), each
+      !! contracted against the SAME shell quartet's derivative integral in
+      !! one sweep
+      !!
+      !! What costs in this loop is generating a shell quartet's derivative
+      !! integral (`two_electron_ip1_block`, unscreened -- there is no cheap
+      !! bound on a general four-index density the way there is for a
+      !! symmetric one-particle one), not dotting it with an extra density;
+      !! stacking `n_root` Gamma tensors here divides that generation cost by
+      !! `n_root` instead of repeating it, which is what
+      !! `mqc_czt_sa_gradient`'s cross-root fusion needs.
+      !!
+      !! `gamma_stack` is one `gamma_block`-shaped block per root; the caller
+      !! (`mqc_czt_sa_gradient`) sums each root's own pieces -- the base
+      !! cumulant, the orbital-response leg sum
+      !! (`active_two_electron_gradient_response`'s own Gamma), the
+      !! CI-response transition density -- into one Gamma per root before
+      !! calling this.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: gamma_stack(:, :, :, :, :)   !! (np, n_ao, n_ao, n_ao, n_root)
+      integer, intent(in) :: ish_lo, ish_hi   !! The first index's shell range
+      integer, intent(in) :: p_offset          !! `gamma_stack`'s first index, minus this
+      real(dp), intent(inout) :: gradients(:, :, :)   !! (3, natm, n_root), accumulated into
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: buf(:)
+      real(dp), allocatable :: de_local(:, :, :)
+      integer, allocatable :: offsets(:), counts(:), shell_atom(:)
+      type(c_ptr) :: opt
+      type(eri_grad_dispatch_t) :: disp
+      integer :: shls(4)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: io, jo, ko, lo, i, j, k, l, comp, idx
+      integer :: nao, nbas, natm, ia, iroot, n_root, mx
+
+      if (error%has_error()) return
+      nao = mol%nao
+      nbas = mol%nbas
+      natm = mol%natm
+      n_root = size(gamma_stack, 5)
+      mx = max_block(mol)
+
+      allocate (offsets(natm), counts(natm))
+      call atom_ao_blocks(mol, offsets, counts)
+      allocate (shell_atom(nbas))
+      do ish = 1, nbas
+         io = mol%shell_offset(ish)
+         shell_atom(ish) = 1
+         do ia = 1, natm
+            if (io >= offsets(ia) .and. io < offsets(ia) + counts(ia)) shell_atom(ish) = ia
+         end do
+      end do
+
+      opt = c_null_ptr
+      call build_eri_grad_dispatch(mol%bas, nbas, disp)
+      if (mol%cartesian) then
+         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
+      else
+         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
+      end if
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, gamma_stack, gradients, opt, mx, nao, nbas, natm, disp, &
+      !$omp           shell_atom, ish_lo, ish_hi, p_offset, n_root) &
+      !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, comp, idx, shls, ia, buf, de_local, iroot)
+      allocate (buf(mx**4*3))
+      allocate (de_local(3, natm, n_root))
+      de_local = 0.0_dp
+
+      !$omp do collapse(2) schedule(dynamic)
+      do ish = ish_lo, ish_hi
+         do jsh = 1, nbas
+            di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+            io = mol%shell_offset(ish)
+            ia = shell_atom(ish)
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            do ksh = 1, nbas
+               dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
+               ko = mol%shell_offset(ksh)
+               do lsh = 1, ksh
+                  dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
+                  lo = mol%shell_offset(lsh)
+                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+
+                  if (.not. two_electron_ip1_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                                   mol%bas, nbas, mol%env, opt, disp)) cycle
+
+                  do comp = 1, 3
+                     do l = 1, dl
+                        do k = 1, dk
+                           do j = 1, dj
+                              do i = 1, di
+                                 idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
+                                 do iroot = 1, n_root
+                                    de_local(comp, ia, iroot) = de_local(comp, ia, iroot) &
+                                                                - 2.0_dp*buf(idx)*gamma_stack(io + i - p_offset, jo + j, &
+                                                                                              ko + k, lo + l, iroot)
+                                    if (lsh /= ksh) then
+                                       de_local(comp, ia, iroot) = de_local(comp, ia, iroot) &
+                                                                   - 2.0_dp*buf(idx)*gamma_stack(io + i - p_offset, &
+                                                                                                 jo + j, lo + l, ko + k, &
+                                                                                                 iroot)
+                                    end if
+                                 end do
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+
+      !$omp critical
+      gradients = gradients + de_local
+      !$omp end critical
+      deallocate (buf, de_local)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+      deallocate (offsets, counts, shell_atom)
+   end subroutine active_two_electron_gradient_many
 
 end module mqc_czt_mcscf_gradient

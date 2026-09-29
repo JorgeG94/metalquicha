@@ -364,6 +364,11 @@ contains
          allocate (m%options%state_weights(size(config%mcscf%state_weights)))
          m%options%state_weights = config%mcscf%state_weights
       end if
+      if (allocated(config%mcscf%gradient_roots)) then
+         if (allocated(m%options%gradient_roots)) deallocate (m%options%gradient_roots)
+         allocate (m%options%gradient_roots(size(config%mcscf%gradient_roots)))
+         m%options%gradient_roots = config%mcscf%gradient_roots
+      end if
 
       ! Convergence
       m%options%max_macro_iter = config%mcscf%max_macro_iter
