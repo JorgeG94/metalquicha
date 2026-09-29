@@ -15,6 +15,7 @@ module test_mqc_sa_casscf
    !! see `tools/sa_casscf/pyscf_ref.py`. `SA_CASSCF_GRADIENT_PLAN.md`'s
    !! progress log carries the same two numbers.
    use testdrive, only: new_unittest, unittest_type, error_type, check
+   use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
@@ -124,49 +125,52 @@ contains
       !! solved, the densities are built and the objective is read. This test
       !! checks that `n_states = 1` takes the single-state operations.
       !!
-      !! The threshold is `1e-9`, not exactly zero: two separate calls to the
-      !! *same* code path already scatter by ~5e-10 under OpenMP, because a
-      !! threaded reduction's merge order is not fixed run to run (see this
-      !! repository's own note on that). That noise has nothing to do with
-      !! `n_states`, so asking for literal bit-identity here would be testing
-      !! the thread count rather than the dispatch. `1e-9` is ten orders of
-      !! magnitude tighter than the `1e-8` a converged energy is judged by
-      !! elsewhere, which is as close to "no bit changes" as a threaded build
-      !! can promise.
+      !! At one thread, since a threaded reduction's merge order, and so the
+      !! last bits, is not fixed from run to run.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       type(czt_molecule_t) :: mol
       real(dp), allocatable :: orbitals(:, :)
       type(casscf_result_t) :: plain, with_n_states
       real(dp), parameter :: ONE_WEIGHT(1) = [1.0_dp]
+      integer :: threads
 
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
       call lih_reference(mol, orbitals, err)
       call check(error,.not. err%has_error(), "the reference SCF should converge")
-      if (allocated(error)) return
+      if (allocated(error)) then
+         call omp_set_num_threads(threads)
+         return
+      end if
 
       call run_czt_casscf(mol, orbitals, 1, 2, 1, 1, plain, err, &
                           max_iterations=300, gradient_tol=1.0e-10_dp)
       call check(error,.not. err%has_error(), "the plain path should not error")
-      if (allocated(error)) return
+      if (allocated(error)) then
+         call omp_set_num_threads(threads)
+         return
+      end if
 
       call run_czt_casscf(mol, orbitals, 1, 2, 1, 1, with_n_states, err, &
                           max_iterations=300, gradient_tol=1.0e-10_dp, &
                           n_states=1, weights=ONE_WEIGHT)
+      call omp_set_num_threads(threads)
       call mol%destroy()
       call check(error,.not. err%has_error(), "n_states=1 should not error")
       if (allocated(error)) return
 
-      call check(error, with_n_states%energy, plain%energy, &
-                 "n_states=1 reproduces the plain path", thr=1.0e-9_dp)
+      call check(error, with_n_states%energy == plain%energy, &
+                 "n_states=1 reproduces the plain path's energy bit for bit")
       if (allocated(error)) return
-      call check(error, with_n_states%gradient_norm, plain%gradient_norm, &
-                 "n_states=1 reproduces the plain path's gradient norm", thr=1.0e-9_dp)
+      call check(error, with_n_states%gradient_norm == plain%gradient_norm, &
+                 "n_states=1 reproduces the plain path's gradient norm bit for bit")
       if (allocated(error)) return
       call check(error, with_n_states%iterations, plain%iterations, &
                  "n_states=1 takes the same macro-iterations")
       if (allocated(error)) return
-      call check(error, maxval(abs(with_n_states%orbitals - plain%orbitals)), 0.0_dp, &
-                 "n_states=1 reproduces the plain path's orbitals", thr=1.0e-9_dp)
+      call check(error, all(with_n_states%orbitals == plain%orbitals), &
+                 "n_states=1 reproduces the plain path's orbitals bit for bit")
    end subroutine test_n_states_one_matches_plain
 
    subroutine test_singlet_selection(error)
