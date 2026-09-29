@@ -61,8 +61,10 @@ module mqc_fragment_capabilities
          !! would count dispersion twice.
       logical :: dispersion = .false.
          !! Empirical dispersion runs alongside this method under this
-         !! scheme. False for every method: where D3/D4 belongs under FMO is
-         !! not settled.
+         !! scheme, added to every fragment and n-mer as GAMESS does. True for
+         !! Kohn-Sham under FMO and EE-MBE; false for Hartree-Fock, where there
+         !! is no functional to take damping parameters from, for the MP2
+         !! family, and for EFMO.
    end type fragment_capabilities_t
 
 contains
@@ -74,9 +76,10 @@ contains
       !! bond, plus MP2, SCS/SOS-MP2 or RI-MP2 as correlation on the embedded
       !! Hartree-Fock reference, without a detached bond (the frozen orbitals
       !! at a cut would be correlated). A double hybrid does not run: its PT2
-      !! part is not added. All of them carry PIEDA, and none carries
-      !! empirical dispersion yet. PIEDA's own empirical `Edi` is offered with
-      !! Hartree-Fock and Kohn-Sham, and not with the MP2 family.
+      !! part is not added. All of them carry PIEDA. Empirical dispersion
+      !! (`keywords.dft.dispersion`) runs with Kohn-Sham only, per fragment and
+      !! n-mer. PIEDA's own empirical `Edi` is offered with Hartree-Fock and
+      !! Kohn-Sham, and not with the MP2 family.
       !! EFMO: Hartree-Fock, and MP2 or RI-MP2 without a detached bond (the
       !! frozen virtual at a cut would be correlated) and without spin-component
       !! scaling. Nothing runs unrestricted or with a gradient.
@@ -96,6 +99,7 @@ contains
             cap%cut = cap%runs
             cap%pieda = cap%runs
             cap%pieda_dispersion = cap%runs
+            cap%dispersion = cap%runs
          else if (config%method_type == METHOD_TYPE_MP2) then
             cap%runs = .true.
             cap%pieda = .true.
@@ -122,7 +126,12 @@ contains
       !!
       !! Reports the first unmet need, checked in this order: the method at
       !! all, a non-Energy driver, `unrestricted`, a detached bond,
-      !! dispersion, PIEDA, PIEDA's empirical dispersion.
+      !! dispersion, PIEDA, PIEDA's empirical dispersion, and dispersion
+      !! together with PIEDA's.
+      !!
+      !! Whether the build has the library that serves the correction is not
+      !! asked here: the deck reader refuses it by name, with the CMake
+      !! option, before any scheme is chosen.
       integer, intent(in) :: scheme
       type(method_config_t), intent(in) :: config
       type(fragment_needs_t), intent(in) :: needs
@@ -142,7 +151,7 @@ contains
       else if (needs%cut .and. .not. cap%cut) then
          message = cut_refusal(scheme, config)
       else if (needs%dispersion .and. .not. cap%dispersion) then
-         message = dispersion_refusal(scheme)
+         message = dispersion_refusal(scheme, config%method_type)
       else if (needs%pieda .and. .not. cap%pieda) then
          message = "keywords.fragmentation.pieda has no decomposition for "// &
                    "model.method '"//trim(method_type_to_string(config%method_type))// &
@@ -154,6 +163,13 @@ contains
                    "' the pair's Edi is its correlation energy, which already holds "// &
                    "the dispersion: both would count it twice. Set "// &
                    "keywords.fragmentation.pieda_dispersion to 'none'."
+      else if (needs%pieda_dispersion .and. needs%dispersion) then
+         message = "keywords.dft.dispersion adds the empirical dispersion to every "// &
+                   "fragment and n-mer, so the dispersion interaction is already in "// &
+                   "each pair's energy, and keywords.fragmentation.pieda_dispersion "// &
+                   "would count it a second time. Set "// &
+                   "keywords.fragmentation.pieda_dispersion to 'none'; PIEDA then "// &
+                   "reports the dispersion as its Edi term."
       end if
    end function fragment_refusal
 
@@ -240,15 +256,29 @@ contains
       if (.not. error%has_error()) is_dh = spec%is_double_hybrid()
    end function double_hybrid
 
-   function dispersion_refusal(scheme) result(message)
+   function dispersion_refusal(scheme, method_type) result(message)
       !! Why `keywords.dft.dispersion` is refused under `scheme`
       integer, intent(in) :: scheme
+      integer, intent(in) :: method_type
       character(len=:), allocatable :: message
 
-      message = trim(scheme_name(scheme))//" does not add empirical dispersion "// &
-                "yet: where it belongs -- once for the whole system, or per "// &
-                "fragment and n-mer -- is still to be checked against GAMESS. "// &
-                "Drop keywords.dft.dispersion."
+      if (scheme == FRAGMENT_SCHEME_EFMO) then
+         message = "EFMO does not add empirical dispersion: its fragments are "// &
+                   "Hartree-Fock or MP2, and dispersion is added to a Kohn-Sham "// &
+                   "reference. Drop keywords.dft.dispersion."
+      else if (method_type == METHOD_TYPE_MP2) then
+         message = trim(scheme_name(scheme))//" adds empirical dispersion to "// &
+                   "Kohn-Sham fragments and n-mers, and model.method '"// &
+                   trim(method_type_to_string(method_type))//"' already holds the "// &
+                   "dispersion in its correlation energy. Drop keywords.dft.dispersion."
+      else
+         message = trim(scheme_name(scheme))//" adds empirical dispersion to "// &
+                   "Kohn-Sham fragments and n-mers, and model.method '"// &
+                   trim(method_type_to_string(method_type))//"' has no "// &
+                   "functional for it to take damping parameters from. Drop "// &
+                   "keywords.dft.dispersion, or run model.method 'dft' with a "// &
+                   "model.functional."
+      end if
    end function dispersion_refusal
 
    function scheme_name(scheme) result(name)

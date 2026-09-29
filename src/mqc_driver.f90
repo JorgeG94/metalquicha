@@ -832,6 +832,12 @@ contains
             expansion%pieda = config%fmo_pieda
             expansion%pieda_hl = config%fmo_pieda_hl
             expansion%pieda_dispersion = config%fmo_pieda_dispersion
+            ! Per fragment and n-mer, as GAMESS does it; the whole system's is
+            ! never distributed. Off unless the deck asked for it.
+            expansion%dispersion = "none"
+            if (config%method_config%dft%use_dispersion) then
+               expansion%dispersion = config%method_config%dft%dispersion_type
+            end if
             ! From `keywords.scf`, the same source the unfragmented path reads.
             ! The three above stay on `keywords.fragmentation`, being
             ! per-fragment by intent.

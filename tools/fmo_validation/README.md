@@ -129,7 +129,7 @@ cited in `test/test_mqc_fmo_dft.f90` and `test/test_mqc_fmo_mp2.f90`.
 | `w3_mp2.inp` | FMO2-MP2, 6-31G, exact field, frozen core (GAMESS's default: 1 core orbital/water) | -228.375055246 Eh |
 | `w3_pbe.inp` / `w3_pbe_super.inp` | FMO2-PBE and the supermolecule, 6-31G, exact field, `nrad=200 nleb=1202` | -228.942512413 / -228.9414854987 Eh |
 | `w3_b3lyp.inp` / `w3_b3lyp_super.inp` | FMO2 and the supermolecule with GAMESS's `dfttyp=b3lyp` (VWN5, see below) | -229.088616246 / -229.0878767518 Eh |
-| `w3_pbe_d3.inp` / `w3_pbe_d3_super.inp` | FMO2-PBE-D3(BJ) and the supermolecule, `dc=.t. idcver=3` | see "Dispersion" below |
+| `w3_pbe_d3.inp` / `w3_pbe_d3_super.inp` | FMO2-PBE-D3 (zero damping, by the evidence below) and the supermolecule, `dc=.t. idcver=3` | see "Dispersion" below |
 | `gly3w_afo_pbe.inp` | FMO2-PBE, AFO, two Cα-C cuts, STO-3G, ER localization | did not converge -- see "AFO under DFT" below |
 
 Every pair IFIE (`EFMOu`/`EFMOc` at full precision plus `Tr`, read off the
@@ -163,11 +163,17 @@ the group the way a pairwise-additive term should. GAMESS does **not** apply
 one dispersion correction to the whole system and distribute it; it is
 per-fragment and per-n-mer, exactly the shape mqc's own
 `keywords.fragmentation.pieda_dispersion` (`edi`) column already uses for the
-*pair* correction. `keywords.dft.dispersion` under FMO/EE-MBE is refused by
-name today (`fragment_capabilities`'s `dispersion` field is false for every
-method) pending this decision; the finding above says the refusal should lift
-by wiring dispersion into `mqc_czt_fragment_solver.f90` the same way, once per
-fragment and n-mer, not once for the assembled total.
+*pair* correction. `keywords.dft.dispersion` under Kohn-Sham FMO/EE-MBE is
+therefore added the same way, in `mqc_czt_fragment_solver.f90`, once per
+fragment and n-mer and never once for the assembled total
+(`test/test_mqc_fmo_dispersion.f90` prints our per-group values for
+`w3_pbe_d3.inp`'s geometry beside the ones above). Not yet compared with
+GAMESS's numbers: they are not the same correction. mqc's `"d3bj"` gives
+-3.59e-4 Eh for a lone water where GAMESS's log gives -8.9e-6, a factor of
+forty that a damping function vanishing at short range explains and a
+rational (BJ) one does not. That fits `idcver=3` being GAMESS's zero-damping
+D3 rather than D3(BJ), which mqc does not offer. A D3(BJ) reference needs
+`w3_pbe_d3.inp` rerun with GAMESS's BJ variant.
 
 **AFO under DFT.** GAMESS does not keep the AFO model system at Hartree-Fock
 under `dfttyp=pbe`: `gly3w_afo_pbe.inp`'s log prints `EXCHANGE FUNCTIONAL

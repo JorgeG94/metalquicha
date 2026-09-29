@@ -2,7 +2,7 @@
 The fragment solver: design and progress
 ========================================
 
-**Status: design agreed (see Decisions at the end); phases 1 to 4 built, except dispersion.**
+**Status: design agreed (see Decisions at the end); phases 1 to 4 built, dispersion included.**
 The survey below describes the code as it is now; the sections after it
 describe the planned change. They will be rewritten as each phase lands.
 
@@ -122,7 +122,8 @@ Method entry points
   virtuals sit at the shift (1e3 Eh) and would still be correlated. Nothing
   excludes them yet.
 * D3 and D4 are added in the method layer (``dft_run`` via
-  ``dispersion_apply``), not in the backend.
+  ``dispersion_apply``) for an unfragmented run. Under FMO and EE-MBE they are
+  added in the fragment solver, per fragment and n-mer (Decision 2).
 * ``run_czt_hf``, the unfragmented dispatcher, passes neither ``h_extra`` nor
   ``projector``. It returns no density.
 
@@ -169,13 +170,17 @@ The interface
       real(dp), allocatable :: grad_tol
       logical :: retry_level_shift                       ! one retry at >= 0.5 Eh if unconverged
       logical :: verbose
+      character(len=16) :: dispersion                    ! "none", "d3bj" or "d4"
+      real(dp), allocatable :: dispersion_xyz(:, :)     ! the real atoms, Bohr
+      real(dp) :: dispersion_charge                      ! only D4 reads it
    end type
 
    type :: fragment_outcome_t
-      real(dp) :: energy        ! E: reference + correlation, including Tr(D u)
+      real(dp) :: energy        ! E: reference + correlation + dispersion, including Tr(D u)
       real(dp) :: internal      ! E' = E - Tr(D_esp u); energy when there is no u
       real(dp) :: reference     ! the SCF energy
       real(dp) :: correlation   ! zero for HF (and DFT)
+      real(dp) :: dispersion    ! inside energy and internal; zero unless asked for
       real(dp), allocatable :: density(:, :)  ! D_esp: the reference SCF's total density
       type(rhf_result_t) :: scf                ! the reference SCF itself
       logical :: converged
@@ -198,7 +203,7 @@ adds correlation. Inside the routine:
   ``settings``, restricted only. ``fragment_refusal`` refuses a double
   hybrid, which it identifies by name through ``xc_spec_from_name``, so its
   PT2 part is never silently dropped. The solver has a guard for the same
-  case. Dispersion stays refused (Decision 2).
+  case. Dispersion, when the request asks for it, is added here (Decision 2).
 * **MP2, SCS/SOS-MP2 and RI-MP2:** HF as above, then ``run_czt_mp2`` or
   ``run_czt_ri_mp2`` on the embedded orbitals, scaled by ``scs_ss`` and
   ``scs_os``. The frozen core is counted from ``real_z``, so ghosts do not
@@ -260,8 +265,10 @@ not a capability. ``pieda`` says whether the method has its own PIEDA terms.
 Which schemes offer PIEDA is still decided by ``check_pieda_support``.
 ``pieda_dispersion`` says whether PIEDA's empirical ``Edi`` can be added beside
 the method's terms: it can for Hartree-Fock and Kohn-Sham, and not for the MP2
-family, whose ``Edi`` is its correlation. ``dispersion`` is false for every
-method for now -- see Decision 2.
+family, whose ``Edi`` is its correlation. ``dispersion`` is true for Kohn-Sham
+under FMO and EE-MBE and false for every other method and for EFMO -- see
+Decision 2. ``fragment_refusal`` also refuses ``dispersion`` together with
+``pieda_dispersion``, which would count the pair dispersion twice.
 
 ``fragment_refusal`` is the single refusal site. ``run_fragmented_calculation``
 calls it for FMO and EE-MBE, and ``run_efmo_energy`` calls it for EFMO. It
@@ -287,13 +294,13 @@ is. An odd electron count after a cut is one example.
      - yes
      - yes
      - yes
-     - refused (Decision 2)
+     - refused: no functional for the damping (Decision 2)
    * - DFT, including RSH
      - yes (phase 2)
      - yes (phase 2)
      - no: MAKEFP is HF
      - yes (phase 4), FMO only
-     - refused (Decision 2)
+     - yes, per fragment and n-mer (Decision 2)
    * - DFT, double hybrid
      - no: PT2 fraction not added
      - no
@@ -343,9 +350,8 @@ Phases and gates
    optimisation's partitioning can inline them differently. A reference
    built at another time is therefore not a valid comparison.
 2. **DFT under FMO**, including range-separated hybrids. Built, restricted
-   only, for FMO and EE-MBE, with or without a detached bond; D3/D4 stays
-   refused by name (``mqc_fragment_capabilities``'s ``dispersion`` field),
-   pending the GAMESS check in Decision 2. A double hybrid is refused by
+   only, for FMO and EE-MBE, with or without a detached bond; D3/D4 is
+   added per fragment and n-mer (Decision 2). A double hybrid is refused by
    ``fragment_refusal``.
 
    Gate: two fragments at full level reproduce the supermolecule, the same
@@ -435,9 +441,21 @@ Decisions
    Correlation is added per fragment and per n-mer.
 2. **D3/D4 under FMO-DFT: match GAMESS.** GAMESS applies D3 per fragment
    and per n-mer (``dftdis.src``, ``DFTDSM``/``DFTDSMI``; confirmed from a
-   run), not once for the whole system. When dispersion is wired in, it
-   therefore goes through the solver per fragment and n-mer. Until then it is
-   refused.
+   run), not once for the whole system. **Done.** ``fmo_options_t%dispersion``
+   (``"d3bj"`` or ``"d4"``, from ``keywords.dft.dispersion``) reaches every
+   ``solve_fragment_method`` call through ``fragment_request_t``, which carries
+   the group's real atoms (never a ghost centre or a split nucleus), their
+   coordinates and the sum of the members' declared charges. The solver adds
+   the correction once to ``outcome%energy`` and ``outcome%internal`` -- it does
+   not depend on the density, so ``E'`` changes by it alone -- and reports it
+   in ``outcome%dispersion``. A monomer's is recomputed on each pass of the
+   monomer loop and replaces the last, so it is counted once. A separated pair
+   runs no SCF, so ``calculate_polymers`` adds ``E_D(IJ) - E_D(I) - E_D(J)``
+   to its term directly. PIEDA reports the same increment as ``edi``, inside
+   the pair energy; ``Eex`` takes the monomers' dispersion back out of their
+   ``E'``. Gate: ``test/test_mqc_fmo_dispersion.f90``, and the PBE-D3(BJ) case
+   of ``check_fmo_mpi`` for the distributed path.
+   Whether GAMESS also adds it to a separated dimer is still to be confirmed.
 3. **EFMO with DFT stays refused.** MAKEFP is HF, so EFMO allows HF and the
    MP2 family only. It still routes through the solver.
 

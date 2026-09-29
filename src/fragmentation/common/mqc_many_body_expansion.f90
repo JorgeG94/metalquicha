@@ -245,6 +245,9 @@ module mqc_many_body_expansion
          !! `keywords.fragmentation.pieda_hl`: "gamess" or "projected"
       character(len=16) :: pieda_dispersion = "none"
          !! `keywords.fragmentation.pieda_dispersion`: "none", "d4" or "d3bj"
+      character(len=16) :: dispersion = "none"
+         !! `keywords.dft.dispersion`: "none", "d4" or "d3bj", added to every
+         !! fragment and n-mer rather than to the assembled total
       logical, allocatable :: pair_pieda(:)
          !! Whether `pair_ees`/`pair_eex`/`pair_ect_mix` are meaningful
       real(dp), allocatable :: pair_ees(:)      !! Hartree
@@ -430,6 +433,7 @@ contains
                        afo_localization=trim(this%afo_localization), &
                        pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
                        pieda_dispersion=trim(this%pieda_dispersion), &
+                       dispersion=trim(this%dispersion), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
                        pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
@@ -582,6 +586,7 @@ contains
                        afo_localization=trim(this%afo_localization), &
                        pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
                        pieda_dispersion=trim(this%pieda_dispersion), &
+                       dispersion=trim(this%dispersion), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
                        pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &

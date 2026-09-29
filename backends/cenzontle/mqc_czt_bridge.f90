@@ -656,7 +656,7 @@ contains
                           detached, afo_localization, pair_separated, resdim, &
                           pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, &
                           pair_doubly_cut_neighbor, pieda_dispersion, pair_edi, &
-                          edi_in_energy)
+                          edi_in_energy, dispersion)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -761,6 +761,9 @@ contains
       logical, intent(out), optional :: edi_in_energy
          !! Whether `pair_edi` is inside `pair_energy`; see
          !! `fmo_result_t%edi_in_energy`
+      character(len=*), intent(in), optional :: dispersion
+         !! See `fmo_options_t%dispersion`: `keywords.dft.dispersion` added per
+         !! fragment and n-mer. Absent keeps its default, "none".
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -795,6 +798,7 @@ contains
       if (present(pieda)) opts%pieda = pieda
       if (present(pieda_hl)) opts%pieda_hl = pieda_hl
       if (present(pieda_dispersion)) opts%pieda_dispersion = pieda_dispersion
+      if (present(dispersion)) opts%dispersion = dispersion
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return

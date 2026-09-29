@@ -515,6 +515,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_fmo_dft)
   target_link_libraries(test_mqc_fmo_dft PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Empirical dispersion under FMO and EE-MBE, added to every fragment and n-mer
+  # as GAMESS does: the full-level identity against the supermolecule plus its
+  # D3(BJ), the per-group sum below full level (separated pairs included), and
+  # PIEDA's Edi. Skips without libxc or the dispersion library.
+  addtest(mqc_fmo_dispersion)
+  target_link_libraries(test_mqc_fmo_dispersion PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # MP2, RI-MP2 and SCS-MP2 as correlation on embedded Hartree-Fock, under FMO
   # and EE-MBE: the MP2-family counterpart of mqc_fmo_dft.
   addtest(mqc_fmo_mp2)

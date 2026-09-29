@@ -20,6 +20,7 @@ module mqc_czt_fragment_solver
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
    use mqc_elements, only: core_orbital_count
+   use mqc_dispersion_apply, only: dispersion_apply
    implicit none
    private
 
@@ -53,17 +54,34 @@ module mqc_czt_fragment_solver
          !! One retry at `max(drive%level_shift, RETRY_LEVEL_SHIFT)` if the
          !! first attempt does not converge; the n-mer retry.
       logical :: verbose = .false.
+      character(len=16) :: dispersion = "none"
+         !! Empirical dispersion to add to this group's energy: `"none"`, or
+         !! `"d3bj"` or `"d4"` as `keywords.dft.dispersion` spells them. It
+         !! is evaluated on the group's own real atoms, with the damping
+         !! parameters of `method%functional` (`"hf"` when that is empty), and
+         !! is what GAMESS's `DFTDSM` does for each fragment and n-mer.
+      real(dp), allocatable :: dispersion_xyz(:, :)
+         !! (3, size(real_z)) Bohr: the real atoms `dispersion` is evaluated
+         !! on, in the order of `real_z`. Never a ghost centre. Required when
+         !! `dispersion` is not `"none"`.
+      real(dp) :: dispersion_charge = 0.0_dp
+         !! The group's total charge as `dispersion` sees it. Only D4 reads it.
    end type fragment_request_t
 
    type :: fragment_outcome_t
       !! What a fragment or n-mer solve leaves behind
       real(dp) :: energy = 0.0_dp
-         !! `E`: the reference plus correlation, including `Tr(D u)`.
+         !! `E`: the reference plus correlation and dispersion, including
+         !! `Tr(D u)`.
       real(dp) :: internal = 0.0_dp
          !! `E' = E - Tr(D_esp u)`; equals `energy` when there is no `h_extra`.
+         !! The dispersion does not depend on the density, so it is in both.
       real(dp) :: reference = 0.0_dp
          !! The SCF energy, including `Tr(D u)`.
       real(dp) :: correlation = 0.0_dp
+      real(dp) :: dispersion = 0.0_dp
+         !! The empirical dispersion inside `energy` and `internal`, from
+         !! `fragment_request_t%dispersion`. Zero when none was asked for.
       real(dp), allocatable :: density(:, :)
          !! `D_esp`: the reference SCF's total density.
       type(rhf_result_t) :: scf
@@ -83,6 +101,10 @@ contains
       !!
       !! For either reference, `outcome%internal` is `outcome%energy` less
       !! `Tr(D u)` with the SCF's own density.
+      !!
+      !! With `request%dispersion` set, the dispersion of the group's own
+      !! real atoms is added once, to `outcome%energy` and `outcome%internal`,
+      !! and reported apart in `outcome%dispersion`.
       type(cuest_scf_settings_t), intent(in) :: method
          !! What runs: an empty `functional` is Hartree-Fock and a non-empty
          !! one is restricted Kohn-Sham, plus MP2 or RI-MP2 on a Hartree-Fock
@@ -119,6 +141,14 @@ contains
       end if
 
       kohn_sham = len_trim(method%functional) > 0
+
+      ! Before the SCF, as the unfragmented path does it: it costs
+      ! microseconds and depends on the nuclei alone, so a functional with no
+      ! damping parameters is refused before a fragment is solved.
+      if (trim(request%dispersion) /= "none") then
+         call fragment_dispersion(method, real_z, request, outcome%dispersion, error)
+         if (error%has_error()) return
+      end if
 
       if (present(reference)) then
          outcome%scf = reference
@@ -181,7 +211,50 @@ contains
       else
          outcome%internal = outcome%energy
       end if
+
+      ! Added last, and only when asked for, so a run without dispersion is
+      ! arithmetically what it was.
+      if (trim(request%dispersion) /= "none") then
+         outcome%energy = outcome%energy + outcome%dispersion
+         outcome%internal = outcome%internal + outcome%dispersion
+      end if
    end subroutine solve_fragment_method
+
+   subroutine fragment_dispersion(method, real_z, request, energy, error)
+      !! The empirical dispersion of one group's real atoms, in Hartree
+      !!
+      !! The ordinary correction of the whole group as if it were a molecule of
+      !! its own, at the damping parameters of the deck's functional.
+      type(cuest_scf_settings_t), intent(in) :: method
+      integer, intent(in) :: real_z(:)
+      type(fragment_request_t), intent(in) :: request
+      real(dp), intent(out) :: energy
+      type(error_t), intent(inout) :: error
+
+      type(error_t) :: derr
+      character(len=:), allocatable :: functional
+
+      energy = 0.0_dp
+      if (.not. allocated(request%dispersion_xyz)) then
+         call error%set(ERROR_VALIDATION, "fragment solver: dispersion '"// &
+                        trim(request%dispersion)//"' was requested without the "// &
+                        "coordinates of the atoms it is evaluated on.")
+         return
+      end if
+      if (size(request%dispersion_xyz, 2) /= size(real_z)) then
+         call error%set(ERROR_VALIDATION, "fragment solver: dispersion was given "// &
+                        "coordinates for a different number of atoms than real_z.")
+         return
+      end if
+      functional = "hf"
+      if (len_trim(method%functional) > 0) functional = trim(method%functional)
+
+      call dispersion_apply(trim(request%dispersion), functional, request%dispersion_charge, &
+                            real_z, request%dispersion_xyz, energy, error=derr)
+      if (derr%has_error()) then
+         call error%set(ERROR_VALIDATION, "fragment solver: "//derr%get_message())
+      end if
+   end subroutine fragment_dispersion
 
    subroutine fragment_xc_context(method, mol, xc, error)
       !! The Kohn-Sham functional `method` names, on `mol`'s grid

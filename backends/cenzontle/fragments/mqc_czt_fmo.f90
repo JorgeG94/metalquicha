@@ -367,6 +367,15 @@ module mqc_czt_fmo
          !! connected pairs never. Read only when `pieda` is true. Not
          !! available with an MP2-family method, whose `Edi` is its
          !! correlation. See `pieda_dispersion_term`.
+      character(len=16) :: dispersion = "none"
+         !! `keywords.dft.dispersion` under FMO and EE-MBE: `"none"` (the
+         !! default), `"d3bj"` or `"d4"`. Every monomer and every n-mer carries
+         !! the correction of its own real atoms, at the damping parameters of
+         !! `method%functional` and with its declared net charge, as GAMESS's
+         !! `DFTDSM` does; the whole system's is never distributed. A pair's
+         !! term therefore holds `E_D(IJ) - E_D(I) - E_D(J)`, separated pairs
+         !! included. Refused together with `pieda_dispersion`, which would
+         !! count it twice. See `fragment_request_t%dispersion`.
    end type fmo_options_t
 
    type :: fmo_pair_t
@@ -410,11 +419,12 @@ module mqc_czt_fmo
          !! separated pair.
       real(dp) :: edi = 0.0_dp
          !! Hartree. Under an MP2-family method the correlation interaction
-         !! `Ec(IJ) - Ec(I) - Ec(J)`, which is part of `energy`. Otherwise the
-         !! empirical dispersion interaction `E_D(IJ) - E_D(I) - E_D(J)` from
-         !! `fmo_options_t%pieda_dispersion`, which is not part of `energy`
-         !! (`energy + edi` is the dispersion-inclusive interaction). Zero when
-         !! that is `"none"` and for a connected pair.
+         !! `Ec(IJ) - Ec(I) - Ec(J)`, which is part of `energy`. With
+         !! `fmo_options_t%dispersion` the empirical dispersion interaction
+         !! `E_D(IJ) - E_D(I) - E_D(J)`, also part of `energy`. Otherwise the
+         !! same from `fmo_options_t%pieda_dispersion`, which is not part of
+         !! `energy` (`energy + edi` is the dispersion-inclusive interaction).
+         !! Zero when both are `"none"` and for a connected pair.
       logical :: doubly_cut_neighbor = .false.
          !! `i` and `j` are the two fragments either side of a third one cut
          !! at two bonded atoms -- see `warn_adjacent_cuts`. FMO2 omits a
@@ -443,8 +453,9 @@ module mqc_czt_fmo
       logical :: converged = .false.
       logical :: edi_in_energy = .false.
          !! Whether each pair's `edi` is inside its `energy`: true for PIEDA
-         !! under an MP2-family method, false otherwise. Then `ees + eex +
-         !! ect_mix + edi` is `energy`; otherwise `edi` is read beside it.
+         !! under an MP2-family method or with `fmo_options_t%dispersion`,
+         !! false otherwise. Then `ees + eex + ect_mix + edi` is `energy`;
+         !! otherwise `edi` is read beside it.
       real(dp), allocatable :: monomer_energy(:)     !! E'_I
       real(dp), allocatable :: charges(:)            !! Mulliken, for reporting only
       real(dp), allocatable :: fragment_charge(:)
@@ -504,6 +515,9 @@ module mqc_czt_fmo
       real(dp) :: correlation = 0.0_dp
          !! The MP2-family correlation inside `energy`; zero for Hartree-Fock
          !! and Kohn-Sham. `energy - correlation` is the reference's E'.
+      real(dp) :: dispersion = 0.0_dp
+         !! The empirical dispersion of this fragment's own atoms inside
+         !! `energy` and `energy_total`; zero without `fmo_options_t%dispersion`.
       integer :: nelec = 0
       integer :: charge = 0                      !! declared net charge
       integer :: n_caps = 0
@@ -648,6 +662,22 @@ contains
                         "would count it twice: set keywords.fragmentation.pieda_dispersion "// &
                         "to 'none'.")
          return
+      end if
+
+      if (dispersion_requested(opts)) then
+         if (trim(opts%pieda_dispersion) /= "none") then
+            call error%set(ERROR_VALIDATION, "fmo: dispersion adds the empirical "// &
+                           "correction to every fragment and n-mer, so a pair's Edi "// &
+                           "from pieda_dispersion would count it twice: set "// &
+                           "keywords.fragmentation.pieda_dispersion to 'none'.")
+            return
+         end if
+         if (opts%method%run_mp2) then
+            call error%set(ERROR_VALIDATION, "fmo: dispersion is added beside a "// &
+                           "Kohn-Sham reference and an MP2-family method already "// &
+                           "holds it: set keywords.dft.dispersion to 'none'.")
+            return
+         end if
       end if
 
       call build_fragments(atomic_numbers, symbols, coordinates, owner, opts, &
@@ -2082,6 +2112,14 @@ contains
       show_table = show_inner_scf()
       request%verbose = show_table
 
+      ! The n-mer's own real atoms, never a ghost centre or a split nucleus,
+      ! and its declared charge: what an isolated molecule of it would be.
+      if (dispersion_requested(opts)) then
+         request%dispersion = opts%dispersion
+         request%dispersion_xyz = group%xyz(:, 1:group%n_real)
+         request%dispersion_charge = real(sum(frag(members)%charge), dp)
+      end if
+
       ! RI-MP2's fitting basis, over the same real atoms as `mol` and read the
       ! same way `open_fragment` reads the orbital basis -- no `force_cartesian`,
       ! so a basis file's own declared angular form is kept. `run_mp2` never
@@ -2546,7 +2584,8 @@ contains
    subroutine swap_solution(a, b)
       !! Exchange what a fragment's SCF produced between two copies of it
       !!
-      !! The density, the charges, both energies and the correlation -- the
+      !! The density, the charges, both energies, the correlation and the
+      !! dispersion -- the
       !! fields `solve_fragment` writes and `exchange_monomers` shares.
       type(fragment_t), intent(inout) :: a, b
 
@@ -2568,6 +2607,9 @@ contains
       e = a%correlation
       a%correlation = b%correlation
       b%correlation = e
+      e = a%dispersion
+      a%dispersion = b%dispersion
+      b%dispersion = e
    end subroutine swap_solution
 
    subroutine calculate_polymers(frag, n_frag, z, coords, opts, afo, res, error, comm)
@@ -2606,7 +2648,7 @@ contains
       real(dp), allocatable :: correction(:), response(:), ees(:), eex(:), pair_corr(:)
       logical, allocatable :: separated(:)
       type(pieda_pair_terms_t) :: pd
-      real(dp) :: e_internal, e_resp, e_es, e_corr
+      real(dp) :: e_internal, e_resp, e_es, e_corr, e_disp
       integer :: n_terms, t, task, level, n_nmers
 
       level = min(opts%level, n_frag)
@@ -2679,6 +2721,18 @@ contains
             if (error%has_error()) return
             correction(t) = frag(terms(1, t))%energy + frag(terms(2, t))%energy + e_es
             response(t) = 0.0_dp
+            ! Dispersion does not vanish at `resdim`, and each monomer's
+            ! already carries its own, so what a pair SCF would have added is
+            ! the interaction alone.
+            ! TODO(mqc): confirm against GAMESS that a separated dimer
+            ! (`resdim`) gets `E_D(IJ) - E_D(I) - E_D(J)` at all; its
+            ! dimer SCF, which would compute it, is never run.
+            if (dispersion_requested(opts)) then
+               call pieda_dispersion_term(frag, terms(1, t), terms(2, t), z, coords, opts, &
+                                          opts%dispersion, e_disp, error)
+               if (error%has_error()) return
+               correction(t) = correction(t) + e_disp
+            end if
             cycle
          end if
 
@@ -2753,7 +2807,9 @@ contains
       ! pairs from them and nothing about a pair is ever sent. `Edi` needs
       ! only the geometry and the declared charges, which every rank holds,
       ! so it is computed here on every rank alike rather than reduced.
-      res%edi_in_energy = opts%pieda .and. opts%method%run_mp2
+      ! With `opts%dispersion` it is the part of `correction` the n-mer SCFs
+      ! already carried, recomputed here for the report.
+      res%edi_in_energy = opts%pieda .and. (opts%method%run_mp2 .or. dispersion_requested(opts))
       call collect_pairs(frag, z, coords, afo, opts, terms, term_size, n_terms, correction, &
                          response, separated, ees, eex, pair_corr, res%pairs, error)
       if (error%has_error()) return
@@ -2955,7 +3011,8 @@ contains
       !! The reference's own energies enter `Eex`: for Kohn-Sham `E'^HL` is the
       !! functional's, from an exchange-correlation quadrature over the pair's
       !! grid, and for an MP2-family method the monomers' `E'` are the
-      !! Hartree-Fock ones, `energy - correlation`.
+      !! Hartree-Fock ones, `energy - correlation`. Empirical dispersion is in
+      !! neither, so it is taken out of the monomers' as well.
       !!
       !! **Next to a cut**, one or both monomers may carry a ghost block, so
       !! the group's basis is not the two monomers' bases end to end; each
@@ -3046,8 +3103,10 @@ contains
       if (error%has_error()) return
 
       terms%ees = e_es
-      terms%eex = e_hl - (frag(i)%energy - frag(i)%correlation) &
-                  - (frag(j)%energy - frag(j)%correlation) - e_es
+      ! `E'^HL` is the functional alone, so the monomers' dispersion, which
+      ! is in their `energy`, is taken back out with their correlation.
+      terms%eex = e_hl - (frag(i)%energy - frag(i)%correlation - frag(i)%dispersion) &
+                  - (frag(j)%energy - frag(j)%correlation - frag(j)%dispersion) - e_es
    end subroutine pieda_pair_term
 
    subroutine scatter_orbital_block(frag, slot_of, ao_off, ao_count, c_local, c_group, error)
@@ -3156,7 +3215,7 @@ contains
 
       type(pieda_pair_terms_t) :: pieda_terms
       integer :: t, k, a, b, fi, fj
-      real(dp) :: r2
+      real(dp) :: r2, e_disp
 
       allocate (pairs(count(term_size(1:n_terms) == 2)))
       k = 0
@@ -3188,8 +3247,22 @@ contains
             ! the round-off of subtracting the monomers back out.
             ! A separated pair has no pair-level correlation to split off either:
             ! its two monomers' own cancel out of `correction`.
-            if (separated(t)) then
+            if (separated(t) .and. dispersion_requested(opts)) then
+               ! The separated pair's term carries its dispersion increment
+               ! (`calculate_polymers`), so electrostatics is what is left.
+               call pieda_dispersion_term(frag, fi, fj, z, coords, opts, opts%dispersion, &
+                                          e_disp, error)
+               if (error%has_error()) return
+               call combine_pieda_terms(correction(t), correction(t) - e_disp, 0.0_dp, &
+                                        pieda_terms, edi=e_disp)
+            else if (separated(t)) then
                call combine_pieda_terms(correction(t), correction(t), 0.0_dp, pieda_terms)
+            else if (dispersion_requested(opts)) then
+               ! Inside `correction` already, from the n-mer's own dispersion.
+               call pieda_dispersion_term(frag, fi, fj, z, coords, opts, opts%dispersion, &
+                                          e_disp, error)
+               if (error%has_error()) return
+               call combine_pieda_terms(correction(t), ees(t), eex(t), pieda_terms, edi=e_disp)
             else if (opts%method%run_mp2) then
                call combine_pieda_terms(correction(t), ees(t), eex(t), pieda_terms, &
                                         edi=pair_corr(t) - frag(fi)%correlation &
@@ -3205,16 +3278,30 @@ contains
 
             ! A separated pair too: dispersion does not vanish at `resdim`.
             if (trim(opts%pieda_dispersion) /= "none") then
-               call pieda_dispersion_term(frag, fi, fj, z, coords, opts, pairs(k)%edi, error)
+               call pieda_dispersion_term(frag, fi, fj, z, coords, opts, &
+                                          opts%pieda_dispersion, pairs(k)%edi, error)
                if (error%has_error()) return
             end if
          end if
       end do
    end subroutine collect_pairs
 
-   subroutine pieda_dispersion_term(frag, i, j, z, coords, opts, edi, error)
+   pure function dispersion_requested(opts) result(requested)
+      !! Whether `opts%dispersion` names a correction to add per fragment
+      type(fmo_options_t), intent(in) :: opts
+      logical :: requested
+
+      requested = trim(opts%dispersion) /= "none"
+   end function dispersion_requested
+
+   subroutine pieda_dispersion_term(frag, i, j, z, coords, opts, kind, edi, error)
       !! `Edi = E_D(I union J) - E_D(I) - E_D(J)` at the damping parameters of
       !! `opts%method%functional`, `"hf"` when it is empty, in Hartree
+      !!
+      !! `kind` is the correction, `"d3bj"` or `"d4"`: `opts%pieda_dispersion`
+      !! for PIEDA's own `Edi`, `opts%dispersion` for the increment a
+      !! separated pair's term is missing and the one PIEDA reports for a pair
+      !! whose SCF already carried it.
       !!
       !! Evaluated on the fragments' real atoms (`frag(*)%atoms`: no ghost, no
       !! cap, element numbers unsplit, taken from the system's `z`), each atom
@@ -3226,6 +3313,7 @@ contains
       integer, intent(in) :: z(:)             !! (n_atoms), the system's atomic numbers
       real(dp), intent(in) :: coords(:, :)   !! (3, n_atoms), Bohr
       type(fmo_options_t), intent(in) :: opts
+      character(len=*), intent(in) :: kind
       real(dp), intent(out) :: edi
       type(error_t), intent(inout) :: error
 
@@ -3247,17 +3335,17 @@ contains
       q_i = real(frag(i)%charge, dp)
       q_j = real(frag(j)%charge, dp)
 
-      call dispersion_apply(opts%pieda_dispersion, functional, q_i, z(frag(i)%atoms), &
+      call dispersion_apply(kind, functional, q_i, z(frag(i)%atoms), &
                             coords(:, frag(i)%atoms), e_i, error=derr)
       if (derr%has_error()) then
-         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on fragment "// &
+         call error%set(ERROR_VALIDATION, "fmo: dispersion on fragment "// &
                         to_char(i)//": "//derr%get_message())
          return
       end if
-      call dispersion_apply(opts%pieda_dispersion, functional, q_j, z(frag(j)%atoms), &
+      call dispersion_apply(kind, functional, q_j, z(frag(j)%atoms), &
                             coords(:, frag(j)%atoms), e_j, error=derr)
       if (derr%has_error()) then
-         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on fragment "// &
+         call error%set(ERROR_VALIDATION, "fmo: dispersion on fragment "// &
                         to_char(j)//": "//derr%get_message())
          return
       end if
@@ -3270,10 +3358,10 @@ contains
       allocate (xyz_ij(3, ni + nj))
       xyz_ij(:, 1:ni) = coords(:, frag(i)%atoms)
       xyz_ij(:, ni + 1:) = coords(:, frag(j)%atoms)
-      call dispersion_apply(opts%pieda_dispersion, functional, q_i + q_j, z_ij, xyz_ij, e_ij, &
+      call dispersion_apply(kind, functional, q_i + q_j, z_ij, xyz_ij, e_ij, &
                             error=derr)
       if (derr%has_error()) then
-         call error%set(ERROR_VALIDATION, "fmo: pieda_dispersion on pair "// &
+         call error%set(ERROR_VALIDATION, "fmo: dispersion on pair "// &
                         to_char(i)//"-"//to_char(j)//": "//derr%get_message())
          return
       end if
@@ -3373,7 +3461,11 @@ contains
          call logger%info("  fmo: PIEDA, kcal/mol -- Ees electrostatics, Eex exact "// &
                           "exchange, Ect+mix the residual (charge transfer, mixing "// &
                           "and the response together)")
-         if (edi_in_energy) then
+         if (edi_in_energy .and. dispersion_requested(opts)) then
+            call logger%info("  fmo: Edi is the empirical "//trim(opts%dispersion)// &
+                             " dispersion interaction E_D(IJ) - E_D(I) - E_D(J), inside "// &
+                             "the pair energy; Total = Ees + Eex + Ect+mix + Edi = dE")
+         else if (edi_in_energy) then
             call logger%info("  fmo: Edi is the correlation interaction Ec(IJ) - Ec(I) - "// &
                              "Ec(J), inside the pair energy; Total = Ees + Eex + Ect+mix "// &
                              "+ Edi = dE")
@@ -3703,7 +3795,7 @@ contains
       !!
       !! A sum-reduce over buffers that are zero where a rank computed nothing,
       !! which makes it a gather needing no displacements for fragments of
-      !! different sizes. Densities, energies, correlations and charges only --
+      !! different sizes. Densities, energies, correlations, dispersions and charges only --
       !! the things the next pass reads.
       type(fragment_t), intent(inout) :: frag(:)
       integer, intent(in) :: n_frag
@@ -3721,7 +3813,7 @@ contains
       ! answer -- independent of how many ranks filled it.
       total = 0
       do f = 1, n_frag
-         total = total + frag(f)%nao_full*frag(f)%nao_full + 3 + size(frag(f)%mol_atom)
+         total = total + frag(f)%nao_full*frag(f)%nao_full + 4 + size(frag(f)%mol_atom)
       end do
       allocate (buf(total), source=0.0_dp)
 
@@ -3733,14 +3825,15 @@ contains
             buf(at + n + 1) = frag(f)%energy
             buf(at + n + 2) = frag(f)%energy_total
             buf(at + n + 3) = frag(f)%correlation
+            buf(at + n + 4) = frag(f)%dispersion
             ! A charge per atom of the molecule the SCF saw, ghosts included:
             ! the ghost block is where a detached bond's pair lives, and
             ! `all_charges` needs its share to make the charges add up.
             if (allocated(frag(f)%charges)) then
-               buf(at + n + 4:at + n + 3 + size(frag(f)%mol_atom)) = frag(f)%charges
+               buf(at + n + 5:at + n + 4 + size(frag(f)%mol_atom)) = frag(f)%charges
             end if
          end if
-         at = at + n + 3 + size(frag(f)%mol_atom)
+         at = at + n + 4 + size(frag(f)%mol_atom)
       end do
 
       call allreduce(comm, buf, size(buf), MPI_SUM)
@@ -3755,11 +3848,12 @@ contains
          frag(f)%energy = buf(at + n + 1)
          frag(f)%energy_total = buf(at + n + 2)
          frag(f)%correlation = buf(at + n + 3)
+         frag(f)%dispersion = buf(at + n + 4)
          if (.not. allocated(frag(f)%charges)) then
             allocate (frag(f)%charges(size(frag(f)%mol_atom)))
          end if
-         frag(f)%charges = buf(at + n + 4:at + n + 3 + size(frag(f)%mol_atom))
-         at = at + n + 3 + size(frag(f)%mol_atom)
+         frag(f)%charges = buf(at + n + 5:at + n + 4 + size(frag(f)%mol_atom))
+         at = at + n + 4 + size(frag(f)%mol_atom)
       end do
    end subroutine exchange_monomers
 
@@ -3817,6 +3911,14 @@ contains
       show_table = show_inner_scf()
       request%verbose = show_table
 
+      ! The fragment's own real atoms and declared charge; `f%z` and `f%xyz`
+      ! hold no ghost and no cap.
+      if (dispersion_requested(opts)) then
+         request%dispersion = opts%dispersion
+         request%dispersion_xyz = f%xyz
+         request%dispersion_charge = real(f%charge, dp)
+      end if
+
       ! RI-MP2's fitting basis, over this fragment's own real atoms -- `f%z`,
       ! `f%sym` and `f%xyz`, the same atoms `f%z` already names as `real_z`
       ! below. A monomer never carries a ghost under `run_mp2` (`fragment_refusal`,
@@ -3850,6 +3952,7 @@ contains
       f%energy_total = outcome%energy
       f%energy = outcome%internal
       f%correlation = outcome%correlation
+      f%dispersion = outcome%dispersion
       f%density = outcome%density
    end subroutine inner_scf
 

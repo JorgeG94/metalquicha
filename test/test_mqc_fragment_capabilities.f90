@@ -34,7 +34,13 @@ contains
                   new_unittest("fmo_double_hybrid_refused", test_fmo_double_hybrid_refused), &
                   new_unittest("fmo_dft_cut_ok", test_fmo_dft_cut_ok), &
                   new_unittest("eembe_dft_ok", test_eembe_dft_ok), &
-                  new_unittest("fmo_dft_dispersion_refused", test_fmo_dft_dispersion_refused), &
+                  new_unittest("fmo_dft_dispersion_ok", test_fmo_dft_dispersion_ok), &
+                  new_unittest("eembe_dft_dispersion_ok", test_eembe_dft_dispersion_ok), &
+                  new_unittest("fmo_hf_dispersion_refused", test_fmo_hf_dispersion_refused), &
+                  new_unittest("fmo_mp2_dispersion_refused", test_fmo_mp2_dispersion_refused), &
+                  new_unittest("efmo_hf_dispersion_refused", test_efmo_hf_dispersion_refused), &
+                  new_unittest("fmo_dft_dispersion_with_pieda_dispersion_refused", &
+                               test_fmo_dft_dispersion_pieda_dispersion_refused), &
                   new_unittest("fmo_dft_pieda_ok", test_fmo_dft_pieda_ok), &
                   new_unittest("fmo_dft_pieda_dispersion_ok", test_fmo_dft_pieda_dispersion_ok), &
                   new_unittest("fmo_mp2_ok", test_fmo_mp2_ok), &
@@ -151,7 +157,78 @@ contains
                  "EE-MBE+DFT was refused")
    end subroutine test_eembe_dft_ok
 
-   subroutine test_fmo_dft_dispersion_refused(error)
+   subroutine test_fmo_dft_dispersion_ok(error)
+      !! Kohn-Sham dispersion runs per fragment and n-mer under FMO
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_DFT
+      needs%dispersion = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)), 0, &
+                 "FMO+DFT with dispersion was refused")
+   end subroutine test_fmo_dft_dispersion_ok
+
+   subroutine test_eembe_dft_dispersion_ok(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+
+      config%method_type = METHOD_TYPE_DFT
+      needs%dispersion = .true.
+      call check(error, len(fragment_refusal(FRAGMENT_SCHEME_EE_MBE, config, needs)), 0, &
+                 "EE-MBE+DFT with dispersion was refused")
+   end subroutine test_eembe_dft_dispersion_ok
+
+   subroutine test_fmo_hf_dispersion_refused(error)
+      !! No functional, so no damping parameters to take
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_HF
+      needs%dispersion = .true.
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
+      call check(error, len(why) > 0, "FMO+HF with dispersion was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "keywords.dft.dispersion") > 0, &
+                 "the refusal does not name the key to change")
+   end subroutine test_fmo_hf_dispersion_refused
+
+   subroutine test_fmo_mp2_dispersion_refused(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_MP2
+      needs%dispersion = .true.
+      why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
+      call check(error, len(why) > 0, "FMO+MP2 with dispersion was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "keywords.dft.dispersion") > 0, &
+                 "the refusal does not name the key to change")
+   end subroutine test_fmo_mp2_dispersion_refused
+
+   subroutine test_efmo_hf_dispersion_refused(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(method_config_t) :: config
+      type(fragment_needs_t) :: needs
+      character(len=:), allocatable :: why
+
+      config%method_type = METHOD_TYPE_HF
+      needs%dispersion = .true.
+      why = fragment_refusal(FRAGMENT_SCHEME_EFMO, config, needs)
+      call check(error, len(why) > 0, "EFMO with dispersion was not refused")
+      if (allocated(error)) return
+      call check(error, index(why, "keywords.dft.dispersion") > 0, &
+                 "the refusal does not name the key to change")
+   end subroutine test_efmo_hf_dispersion_refused
+
+   subroutine test_fmo_dft_dispersion_pieda_dispersion_refused(error)
+      !! The correction is already in each pair's energy, so PIEDA's own would
+      !! count it twice
       type(error_type), allocatable, intent(out) :: error
       type(method_config_t) :: config
       type(fragment_needs_t) :: needs
@@ -159,12 +236,14 @@ contains
 
       config%method_type = METHOD_TYPE_DFT
       needs%dispersion = .true.
+      needs%pieda = .true.
+      needs%pieda_dispersion = .true.
       why = fragment_refusal(FRAGMENT_SCHEME_FMO, config, needs)
-      call check(error, len(why) > 0, "FMO+DFT with dispersion was not refused")
+      call check(error, len(why) > 0, "dispersion together with pieda_dispersion was accepted")
       if (allocated(error)) return
-      call check(error, index(why, "keywords.dft.dispersion") > 0, &
-                 "the refusal does not name the key to change")
-   end subroutine test_fmo_dft_dispersion_refused
+      call check(error, index(why, "keywords.fragmentation.pieda_dispersion") > 0, &
+                 "the refusal does not name pieda_dispersion")
+   end subroutine test_fmo_dft_dispersion_pieda_dispersion_refused
 
    subroutine test_fmo_dft_pieda_ok(error)
       !! PIEDA under a functional: the union state takes the functional's energy

@@ -846,7 +846,9 @@ At Hartree-Fock and under Kohn-Sham PIEDA has no dispersion term: GAMESS's
 ``keywords.fragmentation.pieda_dispersion`` (``"none"`` by default, or
 ``"d4"`` or ``"d3bj"``) adds an *empirical* one in its place, as a fourth
 column ``edi``. It is refused with the MP2 family, whose ``edi`` is its
-correlation energy and already holds the dispersion:
+correlation energy and already holds the dispersion, and with
+``keywords.dft.dispersion``, which puts the same interaction inside every pair
+energy (see Limits):
 
 .. code-block:: text
 
@@ -892,10 +894,12 @@ interaction energy; ``Ees + Eex + Ect+mix`` is still the HF one. In the JSON,
 decomposed pair, and only when ``pieda_dispersion`` ran or the method is in the
 MP2 family; ``interaction_energy`` stays the reference's ``delta_energy``.
 
-**Whether Edi is inside the pair energy.** The empirical ``edi`` is in no
-energy; the MP2 family's is in ``delta_energy``. The JSON says which, as
+**Whether Edi is inside the pair energy.** The empirical ``edi`` of
+``pieda_dispersion`` is in no energy; the MP2 family's is in ``delta_energy``,
+and so is the ``edi`` of ``keywords.dft.dispersion``, which is added to every
+fragment and n-mer. The JSON says which, as
 ``edi_in_energy`` beside ``pairs`` (written when ``pieda`` decomposed a pair): ``true``
-for the MP2 family, ``false`` otherwise. Where it is true, ``Total`` in the
+for the MP2 family and for ``keywords.dft.dispersion``, ``false`` otherwise. Where it is true, ``Total`` in the
 info-level table is ``delta_energy`` itself and not ``delta_energy + edi``,
 so the correlation is not added twice. The hydrogen-bonded water dimer at
 STO-3G with ``"mp2"``::
@@ -952,9 +956,33 @@ VWN5 one, which is ``"hyb_gga_xc_b3lyp5"`` here. See
 * Any other method is refused by name. It used to be ignored: a B3LYP deck ran
   as Hartree-Fock and reported that total.
 
-**Empirical dispersion (D3/D4) is refused under FMO and EE-MBE for now.**
-Whether it belongs once for the whole system or per fragment and n-mer is
-still to be checked against GAMESS.
+**Empirical dispersion (D3/D4) runs under Kohn-Sham FMO and EE-MBE, per
+fragment and per n-mer.** ``keywords.dft.dispersion`` (``"d3bj"`` or ``"d4"``)
+is applied as GAMESS applies it (``DFTDSM`` in ``dftdis.src``): every monomer's
+energy holds the correction of that monomer's own atoms, and every n-mer's
+holds the correction of the n-mer's own atoms. The whole system's correction is
+never computed and distributed. The pair term therefore carries
+``E_D(IJ) - E_D(I) - E_D(J)`` and a trimer term the three-body remainder, and
+at full level the terms telescope to ``E_D`` of the whole system.
+
+* The atoms are the group's **real atoms**, with the partition's element
+  numbers: no ghost centre, no split nucleus. The charge given to D4 is the sum
+  of the members' declared net charges; D3 has no charge dependence. The damping
+  parameters are those of ``model.functional``.
+* A **separated pair** (beyond ``resdim``, no pair SCF) still gets
+  ``E_D(IJ) - E_D(I) - E_D(J)``, since dispersion does not vanish at that
+  distance.
+* Under EE-MBE the same corrections enter the total energies that expansion
+  sums.
+* It is refused with Hartree-Fock (no functional to take damping parameters
+  from), with the MP2 family, and with EFMO, and a build without the library
+  is refused at the deck, naming ``MQC_ENABLE_DFTD3`` or ``MQC_ENABLE_DFTD4``.
+* **PIEDA** with dispersion on reports the pair's ``E_D(IJ) - E_D(I) - E_D(J)``
+  as ``edi``, **inside** the pair energy exactly as the MP2 family's is
+  (``edi_in_energy`` is ``true``), and ``ees``, ``eex`` and ``ect_mix`` are the
+  numbers they were without it. ``keywords.fragmentation.pieda_dispersion`` is
+  refused with ``keywords.dft.dispersion``, by name, because it would count
+  the interaction twice.
 
 ``keywords.fragmentation.pieda`` runs with Hartree-Fock, Kohn-Sham and the
 MP2 family, under FMO only: EE-MBE and EFMO refuse it by name, and a double
