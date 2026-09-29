@@ -1,0 +1,8 @@
+6
+C2H4 twisted 90 degrees, second CH2 pyramidalised (H y += 0.15 A) so C1 and C2 are not equivalent
+C   0.0000   0.0000   0.6695
+C   0.0000   0.0000  -0.6695
+H   0.0000   0.9290   1.2320
+H   0.0000  -0.9290   1.2320
+H   0.9290   0.1500  -1.2320
+H  -0.9290   0.1500  -1.2320
