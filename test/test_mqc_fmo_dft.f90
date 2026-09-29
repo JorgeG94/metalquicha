@@ -410,8 +410,8 @@ contains
       !! FMO2, cyclic water trimer, 6-31G, exact field, against GAMESS B3LYP
       !!
       !! GAMESS's plain `dfttyp=b3lyp` uses VWN formula V for the local
-      !! correlation (`DATA B3LYP /8HB3LYP   / !USING VWN V` in
-      !! `dftxca.src`), not VWN-RPA; libxc's `hyb_gga_xc_b3lyp` is the
+      !! correlation (GAMESS's functional table, `dftxca.src`), not
+      !! VWN-RPA; libxc's `hyb_gga_xc_b3lyp` is the
       !! VWN-RPA variant (`XC_LDA_C_VWN_RPA` in `hyb_gga_xc_b3lyp.c`) and
       !! `hyb_gga_xc_b3lyp5` is the VWN5 one GAMESS's name means
       !! (`XC_LDA_C_VWN`, "B3LYP with VWN functional 5 instead of RPA"). This

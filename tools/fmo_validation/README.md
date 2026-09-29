@@ -137,8 +137,8 @@ per-fragment/per-dimer lines in the log rather than the three-decimal PIEDA
 table) is in the cited test's docstring.
 
 **B3LYP: which VWN.** GAMESS's plain `dfttyp=b3lyp` is VWN formula V, not
-VWN-RPA (`dftxca.src`: `DATA B3LYP /8HB3LYP   / !USING VWN V`; the VWN-RPA
-variant is the separate name `B3LYPV1R`). libxc's `hyb_gga_xc_b3lyp` is the
+VWN-RPA (GAMESS's functional table in `dftxca.src` defines it with VWN5; the
+VWN-RPA variant is the separate name `B3LYPV1R`). libxc's `hyb_gga_xc_b3lyp` is the
 VWN-RPA one (`XC_LDA_C_VWN_RPA` in `hyb_gga_xc_b3lyp.c`); `hyb_gga_xc_b3lyp5`
 is "B3LYP with VWN functional 5 instead of RPA" (`XC_LDA_C_VWN`) -- the
 matching name for GAMESS's `B3LYP`. `w3_b3lyp.inp` is checked against mqc's
@@ -150,10 +150,9 @@ angular points on oxygen) leaves totals agreeing to 1.2e-8 (PBE) and 5.7e-8
 band `mqc_docs/source/fmo.rst` expects for an unmatched grid, and tighter than
 that because the grids here are both large rather than both default-sized.
 
-**Dispersion (Decision 2, `developer_fragment_solver.rst`).** GAMESS's own
-comment names the mechanism: `dftdis.src`'s `DFTDSM`/`DFTDSMI` ("Grimme's
-dispersion correction for FMO... aim is to omit calling SETR0AB and COPYC6
-... for every fragment calc") precomputes memory once and then calls the
+**Dispersion (Decision 2, `developer_fragment_solver.rst`).** GAMESS's
+FMO dispersion driver (`DFTDSM`/`DFTDSMI` in `dftdis.src`) sets up the D3
+parameters once rather than per fragment, and then calls the
 ordinary D3 routine on every fragment and n-mer's own atom set, the same
 generic SCF/energy path every other additive term (nuclear repulsion
 included) goes through. `w3_pbe_d3.log` confirms it directly: a lone water
