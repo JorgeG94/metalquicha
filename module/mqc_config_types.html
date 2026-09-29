@@ -194,13 +194,13 @@ Re-exported so consumers need only this module</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='mqc_scf_types.html'>mqc_scf_types</a></li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1107,18 +1107,18 @@ large graphs.</div>
 <path fill="none" stroke="#b6ff00" stroke-dasharray="5,2" d="M990.13,-239.1C966.18,-239.71 932.06,-243.96 908,-261 882,-279.42 898.12,-304.74 872,-323 850.97,-337.7 822.84,-343.13 799.27,-344.8"/>
 <polygon fill="#b6ff00" stroke="#b6ff00" points="798.95,-341.31 789.14,-345.31 799.3,-348.3 798.95,-341.31"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_config_types~~UsedByGraph_node26" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_config_types~~UsedByGraph_node26"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_config_types~~UsedByGraph_node26"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1058.5,-378 980.5,-378 980.5,-354 1058.5,-354 1058.5,-378"/>
 <text text-anchor="middle" x="1019.5" y="-363.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_config_types~~UsedByGraph_edge31" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#b6ff00" stroke-dasharray="5,2" d="M980.25,-362.82C932.38,-358.85 850.47,-352.05 799.31,-347.8"/>
 <polygon fill="#b6ff00" stroke="#b6ff00" points="799.45,-344.3 789.19,-346.96 798.87,-351.28 799.45,-344.3"/>
 </g>
@@ -1591,7 +1591,7 @@ atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~8"></span>
+              <span class="anchor" id="variable-charge~12"></span>
               integer,
             </td>
               <td>public</td>
@@ -1608,7 +1608,7 @@ atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~8"></span>
+              <span class="anchor" id="variable-indices~12"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1625,7 +1625,7 @@ atom indices</p><a href="../type/input_fragment_t.html" class="pull-right"><emph
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~5"></span>
+              <span class="anchor" id="variable-multiplicity~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -1671,7 +1671,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~24'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
+  <strong><a href='../type/input_fragment_t.html#boundprocedure-destroy~27'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1704,7 +1704,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~14"></span>
+              <span class="anchor" id="variable-bonds~19"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -1721,7 +1721,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~9"></span>
+              <span class="anchor" id="variable-charge~13"></span>
               integer,
             </td>
               <td>public</td>
@@ -1738,7 +1738,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~3"></span>
+              <span class="anchor" id="variable-fragments~8"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -1772,7 +1772,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~6"></span>
+              <span class="anchor" id="variable-multiplicity~9"></span>
               integer,
             </td>
               <td>public</td>
@@ -1789,7 +1789,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~23"></span>
+              <span class="anchor" id="variable-name~45"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -1806,7 +1806,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds"></span>
+              <span class="anchor" id="variable-nbonds~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1823,7 +1823,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken"></span>
+              <span class="anchor" id="variable-nbroken~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1840,7 +1840,7 @@ resolved relative to the deck, like <code>xyz</code>.</p><a href="../type/input_
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~3"></span>
+              <span class="anchor" id="variable-nfrag~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -1886,7 +1886,7 @@ size, so a deck claiming uniformity without it is refused.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~25'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
+  <strong><a href='../type/molecule_t.html#boundprocedure-destroy~28'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecule_destroy.html'>molecule_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1919,7 +1919,7 @@ size, so a deck claiming uniformity without it is refused.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-afo_localization~3"></span>
+              <span class="anchor" id="variable-afo_localization~4"></span>
               character(len=8),
             </td>
               <td>public</td>
@@ -2061,7 +2061,7 @@ table.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~12"></span>
+              <span class="anchor" id="variable-basis~13"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2078,7 +2078,7 @@ table.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_breaking~4"></span>
+              <span class="anchor" id="variable-bond_breaking~5"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2090,12 +2090,12 @@ table.</p>
                 <td></td>
                 <td></td>
             <td>
-<p>How a fragment represents a covalent bond the partition cut.</p><a href="../type/mqc_config_t.html#variable-bond_breaking~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>How a fragment represents a covalent bond the partition cut.</p><a href="../type/mqc_config_t.html#variable-bond_breaking~5" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bond_order_scheme~5"></span>
+              <span class="anchor" id="variable-bond_order_scheme~6"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2254,7 +2254,7 @@ counted and then not printed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~15"></span>
+              <span class="anchor" id="variable-bonds~20"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -2271,7 +2271,7 @@ counted and then not printed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~11"></span>
+              <span class="anchor" id="variable-calc_type~15"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -2288,7 +2288,7 @@ counted and then not printed.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_scale~5"></span>
+              <span class="anchor" id="variable-cap_scale~6"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2300,7 +2300,7 @@ counted and then not printed.</p>
 <td> =</td>
                 <td>1.0_dp</td>
             <td>
-<p>Where the cap goes along the cut bond: <code>R_H = R_kept + s (R_gone - R_kept)</code>.</p><a href="../type/mqc_config_t.html#variable-cap_scale~5" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>Where the cap goes along the cut bond: <code>R_H = R_kept + s (R_gone - R_kept)</code>.</p><a href="../type/mqc_config_t.html#variable-cap_scale~6" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2445,7 +2445,7 @@ absent one.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~10"></span>
+              <span class="anchor" id="variable-charge~14"></span>
               integer,
             </td>
               <td>public</td>
@@ -2671,7 +2671,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-detached_atoms~2"></span>
+              <span class="anchor" id="variable-detached_atoms~3"></span>
               integer,
             </td>
               <td>public,</td>
@@ -2685,7 +2685,7 @@ fingerprint disagrees with this run is refused, not overwritten.</p>
             <td>
 <p><code>keywords.fragmentation.detached_atoms</code>: 0-based atoms that are the
 detached ends of cut bonds, GAMESS&rsquo;s <code>$FMOBND</code> sign. Unallocated
-lets each cut take its sp3 end, else its lower-numbered one.</p><a href="../type/mqc_config_t.html#variable-detached_atoms~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+lets each cut take its sp3 end, else its lower-numbered one.</p><a href="../type/mqc_config_t.html#variable-detached_atoms~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -2872,7 +2872,7 @@ whole basis, which is how a run measures what the screen is worth.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ecp"></span>
+              <span class="anchor" id="variable-ecp~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3446,7 +3446,7 @@ can be converged more loosely than a whole-system one would be.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_level~4"></span>
+              <span class="anchor" id="variable-frag_level~6"></span>
               integer,
             </td>
               <td>public</td>
@@ -3544,7 +3544,7 @@ whichever one the shared constant happens to hold.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~4"></span>
+              <span class="anchor" id="variable-fragments~9"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
               <td>public,</td>
@@ -3616,7 +3616,7 @@ it &ndash; <code>properties: {"fukui": {}}</code> is a valid request.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~8"></span>
+              <span class="anchor" id="variable-functional~11"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -3650,7 +3650,7 @@ it &ndash; <code>properties: {"fukui": {}}</code> is a valid request.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-global_groups~4"></span>
+              <span class="anchor" id="variable-global_groups~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -4123,7 +4123,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~10"></span>
+              <span class="anchor" id="variable-method~18"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -4140,7 +4140,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-molecules"></span>
+              <span class="anchor" id="variable-molecules~2"></span>
               type(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
               <td>public,</td>
@@ -4157,7 +4157,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~7"></span>
+              <span class="anchor" id="variable-multiplicity~10"></span>
               integer,
             </td>
               <td>public</td>
@@ -4174,7 +4174,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~2"></span>
+              <span class="anchor" id="variable-nbonds~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -4191,7 +4191,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~2"></span>
+              <span class="anchor" id="variable-nbroken~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -4293,7 +4293,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~4"></span>
+              <span class="anchor" id="variable-nfrag~8"></span>
               integer,
             </td>
               <td>public</td>
@@ -4327,7 +4327,7 @@ machine decides: a share of what it reports available.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nodes_per_group~3"></span>
+              <span class="anchor" id="variable-nodes_per_group~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -5025,7 +5025,7 @@ table on this path.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reference_fragment~6"></span>
+              <span class="anchor" id="variable-reference_fragment~7"></span>
               integer,
             </td>
               <td>public</td>
@@ -5663,7 +5663,7 @@ hiding a problem, not a way to run one.</p>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~26'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/mqc_config_t.html#boundprocedure-destroy~29'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -5697,7 +5697,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~134"></span>
+              <span class="anchor" id="variable-this~160"></span>
               class(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5737,7 +5737,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~135"></span>
+              <span class="anchor" id="variable-this~161"></span>
               class(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5777,7 +5777,7 @@ hiding a problem, not a way to run one.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~133"></span>
+              <span class="anchor" id="variable-this~159"></span>
               class(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -5820,7 +5820,7 @@ hiding a problem, not a way to run one.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-28 14:23 +0000             </p>
+ on 2026-09-29 04:31 +0000             </p>
           </div>
         </div>
         <br>
