@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">78 statements</a>
+                 title=" 0.3% of total for procedures.">83 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,16 +138,16 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-block">block</a>
             <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-frags_arr~3">frags_arr</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-idx">idx</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-idx~8">idx</a>
             <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-interactions">interactions</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-joined">joined</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-k~15">k</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-key~4">key</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-n~17">n</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-p~2">p</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-joined~3">joined</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-k~46">k</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-key~14">key</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-n~55">n</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-p~9">p</a>
             <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-pair_obj~3">pair_obj</a>
             <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-pairs_arr~3">pairs_arr</a>
-            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-pick">pick</a>
+            <a class="list-group-item" href="../proc/write_fmo_pairs.html#variable-pick~3">pick</a>
         </div>
       </div>
     </div>
@@ -191,8 +191,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_sorting</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_sorting</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -347,7 +347,7 @@ the MBE fragment table. EFMO&rsquo;s is a unitless vdW-scaled <code>R_IJ</code>.
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~22"></span>
+              <span class="anchor" id="variable-json~69"></span>
               type(json_core),
             </td>
 <td>intent(inout)</td>
@@ -377,7 +377,7 @@ the MBE fragment table. EFMO&rsquo;s is a unitless vdW-scaled <code>R_IJ</code>.
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~21"></span>
+              <span class="anchor" id="variable-data~23"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -941,7 +941,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-idx"></span>
+              <span class="anchor" id="variable-idx~8"></span>
               integer(kind=int_index),
             </td>
               <td>private,</td>
@@ -975,7 +975,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-joined"></span>
+              <span class="anchor" id="variable-joined~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -992,7 +992,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~15"></span>
+              <span class="anchor" id="variable-k~46"></span>
               integer,
             </td>
               <td>private</td>
@@ -1009,7 +1009,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~4"></span>
+              <span class="anchor" id="variable-key~14"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1026,7 +1026,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~17"></span>
+              <span class="anchor" id="variable-n~55"></span>
               integer,
             </td>
               <td>private</td>
@@ -1043,7 +1043,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-p~2"></span>
+              <span class="anchor" id="variable-p~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -1094,7 +1094,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pick"></span>
+              <span class="anchor" id="variable-pick~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1190,6 +1190,14 @@ large graphs.</div>
 <span class="w">                       </span><span class="s2">"is not an interaction energy. They are sorted last."</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
+<span class="w">      </span><span class="c">! Whether each pair's `edi` is inside its `delta_energy`, so a reader knows</span>
+<span class="w">      </span><span class="c">! whether `ees + eex + ect_mix + edi` closes it or `edi` is read beside it.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fmo_pair_pieda</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">any</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fmo_pair_pieda</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="s2">"edi_in_energy"</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fmo_edi_in_energy</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
+
 <span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">pairs_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">"pairs"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="n">pairs_arr</span><span class="p">)</span>
 <span class="w">      </span><span class="k">do block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
@@ -1261,7 +1269,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-29 04:31 +0000             </p>
+ on 2026-09-29 04:32 +0000             </p>
           </div>
         </div>
         <br>

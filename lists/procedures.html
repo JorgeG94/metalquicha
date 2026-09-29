@@ -1551,6 +1551,12 @@ reference and the other monomers, renumbered to the system</p></td>
                  <td><p>The live session, for Fortran code that needs its communicators</p><a href="../proc/current_session.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/cut_refusal.html'>cut_refusal</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Why a detached bond is refused for <code>config%method_type</code> under <code>scheme</code></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/czt_backend_available.html'>czt_backend_available</a></td>
                  <td><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></td>
                  <td>Function</td>
@@ -1621,6 +1627,12 @@ reference and the other monomers, renumbered to the system</p></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>DFS helper: accumulate PIE coefficients for intersections</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dft_backend_settings.html'>dft_backend_settings</a></td>
+                 <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>cuest_scf_settings_t</code> for a Kohn-Sham calculation</p><a href="../proc/dft_backend_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/dft_calc_energy.html'>dft_calc_energy</a></td>
@@ -1773,6 +1785,12 @@ reference and the other monomers, renumbered to the system</p></td>
                  <td><p>The CMake option that would have supplied <code>kind</code></p><a href="../proc/dispersion_kind_option.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/dispersion_refusal.html'>dispersion_refusal</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Why <code>keywords.dft.dispersion</code> is refused under <code>scheme</code></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
@@ -1807,6 +1825,18 @@ reference and the other monomers, renumbered to the system</p></td>
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/double_hybrid.html'>double_hybrid</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Whether <code>functional</code> names a double hybrid</p><a href="../proc/double_hybrid.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/driver_refusal.html'>driver_refusal</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Why a non-Energy driver is refused under <code>scheme</code></p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/drop_unreachable_classes.html'>drop_unreachable_classes</a></td>
@@ -2134,12 +2164,6 @@ there is no older spelling to keep working.</p></td>
                  <td><p>Initialise an FMO context</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/fmo_method_refusal.html'>fmo_method_refusal</a></td>
-                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
-                 <td>Function</td>
-                 <td><p>Why FMO and EE-MBE cannot run <code>model.method</code> yet, or &ldquo;&rdquo; when they can</p><a href="../proc/fmo_method_refusal.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/fmo_refuse.html'>fmo_refuse</a></td>
                  <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
                  <td>Subroutine</td>
@@ -2224,6 +2248,12 @@ there is no older spelling to keep working.</p></td>
                  <td><p>Take a caller&rsquo;s term list wholesale</p><a href="../proc/fraglist_replace.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/fragment_capabilities.html'>fragment_capabilities</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>What <code>config%method_type</code> may do under <code>scheme</code></p><a href="../proc/fragment_capabilities.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/fragment_charge_multiplicity.html'>fragment_charge_multiplicity</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -2270,6 +2300,12 @@ there is no older spelling to keep working.</p></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
                  <td><p>Which fragment each atom belongs to, from the declared monomers</p><a href="../proc/fragment_owner_map.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragment_refusal.html'>fragment_refusal</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Why this deck cannot run under <code>scheme</code>, or &ldquo;&rdquo; when it can</p><a href="../proc/fragment_refusal.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/fragment_set_basis.html'>fragment_set_basis</a></td>
@@ -2804,6 +2840,12 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/hf_backend_settings.html'>hf_backend_settings</a></td>
+                 <td><a href='../module/mqc_method_hf.html'>mqc_method_hf</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>cuest_scf_settings_t</code> for a Hartree-Fock (+ MP2/CC) calculation</p><a href="../proc/hf_backend_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/hf_calc_energy.html'>hf_calc_energy</a></td>
                  <td><a href='../module/mqc_method_hf.html'>mqc_method_hf</a></td>
                  <td>Subroutine</td>
@@ -3206,6 +3248,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
                  <td>Function</td>
                  <td><p>Whether the backend this method needs was compiled into this binary</p><a href="../proc/method_backend_built.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/method_backend_settings.html'>method_backend_settings</a></td>
+                 <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
+                 <td>Subroutine</td>
+                 <td><p><code>config</code> as an unfragmented run would build it: <code>cuest_scf_settings_t</code></p><a href="../proc/method_backend_settings.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/method_is_casci.html'>method_is_casci</a></td>
@@ -4907,6 +4955,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><p>Run the whole system as one calculation (<code>nlevel = 0</code>)</p><a href="../proc/run_unfragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/runs_refusal.html'>runs_refusal</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Why <code>config%method_type</code> does not run under <code>scheme</code> at all</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/saddle_method_from_string.html'>saddle_method_from_string</a></td>
                  <td><a href='../module/mqc_optimizer_types.html'>mqc_optimizer_types</a></td>
                  <td>Function</td>
@@ -4943,6 +4997,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><p>What to say when an SCF runs out of cycles and the run must stop</p><a href="../proc/scf_not_converged_message.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/scf_numerics_from_config.html'>scf_numerics_from_config</a></td>
+                 <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
+                 <td>Function</td>
+                 <td><p>The deck&rsquo;s <code>keywords.scf</code> as <code>scf_numerics_t</code>: how an SCF is driven</p><a href="../proc/scf_numerics_from_config.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/scf_status_label.html'>scf_status_label</a></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Function</td>
@@ -4953,6 +5013,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/scheme_name.html'>scheme_name</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p><code>scheme</code> in a sentence: &ldquo;FMO&rdquo;, &ldquo;EE-MBE&rdquo; or &ldquo;EFMO&rdquo;</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/score_unconverged.html'>score_unconverged</a></td>
@@ -5387,6 +5453,12 @@ guess would be read, validated and then silently ignored.</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/unrestricted_refusal.html'>unrestricted_refusal</a></td>
+                 <td><a href='../module/mqc_fragment_capabilities.html'>mqc_fragment_capabilities</a></td>
+                 <td>Function</td>
+                 <td><p>Why <code>model.unrestricted</code> is refused under <code>scheme</code></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/validate_guess_group.html'>validate_guess_group</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
@@ -5466,15 +5538,15 @@ guess would be read, validated and then silently ignored.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_loop~2.html'>worker_loop</a></td>
-                 <td><a href='../module/mqc_geometry_optimizer.html'>mqc_geometry_optimizer</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
                  <td>Subroutine</td>
-                 <td><p>A worker&rsquo;s half of an optimization: compute what rank 0 asks for</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/worker_run.html'>worker_run</a></td>
@@ -5726,7 +5798,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-29 04:31 +0000             </p>
+ on 2026-09-29 04:32 +0000             </p>
           </div>
         </div>
         <br>

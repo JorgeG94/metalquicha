@@ -1526,6 +1526,14 @@ contains
                        "is not an interaction energy. They are sorted last.")
       end if
 
+      ! Whether each pair's `edi` is inside its `delta_energy`, so a reader knows
+      ! whether `ees + eex + ect_mix + edi` closes it or `edi` is read beside it.
+      if (allocated(data%fmo_pair_pieda)) then
+         if (any(data%fmo_pair_pieda)) then
+            call json%add(parent, "edi_in_energy", data%fmo_edi_in_energy)
+         end if
+      end if
+
       call json%create_array(pairs_arr, "pairs")
       call json%add(parent, pairs_arr)
       do block = 1, 2

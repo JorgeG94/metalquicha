@@ -136,9 +136,9 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-error~190">error</a>
-            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-i~192">i</a>
-            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-symbols~5">symbols</a>
+            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-error~164">error</a>
+            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-i~151">i</a>
+            <a class="list-group-item" href="../proc/fmo_run_serial.html#variable-symbols~2">symbols</a>
         </div>
       </div>
     </div>
@@ -182,10 +182,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_czt_bridge.html'>mqc_czt_bridge</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -776,7 +776,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~145"></span>
+              <span class="anchor" id="variable-this~92"></span>
               class(<a href='../type/fmo_context_t.html'>fmo_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -791,7 +791,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~20"></span>
+              <span class="anchor" id="variable-json_data~17"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1144,7 +1144,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~190"></span>
+              <span class="anchor" id="variable-error~164"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1161,7 +1161,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~192"></span>
+              <span class="anchor" id="variable-i~151"></span>
               integer,
             </td>
               <td>private</td>
@@ -1178,7 +1178,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-symbols~5"></span>
+              <span class="anchor" id="variable-symbols~2"></span>
               character(len=2),
             </td>
               <td>private,</td>
@@ -1231,10 +1231,10 @@ large graphs.</div>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"fmo_run_serial: no fragment partition set"</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">basis</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"fmo_run_serial: no orbital basis set. The caller fills "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">"this from the deck, so an empty one is a plumbing fault "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                           </span><span class="s2">"rather than a request for a default."</span><span class="p">)</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">settings</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">"fmo_run_serial: no method settings set. The driver fills "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"these from the deck, so their absence is a plumbing "</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="s2">"fault rather than a request for a default."</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -1245,7 +1245,7 @@ large graphs.</div>
 
 <span class="k">      call </span><span class="n">run_czt_fmo</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">symbols</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">this</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">owner</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                       </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">basis</span><span class="p">),</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">esp</span><span class="p">),</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">expansion</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">this</span><span class="p">%</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">esp</span><span class="p">),</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">expansion</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">far_field</span><span class="p">),</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">resppc</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">this</span><span class="p">%</span><span class="n">max_outer</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">outer_tol</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">scf_max_iter</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">this</span><span class="p">%</span><span class="n">scf_energy_tol</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">scf_density_tol</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1263,9 +1263,10 @@ large graphs.</div>
 <span class="w">                       </span><span class="n">afo_localization</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">afo_localization</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pieda</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pieda</span><span class="p">,</span><span class="w"> </span><span class="n">pieda_hl</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">pieda_hl</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pieda_dispersion</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">pieda_dispersion</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">dispersion</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">dispersion</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pair_pieda</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_pieda</span><span class="p">,</span><span class="w"> </span><span class="n">pair_ees</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_ees</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pair_eex</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_eex</span><span class="p">,</span><span class="w"> </span><span class="n">pair_ect_mix</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_ect_mix</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                       </span><span class="n">pair_edi</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_edi</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">pair_edi</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_edi</span><span class="p">,</span><span class="w"> </span><span class="n">edi_in_energy</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">edi_in_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pair_doubly_cut_neighbor</span><span class="o">=</span><span class="n">this</span><span class="p">%</span><span class="n">pair_doubly_cut_neighbor</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">fmo_refuse</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="s2">"fmo_run_serial: "</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
@@ -1297,7 +1298,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-09-29 04:31 +0000             </p>
+ on 2026-09-29 04:32 +0000             </p>
           </div>
         </div>
         <br>
