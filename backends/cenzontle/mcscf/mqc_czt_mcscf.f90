@@ -77,6 +77,16 @@ module mqc_czt_mcscf
    public :: run_czt_casscf
    public :: casscf_result_t
    public :: natural_orbitals
+   public :: one_index_fock
+   public :: transformed_potential
+   public :: sa_density_matrices
+      !! The three above were private until the SA Hessian-vector product
+      !! (`mqc_czt_sa_hessian.f90`) needed to reuse them rather than
+      !! reimplement them: the orbital-orbital Hessian block is exactly
+      !! `one_index_fock`, and the CI-orbital block's one-index-transformed
+      !! active Hamiltonian reuses `transformed_potential` for the same
+      !! inactive-density potential `one_index_fock` builds internally. No
+      !! behaviour changed by exporting them.
 
    ! The step-control constants and the matrix exponential are
    ! `mqc_orbital_rotation`'s, used from there rather than declared here: the
