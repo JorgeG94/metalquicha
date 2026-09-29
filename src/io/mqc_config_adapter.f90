@@ -511,6 +511,9 @@ contains
       if (allocated(mqc_config%mcscf_gradient_roots)) then
          driver_config%method_config%mcscf%gradient_roots = mqc_config%mcscf_gradient_roots
       end if
+      if (allocated(mqc_config%mcscf_nac_pairs)) then
+         driver_config%method_config%mcscf%nac_pairs = mqc_config%mcscf_nac_pairs
+      end if
       ! `guess_type` is the current spelling and `scf_guess` the superseded one.
       ! The schema has already refused a deck that sets both, so whichever is
       ! allocated is the one the user meant.

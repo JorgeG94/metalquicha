@@ -255,6 +255,17 @@ module mqc_result_types
       integer, allocatable :: mcscf_gradient_roots(:)
          !! (size(mcscf_state_gradients, 3)) 1-based root index each slice of
          !! `mcscf_state_gradients` belongs to, in the order computed.
+      integer, allocatable :: mcscf_nac_pairs(:, :)
+         !! (2, n_pairs) 1-based `[state_i, state_j]` each slice of the NAC
+         !! arrays below belongs to, from `keywords.mcscf.nac_pairs`.
+      real(dp), allocatable :: mcscf_nac_couplings(:, :, :)
+         !! (3, n_atoms, n_pairs) `d_IJ`, 1/Bohr, from `czt_sa_casscf_nacs`.
+      real(dp), allocatable :: mcscf_nac_interstate(:, :, :)
+         !! (3, n_atoms, n_pairs) `h_IJ = (E_J - E_I) d_IJ`, Hartree/Bohr.
+      real(dp), allocatable :: mcscf_nac_csf(:, :, :)
+         !! (3, n_atoms, n_pairs) the CSF-term part of `mcscf_nac_interstate`.
+      real(dp), allocatable :: mcscf_nac_energy_diff(:)
+         !! (n_pairs) `E_J - E_I`, Hartree.
       logical :: has_mcscf_states = .false.
 
       logical :: stability_stable = .true.
@@ -523,6 +534,11 @@ contains
       if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
       if (allocated(this%mcscf_state_gradients)) deallocate (this%mcscf_state_gradients)
       if (allocated(this%mcscf_gradient_roots)) deallocate (this%mcscf_gradient_roots)
+      if (allocated(this%mcscf_nac_pairs)) deallocate (this%mcscf_nac_pairs)
+      if (allocated(this%mcscf_nac_couplings)) deallocate (this%mcscf_nac_couplings)
+      if (allocated(this%mcscf_nac_interstate)) deallocate (this%mcscf_nac_interstate)
+      if (allocated(this%mcscf_nac_csf)) deallocate (this%mcscf_nac_csf)
+      if (allocated(this%mcscf_nac_energy_diff)) deallocate (this%mcscf_nac_energy_diff)
       call this%quao_rows%destroy()
       call this%reset()
    end subroutine result_destroy
