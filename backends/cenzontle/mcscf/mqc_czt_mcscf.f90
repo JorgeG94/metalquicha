@@ -833,7 +833,11 @@ contains
 
       real(dp), allocatable :: occupied(:, :), weight(:, :), coulomb(:, :)
       real(dp), allocatable :: exchange(:, :, :), virtual(:, :, :), product(:, :)
-      integer :: m, n_virt, k, q, r, s, p
+      real(dp), allocatable :: mine(:, :, :)
+      integer :: m, n_virt, k, q, r, s, p, row0, rows
+
+      integer, parameter :: ROW_BLOCK = 512
+         !! Rows of the Coulomb product per thread chunk
 
       m = n_mo*n_occ
       n_virt = n_mo - n_occ
@@ -851,16 +855,25 @@ contains
                2.0_dp*weight((s - 1)*n_mo + n_occ + 1:s*n_mo, k)
          end do
       end do
-      call pic_dgemm_x("N", "N", m, n_set, m, 1.0_dp, a_block, m, weight, m, 0.0_dp, &
-                       coulomb, m)
+      ! Threaded over row blocks with sequential BLAS. Called from inside the
+      ! orbital Hessian's own parallel loop, these regions run on one thread.
+      !$omp parallel do schedule(static) default(shared) private(row0, rows)
+      do row0 = 1, m, ROW_BLOCK
+         rows = min(ROW_BLOCK, m - row0 + 1)
+         call pic_dgemm_x("N", "N", rows, n_set, m, 1.0_dp, a_block(row0, 1, 1, 1), m, &
+                          weight, m, 0.0_dp, coulomb(row0, 1), m)
+      end do
+      !$omp end parallel do
 
       ! Exchange, the half with both density indices in the occupied columns:
       ! `b_block(:, :, :, q)` is `(p r|s q)` with columns `(r s)`.
       allocate (exchange(n_mo, n_occ, n_set))
+      !$omp parallel do schedule(static) default(shared)
       do q = 1, n_occ
          call pic_dgemm_x("N", "N", n_mo, n_set, m, 1.0_dp, b_block(1, 1, 1, q), n_mo, &
                           occupied, m, 0.0_dp, exchange(1, q, 1), n_mo*n_occ)
       end do
+      !$omp end parallel do
 
       ! Exchange, the half with a virtual second density index. Swapping the
       ! density indices moves them to different slots of the integral, so it
@@ -868,22 +881,32 @@ contains
       ! D_rs (s q|p r). The virtual rows of `a_block(:, :, :, r)` are a matrix
       ! over `(q p)` with leading dimension `n_mo`.
       if (n_virt > 0) then
-         allocate (virtual(n_virt, n_set, n_occ), product(m, n_set))
+         allocate (virtual(n_virt, n_set, n_occ))
          do r = 1, n_occ
             do k = 1, n_set
                virtual(:, k, r) = densities(r, n_occ + 1:n_mo, k)
             end do
          end do
+         !$omp parallel default(shared) private(r, k, p, product, mine)
+         allocate (product(m, n_set), mine(n_mo, n_occ, n_set))
+         mine = 0.0_dp
+         !$omp do schedule(static)
          do r = 1, n_occ
             call pic_dgemm_x("T", "N", m, n_set, n_virt, 1.0_dp, a_block(n_occ + 1, 1, 1, r), &
                              n_mo, virtual(1, 1, r), n_virt, 0.0_dp, product, m)
             do k = 1, n_set
                do p = 1, n_mo
-                  exchange(p, :, k) = exchange(p, :, k) + product((p - 1)*n_occ + 1:p*n_occ, k)
+                  mine(p, :, k) = mine(p, :, k) + product((p - 1)*n_occ + 1:p*n_occ, k)
                end do
             end do
          end do
-         deallocate (virtual, product)
+         !$omp end do
+         !$omp critical
+         exchange = exchange + mine
+         !$omp end critical
+         deallocate (product, mine)
+         !$omp end parallel
+         deallocate (virtual)
       end if
 
       do k = 1, n_set
