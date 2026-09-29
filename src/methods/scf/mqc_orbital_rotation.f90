@@ -43,6 +43,8 @@ module mqc_orbital_rotation
 
    public :: rotation_matrix
    public :: level_shifted_step
+   public :: rotation_hessian_t
+   public :: subspace_newton_step
    public :: MIN_CURVATURE, SADDLE_CURVATURE, MAX_ROTATION, MIN_ROTATION
    public :: ENERGY_RESOLUTION, TRUST_GROWTH
 
@@ -81,6 +83,35 @@ module mqc_orbital_rotation
       !! step whose *predicted* gain is below this is taken without being
       !! tested rather than rejected on the noise of the objective.
    real(dp), parameter :: TRUST_GROWTH = 1.3_dp
+
+   integer, parameter :: DEFAULT_SUBSPACE = 20
+      !! Largest Krylov subspace `subspace_newton_step` builds unless told
+   real(dp), parameter :: DEFAULT_SUBSPACE_TOLERANCE = 1.0e-3_dp
+      !! Residual of the projected Newton equations, relative to the gradient,
+      !! at which `subspace_newton_step` stops expanding unless told
+   real(dp), parameter :: PRECONDITION_FLOOR = 1.0e-6_dp
+      !! Smallest diagonal element the preconditioner divides by
+   real(dp), parameter :: LINEAR_DEPENDENCE = 1.0e-8_dp
+      !! Norm below which an orthogonalised direction is taken as already spanned
+
+   type, abstract :: rotation_hessian_t
+      !! An orbital Hessian that can be applied to a vector of rotation
+      !! parameters, in energy per radian squared, without being written down
+   contains
+      procedure(apply_rotation_hessian), deferred :: apply
+   end type rotation_hessian_t
+
+   abstract interface
+      subroutine apply_rotation_hessian(this, x, hx, error)
+         !! `H x`
+         import :: rotation_hessian_t, dp, error_t
+         implicit none
+         class(rotation_hessian_t), intent(inout) :: this
+         real(dp), intent(in) :: x(:)
+         real(dp), intent(out) :: hx(:)
+         type(error_t), intent(inout) :: error
+      end subroutine apply_rotation_hessian
+   end interface
       !! How fast the trust radius recovers after a successful step. Slower than
       !! it shrinks: an over-long step costs a wasted objective evaluation, an
       !! over-short one only an iteration.
@@ -223,5 +254,171 @@ contains
 
       deallocate (vectors, values, projected, amplitude)
    end subroutine level_shifted_step
+
+   subroutine subspace_newton_step(hessian, diagonal, gradient, escape, step, lowest, &
+                                   predicted, products, error, max_subspace, tolerance)
+      !! The trust-region Newton step, from Hessian-vector products alone
+      !!
+      !! Builds a Krylov subspace off the preconditioned gradient, projects the
+      !! Hessian and the gradient into it, and hands the small dense problem to
+      !! `level_shifted_step`, so the level shift, the saddle escape and the
+      !! predicted gain are the ones an explicit Hessian gets, applied to a
+      !! projected matrix instead of the full one.
+      !!
+      !! The softest diagonal direction is seeded alongside the gradient. Two
+      !! reasons, and the second is the important one: it is where an
+      !! instability lives, so the bound on `lowest` is tight; and at a saddle
+      !! the gradient is zero and the preconditioned-gradient seed is the zero
+      !! vector, leaving nothing to build a subspace from.
+      class(rotation_hessian_t), intent(inout) :: hessian
+      real(dp), intent(in) :: diagonal(:)
+         !! (n_param) the Hessian's diagonal or an approximation to it, for
+         !! preconditioning, in the same units
+      real(dp), intent(in) :: gradient(:)
+         !! (n_param), `dE/d kappa` on each parameter
+      real(dp), intent(in) :: escape
+         !! How far to displace a mode with negative curvature and no gradient,
+         !! in radians
+      real(dp), allocatable, intent(out) :: step(:)
+         !! (n_param), the displacement to take
+      real(dp), intent(out) :: lowest
+         !! An **upper bound** on the smallest curvature: the smallest
+         !! eigenvalue of the projected Hessian
+      real(dp), intent(out) :: predicted
+         !! What the quadratic model says the step is worth, as a positive
+         !! energy decrease
+      integer, intent(out) :: products
+         !! Hessian-vector products spent
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_subspace
+         !! Default `DEFAULT_SUBSPACE`
+      real(dp), intent(in), optional :: tolerance
+         !! Default `DEFAULT_SUBSPACE_TOLERANCE`
+
+      real(dp), allocatable :: basis(:, :), image(:, :)
+      real(dp), allocatable :: small(:, :), small_gradient(:), amplitude(:)
+      real(dp), allocatable :: residual(:), direction(:)
+      real(dp) :: norm, overlap, gradient_norm, stop_at
+      integer :: n_param, nmax, nsub, i, j, pass
+
+      lowest = 0.0_dp
+      predicted = 0.0_dp
+      products = 0
+      n_param = size(gradient)
+      allocate (step(n_param))
+      step = 0.0_dp
+      if (error%has_error()) return
+      if (n_param < 1) return
+
+      nmax = DEFAULT_SUBSPACE
+      if (present(max_subspace)) nmax = max_subspace
+      nmax = max(1, min(nmax, n_param))
+      stop_at = DEFAULT_SUBSPACE_TOLERANCE
+      if (present(tolerance)) stop_at = tolerance
+
+      allocate (basis(n_param, nmax), image(n_param, nmax))
+      allocate (residual(n_param), direction(n_param))
+      gradient_norm = sqrt(dot_product(gradient, gradient))
+
+      ! ---- the seeds ------------------------------------------------------
+      nsub = 0
+      direction = -gradient/max(diagonal, PRECONDITION_FLOOR)
+      call add_direction(basis, nsub, direction)
+      direction = 0.0_dp
+      direction(minloc(diagonal, 1)) = 1.0_dp
+      call add_direction(basis, nsub, direction)
+      if (nsub == 0) then
+         ! No gradient and a rotation space of one direction that vanished
+         ! under projection: nothing to do, and saying so beats an undefined
+         ! step.
+         return
+      end if
+      do i = 1, nsub
+         call hessian%apply(basis(:, i), image(:, i), error)
+         products = products + 1
+         if (error%has_error()) return
+      end do
+
+      ! ---- solve, expand, repeat ------------------------------------------
+      do
+         if (allocated(small)) deallocate (small, small_gradient)
+         allocate (small(nsub, nsub), small_gradient(nsub))
+         do j = 1, nsub
+            do i = 1, nsub
+               small(i, j) = dot_product(basis(:, i), image(:, j))
+            end do
+            small_gradient(j) = dot_product(basis(:, j), gradient)
+         end do
+         ! Symmetric to rounding only; the average is what a symmetric solver
+         ! would read anyway.
+         small = 0.5_dp*(small + transpose(small))
+
+         if (allocated(amplitude)) deallocate (amplitude)
+         call level_shifted_step(small, small_gradient, escape, amplitude, lowest, &
+                                 predicted, error)
+         if (error%has_error()) return
+
+         step = 0.0_dp
+         residual = gradient
+         do i = 1, nsub
+            step = step + amplitude(i)*basis(:, i)
+            residual = residual + amplitude(i)*image(:, i)
+         end do
+
+         if (nsub >= nmax) exit
+         norm = sqrt(dot_product(residual, residual))
+         if (norm <= stop_at*max(gradient_norm, tiny(1.0_dp))) exit
+
+         direction = -residual/max(diagonal, PRECONDITION_FLOOR)
+         norm = sqrt(dot_product(direction, direction))
+         if (norm < tiny(1.0_dp)) exit
+         direction = direction/norm
+         do pass = 1, 2
+            do j = 1, nsub
+               overlap = dot_product(basis(:, j), direction)
+               direction = direction - overlap*basis(:, j)
+            end do
+         end do
+         norm = sqrt(dot_product(direction, direction))
+         if (norm < LINEAR_DEPENDENCE) exit
+
+         nsub = nsub + 1
+         basis(:, nsub) = direction/norm
+         call hessian%apply(basis(:, nsub), image(:, nsub), error)
+         products = products + 1
+         if (error%has_error()) return
+      end do
+
+      deallocate (basis, image, residual, direction)
+      if (allocated(small)) deallocate (small, small_gradient)
+      if (allocated(amplitude)) deallocate (amplitude)
+   end subroutine subspace_newton_step
+
+   subroutine add_direction(basis, nsub, direction)
+      !! Orthonormalise a candidate against the subspace and keep it if anything survives
+      real(dp), intent(inout) :: basis(:, :)
+      integer, intent(inout) :: nsub
+      real(dp), intent(in) :: direction(:)
+
+      real(dp), allocatable :: work(:)
+      real(dp) :: norm, overlap
+      integer :: j, pass
+
+      work = direction
+      norm = sqrt(dot_product(work, work))
+      if (norm < tiny(1.0_dp)) return
+      work = work/norm
+      do pass = 1, 2
+         do j = 1, nsub
+            overlap = dot_product(basis(:, j), work)
+            work = work - overlap*basis(:, j)
+         end do
+      end do
+      norm = sqrt(dot_product(work, work))
+      if (norm < LINEAR_DEPENDENCE) return
+      if (nsub >= size(basis, 2)) return
+      nsub = nsub + 1
+      basis(:, nsub) = work/norm
+   end subroutine add_direction
 
 end module mqc_orbital_rotation

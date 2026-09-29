@@ -61,6 +61,7 @@ module mqc_czt_mcscf
    use pic_logger, only: logger => global_logger
    use pic_lapack_interfaces, only: pic_syev
    use mqc_orbital_rotation, only: rotation_matrix, level_shifted_step, &
+                                   rotation_hessian_t, subspace_newton_step, &
                                    MIN_CURVATURE, SADDLE_CURVATURE, MAX_ROTATION, &
                                    MIN_ROTATION, ENERGY_RESOLUTION, TRUST_GROWTH
    implicit none
@@ -77,6 +78,9 @@ module mqc_czt_mcscf
    public :: orbital_hessian_from_blocks
    public :: mo_integral_blocks
    public :: fock_from_blocks
+   public :: orbital_hessian_operator_t
+   public :: approximate_hessian_diagonal
+   public :: iterative_newton_step
    public :: run_czt_casscf
    public :: casscf_result_t
    public :: natural_orbitals
@@ -157,6 +161,35 @@ module mqc_czt_mcscf
          !! having explicitly because it is what makes a rotation redundant when
          !! two orbitals share it.
    end type mcscf_fock_t
+
+   type, extends(rotation_hessian_t) :: orbital_hessian_operator_t
+      !! The orbital Hessian at fixed CI, applied to vectors without being built
+      !!
+      !! A vector holds one value per non-redundant rotation, in `rows`/`cols`
+      !! order, and its image is that vector times `orbital_hessian_from_blocks`'s
+      !! columns before that routine averages the matrix with its transpose.
+      !! The integral blocks are the caller's, pointed to rather than copied.
+      real(dp), pointer, contiguous :: a_block(:, :, :, :) => null()
+         !! (n_mo, n_occ, n_mo, n_occ): `(p q|r s)`, `q` and `s` occupied
+      real(dp), pointer, contiguous :: b_block(:, :, :, :) => null()
+         !! (n_mo, n_mo, n_occ, n_occ): `(p q|r s)`, `r` and `s` occupied
+      type(mcscf_fock_t) :: fock
+      real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
+      integer :: n_inactive = 0
+      integer :: n_active = 0
+      integer, allocatable :: rows(:), cols(:)
+   contains
+      procedure :: apply => orbital_hessian_apply
+   end type orbital_hessian_operator_t
+
+   integer, parameter :: ITERATIVE_HESSIAN_ABOVE = 800
+      !! Rotation count above which `run_czt_casscf` takes its Newton step
+      !! iteratively instead of building and diagonalising the Hessian
+   integer, parameter :: ITERATIVE_SUBSPACE = 40
+      !! Largest Krylov subspace of an iterative Newton step
+   real(dp), parameter :: ITERATIVE_TOLERANCE = 1.0e-4_dp
+      !! Residual of the projected Newton equations, relative to the gradient,
+      !! at which an iterative step stops expanding
 
 contains
 
@@ -408,6 +441,106 @@ contains
          end do
       end do
    end subroutine rotation_parameters
+
+   subroutine orbital_hessian_apply(this, x, hx, error)
+      !! The orbital Hessian times one vector of rotation parameters
+      class(orbital_hessian_operator_t), intent(inout) :: this
+      real(dp), intent(in) :: x(:)      !! (n_param)
+      real(dp), intent(out) :: hx(:)    !! (n_param)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: kappa_stack(:, :, :), fock_stack(:, :, :)
+      integer :: n_mo, l
+
+      if (error%has_error()) return
+      n_mo = size(this%a_block, 1)
+      allocate (kappa_stack(n_mo, n_mo, 1), fock_stack(n_mo, n_mo, 1))
+      kappa_stack = 0.0_dp
+      do l = 1, size(this%rows)
+         kappa_stack(this%rows(l), this%cols(l), 1) = x(l)
+         kappa_stack(this%cols(l), this%rows(l), 1) = -x(l)
+      end do
+      call one_index_fock_many(this%a_block, this%b_block, this%fock, this%dm1, this%dm2, &
+                               this%n_inactive, this%n_active, kappa_stack, fock_stack)
+      do l = 1, size(this%rows)
+         hx(l) = 2.0_dp*(fock_stack(this%cols(l), this%rows(l), 1) &
+                         - fock_stack(this%rows(l), this%cols(l), 1))
+      end do
+   end subroutine orbital_hessian_apply
+
+   function approximate_hessian_diagonal(fock, rows, cols) result(diagonal)
+      !! The one-electron approximation to the orbital Hessian's diagonal
+      !!
+      !!     H_pq,pq ~ 2 (n_q f_pp + n_p f_qq) - 2 (F_pp + F_qq)
+      !!
+      !! with `n` the occupations, `f = FI + FA` and `F` the generalised Fock.
+      !! For an inactive-virtual pair it is `4 (f_aa - f_ii)`.
+      type(mcscf_fock_t), intent(in) :: fock
+      integer, intent(in) :: rows(:), cols(:)
+      real(dp) :: diagonal(size(rows))
+
+      integer :: l, p, q
+
+      do l = 1, size(rows)
+         p = rows(l)
+         q = cols(l)
+         diagonal(l) = 2.0_dp*(fock%occupation(q)*(fock%inactive(p, p) + fock%active(p, p)) &
+                               + fock%occupation(p)*(fock%inactive(q, q) + fock%active(q, q))) &
+                       - 2.0_dp*(fock%general(p, p) + fock%general(q, q))
+      end do
+   end function approximate_hessian_diagonal
+
+   subroutine iterative_newton_step(operator, gradient, escape, kappa, lowest, predicted, &
+                                    products, error)
+      !! `newton_step` without building or diagonalising the Hessian
+      !!
+      !! `mqc_orbital_rotation`'s `subspace_newton_step` on the operator, with
+      !! `approximate_hessian_diagonal` as its preconditioner, so the level
+      !! shift and saddle escape are `level_shifted_step`'s on the projected
+      !! Hessian. `lowest` is then an upper bound on the smallest curvature.
+      type(orbital_hessian_operator_t), intent(inout) :: operator
+      real(dp), intent(in) :: gradient(:, :)   !! (n_mo, n_mo), as `orbital_gradient`
+      real(dp), intent(in) :: escape
+         !! How far to displace a mode that has negative curvature and no
+         !! gradient, in radians
+      real(dp), allocatable, intent(out) :: kappa(:, :)
+      real(dp), intent(out) :: lowest
+      real(dp), intent(out) :: predicted
+         !! What the quadratic model says the step is worth, as a positive
+         !! energy decrease
+      integer, intent(out) :: products
+         !! Hessian-vector products spent
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: flat_gradient(:), step(:)
+      integer :: n_mo, n_param, l
+
+      lowest = 0.0_dp
+      predicted = 0.0_dp
+      products = 0
+      if (error%has_error()) return
+      n_mo = size(gradient, 1)
+      n_param = size(operator%rows)
+      allocate (kappa(n_mo, n_mo))
+      kappa = 0.0_dp
+      if (n_param == 0) return
+
+      allocate (flat_gradient(n_param))
+      do l = 1, n_param
+         flat_gradient(l) = gradient(operator%rows(l), operator%cols(l))
+      end do
+      call subspace_newton_step(operator, &
+                                approximate_hessian_diagonal(operator%fock, operator%rows, &
+                                                             operator%cols), &
+                                flat_gradient, escape, step, lowest, predicted, products, error, &
+                                max_subspace=ITERATIVE_SUBSPACE, tolerance=ITERATIVE_TOLERANCE)
+      if (error%has_error()) return
+
+      do l = 1, n_param
+         kappa(operator%rows(l), operator%cols(l)) = step(l)
+         kappa(operator%cols(l), operator%rows(l)) = -step(l)
+      end do
+   end subroutine iterative_newton_step
 
    subroutine orbital_hessian(mol, orbitals, n_inactive, n_active, dm1, dm2, fock, &
                               rows, cols, hessian, error)
@@ -975,7 +1108,8 @@ contains
 
    subroutine run_czt_casscf(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                              result, error, max_iterations, gradient_tol, verbose, &
-                             subspaces, min_electrons, max_electrons, n_states, weights)
+                             subspaces, min_electrons, max_electrons, n_states, weights, &
+                             iterative_hessian)
       !! Two-step CASSCF: solve the CI, move the orbitals, repeat
       !!
       !! Each macro-iteration solves the CI problem exactly at the current
@@ -1018,13 +1152,20 @@ contains
          !! Needs `weights`, `n_alpha == n_beta`, and a complete active space.
       real(dp), intent(in), optional :: weights(:)
          !! One weight per state, summing to one
+      logical, intent(in), optional :: iterative_hessian
+         !! Take each Newton step iteratively (`iterative_newton_step`) instead
+         !! of building and diagonalising the orbital Hessian. Absent, it is
+         !! iterative above `ITERATIVE_HESSIAN_ABOVE` rotations.
 
       type(ormas_space_t) :: space
       logical :: restricted
       type(casci_result_t) :: ci, trial_ci
       type(mcscf_fock_t) :: fock
       type(link_table_t) :: alpha, beta
-      real(dp), allocatable :: a_mo(:, :, :, :), b_mo(:, :, :, :)
+      real(dp), allocatable, target :: a_mo(:, :, :, :), b_mo(:, :, :, :)
+      integer :: hessian_products
+      type(orbital_hessian_operator_t) :: hessian_operator
+      logical :: iterative
       real(dp), allocatable :: current(:, :), updated(:, :)
       real(dp), allocatable :: dm1(:, :), dm2(:, :, :, :)
       real(dp), allocatable :: gradient(:, :), hessian(:, :), kappa(:, :), rotation(:, :)
@@ -1110,6 +1251,15 @@ contains
          call rotation_parameters(n_mo, n_inactive, n_active, rows, cols)
       end if
 
+      iterative = size(rows) > ITERATIVE_HESSIAN_ABOVE
+      if (present(iterative_hessian)) iterative = iterative_hessian
+      if (iterative) then
+         hessian_operator%n_inactive = n_inactive
+         hessian_operator%n_active = n_active
+         hessian_operator%rows = rows
+         hessian_operator%cols = cols
+      end if
+
       if (loud) then
          call logger%info("")
          if (restricted) then
@@ -1172,11 +1322,23 @@ contains
          ! still a zero gradient.
          if (allocated(hessian)) deallocate (hessian)
          if (allocated(kappa)) deallocate (kappa)
-         call orbital_hessian_from_blocks(a_mo, b_mo, n_inactive, n_active, dm1, dm2, fock, &
-                                          rows, cols, hessian)
-         deallocate (a_mo, b_mo)
-         call newton_step(hessian, gradient, rows, cols, MAX_ROTATION, kappa, &
-                          lowest, predicted, error)
+         if (iterative) then
+            hessian_operator%a_block => a_mo
+            hessian_operator%b_block => b_mo
+            hessian_operator%fock = fock
+            hessian_operator%dm1 = dm1
+            hessian_operator%dm2 = dm2
+            call iterative_newton_step(hessian_operator, gradient, MAX_ROTATION, kappa, lowest, &
+                                       predicted, hessian_products, error)
+            nullify (hessian_operator%a_block, hessian_operator%b_block)
+            deallocate (a_mo, b_mo)
+         else
+            call orbital_hessian_from_blocks(a_mo, b_mo, n_inactive, n_active, dm1, dm2, &
+                                             fock, rows, cols, hessian)
+            deallocate (a_mo, b_mo)
+            call newton_step(hessian, gradient, rows, cols, MAX_ROTATION, kappa, &
+                             lowest, predicted, error)
+         end if
          if (error%has_error()) return
 
          if (loud) then
