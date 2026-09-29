@@ -545,11 +545,10 @@ contains
       !! The active space, and how hard to work at it
       !!
       !! **Only what the backend actually acts on is listed.** `mcscf_config_t`
-      !! carries fields for state averaging and for a CASPT2/NEVPT2 correction,
-      !! and none of that is implemented -- `run_czt_casscf` optimises one
-      !! state and there is no perturbative step at all. Allowing those keys
-      !! would let a deck ask for a three-state average and get a ground-state
-      !! energy with nothing in the output to say so.
+      !! also carries fields for a CASPT2/NEVPT2 correction that nothing
+      !! implements, so those keys stay off the list. `n_states`/`weights`
+      !! select a state-averaged CASSCF (see `run_czt_mcscf` for what it is
+      !! refused with).
       !!
       !! `max_micro_iter` and a CI threshold are absent because neither routine
       !! underneath takes them: the macro loop pins its CASCI at 1e-11, so the
@@ -564,6 +563,8 @@ contains
       call allow(keys, "optimize_orbitals")
       call allow(keys, "max_macro_iter")
       call allow(keys, "orbital_convergence")
+      call allow(keys, "n_states")
+      call allow(keys, "weights")
    end function mcscf_keys
 
    function hessian_keys() result(keys)

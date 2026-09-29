@@ -156,6 +156,10 @@ contains
       end if
       settings%mcscf%max_macro_iter = this%options%max_macro_iter
       settings%mcscf%orbital_convergence = this%options%orbital_tol
+      settings%mcscf%n_states = this%options%n_states
+      if (allocated(this%options%state_weights)) then
+         settings%mcscf%state_weights = this%options%state_weights
+      end if
 
       call run_czt_mcscf(settings, fragment, result, want_gradient=want_gradient)
    end subroutine mcscf_run

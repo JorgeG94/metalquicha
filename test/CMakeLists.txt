@@ -199,6 +199,10 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_mcscf)
   addtest(mqc_scf_level_shift)
 
+  # State-averaged CASSCF: energy, singlet selection, n_states = 1 unchanged.
+  addtest(mqc_sa_casscf)
+  target_link_libraries(test_mqc_sa_casscf PRIVATE cint_fortran cint)
+
   # `incremental_fock` changes no number the SCF reports, so it is tested by the
   # count of full Fock builds rather than by timing -- see the module's own note
   # for the measurements that ruled timing out.

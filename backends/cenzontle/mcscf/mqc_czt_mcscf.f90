@@ -55,7 +55,7 @@ module mqc_czt_mcscf
    use mqc_czt_casci, only: run_czt_casci, casci_result_t, &
                             run_czt_ormas_ci
    use mqc_determinants, only: link_table_t, build_link_table
-   use mqc_rdm, only: active_space_rdms
+   use mqc_rdm, only: active_space_rdms, spin_squared
    use mqc_ormas_space, only: ormas_space_t, build_ormas_space
    use mqc_ormas_ci, only: ormas_density_matrices
    use pic_logger, only: logger => global_logger
@@ -106,6 +106,21 @@ module mqc_czt_mcscf
          !! a run that ran out of iterations instead, both densities are one
          !! orbital step behind -- consistent with each other, which is what a
          !! cumulant needs, but not with the orbitals they are reported beside.
+         !!
+         !! Under state averaging (`n_states > 1`, below) these are the
+         !! **state-averaged** densities `D_SA = sum_J w_J D_J`, `d_SA = sum_J
+         !! w_J d_J` -- what the orbital optimiser actually used -- and not any
+         !! one root's own density. A per-root density is not carried here;
+         !! `energy` is likewise `E_SA`, not root 1's energy.
+      real(dp), allocatable :: energies(:)
+         !! Every state's total energy, ascending, when `n_states > 1`;
+         !! `weights(J)` belongs to `energies(J)`. Unallocated otherwise.
+      real(dp), allocatable :: ci_vectors(:, :, :)
+         !! (n_alpha_strings, n_beta_strings, n_states): every state's CI
+         !! vector at the final orbitals, when `n_states > 1`
+      real(dp), allocatable :: spins(:)
+         !! `<S^2>` of each state in `energies`, from its CI vector
+         !! (`spin_squared`). Same shape as `energies`.
       integer :: iterations = 0
       integer :: n_determinants = 0
       logical :: converged = .false.
@@ -672,7 +687,7 @@ contains
 
    subroutine run_czt_casscf(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                              result, error, max_iterations, gradient_tol, verbose, &
-                             subspaces, min_electrons, max_electrons)
+                             subspaces, min_electrons, max_electrons, n_states, weights)
       !! Two-step CASSCF: solve the CI, move the orbitals, repeat
       !!
       !! Each macro-iteration solves the CI problem exactly at the current
@@ -708,6 +723,13 @@ contains
       integer, intent(in), optional :: subspaces(:), min_electrons(:), max_electrons(:)
          !! An occupation-restricted space, as `keywords.mcscf.ormas` gives it.
          !! Absent is a complete active space. All three or none.
+      integer, intent(in), optional :: n_states
+         !! State-averaged CASSCF over this many singlet roots when greater
+         !! than 1: the orbitals minimise `E_SA = sum_J w_J E_J`, and the
+         !! orbital gradient and Hessian are built from the weighted densities.
+         !! Needs `weights`, `n_alpha == n_beta`, and a complete active space.
+      real(dp), intent(in), optional :: weights(:)
+         !! One weight per state, summing to one
 
       type(ormas_space_t) :: space
       logical :: restricted
@@ -723,12 +745,41 @@ contains
       integer, allocatable :: rows(:), cols(:)
       character(len=160) :: line
       real(dp) :: tol, largest, previous, trust, scaling, lowest, predicted
-      integer :: cycles, iteration, n_ao, n_mo, trial
-      logical :: loud, have_guess, accepted, saddle
+      real(dp) :: energy, trial_energy
+      integer :: cycles, iteration, n_ao, n_mo, trial, n_roots, j
+      logical :: loud, have_guess, accepted, saddle, averaged
 
       integer, parameter :: MAX_BACKTRACKS = 12
 
       if (error%has_error()) return
+
+      n_roots = 1
+      if (present(n_states)) n_roots = n_states
+      averaged = n_roots > 1
+      if (averaged) then
+         if (.not. present(weights)) then
+            call error%set(ERROR_VALIDATION, "mcscf: n_states > 1 needs weights")
+            return
+         end if
+         if (size(weights) /= n_roots) then
+            call error%set(ERROR_VALIDATION, "mcscf: "//to_char(size(weights))// &
+                           " weights for "//to_char(n_roots)//" states")
+            return
+         end if
+         if (n_alpha /= n_beta) then
+            call error%set(ERROR_VALIDATION, "mcscf: state averaging needs a singlet "// &
+                           "(equal active alpha and beta electrons); this active "// &
+                           "space has "//to_char(n_alpha)//" alpha and "// &
+                           to_char(n_beta)//" beta.")
+            return
+         end if
+         if (present(subspaces)) then
+            call error%set(ERROR_VALIDATION, "mcscf: state averaging over an "// &
+                           "occupation-restricted (ORMAS) space is not implemented")
+            return
+         end if
+      end if
+
       cycles = 50
       if (present(max_iterations)) cycles = max_iterations
       ! `keywords.mcscf.max_macro_iter` reaches here unchecked -- the schema
@@ -774,6 +825,9 @@ contains
          call logger%info("")
          if (restricted) then
             call logger%info("  occupation-restricted active space SCF")
+         else if (averaged) then
+            call logger%info("  state-averaged complete active space SCF, "// &
+                             to_char(n_roots)//" states")
          else
             call logger%info("  complete active space SCF")
          end if
@@ -791,10 +845,12 @@ contains
                        max_electrons, flat_guess)
       else
          call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
-                       guess, have_guess, ci, error)
+                       guess, have_guess, ci, error, n_roots=n_roots)
       end if
       if (error%has_error()) return
-      previous = ci%energy
+      energy = ci%energy
+      if (averaged) energy = weighted_sum(ci%energies, weights)
+      previous = energy
 
       do iteration = 1, cycles
          result%iterations = iteration
@@ -803,6 +859,8 @@ contains
          if (allocated(dm2)) deallocate (dm2)
          if (restricted) then
             call ormas_density_matrices(space, ci%ci_flat, dm1, dm2, error)
+         else if (averaged) then
+            call sa_density_matrices(ci%vectors, weights, alpha, beta, dm1, dm2, error)
          else
             call active_space_rdms(ci%ci_vector, alpha, beta, dm1, dm2, error)
          end if
@@ -832,10 +890,10 @@ contains
 
          if (loud) then
             write (line, "(a,i4,f20.12,2es16.4,2es12.2)") "    ", iteration, &
-               ci%energy, ci%energy - previous, largest, trust, lowest
+               energy, energy - previous, largest, trust, lowest
             call logger%info(trim(line))
          end if
-         previous = ci%energy
+         previous = energy
 
          saddle = lowest < SADDLE_CURVATURE
          if (largest < tol) then
@@ -878,13 +936,17 @@ contains
                              subspaces, min_electrons, max_electrons, flat_guess)
             else
                call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
-                             alpha, beta, guess, have_guess, trial_ci, error)
+                             alpha, beta, guess, have_guess, trial_ci, error, &
+                             n_roots=n_roots)
             end if
             if (error%has_error()) return
+            trial_energy = trial_ci%energy
+            if (averaged) trial_energy = weighted_sum(trial_ci%energies, weights)
 
-            if (trial_ci%energy < ci%energy .or. predicted < ENERGY_RESOLUTION) then
+            if (trial_energy < energy .or. predicted < ENERGY_RESOLUTION) then
                current = updated
                ci = trial_ci
+               energy = trial_energy
                trust = min(MAX_ROTATION, trust*TRUST_GROWTH)
                accepted = .true.
                exit
@@ -900,9 +962,10 @@ contains
          end if
       end do
 
-      result%energy = ci%energy
+      result%energy = energy
       result%core_energy = ci%core_energy
       result%active_energy = ci%active_energy
+      if (averaged) result%active_energy = energy - ci%core_energy
       result%gradient_norm = largest
       result%n_determinants = ci%n_determinants
       result%orbitals = current
@@ -913,10 +976,27 @@ contains
       if (allocated(ci%ci_flat)) result%ci_flat = ci%ci_flat
       result%dm1 = dm1
       result%dm2 = dm2
+      if (averaged) then
+         allocate (result%energies(n_roots), result%spins(n_roots))
+         result%energies = ci%energies(1:n_roots)
+         result%ci_vectors = ci%vectors(:, :, 1:n_roots)
+         do j = 1, n_roots
+            result%spins(j) = spin_squared(n_active, n_alpha, n_beta, ci%vectors(:, :, j), &
+                                           error)
+            if (error%has_error()) return
+         end do
+      end if
 
       if (loud) then
          write (line, "(a,f22.12)") "    converged energy        ", result%energy
          call logger%info(trim(line))
+         if (averaged) then
+            do j = 1, n_roots
+               write (line, "(a,i0,a,f20.12,a,f8.4)") "      state ", j, "  E = ", &
+                  result%energies(j), "   <S^2> = ", result%spins(j)
+               call logger%info(trim(line))
+            end do
+         end if
       end if
 
       ! Outside the `loud` block on purpose: a warning says the answer may be
@@ -930,6 +1010,47 @@ contains
       call alpha%destroy()
       call beta%destroy()
    end subroutine run_czt_casscf
+
+   pure function weighted_sum(energies, weights) result(total)
+      !! `sum_J weights(J) * energies(J)`, e.g. `E_SA` from every root's energy
+      real(dp), intent(in) :: energies(:), weights(:)
+      real(dp) :: total
+
+      integer :: j
+
+      total = 0.0_dp
+      do j = 1, size(weights)
+         total = total + weights(j)*energies(j)
+      end do
+   end function weighted_sum
+
+   subroutine sa_density_matrices(vectors, weights, alpha, beta, dm1, dm2, error)
+      !! `D_SA = sum_J w_J D_J`, `d_SA = sum_J w_J d_J`, one `active_space_rdms`
+      !! call per state
+      real(dp), intent(in) :: vectors(:, :, :)  !! (n_alpha_str, n_beta_str, n_states)
+      real(dp), intent(in) :: weights(:)
+      type(link_table_t), intent(in) :: alpha, beta
+      real(dp), allocatable, intent(out) :: dm1(:, :)
+      real(dp), allocatable, intent(out) :: dm2(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dm1_j(:, :), dm2_j(:, :, :, :)
+      integer :: j, n_states
+
+      if (error%has_error()) return
+      n_states = size(weights)
+      do j = 1, n_states
+         call active_space_rdms(vectors(:, :, j), alpha, beta, dm1_j, dm2_j, error)
+         if (error%has_error()) return
+         if (j == 1) then
+            dm1 = weights(1)*dm1_j
+            dm2 = weights(1)*dm2_j
+         else
+            dm1 = dm1 + weights(j)*dm1_j
+            dm2 = dm2 + weights(j)*dm2_j
+         end if
+      end do
+   end subroutine sa_density_matrices
 
    subroutine natural_orbitals(orbitals, n_inactive, n_active, dm1, natural, &
                                occupations, error)
@@ -989,7 +1110,7 @@ contains
 
    subroutine solve_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                        alpha, beta, guess, have_guess, ci, error, &
-                       subspaces, min_electrons, max_electrons, flat_guess)
+                       subspaces, min_electrons, max_electrons, flat_guess, n_roots)
       !! One CASCI, started from the previous vector when there is one
       !!
       !! After the first couple of macro-iterations the orbitals barely move, so
@@ -1007,6 +1128,9 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: subspaces(:), min_electrons(:), max_electrons(:)
       real(dp), allocatable, intent(inout), optional :: flat_guess(:, :)
+      integer, intent(in), optional :: n_roots
+         !! More than one: that many singlet roots (state averaging), each kept
+         !! as the next call's guess. Complete active space only.
 
       ! A restricted space has no alpha-by-beta rectangle to keep a guess in, so
       ! it carries the flat vector instead.
@@ -1028,6 +1152,24 @@ contains
             have_guess = .true.
          end if
          return
+      end if
+
+      if (present(n_roots)) then
+         if (n_roots > 1) then
+            if (have_guess) then
+               call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                                  ci, error, n_roots=n_roots, tolerance=1.0e-11_dp, &
+                                  guess=guess, symmetrize_singlet=.true.)
+            else
+               call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
+                                  ci, error, n_roots=n_roots, tolerance=1.0e-11_dp, &
+                                  symmetrize_singlet=.true.)
+            end if
+            if (error%has_error()) return
+            guess = ci%vectors
+            have_guess = .true.
+            return
+         end if
       end if
 
       if (have_guess) then
