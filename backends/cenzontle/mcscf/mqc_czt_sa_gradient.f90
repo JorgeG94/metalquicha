@@ -625,12 +625,9 @@ contains
          end if
          dm1_all(:, :, ir) = dm1_i
          dm2_all(:, :, :, :, ir) = dm2_i
-         call generalized_fock(mol, orbitals, n_inactive, n_active, dm1_all(:, :, ir), &
-                               dm2_all(:, :, :, :, ir), fock_all(ir), error)
-         if (error%has_error()) then
-            call destroy_sa_hessian(state)
-            return
-         end if
+         ! Only `general` is read from here on, and the SA Hessian state
+         ! already holds the MO integrals it needs: no AO pass.
+         call cheap_generalized_fock(state, dm1_i, dm2_i, fock_all(ir)%general)
          call orbital_gradient(fock_all(ir), n_inactive, n_active, grad_full)
          do l = 1, state%n_rot
             rhs(l, ir) = -grad_full(state%rows(l), state%cols(l))
