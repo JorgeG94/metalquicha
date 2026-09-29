@@ -101,7 +101,7 @@ module mqc_czt_efmo
    use mqc_scf_types, only: scf_numerics_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_atomic_guess, only: build_restricted_guess
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t
    use mqc_czt_efp_potential, only: efp_potential_t, make_efp_potential
    use mqc_czt_fmo, only: afo_context_t, group_t, build_cut_context, &
                           assemble_cut_group, group_projector
@@ -115,9 +115,9 @@ module mqc_czt_efmo
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_bond_perception, only: connected_components
    use mqc_czt_subsets, only: subtract_subsets, n_choose
-   use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2
-   use mqc_elements, only: core_orbital_count
-   use mqc_program_limits, only: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_czt_fragment_solver, only: fragment_request_t, fragment_outcome_t, &
+                                      solve_fragment_method
    use mqc_czt_efp_serialize, only: EFP_HEADER_INTS, fragment_header, &
                                     fragment_buffer_sizes, fragment_pack, fragment_unpack
    use pic_mpi_lib, only: comm_t, allreduce, MPI_SUM
@@ -125,7 +125,6 @@ module mqc_czt_efmo
    implicit none
    private
 
-   public :: EFMO_CORR_NONE, EFMO_CORR_MP2, EFMO_CORR_RI_MP2
    public :: efmo_options_t
    public :: efmo_pair_t
    public :: efmo_pair_contribution
@@ -198,8 +197,10 @@ module mqc_czt_efmo
          !! the two are the same solver on different systems and damping one
          !! without the other would leave the difference in the many-body
          !! remainder.
-      integer :: correlation = EFMO_CORR_NONE
-         !! `model.method`: `hf` leaves this alone, `mp2` and `ri-mp2` set it.
+      type(cuest_scf_settings_t) :: method
+         !! `model.method`: `hf` leaves `run_mp2` false, `mp2` and `ri-mp2` set
+         !! it (`corr_density_fitting` too, for `ri-mp2`); `freeze_core` and
+         !! `n_frozen_core` come along from `keywords.correlation`.
          !!
          !! **The whole of what a correlated EFMO is.** Eq 6 says nothing about
          !! the level of theory: `E_I^0` and `E_IJ^0` are in-vacuo energies of
@@ -209,17 +210,11 @@ module mqc_czt_efmo
          !! the induction come from the potentials, which are built from the
          !! Hartree-Fock density either way -- that is the method, not an
          !! approximation taken here: MAKEFP is a Hartree-Fock construction.
-      character(len=64) :: corr_aux_basis = ""
-         !! `model.aux_basis`, the fitting set `EFMO_CORR_RI_MP2` uses. Distinct
-         !! from `aux_basis` above, which fits MAKEFP's response Hessian: one is
-         !! a correlation-fitting set and the other a Coulomb-fitting one, and
-         !! a run may want both or neither.
-      logical :: freeze_core = .true.
-      integer :: n_frozen_core = -1
-         !! `keywords.correlation`. A negative count is derived per fragment
-         !! from its elements, which makes the dimer's core the sum of its two
-         !! monomers' -- so `E_IJ - E_I - E_J` differences the same set of
-         !! correlated orbitals on both sides.
+         !!
+         !! `method%aux_basis_set` is the fitting set RI-MP2 uses. Distinct
+         !! from `aux_basis` below, which fits MAKEFP's response Hessian: one
+         !! is a correlation-fitting set and the other a Coulomb-fitting one,
+         !! and a run may want both or neither.
       character(len=32) :: guess = "auto"
          !! Initial guess for every SCF here, monomer and dimer alike.
       character(len=64) :: aux_basis = ""
@@ -453,15 +448,17 @@ contains
                                 error, comm, detached=opts%detached)
          if (error%has_error()) return
          if (afo%active) res%n_cuts = afo%n_cuts
-         if (afo%active .and. opts%correlation /= EFMO_CORR_NONE) then
+         if (afo%active .and. opts%method%run_mp2) then
             ! The frozen virtual is held at a shift rather than removed, which a
             ! Hartree-Fock energy does not see and a correlation energy does:
-            ! it would be correlated into like any other virtual.
-            call error%set(ERROR_VALIDATION, "efmo: a partition that detaches "// &
-                           "covalent bonds runs Hartree-Fock fragments only. The "// &
-                           "frozen orbitals at a cut are not yet excluded from the "// &
-                           "correlation, so an MP2 energy there would be a "// &
-                           "different and wrong method; set model.method to 'hf'.")
+            ! it would be correlated into like any other virtual. A defensive
+            ! guard rather than the user-facing text: `fragment_refusal` in
+            ! `mqc_fragment_capabilities` is what a deck actually sees, and it
+            ! refuses this combination before any backend work starts.
+            call error%set(ERROR_VALIDATION, "efmo: correlation with detached "// &
+                           "bonds reached the backend, where only Hartree-Fock "// &
+                           "should ever arrive; fragment_refusal should have "// &
+                           "refused this deck.")
             return
          end if
       case default
@@ -800,6 +797,9 @@ contains
       type(rhf_result_t) :: scf
       type(group_t) :: group
       type(fock_projector_t) :: proj
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
+      type(czt_molecule_t) :: corr_mol, aux_mol
       integer, allocatable :: idx(:)
       real(dp) :: e_corr
       integer :: k
@@ -841,12 +841,33 @@ contains
          ! And the correlation on those same orbitals, when the deck asked for
          ! it. **On the SCF MAKEFP already ran**, which is why `scf_out` exists:
          ! a second SCF here would converge to the same place and cost as much
-         ! as everything after it.
-         if (opts%correlation /= EFMO_CORR_NONE) then
-            call fragment_correlation(z(idx), symbols(idx), xyz(:, idx), &
-                                      sum(z(idx)) - charges(k), scf, opts, &
-                                      e_corr, error)
+         ! as everything after it. `afo%active` is false whenever this branch
+         ! runs: `run_efmo` refuses correlation with a detached bond before
+         ! `build_potentials` is ever reached, so `z(idx)` -- ghost-free -- is
+         ! the same atom list `scf`'s orbitals were built over.
+         if (opts%method%run_mp2) then
+            call build_czt_molecule(z(idx), symbols(idx), xyz(:, idx), trim(opts%basis), &
+                                    corr_mol, error, force_cartesian=.true.)
             if (error%has_error()) return
+            if (opts%method%corr_density_fitting) then
+               call build_czt_molecule(z(idx), symbols(idx), xyz(:, idx), &
+                                       trim(opts%method%aux_basis_set), aux_mol, error, &
+                                       force_cartesian=.true.)
+               if (error%has_error()) then
+                  call corr_mol%destroy()
+                  return
+               end if
+               call solve_fragment_method(opts%method, corr_mol, sum(z(idx)) - charges(k), &
+                                          z(idx), request, outcome, error, reference=scf, &
+                                          aux=aux_mol)
+               call aux_mol%destroy()
+            else
+               call solve_fragment_method(opts%method, corr_mol, sum(z(idx)) - charges(k), &
+                                          z(idx), request, outcome, error, reference=scf)
+            end if
+            call corr_mol%destroy()
+            if (error%has_error()) return
+            e_corr = outcome%correlation
             monomer_energy(k) = monomer_energy(k) + e_corr
             correlation(k) = e_corr
          end if
@@ -1062,74 +1083,6 @@ contains
       end subroutine join
 
    end subroutine force_joined_near
-
-   subroutine fragment_correlation(z, symbols, xyz, nelec, scf, opts, energy, error)
-      !! One fragment's MP2 correlation energy, on orbitals already converged
-      !!
-      !! The molecule is rebuilt rather than passed in, because the two callers
-      !! get theirs from different places -- `make_efp_potential` builds and
-      !! destroys its own -- and rebuilding it is a basis-set lookup against an
-      !! SCF. **Cartesian**, the same as every SCF in this module and for the
-      !! same reason: these orbitals came from a Cartesian molecule and an MO
-      !! transform against a spherical one would be nonsense rather than a
-      !! small error.
-      integer, intent(in) :: z(:)
-      character(len=2), intent(in) :: symbols(:)
-      real(dp), intent(in) :: xyz(:, :)
-      integer, intent(in) :: nelec
-      type(rhf_result_t), intent(in) :: scf
-      type(efmo_options_t), intent(in) :: opts
-      real(dp), intent(out) :: energy
-      type(error_t), intent(inout) :: error
-
-      type(czt_molecule_t) :: mol, aux
-      type(mp2_result_t) :: mp2
-      integer :: frozen
-
-      energy = 0.0_dp
-      if (opts%correlation == EFMO_CORR_NONE) return
-
-      frozen = opts%n_frozen_core
-      if (frozen < 0) frozen = core_orbital_count(z)
-      if (.not. opts%freeze_core) frozen = 0
-
-      call build_czt_molecule(z, symbols, xyz, trim(opts%basis), mol, error, &
-                              force_cartesian=.true.)
-      if (error%has_error()) return
-
-      if (opts%correlation == EFMO_CORR_RI_MP2) then
-         if (len_trim(opts%corr_aux_basis) == 0) then
-            call error%set(ERROR_VALIDATION, "efmo: a fitted correlation needs an "// &
-                           "auxiliary basis. Set model.aux_basis, or ask for 'mp2' "// &
-                           "rather than 'ri-mp2'.")
-            call mol%destroy()
-            return
-         end if
-         ! The fitting set in the orbital basis's angular form, as everywhere
-         ! else here: libcint builds all three centres of a fitting integral in
-         ! one form, and the orbital basis is Cartesian because MAKEFP's is.
-         call build_czt_molecule(z, symbols, xyz, trim(opts%corr_aux_basis), aux, &
-                                 error, force_cartesian=.true.)
-         if (error%has_error()) then
-            call mol%destroy()
-            return
-         end if
-         call run_czt_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, &
-                             nelec/2, scf%energy, mp2, error, n_frozen=frozen)
-         call aux%destroy()
-      else
-         call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, &
-                          nelec/2, scf%energy, mp2, error, n_frozen=frozen)
-      end if
-      call mol%destroy()
-      if (error%has_error()) return
-
-      ! `same_spin + opposite_spin`, unscaled. Spin-component scaling is not
-      ! offered: SCS-MP2 fragment energies would be a different method and the
-      ! deck names it separately, so a run that asked for it is refused above
-      ! rather than silently given plain MP2.
-      energy = mp2%same_spin + mp2%opposite_spin
-   end subroutine fragment_correlation
 
    subroutine announce_cost(res, opts, n_frag)
       !! What the near half is about to cost, before any of it is paid
@@ -1373,9 +1326,9 @@ contains
          !! Hartree-Fock run.
       type(error_t), intent(inout) :: error
 
-      type(czt_molecule_t) :: mol
-      type(rhf_result_t) :: scf
-      real(dp), allocatable :: guess_density(:, :)
+      type(czt_molecule_t) :: mol, aux
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
       integer :: guess_kind, nelec
 
       energy = 0.0_dp
@@ -1392,34 +1345,49 @@ contains
       call build_czt_molecule(z, symbols, xyz, trim(opts%basis), mol, error, &
                               force_cartesian=.true.)
       if (error%has_error()) return
-      call build_restricted_guess(mol, trim(opts%guess), guess_kind, guess_density, error)
+      call build_restricted_guess(mol, trim(opts%guess), guess_kind, request%guess_density, &
+                                  error)
       if (error%has_error()) then
          call mol%destroy()
          return
       end if
+      request%guess = guess_kind
+      request%grad_tol = opts%scf_grad_tol
+      request%drive = opts%scf
+      request%max_iter = opts%scf_max_iter
+      request%energy_tol = opts%scf_energy_tol
+      request%density_tol = opts%scf_density_tol
+      request%verbose = opts%verbose
 
-      call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, opts%verbose, scf, error, &
-                       guess=guess_kind, guess_density=guess_density, &
-                       grad_tol=opts%scf_grad_tol, scf=opts%scf)
+      ! The same correlation step the monomers got, on the group's own
+      ! orbitals, in the one call: `dE_S^0` is then a difference of energies of
+      ! one model, which is the only reading under which it is an interaction
+      ! energy. The frozen core is counted from this group's elements, so it is
+      ! the sum of its fragments' cores and both sides of the difference
+      ! freeze the same set.
+      if (opts%method%run_mp2 .and. opts%method%corr_density_fitting) then
+         call build_czt_molecule(z, symbols, xyz, trim(opts%method%aux_basis_set), aux, &
+                                 error, force_cartesian=.true.)
+         if (error%has_error()) then
+            call mol%destroy()
+            return
+         end if
+         call solve_fragment_method(opts%method, mol, nelec, z, request, outcome, error, &
+                                    aux=aux)
+         call aux%destroy()
+      else
+         call solve_fragment_method(opts%method, mol, nelec, z, request, outcome, error)
+      end if
       call mol%destroy()
       if (error%has_error()) return
-      if (.not. scf%converged .and. .not. opts%scf%allow_crap_scf) then
+      if (.not. outcome%converged .and. .not. opts%scf%allow_crap_scf) then
          call error%set(ERROR_VALIDATION, "efmo: a group SCF did not converge, so the "// &
                         "many-body correction it feeds is not trustworthy. Set "// &
                         "keywords.scf.allow_crap_scf to finish anyway.")
          return
       end if
-      energy = scf%energy
-
-      ! The same correlation step the monomers got, on the group's own
-      ! orbitals. `dE_S^0` is then a difference of energies of one model, which
-      ! is the only reading under which it is an interaction energy. The frozen
-      ! core is counted from this group's elements, so it is the sum of its
-      ! fragments' cores and both sides of the difference freeze the same set.
-      call fragment_correlation(z, symbols, xyz, nelec, scf, opts, correlation, error)
-      if (error%has_error()) return
-      energy = energy + correlation
+      energy = outcome%energy
+      correlation = outcome%correlation
    end subroutine nmer_energy
 
    subroutine cut_nmer_energy(z, symbols, xyz, owner, members, charge, afo, opts, &
@@ -1443,9 +1411,9 @@ contains
 
       type(group_t) :: group
       type(czt_molecule_t) :: mol
-      type(rhf_result_t) :: scf
       type(fock_projector_t) :: proj
-      real(dp), allocatable :: guess_density(:, :)
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
       integer :: guess_kind, nelec
       logical :: held
 
@@ -1465,7 +1433,8 @@ contains
                               error, force_cartesian=.true., ghost=group%ghost, &
                               nuclear_charge=group%nuc_charge)
       if (error%has_error()) return
-      call build_restricted_guess(mol, trim(opts%guess), guess_kind, guess_density, error)
+      call build_restricted_guess(mol, trim(opts%guess), guess_kind, request%guess_density, &
+                                  error)
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -1476,27 +1445,26 @@ contains
          return
       end if
 
-      if (held) then
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, opts%verbose, scf, error, &
-                          guess=guess_kind, guess_density=guess_density, &
-                          grad_tol=opts%scf_grad_tol, scf=opts%scf, projector=proj)
-      else
-         call run_czt_rhf(mol, nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                          opts%scf_density_tol, opts%verbose, scf, error, &
-                          guess=guess_kind, guess_density=guess_density, &
-                          grad_tol=opts%scf_grad_tol, scf=opts%scf)
-      end if
+      request%guess = guess_kind
+      request%grad_tol = opts%scf_grad_tol
+      request%drive = opts%scf
+      request%max_iter = opts%scf_max_iter
+      request%energy_tol = opts%scf_energy_tol
+      request%density_tol = opts%scf_density_tol
+      request%verbose = opts%verbose
+      if (held) request%projector = proj
+      call solve_fragment_method(opts%method, mol, nelec, group%z(1:group%n_real), &
+                                 request, outcome, error)
       call mol%destroy()
       if (error%has_error()) return
-      if (.not. scf%converged .and. .not. opts%scf%allow_crap_scf) then
+      if (.not. outcome%converged .and. .not. opts%scf%allow_crap_scf) then
          call error%set(ERROR_VALIDATION, "efmo: the SCF of group "// &
                         members_text(members)//" did not converge, so the many-body "// &
                         "correction it feeds is not trustworthy. Set "// &
                         "keywords.scf.allow_crap_scf to finish anyway.")
          return
       end if
-      energy = scf%energy
+      energy = outcome%energy
    end subroutine cut_nmer_energy
 
    subroutine total_polarization(frags, shifts, damping, energy, error)
@@ -1582,7 +1550,7 @@ contains
       call logger%info("  EFP dimers          exchange rep.    "//to_char(res%far_exchange_repulsion))
       call logger%info("  EFP dimers          charge transfer  "//to_char(res%far_charge_transfer))
       call logger%info("  all fragments       E_pol^total      "//to_char(res%polarization_total))
-      if (opts%correlation /= EFMO_CORR_NONE) then
+      if (opts%method%run_mp2) then
          ! Inside the two sums above, not beside them: a correlated `E_I^0` is
          ! the monomer energy of eq 6 and not a term added to it.
          call logger%info("    of which correlation, monomers  "// &

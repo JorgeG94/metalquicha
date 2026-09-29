@@ -687,6 +687,10 @@ The integration grid, and how the quadrature walks it:
   Hessian with dispersion on takes the finite-difference path, since neither
   library supplies second derivatives this code could add.
 
+  Under **FMO and EE-MBE** it is added to every fragment and every n-mer on
+  that group's own atoms, not once for the whole system; see
+  :doc:`fmo` (Limits).
+
 .. note::
 
    Both apply to every grid loop the exchange-correlation code has: the

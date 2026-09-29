@@ -15,15 +15,20 @@ program check_fmo_mpi
    !! comparison is against the serial code and not against another rank that
    !! could be wrong in the same way.
    !!
-   !! Four cases: the three embeddings on a water tetramer, where no bond is
-   !! cut, and propane split across both of its carbon-carbon bonds with point
-   !! charges on top, where the layout that has to stay rank-independent is
-   !! wider than the fragment's own basis.
+   !! Five cases: the three embeddings on a water tetramer, where no bond is
+   !! cut, PBE-D3(BJ) on the same tetramer with the far pairs separated (the
+   !! per-fragment dispersion is exchanged with the monomer energies and
+   !! reduced with the n-mer terms, and skipped without libxc or s-dftd3), and
+   !! propane split across both of its carbon-carbon bonds with point charges
+   !! on top, where the layout that has to stay rank-independent is wider than
+   !! the fragment's own basis.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger, warning_level
    use pic_mpi_lib, only: comm_t, comm_world, pic_mpi_init, pic_mpi_finalize
    use mqc_error, only: error_t
    use mqc_czt_fmo, only: fmo_options_t, fmo_result_t, run_fmo2
+   use mqc_czt_xc, only: xc_available
+   use mqc_dispersion_apply, only: dispersion_kind_available
    implicit none
 
    real(dp), parameter :: A2B = 1.8897261254578281_dp
@@ -74,6 +79,21 @@ program check_fmo_mpi
    call one_method("exact", "fmo", n_bad)
    call one_method("ptc", "mbe", n_bad)
    call one_method("none", "mbe", n_bad)
+
+   ! Dispersion is computed per monomer, where the monomers are solved, and per
+   ! n-mer, where the n-mers are; a separated pair's is computed by whichever
+   ! rank owns the pair. Each has to arrive in the total exactly once.
+   if (xc_available() .and. dispersion_kind_available("d3bj")) then
+      opts%method%functional = "pbe"
+      opts%method%grid_level = 3
+      opts%dispersion = "d3bj"
+      opts%resdim = 1.5_dp
+      opts%level = 2
+      call one_method("exact", "fmo", n_bad)
+      opts%method%functional = ""
+      opts%dispersion = "none"
+      opts%resdim = 0.0_dp
+   end if
 
    ! A detached bond changes what is distributed, not only how much of it: the
    ! frozen orbitals are solved on one rank and shared, the monomer densities

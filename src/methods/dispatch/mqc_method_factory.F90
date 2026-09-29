@@ -7,10 +7,13 @@ module mqc_method_factory
                                METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T, &
                                method_type_to_string
    use mqc_method_config, only: scf_options_t, method_config_t
+   use mqc_scf_types, only: scf_numerics_t
    use mqc_method_base, only: qc_method_t
-   use mqc_method_hf, only: hf_method_t
-   use mqc_method_dft, only: dft_method_t
+   use mqc_method_hf, only: hf_method_t, hf_backend_settings
+   use mqc_method_dft, only: dft_method_t, dft_backend_settings
    use mqc_method_mcscf, only: mcscf_method_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_error, only: error_t, ERROR_VALIDATION
 #ifndef MQC_WITHOUT_TBLITE
    use mqc_method_xtb, only: xtb_method_t
    use mctc_env, only: wp
@@ -21,6 +24,8 @@ module mqc_method_factory
    public :: method_factory_t
    public :: create_method  !! Convenience function
    public :: method_backend_built  !! Whether this build can run a method at all
+   public :: scf_numerics_from_config  !! The deck's SCF settings, as `scf_numerics_t` alone
+   public :: method_backend_settings  !! The deck's `cuest_scf_settings_t`, HF or DFT only
 
    type :: method_factory_t
       !! Factory for creating quantum chemistry method instances
@@ -208,6 +213,57 @@ contains
       options%properties = config%properties
       options%excited = config%excited
    end subroutine configure_scf
+
+   function scf_numerics_from_config(config) result(numerics)
+      !! The deck's `keywords.scf` as `scf_numerics_t`: how an SCF is driven
+      !!
+      !! The parent component of what `configure_scf` builds, for the SCFs
+      !! run outside `qc_method_t` (FMO, EE-MBE, EFMO, MAKEFP, NEO).
+      type(method_config_t), intent(in) :: config
+      type(scf_numerics_t) :: numerics
+
+      type(scf_options_t) :: options
+
+      call configure_scf(options, config)
+      numerics = options%scf_numerics_t
+   end function scf_numerics_from_config
+
+   subroutine method_backend_settings(config, settings, error)
+      !! `config` as an unfragmented run would build it: `cuest_scf_settings_t`
+      !!
+      !! For the fragment solver, which runs a fragment with the same settings
+      !! the whole molecule would be run with. Builds the method with
+      !! `create_method` and extracts its settings through `hf_backend_settings`
+      !! or `dft_backend_settings`; any other method type is an
+      !! internal-consistency error, because `fragment_refusal` should have
+      !! stopped a fragmentation scheme from reaching a method this cannot
+      !! serve.
+      type(method_config_t), intent(in) :: config
+      type(cuest_scf_settings_t), intent(out) :: settings
+      type(error_t), intent(inout) :: error
+
+      class(qc_method_t), allocatable :: method
+
+      ! allocate(..., source=), not `method = create_method(config)`: the
+      ! latter is intrinsic assignment from a CLASS(...), ALLOCATABLE function
+      ! result, which gfortran 13.2.0 miscompiles (see `create_method`'s own
+      ! docstring above) -- the assignment leaves `method`'s vptr pointing at
+      ! the abstract `qc_method_t` vtable instead of the concrete type's, so
+      ! neither `type is` branch below ever matches and dispatch through it
+      ! (`method%options`) jumps through a null pointer.
+      allocate (method, source=create_method(config))
+      select type (method)
+      type is (hf_method_t)
+         call hf_backend_settings(method%options, settings, error)
+      type is (dft_method_t)
+         call dft_backend_settings(method%options, settings, error)
+      class default
+         call error%set(ERROR_VALIDATION, "method_backend_settings: model.method '"// &
+                        trim(method_type_to_string(config%method_type))//"' has no "// &
+                        "fragment-solver settings -- fragment_refusal should have "// &
+                        "stopped this deck before it reached here.")
+      end select
+   end subroutine method_backend_settings
 
    subroutine configure_hf(m, config, with_mp2, with_cc)
       !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)

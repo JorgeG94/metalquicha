@@ -20,7 +20,10 @@ module mqc_czt_afo
    use mqc_physical_constants, only: BOHR_TO_ANGSTROM
    use mqc_bond_perception, only: severed_bond_t, perceive_bonds, DEFAULT_BOND_TOLERANCE
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, atom_ao_blocks
-   use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
+   use mqc_czt_rhf, only: rhf_result_t
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_czt_fragment_solver, only: fragment_request_t, fragment_outcome_t, &
+                                      solve_fragment_method
    use mqc_czt_localize, only: boys_localize, er_localize, LOCALIZER_BOYS, LOCALIZER_ER
    use mqc_scf_types, only: scf_numerics_t
    implicit none
@@ -99,6 +102,14 @@ module mqc_czt_afo
          !! (Edmiston-Ruedenberg, GAMESS's default for the model) or "boys".
       logical :: show_scf = .false.
          !! Print the model system's SCF table, at the caller's verbose level
+      type(cuest_scf_settings_t), allocatable :: method
+         !! The method the model system's SCF is solved with, as GAMESS does: a
+         !! non-empty `method%functional` solves it as restricted Kohn-Sham at
+         !! that functional, grid and screening. Unallocated is Hartree-Fock,
+         !! and gives the model exactly as it was before this field existed.
+         !! **Only the reference is read.** `run_mp2` and `run_cc` are ignored
+         !! by the model, which supplies orbitals and no energy, so a caller
+         !! that copies the deck's method here switches them off first.
    end type afo_options_t
 
    integer, parameter :: GAMESS_MAX_Z = 86
@@ -510,7 +521,9 @@ contains
    subroutine bond_hybrid(model, opts, hybrid, n_on_bond, error, centroid_distance)
       !! The orbital on the cut bond, expressed over the BDA's own basis functions
       !!
-      !! Solve the model, localize its occupied orbitals, take the one whose
+      !! Solve the model at `opts%method` -- Hartree-Fock when it is
+      !! unallocated, restricted Kohn-Sham at its functional otherwise --
+      !! localize its occupied orbitals, take the one whose
       !! centroid sits on the cut bond, and keep the part of it that lives on
       !! the bond-detached atom -- the one block the model and the fragment
       !! certainly share, which is what makes the hybrid transferable.
@@ -535,7 +548,6 @@ contains
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
-      type(scf_numerics_t) :: scf_numerics
       real(dp), allocatable :: localized(:, :), centroids(:, :), s(:, :), distance(:)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: midpoint(3)
@@ -561,35 +573,8 @@ contains
                               mol, error, force_cartesian=opts%cartesian)
       if (error%has_error()) return
 
-      ! `afo_options_t` carries the iteration count and the two tolerances twice
-      ! -- once bare and once inside its `scf_numerics_t` -- and
-      ! `run_czt_rhf` reads only the positional ones, so setting
-      ! `opts%scf%energy_tol` did nothing and said nothing. The bare fields are
-      ! the ones callers and tests actually set, so they win; copying them over
-      ! the numerics before the call means the two halves cannot disagree about
-      ! what this SCF was asked for.
-      scf_numerics = opts%scf
-      scf_numerics%max_iter = opts%scf_max_iter
-      scf_numerics%energy_tol = opts%scf_energy_tol
-      scf_numerics%density_tol = opts%scf_density_tol
-      scf_numerics%grad_tol = opts%scf_grad_tol
-      ! Full Fock builds: an incremental one accumulates error the size of its
-      ! screening, which leaves the energy wandering by 1e-10 to 1e-9 once the
-      ! model is converged -- above `scf_energy_tol`, so whether it is ever
-      ! met depends on the thread count. Propane in 6-31G ran 200 iterations
-      ! that way on libcint and failed; with full builds it converges in 14.
-      scf_numerics%incremental_fock = .false.
-      call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, opts%show_scf, scf, error, scf=scf_numerics, &
-                       grad_tol=opts%scf_grad_tol)
+      call solve_model_scf(model, mol, opts, scf, error)
       if (error%has_error()) return
-      if (.not. scf%converged) then
-         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge "// &
-                        "in "//to_char(scf%iterations)//" iterations, orbital gradient "// &
-                        to_char(scf%commutator)//" at the last, so there is no orbital "// &
-                        "to freeze")
-         return
-      end if
 
       n_occ = scf%n_occupied
       call localize_model(mol, scf%orbitals, n_occ, opts, localized, centroids, error)
@@ -634,6 +619,71 @@ contains
 
       if (present(centroid_distance)) centroid_distance = distance
    end subroutine bond_hybrid
+
+   subroutine solve_model_scf(model, mol, opts, scf, error)
+      !! The model system's converged SCF, at `opts%method` or Hartree-Fock
+      !!
+      !! Goes through `solve_fragment_method`, so the Hartree-Fock or
+      !! Kohn-Sham branch is the one every fragment takes. The request carries
+      !! the model's own convergence and nothing else -- no embedding, no
+      !! projector, no guess and no level-shift retry -- so an unallocated
+      !! `opts%method` reaches `run_czt_rhf` with the arguments it always had.
+      !! An unconverged SCF is an error: there is no orbital to freeze.
+      type(afo_model_t), intent(in) :: model
+      type(czt_molecule_t), intent(in) :: mol
+      type(afo_options_t), intent(in) :: opts
+      type(rhf_result_t), intent(out) :: scf
+      type(error_t), intent(inout) :: error
+
+      type(cuest_scf_settings_t) :: hartree_fock
+      type(fragment_request_t) :: request
+      type(fragment_outcome_t) :: outcome
+      character(len=:), allocatable :: solved_with
+
+      ! `afo_options_t` carries the iteration count and the two tolerances twice
+      ! -- once bare and once inside its `scf_numerics_t` -- and
+      ! `run_czt_rhf` reads only the positional ones, so setting
+      ! `opts%scf%energy_tol` did nothing and said nothing. The bare fields are
+      ! the ones callers and tests actually set, so they win; copying them over
+      ! the numerics before the call means the two halves cannot disagree about
+      ! what this SCF was asked for.
+      request%drive = opts%scf
+      request%drive%max_iter = opts%scf_max_iter
+      request%drive%energy_tol = opts%scf_energy_tol
+      request%drive%density_tol = opts%scf_density_tol
+      request%drive%grad_tol = opts%scf_grad_tol
+      ! Full Fock builds: an incremental one accumulates error the size of its
+      ! screening, which leaves the energy wandering by 1e-10 to 1e-9 once the
+      ! model is converged -- above `scf_energy_tol`, so whether it is ever
+      ! met depends on the thread count. Propane in 6-31G ran 200 iterations
+      ! that way on libcint and failed; with full builds it converges in 14.
+      request%drive%incremental_fock = .false.
+      request%max_iter = opts%scf_max_iter
+      request%energy_tol = opts%scf_energy_tol
+      request%density_tol = opts%scf_density_tol
+      request%grad_tol = opts%scf_grad_tol
+      request%verbose = opts%show_scf
+
+      solved_with = "Hartree-Fock"
+      if (allocated(opts%method)) then
+         if (len_trim(opts%method%functional) > 0) then
+            solved_with = "Kohn-Sham "//trim(opts%method%functional)
+         end if
+         call solve_fragment_method(opts%method, mol, model%nelec, model%z, request, &
+                                    outcome, error, label="model system")
+      else
+         call solve_fragment_method(hartree_fock, mol, model%nelec, model%z, request, &
+                                    outcome, error, label="model system")
+      end if
+      if (error%has_error()) return
+      scf = outcome%scf
+      if (.not. scf%converged) then
+         call error%set(ERROR_VALIDATION, "afo: the model system's "//solved_with// &
+                        " SCF did not converge in "//to_char(scf%iterations)// &
+                        " iterations, orbital gradient "//to_char(scf%commutator)// &
+                        " at the last, so there is no orbital to freeze")
+      end if
+   end subroutine solve_model_scf
 
    subroutine localize_model(mol, orbitals, n_occ, opts, localized, centroids, error)
       !! The model's occupied orbitals, localized as `opts%localization` asks
@@ -1068,8 +1118,9 @@ contains
    subroutine bond_lmo_set(model, opts, set, n_on_bond, error)
       !! The frozen orbitals a cut bond contributes, from its model system
       !!
-      !! Solve the model and localize every occupied orbital as
-      !! `opts%localization` says. The detached atom's own are the
+      !! Solve the model at `opts%method` (Hartree-Fock when unallocated,
+      !! restricted Kohn-Sham at its functional otherwise, as GAMESS does) and
+      !! localize every occupied orbital as `opts%localization` says. The detached atom's own are the
       !! `atom_lmo_count` with the largest population on it; of those, the one
       !! with the largest population on the attached atom is the bond's and
       !! goes first. Each is kept on every real atom of the model bonded to
@@ -1087,7 +1138,6 @@ contains
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
-      type(scf_numerics_t) :: scf_numerics
       real(dp), allocatable :: localized(:, :), centroids(:, :), s(:, :), pop_bda(:)
       integer, allocatable :: offsets(:), counts(:), keep(:), pick(:)
       logical, allocatable :: taken(:)
@@ -1106,28 +1156,8 @@ contains
       call build_czt_molecule(model%z, model%sym, model%xyz, trim(opts%basis), &
                               mol, error, force_cartesian=opts%cartesian)
       if (error%has_error()) return
-      scf_numerics = opts%scf
-      scf_numerics%max_iter = opts%scf_max_iter
-      scf_numerics%energy_tol = opts%scf_energy_tol
-      scf_numerics%density_tol = opts%scf_density_tol
-      scf_numerics%grad_tol = opts%scf_grad_tol
-      ! Full Fock builds: an incremental one accumulates error the size of its
-      ! screening, which leaves the energy wandering by 1e-10 to 1e-9 once the
-      ! model is converged -- above `scf_energy_tol`, so whether it is ever
-      ! met depends on the thread count. Propane in 6-31G ran 200 iterations
-      ! that way on libcint and failed; with full builds it converges in 14.
-      scf_numerics%incremental_fock = .false.
-      call run_czt_rhf(mol, model%nelec, opts%scf_max_iter, opts%scf_energy_tol, &
-                       opts%scf_density_tol, opts%show_scf, scf, error, scf=scf_numerics, &
-                       grad_tol=opts%scf_grad_tol)
+      call solve_model_scf(model, mol, opts, scf, error)
       if (error%has_error()) return
-      if (.not. scf%converged) then
-         call error%set(ERROR_VALIDATION, "afo: the model system's SCF did not converge "// &
-                        "in "//to_char(scf%iterations)//" iterations, orbital gradient "// &
-                        to_char(scf%commutator)//" at the last, so there is no orbital "// &
-                        "to freeze")
-         return
-      end if
       n_occ = scf%n_occupied
       call localize_model(mol, scf%orbitals, n_occ, opts, localized, centroids, error)
       if (error%has_error()) return

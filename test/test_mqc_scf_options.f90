@@ -22,10 +22,11 @@ module test_mqc_scf_options
    !! look identical from the backend's side.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_method_config, only: scf_options_t, properties_config_t
+   use mqc_method_config, only: scf_options_t, properties_config_t, method_config_t
    use mqc_cuest_iface, only: cuest_scf_settings_t, apply_scf_settings, &
                               apply_properties_settings
-   use mqc_scf_types, only: guess_step_t
+   use mqc_scf_types, only: guess_step_t, scf_numerics_t
+   use mqc_method_factory, only: scf_numerics_from_config
    implicit none
    private
 
@@ -40,7 +41,9 @@ contains
                   new_unittest("every_shared_field_reaches_the_settings", every_field_arrives), &
                   new_unittest("an_unallocated_guess_ladder_is_not_copied", ladder_optional), &
                   new_unittest("every_property_reaches_the_settings", every_property_arrives), &
-                  new_unittest("unset_allocatable_properties_are_not_copied", properties_optional) &
+                  new_unittest("unset_allocatable_properties_are_not_copied", properties_optional), &
+                  new_unittest("every_numerics_field_reaches_scf_numerics_from_config", &
+                               every_numerics_field_arrives) &
                   ]
    end subroutine collect_mqc_scf_options_tests
 
@@ -311,6 +314,86 @@ contains
       call check(error,.not. allocated(settings%charges_scheme), &
                  "charges_scheme appeared from nowhere")
    end subroutine properties_optional
+
+   subroutine every_numerics_field_arrives(error)
+      !! Every `scf_numerics_t` field survives `scf_numerics_from_config`
+      !!
+      !! That conversion replaced four hand copies in `mqc_driver.f90`
+      !! (`expansion%scf_drive`, `efmo_scf`, `makefp_scf`, `neo_scf`), each of
+      !! which dropped a different subset. `second_order` and `soscf_start`
+      !! sit on `method_config_t` itself, not `config%scf`.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(method_config_t) :: config
+      type(scf_numerics_t) :: numerics
+
+      config%scf%max_iter = 217
+      config%scf%energy_convergence = 1.5e-9_dp
+      config%scf%density_convergence = 2.5e-7_dp
+      config%scf%gradient_convergence = 3.5e-6_dp
+      config%scf%linear_dependence = 1.0e-5_dp
+      config%scf%level_shift = 0.35_dp
+      config%scf%use_diis = .false.
+      config%scf%diis_size = 11
+      config%scf%incremental_fock = .false.
+      config%scf%accelerator = "ediis"
+      config%scf%convergence_metric = "commutator"
+      config%scf%allow_crap_scf = .true.
+      config%scf%guess = "gwh"
+      allocate (config%scf%guess_steps(2))
+      config%scf%guess_steps(1)%basis = "sto-3g"
+      config%scf%guess_steps(1)%maxiter = 7
+      config%scf%guess_steps(2)%basis = "6-31g"
+      config%scf%guess_steps(2)%tolerance = 1.0e-4_dp
+      config%second_order = .true.
+      config%soscf_start = 0.02_dp
+
+      numerics = scf_numerics_from_config(config)
+
+      call check(error, numerics%max_iter == config%scf%max_iter, "max_iter")
+      if (allocated(error)) return
+      call check(error, numerics%energy_tol == config%scf%energy_convergence, "energy_tol")
+      if (allocated(error)) return
+      call check(error, numerics%density_tol == config%scf%density_convergence, "density_tol")
+      if (allocated(error)) return
+      call check(error, numerics%grad_tol == config%scf%gradient_convergence, "grad_tol")
+      if (allocated(error)) return
+      call check(error, numerics%linear_dependence == config%scf%linear_dependence, &
+                 "linear_dependence")
+      if (allocated(error)) return
+      call check(error, numerics%level_shift == config%scf%level_shift, "level_shift")
+      if (allocated(error)) return
+      call check(error, numerics%use_diis .eqv. config%scf%use_diis, "use_diis")
+      if (allocated(error)) return
+      call check(error, numerics%diis_size == config%scf%diis_size, "diis_size")
+      if (allocated(error)) return
+      call check(error, numerics%incremental_fock .eqv. config%scf%incremental_fock, &
+                 "incremental_fock")
+      if (allocated(error)) return
+      call check(error, numerics%accelerator == config%scf%accelerator, "accelerator")
+      if (allocated(error)) return
+      call check(error, numerics%convergence_metric == config%scf%convergence_metric, &
+                 "convergence_metric")
+      if (allocated(error)) return
+      call check(error, numerics%allow_crap_scf .eqv. config%scf%allow_crap_scf, &
+                 "allow_crap_scf")
+      if (allocated(error)) return
+      call check(error, numerics%guess == config%scf%guess, "guess")
+      if (allocated(error)) return
+      call check(error, numerics%second_order .eqv. config%second_order, "second_order")
+      if (allocated(error)) return
+      call check(error, numerics%soscf_start == config%soscf_start, "soscf_start")
+      if (allocated(error)) return
+
+      call check(error, allocated(numerics%guess_steps), "guess_steps not allocated")
+      if (allocated(error)) return
+      call check(error, size(numerics%guess_steps) == 2, "guess_steps size")
+      if (allocated(error)) return
+      call check(error, numerics%guess_steps(1)%basis == "sto-3g", "guess_steps(1)%basis")
+      if (allocated(error)) return
+      call check(error, numerics%guess_steps(2)%maxiter == config%scf%guess_steps(2)%maxiter, &
+                 "guess_steps(2)%maxiter")
+   end subroutine every_numerics_field_arrives
 
 end module test_mqc_scf_options
 

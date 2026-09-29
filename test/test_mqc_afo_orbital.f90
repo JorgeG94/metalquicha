@@ -7,9 +7,16 @@ module test_mqc_afo_orbital
    use mqc_bond_perception, only: find_severed_bonds, severed_bond_t
    use mqc_czt_afo, only: afo_model_t, afo_options_t, build_afo_model, &
                           bond_hybrid, BOND_ORBITAL_REACH, &
-                          afo_hybrid_t, build_group_frozen
+                          afo_hybrid_t, build_group_frozen, afo_lmo_set_t, &
+                          bond_lmo_set, build_bonded_model, orient_cut
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, atom_ao_blocks
    use mqc_czt_rhf, only: run_czt_rhf, rhf_result_t
+   use mqc_czt_localize, only: er_localize
+   use mqc_czt_xc, only: xc_context_t, xc_available
+   use mqc_czt_fragment_solver, only: fragment_xc_context
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_scf_types, only: scf_numerics_t
+   use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_fock_projector, only: fock_projector_t, build_frozen_basis
    implicit none
 
@@ -21,6 +28,9 @@ module test_mqc_afo_orbital
    !! name the basis too, so the layout is a statement about that basis rather
    !! than an assumption about all of them.
    integer, parameter :: P_FIRST = 3, P_LAST = 5
+
+   real(dp), parameter :: NUDGE = 0.03_dp
+      !! Bohr; see `ethane_lmo_set`
 
    private
    public :: collect_mqc_afo_orbital
@@ -39,7 +49,9 @@ contains
                   new_unittest("frozen_columns_land_on_their_own_atom", test_place), &
                   new_unittest("frozen_puts_the_occupied_columns_first", test_order), &
                   new_unittest("frozen_refuses_a_hybrid_from_another_basis", test_wrong_basis), &
-                  new_unittest("a_frozen_hybrid_comes_out_of_the_scf_empty", test_end_to_end) &
+                  new_unittest("a_frozen_hybrid_comes_out_of_the_scf_empty", test_end_to_end), &
+                  new_unittest("model_system_under_pbe_is_solved_at_pbe", test_model_kohn_sham), &
+                  new_unittest("model_system_without_a_method_is_hartree_fock", test_model_hartree_fock) &
                   ]
    end subroutine collect_mqc_afo_orbital
 
@@ -285,6 +297,213 @@ contains
       call check(error, dot_product(sh, matmul(held%density, sh)) < 1.0e-8_dp, &
                  "the frozen virtual still holds electrons")
    end subroutine test_end_to_end
+
+   subroutine ethane_lmo_set(opts, model, set, error)
+      !! Ethane cut at the C-C bond, through to its frozen-orbital set
+      !!
+      !! Every atom is nudged off the D3d geometry by a fixed few hundredths of
+      !! a Bohr. Ethane's six C-H bonds are equivalent, so the localization of
+      !! the symmetric molecule is decided by rounding, and two runs of it
+      !! need not pick the same set of orbitals; the nudge makes it decided by
+      !! the geometry.
+      type(afo_options_t), intent(in) :: opts
+      type(afo_model_t), intent(out) :: model
+      type(afo_lmo_set_t), intent(out) :: set
+      type(error_t), intent(inout) :: error
+
+      type(system_geometry_t) :: sys
+      type(severed_bond_t), allocatable :: cuts(:)
+      integer :: n_cuts, n_on_bond, k
+
+      call ethane(sys)
+      do k = 1, sys%total_atoms
+         sys%coordinates(:, k) = sys%coordinates(:, k) + NUDGE*[sin(1.0_dp*k), &
+                                                                cos(2.0_dp*k), sin(3.0_dp*k)]
+      end do
+      call find_severed_bonds(sys, [1, 1, 1, 1, 2, 2, 2, 2], cuts, n_cuts)
+      call orient_cut(sys%element_numbers, sys%coordinates, cuts(1), error)
+      call build_bonded_model(sys%element_numbers, sys%coordinates, cuts(1), model, error)
+      call bond_lmo_set(model, opts, set, n_on_bond, error)
+   end subroutine ethane_lmo_set
+
+   subroutine independent_localized(model, functional, localized, error, mol)
+      !! The model's occupied orbitals, ER-localized, from a direct `run_czt_rhf`
+      !! at the model's own convergence, with `functional` or Hartree-Fock
+      type(afo_model_t), intent(in) :: model
+      character(len=*), intent(in) :: functional
+      real(dp), allocatable, intent(out) :: localized(:, :)
+      type(error_t), intent(inout) :: error
+      type(czt_molecule_t), intent(out) :: mol
+
+      type(afo_options_t) :: defaults
+      type(cuest_scf_settings_t) :: method
+      type(scf_numerics_t) :: numerics
+      type(xc_context_t) :: xc
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: centroids(:, :)
+
+      call build_czt_molecule(model%z, model%sym, model%xyz, "sto-3g", mol, error)
+      if (error%has_error()) return
+      numerics = defaults%scf
+      numerics%incremental_fock = .false.
+      if (len_trim(functional) > 0) then
+         method%functional = functional
+         call fragment_xc_context(method, mol, xc, error)
+         if (error%has_error()) return
+         call run_czt_rhf(mol, model%nelec, defaults%scf_max_iter, defaults%scf_energy_tol, &
+                          defaults%scf_density_tol, .false., scf, error, scf=numerics, &
+                          xc=xc, grad_tol=defaults%scf_grad_tol)
+         call xc%destroy()
+      else
+         call run_czt_rhf(mol, model%nelec, defaults%scf_max_iter, defaults%scf_energy_tol, &
+                          defaults%scf_density_tol, .false., scf, error, scf=numerics, &
+                          grad_tol=defaults%scf_grad_tol)
+      end if
+      if (error%has_error()) return
+      call er_localize(mol, scf%orbitals, scf%n_occupied, localized, centroids, error)
+   end subroutine independent_localized
+
+   function set_rows(model, mol, set) result(rows)
+      !! The rows of the model's AO axis a set's coefficients are kept on
+      type(afo_model_t), intent(in) :: model
+      type(czt_molecule_t), intent(in) :: mol
+      type(afo_lmo_set_t), intent(in) :: set
+      integer, allocatable :: rows(:)
+
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: k, l, n
+
+      allocate (offsets(mol%natm), counts(mol%natm))
+      call atom_ao_blocks(mol, offsets, counts)
+      allocate (rows(0))
+      do k = 1, set%n_at
+         do l = 1, model%n_atoms
+            if (model%from_system(l) /= set%atoms(k)) cycle
+            rows = [rows, [(offsets(l) + n, n=1, counts(l))]]
+         end do
+      end do
+   end function set_rows
+
+   pure function column_defect(a, pool) result(worst)
+      !! How far the worst column of `a` is from its nearest column of `pool`,
+      !! up to sign -- an orbital's sign is not a property of the orbital
+      real(dp), intent(in) :: a(:, :), pool(:, :)
+      real(dp) :: worst
+
+      real(dp) :: nearest
+      integer :: i, j
+
+      worst = 0.0_dp
+      do i = 1, size(a, 2)
+         nearest = huge(1.0_dp)
+         do j = 1, size(pool, 2)
+            nearest = min(nearest, maxval(abs(a(:, i) - pool(:, j))), &
+                          maxval(abs(a(:, i) + pool(:, j))))
+         end do
+         worst = max(worst, nearest)
+      end do
+   end function column_defect
+
+   subroutine test_model_kohn_sham(error)
+      !! With `opts%method` at PBE the model is the Kohn-Sham solution
+      !!
+      !! The reference is built here from `run_czt_rhf` and an xc context and
+      !! localized with `er_localize`, so it shares no code with the model's own
+      !! path beyond those two. Every column of the returned set must be one of
+      !! its localized orbitals cut down to the kept atoms. The Hartree-Fock set
+      !! must not be: were `opts%method` ignored the two sets would be the same
+      !! and the second check is the one that would fail.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(afo_options_t) :: opts, opts_hf
+      type(afo_model_t) :: model
+      type(afo_lmo_set_t) :: set_pbe, set_hf
+      type(czt_molecule_t) :: mol
+      real(dp), allocatable :: localized(:, :)
+      integer, allocatable :: rows(:)
+      real(dp) :: matched, moved
+
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
+      opts%basis = "sto-3g"
+      opts_hf = opts
+      allocate (opts%method)
+      opts%method%functional = "pbe"
+
+      call ethane_lmo_set(opts, model, set_pbe, err)
+      call check(error,.not. err%has_error(), "the PBE model's orbital set failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+      call ethane_lmo_set(opts_hf, model, set_hf, err)
+      call check(error,.not. err%has_error(), "the Hartree-Fock model's orbital set failed")
+      if (allocated(error)) return
+
+      call independent_localized(model, "pbe", localized, err, mol)
+      call check(error,.not. err%has_error(), "the reference Kohn-Sham model failed")
+      if (allocated(error)) return
+
+      rows = set_rows(model, mol, set_pbe)
+      call check(error, size(rows), size(set_pbe%coeff, 1), &
+                 "the kept rows do not add up to the set's coefficients")
+      if (allocated(error)) return
+      matched = column_defect(set_pbe%coeff, localized(rows, :))
+      call check(error, matched < 1.0e-8_dp, &
+                 "the PBE model's orbitals are not the Kohn-Sham ones")
+      if (allocated(error)) then
+         write (*, *) "   worst column defect against the reference =", matched
+         return
+      end if
+
+      moved = column_defect(set_pbe%coeff, set_hf%coeff)
+      write (*, *) "   PBE set against Hartree-Fock set, worst column defect =", moved
+      call check(error, moved > 1.0e-4_dp, &
+                 "the PBE model's orbitals are the Hartree-Fock ones: the method was ignored")
+   end subroutine test_model_kohn_sham
+
+   subroutine test_model_hartree_fock(error)
+      !! An unallocated method is Hartree-Fock, bit for bit what a settings
+      !! object with no functional gives, and the orbitals a direct
+      !! Hartree-Fock `run_czt_rhf` localizes to
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(afo_options_t) :: opts, opts_named
+      type(afo_model_t) :: model
+      type(afo_lmo_set_t) :: set_bare, set_named
+      type(czt_molecule_t) :: mol
+      real(dp), allocatable :: localized(:, :)
+      integer, allocatable :: rows(:)
+      real(dp) :: matched
+      integer :: threads
+
+      opts%basis = "sto-3g"
+      opts_named = opts
+      allocate (opts_named%method)   ! no functional, no correlation: Hartree-Fock
+
+      ! One thread: a threaded Fock build sums in an order that varies from run
+      ! to run, so two identical calls agree to rounding and not to the bit.
+      threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
+      call ethane_lmo_set(opts, model, set_bare, err)
+      call ethane_lmo_set(opts_named, model, set_named, err)
+      call omp_set_num_threads(threads)
+      call check(error,.not. err%has_error(), "the model's orbital set failed")
+      if (allocated(error)) return
+
+      call check(error, all(set_bare%coeff == set_named%coeff), &
+                 "an unallocated method is not bit-identical to Hartree-Fock by name")
+      if (allocated(error)) return
+
+      call independent_localized(model, "", localized, err, mol)
+      call check(error,.not. err%has_error(), "the reference Hartree-Fock model failed")
+      if (allocated(error)) return
+      rows = set_rows(model, mol, set_bare)
+      matched = column_defect(set_bare%coeff, localized(rows, :))
+      call check(error, matched < 1.0e-8_dp, &
+                 "the Hartree-Fock model's orbitals are not the direct Hartree-Fock ones")
+      if (allocated(error)) write (*, *) "   worst column defect =", matched
+   end subroutine test_model_hartree_fock
 
    subroutine ethane_molecule(mol, err)
       !! Ethane in STO-3G: five functions on each carbon, one on each hydrogen

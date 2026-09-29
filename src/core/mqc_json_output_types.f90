@@ -327,9 +327,16 @@ module mqc_json_output_types
          !! Residual: charge transfer, mixing and the density response, not
          !! plain "charge transfer" on its own
       real(dp), allocatable :: fmo_pair_edi(:)
-         !! Empirical dispersion interaction, `E_D(IJ) - E_D(I) - E_D(J)` at
-         !! `functional = "hf"`, not part of `fmo_pair_energy`. Allocated only
-         !! when `keywords.fragmentation.pieda_dispersion` ran.
+         !! Under an MP2-family method the correlation interaction
+         !! `Ec(IJ) - Ec(I) - Ec(J)`, part of `fmo_pair_energy`. Otherwise the
+         !! empirical dispersion interaction `E_D(IJ) - E_D(I) - E_D(J)`, not
+         !! part of it. Allocated only when
+         !! `keywords.fragmentation.pieda_dispersion` ran or an MP2-family
+         !! method ran PIEDA.
+      logical :: fmo_edi_in_energy = .false.
+         !! Whether `fmo_pair_edi` is inside `fmo_pair_energy`: true for an
+         !! MP2-family method's correlation `Edi`, false for the empirical
+         !! one. Written only when a pair in `fmo_pair_pieda` is decomposed.
       logical, allocatable :: fmo_pair_doubly_cut_neighbor(:)
          !! True where the pair sits either side of a third fragment cut at
          !! two bonded atoms, so its own term omits a three-body correction
@@ -470,6 +477,7 @@ contains
       if (allocated(this%fmo_pair_eex)) deallocate (this%fmo_pair_eex)
       if (allocated(this%fmo_pair_ect_mix)) deallocate (this%fmo_pair_ect_mix)
       if (allocated(this%fmo_pair_edi)) deallocate (this%fmo_pair_edi)
+      this%fmo_edi_in_energy = .false.
       if (allocated(this%fmo_pair_doubly_cut_neighbor)) then
          deallocate (this%fmo_pair_doubly_cut_neighbor)
       end if

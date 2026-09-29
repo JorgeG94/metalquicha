@@ -164,6 +164,11 @@ if(MQC_ENABLE_CZT)
   # The refactor removed three hand-copied blocks; this is what keeps them gone.
   addtest(mqc_scf_options)
 
+  # `fragment_refusal`'s table: which method runs under FMO, EE-MBE and EFMO,
+  # and which combination -- a non-Energy driver, unrestricted, a cut, PIEDA --
+  # each of those refuses. No SCF, so milliseconds like `mqc_fmo_partitions`.
+  addtest(mqc_fragment_capabilities)
+
   # Unrestricted MP2, whose closed-shell limit is the restricted one.
   addtest(mqc_ump2)
   target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)
@@ -274,6 +279,14 @@ if(MQC_ENABLE_CZT)
   # external EFMO reference yet, so identities are what can be asserted.
   addtest(mqc_czt_efmo)
   target_link_libraries(test_mqc_czt_efmo PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The fragment-solver interface FMO, EE-MBE and EFMO now go through: plain
+  # Hartree-Fock against a direct `run_czt_rhf`, an embedded solve against the
+  # same with `h_extra=`, MP2 from an already-converged reference against a
+  # direct `run_czt_mp2`, and the internal-consistency refusal of a functional.
+  addtest(mqc_czt_fragment_solver)
+  target_link_libraries(test_mqc_czt_fragment_solver
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # EFMO across detached covalent bonds: at full level the expansion is the
   # molecule's own RHF energy whatever the partition cut, a bonded pair is
@@ -495,6 +508,37 @@ if(MQC_ENABLE_CZT)
   # state has not been taught to account for.
   addtest(mqc_fmo_pieda)
   addlongtest(mqc_fmo_pieda_long)
+
+  # Kohn-Sham fragments through the fragment solver: FMO2 and FMO3 water against
+  # the supermolecule, an EE-MBE dimer, a range-separated hybrid, and propane
+  # cut across one C-C bond -- the DFT counterpart of `mqc_afo_fmo`.
+  addtest(mqc_fmo_dft)
+  target_link_libraries(test_mqc_fmo_dft PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The glycine tripeptide and water cut at both peptide bonds, PBE: every model
+  # system converges at the deck's functional, and full order is the molecule.
+  # LONG: fifteen PBE n-mer SCFs over the tripeptide.
+  addlongtest(mqc_fmo_dft_long)
+  target_link_libraries(test_mqc_fmo_dft_long PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Empirical dispersion under FMO and EE-MBE, added to every fragment and n-mer
+  # as GAMESS does: the full-level identity against the supermolecule plus its
+  # D3(BJ), the per-group sum below full level (separated pairs included), and
+  # PIEDA's Edi. Skips without libxc or the dispersion library.
+  addtest(mqc_fmo_dispersion)
+  target_link_libraries(test_mqc_fmo_dispersion PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # MP2, RI-MP2 and SCS-MP2 as correlation on embedded Hartree-Fock, under FMO
+  # and EE-MBE: the MP2-family counterpart of mqc_fmo_dft.
+  addtest(mqc_fmo_mp2)
+  target_link_libraries(test_mqc_fmo_mp2 PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # PIEDA under Kohn-Sham and the MP2 family: the terms close every pair energy,
+  # Eex is built from the reference's own energies, MP2's Edi is the correlation
+  # interaction, and the union state's Kohn-Sham energy is the SCF's own
+  # functional.
+  addtest(mqc_fmo_pieda_methods)
+  target_link_libraries(test_mqc_fmo_pieda_methods
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The VV10 kernel. Inside this guard because mqc_czt_vv10 lives in
   # backends/cenzontle/, which is only added when an integrals backend is

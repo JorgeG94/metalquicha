@@ -12,7 +12,8 @@ module mqc_many_body_expansion
    use mqc_json_output_types, only: json_output_data_t
    use mqc_checkpoint, only: checkpoint_t
    use mqc_scf_types, only: scf_numerics_t
-   use mqc_method_types, only: METHOD_TYPE_HF, method_type_to_string, needs_serial_execution
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_method_types, only: needs_serial_execution
    implicit none
    private
 
@@ -20,7 +21,6 @@ module mqc_many_body_expansion
    public :: mbe_context_t
    public :: gmbe_context_t
    public :: fmo_context_t
-   public :: fmo_method_refusal
 
    !============================================================================
    ! Abstract base type for all many-body expansion methods
@@ -178,14 +178,12 @@ module mqc_many_body_expansion
       integer, allocatable :: fragment_charges(:)
          !! Each fragment's net charge, as the deck declares it. Unallocated
          !! means every fragment is neutral.
-      character(len=64) :: basis = ""
-         !! **Empty on purpose, and refused rather than defaulted.** This field
-         !! used to start at "6-31g", which no run ever saw: every caller
-         !! overwrites it from the deck, and a deck that omits `model.basis`
-         !! gets "sto-3g" from `mqc_method_config`. So the initialiser named a
-         !! basis nothing was ever computed in, which is worse than no default
-         !! at all -- a plumbing bug that lost the deck's basis would have
-         !! silently produced 6-31G numbers.
+      type(cuest_scf_settings_t), allocatable :: settings
+         !! What every fragment and n-mer is solved for: the method, basis and
+         !! correlation settings an unfragmented run of this deck would build,
+         !! from `method_backend_settings`. Unallocated until the driver sets
+         !! it, and a run without it is refused rather than given the type's
+         !! default basis.
       character(len=16) :: esp = "exact"
       character(len=16) :: expansion = "fmo"
       integer, allocatable :: detached_atoms(:)
@@ -247,13 +245,20 @@ module mqc_many_body_expansion
          !! `keywords.fragmentation.pieda_hl`: "gamess" or "projected"
       character(len=16) :: pieda_dispersion = "none"
          !! `keywords.fragmentation.pieda_dispersion`: "none", "d4" or "d3bj"
+      character(len=16) :: dispersion = "none"
+         !! `keywords.dft.dispersion`: "none", "d4" or "d3bj", added to every
+         !! fragment and n-mer rather than to the assembled total
       logical, allocatable :: pair_pieda(:)
          !! Whether `pair_ees`/`pair_eex`/`pair_ect_mix` are meaningful
       real(dp), allocatable :: pair_ees(:)      !! Hartree
       real(dp), allocatable :: pair_eex(:)      !! Hartree
       real(dp), allocatable :: pair_ect_mix(:)  !! Hartree
       real(dp), allocatable :: pair_edi(:)
-         !! Hartree; allocated only when `pieda_dispersion` is not "none"
+         !! Hartree; allocated only when `pieda_dispersion` is not "none" or
+         !! an MP2-family method ran PIEDA
+      logical :: edi_in_energy = .false.
+         !! Whether `pair_edi` is inside `pair_energy`: true for an MP2-family
+         !! method's correlation `Edi`, false for the empirical one
       logical, allocatable :: pair_doubly_cut_neighbor(:)
          !! True where the pair sits either side of a third fragment cut at
          !! two bonded atoms; see `warn_adjacent_cuts`
@@ -336,26 +341,6 @@ contains
       call this%destroy_base()
    end subroutine mbe_destroy
 
-   function fmo_method_refusal(method_type) result(message)
-      !! Why FMO and EE-MBE cannot run `model.method` yet, or "" when they can
-      !!
-      !! Every fragment and n-mer SCF on this path is restricted Hartree-Fock:
-      !! `run_czt_fmo` is handed a basis and never a method.
-      integer(int32), intent(in) :: method_type
-      character(len=:), allocatable :: message
-
-      ! TODO(mqc): a stopgap until the fragment calculations go through a
-      ! method-agnostic fragment solver. Until then anything but HF would run
-      ! as HF and report that total -- a B3LYP deck did, bit for bit -- so it is
-      ! refused here. Remove this with the solver work.
-      message = ""
-      if (method_type == METHOD_TYPE_HF) return
-      message = "The fragment calculations of FMO and EE-MBE currently run "// &
-                "Hartree-Fock only, and model.method is '"// &
-                trim(method_type_to_string(method_type))//"', which is not yet "// &
-                "wired into them. Set model.method to 'hf'."
-   end function fmo_method_refusal
-
    subroutine fmo_init(this, method_config, calc_type)
       !! Initialise an FMO context
       class(fmo_context_t), intent(out) :: this
@@ -384,6 +369,7 @@ contains
       if (allocated(this%pair_eex)) deallocate (this%pair_eex)
       if (allocated(this%pair_ect_mix)) deallocate (this%pair_ect_mix)
       if (allocated(this%pair_edi)) deallocate (this%pair_edi)
+      this%edi_in_energy = .false.
       if (allocated(this%pair_doubly_cut_neighbor)) deallocate (this%pair_doubly_cut_neighbor)
       this%n_fragments = 0
       this%energy = 0.0_dp
@@ -415,10 +401,10 @@ contains
          call logger%error("fmo_run_serial: no fragment partition set")
          return
       end if
-      if (len_trim(this%basis) == 0) then
-         call logger%error("fmo_run_serial: no orbital basis set. The caller fills "// &
-                           "this from the deck, so an empty one is a plumbing fault "// &
-                           "rather than a request for a default.")
+      if (.not. allocated(this%settings)) then
+         call logger%error("fmo_run_serial: no method settings set. The driver fills "// &
+                           "these from the deck, so their absence is a plumbing "// &
+                           "fault rather than a request for a default.")
          return
       end if
 
@@ -429,7 +415,7 @@ contains
 
       call run_czt_fmo(this%sys_geom%element_numbers, symbols, &
                        this%sys_geom%coordinates, this%owner, &
-                       trim(this%basis), trim(this%esp), trim(this%expansion), &
+                       this%settings, trim(this%esp), trim(this%expansion), &
                        trim(this%far_field), this%resppc, this%level, &
                        this%max_outer, this%outer_tol, this%scf_max_iter, &
                        this%scf_energy_tol, this%scf_density_tol, &
@@ -447,9 +433,10 @@ contains
                        afo_localization=trim(this%afo_localization), &
                        pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
                        pieda_dispersion=trim(this%pieda_dispersion), &
+                       dispersion=trim(this%dispersion), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
-                       pair_edi=this%pair_edi, &
+                       pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
                        pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
@@ -531,6 +518,7 @@ contains
             json_data%fmo_pair_eex = this%pair_eex
             json_data%fmo_pair_ect_mix = this%pair_ect_mix
             if (allocated(this%pair_edi)) json_data%fmo_pair_edi = this%pair_edi
+            json_data%fmo_edi_in_energy = this%edi_in_energy
          end if
       end if
    end subroutine fmo_report
@@ -565,9 +553,9 @@ contains
          call logger%error("fmo_run_distributed: no fragment partition set")
          return
       end if
-      if (len_trim(this%basis) == 0) then
-         call logger%error("fmo_run_distributed: no orbital basis set. The caller "// &
-                           "fills this from the deck, so an empty one is a plumbing "// &
+      if (.not. allocated(this%settings)) then
+         call logger%error("fmo_run_distributed: no method settings set. The driver fills "// &
+                           "these from the deck, so their absence is a plumbing "// &
                            "fault rather than a request for a default.")
          return
       end if
@@ -579,7 +567,7 @@ contains
 
       call run_czt_fmo(this%sys_geom%element_numbers, symbols, &
                        this%sys_geom%coordinates, this%owner, &
-                       trim(this%basis), trim(this%esp), trim(this%expansion), &
+                       this%settings, trim(this%esp), trim(this%expansion), &
                        trim(this%far_field), this%resppc, this%level, &
                        this%max_outer, this%outer_tol, this%scf_max_iter, &
                        this%scf_energy_tol, this%scf_density_tol, &
@@ -598,9 +586,10 @@ contains
                        afo_localization=trim(this%afo_localization), &
                        pieda=this%pieda, pieda_hl=trim(this%pieda_hl), &
                        pieda_dispersion=trim(this%pieda_dispersion), &
+                       dispersion=trim(this%dispersion), &
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
-                       pair_edi=this%pair_edi, &
+                       pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
                        pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())

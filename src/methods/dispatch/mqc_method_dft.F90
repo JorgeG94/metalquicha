@@ -31,6 +31,7 @@ module mqc_method_dft
    private
 
    public :: dft_method_t, dft_options_t
+   public :: dft_backend_settings
 
    type, extends(scf_options_t) :: dft_options_t
       !! DFT calculation options
@@ -76,6 +77,51 @@ contains
 
       call dft_run(this, fragment, result, want_gradient=.false.)
    end subroutine dft_calc_energy
+
+   subroutine dft_backend_settings(options, settings, error)
+      !! `cuest_scf_settings_t` for a Kohn-Sham calculation
+      !!
+      !! What `dft_run` needs before it can dispatch to a backend: everything
+      !! `apply_scf_settings`/`apply_properties_settings` copy, the functional
+      !! and grid fields neither covers, `settings%backend` parsed from
+      !! `options%backend`, and the refusal of a bonding analysis asked of a
+      !! Kohn-Sham reference (defined only for Hartree-Fock or MCSCF). Also
+      !! what the fragment solver needs to run the same reference a deck's
+      !! unfragmented run would; dispersion is not part of it and stays in
+      !! `dft_run`, since the fragment solver does not add it.
+      type(dft_options_t), intent(in) :: options
+      type(cuest_scf_settings_t), intent(out) :: settings
+      type(error_t), intent(inout) :: error
+
+      call apply_scf_settings(settings, options)
+      settings%functional = options%functional
+      call parse_backend_name(options%backend, settings%backend, error)
+      if (error%has_error()) return
+      settings%radial_points = options%radial_points
+      settings%angular_points = options%angular_points
+      settings%grid_level = options%grid_level
+      settings%nlc_grid_level = options%nlc_grid_level
+      settings%screening_tolerance = options%screening_tolerance
+      settings%block_size = options%block_size
+      ! TODO(mqc): `grid_type` is not copied here, and is read nowhere in the
+      ! tree, although the factory fills it from `dft.grid_type`. A deck naming
+      ! it silently gets whatever `grid_level` and the point counts above chose.
+      ! The quasi-atomic bonding analysis is refused, not ignored: it is defined
+      ! against a Hartree-Fock or MCSCF wavefunction, and `run_czt_hf`
+      ! dispatches on the deck naming an analysis alone, so passing it on would
+      ! decompose Kohn-Sham orbitals and report numbers for it. Tested on the
+      ! name rather than through `bonding_analysis_kind`, which lives in a
+      ! backend module this one must not depend on.
+      if (len_trim(options%properties%bonding_analysis) > 0 .and. &
+          trim(adjustl(options%properties%bonding_analysis)) /= "none") then
+         call error%set(ERROR_VALIDATION, "the quasi-atomic bonding analysis is "// &
+                        "not available for a Kohn-Sham reference: it is defined "// &
+                        "against a Hartree-Fock or MCSCF wavefunction. Request it "// &
+                        "on one of those instead.")
+         return
+      end if
+      call apply_properties_settings(settings, options%properties)
+   end subroutine dft_backend_settings
 
    subroutine dft_run(this, fragment, result, want_gradient, want_hessian)
       !! Run the SCF through whichever backend `options%backend` resolves to
@@ -134,39 +180,12 @@ contains
          end if
       end if
 
-      call apply_scf_settings(settings, this%options)
-      settings%functional = this%options%functional
-      call parse_backend_name(this%options%backend, settings%backend, backend_error)
+      call dft_backend_settings(this%options, settings, backend_error)
       if (backend_error%has_error()) then
          call result%error%set(ERROR_VALIDATION, backend_error%get_message())
          result%has_error = .true.
          return
       end if
-      settings%radial_points = this%options%radial_points
-      settings%angular_points = this%options%angular_points
-      settings%grid_level = this%options%grid_level
-      settings%nlc_grid_level = this%options%nlc_grid_level
-      settings%screening_tolerance = this%options%screening_tolerance
-      settings%block_size = this%options%block_size
-      ! TODO(mqc): `grid_type` is not copied here, and is read nowhere in the
-      ! tree, although the factory fills it from `dft.grid_type`. A deck naming
-      ! it silently gets whatever `grid_level` and the point counts above chose.
-      ! The quasi-atomic bonding analysis is refused, not ignored: it is defined
-      ! against a Hartree-Fock or MCSCF wavefunction, and `run_czt_hf`
-      ! dispatches on the deck naming an analysis alone, so passing it on would
-      ! decompose Kohn-Sham orbitals and report numbers for it. Tested on the
-      ! name rather than through `bonding_analysis_kind`, which lives in a
-      ! backend module this one must not depend on.
-      if (len_trim(this%options%properties%bonding_analysis) > 0 .and. &
-          trim(adjustl(this%options%properties%bonding_analysis)) /= "none") then
-         call result%error%set(ERROR_VALIDATION, "the quasi-atomic bonding analysis is "// &
-                               "not available for a Kohn-Sham reference: it is defined "// &
-                               "against a Hartree-Fock or MCSCF wavefunction. Request it "// &
-                               "on one of those instead.")
-         result%has_error = .true.
-         return
-      end if
-      call apply_properties_settings(settings, this%options%properties)
 
       ! Which backend, and refuse a request that cannot be honoured. Asking for
       ! cuEST on a CPU-only build reaches the stub `run_cuest_scf`, which

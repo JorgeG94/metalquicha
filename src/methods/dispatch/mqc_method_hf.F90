@@ -24,6 +24,7 @@ module mqc_method_hf
    private
 
    public :: hf_method_t, hf_options_t
+   public :: hf_backend_settings
 
    type, extends(scf_options_t) :: hf_options_t
       !! Hartree-Fock calculation options
@@ -64,6 +65,35 @@ contains
       call hf_run(this, fragment, result, want_gradient=.false.)
    end subroutine hf_calc_energy
 
+   subroutine hf_backend_settings(options, settings, error)
+      !! `cuest_scf_settings_t` for a Hartree-Fock (+ MP2/CC) calculation
+      !!
+      !! What `hf_run` needs before it can dispatch to a backend: everything
+      !! `apply_scf_settings`/`apply_properties_settings` copy, the MP2/CC
+      !! fields neither covers, `functional` cleared to select Hartree-Fock,
+      !! and `settings%backend` parsed from `options%backend`. Also what the
+      !! fragment solver needs to run the same reference a deck's unfragmented
+      !! run would.
+      type(hf_options_t), intent(in) :: options
+      type(cuest_scf_settings_t), intent(out) :: settings
+      type(error_t), intent(inout) :: error
+
+      call apply_scf_settings(settings, options)
+      call apply_properties_settings(settings, options%properties)
+      settings%run_mp2 = options%run_mp2
+      settings%corr_density_fitting = options%corr_density_fitting
+      settings%run_cc = options%run_cc
+      settings%cc_triples = options%cc_triples
+      settings%cc_max_iter = options%cc_max_iter
+      settings%cc_tolerance = options%cc_tolerance
+      settings%cc_diis_size = options%cc_diis_size
+      settings%cc_spin_adapted = options%cc_spin_adapted
+      settings%scs_ss = options%scs_ss
+      settings%scs_os = options%scs_os
+      settings%functional = ""        ! empty selects pure Hartree-Fock
+      call parse_backend_name(options%backend, settings%backend, error)
+   end subroutine hf_backend_settings
+
    subroutine hf_run(this, fragment, result, want_gradient, want_hessian)
       !! Run the SCF through whichever backend `options%backend` resolves to
       class(hf_method_t), intent(in) :: this
@@ -77,20 +107,7 @@ contains
       type(cuest_scf_settings_t) :: settings
       type(error_t) :: backend_error
 
-      call apply_scf_settings(settings, this%options)
-      call apply_properties_settings(settings, this%options%properties)
-      settings%run_mp2 = this%options%run_mp2
-      settings%corr_density_fitting = this%options%corr_density_fitting
-      settings%run_cc = this%options%run_cc
-      settings%cc_triples = this%options%cc_triples
-      settings%cc_max_iter = this%options%cc_max_iter
-      settings%cc_tolerance = this%options%cc_tolerance
-      settings%cc_diis_size = this%options%cc_diis_size
-      settings%cc_spin_adapted = this%options%cc_spin_adapted
-      settings%scs_ss = this%options%scs_ss
-      settings%scs_os = this%options%scs_os
-      settings%functional = ""        ! empty selects pure Hartree-Fock
-      call parse_backend_name(this%options%backend, settings%backend, backend_error)
+      call hf_backend_settings(this%options, settings, backend_error)
       if (backend_error%has_error()) then
          call result%error%set(ERROR_VALIDATION, backend_error%get_message())
          result%has_error = .true.

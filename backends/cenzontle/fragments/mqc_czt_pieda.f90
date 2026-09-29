@@ -1,5 +1,5 @@
 module mqc_czt_pieda
-   !! Pair interaction energy decomposition (PIEDA), GAMESS's `IPIEDA=1`, at HF
+   !! Pair interaction energy decomposition (PIEDA), GAMESS's `IPIEDA=1`
    !!
    !! The numerics only PIEDA needs: occupied orbitals recovered from a
    !! converged closed-shell density, the union ("higher-level", HL) state of
@@ -8,18 +8,25 @@ module mqc_czt_pieda
    !!
    !!     Ees      = es_dimer_energy(I, J)
    !!     Eex      = E'^HL - E'_I - E'_J - Ees
-   !!     Ect+mix  = dE_IJ - Ees - Eex        (a residual, not charge transfer alone)
+   !!     Ect+mix  = dE_IJ - Ees - Eex - Edi  (a residual, not charge transfer alone)
    !!
    !! with `E'` an internal energy, `E - Tr(D u)`, and
-   !! `D_HL = 2 C (C^T S C)^-1 C^T` for `C = [C_I, C_J]`. `pieda_pair_terms_t%edi`
-   !! stays zero here; the empirical `Edi` (`fmo_options_t%pieda_dispersion`)
-   !! is computed in [[mqc_czt_fmo]] by `pieda_dispersion_term`.
+   !! `D_HL = 2 C (C^T S C)^-1 C^T` for `C = [C_I, C_J]`. `E'^HL` and the two
+   !! `E'` are those of the reference: Hartree-Fock's or the Kohn-Sham
+   !! functional's, without the correlation of an MP2-family method.
+   !!
+   !! `Edi` is the pair's correlation interaction `Ec(IJ) - Ec(I) - Ec(J)` for
+   !! an MP2-family method, which is inside `dE_IJ`. It is zero here otherwise:
+   !! the empirical `Edi` (`fmo_options_t%pieda_dispersion`) is in no
+   !! `dE_IJ` and is computed in [[mqc_czt_fmo]] by `pieda_dispersion_term`.
    use pic_types, only: dp, default_int
    use pic_io, only: to_char
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_direct, only: build_fock_direct, direct_stats_t
+   use mqc_czt_xc, only: xc_context_t
+   use mqc_czt_rhf, only: density_energy
    implicit none
    private
 
@@ -35,7 +42,9 @@ module mqc_czt_pieda
       real(dp) :: ees = 0.0_dp       !! Electrostatics, `es_dimer_energy`
       real(dp) :: eex = 0.0_dp       !! Exact HL exchange
       real(dp) :: ect_mix = 0.0_dp   !! Residual: charge transfer, mixing, response
-      real(dp) :: edi = 0.0_dp       !! Correlation interaction; zero at HF
+      real(dp) :: edi = 0.0_dp
+         !! `Ec(IJ) - Ec(I) - Ec(J)` for an MP2-family method, inside `dE_IJ`;
+         !! zero otherwise
    end type pieda_pair_terms_t
 
    interface
@@ -157,7 +166,7 @@ contains
       d_hl = 2.0_dp*matmul(c, x)
    end subroutine hl_density_from_orbitals
 
-   subroutine hl_prime_energy(mol, bounds, d_hl, e_hl_prime, error)
+   subroutine hl_prime_energy(mol, bounds, d_hl, e_hl_prime, error, xc)
       !! `E'^HL`, the union state's internal energy, from one Fock build
       !!
       !! Hartree, nuclear repulsion of `mol` included. `bounds` are `mol`'s
@@ -169,13 +178,23 @@ contains
       real(dp), intent(in) :: d_hl(:, :)
       real(dp), intent(out) :: e_hl_prime
       type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional :: xc
+         !! A Kohn-Sham functional's context, built on `mol`: the energy is
+         !! then that functional's (`E_xc[D_HL]`, its exact-exchange fraction
+         !! and range separation), one exchange-correlation quadrature more.
+         !! Absent is Hartree-Fock.
 
       real(dp), allocatable :: h(:, :), fock(:, :)
       type(direct_stats_t) :: stats
 
-      ! `E[D; h + u] - Tr(D u)` is `E[D; h]` for any one-electron `u`, so the
-      ! field the pair was solved in never needs building here.
+      ! `E[D; h + u] - Tr(D u)` is `E[D; h]` for any one-electron `u`, whether
+      ! `E` is Hartree-Fock's or a Kohn-Sham functional's (`E_xc` does not see
+      ! `u`), so the field the pair was solved in never needs building here.
       call mol%core_hamiltonian(h)
+      if (present(xc)) then
+         call density_energy(mol, h, d_hl, bounds, xc, e_hl_prime, error)
+         return
+      end if
       allocate (fock(size(h, 1), size(h, 2)))
       call build_fock_direct(mol, h, d_hl, bounds, fock, stats, error)
       if (error%has_error()) return
@@ -183,19 +202,26 @@ contains
       e_hl_prime = 0.5_dp*sum(d_hl*(h + fock)) + mol%nuclear_repulsion()
    end subroutine hl_prime_energy
 
-   pure subroutine combine_pieda_terms(delta_e, ees, eex, terms)
-      !! `Ect+mix = dE_IJ - Ees - Eex`, the residual that closes the sum
+   pure subroutine combine_pieda_terms(delta_e, ees, eex, terms, edi)
+      !! `Ect+mix = dE_IJ - Ees - Eex - Edi`, the residual that closes the sum
       !!
       !! Taken after `dE_IJ` is final -- reduced across ranks and reduced by
       !! `subtract_subsets` -- which is why this is a separate step from
       !! `hl_prime_energy` rather than folded into it.
       real(dp), intent(in) :: delta_e, ees, eex
       type(pieda_pair_terms_t), intent(inout) :: terms
+      real(dp), intent(in), optional :: edi
+         !! The correlation interaction already inside `delta_e`. Absent is
+         !! zero.
 
       terms%ees = ees
       terms%eex = eex
       terms%ect_mix = delta_e - ees - eex
       terms%edi = 0.0_dp
+      if (present(edi)) then
+         terms%ect_mix = terms%ect_mix - edi
+         terms%edi = edi
+      end if
       terms%decomposed = .true.
    end subroutine combine_pieda_terms
 
