@@ -208,6 +208,31 @@ mirror-image SA solutions, and a coupling computed at either is correct. This
 happens for H2O SA-3 at the equilibrium geometry and for C2H4 at the
 symmetric 90 degree twist. Two codes, or two runs, can land on different ones.
 
+Performance
+===========
+
+Requesting several roots in one run is cheaper than one run per root. The
+roots share one Hessian setup, one block Z-vector solve and one pass over the
+derivative integrals. PSB3 (penta-2,4-dieniminium cation), SA-N-CAS(6,6)/6-31G*
+(106 basis functions), 4 threads, best of three:
+
+=====  ======================  ===============
+roots  gradients together (s)  cost(N)/cost(1)
+=====  ======================  ===============
+1      7.6                     1.00
+2      9.4                     1.23
+3      12.7                    1.67
+4      16.8                    2.21
+=====  ======================  ===============
+
+Four separate one-root runs take 30 s. The SA-2 CASSCF itself converges in 14
+macro-iterations and 35 s, so a complete SA-2 gradient job takes about 45 s.
+
+For a planar pi system the active orbitals vanish on every sigma-type basis
+function by symmetry, and the active two-body part of the gradient is built
+only over the basis functions they occupy (24 of the 106 here), dropping
+nothing larger than 1e-12 of the largest amplitude.
+
 Accuracy against PySCF
 =======================
 
