@@ -372,7 +372,8 @@ re-deriving one would produce a different subspace of the same dimension --
 necessarily, because orbital optimisation moves the active space against the
 inactive and virtual ones, and those are precisely the rotations a CASSCF exists
 to perform. The analysis would then decompose a wave function the calculation
-never computed. GAMESS branches the same way, at ``vvos.src:540``.
+never computed. GAMESS branches the same way, in ``VVOS`` (``vvos.src``; West, Schmidt, Gordon
+and Ruedenberg, J. Chem. Phys. 139, 234107 (2013)).
 
 The visible effect is that ``E(Psi)`` becomes the energy the calculation
 reported, to every figure, instead of sitting some millihartree away from it.
@@ -385,7 +386,7 @@ carries on with its own::
     solves its own and decomposes that one instead
     decomposing E =   -76.027496661520 rather than the calculation's   -76.037524986844
 
-GAMESS refuses outright at that point (``quao_eda4.src:145``). It can, because
+GAMESS refuses outright at that point (in ``quao_eda4.src``). It can, because
 its analysis reads the wave function from the run; this one builds its own, so
 the result is still meaningful and the caller is told rather than stopped.
 

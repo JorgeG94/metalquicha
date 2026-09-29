@@ -53,7 +53,7 @@ module mqc_czt_efp_read
    ! how the mistake announces itself.
    !
    ! **`efinp.src` appears to contradict this, and does not.** Its reader
-   ! (`efinp.src:8456-8464`) and its writer (`efinp.src:7552-7561`) agree that
+   ! and its writer (both in `efinp.src`) agree that
    ! slot 4 is `DYNDD_LMO(1,2)`, the transpose of the map below. Both are true
    ! because the two arrays are indexed oppositely: GAMESS's is
    ! `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose
