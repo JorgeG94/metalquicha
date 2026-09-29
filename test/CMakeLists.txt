@@ -228,6 +228,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_mcscf_gradient)
   target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
 
+  # Single-root SA-CASSCF gradient via the Z-vector (phase 4).
+  addtest(mqc_sa_gradient)
+  target_link_libraries(test_mqc_sa_gradient PRIVATE cint_fortran cint)
+  addlongtest(mqc_sa_gradient_pyscf_long)
+  target_link_libraries(test_mqc_sa_gradient_pyscf_long PRIVATE cint_fortran
+                                                                cint)
+
   # Choosing an active space from atomic orbital labels.
   addtest(mqc_avas)
   target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)
