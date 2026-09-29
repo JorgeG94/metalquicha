@@ -235,6 +235,16 @@ if(MQC_ENABLE_CZT)
   target_link_libraries(test_mqc_sa_gradient_pyscf_long PRIVATE cint_fortran
                                                                 cint)
 
+  # Phase 5: every requested root's gradient built together.
+  addtest(mqc_sa_gradient_fused)
+  target_link_libraries(test_mqc_sa_gradient_fused PRIVATE cint_fortran cint)
+
+  # Phase 5: the benchmark/profiling harness for the fused multi-root gradient,
+  # on PSB3 SA-N-CAS(6,6)/6-31G*.
+  addlongtest(mqc_sa_gradient_psb3_bench)
+  target_link_libraries(test_mqc_sa_gradient_psb3_bench PRIVATE cint_fortran
+                                                                cint)
+
   # Choosing an active space from atomic orbital labels.
   addtest(mqc_avas)
   target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)

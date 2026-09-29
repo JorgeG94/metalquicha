@@ -285,6 +285,16 @@ module mqc_config_types
          !! single-state weight. `read_mcscf_state_averaging` fills this in
          !! with an equal average when `n_states > 1` and the key is absent, so
          !! this is never "1 but unweighted" past the reader.
+      integer, allocatable :: mcscf_gradient_roots(:)
+         !! `keywords.mcscf.gradient_roots`, 1-based root indices the fused
+         !! multi-root SA-CASSCF gradient (`czt_sa_casscf_gradients`) is asked
+         !! for. Unallocated means "every state" -- the default under state
+         !! averaging, and the only sensible reading when `mcscf_n_states` is
+         !! 1. The JSON spelling is either the string `"all"` (resolved to
+         !! unallocated here, same as absent) or an explicit list; the driver
+         !! does not yet read this field (phase 6 of
+         !! `SA_CASSCF_GRADIENT_PLAN.md`), so it only reaches as far as
+         !! `mcscf_options_t` for now.
       ! keywords.dft -- the quadrature, not the functional
       real(dp) :: dft_screening_tolerance = 1.0e-12_dp
          !! From `keywords.dft.screening_tolerance`. The AO value below which a

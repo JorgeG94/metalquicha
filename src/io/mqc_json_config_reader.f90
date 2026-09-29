@@ -1678,6 +1678,7 @@ contains
             allocate (config%mcscf_state_weights(config%mcscf_n_states))
             config%mcscf_state_weights = 1.0_dp/real(config%mcscf_n_states, dp)
          end if
+         call read_mcscf_gradient_roots(json, config, error)
          return
       end if
 
@@ -1709,7 +1710,65 @@ contains
                         trim(to_char(total))//", not 1. State weights must add to one.")
          return
       end if
+      call read_mcscf_gradient_roots(json, config, error)
    end subroutine read_mcscf_state_averaging
+
+   subroutine read_mcscf_gradient_roots(json, config, error)
+      !! `keywords.mcscf.gradient_roots`: the string `"all"` or a list of
+      !! 1-based root indices -- which states the (not yet driver-reachable)
+      !! fused multi-root SA-CASSCF gradient would build. `"all"` and an
+      !! absent key both resolve to `config%mcscf_gradient_roots` left
+      !! unallocated; called from `read_mcscf_state_averaging`, after
+      !! `mcscf_n_states` is already set, since a list is validated against it.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: PATH = "keywords.mcscf.gradient_roots"
+      character(len=:), allocatable :: text
+      integer, allocatable :: roots(:)
+      logical :: found
+      integer :: kind, n, i, j
+
+      if (error%has_error()) return
+      call json%info(PATH, found=found, n_children=n)
+      if (.not. found) return
+      call json%info(PATH, found=found, var_type=kind)
+
+      if (kind == json_string) then
+         call require_string(json, PATH, text, error)
+         if (error%has_error()) return
+         if (trim(adjustl(text)) /= "all") then
+            call error%set(ERROR_VALIDATION, PATH//" is '"//trim(text)//"'; the only "// &
+                           "accepted string is 'all' (or give an explicit list of roots).")
+         end if
+         return
+      end if
+
+      if (n < 1) then
+         call error%set(ERROR_VALIDATION, PATH//" is empty; give at least one root.")
+         return
+      end if
+      allocate (roots(n))
+      do i = 1, n
+         call require_int(json, PATH//"("//int_to_key(i)//")", roots(i), error)
+         if (error%has_error()) return
+         if (roots(i) < 1 .or. roots(i) > config%mcscf_n_states) then
+            call error%set(ERROR_VALIDATION, PATH//"("//trim(to_char(i))//") is "// &
+                           trim(to_char(roots(i)))//"; roots are 1-based and there are "// &
+                           trim(to_char(config%mcscf_n_states))//" averaged states.")
+            return
+         end if
+         do j = 1, i - 1
+            if (roots(j) == roots(i)) then
+               call error%set(ERROR_VALIDATION, PATH//" repeats root "// &
+                              trim(to_char(roots(i)))//".")
+               return
+            end if
+         end do
+      end do
+      config%mcscf_gradient_roots = roots
+   end subroutine read_mcscf_gradient_roots
 
    subroutine read_avas_orbitals(json, config, error)
       !! `keywords.mcscf.avas.orbitals`, a list of atomic orbital labels

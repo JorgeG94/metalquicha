@@ -399,12 +399,13 @@ contains
    end subroutine test_redundancy
 
    subroutine test_preconditioner(error)
-      !! `sa_hessian_precondition` against the two diagonals it divides by,
-      !! reached independently of its own indexing
+      !! `sa_hessian_precondition` against the two diagonals it divides by
       !!
-      !! The orbital block against the explicit dense Hessian's diagonal
-      !! (`build_dense`, which `test_orbital_block_sa2` ties to
-      !! `orbital_hessian`); the CI block against `2 w_J (H_diag - E_J)` with
+      !! The orbital block against `orbital_hessian_diag`, the one-electron
+      !! approximation `build_sa_hessian` stores, checked for sign against the
+      !! dense Hessian's exact diagonal (`build_dense`) so an approximation that
+      !! turned a positive curvature negative would be caught; the CI block
+      !! against `2 w_J (H_diag - E_J)` with
       !! `H_diag` flattened by `reshape`, which is the column-major order every
       !! flat CI vector here is packed in. At `n_alpha == n_beta` that diagonal
       !! is symmetric under `ia <-> ib`, so a transposed determinant index would
@@ -442,11 +443,16 @@ contains
       call sa_hessian_precondition(state, x, px)
 
       do l = 1, state%n_rot
-         d = dense(l, l)
+         d = state%orbital_hessian_diag(l)
          if (abs(d) < FLOOR) d = sign(FLOOR, d)
          call check(error, abs(px(l, 1) - 1.0_dp/d) < TOL*max(1.0_dp, abs(1.0_dp/d)), &
-                    "the orbital preconditioner should divide by the Hessian's diagonal")
+                    "the orbital preconditioner should divide by the stored diagonal")
          if (allocated(error)) return
+         if (abs(dense(l, l)) >= FLOOR) then
+            call check(error, sign(1.0_dp, d) == sign(1.0_dp, dense(l, l)), &
+                       "the approximate orbital diagonal should keep the exact one's sign")
+            if (allocated(error)) return
+         end if
       end do
 
       flat_diag = reshape(state%diagonal, [state%n_det])
