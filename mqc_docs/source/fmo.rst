@@ -268,7 +268,10 @@ a carbonyl oxygen -- comes in whole, since a cap closes one electron pair and a
 double bond is two. It never applies where GAMESS's model is closed-shell
 already. Charged groups taken in are counted into the model's charge.
 
-**The orbitals.** The model is solved and every occupied orbital
+**The orbitals.** The model is solved at the deck's method, as GAMESS does:
+Hartree-Fock under Hartree-Fock, restricted Kohn-Sham at the deck's functional,
+grid and settings under DFT, and the Hartree-Fock reference under MP2, since
+the model supplies orbitals and no energy. Every occupied orbital is then
 localized, Edmiston-Ruedenberg unless ``afo_localization`` says Boys. The detached atom's own orbitals are the ones with the largest
 population on it, ``sum_{mu,nu on A} C_mu S_mu,nu C_nu`` -- five for a carbon,
 its 1s and four sp3 -- and of those the one with the largest population on the
@@ -935,6 +938,10 @@ VWN5 one, which is ``"hyb_gga_xc_b3lyp5"`` here. See
   its two monomers' own, already inside their energies -- again matching
   GAMESS. See ``mqc_docs/source/developer_fragment_solver.rst`` for the
   design and the reasons.
+* Under Kohn-Sham, a partition that detaches a covalent bond
+  (``bond_breaking = "afo"``) solves each cut bond's model system at the deck's
+  functional, as GAMESS does, so the frozen orbitals are Kohn-Sham orbitals.
+  The model's convergence is its own, as at Hartree-Fock.
 * A partition that detaches a covalent bond (``bond_breaking = "afo"``) is
   refused for the MP2 family: the frozen orbitals at the cut are not yet
   excluded from the correlation, so a virtual held at the projector's shift

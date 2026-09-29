@@ -54,6 +54,8 @@ contains
                   new_unittest("eembe_water_dimer_pbe_is_the_supermolecule", test_eembe_dimer), &
                   new_unittest("propane_cut_across_one_bond_pbe_is_the_supermolecule", &
                                test_propane_afo), &
+                  new_unittest("propane_in_three_fragments_pbe_freezes_a_kohn_sham_orbital", &
+                               test_propane_afo_three), &
                   new_unittest("fmo2_water_trimer_pbe_difference_from_the_supermolecule", &
                                test_trimer_fmo2_difference), &
                   new_unittest("fmo2_water_trimer_cyclic_pbe_matches_gamess", &
@@ -290,6 +292,79 @@ contains
          write (*, *) "   difference  =", res%energy - whole
       end if
    end subroutine test_propane_afo
+
+   subroutine test_propane_afo_three(error)
+      !! Propane in three fragments, two detached bonds, FMO2-PBE: the frozen
+      !! orbitals come from a model solved at PBE
+      !!
+      !! Below full level, so the embedding and the frozen orbitals matter and
+      !! the result is not the supermolecule. The model system under each cut
+      !! is solved at the deck's functional, as GAMESS does, where it used to be
+      !! Hartree-Fock by construction. `E_HF_MODEL` is what this same run gave
+      !! before that change, obtained by leaving `afo_opts%method` unallocated
+      !! in `build_afo_context`; `E_KS_MODEL` is the value after it, recorded
+      !! here. The two differ because the frozen orbital does. Neither is close
+      !! to the supermolecule: the middle fragment is a CH2 held by two cuts,
+      !! which is a poor partition at level two whatever the model. The
+      !! comparison is between the models and not against the whole molecule.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(fmo_options_t) :: opts
+      type(fmo_result_t) :: res
+      integer :: z(11)
+      character(len=2) :: sym(11)
+      real(dp) :: xyz(3, 11)
+      real(dp) :: whole
+      real(dp), parameter :: E_HF_MODEL = -117.31265747731965_dp
+      real(dp), parameter :: E_KS_MODEL = -117.30068114551975_dp
+      real(dp), parameter :: TOL_RECORDED = 1.0e-7_dp
+      real(dp), parameter :: MIN_CHANGE = 1.0e-3_dp
+
+      if (.not. xc_available()) return  ! no libxc in this build: nothing to check
+
+      call propane(z, sym, xyz)
+
+      opts%basis = "sto-3g"
+      opts%bond_breaking = "afo"
+      opts%level = 2
+      opts%scf_max_iter = 200
+      opts%scf_energy_tol = 1.0e-11_dp
+      opts%scf_density_tol = 1.0e-9_dp
+      opts%method%functional = "pbe"
+      opts%method%grid_level = GRID_LEVEL
+
+      ! One carbon and its hydrogens per fragment, cutting C1-C2 and C2-C3.
+      call run_fmo2(z, sym, xyz, [1, 2, 3, 1, 1, 1, 2, 2, 3, 3, 3], opts, res, err)
+      call check(error,.not. err%has_error(), "the two-cut frozen-orbital expansion failed")
+      if (allocated(error)) then
+         write (*, *) "   message: ", trim(err%get_message())
+         return
+      end if
+      call check(error, res%converged, "the two-cut PBE expansion did not converge")
+      if (allocated(error)) return
+
+      call supermolecule_energy(z, sym, xyz, "sto-3g", "pbe", GRID_LEVEL, 26, whole, err)
+      call check(error,.not. err%has_error(), "the supermolecule reference failed")
+      if (allocated(error)) return
+
+      call check(error, abs(res%energy - E_KS_MODEL) < TOL_RECORDED, &
+                 "the two-cut PBE expansion does not reproduce its recorded value")
+      if (allocated(error)) then
+         write (*, *) "   fmo2     =", res%energy
+         write (*, *) "   recorded =", E_KS_MODEL
+         return
+      end if
+      call check(error, abs(res%energy - E_HF_MODEL) > MIN_CHANGE, &
+                 "the two-cut PBE expansion is what a Hartree-Fock model gave: the "// &
+                 "model's method was ignored")
+      if (allocated(error)) return
+
+      write (*, *) "   FMO2 PBE, three fragments      =", res%energy
+      write (*, *) "   supermolecule                  =", whole
+      write (*, *) "   error against the supermolecule =", res%energy - whole
+      write (*, *) "   error with an HF model          =", E_HF_MODEL - whole
+      write (*, *) "   change from the HF model        =", res%energy - E_HF_MODEL
+   end subroutine test_propane_afo_three
 
    subroutine test_trimer_fmo2_difference(error)
       !! The water trimer truncated at pairs, PBE -- printed, not asserted

@@ -59,12 +59,19 @@ EE-MBE is ``esp = "ptc"`` and ``expansion = "mbe"``.
 * ``fragment_potential`` calls ``make_efp_potential``, whose own
   ``run_czt_rhf`` supplies the monomer energy ``E_I^0``.
 
-These stay Hartree-Fock by construction, and do not go through the solver:
+The AFO model system goes through the solver too:
 
-* ``bond_lmo_set`` and ``bond_hybrid`` in ``mqc_czt_afo.f90``. The model
-  system only supplies the frozen orbitals.
-* ``make_efp_potential`` in ``mqc_czt_efp_potential.f90``. MAKEFP is a
-  Hartree-Fock construction.
+* ``bond_lmo_set`` and ``bond_hybrid`` in ``mqc_czt_afo.f90`` solve the model
+  system through ``solve_fragment_method`` at ``afo_options_t%method``, which
+  ``build_afo_context`` fills from the deck's method with the correlation
+  switched off. The model only supplies the frozen orbitals, so under Kohn-Sham
+  they are Kohn-Sham orbitals at the deck's functional, and under MP2 they are
+  the Hartree-Fock reference's. An unallocated ``method`` is Hartree-Fock and
+  reaches ``run_czt_rhf`` with the arguments it always had.
+
+``make_efp_potential`` in ``mqc_czt_efp_potential.f90`` stays Hartree-Fock by
+construction and does not go through the solver. MAKEFP is a Hartree-Fock
+construction.
 
 Refusals and gaps in ``src``
 ----------------------------
@@ -323,8 +330,9 @@ Phases and gates
    query and refusal site, and ``scf_numerics_from_config`` in place of the
    driver's four copies, bit-identical on the FMO, EFMO, NEO and MAKEFP decks.
    Phase 1b, done: ``mqc_czt_fragment_solver`` is the only place FMO, EE-MBE
-   and EFMO solve a fragment or n-mer (the AFO model system and MAKEFP stay
-   Hartree-Fock by construction), and ``run_czt_fmo``/``run_czt_efmo`` take
+   and EFMO solve a fragment or n-mer (MAKEFP stays Hartree-Fock by
+   construction; the AFO model system follows the deck's functional, see
+   Decisions), and ``run_czt_fmo``/``run_czt_efmo`` take
    the ``cuest_scf_settings_t`` that ``method_backend_settings`` builds.
 
    Gate: every existing FMO, EFMO, EE-MBE, AFO and PIEDA test passes
@@ -433,12 +441,21 @@ Decisions
 3. **EFMO with DFT stays refused.** MAKEFP is HF, so EFMO allows HF and the
    MP2 family only. It still routes through the solver.
 
+4. **The AFO model system under Kohn-Sham: solve it at the deck's
+   functional**, as GAMESS does. GAMESS solves a cut bond's model system with
+   the deck's functional under FMO-DFT; its log shows ``FINAL R-PBE ENERGY`` for
+   the model. Done: ``bond_lmo_set`` and ``bond_hybrid`` go through
+   ``solve_fragment_method`` with the functional, grid and settings of the
+   fragments, so cut FMO-DFT freezes Kohn-Sham-derived orbitals. The model's own
+   convergence is unchanged. Under MP2 the model is the Hartree-Fock reference,
+   because it supplies orbitals and no energy. Hartree-Fock results are
+   bit-identical to before. Gate: ``test_mqc_afo_orbital`` (the PBE orbital set
+   against an independent PBE solve, and unlike the Hartree-Fock one) and
+   ``propane_in_three_fragments_pbe_freezes_a_kohn_sham_orbital`` in
+   ``test_mqc_fmo_dft``. No GAMESS reference for cut FMO-DFT exists yet: its
+   own PBE model SCF did not converge on Gly3 plus water in STO-3G.
+
 Open, for review
 ================
 
-* **The AFO model system under Kohn-Sham.** GAMESS solves a cut bond's model
-  system with the deck's functional under FMO-DFT; its log shows
-  ``FINAL R-PBE ENERGY`` for the model. Here it stays Hartree-Fock by
-  construction (``bond_lmo_set``, ``bond_hybrid``), so cut FMO-DFT freezes
-  HF-derived orbitals. No GAMESS reference for cut FMO-DFT exists yet: its
-  own PBE model SCF did not converge on Gly3 plus water in STO-3G.
+* None at present.

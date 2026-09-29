@@ -1125,9 +1125,16 @@ contains
       if (is_leader(comm)) call warn_adjacent_cuts(afo, z, coords)
 
       ! The model's convergence is its own, `afo_options_t`'s defaults; only
-      ! how its SCF is driven follows the fragments'.
+      ! how its SCF is driven follows the fragments'. What it is solved *with*
+      ! follows them too, as GAMESS does: Kohn-Sham at the deck's functional,
+      ! grid and settings under DFT. The model supplies orbitals and no energy,
+      ! so correlation is switched off -- under MP2 it is the Hartree-Fock
+      ! reference.
       afo_opts%basis = opts%basis
       afo_opts%scf = opts%scf
+      allocate (afo_opts%method, source=opts%method)
+      afo_opts%method%run_mp2 = .false.
+      afo_opts%method%run_cc = .false.
       if (present(cartesian)) afo_opts%cartesian = cartesian
       afo_opts%localization = opts%afo_localization
       afo_opts%show_scf = show_inner_scf()
