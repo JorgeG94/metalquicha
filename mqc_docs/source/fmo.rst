@@ -945,7 +945,11 @@ VWN5 one, which is ``"hyb_gga_xc_b3lyp5"`` here. See
 * Under Kohn-Sham, a partition that detaches a covalent bond
   (``bond_breaking = "afo"``) solves each cut bond's model system at the deck's
   functional, as GAMESS does, so the frozen orbitals are Kohn-Sham orbitals.
-  The model's convergence is its own, as at Hartree-Fock.
+  The model's convergence is its own, as at Hartree-Fock. **This case has no
+  GAMESS cross-check**: GAMESS's own AFO model SCF diverges under PBE on the
+  glycine tripeptide, and it then carries on with a model energy of zero. It is
+  checked here against the molecule at full order instead, across one cut
+  (propane) and two (the tripeptide with a water).
 * A partition that detaches a covalent bond (``bond_breaking = "afo"``) is
   refused for the MP2 family: the frozen orbitals at the cut are not yet
   excluded from the correlation, so a virtual held at the projector's shift

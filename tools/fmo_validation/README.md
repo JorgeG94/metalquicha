@@ -130,7 +130,7 @@ cited in `test/test_mqc_fmo_dft.f90` and `test/test_mqc_fmo_mp2.f90`.
 | `w3_pbe.inp` / `w3_pbe_super.inp` | FMO2-PBE and the supermolecule, 6-31G, exact field, `nrad=200 nleb=1202` | -228.942512413 / -228.9414854987 Eh |
 | `w3_b3lyp.inp` / `w3_b3lyp_super.inp` | FMO2 and the supermolecule with GAMESS's `dfttyp=b3lyp` (VWN5, see below) | -229.088616246 / -229.0878767518 Eh |
 | `w3_pbe_d3.inp` / `w3_pbe_d3_super.inp` | FMO2-PBE-D3 (zero damping, by the evidence below) and the supermolecule, `dc=.t. idcver=3` | see "Dispersion" below |
-| `gly3w_afo_pbe.inp` | FMO2-PBE, AFO, two Cα-C cuts, STO-3G, ER localization | did not converge -- see "AFO under DFT" below |
+| `gly3w_afo_pbe.inp` | FMO2-PBE, AFO, two Cα-C cuts, STO-3G, ER localization | GAMESS's model SCF diverges -- see "AFO under DFT" below |
 
 Every pair IFIE (`EFMOu`/`EFMOc` at full precision plus `Tr`, read off the
 per-fragment/per-dimer lines in the log rather than the three-decimal PIEDA
@@ -175,20 +175,24 @@ rational (BJ) one does not. That fits `idcver=3` being GAMESS's zero-damping
 D3 rather than D3(BJ), which mqc does not offer. A D3(BJ) reference needs
 `w3_pbe_d3.inp` rerun with GAMESS's BJ variant.
 
-**AFO under DFT.** GAMESS does not keep the AFO model system at Hartree-Fock
-under `dfttyp=pbe`: `gly3w_afo_pbe.inp`'s log prints `EXCHANGE FUNCTIONAL
-=PBE`, `CORRELATION FUNCTIONAL=PBE` and `FINAL R-PBE ENERGY` for the model
-system's own SCF (and later `RHF monomer 2 corr= PBE` for an ordinary
-fragment), so the model is solved at the deck's functional, not at HF as mqc's
-`mqc_czt_afo.f90` does by construction (`bond_lmo_set`/`bond_hybrid` call
-`run_czt_rhf` with no `xc`). This is a genuine design difference between the
-two codes, not yet resolved either way in mqc -- report it rather than change
-it. No numeric total-energy comparison is available for this system: in this
-environment (GAMESS built `2026-08-17`, `gfortran`/`openmpi`), the model
-system's own PBE SCF failed to converge in 30 iterations
-(oscillating between roughly -220 and -260 Eh from the first iteration,
-reproduced identically at 1 and 4 MPI ranks, so not a communication artifact),
-and the ordinary fragment monomer SCF that follows, with the AFO's frozen
-orbitals applied, oscillates the same way. mqc's own FMO2-PBE/AFO/ER run on
-the same geometry and settings (`resppc=2.0`, `resdim=0`, STO-3G) converges
-and gives -765.583472743164 Eh.
+**AFO under DFT: no GAMESS cross-check.** GAMESS solves the AFO model system
+at the deck's functional under `dfttyp=pbe` (`gly3w_afo_pbe.inp`'s log prints
+`FINAL R-PBE ENERGY` for the model), and mqc now does the same
+(`bond_lmo_set`/`bond_hybrid` go through the fragment solver). There is no
+numeric reference for cut FMO-DFT, and none is expected from this GAMESS: its
+AFO model-system SCF diverges under PBE on Gly3 plus water in every variant
+tried -- STO-3G and 6-31G, DIIS and SOSCF (the model SCF ignores `$SCF`; the
+trajectories are bit-identical), and with the BDA and BAA swapped in
+`$FMOBND` -- and GAMESS then carries on with a model energy of zero, so its
+cut FMO-DFT numbers from this build are not usable. The same 11-atom capped
+model run on its own as a PBE/6-31G job converges (-264.1572527936 Eh), so the
+failure is in GAMESS's AFO-with-DFT path and not in the molecule; GAMESS's
+documentation describes AFO as applied to zeolites only. It was not debugged.
+
+Cut FMO-DFT is therefore gated internally: two fragments across one cut
+reproduce the supermolecule (`propane_cut_across_one_bond_pbe_is_the_supermolecule`
+in `test_mqc_fmo_dft`), and so does Gly3 plus water cut at both peptide bonds
+at full order (`test_mqc_fmo_dft_long`, 8e-12 Eh), whose FMO2 run -- the case
+GAMESS diverges on -- converges every PBE model system and lands 2.4e-4 Eh
+from the molecule in STO-3G. Hartree-Fock with cuts is bit-identical to before,
+and uncut FMO-DFT still matches GAMESS (above).

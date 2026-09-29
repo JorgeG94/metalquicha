@@ -470,8 +470,18 @@ Decisions
    bit-identical to before. Gate: ``test_mqc_afo_orbital`` (the PBE orbital set
    against an independent PBE solve, and unlike the Hartree-Fock one) and
    ``propane_in_three_fragments_pbe_freezes_a_kohn_sham_orbital`` in
-   ``test_mqc_fmo_dft``. No GAMESS reference for cut FMO-DFT exists yet: its
-   own PBE model SCF did not converge on Gly3 plus water in STO-3G.
+   ``test_mqc_fmo_dft``, and ``test_mqc_fmo_dft_long`` (Gly3 plus water cut at
+   both peptide bonds: every PBE model converges, and full order is the
+   molecule to 8e-12 Eh).
+
+   **Cut FMO-DFT has no GAMESS cross-check, and none is coming.** GAMESS's AFO
+   model-system SCF diverges under PBE on Gly3 plus water in every variant
+   tried (STO-3G and 6-31G, DIIS and SOSCF, BDA and BAA swapped), and GAMESS
+   then continues with a model energy of zero. The same capped model converges
+   as an ordinary GAMESS PBE job, so the fault is in GAMESS's AFO-with-DFT path;
+   it was not debugged. The gates above are internal, together with
+   bit-identical Hartree-Fock with cuts and uncut FMO-DFT matching GAMESS. See
+   ``tools/fmo_validation/README.md``.
 
 Open, for review
 ================

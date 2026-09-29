@@ -514,6 +514,11 @@ if(MQC_ENABLE_CZT)
   # cut across one C-C bond -- the DFT counterpart of `mqc_afo_fmo`.
   addtest(mqc_fmo_dft)
   target_link_libraries(test_mqc_fmo_dft PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The glycine tripeptide and water cut at both peptide bonds, PBE: every model
+  # system converges at the deck's functional, and full order is the molecule.
+  # LONG: fifteen PBE n-mer SCFs over the tripeptide.
+  addlongtest(mqc_fmo_dft_long)
+  target_link_libraries(test_mqc_fmo_dft_long PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Empirical dispersion under FMO and EE-MBE, added to every fragment and n-mer
   # as GAMESS does: the full-level identity against the supermolecule plus its
