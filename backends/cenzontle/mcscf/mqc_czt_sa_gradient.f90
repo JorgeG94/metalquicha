@@ -1015,6 +1015,11 @@ contains
       !! not screen (`two_electron_mp2_terms`'s `with_gamma` branch has no
       !! Schwarz bound for a general four-index density) and so is paid in
       !! full every time it runs.
+      !!
+      !! Gamma is built only over the AOs where some leg (`c_active` or any
+      !! root's `cbar_active_all`) has an amplitude above `SIGNIFICANCE` times
+      !! the largest. The rest contribute exactly nothing to Gamma, and in a
+      !! planar pi system that is every sigma-type AO.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: c_active(:, :)                !! (n_ao, n_active)
       real(dp), intent(in) :: ddm2_all(:, :, :, :, :)       !! (n_active^4, n_root), base cumulants
@@ -1025,55 +1030,114 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: gamma_stack(:, :, :, :, :), tmp(:, :, :, :)
-      integer :: n_ao, n_root, ish, ish_lo, ish_hi, p_lo, p_hi, np, per_block, ir
+      real(dp), allocatable :: amplitude(:), c_sig(:, :), cbar_sig(:, :, :)
+      integer, allocatable :: ao_map(:), shells(:), sig_aos(:)
+      real(dp) :: cut
+      integer :: n_ao, n_root, n_sig, n_sh, sh, mu, i0, dsh, ir
+      integer :: ip, ip_lo, ip_hi, p_lo, p_hi, np, per_block
       real(dp), parameter :: BLOCK_TARGET = 2.0e8_dp
-         !! As `mqc_czt_mcscf_gradient`'s own, divided below by `n_root`
-         !! (`gamma_stack` holds one such block per root at once).
+      real(dp), parameter :: SIGNIFICANCE = 1.0e-12_dp
 
       if (error%has_error()) return
       n_ao = size(c_active, 1)
       n_root = size(ddm2_all, 5)
 
-      per_block = max(1, int(BLOCK_TARGET/(2.0_dp*real(n_ao, dp)**3*8.0_dp*real(n_root, dp))))
+      allocate (amplitude(n_ao), ao_map(n_ao))
+      do mu = 1, n_ao
+         amplitude(mu) = max(maxval(abs(c_active(mu, :))), maxval(abs(cbar_active_all(mu, :, :))))
+      end do
+      cut = SIGNIFICANCE*max(maxval(amplitude), tiny(1.0_dp))
+      ao_map = 0
+      n_sig = 0
+      do mu = 1, n_ao
+         if (amplitude(mu) > cut) then
+            n_sig = n_sig + 1
+            ao_map(mu) = n_sig
+         end if
+      end do
+      if (n_sig == 0) return
+      allocate (sig_aos(n_sig))
+      sig_aos = pack([(mu, mu=1, n_ao)], ao_map > 0)
+      c_sig = c_active(sig_aos, :)
+      cbar_sig = cbar_active_all(sig_aos, :, :)
 
-      ish_lo = 1
-      do while (ish_lo <= mol%nbas)
-         p_lo = mol%shell_offset(ish_lo) + 1
-         ish_hi = ish_lo
-         do ish = ish_lo, mol%nbas
-            p_hi = mol%shell_offset(ish) + shell_dim(mol%cartesian, ish - 1, mol%bas)
-            if (ish > ish_lo .and. p_hi - p_lo + 1 > per_block) exit
-            ish_hi = ish
+      n_sh = 0
+      allocate (shells(mol%nbas))
+      do sh = 1, mol%nbas
+         i0 = mol%shell_offset(sh)
+         dsh = shell_dim(mol%cartesian, sh - 1, mol%bas)
+         if (any(ao_map(i0 + 1:i0 + dsh) > 0)) then
+            n_sh = n_sh + 1
+            shells(n_sh) = sh
+         end if
+      end do
+      shells = shells(1:n_sh)
+
+      per_block = max(1, int(BLOCK_TARGET/(2.0_dp*real(n_sig, dp)**3*8.0_dp*real(n_root, dp))))
+
+      ip_lo = 1
+      do while (ip_lo <= n_sh)
+         p_lo = first_mapped(shells(ip_lo))
+         ip_hi = ip_lo
+         do ip = ip_lo, n_sh
+            if (ip > ip_lo .and. last_mapped(shells(ip)) - p_lo + 1 > per_block) exit
+            ip_hi = ip
          end do
-         p_hi = mol%shell_offset(ish_hi) + shell_dim(mol%cartesian, ish_hi - 1, mol%bas)
+         p_hi = last_mapped(shells(ip_hi))
          np = p_hi - p_lo + 1
 
-         allocate (gamma_stack(np, n_ao, n_ao, n_ao, n_root))
+         allocate (gamma_stack(np, n_sig, n_sig, n_sig, n_root))
          do ir = 1, n_root
-            call gamma_block(c_active, ddm2_all(:, :, :, :, ir), p_lo, p_hi, tmp)
+            call gamma_block(c_sig, ddm2_all(:, :, :, :, ir), p_lo, p_hi, tmp)
             gamma_stack(:, :, :, :, ir) = tmp
-            call gamma_block(cbar_active_all(:, :, ir), dm2_sa, p_lo, p_hi, tmp, &
-                             c2=c_active, c3=c_active, c4=c_active)
+            call gamma_block(cbar_sig(:, :, ir), dm2_sa, p_lo, p_hi, tmp, &
+                             c2=c_sig, c3=c_sig, c4=c_sig)
             gamma_stack(:, :, :, :, ir) = gamma_stack(:, :, :, :, ir) + tmp
-            call gamma_block(c_active, dm2_sa, p_lo, p_hi, tmp, &
-                             c2=cbar_active_all(:, :, ir), c3=c_active, c4=c_active)
+            call gamma_block(c_sig, dm2_sa, p_lo, p_hi, tmp, &
+                             c2=cbar_sig(:, :, ir), c3=c_sig, c4=c_sig)
             gamma_stack(:, :, :, :, ir) = gamma_stack(:, :, :, :, ir) + tmp
-            call gamma_block(c_active, dm2_sa, p_lo, p_hi, tmp, &
-                             c2=c_active, c3=cbar_active_all(:, :, ir), c4=c_active)
+            call gamma_block(c_sig, dm2_sa, p_lo, p_hi, tmp, &
+                             c2=c_sig, c3=cbar_sig(:, :, ir), c4=c_sig)
             gamma_stack(:, :, :, :, ir) = gamma_stack(:, :, :, :, ir) + tmp
-            call gamma_block(c_active, dm2_sa, p_lo, p_hi, tmp, &
-                             c2=c_active, c3=c_active, c4=cbar_active_all(:, :, ir))
+            call gamma_block(c_sig, dm2_sa, p_lo, p_hi, tmp, &
+                             c2=c_sig, c3=c_sig, c4=cbar_sig(:, :, ir))
             gamma_stack(:, :, :, :, ir) = gamma_stack(:, :, :, :, ir) + tmp
-            call gamma_block(c_active, tdm2_total_all(:, :, :, :, ir), p_lo, p_hi, tmp)
+            call gamma_block(c_sig, tdm2_total_all(:, :, :, :, ir), p_lo, p_hi, tmp)
             gamma_stack(:, :, :, :, ir) = gamma_stack(:, :, :, :, ir) + tmp
          end do
 
-         call active_two_electron_gradient_many(mol, gamma_stack, ish_lo, ish_hi, p_lo - 1, &
-                                                gradients, error)
+         call active_two_electron_gradient_many(mol, gamma_stack, shells, ip_lo, ip_hi, ao_map, &
+                                                p_lo - 1, gradients, error)
          deallocate (gamma_stack)
          if (error%has_error()) return
-         ish_lo = ish_hi + 1
+         ip_lo = ip_hi + 1
       end do
+
+   contains
+
+      function first_mapped(shell) result(first)
+         !! The smallest compressed index among `shell`'s AOs
+         integer, intent(in) :: shell
+         integer :: first
+         integer :: q
+         first = huge(1)
+         do q = mol%shell_offset(shell) + 1, mol%shell_offset(shell) + &
+            shell_dim(mol%cartesian, shell - 1, mol%bas)
+            if (ao_map(q) > 0) first = min(first, ao_map(q))
+         end do
+      end function first_mapped
+
+      function last_mapped(shell) result(last)
+         !! The largest compressed index among `shell`'s AOs
+         integer, intent(in) :: shell
+         integer :: last
+         integer :: q
+         last = 0
+         do q = mol%shell_offset(shell) + 1, mol%shell_offset(shell) + &
+            shell_dim(mol%cartesian, shell - 1, mol%bas)
+            last = max(last, ao_map(q))
+         end do
+      end function last_mapped
    end subroutine active_two_electron_gradient_stacked
 
    subroutine build_active_density(c_active, dm1, d_active)
