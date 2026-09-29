@@ -785,3 +785,27 @@ What is not here yet
   induction still differ by about two per cent, in the other direction; what is
   left is a difference in the *undamped* induction and it is not yet accounted
   for.
+
+References
+----------
+
+Steinmann, Fedorov and Jensen, *J. Phys. Chem. A* **114**, 8705 (2010) -- the
+effective fragment molecular orbital method.
+
+Sattasathuchana, Xu, Bertoni, Kim, Leang, Pham and Gordon, *J. Chem. Theory
+Comput.* **20**, 2445 (2024) -- the form of the energy used here (eq 6).
+
+Steinmann, Fedorov and Jensen, *PLoS ONE* **8**, e60602 (2013) -- EFMO across
+covalent bonds.
+
+Fedorov, Jensen, Deka and Kitaura, *J. Phys. Chem. A* **112**, 11808 (2008) --
+the adjusted frozen orbitals used to detach a covalent bond.
+
+Gordon, Freitag, Bandyopadhyay, Jensen, Kairys and Stevens, *J. Phys. Chem. A*
+**105**, 293 (2001) -- the effective fragment potential method.
+
+Kitaura, Ikeo, Asada, Nakano and Uebayasi, *Chem. Phys. Lett.* **313**, 701
+(1999) -- the fragment molecular orbital method EFMO builds on.
+
+The GAMESS results this page compares against were computed with GAMESS:
+Barca *et al.*, *J. Chem. Phys.* **152**, 154102 (2020).

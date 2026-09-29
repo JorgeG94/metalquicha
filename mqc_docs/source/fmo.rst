@@ -277,7 +277,7 @@ end and dropped elsewhere; a group takes whichever of those atoms it holds and
 Gram-Schmidt orthonormalises the set, occupied first.
 
 **Which localizer.** Edmiston-Ruedenberg by default, as in the paper and in
-GAMESS (``$CONTRL LOCAL``, read into the model at ``fmolib.src:5783``); Boys was
+GAMESS (``$CONTRL LOCAL``, which GAMESS applies to the model system too); Boys was
 this code's only choice until ER was added. The two split the detached carbon's
 five orbitals differently, so the *monomers* move by a tenth of a Hartree --
 0.086 and -0.105 on butane with a water, in GAMESS and here alike -- while the
@@ -917,3 +917,42 @@ reference, because PIEDA's decomposition exists for Hartree-Fock only so far.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are
 not available through these.
+
+References
+----------
+
+Kitaura, Ikeo, Asada, Nakano and Uebayasi, *Chem. Phys. Lett.* **313**, 701
+(1999) -- the fragment molecular orbital method.
+
+Nakano, Kaminuma, Sato, Fukuzawa, Akiyama, Uebayasi and Kitaura, *Chem. Phys.
+Lett.* **351**, 475 (2002) -- the approximations to the electrostatic potential
+(``resppc``, ``resdim``).
+
+Fedorov and Kitaura, *J. Chem. Phys.* **120**, 6832 (2004) -- three-body terms,
+FMO3.
+
+Fedorov and Kitaura, *J. Chem. Phys.* **121**, 2483 (2004) -- FMO with
+second-order Moller-Plesset perturbation theory.
+
+Sugiki, Kurita, Sekino and Nakano, *Chem. Phys. Lett.* **382**, 611 (2003) --
+FMO with density functional theory.
+
+Fedorov and Kitaura, *J. Comput. Chem.* **28**, 222 (2007) -- the pair
+interaction energy decomposition analysis (PIEDA).
+
+Fedorov, Jensen, Deka and Kitaura, *J. Phys. Chem. A* **112**, 11808 (2008) --
+the adjusted frozen orbitals used to detach a covalent bond.
+
+Fedorov and Kitaura, *J. Phys. Chem. A* **111**, 6904 (2007) -- a review of FMO
+and its implementation in GAMESS.
+
+Dahlke and Truhlar, *J. Chem. Theory Comput.* **3**, 46 (2007) -- the
+electrostatically embedded many-body expansion (EE-MBE).
+
+Grimme, Antony, Ehrlich and Krieg, *J. Chem. Phys.* **132**, 154104 (2010), and
+Grimme, Ehrlich and Goerigk, *J. Comput. Chem.* **32**, 1456 (2011) -- D3 and
+its Becke-Johnson damping. Caldeweyher, Ehlert, Hansen, Neugebauer, Spicher,
+Bannwarth and Grimme, *J. Chem. Phys.* **150**, 154122 (2019) -- D4.
+
+The GAMESS results this page compares against were computed with GAMESS:
+Barca *et al.*, *J. Chem. Phys.* **152**, 154102 (2020).
