@@ -34,9 +34,9 @@ module mqc_orbital_rotation
    !! `test_mqc_mcscf.f90` fixes it by finite differences rather than by
    !! assertion, and `test_mqc_czt_soscf.f90` fixes it again for the SCF.
    use pic_types, only: dp
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_blas_interfaces, only: pic_gemm, pic_gemv
    use pic_io, only: to_char
-   use pic_lapack_interfaces, only: pic_syev
+   use pic_lapack_interfaces, only: pic_syevd
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
@@ -176,7 +176,7 @@ contains
 
       real(dp), allocatable :: vectors(:, :), values(:), projected(:), amplitude(:)
       real(dp) :: shift
-      integer :: n_param, k, l, info
+      integer :: n_param, k, info
 
       lowest = 0.0_dp
       predicted = 0.0_dp
@@ -194,7 +194,7 @@ contains
       allocate (vectors(n_param, n_param), values(n_param))
       allocate (projected(n_param), amplitude(n_param))
       vectors = hessian
-      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      call pic_syevd(vectors, values, jobz="V", uplo="U", info=info)
       if (info /= 0) then
          call error%set(ERROR_VALIDATION, "the orbital Hessian could not be "// &
                         "diagonalized (info = "//to_char(info)//")")
@@ -205,12 +205,7 @@ contains
       shift = 0.0_dp
       if (values(1) < MIN_CURVATURE) shift = MIN_CURVATURE - values(1)
 
-      do k = 1, n_param
-         projected(k) = 0.0_dp
-         do l = 1, n_param
-            projected(k) = projected(k) + vectors(l, k)*gradient(l)
-         end do
-      end do
+      call pic_gemv(vectors, gradient, projected, trans_a="T")
 
       do k = 1, n_param
          amplitude(k) = -projected(k)/(values(k) + shift)
@@ -224,9 +219,7 @@ contains
                      - 0.5_dp*values(k)*amplitude(k)**2
       end do
 
-      do l = 1, n_param
-         step(l) = dot_product(vectors(l, :), amplitude)
-      end do
+      call pic_gemv(vectors, amplitude, step)
 
       deallocate (vectors, values, projected, amplitude)
    end subroutine level_shifted_step
