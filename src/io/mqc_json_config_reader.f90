@@ -1677,8 +1677,8 @@ contains
 
    subroutine read_mcscf_gradient_roots(json, config, error)
       !! `keywords.mcscf.gradient_roots`: the string `"all"` or a list of
-      !! 1-based root indices -- which states the (not yet driver-reachable)
-      !! fused multi-root SA-CASSCF gradient would build. `"all"` and an
+      !! 1-based root indices -- which states a Gradient driver's fused
+      !! multi-root SA-CASSCF gradient builds. `"all"` and an
       !! absent key both resolve to `config%mcscf_gradient_roots` left
       !! unallocated; called from `read_mcscf_state_averaging`, after
       !! `mcscf_n_states` is already set, since a list is validated against it.

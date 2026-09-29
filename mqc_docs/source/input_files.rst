@@ -1462,72 +1462,15 @@ give -75.7103507602.
 State Averaging
 """"""""""""""""
 
-.. code-block:: json
-
-   "mcscf": {
-     "n_active_electrons": 2,
-     "n_active_orbitals": 2,
-     "n_states": 2,
-     "weights": [0.5, 0.5]
-   }
-
-- ``n_states``: How many roots the orbitals are optimised against (default: 1,
-  an ordinary CASSCF). The energy reported, ``E_SA = sum_J weight(J) *
-  energy(J)``, is what the orbital optimiser actually minimises -- **not** the
-  lowest root's own energy, and the output section below says so explicitly
-  rather than leaving it to be assumed.
-- ``weights``: One weight per state, non-negative and summing to one (default:
-  equal, ``1/n_states``, when the key is absent). Any weights are accepted for
-  the energy; a future gradient will restrict this to equal weights, as
-  PySCF's own SA-CASSCF gradient code does, because a rotation between
-  unequally-weighted states is not redundant and needs a curvature term this
-  code does not yet carry.
-
-**Singlets only, for now.** State averaging needs the reference to be a
-singlet -- equal active alpha and beta electrons -- and is refused otherwise.
-The determinant CI here imposes no total spin by itself, so its lowest roots
-can be of any spin (two electrons in two orbitals already has a triplet among
-its four lowest determinants), and an unrestricted state average would mix
-whatever spins the Davidson happened to converge to. With a singlet reference,
-``n_alpha == n_beta`` makes every determinant's alpha and beta string tables
-identical, and every singlet is exactly symmetric under swapping which table
-is called alpha and which beta while every other spin is exactly
-antisymmetric; the Davidson is restricted to the symmetric subspace whenever
-``n_states > 1``, which excludes every non-singlet root exactly rather than
-approximately. Every state's ``<S^2>`` reaches the output (below) so a spin
-mix-up would be visible if the restriction were ever wrong.
-
-Every root's energy, ``<S^2>`` and weight reach the JSON output, under an
-``mcscf_states`` section, alongside ``E_SA``:
-
-.. code-block:: json
-
-   "mcscf_states": {
-     "n_states": 2,
-     "e_sa_hartree": -77.861519139902,
-     "states": [
-       {"state": 1, "energy_hartree": -78.049709783060, "s2": 0.0, "weight": 0.5},
-       {"state": 2, "energy_hartree": -77.673328496744, "s2": 0.0, "weight": 0.5}
-     ]
-   }
-
-**Refused rather than silently ignored:**
-
-- ``n_states > 1`` together with ``ormas``: there is no transition-density
-  machinery for a restricted active space.
-- ``n_states > 1`` on a CASCI (``optimize_orbitals: false``): averaging is a
-  property of what the orbitals are optimised against, and a CASCI never
-  moves them.
-- ``n_states > 1`` on a ``Gradient`` or ``Hessian`` driver: the single-state
-  CASSCF gradient below is not the gradient of ``E_SA``, and returning it
-  would silently answer the wrong question. A state-averaged gradient is
-  planned but not implemented yet.
-
-CASPT2/NEVPT2 corrections are not implemented, and no keyword accepts them --
-a deck asking for one is refused rather than quietly given the uncorrected
-energy. A single-state CASSCF has an analytic nuclear gradient (below);
-CASCI and state-averaged CASSCF do not, for the reasons given at each
-refusal, and neither has a Hessian.
+``keywords.mcscf.n_states`` and ``.weights`` optimise the orbitals against
+several CI roots at once (state-averaged CASSCF) instead of the lowest one
+alone, with an analytic gradient of every requested root -- see
+:doc:`sa_casscf` for the keys, the singlet rule, what is refused, and what
+the output contains. CASPT2/NEVPT2 corrections are not implemented, and no
+keyword accepts them -- a deck asking for one is refused rather than quietly
+given the uncorrected energy. A single-state CASSCF has an analytic nuclear
+gradient; CASCI does not, since its orbitals were never optimised for the
+active space, and neither has a Hessian.
 
 Hessian Options
 ^^^^^^^^^^^^^^^

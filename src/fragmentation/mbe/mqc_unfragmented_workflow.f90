@@ -269,6 +269,10 @@ contains
                            json_data%mcscf_state_energies = result%mcscf_state_energies
                            json_data%mcscf_state_spins = result%mcscf_state_spins
                            json_data%mcscf_state_weights = result%mcscf_state_weights
+                           if (allocated(result%mcscf_state_gradients)) then
+                              json_data%mcscf_state_gradients = result%mcscf_state_gradients
+                              json_data%mcscf_gradient_roots = result%mcscf_gradient_roots
+                           end if
                            json_data%has_mcscf_states = .true.
                         end if
 
@@ -474,6 +478,10 @@ contains
                json_data%mcscf_state_energies = result%mcscf_state_energies
                json_data%mcscf_state_spins = result%mcscf_state_spins
                json_data%mcscf_state_weights = result%mcscf_state_weights
+               if (allocated(result%mcscf_state_gradients)) then
+                  json_data%mcscf_state_gradients = result%mcscf_state_gradients
+                  json_data%mcscf_gradient_roots = result%mcscf_gradient_roots
+               end if
                json_data%has_mcscf_states = .true.
             end if
 

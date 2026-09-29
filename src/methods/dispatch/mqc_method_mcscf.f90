@@ -58,14 +58,9 @@ module mqc_method_mcscf
          !! Number of states for state-averaged CASSCF
       real(dp), allocatable :: state_weights(:)
          !! Weights for state averaging (must sum to 1)
-         !!
-         !! Not reachable from a deck: the optimiser underneath solves for one
-         !! state, so `mqc_json_schema` allows no key that would set these. The
-         !! fields stay because the config type they are copied from has them.
       integer, allocatable :: gradient_roots(:)
          !! `keywords.mcscf.gradient_roots`, 1-based. Unallocated means every
-         !! state. Carried this far by `configure_mcscf`; nothing downstream of
-         !! here reads it yet (`SA_CASSCF_GRADIENT_PLAN.md` phase 6).
+         !! state; only meaningful on a Gradient driver with `n_states > 1`.
 
       ! Convergence settings
       integer :: max_macro_iter = 100

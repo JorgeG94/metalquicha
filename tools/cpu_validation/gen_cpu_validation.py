@@ -768,6 +768,19 @@ FRAGMENTED_CASES = [
 # seven unwanted decks.
 MULTIREF_MOLECULES = {
     "n2": _mol("N2", "N", diatomic("N", "N", 1.0977)),
+    # Twisted 90 degrees, second CH2 pyramidalised (H y += 0.15 A) so the two
+    # carbons are not equivalent -- the unpyramidalised D2d geometry has two
+    # mirror-image SA-2-CAS(2,2) solutions with equal energy and swapped
+    # gradients, and either one is a valid but incomparable answer. Same
+    # geometry as tools/sa_casscf/c2h4_twisted.xyz.
+    "c2h4_twisted": _mol("C2H4-twisted", "C", [
+        ("C", 0.0000, 0.0000, 0.6695),
+        ("C", 0.0000, 0.0000, -0.6695),
+        ("H", 0.0000, 0.9290, 1.2320),
+        ("H", 0.0000, -0.9290, 1.2320),
+        ("H", 0.9290, 0.1500, -1.2320),
+        ("H", -0.9290, 0.1500, -1.2320),
+    ]),
 }
 
 
@@ -809,6 +822,19 @@ MCSCF_GRADIENT_CASES = [
     # molecule  basis      nelecas  ncas
     ("water",   "sto-3g",  6,       5),
     ("n2",      "cc-pvdz", 6,       6),
+]
+
+# State-averaged CASSCF gradient, through the real driver's Gradient path
+# (`SA_CASSCF_GRADIENT_PLAN.md` phase 6). One cheap case for the default
+# manifest: only the SA total energy and the norm of dE_SA/dR are checked
+# (not every component), since a component-by-component reference for a
+# weighted sum of several roots' relaxed densities is a bigger reference
+# script than this generator needs for one smoke-test-sized deck -- the
+# per-root, per-component agreement is what the phase's own unit tests
+# (test/test_mqc_sa_gradient_pyscf_long.f90) already check to 1e-9-1e-8.
+# molecule       basis     nelecas  ncas  nroots  weights
+SA_MCSCF_GRADIENT_CASES = [
+    ("c2h4_twisted", "6-31g*", 2, 2, 2, (0.5, 0.5)),
 ]
 
 QUAO_CASES = [
@@ -2979,6 +3005,42 @@ def pyscf_mcscf_gradient(atoms, basis, nelecas, ncas):
     return energy, [list(map(float, row)) for row in gradient], note, mol.nao
 
 
+def pyscf_sa_mcscf_gradient(atoms, basis, nelecas, ncas, nroots, weights):
+    """E_SA and the norm of dE_SA/dR for a state-averaged CASSCF.
+
+    dE_SA/dR has no separate PySCF entry point of its own: it is the
+    weight-averaged sum of every root's own analytic gradient
+    (``sa_gradients``), reused here from ``tools/sa_casscf/pyscf_ref.py``
+    rather than re-derived.
+    """
+    import numpy as np
+    import sys as _sys
+    from pyscf import gto
+
+    sa_dir = str(REPO / "tools" / "sa_casscf")
+    if sa_dir not in _sys.path:
+        _sys.path.insert(0, sa_dir)
+    from pyscf_ref import run_sacasscf, sa_gradients, state_energies
+
+    symbols = {a[0] for a in atoms}
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    mol.basis = {sym: bse_to_pyscf(basis, sym) for sym in symbols}
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+
+    _, mc = run_sacasscf(mol, ncas, nelecas, nroots, list(weights),
+                         conv_tol=1e-12, conv_tol_grad=1e-6, newton_polish=True)
+    energies = state_energies(mc, nroots)
+    e_sa = sum(w*e for w, e in zip(weights, energies))
+    grads = sa_gradients(mc, nroots, conv_rtol=1e-12, conv_atol=1e-14, max_cycle=200)
+    g_sa = sum(w*np.asarray(g) for w, g in zip(weights, grads))
+    norm = math.sqrt(float(np.sum(g_sa*g_sa)))
+    return e_sa, norm
+
+
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1, ecp=""):
     from pyscf import df, gto, scf
 
@@ -3505,6 +3567,42 @@ def main():
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} CASSCF grad CAS({nelecas},{ncas}) "
               f"|g|={norm:.10f} E={energy:.12f}", flush=True)
+
+    # State-averaged CASSCF gradient (SA_CASSCF_GRADIENT_PLAN.md phase 6): the
+    # Gradient driver's top-level output, dE_SA/dR, on a deck with
+    # keywords.mcscf.n_states > 1.
+    for name, basis, nelecas, ncas, nroots, weights in SA_MCSCF_GRADIENT_CASES:
+        mol = multiref_molecule(name)
+        e_sa, grad_norm = pyscf_sa_mcscf_gradient(
+            mol.atoms, basis, nelecas, ncas, nroots, weights)
+        tag = normalize_basis_name(basis) + f"_sa{nroots}_{nelecas}e{ncas}o"
+        deck = deck_for(f"{CPU_MQC}/mcscf", f"cpu_{name}_{tag}_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="casscf")
+            d["keywords"]["mcscf"] = {
+                "n_active_electrons": nelecas,
+                "n_active_orbitals": ncas,
+                "max_macro_iter": 400,
+                "orbital_convergence": 1e-10,
+                "n_states": nroots,
+                "weights": list(weights),
+                "gradient_roots": "all",
+            }
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"SA-{nroots}-CASSCF gradient CAS({nelecas},{ncas}) "
+                    f"{mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(e_sa, 12),
+            "expected_gradient_norm": round(grad_norm, 10),
+            "tolerance": GRADIENT_MCSCF_TOLERANCE,
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} SA-{nroots}-CASSCF grad "
+              f"CAS({nelecas},{ncas}) |g_SA|={grad_norm:.10f} E_SA={e_sa:.12f}",
+              flush=True)
 
     # The quasi-atomic bonding analysis, through the real driver. The energy is
     # the ordinary RHF one and is what the harness checks; what the case is

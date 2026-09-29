@@ -217,12 +217,14 @@ module mqc_result_types
 
       ! State-averaged CASSCF, when `keywords.mcscf.n_states` asked for more
       ! than one. `energy%scf` is `E_SA = sum_J w_J E_J`, the quantity the
-      ! orbitals were actually optimised against -- these three carry what it
-      ! was built from.
+      ! orbitals were actually optimised against -- these five carry what it
+      ! was built from and, for a Gradient driver, every requested root's own
+      ! gradient.
       ! TODO(mqc): not threaded through `result_send`/`result_recv` (and their
       ! `i`-prefixed twins) below, unlike the excited-states arrays beside
-      ! them: state-averaged CASSCF has no fragmented (MPI worker) path yet,
-      ! so a fragmented run would silently drop these three on the wire.
+      ! them. This is also why `mqc_driver` refuses `n_states > 1` under
+      ! fragmentation by name: nothing carries this section through the
+      ! fragment machinery or MPI packing yet.
       real(dp), allocatable :: mcscf_state_energies(:)
          !! (n_states) every state's own total energy, in the order `weights`
          !! was given.
@@ -230,6 +232,15 @@ module mqc_result_types
          !! (n_states) `<S^2>` of each state above, same order.
       real(dp), allocatable :: mcscf_state_weights(:)
          !! (n_states) the weights `E_SA` was built from.
+      real(dp), allocatable :: mcscf_state_gradients(:, :, :)
+         !! (3, n_atoms, size(mcscf_gradient_roots)) the analytic nuclear
+         !! gradient of each root named in `mcscf_gradient_roots`, from
+         !! `czt_sa_casscf_gradients`. Unallocated unless a Gradient driver
+         !! asked for a state-averaged CASSCF. The top-level `gradient` is
+         !! `dE_SA/dR`, not any one of these.
+      integer, allocatable :: mcscf_gradient_roots(:)
+         !! (size(mcscf_state_gradients, 3)) 1-based root index each slice of
+         !! `mcscf_state_gradients` belongs to, in the order computed.
       logical :: has_mcscf_states = .false.
 
       logical :: stability_stable = .true.
@@ -464,6 +475,8 @@ contains
       if (allocated(this%mcscf_state_energies)) deallocate (this%mcscf_state_energies)
       if (allocated(this%mcscf_state_spins)) deallocate (this%mcscf_state_spins)
       if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
+      if (allocated(this%mcscf_state_gradients)) deallocate (this%mcscf_state_gradients)
+      if (allocated(this%mcscf_gradient_roots)) deallocate (this%mcscf_gradient_roots)
       call this%quao_rows%destroy()
       call this%reset()
    end subroutine result_destroy
