@@ -197,6 +197,7 @@ if(MQC_ENABLE_CZT)
   target_link_libraries(test_mqc_casci PRIVATE cint_fortran cint)
 
   addtest(mqc_mcscf)
+  addtest(mqc_mcscf_iterative)
   addtest(mqc_scf_level_shift)
 
   # State-averaged CASSCF: energy, singlet selection, n_states = 1 unchanged.

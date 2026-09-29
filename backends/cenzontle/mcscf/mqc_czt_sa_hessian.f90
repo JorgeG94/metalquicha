@@ -71,7 +71,8 @@ module mqc_czt_sa_hessian
    use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
                             rotation_parameters, rotation_matrix, &
                             one_index_fock, transformed_potential, sa_density_matrices, &
-                            mo_integral_blocks, fock_from_blocks
+                            mo_integral_blocks, fock_from_blocks, &
+                            approximate_hessian_diagonal
    use mqc_determinants, only: link_table_t, build_link_table
    use mqc_ci, only: absorb_one_electron, sigma_vector, ci_diagonal
    use mqc_rdm, only: active_space_rdms, transition_rdms
@@ -152,7 +153,7 @@ contains
       type(sa_hessian_t), intent(out) :: state
       type(error_t), intent(inout) :: error
 
-      integer :: n_occ, j, l, p, q
+      integer :: n_occ, j
 
       if (error%has_error()) return
       if (n_alpha /= n_beta) then
@@ -218,21 +219,10 @@ contains
          state%active_energies(j) = energies(j) - state%core_energy
       end do
 
-      ! The orbital preconditioner: the one-electron approximation to the
-      ! Hessian diagonal, 2 (n_q f_pp + n_p f_qq) - 2 (F_pp + F_qq), with
-      ! f = FI + FA and F the generalised Fock. For an inactive-virtual pair
-      ! it is 4 (f_aa - f_ii). Building the exact diagonal would take one
+      ! The orbital preconditioner. Building the exact diagonal would take one
       ! `one_index_fock` per rotation.
-      allocate (state%orbital_hessian_diag(state%n_rot))
-      do l = 1, state%n_rot
-         p = state%rows(l)
-         q = state%cols(l)
-         state%orbital_hessian_diag(l) = 2.0_dp*(state%fock_sa%occupation(q)* &
-                                                 (state%fock_sa%inactive(p, p) + state%fock_sa%active(p, p)) &
-                                                 + state%fock_sa%occupation(p)* &
-                                                 (state%fock_sa%inactive(q, q) + state%fock_sa%active(q, q))) &
-                                         - 2.0_dp*(state%fock_sa%general(p, p) + state%fock_sa%general(q, q))
-      end do
+      state%orbital_hessian_diag = approximate_hessian_diagonal(state%fock_sa, state%rows, &
+                                                                state%cols)
    end subroutine build_sa_hessian
 
    subroutine destroy_sa_hessian(state)
