@@ -1,8 +1,7 @@
 !! The matrix-free Hessian-vector product of the SA-CASSCF energy
 module mqc_czt_sa_hessian
-   !! Phase 3 of the SA-CASSCF gradient project (`SA_CASSCF_GRADIENT_PLAN.md`;
-   !! equations in `mqc_docs/source/developer_sa_casscf.rst`, "The SA-CASSCF
-   !! Lagrangian and Z-vector" and "The SA Hessian blocks").
+   !! Equations in `mqc_docs/source/developer_sa_casscf.rst`, "The SA-CASSCF
+   !! Lagrangian and Z-vector" and "The SA Hessian blocks".
    !!
    !! **The joint parameter vector.** A point in the space the SA Hessian acts
    !! on is `[kappa (n_rot) ; x_1 (n_det) ; ... ; x_N (n_det)]`: `kappa` one
@@ -13,8 +12,7 @@ module mqc_czt_sa_hessian
    !! `newton_casscf` convention: the redundant "renormalise `c_J`" direction
    !! is not part of the parameter space at all). `sa_hessian_n_param` gives
    !! the flat length; `sa_hessian_apply`/`sa_hessian_precondition` work on
-   !! that flat layout directly, block-shaped over several vectors at once so
-   !! phase 5 can fuse the block without changing this interface.
+   !! that flat layout directly, block-shaped over several vectors at once.
    !!
    !! **Every quantity built once, in `build_sa_hessian`, off a converged
    !! `run_czt_casscf` result.** `a_block`/`b_block` (the `(n_mo, n_occ, n_mo,
@@ -39,7 +37,7 @@ module mqc_czt_sa_hessian
    !!   `d^2 E_SA / dkappa dx_J` equals `w_J` times the orbital-gradient
    !!   extraction of a generalised Fock built from the *symmetrised
    !!   transition density* between the reference `c_J` and `x_J`
-   !!   (`transition_rdms`, phase 2). Built here by `cheap_generalized_fock`,
+   !!   (`transition_rdms`). Built here by `cheap_generalized_fock`,
    !!   which reuses `a_block`/`b_block`/the inactive Fock rather than
    !!   calling `generalized_fock` (which would redo the AO integral pass
    !!   every call) -- called with `delta_only = .true.`, because
@@ -92,6 +90,10 @@ module mqc_czt_sa_hessian
    public :: project_ci_block
    public :: cheap_generalized_fock   !! Exposed for the tests, against `generalized_fock`
    public :: one_index_active_hamiltonian   !! Exposed for the tests, against `active_space_integrals`
+   public :: gather_from_general
+      !! Exposed for `mqc_czt_sa_nac`: the same orbital-gradient extraction it
+      !! applies to `cheap_generalized_fock`'s output when building the
+      !! interstate-coupling Z-vector's orbital right-hand side.
 
    real(dp), parameter :: CURVATURE_FLOOR = 1.0e-3_dp
       !! Smallest magnitude the diagonal preconditioner divides by, matching
@@ -541,8 +543,7 @@ contains
 
    subroutine sa_hessian_apply(state, x, hx, error)
       !! `H_SA` applied to a block of flat parameter vectors, one column at a
-      !! time -- block-shaped so phase 5 can fuse the block without changing
-      !! this interface
+      !! time
       !!
       !! **The redundancy projection (`project_ci_block`, applied to every
       !! CI input and output here) is exact only for equal weights.** With
@@ -552,8 +553,8 @@ contains
       !! `E_SA`; projecting it out here still runs, but the resulting
       !! operator is then the Hessian of `E_SA` restricted to the subspace
       !! orthogonal to every reference state, not the unconstrained Hessian.
-      !! Phase 4's single-root gradient is equal-weights only, matching
-      !! PySCF's own refusal for that case; this routine itself does not
+      !! The SA-CASSCF gradient is equal-weights only, matching PySCF's own
+      !! refusal for that case; this routine itself does not
       !! refuse unequal weights, since nothing about the block formulas
       !! stops working, only the projection's interpretation changes.
       type(sa_hessian_t), intent(in) :: state

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """A PySCF reference for state-averaged CASSCF energies and gradients.
 
-Phase 0 of the SA-CASSCF gradient project (``SA_CASSCF_GRADIENT_PLAN.md`` at
-the repository root). What this checks against later phases: every root's
-energy and (with ``--grad``) every root's analytic nuclear gradient from
+What it produces: every root's energy, (with ``--grad``) every root's
+analytic nuclear gradient from
 PySCF's own Lagrangian implementation (``pyscf.grad.sacasscf``), plus a
 finite-difference arbiter for the cases where PySCF's own iterative solvers
 are too loose to tell a real disagreement from noise.
@@ -97,6 +96,13 @@ INLINE_GEOMETRIES_ANGSTROM = {
         ("O", 0.0, 0.0, 0.0),
         ("H", 0.0, -0.7572, 0.5865),
         ("H", 0.0, 0.7572, 0.5865),
+    ],
+    # One O-H bond stretched: SA-3-CAS(4,4) at the symmetric geometry breaks
+    # C2v into two mirror solutions with the H atoms swapped.
+    "h2o_asym": [
+        ("O", 0.0, 0.0, 0.0),
+        ("H", 0.0, -0.7572, 0.5865),
+        ("H", 0.0, 0.8100, 0.6200),
     ],
 }
 
@@ -340,6 +346,33 @@ def finite_difference_root(system, basis, cart, ncas, nelecas, nroots, weights,
     return results
 
 
+def sa_nac(mc, pair, conv_rtol=1e-11, conv_atol=1e-13, max_cycle=200):
+    """The NAC between one pair of roots, both scalings and both
+    with/without the CSF term.
+
+    ``pair`` is ``(state_i, state_j)``, 0-based, matching this repository's
+    `d_IJ = <I| d/dR J>` convention. `pyscf.nac.sacasscf.NonAdiabaticCouplings`
+    takes ``state=(ket, bra)`` and returns ``<bra|d(ket)/dR>``, so
+    ``state=(state_j, state_i)`` gives exactly `d_IJ`.
+    """
+    from pyscf.nac.sacasscf import NonAdiabaticCouplings
+
+    state_i, state_j = pair
+    nac_calc = NonAdiabaticCouplings(mc)
+    nac_calc.conv_rtol = conv_rtol
+    nac_calc.conv_atol = conv_atol
+    nac_calc.max_cycle = max_cycle
+    state = (state_j, state_i)
+
+    out = {}
+    for use_etfs in (False, True):
+        for mult_ediff in (False, True):
+            key = f"etfs_{use_etfs}_mult_{mult_ediff}"
+            value = nac_calc.kernel(state=state, use_etfs=use_etfs, mult_ediff=mult_ediff)
+            out[key] = np.asarray(value).tolist()
+    return out
+
+
 def parse_coord_list(text):
     """``"0:2,1:0"`` -> ``[(0, 2), (1, 0)]``, atom index then x/y/z index."""
     coords = []
@@ -350,7 +383,7 @@ def parse_coord_list(text):
 
 
 # --------------------------------------------------------------------------
-# NAC availability (for phase 7)
+# NAC availability
 # --------------------------------------------------------------------------
 
 def report_nac_availability():
@@ -405,6 +438,9 @@ def main():
     parser.add_argument("--nac-check", action="store_true",
                         help="report whether this PySCF has an SA-CASSCF NAC "
                              "implementation, and exit")
+    parser.add_argument("--nac", default=None,
+                        help='"i,j" (0-based) -- also compute the NAC between '
+                             "those two roots")
     args = parser.parse_args()
 
     if args.nac_check:
@@ -458,6 +494,12 @@ def main():
         out["gradients"] = {f"state_{i}": g.tolist() for i, g in enumerate(grads)}
         out["max_abs_gradient"] = {f"state_{i}": float(np.abs(g).max())
                                    for i, g in enumerate(grads)}
+
+    if args.nac:
+        state_i, state_j = (int(t) for t in args.nac.split(","))
+        if max(weights) - min(weights) > 1.0e-8:
+            raise SystemExit("--nac needs equal weights, same as --grad")
+        out["nac"] = {"pair": [state_i, state_j], **sa_nac(mc, (state_i, state_j))}
 
     if args.fd:
         coords = parse_coord_list(args.fd)

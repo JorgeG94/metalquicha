@@ -294,6 +294,14 @@ module mqc_config_types
          !! `mqc_czt_bridge`'s `run_czt_mcscf` refuses this key when
          !! `mcscf_n_states` is 1 or the driver is not Gradient, rather than
          !! silently ignoring it.
+      integer, allocatable :: mcscf_nac_pairs(:, :)
+         !! `keywords.mcscf.nac_pairs`, shape (2, n_pairs): explicit 1-based
+         !! `[state_i, state_j]` pairs a Gradient driver's nonadiabatic
+         !! coupling (`czt_sa_casscf_nacs`) is asked for. No "every pair"
+         !! default -- unlike `gradient_roots`, the pair count grows with the
+         !! square of `n_states`, so a NAC is opt-in only; unallocated means
+         !! none were asked for. Refused the same way `gradient_roots` is when
+         !! `mcscf_n_states` is 1 or the driver is not Gradient.
       ! keywords.dft -- the quadrature, not the functional
       real(dp) :: dft_screening_tolerance = 1.0e-12_dp
          !! From `keywords.dft.screening_tolerance`. The AO value below which a

@@ -1641,6 +1641,8 @@ contains
             config%mcscf_state_weights = 1.0_dp/real(config%mcscf_n_states, dp)
          end if
          call read_mcscf_gradient_roots(json, config, error)
+         if (error%has_error()) return
+         call read_mcscf_nac_pairs(json, config, error)
          return
       end if
 
@@ -1673,6 +1675,8 @@ contains
          return
       end if
       call read_mcscf_gradient_roots(json, config, error)
+      if (error%has_error()) return
+      call read_mcscf_nac_pairs(json, config, error)
    end subroutine read_mcscf_state_averaging
 
    subroutine read_mcscf_gradient_roots(json, config, error)
@@ -1731,6 +1735,72 @@ contains
       end do
       config%mcscf_gradient_roots = roots
    end subroutine read_mcscf_gradient_roots
+
+   subroutine read_mcscf_nac_pairs(json, config, error)
+      !! `keywords.mcscf.nac_pairs`: an explicit list of `[state_i, state_j]`
+      !! pairs (1-based, distinct) -- which nonadiabatic couplings a Gradient
+      !! driver's `czt_sa_casscf_nacs` builds. Absent leaves
+      !! `config%mcscf_nac_pairs` unallocated (no NAC requested); unlike
+      !! `gradient_roots` there is no `"all"` spelling, since the pair count
+      !! grows with the square of `n_states`. Called from
+      !! `read_mcscf_state_averaging`, after `mcscf_n_states` is set, since
+      !! each pair is validated against it.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: PATH = "keywords.mcscf.nac_pairs"
+      character(len=:), allocatable :: pair_path
+      integer, allocatable :: pair(:), pairs(:, :)
+      logical :: found
+      integer :: n, ip, jp, k
+
+      if (error%has_error()) return
+      call json%info(PATH, found=found, n_children=n)
+      if (.not. found) return
+      if (n < 1) then
+         call error%set(ERROR_VALIDATION, PATH//" is empty; give at least one pair.")
+         return
+      end if
+
+      allocate (pairs(2, n))
+      do ip = 1, n
+         pair_path = PATH//"("//int_to_key(ip)//")"
+         call json%get(pair_path, pair, found)
+         if (.not. found .or. .not. allocated(pair)) then
+            call error%set(ERROR_PARSE, pair_path//" is not a list")
+            return
+         end if
+         if (size(pair) /= 2) then
+            call error%set(ERROR_VALIDATION, pair_path//" must be [state_i, state_j]")
+            return
+         end if
+         do k = 1, 2
+            if (pair(k) < 1 .or. pair(k) > config%mcscf_n_states) then
+               call error%set(ERROR_VALIDATION, pair_path//" entry "// &
+                              trim(to_char(pair(k)))//" is not one of the "// &
+                              trim(to_char(config%mcscf_n_states))//" averaged states.")
+               return
+            end if
+         end do
+         if (pair(1) == pair(2)) then
+            call error%set(ERROR_VALIDATION, pair_path//": a coupling needs two "// &
+                           "different states, not ["//trim(to_char(pair(1)))//", "// &
+                           trim(to_char(pair(2)))//"].")
+            return
+         end if
+         pairs(:, ip) = pair
+         do jp = 1, ip - 1
+            if ((pairs(1, jp) == pair(1) .and. pairs(2, jp) == pair(2)) .or. &
+                (pairs(1, jp) == pair(2) .and. pairs(2, jp) == pair(1))) then
+               call error%set(ERROR_VALIDATION, PATH//" repeats the pair ["// &
+                              trim(to_char(pair(1)))//", "//trim(to_char(pair(2)))//"].")
+               return
+            end if
+         end do
+      end do
+      config%mcscf_nac_pairs = pairs
+   end subroutine read_mcscf_nac_pairs
 
    subroutine read_avas_orbitals(json, config, error)
       !! `keywords.mcscf.avas.orbitals`, a list of atomic orbital labels

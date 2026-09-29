@@ -100,6 +100,7 @@ contains
                   new_unittest("mcscf_keywords", test_mcscf_keywords), &
                   new_unittest("mcscf_state_averaging", test_mcscf_state_averaging), &
                   new_unittest("mcscf_gradient_roots", test_mcscf_gradient_roots), &
+                  new_unittest("mcscf_nac_pairs", test_mcscf_nac_pairs), &
                   new_unittest("casci_spelling_fixes_the_orbitals", test_casci_spelling), &
                   new_unittest("backend_keyword", test_backend_keyword), &
                   new_unittest("system_gpu_keyword", test_gpu_keyword), &
@@ -2286,6 +2287,59 @@ contains
       call check(error, parse_error%has_error(), &
                  "an empty gradient_roots list must be refused")
    end subroutine test_mcscf_gradient_roots
+
+   subroutine test_mcscf_nac_pairs(error)
+      !! keywords.mcscf.nac_pairs: absent, a list of [i, j] pairs, and the
+      !! malformed cases the reader refuses
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      character(len=*), parameter :: METHOD = '"method": "casscf", "basis": "sto-3g"'
+      character(len=*), parameter :: ACTIVE = '"mcscf": {"n_active_electrons": 2, '// &
+                                     '"n_active_orbitals": 2, "n_states": 3'
+
+      ! Absent: unallocated, no coupling requested.
+      call write_deck(METHOD, "Gradient", ACTIVE//'}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. allocated(config%mcscf_nac_pairs), &
+                 "an absent nac_pairs key should stay unallocated")
+      if (allocated(error)) return
+
+      ! Two pairs, stored (2, n_pairs).
+      call write_deck(METHOD, "Gradient", ACTIVE//', "nac_pairs": [[1, 2], [2, 3]]}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%mcscf_nac_pairs), "nac_pairs should be read")
+      if (allocated(error)) return
+      call check(error, size(config%mcscf_nac_pairs, 2), 2)
+      if (allocated(error)) return
+      call check(error, config%mcscf_nac_pairs(1, 2), 2)
+      if (allocated(error)) return
+      call check(error, config%mcscf_nac_pairs(2, 2), 3)
+      if (allocated(error)) return
+
+      ! A state outside 1..n_states is refused.
+      call write_deck(METHOD, "Gradient", ACTIVE//', "nac_pairs": [[1, 4]]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a pair naming state 4 of 3 should be refused")
+      if (allocated(error)) return
+
+      ! A state paired with itself is refused.
+      call write_deck(METHOD, "Gradient", ACTIVE//', "nac_pairs": [[2, 2]]}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a pair [2, 2] should be refused")
+      if (allocated(error)) return
+
+      ! A pair that is not two numbers is refused.
+      call write_deck(METHOD, "Gradient", ACTIVE//', "nac_pairs": [[1, 2, 3]]}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a three-element pair should be refused")
+   end subroutine test_mcscf_nac_pairs
 
    subroutine test_casci_spelling(error)
       !! "casci" and "casscf" are one method type and differ by this boolean

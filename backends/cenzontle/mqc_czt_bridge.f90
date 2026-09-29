@@ -66,6 +66,7 @@ module mqc_czt_bridge
                             natural_orbitals
    use mqc_czt_mcscf_gradient, only: czt_mcscf_gradient
    use mqc_czt_sa_gradient, only: czt_sa_casscf_gradients, UNEQUAL_WEIGHT_TOL
+   use mqc_czt_sa_nac, only: czt_sa_casscf_nacs
    implicit none
    private
 
@@ -3475,6 +3476,29 @@ contains
          end if
       end if
 
+      ! `keywords.mcscf.nac_pairs`, same refusals as `gradient_roots` above.
+      if (allocated(settings%mcscf%nac_pairs)) then
+         if (settings%mcscf%n_states <= 1) then
+            call result%error%set(ERROR_VALIDATION, "keywords.mcscf.nac_pairs selects "// &
+                                  "pairs among several state-averaged roots, and "// &
+                                  "keywords.mcscf.n_states is 1: there is only one root, "// &
+                                  "so no pair exists. Drop nac_pairs, or raise n_states.")
+            result%has_error = .true.
+            return
+         end if
+         is_gradient_request = .false.
+         if (present(want_gradient)) is_gradient_request = want_gradient
+         if (.not. is_gradient_request) then
+            call result%error%set(ERROR_VALIDATION, "keywords.mcscf.nac_pairs only "// &
+                                  "matters for a state-averaged CASSCF nonadiabatic "// &
+                                  "coupling, and this is not a Gradient driver: it would "// &
+                                  "be parsed and then silently ignored. Drop nac_pairs, "// &
+                                  "or set driver to 'Gradient'.")
+            result%has_error = .true.
+            return
+         end if
+      end if
+
       ! A state-averaged CASSCF gradient needs equal weights: an
       ! unequal-weight rotation between averaged states is not redundant and
       ! needs a curvature term the Z-vector projection does not carry, as in
@@ -3953,6 +3977,10 @@ contains
 
       if (settings%mcscf%n_states > 1) then
          call sa_state_gradients_into(settings, mol, casscf, space, result)
+         if (result%has_error) return
+         if (allocated(settings%mcscf%nac_pairs)) then
+            call sa_state_nacs_into(settings, mol, casscf, space, result)
+         end if
       end if
    end subroutine mcscf_gradient_into
 
@@ -4017,6 +4045,51 @@ contains
          end do
       end do
    end subroutine sa_state_gradients_into
+
+   subroutine sa_state_nacs_into(settings, mol, casscf, space, result)
+      !! Every pair in `keywords.mcscf.nac_pairs`, onto the result
+      !!
+      !! Sharing one SA Hessian state across every pair (`czt_sa_casscf_nacs`);
+      !! each pair still solves its own Z-vector column -- see that routine's
+      !! docstring for what is and is not fused. Called only after
+      !! `sa_state_gradients_into` succeeds, so a converged, equal-weight SA
+      !! reference is already established.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(czt_molecule_t), intent(in) :: mol
+      type(casscf_result_t), intent(in) :: casscf
+      integer, intent(in) :: space(:)
+      type(calculation_result_t), intent(inout) :: result
+
+      type(error_t) :: error
+      real(dp), allocatable :: couplings(:, :, :), interstates(:, :, :), csfs(:, :, :)
+      real(dp), allocatable :: energy_diffs(:)
+      character(len=MAX_LINE_LENGTH) :: line
+      integer :: ip
+
+      call czt_sa_casscf_nacs(mol, casscf%orbitals, space(1), space(2), space(3), space(4), &
+                              casscf%ci_vectors, casscf%energies, settings%mcscf%state_weights, &
+                              settings%mcscf%nac_pairs, couplings, interstates, csfs, &
+                              energy_diffs, error)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, "nonadiabatic coupling: "// &
+                               error%get_message())
+         result%has_error = .true.
+         return
+      end if
+
+      result%mcscf_nac_pairs = settings%mcscf%nac_pairs
+      result%mcscf_nac_couplings = couplings
+      result%mcscf_nac_interstate = interstates
+      result%mcscf_nac_csf = csfs
+      result%mcscf_nac_energy_diff = energy_diffs
+
+      do ip = 1, size(energy_diffs)
+         write (line, "(a,i0,a,i0,a,es10.3,a,es10.3)") "  NAC (", &
+            settings%mcscf%nac_pairs(1, ip), ",", settings%mcscf%nac_pairs(2, ip), &
+            ")  |d_IJ| ", sqrt(sum(couplings(:, :, ip)**2)), "  E_J-E_I ", energy_diffs(ip)
+         call logger%info(trim(line))
+      end do
+   end subroutine sa_state_nacs_into
 
    subroutine store_decomposition(result, atom_energy, free_atom_energy, &
                                   pair_energy, pair_classical, formation_energy)

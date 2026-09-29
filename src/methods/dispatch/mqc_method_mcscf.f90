@@ -61,6 +61,9 @@ module mqc_method_mcscf
       integer, allocatable :: gradient_roots(:)
          !! `keywords.mcscf.gradient_roots`, 1-based. Unallocated means every
          !! state; only meaningful on a Gradient driver with `n_states > 1`.
+      integer, allocatable :: nac_pairs(:, :)
+         !! `keywords.mcscf.nac_pairs`, shape (2, n_pairs), 1-based, opt-in
+         !! only; only meaningful on a Gradient driver with `n_states > 1`.
 
       ! Convergence settings
       integer :: max_macro_iter = 100
@@ -161,6 +164,9 @@ contains
       end if
       if (allocated(this%options%gradient_roots)) then
          settings%mcscf%gradient_roots = this%options%gradient_roots
+      end if
+      if (allocated(this%options%nac_pairs)) then
+         settings%mcscf%nac_pairs = this%options%nac_pairs
       end if
 
       call run_czt_mcscf(settings, fragment, result, want_gradient=want_gradient)

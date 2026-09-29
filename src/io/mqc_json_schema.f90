@@ -550,7 +550,8 @@ contains
       !! select a state-averaged CASSCF (see `run_czt_mcscf` for what it is
       !! refused with). `gradient_roots` names which of those states a
       !! Gradient driver's fused multi-root gradient builds; default is
-      !! every state.
+      !! every state. `nac_pairs` names explicit state pairs a Gradient
+      !! driver's nonadiabatic coupling builds; no default -- opt-in only.
       !!
       !! `max_micro_iter` and a CI threshold are absent because neither routine
       !! underneath takes them: the macro loop pins its CASCI at 1e-11, so the
@@ -568,6 +569,7 @@ contains
       call allow(keys, "n_states")
       call allow(keys, "weights")
       call allow(keys, "gradient_roots")
+      call allow(keys, "nac_pairs")
    end function mcscf_keys
 
    function hessian_keys() result(keys)
