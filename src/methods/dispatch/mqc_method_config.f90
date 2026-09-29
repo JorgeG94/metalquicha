@@ -519,8 +519,8 @@ module mqc_method_config
          !! State weights (must sum to 1)
       integer, allocatable :: gradient_roots(:)
          !! `keywords.mcscf.gradient_roots`, 1-based. Unallocated means every
-         !! state. Not read by anything downstream yet (phase 6 of
-         !! `SA_CASSCF_GRADIENT_PLAN.md` wires the driver to it).
+         !! state. Only meaningful on a Gradient driver with `n_states > 1`;
+         !! `mqc_czt_bridge`'s `run_czt_mcscf` refuses it otherwise.
 
       ! Convergence
       integer :: max_macro_iter = 100

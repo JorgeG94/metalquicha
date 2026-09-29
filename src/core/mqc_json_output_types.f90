@@ -114,6 +114,11 @@ module mqc_json_output_types
       real(dp), allocatable :: mcscf_state_energies(:)  !! (n_states) Hartree
       real(dp), allocatable :: mcscf_state_spins(:)     !! (n_states) <S^2>
       real(dp), allocatable :: mcscf_state_weights(:)   !! (n_states)
+      real(dp), allocatable :: mcscf_state_gradients(:, :, :)
+         !! (3, n_atoms, size(mcscf_gradient_roots)) each requested root's own
+         !! gradient, Hartree/Bohr. Unallocated off a Gradient driver.
+      integer, allocatable :: mcscf_gradient_roots(:)
+         !! (size(mcscf_state_gradients, 3)) 1-based root index of each slice.
       logical :: has_mcscf_states = .false.
 
       !----- MBE-specific data (store ALL fragments for detailed output) -----
@@ -539,6 +544,8 @@ contains
       if (allocated(this%mcscf_state_energies)) deallocate (this%mcscf_state_energies)
       if (allocated(this%mcscf_state_spins)) deallocate (this%mcscf_state_spins)
       if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
+      if (allocated(this%mcscf_state_gradients)) deallocate (this%mcscf_state_gradients)
+      if (allocated(this%mcscf_gradient_roots)) deallocate (this%mcscf_gradient_roots)
 
       call this%reset()
    end subroutine json_output_data_destroy
