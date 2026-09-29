@@ -39,8 +39,9 @@ module mqc_czt_efp_pair
    public :: N_DQ_SLOTS, N_QQ_SLOTS
 
    real(dp), parameter :: S_FLOOR = 1.0e-5_dp
-      !! Overlap below which a pair's damping series is not evaluated at all,
-      !! `efdrvr.src:4464`.
+      !! Overlap below which a pair's damping series is not evaluated at all, as in
+      !! `Damping_for_Dispersion` (`efdrvr.src`; Slipchenko and Gordon, Mol. Phys.
+      !! 107, 999 (2009)).
 
    integer, parameter :: N_DQ_SLOTS = 27
       !! Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
@@ -246,8 +247,9 @@ contains
       !!     quadrupole  - (1/3)  Q_ab  grad_a grad_b <mu| 1/r_C |nu>
       !!
       !! all gradients with respect to `C`, and the quadrupole one summed over all
-      !! nine `ab` -- `efchtr.src:1801-1807`'s three diagonal terms plus twice its
-      !! three off-diagonal ones, written out.
+      !! nine `ab` -- the three diagonal terms plus twice the three off-diagonal ones
+      !! of the quadrupole contraction in `efchtr.src`, written out (Li, Gordon and
+      !! Jensen, J. Chem. Phys. 124, 214108 (2006)).
       !!
       !! The dipole and quadrupole moments here are **electronic only**; the
       !! nucleus sits entirely in the monopole, which is how the potential stores
@@ -291,8 +293,9 @@ contains
       end do
       deallocate (grad)
 
-      ! The quadrupole rank, `efchtr.src:1801-1807`. Its three diagonal terms and twice
-      ! its three off-diagonal ones are the sum over all nine `ab` of a symmetric `Q`.
+      ! The quadrupole rank, as in the quadrupole contraction of `efchtr.src`. Its
+      ! three diagonal terms and twice its three off-diagonal ones are the sum over
+      ! all nine `ab` of a symmetric `Q`.
       !
       ! **The `1/3` is not in `efchtr.src`, and belongs here anyway.** It is the
       ! coefficient a *traceless* quadrupole carries against `grad grad (1/R)`: the
@@ -316,7 +319,7 @@ contains
    pure function traceless_quadrupole(stored) result(quad)
       !! The stored second moments as the electric quadrupole `EFQEF` contracts
       !!
-      !! `efchtr.src:1557-1571`, which does this conversion on its own copy before
+      !! `EFQEF` in `efchtr.src` does this conversion on its own copy before
       !! using it -- so a potential's `QUADRUPOLES` section holds **second moments,
       !! not traceless quadrupoles**, as a nonzero stored trace shows.
       !!
@@ -459,7 +462,8 @@ contains
    end function dispersion_e6_damped
 
    pure subroutine overlap_damping(sab, f6, f7, f8)
-      !! `Damping_for_Dispersion`'s overlap branch, `efdrvr.src:4462-4517`
+      !! `Damping_for_Dispersion`'s overlap branch, in `efdrvr.src` (Slipchenko and
+      !! Gordon, Mol. Phys. 107, 999 (2009))
       !!
       !! One routine produces all three damping factors, and they are one series
       !! truncated at three different orders:
@@ -498,9 +502,9 @@ contains
    function dispersion_e8_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! `E8`, the isotropic one -- which is the one GAMESS prints
       !!
-      !! `Disp8_LMOpol` (`efdrvr.src:4311`) computes two unrelated things, and the
+      !! `Disp8_LMOpol` (`efdrvr.src`) computes two unrelated things, and the
       !! anisotropic one is never printed. What reaches `E8 DISPERSION ENERGY` is
-      !! the isotropic form at `efdrvr.src:4401-4418`, computed whenever the
+      !! the isotropic form in the same routine, computed whenever the
       !! potential carries an `LMOQQPOL` section at all:
       !!
       !!     C8 = sum_f (15/pi) FACT(f) ( a_iso^A A_QQ^B + a_iso^B A_QQ^A )
@@ -511,8 +515,8 @@ contains
       !! averages are isotropic contractions and survive the rotation into the
       !! current frame unchanged, which is why nothing is rotated here.
       !!
-      !! **Not `E6/3`.** That approximation is `efdrvr.src:1917` and does not run
-      !! for a pair of file-based fragments; reconciling against it would fit a
+      !! **Not `E6/3`.** That approximation is a separate branch of `efdrvr.src` and
+      !! does not run for a pair of file-based fragments; reconciling against it would fit a
       !! factor to the wrong quantity.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
@@ -567,7 +571,8 @@ contains
    function dispersion_e7_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! `E7`, the dipole-dipole/dipole-quadrupole cross term
       !!
-      !! `Disp7_LMOpol`, `efdrvr.src:3979-4308`, accumulating `efdrvr.src:4042-4049`:
+      !! `Disp7_LMOpol` in `efdrvr.src` (Xu, Zahariev and Gordon, J. Chem. Theory
+      !! Comput. 10, 1576 (2014)), accumulating as follows:
       !!
       !!     DUM1 = DD_A(a,c) DQ_B(b,d,e)
       !!     DUM2 = DD_B(b,e) DQ_A(a,c,d)
@@ -582,11 +587,12 @@ contains
       !! first term that can see any of them; E6 and E8 reach the polarizabilities
       !! only through isotropic averages and the separation only through `R`.
       !!
-      !! *The displacement runs A minus B* (`efdrvr.src:1724-1726`), A being this
+      !! *The displacement runs A minus B* (as in the dispersion driver of
+      !! `efdrvr.src`), A being this
       !! routine's first fragment. E7 is odd in `C`: `T2` is even and `T3` is odd,
       !! so the whole term changes sign with it.
       !!
-      !! *`T3` carries a deliberate extra negative* (`efdrvr.src:3507`). The
+      !! *`T3` carries a deliberate extra negative* (in `T_tensor_3`). The
       !! textbook `-grad grad grad 1/R` gives E7 the wrong sign; `t_tensors` builds
       !! the form GAMESS's routine actually hands over.
       !!
@@ -663,14 +669,15 @@ contains
    end function dispersion_e7_damped
 
    pure subroutine t_tensors(c, t2, t3)
-      !! The rank-2 and rank-3 interaction tensors, `efdrvr.src:3449-3562`
+      !! The rank-2 and rank-3 interaction tensors, as `T_tensor_3` and its rank-2
+      !! counterpart in `efdrvr.src` build them
       !!
       !!     T2(i,j)   = ( 3 C_i C_j - R^2 d_ij ) / R^5
       !!     T3(i,j,k) = ( 15 C_i C_j C_k
       !!                   - 3 R^2 ( C_i d_jk + C_j d_ik + C_k d_ij ) ) / R^7
       !!
       !! `T3`'s sign is GAMESS's, not the textbook's: `T_tensor_3` builds the
-      !! negative of the form above and flips it in place at `efdrvr.src:3507`.
+      !! negative of the form above and flips it in place.
       !! What is written here is the net tensor its caller receives, and E7 is
       !! linear in `T3`.
       real(dp), intent(in) :: c(3)
@@ -713,8 +720,7 @@ contains
       !! Where `DQ(i,j,k)` sits in a `DIPOLE-QUADRUPOLE` record
       !!
       !! `i` is the dipole index and `(j,k)` the quadrupole pair. Row-major with the
-      !! last index fastest, in GAMESS's writer (`efinp.src:7635`) and reader
-      !! (`efinp.src:12943-12949`) alike.
+      !! last index fastest, in GAMESS's writer and reader (`efinp.src`) alike.
       integer, intent(in) :: i, j, k
       integer :: slot
 
@@ -724,8 +730,8 @@ contains
    pure function isotropic_quadquad(values) result(a)
       !! `DYNQQ_LMO_AVE`, the spherical average of a quadrupole-quadrupole tensor
       !!
-      !! `efdrvr.src:1567-1572` contracts the full rank-four tensor against the
-      !! isotropic projector
+      !! The average is formed in `efdrvr.src`, which contracts the full rank-four
+      !! tensor against the isotropic projector
       !!
       !!     A_QQ = (1/5) sum_ijkl QQ(i,j,k,l)
       !!            [ (d_ik d_jl + d_il d_jk)/2 - d_ij d_kl / 3 ]
@@ -801,7 +807,7 @@ contains
       real(dp), parameter :: RT2PI = 0.7978845608028654_dp   !! sqrt(2/pi)
       real(dp), parameter :: S_FLOOR_LOCAL = 1.0e-7_dp
          !! Named apart from the module's `S_FLOOR` deliberately: that one is the
-         !! 1e-5 damping cutoff from `efdrvr.src:4464`, this is a different and
+         !! 1e-5 damping cutoff of `Damping_for_Dispersion`, this is a different and
          !! tighter threshold, and one name for both would make the module constant
          !! silently mean something else inside this procedure.
       type(czt_molecule_t) :: pair

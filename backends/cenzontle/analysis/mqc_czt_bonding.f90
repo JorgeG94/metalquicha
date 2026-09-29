@@ -344,8 +344,9 @@ contains
       ! A full valence MCSCF has no missing part: its active space *is* the
       ! valence space, and re-deriving one here would produce a different
       ! subspace of the same dimension, so the analysis would decompose a wave
-      ! function the calculation never computed. GAMESS takes the same branch at
-      ! `vvos.src:540`.
+      ! function the calculation never computed. GAMESS takes the same branch in
+      ! `VVOS` (`vvos.src`; West, Schmidt, Gordon and Ruedenberg, J. Chem. Phys.
+      ! 139, 234107 (2013)).
       call adopt_valence_space(valence_wavefunction, dims, vvo%n_vvo, n_electrons, &
                                valence_internal, loud, adopted)
 
@@ -967,7 +968,7 @@ contains
       !! valence dimension is a property of the *atoms*, so an active space of
       !! that size holding that many electrons on that many inactive orbitals is
       !! the full valence shell or is a coincidence. GAMESS tests the same thing
-      !! at `locsvd.src:3676`.
+      !! in `locsvd.src`.
       !!
       !! A coincidence is not silent: an active space of the right size that is
       !! not the valence shell shows up in the printed `atomic character`.
@@ -1241,7 +1242,7 @@ contains
                ! *different* wave function from the one the calculation
                ! reported -- the full valence one this analysis is defined on,
                ! rather than whatever active space the deck asked for. GAMESS
-               ! refuses outright at `quao_eda4.src:145`; this one builds its
+               ! refuses outright in `quao_eda4.src`; this one builds its
                ! own wave function, so the result is still meaningful.
                call logger%warning("  the converged wave function is not over the "// &
                                    "full valence space ("//declined//"), so the "// &
