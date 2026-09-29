@@ -397,25 +397,42 @@ fed a different effective density:
 Orbital-response piece (from :math:`\bar\kappa_I`)
 -----------------------------------------------------
 
-:math:`\bar\kappa_I` one-index-transforms the **SA** densities exactly the way
-``one_index_fock`` already builds its :math:`d_{\text{inactive}}`,
-:math:`d_{\text{active}}` intermediates from a trial :math:`\kappa`:
+Implemented as ``orbital_response_gradient`` (``mqc_czt_sa_gradient.f90``).
+:math:`\bar\kappa_I\cdot\partial E_{SA}/\partial\kappa` at :math:`\kappa=0` is
+:math:`\mathrm{Tr}(\bar\kappa_I, F_{SA}(C))` for the explicit AO-integral
+formula ``generalized_fock`` builds, at fixed :math:`(D_{SA}, d_{SA})`. Its
+*total* :math:`R`-derivative -- through both the explicit AO-integral
+dependence and the orbital connection :math:`C(R)` -- splits into three
+pieces, all built inside that one routine:
 
-.. math::
+- the fixed-:math:`C` one-particle piece: the one-index transform of
+  :math:`D_{SA}` along :math:`\bar\kappa_I` (:math:`d_{\text{core}}^{\bar\kappa}`,
+  :math:`d_{\text{active}}^{\bar\kappa}` -- the same construction
+  ``one_index_fock`` uses internally), contracted against the reference
+  densities' *derivative* integrals via ``response_separable_gradient``;
+- the fixed-:math:`C` active two-body piece: a product rule over which of the
+  four AO-transform legs of ``active_two_electron_gradient`` carries
+  :math:`C_{\text{active}}\bar\kappa_I` instead of :math:`C_{\text{active}}`,
+  contracted against the **full** active two-particle density :math:`d_{SA}`
+  -- not the cumulant, since ``generalized_fock``'s active-row block never
+  separates a classical mean-field piece from a cumulant correction for the
+  active-active interaction the way the stationary *energy* does;
+- the overlap/connection piece: :math:`-S^{(1)}\cdot\mathrm{sym}(W)`, with
+  :math:`W` the derivative of :math:`\bar\kappa_I\cdot\partial E_{SA}/\partial\kappa`
+  wrt a *general* (non-antisymmetric) orbital change :math:`C\to C(1+A)`,
+  built from ``one_index_fock`` and a commutator with :math:`F_{SA}`
+  (derived via Clairaut's theorem in the routine's own comment).
 
-   \tilde D^{\bar\kappa_I} = \big[\bar\kappa_I, D_{SA}\big]\text{-type one-index transform}, \qquad
-   \tilde d^{\bar\kappa_I} = \text{the four-term one-index transform of } d_{SA}
-
-(PySCF's ``Lorb_dot_dgorb_dx`` builds exactly this pair, calling them
-``dm1L``/the implicit two-particle piece, from ``Lorb`` -- the code's
-:math:`\bar\kappa_I`.) The resulting effective one/two-particle density is fed
-to the derivative-integral contraction the same way :math:`(D, d)` are today.
+(PySCF's ``Lorb_dot_dgorb_dx`` builds the analogous quantities, calling them
+``dm1L``/the implicit two-particle piece from ``Lorb`` -- the code's
+:math:`\bar\kappa_I`; its ``dme0`` is this section's :math:`W`.)
 
 CI-response piece (from :math:`\bar c_{I,J}`)
 ------------------------------------------------
 
-The symmetrised **transition** density between the Lagrange multiplier and the
-state it is attached to, summed over the SA space:
+Implemented as ``ci_response_gradient``. The symmetrised **transition**
+density between the Lagrange multiplier and the state it is attached to,
+summed over the SA space:
 
 .. math::
 
@@ -423,32 +440,34 @@ state it is attached to, summed over the SA space:
    \tilde d^{ci} \text{ likewise from the transition 2-RDM}
 
 matching PySCF's ``Lci_dot_dgci_dx``, which forms ``trans_rdm12(Lci, ci)``
-symmetrised. This needs the transition-RDM routine phase 2 adds beside
-``active_space_rdms`` (bra :math:`\ne` ket).
+symmetrised, via ``transition_rdms`` (bra :math:`\ne` ket). Because there is
+no orbital rotation in this piece at all, its split is the same shape as the
+orbital-response piece minus the active-two-body factor-of-product-rule
+business: a fixed-:math:`C` piece (``response_separable_gradient`` plus a
+single, undoubled ``active_two_electron_gradient`` call against
+:math:`\tilde d^{ci}` directly, again the full density, not a cumulant) and
+an overlap piece built from ``cheap_generalized_fock`` on
+:math:`(\tilde D^{ci}, \tilde d^{ci})` in place of ``one_index_fock``.
+The multiplier vectors are projected off every averaged state first. The
+Z-vector solution can carry components along them: they are null directions
+of the projected Hessian, and their multipliers are zero for non-degenerate
+states. A reference that leaves them in picks up
+:math:`d\langle c_K|H|c_J\rangle/dR`, which is not part of the gradient.
 
-Overlap / energy-weighted-density term
------------------------------------------
+Why every piece needs its own overlap term
+-----------------------------------------------
 
-The Pulay term contracts the overlap derivative against the generalised Fock
-of *whichever* density the energy expression is built from. Because
-``generalized_fock`` is linear in :math:`(D,d)`, phase 4 does **not** need
-PySCF's three-way split of ``dme0`` into a root, an orbital-response and a
-CI-response generalised Fock (three separate ``get_jk`` calls in PySCF): one
-call to a `generalized_fock`-shaped contraction on the **total relaxed**
-density
-
-.. math::
-
-   D_I^{\text{relaxed}} = D_I + \tilde D^{\bar\kappa_I} + \tilde D^{ci}, \qquad
-   d_I^{\text{relaxed}} = d_I + \tilde d^{\bar\kappa_I} + \tilde d^{ci}
-
-gives the same energy-weighted density in one pass, and the cumulant split
-(``cumulant_two_particle_density``) applies unchanged, since it is an algebraic
-identity in whatever :math:`(D,d)` pair it is given (stated above). This is
-the concrete target for phase 4: build one relaxed :math:`(D_I, d_I)` pair per
-root and hand it to a generalised
-``czt_mcscf_gradient``-shaped routine, rather than porting PySCF's
-term-by-term decomposition.
+``czt_mcscf_gradient``'s own overlap (Pulay) term is the derivative of the
+orthonormality connection :math:`C(R) = C_0(C_0^T S(R) C_0)^{-1/2}` that keeps
+a fixed numerical :math:`C_0` orthonormal as :math:`R` moves -- valid for
+*any* quantity built from :math:`C(R)`, stationary or not, not only a
+stationary energy. Both Lagrange terms above depend on :math:`C(R)` the same
+way the root energy does, so each needs its own overlap term, built from
+that term's own generalised-Fock-like object rather than the base term's
+:math:`F`. A finite-difference check of a response piece has to use the
+same connection. One that holds :math:`C(R) = C_0` fixed while the atoms move
+agrees with the piece minus its overlap term, so it hides a missing overlap
+term instead of catching it.
 
 Checks
 ========

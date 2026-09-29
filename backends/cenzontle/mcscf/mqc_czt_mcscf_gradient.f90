@@ -50,6 +50,12 @@ module mqc_czt_mcscf_gradient
 
    public :: czt_mcscf_gradient
    public :: cumulant_two_particle_density   !! Exposed for the tests
+   public :: active_two_electron_gradient
+      !! Exposed for `mqc_czt_sa_gradient`: the SA-CASSCF orbital-response
+      !! gradient needs the same active-space two-electron derivative-integral
+      !! contraction, fed the one-index-transformed cumulant (`deri_act`) and,
+      !! one leg at a time, the kappa-bar-rotated coefficient matrix rather than
+      !! `c_active` on every leg -- the optional `c2`/`c3`/`c4` arguments below.
 
    real(dp), parameter :: BLOCK_TARGET = 2.0e8_dp
       !! Bytes the first-index block of the AO two-particle density may reach, so
@@ -238,7 +244,8 @@ contains
       end do
    end subroutine cumulant_two_particle_density
 
-   subroutine active_two_electron_gradient(mol, c_active, ddm2, gradient, error)
+   subroutine active_two_electron_gradient(mol, c_active, ddm2, gradient, error, &
+                                           c2, c3, c4)
       !! The genuinely non-separable term, a block of the first index at a time
       !!
       !! The density is transformed out of the active space and into the AO
@@ -249,11 +256,22 @@ contains
       !!
       !! Blocks are cut on shell boundaries because a shell's functions share a
       !! quartet and cannot be split across two passes.
+      !!
+      !! `c2`/`c3`/`c4` default to `c_active`, reproducing the four-fold
+      !! transform by the same coefficient matrix on every leg -- the
+      !! stationary-density case. A caller differentiating this contraction
+      !! along an orbital rotation `kappa_bar` (SA-CASSCF's orbital-response
+      !! gradient) instead passes `c_active @ kappa_bar` on exactly one leg at a
+      !! time, holding `ddm2` fixed: the product-rule sum over which leg carries
+      !! the rotated coefficient.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: c_active(:, :)       !! (n_ao, n_active)
       real(dp), intent(in) :: ddm2(:, :, :, :)
       real(dp), intent(inout) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: c2(:, :), c3(:, :), c4(:, :)
+         !! (n_ao, n_active) each, in place of `c_active` on the second, third
+         !! and fourth legs of the transform
 
       real(dp), allocatable :: gamma_blk(:, :, :, :), eri_blk(:, :, :, :)
       real(dp), allocatable :: dummy_vhf1(:, :, :, :), hf_density(:, :)
@@ -282,7 +300,7 @@ contains
          p_hi = mol%shell_offset(ish_hi) + shell_dim(mol%cartesian, ish_hi - 1, mol%bas)
          np = p_hi - p_lo + 1
 
-         call gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk)
+         call gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk, c2, c3, c4)
 
          allocate (eri_blk(np, n_ao, n_ao, n_ao))
          eri_blk = 0.0_dp
@@ -297,7 +315,7 @@ contains
       deallocate (dummy_vhf1, hf_density)
    end subroutine active_two_electron_gradient
 
-   subroutine gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk)
+   subroutine gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk, c2, c3, c4)
       !! `ddm2` transformed to the AO basis over one range of the first index
       !!
       !! **Four gemms and no copies.** Each step contracts the *first* index and
@@ -309,20 +327,34 @@ contains
       !! bounds remapped, as `build_two_particle_density` does next door. The
       !! memory order is identical either way, so a `reshape` between steps would
       !! only be telling the compiler what it already had.
+      !!
+      !! `c2`/`c3`/`c4` default to `c_active`: absent, the four gemms transform
+      !! every leg by the same matrix, bit-identical to before this argument
+      !! existed. Present, that leg's transform uses the given matrix instead --
+      !! `active_two_electron_gradient`'s docstring says what that is for.
       real(dp), intent(in), target :: c_active(:, :)
       real(dp), intent(in), target, contiguous :: ddm2(:, :, :, :)
          !! `contiguous` because its bounds are remapped below, and a rank
          !! remapping needs a target the compiler knows is not a stride.
       integer, intent(in) :: p_lo, p_hi
       real(dp), allocatable, target, intent(out) :: gamma_blk(:, :, :, :)
+      real(dp), intent(in), optional, target :: c2(:, :), c3(:, :), c4(:, :)
 
       real(dp), allocatable, target :: buf1(:), buf2(:)
       real(dp), pointer :: src(:, :), dst(:, :)
+      real(dp), pointer :: leg2(:, :), leg3(:, :), leg4(:, :)
       integer :: n_ao, n_act, np, need
 
       n_ao = size(c_active, 1)
       n_act = size(c_active, 2)
       np = p_hi - p_lo + 1
+
+      leg2 => c_active
+      if (present(c2)) leg2 => c2
+      leg3 => c_active
+      if (present(c3)) leg3 => c3
+      leg4 => c_active
+      if (present(c4)) leg4 => c4
 
       allocate (gamma_blk(np, n_ao, n_ao, n_ao))
       need = max(n_act**3*np, n_act*np*n_ao*n_ao, n_act**2*np*n_ao)
@@ -337,19 +369,19 @@ contains
       ! (u v w p) -> (v w p q)
       src(1:n_act, 1:n_act**2*np) => buf1
       dst(1:n_act**2*np, 1:n_ao) => buf2
-      call pic_gemm(src, c_active, dst, transa="T", transb="T", beta=0.0_dp)
+      call pic_gemm(src, leg2, dst, transa="T", transb="T", beta=0.0_dp)
 
       ! (v w p q) -> (w p q r)
       src(1:n_act, 1:n_act*np*n_ao) => buf2
       dst(1:n_act*np*n_ao, 1:n_ao) => buf1
-      call pic_gemm(src, c_active, dst, transa="T", transb="T", beta=0.0_dp)
+      call pic_gemm(src, leg3, dst, transa="T", transb="T", beta=0.0_dp)
 
       ! (w p q r) -> (p q r s), straight into the result
       src(1:n_act, 1:np*n_ao*n_ao) => buf1
       dst(1:np*n_ao*n_ao, 1:n_ao) => gamma_blk
-      call pic_gemm(src, c_active, dst, transa="T", transb="T", beta=0.0_dp)
+      call pic_gemm(src, leg4, dst, transa="T", transb="T", beta=0.0_dp)
 
-      nullify (src, dst)
+      nullify (src, dst, leg2, leg3, leg4)
       deallocate (buf1, buf2)
    end subroutine gamma_block
 
