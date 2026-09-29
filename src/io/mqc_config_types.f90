@@ -276,6 +276,15 @@ module mqc_config_types
          !! `keywords.mcscf.optimize_orbitals` override.
       integer :: mcscf_max_macro_iter = 100
       real(dp) :: mcscf_orbital_convergence = 1.0e-6_dp
+      integer :: mcscf_n_states = 1
+         !! `keywords.mcscf.n_states` -- roots the orbitals average over. One
+         !! is an ordinary (non-averaged) CASSCF/CASCI.
+      real(dp), allocatable :: mcscf_state_weights(:)
+         !! `keywords.mcscf.weights`, one entry per state, summing to one.
+         !! Unallocated when `mcscf_n_states` is 1: nothing downstream reads a
+         !! single-state weight. `read_mcscf_state_averaging` fills this in
+         !! with an equal average when `n_states > 1` and the key is absent, so
+         !! this is never "1 but unweighted" past the reader.
       ! keywords.dft -- the quadrature, not the functional
       real(dp) :: dft_screening_tolerance = 1.0e-12_dp
          !! From `keywords.dft.screening_tolerance`. The AO value below which a

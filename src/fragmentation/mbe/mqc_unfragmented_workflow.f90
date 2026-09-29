@@ -263,6 +263,15 @@ contains
                            json_data%has_excited_states = .true.
                         end if
 
+                        ! State-averaged CASSCF, when `keywords.mcscf.n_states`
+                        ! asked for more than one.
+                        if (result%has_mcscf_states) then
+                           json_data%mcscf_state_energies = result%mcscf_state_energies
+                           json_data%mcscf_state_spins = result%mcscf_state_spins
+                           json_data%mcscf_state_weights = result%mcscf_state_weights
+                           json_data%has_mcscf_states = .true.
+                        end if
+
                         ! Whether the reference the whole calculation rests on
                         ! is a minimum, when `keywords.scf.stability` asked.
                         if (result%has_stability) then
@@ -457,6 +466,15 @@ contains
                json_data%excited_method = config%method_config%excited%method
                json_data%excited_spin = config%method_config%excited%spin
                json_data%has_excited_states = .true.
+            end if
+
+            ! State-averaged CASSCF, when `keywords.mcscf.n_states` asked for
+            ! more than one.
+            if (result%has_mcscf_states) then
+               json_data%mcscf_state_energies = result%mcscf_state_energies
+               json_data%mcscf_state_spins = result%mcscf_state_spins
+               json_data%mcscf_state_weights = result%mcscf_state_weights
+               json_data%has_mcscf_states = .true.
             end if
 
             ! Whether the reference the whole calculation rests on

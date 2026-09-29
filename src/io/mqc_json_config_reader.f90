@@ -372,6 +372,8 @@ contains
       ! in the adapter, one hop after the spelling has been discarded.
       call optional_logical(json, "keywords.mcscf.optimize_orbitals", &
                             config%mcscf_optimize_orbitals)
+      call read_mcscf_state_averaging(json, config, error)
+      if (error%has_error()) return
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
       call optional_int(json, "keywords.dft.nlc_grid_level", &
                         config%dft_nlc_grid_level)
@@ -1605,6 +1607,72 @@ contains
       end do
    end subroutine read_ormas_partition
 
+   subroutine read_mcscf_state_averaging(json, config, error)
+      !! `keywords.mcscf.n_states` and `.weights`: how many roots the
+      !! orbitals average over, and how much each one counts
+      !!
+      !! Absent weights default to an equal average over `n_states` roots --
+      !! the one default that needs `n_states` first, so it is filled in here
+      !! rather than on the field itself. Left unallocated when `n_states` is
+      !! 1, since nothing downstream reads a single-state weight and an
+      !! always-allocated `[1.0]` would be one more thing to keep in sync with
+      !! the default.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: total
+      integer :: n_weights, i
+      logical :: found
+
+      if (error%has_error()) return
+      call optional_int(json, "keywords.mcscf.n_states", config%mcscf_n_states)
+      if (config%mcscf_n_states < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states is "// &
+                        trim(to_char(config%mcscf_n_states))//"; a state average "// &
+                        "needs at least one root.")
+         return
+      end if
+
+      call json%info("keywords.mcscf.weights", found=found, n_children=n_weights)
+      if (.not. found) then
+         if (config%mcscf_n_states > 1) then
+            allocate (config%mcscf_state_weights(config%mcscf_n_states))
+            config%mcscf_state_weights = 1.0_dp/real(config%mcscf_n_states, dp)
+         end if
+         return
+      end if
+
+      if (n_weights /= config%mcscf_n_states) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.weights has "// &
+                        trim(to_char(n_weights))//" entries but keywords.mcscf.n_states "// &
+                        "asks for "//trim(to_char(config%mcscf_n_states))// &
+                        ": one weight per state.")
+         return
+      end if
+
+      allocate (config%mcscf_state_weights(n_weights))
+      total = 0.0_dp
+      do i = 1, n_weights
+         call require_real(json, "keywords.mcscf.weights("//int_to_key(i)//")", &
+                           config%mcscf_state_weights(i), error)
+         if (error%has_error()) return
+         if (config%mcscf_state_weights(i) < 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "keywords.mcscf.weights("// &
+                           trim(to_char(i))//") is "// &
+                           trim(to_char(config%mcscf_state_weights(i)))// &
+                           "; a state weight cannot be negative.")
+            return
+         end if
+         total = total + config%mcscf_state_weights(i)
+      end do
+      if (abs(total - 1.0_dp) > 1.0e-10_dp) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.weights sums to "// &
+                        trim(to_char(total))//", not 1. State weights must add to one.")
+         return
+      end if
+   end subroutine read_mcscf_state_averaging
+
    subroutine read_avas_orbitals(json, config, error)
       !! `keywords.mcscf.avas.orbitals`, a list of atomic orbital labels
       type(json_file), intent(inout) :: json
@@ -1937,6 +2005,19 @@ contains
       call json%get(path, value, found)
       if (.not. found) call error%set(ERROR_VALIDATION, "Missing required key: "//path)
    end subroutine require_int
+
+   subroutine require_real(json, path, value, error)
+      !! Fetch a real, or record a missing-key error
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: path
+      real(dp), intent(out) :: value
+      type(error_t), intent(out) :: error
+
+      logical :: found
+
+      call json%get(path, value, found)
+      if (.not. found) call error%set(ERROR_VALIDATION, "Missing required key: "//path)
+   end subroutine require_real
 
    subroutine optional_string(json, path, value)
       !! Fetch a string if present, leaving `value` untouched otherwise

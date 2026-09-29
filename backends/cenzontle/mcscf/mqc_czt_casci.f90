@@ -173,7 +173,7 @@ contains
 
    subroutine run_czt_casci(mol, orbitals, n_inactive, n_active, &
                             n_alpha, n_beta, result, error, n_roots, verbose, &
-                            tolerance, guess)
+                            tolerance, guess, symmetrize_singlet)
       !! A complete-active-space CI on converged orbitals
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
@@ -185,6 +185,10 @@ contains
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: tolerance
       real(dp), intent(in), optional :: guess(:, :, :)
+      logical, intent(in), optional :: symmetrize_singlet
+         !! Restrict every root to a singlet by alpha/beta symmetrisation of
+         !! the Davidson (`davidson_lowest`). Off by default; refused there
+         !! unless `n_alpha == n_beta`.
 
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: folded(:, :), diagonal(:, :)
@@ -259,7 +263,8 @@ contains
 
       call davidson_lowest(folded, diagonal, alpha, beta, roots, davidson, error, &
                            tolerance=tolerance, guess=guess, verbose=loud, &
-                           energy_offset=result%core_energy)
+                           energy_offset=result%core_energy, &
+                           symmetrize_singlet=symmetrize_singlet)
       if (error%has_error()) return
       call clk%lap("Davidson")
 

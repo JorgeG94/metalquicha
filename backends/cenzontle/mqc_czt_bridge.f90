@@ -3417,6 +3417,53 @@ contains
          return
       end if
 
+      ! Refused by name, before anything else here is attempted: state
+      ! averaging (`n_states > 1`) has no transition-density machinery for an
+      ! occupation-restricted space, and running an ordinary CASSCF while
+      ! silently ignoring `n_states` would report a single-state answer under
+      ! a deck that asked for several.
+      if (settings%mcscf%n_states > 1 .and. allocated(settings%mcscf%ormas_subspaces)) then
+         call result%error%set(ERROR_VALIDATION, "state-averaged CASSCF "// &
+                               "(keywords.mcscf.n_states > 1) is not implemented "// &
+                               "together with an occupation-restricted active space "// &
+                               "(keywords.mcscf.ormas): there is no transition-density "// &
+                               "machinery for a restricted space yet. Drop one or the "// &
+                               "other.")
+         result%has_error = .true.
+         return
+      end if
+
+      ! A state average is a property of the orbitals -- what they are
+      ! optimised against -- so it means nothing for a CASCI, which never
+      ! moves them. Refused rather than silently taking the reference
+      ! orbitals' single-state answer.
+      if (settings%mcscf%n_states > 1 .and. .not. settings%mcscf%optimize_orbitals) then
+         call result%error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 asks for "// &
+                               "a state average, which only means something for the "// &
+                               "orbitals a CASSCF optimises. A CASCI leaves the "// &
+                               "reference orbitals alone, so there is nothing to "// &
+                               "average over. Ask for 'casscf' instead, or drop "// &
+                               "n_states.")
+         result%has_error = .true.
+         return
+      end if
+
+      ! A state-averaged CASSCF gradient needs the Z-vector equation (the
+      ! orbital and CI Lagrangian of `E_SA`), which is not implemented yet --
+      ! refused rather than silently returning the single-state gradient of a
+      ! different energy than the one that was optimised.
+      if (present(want_gradient)) then
+         if (want_gradient .and. settings%mcscf%n_states > 1) then
+            call result%error%set(ERROR_VALIDATION, "a state-averaged CASSCF gradient "// &
+                                  "is not implemented: it needs the orbital and CI "// &
+                                  "Lagrangian of E_SA (the Z-vector equation), which "// &
+                                  "has not been coded yet. Run driver 'Energy', or set "// &
+                                  "n_states to 1.")
+            result%has_error = .true.
+            return
+         end if
+      end if
+
       if (mod(fragment%nelec, 2) /= 0) then
          call result%error%set(ERROR_VALIDATION, "a multiconfigurational calculation "// &
                                "here starts from a closed-shell SCF, and "// &
@@ -3592,6 +3639,25 @@ contains
          end if
       end if
 
+      ! Singlet selection (alpha/beta symmetrisation of the CI, see
+      ! `mqc_davidson`) is what state averaging relies on here, and it only
+      ! makes sense with equal active alpha and beta electrons -- which is
+      ! exactly a singlet reference, the inactive core being paired either
+      ! way. Any other spin is refused by name rather than silently averaged
+      ! over whatever mix of states the unrestricted CI happens to converge
+      ! to.
+      if (settings%mcscf%n_states > 1 .and. space(3) /= space(4)) then
+         call result%error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 needs a "// &
+                               "singlet reference (equal active alpha and beta "// &
+                               "electrons): the singlet selection this needs is not "// &
+                               "implemented for any other spin. This active space has "// &
+                               int_to_text(space(3))//" alpha and "//int_to_text(space(4))// &
+                               " beta active electrons.")
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
       if (settings%mcscf%optimize_orbitals .and. allocated(settings%mcscf%ormas_subspaces)) then
          call run_czt_casscf(mol, reference, space(1), space(2), space(3), space(4), &
                              casscf, error, &
@@ -3602,11 +3668,15 @@ contains
                              min_electrons=settings%mcscf%ormas_min_electrons, &
                              max_electrons=settings%mcscf%ormas_max_electrons)
       else if (settings%mcscf%optimize_orbitals) then
+         ! `state_weights` is unallocated for a single state, which makes it
+         ! an absent optional argument.
          call run_czt_casscf(mol, reference, space(1), space(2), space(3), space(4), &
                              casscf, error, &
                              max_iterations=settings%mcscf%max_macro_iter, &
                              gradient_tol=settings%mcscf%orbital_convergence, &
-                             verbose=settings%verbose)
+                             verbose=settings%verbose, &
+                             n_states=settings%mcscf%n_states, &
+                             weights=settings%mcscf%state_weights)
          if (.not. error%has_error() .and. .not. casscf%converged) then
             if (casscf%stalled) then
                ! Distinguished from running out of iterations, because the
@@ -3644,7 +3714,15 @@ contains
          ! "correlation" a CAS recovers is not separable from the reference the
          ! way an MP2 or a coupled-cluster correction is, because the orbitals
          ! underneath it are no longer the Hartree-Fock ones.
+         ! Under state averaging this is `E_SA`, the energy the orbitals were
+         ! optimised for; every state's own energy goes beside it.
          result%energy%scf = casscf%energy
+         if (allocated(casscf%energies)) then
+            result%mcscf_state_energies = casscf%energies
+            result%mcscf_state_spins = casscf%spins
+            result%mcscf_state_weights = settings%mcscf%state_weights
+            result%has_mcscf_states = .true.
+         end if
          if (settings%verbose) then
             write (line, "(a,f20.12)") "  E(CASSCF)      ", casscf%energy
             call logger%info(trim(line))

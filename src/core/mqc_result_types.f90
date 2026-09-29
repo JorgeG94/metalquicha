@@ -215,6 +215,23 @@ module mqc_result_types
          !! nothing in an excitation energy says which kind it is.
       logical :: has_excited_states = .false.
 
+      ! State-averaged CASSCF, when `keywords.mcscf.n_states` asked for more
+      ! than one. `energy%scf` is `E_SA = sum_J w_J E_J`, the quantity the
+      ! orbitals were actually optimised against -- these three carry what it
+      ! was built from.
+      ! TODO(mqc): not threaded through `result_send`/`result_recv` (and their
+      ! `i`-prefixed twins) below, unlike the excited-states arrays beside
+      ! them: state-averaged CASSCF has no fragmented (MPI worker) path yet,
+      ! so a fragmented run would silently drop these three on the wire.
+      real(dp), allocatable :: mcscf_state_energies(:)
+         !! (n_states) every state's own total energy, in the order `weights`
+         !! was given.
+      real(dp), allocatable :: mcscf_state_spins(:)
+         !! (n_states) `<S^2>` of each state above, same order.
+      real(dp), allocatable :: mcscf_state_weights(:)
+         !! (n_states) the weights `E_SA` was built from.
+      logical :: has_mcscf_states = .false.
+
       logical :: stability_stable = .true.
          !! Whether the converged SCF is a minimum with respect to real
          !! closed-shell orbital rotations. Meaningful only with
@@ -444,6 +461,9 @@ contains
       end if
       if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
+      if (allocated(this%mcscf_state_energies)) deallocate (this%mcscf_state_energies)
+      if (allocated(this%mcscf_state_spins)) deallocate (this%mcscf_state_spins)
+      if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
       call this%quao_rows%destroy()
       call this%reset()
    end subroutine result_destroy
@@ -472,6 +492,7 @@ contains
       this%has_quao_rows = .false.
       this%has_fukui = .false.
       this%has_excited_states = .false.
+      this%has_mcscf_states = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.
