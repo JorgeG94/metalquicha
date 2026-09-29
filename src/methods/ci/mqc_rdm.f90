@@ -36,6 +36,7 @@ module mqc_rdm
    private
 
    public :: active_space_rdms
+   public :: transition_rdms
    public :: rdm_energy
    public :: spin_squared
 
@@ -165,6 +166,132 @@ contains
 
       deallocate (gathered, paired, flat, pair_column)
    end subroutine active_space_rdms
+
+   subroutine transition_rdms(bra, ket, alpha, beta, dm1, dm2, error)
+      !! Spin-traced one- and two-particle transition density matrices
+      !!
+      !!     dm1(p,q)     = <bra| E_pq |ket>
+      !!     dm2(p,q,r,s) = <bra| E_pq E_rs - delta_qr E_ps |ket>
+      !!
+      !! the `bra == ket` case of `active_space_rdms`, same spin-traced,
+      !! chemist-ordered convention. Not symmetric in general:
+      !! `transition_rdms(bra, ket, ...)`'s `dm1(p,q)` equals
+      !! `transition_rdms(ket, bra, ...)`'s `dm1(q,p)`, and likewise
+      !! `dm2(p,q,r,s)` of `(bra,ket)` equals `dm2(q,p,s,r)` of `(ket,bra)`. The
+      !! symmetrised sum over both orderings, which is what a CI-response
+      !! density needs, is left to the caller.
+      real(dp), intent(in) :: bra(:, :)      !! (n_alpha_strings, n_beta_strings)
+      real(dp), intent(in) :: ket(:, :)      !! (n_alpha_strings, n_beta_strings)
+      type(link_table_t), intent(in) :: alpha, beta
+      real(dp), allocatable, intent(out) :: dm1(:, :)
+      real(dp), allocatable, intent(out) :: dm2(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: gathered_bra(:, :), gathered_ket(:, :), paired(:, :)
+      real(dp), allocatable :: flat_bra(:, :), pair_column(:, :)
+      integer :: norb, na, nb, npair, p, q, r, s, qp, rs
+      integer :: per_block, first, last, width, c0, c1
+      real(dp), allocatable :: mine(:, :), chunk_product(:, :)
+
+      if (error%has_error()) return
+      norb = alpha%n_orbitals
+      na = alpha%n_strings
+      nb = beta%n_strings
+      npair = norb*norb
+
+      if (beta%n_orbitals /= norb) then
+         call error%set(ERROR_VALIDATION, "the alpha and beta excitation tables "// &
+                        "describe different active spaces: "//to_char(norb)//" and "// &
+                        to_char(beta%n_orbitals)//" orbitals.")
+         return
+      end if
+      if (size(bra, 1) /= na .or. size(bra, 2) /= nb) then
+         call error%set(ERROR_VALIDATION, "the bra vector is "//to_char(size(bra, 1))// &
+                        " by "//to_char(size(bra, 2))//" but the tables have "// &
+                        to_char(na)//" alpha and "//to_char(nb)//" beta strings.")
+         return
+      end if
+      if (size(ket, 1) /= na .or. size(ket, 2) /= nb) then
+         call error%set(ERROR_VALIDATION, "the ket vector is "//to_char(size(ket, 1))// &
+                        " by "//to_char(size(ket, 2))//" but the tables have "// &
+                        to_char(na)//" alpha and "//to_char(nb)//" beta strings.")
+         return
+      end if
+
+      ! Two gathered buffers instead of `active_space_rdms`'s one -- the bra's
+      ! excited vectors and the ket's, contracted against each other rather
+      ! than against themselves. `beta_strings_per_block` already sizes a block
+      ! for two `(npair, na)`-per-string buffers (its own docstring), so the
+      ! same block width is reused here rather than halved.
+      per_block = beta_strings_per_block(npair, na, nb)
+      allocate (gathered_bra(npair, na*per_block), gathered_ket(npair, na*per_block))
+      allocate (dm1(norb, norb), paired(npair, npair))
+      allocate (flat_bra(na*per_block, 1), pair_column(npair, 1))
+      pair_column = 0.0_dp
+      dm1 = 0.0_dp
+      paired = 0.0_dp
+
+      do first = 1, nb, per_block
+         last = min(first + per_block - 1, nb)
+         width = na*(last - first + 1)
+
+         call excitations_block(bra, alpha, beta, first, last, gathered_bra(:, 1:width))
+         call excitations_block(ket, alpha, beta, first, last, gathered_ket(:, 1:width))
+         flat_bra(1:width, 1) = reshape(bra(:, first:last), [width])
+
+         ! dm1(p,q) = <bra| E_pq |ket>: the ket's excited vectors dotted
+         ! against the bra, not against the ket itself.
+         call pic_gemm(gathered_ket(:, 1:width), flat_bra(1:width, 1:1), pair_column, &
+                       alpha=1.0_dp, beta=1.0_dp)
+
+         ! <bra| E_pq E_rs |ket> = <E_qp bra | E_rs ket>, the bra's
+         ! intermediate against the ket's.
+         !$omp parallel default(shared) private(c0, c1, mine, chunk_product)
+         allocate (mine(npair, npair), chunk_product(npair, npair))
+         mine = 0.0_dp
+         !$omp do schedule(dynamic)
+         do c0 = 1, width, COLUMN_CHUNK
+            c1 = min(c0 + COLUMN_CHUNK - 1, width)
+            call pic_gemm(gathered_bra(:, c0:c1), gathered_ket(:, c0:c1), chunk_product, &
+                          transb="T")
+            mine = mine + chunk_product
+         end do
+         !$omp end do
+         !$omp critical
+         paired = paired + mine
+         !$omp end critical
+         deallocate (mine, chunk_product)
+         !$omp end parallel
+      end do
+
+      do q = 1, norb
+         do p = 1, norb
+            dm1(p, q) = pair_column(p + (q - 1)*norb, 1)
+         end do
+      end do
+
+      allocate (dm2(norb, norb, norb, norb))
+      do s = 1, norb
+         do r = 1, norb
+            rs = r + (s - 1)*norb
+            do q = 1, norb
+               do p = 1, norb
+                  qp = q + (p - 1)*norb
+                  dm2(p, q, r, s) = paired(qp, rs)
+               end do
+            end do
+         end do
+      end do
+      do s = 1, norb
+         do r = 1, norb
+            do p = 1, norb
+               dm2(p, r, r, s) = dm2(p, r, r, s) - dm1(p, s)
+            end do
+         end do
+      end do
+
+      deallocate (gathered_bra, gathered_ket, paired, flat_bra, pair_column)
+   end subroutine transition_rdms
 
    pure function rdm_energy(h1e, eri, dm1, dm2) result(energy)
       !! The active-space energy rebuilt from the density matrices
