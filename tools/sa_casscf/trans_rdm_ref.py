@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+"""PySCF reference elements for ``test/test_mqc_transition_rdm.f90``.
+
+Prints the six ``dm1`` and six ``dm2`` elements that ``test_pyscf`` in that
+file checks, from ``pyscf.fci.direct_spin1.trans_rdm12`` on a 4-orbital,
+(2, 2)-electron model. The model (``NORB``, ``NCHOL``, the ``h1e``/``b``
+formulas) and the ``bra``/``ket`` formulas are repeated in the Fortran test's
+``model_integrals`` and ``formula_vector``; change one and the other must
+follow.
+
+``dm1`` is transposed on the way out (``our_dm1``), because PySCF's
+``1pdm[p,q]`` is ``<q^dagger p>`` and this code's ``dm1(p,q)`` is ``<E_pq>``.
+
+Run with ``python3 trans_rdm_ref.py`` and paste the printed values into
+``test_pyscf``.
+"""
 import numpy as np
 from pyscf.fci import direct_spin1, cistring
 
