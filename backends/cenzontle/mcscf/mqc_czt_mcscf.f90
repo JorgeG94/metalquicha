@@ -631,7 +631,7 @@ contains
       hessian = 0.5_dp*(hessian + transpose(hessian))
    end subroutine orbital_hessian_from_blocks
 
-   subroutine mo_integral_blocks(mol, orbitals, n_occ, a_block, b_block)
+   subroutine mo_integral_blocks(mol, orbitals, n_occ, a_block, b_block, eri_packed)
       !! The two MO integral blocks the orbital Hessian and the generalised
       !! Fock matrix are built from, from one pass over the AO integrals
       type(czt_molecule_t), intent(in) :: mol
@@ -641,14 +641,33 @@ contains
          !! (n_mo, n_occ, n_mo, n_occ): `(p q|r s)`, `q` and `s` occupied
       real(dp), allocatable, intent(out) :: b_block(:, :, :, :)
          !! (n_mo, n_mo, n_occ, n_occ): `(p q|r s)`, `r` and `s` occupied
+      real(dp), intent(in), optional :: eri_packed(:, :)
+         !! `mol%eris_packed`, when the caller already holds it
 
-      real(dp), allocatable :: eri_packed(:, :)
+      real(dp), allocatable :: own(:, :), occ_first(:, :, :, :)
+      integer :: n_mo
 
-      call mol%eris_packed(eri_packed)
-      call transform_block(eri_packed, orbitals, orbitals(:, 1:n_occ), orbitals, &
-                           orbitals(:, 1:n_occ), a_block)
-      call transform_block(eri_packed, orbitals, orbitals, orbitals(:, 1:n_occ), &
-                           orbitals(:, 1:n_occ), b_block)
+      n_mo = size(orbitals, 2)
+      ! Each transform takes its occupied indices first: the first half's
+      ! cost scales with the first pair's width, and n_occ is well below n_mo.
+      if (present(eri_packed)) then
+         call transform_block(eri_packed, orbitals(:, 1:n_occ), orbitals, &
+                              orbitals(:, 1:n_occ), orbitals, occ_first)
+      else
+         call mol%eris_packed(own)
+         call transform_block(own, orbitals(:, 1:n_occ), orbitals, &
+                              orbitals(:, 1:n_occ), orbitals, occ_first)
+      end if
+      a_block = reshape(occ_first, [n_mo, n_occ, n_mo, n_occ], order=[2, 1, 4, 3])
+      deallocate (occ_first)
+      if (present(eri_packed)) then
+         call transform_block(eri_packed, orbitals(:, 1:n_occ), orbitals(:, 1:n_occ), &
+                              orbitals, orbitals, occ_first)
+      else
+         call transform_block(own, orbitals(:, 1:n_occ), orbitals(:, 1:n_occ), &
+                              orbitals, orbitals, occ_first)
+      end if
+      b_block = reshape(occ_first, [n_mo, n_mo, n_occ, n_occ], order=[3, 4, 1, 2])
    end subroutine mo_integral_blocks
 
    subroutine fock_from_blocks(mol, orbitals, n_inactive, n_active, dm1, dm2, a_block, &
@@ -1172,6 +1191,7 @@ contains
       real(dp), allocatable :: step_matrix(:, :)
       real(dp), allocatable :: guess(:, :, :)
       real(dp), allocatable :: flat_guess(:, :)
+      real(dp), allocatable :: eri_packed(:, :)
       integer, allocatable :: rows(:), cols(:)
       character(len=160) :: line
       real(dp) :: tol, largest, previous, trust, scaling, lowest, predicted
@@ -1277,14 +1297,18 @@ contains
       have_guess = .false.
       trust = MAX_ROTATION
 
+      ! Every macro-iteration's MO blocks and every CASCI read the same AO
+      ! integrals, which the MO transform needs in memory anyway: build once.
+      call mol%eris_packed(eri_packed)
+
       ! The starting point, so the first step has something to improve on.
       if (restricted) then
          call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
                        guess, have_guess, ci, error, subspaces, min_electrons, &
-                       max_electrons, flat_guess)
+                       max_electrons, flat_guess, eri_packed=eri_packed)
       else
          call solve_ci(mol, current, n_inactive, n_active, n_alpha, n_beta, alpha, beta, &
-                       guess, have_guess, ci, error, n_roots=n_roots)
+                       guess, have_guess, ci, error, n_roots=n_roots, eri_packed=eri_packed)
       end if
       if (error%has_error()) return
       energy = ci%energy
@@ -1307,7 +1331,7 @@ contains
 
          ! One AO integral pass per macro-iteration: the generalised Fock
          ! matrix and the Hessian are both read out of these blocks.
-         call mo_integral_blocks(mol, current, n_inactive + n_active, a_mo, b_mo)
+         call mo_integral_blocks(mol, current, n_inactive + n_active, a_mo, b_mo, eri_packed)
          call fock_from_blocks(mol, current, n_inactive, n_active, dm1, dm2, a_mo, b_mo, fock)
          if (allocated(gradient)) deallocate (gradient)
          if (restricted) then
@@ -1386,11 +1410,12 @@ contains
             if (restricted) then
                call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
                              alpha, beta, guess, have_guess, trial_ci, error, &
-                             subspaces, min_electrons, max_electrons, flat_guess)
+                             subspaces, min_electrons, max_electrons, flat_guess, &
+                             eri_packed=eri_packed)
             else
                call solve_ci(mol, updated, n_inactive, n_active, n_alpha, n_beta, &
                              alpha, beta, guess, have_guess, trial_ci, error, &
-                             n_roots=n_roots)
+                             n_roots=n_roots, eri_packed=eri_packed)
             end if
             if (error%has_error()) return
             trial_energy = trial_ci%energy
@@ -1563,7 +1588,8 @@ contains
 
    subroutine solve_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                        alpha, beta, guess, have_guess, ci, error, &
-                       subspaces, min_electrons, max_electrons, flat_guess, n_roots)
+                       subspaces, min_electrons, max_electrons, flat_guess, n_roots, &
+                       eri_packed)
       !! One CASCI, started from the previous vector when there is one
       !!
       !! After the first couple of macro-iterations the orbitals barely move, so
@@ -1584,6 +1610,8 @@ contains
       integer, intent(in), optional :: n_roots
          !! More than one: that many singlet roots (state averaging), each kept
          !! as the next call's guess. Complete active space only.
+      real(dp), intent(in), optional :: eri_packed(:, :)
+         !! `mol%eris_packed`, when the caller already holds it
 
       ! A restricted space has no alpha-by-beta rectangle to keep a guess in, so
       ! it carries the flat vector instead.
@@ -1591,11 +1619,12 @@ contains
          if (have_guess .and. present(flat_guess)) then
             call run_czt_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
                                   n_beta, subspaces, min_electrons, max_electrons, &
-                                  ci, error, tolerance=1.0e-11_dp, guess=flat_guess)
+                                  ci, error, tolerance=1.0e-11_dp, guess=flat_guess, &
+                                  eri_packed=eri_packed)
          else
             call run_czt_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
                                   n_beta, subspaces, min_electrons, max_electrons, &
-                                  ci, error, tolerance=1.0e-11_dp)
+                                  ci, error, tolerance=1.0e-11_dp, eri_packed=eri_packed)
          end if
          if (error%has_error()) return
          if (present(flat_guess)) then
@@ -1612,11 +1641,12 @@ contains
             if (have_guess) then
                call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                                   ci, error, n_roots=n_roots, tolerance=1.0e-11_dp, &
-                                  guess=guess, symmetrize_singlet=.true.)
+                                  guess=guess, symmetrize_singlet=.true., &
+                                  eri_packed=eri_packed)
             else
                call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                                   ci, error, n_roots=n_roots, tolerance=1.0e-11_dp, &
-                                  symmetrize_singlet=.true.)
+                                  symmetrize_singlet=.true., eri_packed=eri_packed)
             end if
             if (error%has_error()) return
             guess = ci%vectors
@@ -1627,10 +1657,11 @@ contains
 
       if (have_guess) then
          call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                            ci, error, tolerance=1.0e-11_dp, guess=guess)
+                            ci, error, tolerance=1.0e-11_dp, guess=guess, &
+                            eri_packed=eri_packed)
       else
          call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                            ci, error, tolerance=1.0e-11_dp)
+                            ci, error, tolerance=1.0e-11_dp, eri_packed=eri_packed)
       end if
       if (error%has_error()) return
 

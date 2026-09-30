@@ -152,6 +152,7 @@ contains
       type(sa_hessian_t), intent(out) :: state
       type(error_t), intent(inout) :: error
 
+      real(dp), allocatable :: eri_packed(:, :)
       integer :: n_occ, j
 
       if (error%has_error()) return
@@ -193,12 +194,15 @@ contains
                                state%dm1_sa, state%dm2_sa, error)
       if (error%has_error()) return
 
-      call mo_integral_blocks(mol, orbitals, n_occ, state%a_block, state%b_block)
+      ! Both integral consumers below read the same packed AO integrals.
+      call mol%eris_packed(eri_packed)
+      call mo_integral_blocks(mol, orbitals, n_occ, state%a_block, state%b_block, eri_packed)
       call fock_from_blocks(mol, orbitals, n_inactive, n_active, state%dm1_sa, state%dm2_sa, &
                             state%a_block, state%b_block, state%fock_sa)
 
       call active_space_integrals(mol, orbitals, n_inactive, n_active, state%h_eff, &
-                                  state%eri_act, state%core_energy, error)
+                                  state%eri_act, state%core_energy, error, eri_packed)
+      deallocate (eri_packed)
       if (error%has_error()) return
       call absorb_one_electron(state%h_eff, state%eri_act, n_alpha + n_beta, &
                                state%folded, error)
