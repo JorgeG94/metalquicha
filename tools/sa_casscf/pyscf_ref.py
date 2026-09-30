@@ -113,6 +113,8 @@ INLINE_GEOMETRIES_ANGSTROM = {
 XYZ_SYSTEMS = {
     "c2h4_planar": HERE / "c2h4_planar.xyz",
     "c2h4_twisted": HERE / "c2h4_twisted.xyz",
+    "c2f4_planar": HERE / "c2f4_planar.xyz",
+    "c2f4_twisted": HERE / "c2f4_twisted.xyz",
 }
 
 
