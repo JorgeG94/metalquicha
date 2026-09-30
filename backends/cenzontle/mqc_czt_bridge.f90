@@ -3623,13 +3623,15 @@ contains
                           " while the error is large, then DIIS")
       end if
 
+      ! Stored integrals when they fit, as the Hartree-Fock path chooses them.
       call run_czt_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                        settings%density_tol, settings%verbose, scf, error, &
                        diis_vectors=diis_size, accelerator=accel_kind, &
                        level_shift=settings%level_shift, &
                        linear_dependence=settings%linear_dependence, &
                        incremental_fock=settings%incremental_fock, &
-                       grad_tol=settings%grad_tol, convergence=scf_conv)
+                       grad_tol=settings%grad_tol, convergence=scf_conv, &
+                       in_core=eri_fits_in_core(mol%nao))
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
