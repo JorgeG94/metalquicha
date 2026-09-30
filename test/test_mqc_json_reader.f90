@@ -2195,6 +2195,39 @@ contains
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
                  "a negative weight must be refused")
+      if (allocated(error)) return
+
+      ! Fragmented: each fragment would average over its own lowest roots,
+      ! and a fragment worker does not carry the per-state energies back, so
+      ! the combination is refused by name at read time.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 2}, '// &
+                      '"fragmentation": {"method": "MBE", "level": 2}', "", &
+                      '"symbols": ["H", "H", "H", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, 4,0,0, 4.7,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1], [2, 3]]')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a fragmented deck asking for a state average was accepted")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "fragmented") > 0, &
+                 "refused, but not for being fragmented: "//parse_error%get_message())
+      if (allocated(error)) return
+
+      ! The same fragmented deck with one state is an ordinary CASSCF: the
+      ! gate must not fire on it.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Energy", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 1}, '// &
+                      '"fragmentation": {"method": "MBE", "level": 2}', "", &
+                      '"symbols": ["H", "H", "H", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, 4,0,0, 4.7,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1], [2, 3]]')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
    end subroutine test_mcscf_state_averaging
 
    subroutine test_casci_spelling(error)

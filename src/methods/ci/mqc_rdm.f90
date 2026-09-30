@@ -332,13 +332,13 @@ contains
       !! `<S^2>` of a determinant-basis CI vector, by explicit construction of
       !! `S_+ |Psi>` in its own (shifted-electron-count) sector
       !!
-      !!
       !! `S^2 = Sz(Sz + 1) + S_-S_+`, with `Sz = (n_alpha - n_beta)/2` exact for
       !! a fixed-`(n_alpha, n_beta)` CI, and `<S_-S_+> = ||S_+ Psi||^2` for a
       !! real vector. `S_+ Psi` lives in the `(n_alpha + 1, n_beta - 1)` string
       !! space, which is built here. `ci` is indexed by `generate_strings`
       !! order, as `run_czt_casci`'s vectors are. The spin-traced RDMs cannot
       !! give this: it needs the opposite-spin exchange part of the 2-RDM.
+      !! Zero whenever `error` is set, on entry or on return.
       integer, intent(in) :: n_active, n_alpha, n_beta
       real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
       type(error_t), intent(inout) :: error
@@ -351,6 +351,7 @@ contains
       real(dp) :: sz
       integer :: na, nb, na2, nb2, ia, ib, p, ia2, ib2, phase
 
+      s2 = 0.0_dp
       if (error%has_error()) return
       na = size(ci, 1)
       nb = size(ci, 2)
@@ -363,7 +364,10 @@ contains
       call generate_strings(n_active, n_beta, strings_b, error)
       call generate_strings(n_active, n_alpha + 1, strings_a2, error)
       call generate_strings(n_active, n_beta - 1, strings_b2, error)
-      if (error%has_error()) return
+      if (error%has_error()) then
+         s2 = 0.0_dp
+         return
+      end if
       na2 = size(strings_a2)
       nb2 = size(strings_b2)
 
@@ -390,14 +394,14 @@ contains
       deallocate (shifted, strings_a, strings_b, strings_a2, strings_b2)
    end function spin_squared
 
-   pure function above_parity(string, p) result(sign)
+   pure function above_parity(string, p) result(parity)
       !! `+1`/`-1` by the parity of how many occupied orbitals sit above `p`
       integer(int64), intent(in) :: string
       integer, intent(in) :: p
-      integer :: sign
+      integer :: parity
 
-      sign = 1
-      if (mod(popcnt(iand(string, not(shiftl(1_int64, p) - 1_int64))), 2) == 1) sign = -1
+      parity = 1
+      if (mod(popcnt(iand(string, not(shiftl(1_int64, p) - 1_int64))), 2) == 1) parity = -1
    end function above_parity
 
 end module mqc_rdm
