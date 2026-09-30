@@ -77,16 +77,13 @@ module mqc_czt_mcscf
    public :: run_czt_casscf
    public :: casscf_result_t
    public :: natural_orbitals
+   ! Public for `mqc_czt_sa_hessian`, which reuses rather than reimplements
+   ! them: its orbital-orbital block is exactly `one_index_fock`, and its
+   ! one-index-transformed active Hamiltonian needs the same inactive-density
+   ! potential, from `transformed_potential`.
    public :: one_index_fock
    public :: transformed_potential
    public :: sa_density_matrices
-      !! The three above were private until the SA Hessian-vector product
-      !! (`mqc_czt_sa_hessian.f90`) needed to reuse them rather than
-      !! reimplement them: the orbital-orbital Hessian block is exactly
-      !! `one_index_fock`, and the CI-orbital block's one-index-transformed
-      !! active Hamiltonian reuses `transformed_potential` for the same
-      !! inactive-density potential `one_index_fock` builds internally. No
-      !! behaviour changed by exporting them.
 
    ! The step-control constants and the matrix exponential are
    ! `mqc_orbital_rotation`'s, used from there rather than declared here: the
@@ -1142,17 +1139,20 @@ contains
          !! More than one: that many singlet roots (state averaging), each kept
          !! as the next call's guess. Complete active space only.
 
+      real(dp), parameter :: CI_TOLERANCE = 1.0e-11_dp
+         !! Residual norm every CI solve here converges to, whichever branch
+
       ! A restricted space has no alpha-by-beta rectangle to keep a guess in, so
       ! it carries the flat vector instead.
       if (present(subspaces)) then
          if (have_guess .and. present(flat_guess)) then
             call run_czt_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
                                   n_beta, subspaces, min_electrons, max_electrons, &
-                                  ci, error, tolerance=1.0e-11_dp, guess=flat_guess)
+                                  ci, error, tolerance=CI_TOLERANCE, guess=flat_guess)
          else
             call run_czt_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, &
                                   n_beta, subspaces, min_electrons, max_electrons, &
-                                  ci, error, tolerance=1.0e-11_dp)
+                                  ci, error, tolerance=CI_TOLERANCE)
          end if
          if (error%has_error()) return
          if (present(flat_guess)) then
@@ -1168,11 +1168,11 @@ contains
          if (n_roots > 1) then
             if (have_guess) then
                call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                                  ci, error, n_roots=n_roots, tolerance=1.0e-11_dp, &
+                                  ci, error, n_roots=n_roots, tolerance=CI_TOLERANCE, &
                                   guess=guess, symmetrize_singlet=.true.)
             else
                call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                                  ci, error, n_roots=n_roots, tolerance=1.0e-11_dp, &
+                                  ci, error, n_roots=n_roots, tolerance=CI_TOLERANCE, &
                                   symmetrize_singlet=.true.)
             end if
             if (error%has_error()) return
@@ -1184,10 +1184,10 @@ contains
 
       if (have_guess) then
          call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                            ci, error, tolerance=1.0e-11_dp, guess=guess)
+                            ci, error, tolerance=CI_TOLERANCE, guess=guess)
       else
          call run_czt_casci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
-                            ci, error, tolerance=1.0e-11_dp)
+                            ci, error, tolerance=CI_TOLERANCE)
       end if
       if (error%has_error()) return
 
