@@ -173,19 +173,23 @@ contains
       !!     dm1(p,q)     = <bra| E_pq |ket>
       !!     dm2(p,q,r,s) = <bra| E_pq E_rs - delta_qr E_ps |ket>
       !!
-      !! the `bra == ket` case of `active_space_rdms`, same spin-traced,
-      !! chemist-ordered convention. Not symmetric in general:
-      !! `transition_rdms(bra, ket, ...)`'s `dm1(p,q)` equals
-      !! `transition_rdms(ket, bra, ...)`'s `dm1(q,p)`, and likewise
-      !! `dm2(p,q,r,s)` of `(bra,ket)` equals `dm2(q,p,s,r)` of `(ket,bra)`. The
-      !! symmetrised sum over both orderings, which is what a CI-response
-      !! density needs, is left to the caller.
+      !! the generalisation of `active_space_rdms`, which is its `bra == ket`
+      !! case, in the same spin-traced, chemist-ordered convention. Not
+      !! symmetric in general: `transition_rdms(bra, ket, ...)`'s `dm1(p,q)`
+      !! equals `transition_rdms(ket, bra, ...)`'s `dm1(q,p)`, and likewise
+      !! `dm2(p,q,r,s)` of `(bra,ket)` equals `dm2(q,p,s,r)` of `(ket,bra)`.
+      !! `dm1` and `dm2` are left unallocated when `error` is set.
       real(dp), intent(in) :: bra(:, :)      !! (n_alpha_strings, n_beta_strings)
       real(dp), intent(in) :: ket(:, :)      !! (n_alpha_strings, n_beta_strings)
       type(link_table_t), intent(in) :: alpha, beta
       real(dp), allocatable, intent(out) :: dm1(:, :)
+         !! (n_active, n_active)
       real(dp), allocatable, intent(out) :: dm2(:, :, :, :)
+         !! (n_active, n_active, n_active, n_active)
       type(error_t), intent(inout) :: error
+
+      ! Neither ordering is symmetrised here: the sum over both, which is what
+      ! a CI-response density needs, is the caller's to form.
 
       real(dp), allocatable :: gathered_bra(:, :), gathered_ket(:, :), paired(:, :)
       real(dp), allocatable :: flat_bra(:, :), pair_column(:, :)
