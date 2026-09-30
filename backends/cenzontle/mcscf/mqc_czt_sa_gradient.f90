@@ -24,15 +24,14 @@ module mqc_czt_sa_gradient
    !! `czt_sa_casscf_gradients` computes several roots together. It builds the
    !! SA Hessian state once and solves every root's Z-vector equation in one
    !! block PCG, in which a converged column stops costing Hessian-vector
-   !! products. It then shares the two expensive derivative-integral sweeps
-   !! across every root and every response piece, rather than repeating them
-   !! once per root: one `two_electron_deriv_many` call over the union of
-   !! every root's separable densities (`response_separable_assemble`,
-   !! `base_gradient_assemble` do the per-root/per-piece dot products from its
-   !! potentials), and one stacked sweep over the active two-body Gamma
-   !! tensors (`active_two_electron_gradient_stacked`, on
-   !! `active_two_electron_gradient_many`). The one-electron core-Hamiltonian
-   !! derivative (`build_core_hamiltonian_derivative`) is shared the same way.
+   !! products. It then makes one pass over the derivative integrals for
+   !! every root and every response piece: one `two_electron_deriv_many` call
+   !! contracts the union of every root's separable densities
+   !! (`response_separable_assemble` and `base_gradient_assemble` do the
+   !! per-root dot products from its potentials) and, in the same quartet
+   !! loop, every root's active two-body Gamma (`fill_gamma`). The
+   !! one-electron core-Hamiltonian derivative
+   !! (`build_core_hamiltonian_derivative`) is shared the same way.
    !! `sa_casscf_gradient_general` (`czt_sa_casscf_gradient`'s single-root
    !! path) does not share any of this: its response pieces
    !! (`orbital_response_gradient`, `ci_response_gradient`) each run their own
@@ -49,7 +48,6 @@ module mqc_czt_sa_gradient
    use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, one_index_fock
    use mqc_czt_mcscf_gradient, only: czt_mcscf_gradient, active_two_electron_gradient, &
                                      active_two_electron_gradient_response, gamma_block, &
-                                     active_two_electron_gradient_many, &
                                      cumulant_two_particle_density
    use mqc_czt_sa_hessian, only: sa_hessian_t, build_sa_hessian, destroy_sa_hessian, &
                                  sa_hessian_n_param, sa_hessian_apply, &
@@ -88,6 +86,11 @@ module mqc_czt_sa_gradient
    real(dp), parameter :: DEFAULT_CG_TOL = 1.0e-10_dp
    integer, parameter :: DEFAULT_CG_MAX_ITER = 200
    real(dp), parameter :: UNEQUAL_WEIGHT_TOL = 1.0e-8_dp
+   real(dp), parameter :: GAMMA_SIGNIFICANCE = 1.0e-12_dp
+      !! An AO whose largest active-leg amplitude is below this fraction of
+      !! the largest carries no Gamma
+   real(dp), parameter :: GAMMA_BLOCK_TARGET = 2.0e8_dp
+      !! Bytes of AO Gamma (and its one scratch copy) held per first-index block
 
 contains
 
@@ -564,9 +567,8 @@ contains
       !! matrices are built first (`orbital_response_pieces`,
       !! `ci_response_pieces`, `cumulant_two_particle_density`,
       !! `build_active_density`, `build_weighted_from_fock`). Then the union of
-      !! every column's separable densities goes through **one**
-      !! `two_electron_deriv_many` call, and every column's active two-body
-      !! Gamma through **one** `active_two_electron_gradient_stacked` call. The
+      !! every column's separable densities, and every column's active
+      !! two-body Gamma, go through **one** `two_electron_deriv_many` call. The
       !! core-Hamiltonian derivative (`build_core_hamiltonian_derivative`) and
       !! the nuclear-repulsion term are shared the same way.
       !!
@@ -619,8 +621,11 @@ contains
       real(dp), allocatable :: s1(:, :, :), kin(:, :, :), h1(:, :, :)
       real(dp), allocatable :: hcore_all(:, :, :, :)
       real(dp), allocatable :: density_stack(:, :, :), vhf_stack(:, :, :, :)
-      real(dp), allocatable :: nuc_grad(:, :), column_grads(:, :, :)
-      integer :: n_stack, slot, s_bar, s_core_bar
+      real(dp), allocatable :: nuc_grad(:, :), column_grads(:, :, :), gamma_grads(:, :, :)
+      real(dp), allocatable :: amplitude(:), c_sig(:, :), cbar_sig(:, :, :)
+      integer, allocatable :: ao_map(:), sig_aos(:)
+      real(dp) :: cut
+      integer :: n_stack, slot, s_bar, s_core_bar, n_sig, mu, gamma_width
 
       if (error%has_error()) return
       n_states = size(weights)
@@ -784,7 +789,38 @@ contains
          density_stack(:, :, s_bar) = d_active_bar_all(:, :, ic)
          density_stack(:, :, s_core_bar) = d_core_bar_all(:, :, ic)
       end do
-      call two_electron_deriv_many(state%mol, density_stack, vhf_stack, error)
+      ! Every column's active two-body Gamma rides the same sweep. It is built
+      ! only over the AOs where some leg (`c_active` or a column's `cbar`)
+      ! has an amplitude above `GAMMA_SIGNIFICANCE` times the largest: the rest
+      ! contribute exactly nothing, and in a planar pi system that is every
+      ! sigma-type AO.
+      allocate (amplitude(n_ao), ao_map(n_ao))
+      do mu = 1, n_ao
+         amplitude(mu) = max(maxval(abs(c_active(mu, :))), maxval(abs(cbar_active_all(mu, :, :))))
+      end do
+      cut = GAMMA_SIGNIFICANCE*max(maxval(amplitude), tiny(1.0_dp))
+      ao_map = 0
+      n_sig = 0
+      do mu = 1, n_ao
+         if (amplitude(mu) > cut) then
+            n_sig = n_sig + 1
+            ao_map(mu) = n_sig
+         end if
+      end do
+      allocate (gamma_grads(3, natm, n_col))
+      gamma_grads = 0.0_dp
+      if (n_sig > 0) then
+         sig_aos = pack([(mu, mu=1, n_ao)], ao_map > 0)
+         c_sig = c_active(sig_aos, :)
+         cbar_sig = cbar_active_all(sig_aos, :, :)
+         gamma_width = max(1, int(GAMMA_BLOCK_TARGET/(2.0_dp*real(n_sig, dp)**3*8.0_dp* &
+                                                      real(n_col, dp))))
+         call two_electron_deriv_many(state%mol, density_stack, vhf_stack, error, &
+                                      gamma_ao_map=ao_map, gamma_width=gamma_width, &
+                                      gamma_fill=fill_gamma, gamma_grads=gamma_grads)
+      else
+         call two_electron_deriv_many(state%mol, density_stack, vhf_stack, error)
+      end if
       deallocate (density_stack)
       if (error%has_error()) return
 
@@ -813,13 +849,41 @@ contains
          if (error%has_error()) return
       end do
 
-      ! ---- one stacked sweep for every column's active two-body Gamma ------
-      call active_two_electron_gradient_stacked(state%mol, c_active, ddm2_all, cbar_active_all, &
-                                                state%dm2_sa, tdm2_total_all, column_grads, error)
-      if (error%has_error()) return
-
+      column_grads = column_grads + gamma_grads
       gradients = column_grads(:, :, 1:n_roots)
       if (present(extra_out)) extra_out = column_grads(:, :, n_roots + 1:n_col)
+
+   contains
+
+      subroutine fill_gamma(p_lo, p_hi, gamma)
+         !! Every column's AO Gamma over compressed first-index positions
+         !! `p_lo..p_hi`: one transform over the doubled leg `[C | Cbar]`
+         !! gives all six terms -- the base and CI-response densities in the
+         !! all-`C` block, `dm2_sa` in each block with `Cbar` on exactly one leg.
+         integer, intent(in) :: p_lo, p_hi
+         real(dp), allocatable, intent(inout) :: gamma(:, :, :, :, :)
+
+         real(dp), allocatable :: c_both(:, :), g_both(:, :, :, :), tmp(:, :, :, :)
+         integer :: jc, na2
+
+         na2 = 2*n_active
+         if (allocated(gamma)) deallocate (gamma)
+         allocate (gamma(p_hi - p_lo + 1, n_sig, n_sig, n_sig, n_col))
+         allocate (c_both(n_sig, na2), g_both(na2, na2, na2, na2))
+         do jc = 1, n_col
+            c_both(:, 1:n_active) = c_sig
+            c_both(:, n_active + 1:na2) = cbar_sig(:, :, jc)
+            g_both = 0.0_dp
+            g_both(1:n_active, 1:n_active, 1:n_active, 1:n_active) = ddm2_all(:, :, :, :, jc) &
+                                                                     + tdm2_total_all(:, :, :, :, jc)
+            g_both(n_active + 1:, 1:n_active, 1:n_active, 1:n_active) = state%dm2_sa
+            g_both(1:n_active, n_active + 1:, 1:n_active, 1:n_active) = state%dm2_sa
+            g_both(1:n_active, 1:n_active, n_active + 1:, 1:n_active) = state%dm2_sa
+            g_both(1:n_active, 1:n_active, 1:n_active, n_active + 1:) = state%dm2_sa
+            call gamma_block(c_both, g_both, p_lo, p_hi, tmp)
+            gamma(:, :, :, :, jc) = tmp
+         end do
+      end subroutine fill_gamma
    end subroutine sa_gradients_on_state
 
    pure subroutine column_slots(ic, n_roots, own, s_bar, s_core_bar)
@@ -1026,8 +1090,8 @@ contains
    subroutine base_gradient_assemble(mol, hcore_all, s1, vhf_core, vhf_active, d_core, &
                                      d_active, weighted, gradient, error)
       !! `czt_mcscf_gradient`'s own per-atom Hcore/Coulomb/Pulay assembly (its
-      !! active two-body cumulant term is handled separately, by
-      !! `active_two_electron_gradient_stacked`), from the shared
+      !! active two-body cumulant term is contracted in the same sweep, by
+      !! `sa_gradients_on_state`'s `fill_gamma`), from the shared
       !! `hcore_all`/`s1` and the two-electron potentials of `d_core` and this
       !! root's own active density `d_active` -- `V(d_core + d_active) =
       !! V(d_core) + V(d_active)` by linearity of `J - K/2`, so the two need
@@ -1073,146 +1137,6 @@ contains
 
       deallocate (d_total, offsets, counts)
    end subroutine base_gradient_assemble
-
-   subroutine active_two_electron_gradient_stacked(mol, c_active, ddm2_all, cbar_active_all, &
-                                                   dm2_sa, tdm2_total_all, gradients, error)
-      !! Every root's active two-body Gamma -- the base cumulant, the
-      !! orbital-response four-leg sum, and the CI-response transition
-      !! density -- summed in the AO basis one shell block at a time and
-      !! contracted against the derivative integrals in **one** sweep for
-      !! every root together (`active_two_electron_gradient_many`), instead of
-      !! `n_root` separate sweeps (one per root, itself already one sweep
-      !! since `active_two_electron_gradient_response`'s Part-A fusion).
-      !! `gamma_block`'s four gemms per term are bounded by `n_active` and
-      !! cost little; what this saves is the shell-quartet loop, which does
-      !! not screen (`two_electron_mp2_terms`'s `with_gamma` branch has no
-      !! Schwarz bound for a general four-index density) and so is paid in
-      !! full every time it runs.
-      !!
-      !! Gamma is built only over the AOs where some leg (`c_active` or any
-      !! root's `cbar_active_all`) has an amplitude above `SIGNIFICANCE` times
-      !! the largest. The rest contribute exactly nothing to Gamma, and in a
-      !! planar pi system that is every sigma-type AO.
-      type(czt_molecule_t), intent(in) :: mol
-      real(dp), intent(in) :: c_active(:, :)                !! (n_ao, n_active)
-      real(dp), intent(in) :: ddm2_all(:, :, :, :, :)       !! (n_active^4, n_root), base cumulants
-      real(dp), intent(in) :: cbar_active_all(:, :, :)      !! (n_ao, n_active, n_root)
-      real(dp), intent(in) :: dm2_sa(:, :, :, :)            !! The shared SA active density
-      real(dp), intent(in) :: tdm2_total_all(:, :, :, :, :)  !! (n_active^4, n_root)
-      real(dp), intent(inout) :: gradients(:, :, :)         !! (3, natm, n_root), accumulated into
-      type(error_t), intent(inout) :: error
-
-      real(dp), allocatable :: gamma_stack(:, :, :, :, :), tmp(:, :, :, :)
-      real(dp), allocatable :: amplitude(:), c_sig(:, :), cbar_sig(:, :, :)
-      real(dp), allocatable :: c_both(:, :), g_both(:, :, :, :)
-      integer, allocatable :: ao_map(:), shells(:), sig_aos(:)
-      real(dp) :: cut
-      integer :: n_ao, n_root, n_sig, n_sh, sh, mu, i0, dsh, ir, n_act
-      integer :: ip, ip_lo, ip_hi, p_lo, p_hi, np, per_block
-      real(dp), parameter :: BLOCK_TARGET = 2.0e8_dp
-      real(dp), parameter :: SIGNIFICANCE = 1.0e-12_dp
-
-      if (error%has_error()) return
-      n_ao = size(c_active, 1)
-      n_root = size(ddm2_all, 5)
-
-      allocate (amplitude(n_ao), ao_map(n_ao))
-      do mu = 1, n_ao
-         amplitude(mu) = max(maxval(abs(c_active(mu, :))), maxval(abs(cbar_active_all(mu, :, :))))
-      end do
-      cut = SIGNIFICANCE*max(maxval(amplitude), tiny(1.0_dp))
-      ao_map = 0
-      n_sig = 0
-      do mu = 1, n_ao
-         if (amplitude(mu) > cut) then
-            n_sig = n_sig + 1
-            ao_map(mu) = n_sig
-         end if
-      end do
-      if (n_sig == 0) return
-      allocate (sig_aos(n_sig))
-      sig_aos = pack([(mu, mu=1, n_ao)], ao_map > 0)
-      c_sig = c_active(sig_aos, :)
-      cbar_sig = cbar_active_all(sig_aos, :, :)
-      n_act = size(c_active, 2)
-      allocate (c_both(n_sig, 2*n_act), g_both(2*n_act, 2*n_act, 2*n_act, 2*n_act))
-
-      n_sh = 0
-      allocate (shells(mol%nbas))
-      do sh = 1, mol%nbas
-         i0 = mol%shell_offset(sh)
-         dsh = shell_dim(mol%cartesian, sh - 1, mol%bas)
-         if (any(ao_map(i0 + 1:i0 + dsh) > 0)) then
-            n_sh = n_sh + 1
-            shells(n_sh) = sh
-         end if
-      end do
-      shells = shells(1:n_sh)
-
-      per_block = max(1, int(BLOCK_TARGET/(2.0_dp*real(n_sig, dp)**3*8.0_dp*real(n_root, dp))))
-
-      ip_lo = 1
-      do while (ip_lo <= n_sh)
-         p_lo = first_mapped(shells(ip_lo))
-         ip_hi = ip_lo
-         do ip = ip_lo, n_sh
-            if (ip > ip_lo .and. last_mapped(shells(ip)) - p_lo + 1 > per_block) exit
-            ip_hi = ip
-         end do
-         p_hi = last_mapped(shells(ip_hi))
-         np = p_hi - p_lo + 1
-
-         allocate (gamma_stack(np, n_sig, n_sig, n_sig, n_root))
-         do ir = 1, n_root
-            ! One transform over the doubled leg `[C | Cbar]` gives all six
-            ! terms: the base and CI-response densities in the all-`C` block,
-            ! `dm2_sa` in each block with `Cbar` on exactly one leg.
-            c_both(:, 1:n_act) = c_sig
-            c_both(:, n_act + 1:2*n_act) = cbar_sig(:, :, ir)
-            g_both = 0.0_dp
-            g_both(1:n_act, 1:n_act, 1:n_act, 1:n_act) = ddm2_all(:, :, :, :, ir) &
-                                                         + tdm2_total_all(:, :, :, :, ir)
-            g_both(n_act + 1:, 1:n_act, 1:n_act, 1:n_act) = dm2_sa
-            g_both(1:n_act, n_act + 1:, 1:n_act, 1:n_act) = dm2_sa
-            g_both(1:n_act, 1:n_act, n_act + 1:, 1:n_act) = dm2_sa
-            g_both(1:n_act, 1:n_act, 1:n_act, n_act + 1:) = dm2_sa
-            call gamma_block(c_both, g_both, p_lo, p_hi, tmp)
-            gamma_stack(:, :, :, :, ir) = tmp
-         end do
-
-         call active_two_electron_gradient_many(mol, gamma_stack, shells, ip_lo, ip_hi, ao_map, &
-                                                p_lo - 1, gradients, error)
-         deallocate (gamma_stack)
-         if (error%has_error()) return
-         ip_lo = ip_hi + 1
-      end do
-
-   contains
-
-      function first_mapped(shell) result(first)
-         !! The smallest compressed index among `shell`'s AOs
-         integer, intent(in) :: shell
-         integer :: first
-         integer :: q
-         first = huge(1)
-         do q = mol%shell_offset(shell) + 1, mol%shell_offset(shell) + &
-            shell_dim(mol%cartesian, shell - 1, mol%bas)
-            if (ao_map(q) > 0) first = min(first, ao_map(q))
-         end do
-      end function first_mapped
-
-      function last_mapped(shell) result(last)
-         !! The largest compressed index among `shell`'s AOs
-         integer, intent(in) :: shell
-         integer :: last
-         integer :: q
-         last = 0
-         do q = mol%shell_offset(shell) + 1, mol%shell_offset(shell) + &
-            shell_dim(mol%cartesian, shell - 1, mol%bas)
-            last = max(last, ao_map(q))
-         end do
-      end function last_mapped
-   end subroutine active_two_electron_gradient_stacked
 
    subroutine build_active_density(c_active, dm1, d_active)
       !! The AO active density `c_active dm1 c_active^T` -- the base
