@@ -558,6 +558,8 @@ contains
       ! fragmentation block and the molecules together.
       call check_excited_states_run(config, error)
       if (error%has_error()) return
+      call check_state_averaged_run(config, error)
+      if (error%has_error()) return
       call check_interaction_energy_run(config, error)
    end subroutine populate_config
 
@@ -658,9 +660,6 @@ contains
       type(mqc_config_t), intent(in) :: config
       type(error_t), intent(inout) :: error
 
-      integer :: imol
-      logical :: fragmented
-
       if (config%excited_n_states <= 0) return
 
       if (config%calc_type /= CALC_TYPE_ENERGY) then
@@ -677,18 +676,9 @@ contains
          return
       end if
 
-      ! What the adapter calls fragmented: declared fragments and a level
-      ! above zero. Fragments with no expansion over them is the unfragmented
-      ! path, and reads the spectrum like any other.
-      fragmented = config%nfrag > 0
-      if (allocated(config%molecules)) then
-         do imol = 1, size(config%molecules)
-            if (config%molecules(imol)%nfrag > 0) fragmented = .true.
-         end do
-      end if
-      fragmented = fragmented .and. config%frag_level > 0
-
-      if (fragmented) then
+      ! Fragments with no expansion over them is the unfragmented path, and
+      ! reads the spectrum like any other.
+      if (is_fragmented(config)) then
          call error%set(ERROR_VALIDATION, "keywords.excited_states cannot be combined "// &
                         "with a fragmented calculation. Every fragment would converge "// &
                         "its own spectrum and every one of them would be thrown away: "// &
@@ -698,6 +688,51 @@ contains
          return
       end if
    end subroutine check_excited_states_run
+
+   subroutine check_state_averaged_run(config, error)
+      !! Refuse `keywords.mcscf.n_states > 1` in a fragmented calculation
+      !!
+      !! Each fragment would optimise its orbitals for its own state average,
+      !! and the expansion would sum those `E_SA` values into a total no
+      !! unfragmented calculation reproduces: which roots are lowest, and so
+      !! what is averaged, changes from monomer to dimer. The per-state
+      !! energies are not carried back from a fragment worker either.
+      !! Gradient and Hessian drivers are refused in the backend, which is
+      !! where the unfragmented path first meets them.
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(inout) :: error
+
+      if (config%mcscf_n_states <= 1) return
+
+      if (is_fragmented(config)) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 cannot be "// &
+                        "combined with a fragmented calculation. Each fragment would "// &
+                        "average over its own lowest roots, which are not the same "// &
+                        "states from one fragment to the next, so the many-body sum "// &
+                        "of those averages is not the state average of the whole "// &
+                        "system. Run the whole system unfragmented, or set n_states "// &
+                        "to 1.")
+         return
+      end if
+   end subroutine check_state_averaged_run
+
+   pure function is_fragmented(config) result(fragmented)
+      !! Whether the deck asks for a many-body expansion: fragments declared on
+      !! any molecule, and a level above zero -- what the adapter calls
+      !! fragmented
+      type(mqc_config_t), intent(in) :: config
+      logical :: fragmented
+
+      integer :: imol
+
+      fragmented = config%nfrag > 0
+      if (allocated(config%molecules)) then
+         do imol = 1, size(config%molecules)
+            if (config%molecules(imol)%nfrag > 0) fragmented = .true.
+         end do
+      end if
+      fragmented = fragmented .and. config%frag_level > 0
+   end function is_fragmented
 
    subroutine read_fragmentation(json, config, error)
       !! The keywords.fragmentation block, including per-level cutoffs
@@ -1621,6 +1656,9 @@ contains
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(inout) :: error
 
+      real(dp), parameter :: WEIGHT_SUM_TOLERANCE = 1.0e-10_dp
+         !! How far the weights may sum from one: loose enough for a deck's
+         !! decimal thirds, tight enough that a typo is caught.
       real(dp) :: total
       integer :: n_weights, i
       logical :: found
@@ -1666,7 +1704,7 @@ contains
          end if
          total = total + config%mcscf_state_weights(i)
       end do
-      if (abs(total - 1.0_dp) > 1.0e-10_dp) then
+      if (abs(total - 1.0_dp) > WEIGHT_SUM_TOLERANCE) then
          call error%set(ERROR_VALIDATION, "keywords.mcscf.weights sums to "// &
                         trim(to_char(total))//", not 1. State weights must add to one.")
          return

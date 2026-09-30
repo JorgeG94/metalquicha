@@ -234,8 +234,9 @@ module mqc_result_types
       ! was built from.
       ! TODO(mqc): not threaded through `result_send`/`result_recv` (and their
       ! `i`-prefixed twins) below, unlike the excited-states arrays beside
-      ! them: state-averaged CASSCF has no fragmented (MPI worker) path yet,
-      ! so a fragmented run would silently drop these three on the wire.
+      ! them. Unreachable from a deck, which `check_state_averaged_run` in the
+      ! reader refuses when fragmented; lifting that refusal without adding
+      ! these to the wire would silently drop all three.
       real(dp), allocatable :: mcscf_state_energies(:)
          !! (n_states) every state's own total energy, in the order `weights`
          !! was given.
