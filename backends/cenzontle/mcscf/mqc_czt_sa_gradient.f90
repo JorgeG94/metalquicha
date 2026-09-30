@@ -62,7 +62,7 @@ contains
       !! The analytic gradient of root `state_index` of a converged SA-CASSCF
       !!
       !! `n_states = 1` (`size(weights) == 1`) is a literal short-circuit to
-      !! `czt_mcscf_gradient`, bit for bit -- gate 1 of the phase-4 plan.
+      !! `czt_mcscf_gradient`, bit for bit, and then `state_index` must be 1.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)         !! (n_ao, n_mo), the SA orbitals
       integer, intent(in) :: n_inactive, n_active, n_alpha, n_beta
@@ -70,7 +70,7 @@ contains
       real(dp), intent(in) :: energies(:)            !! (>= n_states), total
       real(dp), intent(in) :: weights(:)              !! (n_states)
       integer, intent(in) :: state_index              !! Which root, 1-based
-      real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, n_atoms)
+      real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, n_atoms), Hartree/Bohr
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: cg_tol
          !! Relative residual the Z-vector solve stops at. Default `1e-10`.
@@ -87,7 +87,16 @@ contains
       if (present(cg_residual)) cg_residual = 0.0_dp
 
       if (size(weights) == 1) then
+         ! The general path's range check, repeated because this branch never
+         ! reaches it: without it, any `state_index` returns root 1.
+         if (state_index /= 1) then
+            call error%set(ERROR_VALIDATION, "sa_casscf_gradient: state "// &
+                           to_char(state_index)//" is not one of the 1 averaged "// &
+                           "states.")
+            return
+         end if
          call build_link_table(n_active, n_alpha, alpha, error)
+         if (error%has_error()) return
          call build_link_table(n_active, n_beta, beta, error)
          if (error%has_error()) return
          call active_space_rdms(ci_vectors(:, :, 1), alpha, beta, dm1_i, dm2_i, error)
@@ -108,19 +117,18 @@ contains
                                          n_beta, ci_vectors, energies, weights, state_index, &
                                          gradient, error, cg_tol, cg_max_iter, cg_iterations, &
                                          cg_residual)
-      !! The Z-vector machinery itself, with no `n_states = 1` short-circuit --
-      !! see `czt_sa_casscf_gradient`, which is this with that short-circuit in
-      !! front of it. Callable directly at `n_states = 1` to check that the
-      !! *general* path also reproduces `czt_mcscf_gradient` (to solver
-      !! tolerance, not bit for bit -- gate 1's "separately" clause).
+      !! `czt_sa_casscf_gradient` without its `n_states = 1` short-circuit
+      !!
+      !! At `n_states = 1` this reproduces `czt_mcscf_gradient` to the Z-vector
+      !! solve's tolerance, not bit for bit. Arguments as there.
       type(czt_molecule_t), intent(in) :: mol
-      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: orbitals(:, :)         !! (n_ao, n_mo), the SA orbitals
       integer, intent(in) :: n_inactive, n_active, n_alpha, n_beta
-      real(dp), intent(in) :: ci_vectors(:, :, :)
-      real(dp), intent(in) :: energies(:)
-      real(dp), intent(in) :: weights(:)
-      integer, intent(in) :: state_index
-      real(dp), allocatable, intent(out) :: gradient(:, :)
+      real(dp), intent(in) :: ci_vectors(:, :, :)    !! (na, nb, >= n_states)
+      real(dp), intent(in) :: energies(:)            !! (>= n_states), total
+      real(dp), intent(in) :: weights(:)             !! (n_states)
+      integer, intent(in) :: state_index             !! Which root, 1-based
+      real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, n_atoms), Hartree/Bohr
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: cg_tol
       integer, intent(in), optional :: cg_max_iter
