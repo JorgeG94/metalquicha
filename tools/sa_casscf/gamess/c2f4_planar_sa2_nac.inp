@@ -1,0 +1,28 @@
+! C2F4 SA-2-CAS(2,2)/6-31G* (Cartesian d): both state-specific gradients
+! and the 1-2 nonadiabatic coupling, the same job as
+! ../c2f4_planar_sa2_nac_6-31gs.json in metalquicha.
+! 48 electrons: 23 core, 2 in 2 active. NSTATE=4 so the lone M_s=0 triplet
+! of CAS(2,2) cannot displace the second singlet (PURES keeps singlets).
+!
+! Two steps. Run rhf_planar.inp first and append the $VEC group from its
+! punch (.dat) file after $end below: metalquicha starts the CASSCF from
+! RHF orbitals, and GAMESS's Huckel guess lands on a different SA-CASSCF
+! solution (twisted: E_SA -473.25104 instead of -473.25374).
+ $contrl scftyp=mcscf runtyp=nacme icharg=0 mult=1 ispher=-1 $end
+ $system mwords=200 $end
+ $basis  gbasis=n31 ngauss=6 ndfunc=1 $end
+ $guess  guess=moread norb=90 $end
+ $det    ncore=23 nact=2 nels=2 nstate=4 pures=.true. wstate(1)=1,1 $end
+ $mcscf  cistep=aldet fullnr=.true. acurcy=1.0d-8 maxit=200 $end
+ $cpmchf gcro=.true. micit=10 kicit=10 cptol=1.0d-9
+         napick=.true. nacst(1)=1,2 $end
+ $data
+C2F4 planar (C=C 1.311 A, C-F 1.319 A, F-C-F 112.4 deg)
+C1
+C  6.0      0.00000      0.00000      0.65550
+C  6.0      0.00000      0.00000     -0.65550
+F  9.0      0.00000      1.09607      1.38925
+F  9.0      0.00000     -1.09607      1.38925
+F  9.0      0.00000      1.09607     -1.38925
+F  9.0      0.00000     -1.09607     -1.38925
+ $end
