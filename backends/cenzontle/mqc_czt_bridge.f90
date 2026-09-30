@@ -3943,6 +3943,7 @@ contains
       type(calculation_result_t), intent(inout) :: result
 
       type(error_t) :: error
+      integer :: i
 
       if (.not. settings%mcscf%optimize_orbitals) then
          call result%error%set(ERROR_VALIDATION, "a CASCI gradient needs the orbital "// &
@@ -3962,27 +3963,38 @@ contains
          return
       end if
 
-      ! `casscf%dm1`/`%dm2` are the SA densities under state averaging (what
-      ! the orbital optimiser actually used) and root 1's own under a plain
-      ! CASSCF, so this one call is `dE_SA/dR` in the first case and the
-      ! ordinary single-state gradient in the second -- no branch needed here.
-      call czt_mcscf_gradient(mol, casscf%orbitals, space(1), space(2), &
-                              casscf%dm1, casscf%dm2, result%gradient, error)
-      if (error%has_error()) then
-         call result%error%set(ERROR_VALIDATION, "gradient: "//error%get_message())
-         result%has_error = .true.
-         return
-      end if
-      ! Set last, so a failed per-root solve leaves an error and no gradient
-      ! rather than an error beside a valid-looking `E_SA` one.
       if (settings%mcscf%n_states > 1) then
          call sa_state_gradients_into(settings, mol, casscf, space, result)
          if (result%has_error) return
-         if (allocated(settings%mcscf%nac_pairs)) then
-            call sa_state_nacs_into(settings, mol, casscf, space, result)
-            if (result%has_error) return
+      end if
+
+      ! The top-level gradient is `dE_SA/dR` under state averaging and the
+      ! ordinary gradient otherwise. When every averaged root's gradient is
+      ! already in hand, `dE_SA/dR` is their weighted sum; otherwise it is
+      ! `czt_mcscf_gradient` on `casscf%dm1`/`%dm2`, which are the SA
+      ! densities under state averaging and root 1's own for a plain CASSCF.
+      if (settings%mcscf%n_states > 1 .and. .not. allocated(settings%mcscf%gradient_roots)) then
+         allocate (result%gradient(3, mol%natm))
+         result%gradient = 0.0_dp
+         do i = 1, settings%mcscf%n_states
+            result%gradient = result%gradient &
+                              + settings%mcscf%state_weights(i)*result%mcscf_state_gradients(:, :, i)
+         end do
+      else
+         call czt_mcscf_gradient(mol, casscf%orbitals, space(1), space(2), &
+                                 casscf%dm1, casscf%dm2, result%gradient, error)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, "gradient: "//error%get_message())
+            result%has_error = .true.
+            return
          end if
       end if
+      if (settings%mcscf%n_states > 1 .and. allocated(settings%mcscf%nac_pairs)) then
+         call sa_state_nacs_into(settings, mol, casscf, space, result)
+         if (result%has_error) return
+      end if
+      ! Set last, so a failed per-root or coupling solve leaves an error and no
+      ! gradient rather than an error beside a valid-looking `E_SA` one.
       result%has_gradient = .true.
    end subroutine mcscf_gradient_into
 
