@@ -27,7 +27,7 @@ module test_mqc_sa_hessian
    use mqc_czt_sa_hessian, only: sa_hessian_t, build_sa_hessian, destroy_sa_hessian, &
                                  sa_hessian_n_param, sa_gradient, sa_hessian_apply, &
                                  project_ci_block, cheap_generalized_fock, &
-                                 one_index_active_hamiltonian
+                                 one_index_active_hamiltonian, sa_hessian_precondition
    implicit none
    private
 
@@ -51,6 +51,8 @@ contains
                                test_orbital_block_one_state), &
                   new_unittest("hessian_is_symmetric", test_symmetry), &
                   new_unittest("redundancy_and_positive_curvature", test_redundancy), &
+                  new_unittest("preconditioner_matches_diagonals", test_preconditioner), &
+                  new_unittest("apply_refuses_wrong_shape", test_apply_shape), &
                   new_unittest("hvp_against_finite_difference", test_finite_difference), &
                   new_unittest("cheap_generalized_fock_matches_generalized_fock", &
                                test_cheap_fock), &
@@ -395,6 +397,108 @@ contains
       call destroy_sa_hessian(state)
       call mol%destroy()
    end subroutine test_redundancy
+
+   subroutine test_preconditioner(error)
+      !! `sa_hessian_precondition` against the two diagonals it divides by,
+      !! reached independently of its own indexing
+      !!
+      !! The orbital block against the explicit dense Hessian's diagonal
+      !! (`build_dense`, which `test_orbital_block_sa2` ties to
+      !! `orbital_hessian`); the CI block against `2 w_J (H_diag - E_J)` with
+      !! `H_diag` flattened by `reshape`, which is the column-major order every
+      !! flat CI vector here is packed in. At `n_alpha == n_beta` that diagonal
+      !! is symmetric under `ia <-> ib`, so a transposed determinant index would
+      !! give the same numbers and is not what this can catch; what it does pin
+      !! is each state's segment offset and length, which the unequal weights
+      !! make distinguishable.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(czt_molecule_t) :: mol
+      real(dp), allocatable :: orbitals(:, :)
+      type(casscf_result_t) :: result
+      type(sa_hessian_t) :: state
+      real(dp), allocatable :: dense(:, :), x(:, :), px(:, :), flat_diag(:)
+      real(dp) :: expected, d
+      integer :: np, l, j, det, seg0
+      logical :: ok
+      real(dp), parameter :: FLOOR = 1.0e-3_dp
+      real(dp), parameter :: TOL = 1.0e-10_dp
+
+      call converged_sa2(mol, orbitals, result, err, ok)
+      call check(error, ok, "SA-2-CAS(2,2) should converge")
+      if (allocated(error)) return
+      call build_sa_hessian(mol, result%orbitals, 1, 2, 1, 1, result%ci_vectors, &
+                            result%energies, [0.7_dp, 0.3_dp], state, err)
+      call check(error,.not. err%has_error(), "build_sa_hessian should not error")
+      if (allocated(error)) return
+
+      call build_dense(state, dense, err)
+      call check(error,.not. err%has_error(), "the dense Hessian should build")
+      if (allocated(error)) return
+
+      np = sa_hessian_n_param(state)
+      allocate (x(np, 1), px(np, 1))
+      x = 1.0_dp
+      call sa_hessian_precondition(state, x, px)
+
+      do l = 1, state%n_rot
+         d = dense(l, l)
+         if (abs(d) < FLOOR) d = sign(FLOOR, d)
+         call check(error, abs(px(l, 1) - 1.0_dp/d) < TOL*max(1.0_dp, abs(1.0_dp/d)), &
+                    "the orbital preconditioner should divide by the Hessian's diagonal")
+         if (allocated(error)) return
+      end do
+
+      flat_diag = reshape(state%diagonal, [state%n_det])
+      do j = 1, state%n_states
+         seg0 = state%n_rot + (j - 1)*state%n_det
+         do det = 1, state%n_det
+            d = 2.0_dp*state%weights(j)*(flat_diag(det) - state%active_energies(j))
+            if (abs(d) < FLOOR) d = sign(FLOOR, d)
+            expected = 1.0_dp/d
+            call check(error, abs(px(seg0 + det, 1) - expected) < &
+                       TOL*max(1.0_dp, abs(expected)), &
+                       "the CI preconditioner should follow the flat determinant order")
+            if (allocated(error)) return
+         end do
+      end do
+
+      call destroy_sa_hessian(state)
+      call mol%destroy()
+   end subroutine test_preconditioner
+
+   subroutine test_apply_shape(error)
+      !! A vector of the wrong length is refused by name, not read out of bounds
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(czt_molecule_t) :: mol
+      real(dp), allocatable :: orbitals(:, :)
+      type(casscf_result_t) :: result
+      type(sa_hessian_t) :: state
+      real(dp), allocatable :: x(:, :), hx(:, :)
+      integer :: np
+      logical :: ok
+
+      call converged_sa2(mol, orbitals, result, err, ok)
+      call check(error, ok, "SA-2-CAS(2,2) should converge")
+      if (allocated(error)) return
+      call build_sa_hessian(mol, result%orbitals, 1, 2, 1, 1, result%ci_vectors, &
+                            result%energies, [0.5_dp, 0.5_dp], state, err)
+      call check(error,.not. err%has_error(), "build_sa_hessian should not error")
+      if (allocated(error)) return
+
+      np = sa_hessian_n_param(state)
+      allocate (x(np - 1, 1), hx(np - 1, 1))
+      x = 0.0_dp
+      call sa_hessian_apply(state, x, hx, err)
+      call check(error, err%has_error(), "a short parameter vector should be refused")
+      if (allocated(error)) return
+      call check(error, err%get_code() == ERROR_VALIDATION, &
+                 "and refused as a validation error: "//err%get_message())
+
+      call destroy_sa_hessian(state)
+      call mol%destroy()
+   end subroutine test_apply_shape
 
    subroutine test_finite_difference(error)
       !! The full HVP (every block) against a central difference of
