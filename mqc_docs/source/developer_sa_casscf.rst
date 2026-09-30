@@ -787,21 +787,26 @@ own raw (pre-``kernel``-division) :math:`h_{IJ}` is scaled by
 flip, and every piece here except the CSF term shares the Z-vector machinery
 and so flips together automatically against it; the CSF term, built
 independently, needed the extra sign written in by hand
-(``mqc_czt_sa_nac.f90``, ``sa_casscf_nac_pair``) -- found by the numerical
+(``mqc_czt_sa_nac.f90``, ``czt_sa_casscf_gradients_nacs``) -- found by the numerical
 gate below disagreeing by almost exactly the CSF term's own size while the
 CSF-free piece already agreed. It is *not* translationally invariant on its
 own (an overlap-derivative contraction between two different orbital sets,
 not a Hellmann-Feynman-type energy derivative): expected, not a bug.
 
-**What is fused, what is not.** ``czt_sa_casscf_nacs`` builds the SA Hessian
-state once and shares it across every requested pair, the same expensive
-precompute ``czt_sa_casscf_gradients`` shares across roots. Each pair still
-solves its own single-column Z-vector equation and its own two
-derivative-integral sweeps rather than joining a cross-pair block solve or a
-cross-pair fused sweep: a NAC's right-hand side and its :math:`h_{base}` both
-depend on the pair :math:`(I,J)` itself in a way that would need re-deriving
-the gradient's cross-root fusion from scratch. Left for later if NACs for
-many pairs turn out to dominate a run's cost.
+**Fused with the gradients.** A pair is one more Lagrangian column beside
+the roots. ``nac_pair_inputs`` builds its right-hand side and its
+:math:`h_{base}` densities without a derivative integral:
+
+- the symmetrised transition 2-RDM, which goes where a root's cumulant goes
+  in the stacked active :math:`\Gamma`;
+- the transition 1-RDM's AO density and energy-weighted matrix, which take
+  the same form as the CI-response piece and are added to it.
+
+``sa_gradients_on_state`` then solves every root and every pair in one block
+Z-vector solve and one pass of each derivative-integral sweep.
+``czt_sa_casscf_gradients_nacs`` adds the CSF term afterwards.
+On twisted C2F4 SA-2-CAS(2,2)/6-31G* at one thread, gradients plus one pair
+went from 122 s to 64 s.
 
 **Gates run** (``test/test_mqc_sa_nac.f90``, LiH/STO-3G SA-2-CAS(2,2)):
 :math:`d_{IJ}` and :math:`h_{IJ}`, with and without the CSF term, vs PySCF's
