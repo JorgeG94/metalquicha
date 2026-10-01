@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">76 statements</a>
+                 title=" 0.3% of total for procedures.">79 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -182,7 +182,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~47"></span>
+              <span class="anchor" id="variable-result~24"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -197,7 +197,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~19"></span>
+              <span class="anchor" id="variable-comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -212,7 +212,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest~8"></span>
+              <span class="anchor" id="variable-dest~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -242,7 +242,7 @@ Sends SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~24"></span>
+              <span class="anchor" id="variable-req~16"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -884,6 +884,9 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Send other energy components (blocking to avoid needing multiple request handles)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">dispersion</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">dh_pt2</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">mp2</span><span class="p">%</span><span class="n">ss_scale</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">mp2</span><span class="p">%</span><span class="n">os_scale</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">mp2</span><span class="p">%</span><span class="n">ss</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">mp2</span><span class="p">%</span><span class="n">os</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">singles</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
@@ -995,7 +998,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-10-01 09:14 +0000             </p>
+ on 2026-10-01 22:10 +0000             </p>
           </div>
         </div>
         <br>

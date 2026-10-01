@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">16 statements</a>
+                 title=" 0.1% of total for procedures.">31 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_mbe_energy_breakdown.html#variable-energy_line~2">energy_line</a>
+            <a class="list-group-item" href="../proc/print_mbe_energy_breakdown.html#variable-correlation">correlation</a>
+            <a class="list-group-item" href="../proc/print_mbe_energy_breakdown.html#variable-energy_line">energy_line</a>
             <a class="list-group-item" href="../proc/print_mbe_energy_breakdown.html#variable-nlevel~3">nlevel</a>
         </div>
       </div>
@@ -173,11 +174,13 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine print_mbe_energy_breakdown(sum_by_level, max_level, total_energy)  
+    <h2>private  subroutine print_mbe_energy_breakdown(sum_by_level, max_level, total_energy, correlation_by_level)  
 </h2>
     
 
     <p>Print MBE energy breakdown to logger</p>
+<p>With <code>correlation_by_level</code> (max_level) each level is also split into
+its SCF and correlation parts.</p>
 
 
     <h3>Arguments</h3>
@@ -193,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~2"></span>
+              <span class="anchor" id="variable-sum_by_level"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -208,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~29"></span>
+              <span class="anchor" id="variable-max_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -223,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -232,6 +235,21 @@
             </td>
             <td>::</td>
             <td><strong>total_energy</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-correlation_by_level"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>correlation_by_level</strong>(:)</td>
             <td>
                 
             </td>
@@ -603,7 +621,24 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_line~2"></span>
+              <span class="anchor" id="variable-correlation"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>correlation</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_line"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -651,14 +686,19 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_mbe_energy_breakdown</span><span class="p">(</span><span class="n">sum_by_level</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_mbe_energy_breakdown</span><span class="p">(</span><span class="n">sum_by_level</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="n">correlation_by_level</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Print MBE energy breakdown to logger</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! With `correlation_by_level` (max_level) each level is also split into</span>
+<span class="w">      </span><span class="c">!! its SCF and correlation parts.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">correlation_by_level</span><span class="p">(:)</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nlevel</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_line</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">correlation</span>
 
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"MBE Energy breakdown:"</span><span class="p">)</span>
 <span class="w">      </span><span class="k">do </span><span class="n">nlevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
@@ -668,6 +708,23 @@ large graphs.</div>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end do</span>
 <span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">energy_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,f20.10)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Total:   "</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">energy_line</span><span class="p">))</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">correlation_by_level</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">"MBE Energy by component (Hartree):"</span><span class="p">)</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">energy_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,3a20)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"          "</span><span class="p">,</span><span class="w"> </span><span class="s2">"SCF"</span><span class="p">,</span><span class="w"> </span><span class="s2">"correlation"</span><span class="p">,</span><span class="w"> </span><span class="s2">"total"</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">energy_line</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">nlevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1e-15_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">energy_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,i0,a,3f20.10)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  "</span><span class="p">,</span><span class="w"> </span><span class="n">nlevel</span><span class="p">,</span><span class="w"> </span><span class="s2">"-body:  "</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">correlation_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">               </span><span class="n">correlation_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">),</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">energy_line</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+<span class="k">      </span><span class="n">correlation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sum</span><span class="p">(</span><span class="n">correlation_by_level</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">max_level</span><span class="p">))</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">energy_line</span><span class="p">,</span><span class="w"> </span><span class="s2">"(a,3f20.10)"</span><span class="p">)</span><span class="w"> </span><span class="s2">"  Total:   "</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">correlation</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="n">correlation</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">energy_line</span><span class="p">))</span>
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">print_mbe_energy_breakdown</span>
 </pre></div>
@@ -693,7 +750,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-10-01 09:14 +0000             </p>
+ on 2026-10-01 22:10 +0000             </p>
           </div>
         </div>
         <br>

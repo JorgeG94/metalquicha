@@ -11,6 +11,7 @@ module mqc_json_writer
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
    use mqc_fragment_table_writer, only: write_fragment_table
+   use mqc_result_types, only: N_CORRELATION_PARTS, CORRELATION_PART_NAMES
    use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
                                STATE_SPIN_UNRESTRICTED
    use json_module, only: json_core, json_value
@@ -249,6 +250,15 @@ contains
          call write_interaction_section(json, main_obj, data)
       else
          call json%add(main_obj, "total_energy", data%total_energy)
+         ! The total split in two, so a correlated expansion's SCF and
+         ! correlation parts can be followed separately level by level.
+         if (allocated(data%correlation_by_level)) then
+            call json%add(main_obj, "scf_energy", data%total_energy - sum(data%correlation_by_level))
+            call json%add(main_obj, "correlation_energy", sum(data%correlation_by_level))
+            if (allocated(data%correlation_parts_by_level)) then
+               call add_correlation_parts(json, main_obj, data, 0)
+            end if
+         end if
       end if
 
       call write_unconverged_section(json, main_obj, data)
@@ -286,6 +296,14 @@ contains
             call json%add(level_obj, "count", int(count_by_level))
             if (allocated(data%sum_by_level)) then
                call json%add(level_obj, "total_energy", data%sum_by_level(frag_level))
+               if (allocated(data%correlation_by_level)) then
+                  call json%add(level_obj, "scf_energy", data%sum_by_level(frag_level) - &
+                                data%correlation_by_level(frag_level))
+                  call json%add(level_obj, "correlation_energy", data%correlation_by_level(frag_level))
+                  if (allocated(data%correlation_parts_by_level)) then
+                     call add_correlation_parts(json, level_obj, data, frag_level)
+                  end if
+               end if
             end if
 
             ! Per-fragment detail only when this is the chosen sink for it
@@ -314,8 +332,16 @@ contains
                   call json%add(frag_obj, "distance", data%fragment_distances(i))
                end if
 
+               if (allocated(data%fragment_correlation)) then
+                  call json%add(frag_obj, "correlation_energy", data%fragment_correlation(i))
+               end if
+
                if (frag_level > 1 .and. allocated(data%delta_energies)) then
                   call json%add(frag_obj, "delta_energy", data%delta_energies(i))
+               end if
+
+               if (frag_level > 1 .and. allocated(data%correlation_deltas)) then
+                  call json%add(frag_obj, "correlation_delta_energy", data%correlation_deltas(i))
                end if
 
                ! Only on a two-body term, where the question means something.
@@ -360,6 +386,33 @@ contains
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine write_mbe_breakdown_json_impl
+
+   subroutine add_correlation_parts(json, parent, data, level)
+      !! A `correlation_parts` object: one key per part some term had
+      !!
+      !! `level` 0 gives the whole expansion's parts, a level its own. The
+      !! parts add up to the `correlation_energy` beside them.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+      integer, intent(in) :: level
+
+      type(json_value), pointer :: obj
+      integer :: part
+      real(dp) :: value
+
+      call json%create_object(obj, "correlation_parts")
+      call json%add(parent, obj)
+      do part = 1, N_CORRELATION_PARTS
+         if (.not. data%correlation_part_present(part)) cycle
+         if (level == 0) then
+            value = sum(data%correlation_parts_by_level(:, part))
+         else
+            value = data%correlation_parts_by_level(level, part)
+         end if
+         call json%add(obj, trim(CORRELATION_PART_NAMES(part)), value)
+      end do
+   end subroutine add_correlation_parts
 
    subroutine write_interaction_section(json, parent, data)
       !! The `interaction_energy` object of a `driver: "InteractionEnergy"` run

@@ -162,6 +162,12 @@
                  <td><p>Ask tblite to compute Wiberg-Mayer bond orders during the single point</p><a href="../proc/add_bond_order_post_processing.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_correlation_parts.html'>add_correlation_parts</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>A <code>correlation_parts</code> object: one key per part some term had</p><a href="../proc/add_correlation_parts.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_dispersion.html'>add_dispersion</a></td>
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td>Subroutine</td>
@@ -1495,6 +1501,12 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                  <td><p>Post-Hartree-Fock settings, deliberately not under &ldquo;scf&rdquo;</p><a href="../proc/correlation_keys.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/correlation_parts.html'>correlation_parts</a></td>
+                 <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
+                 <td>Function</td>
+                 <td><p>A term&rsquo;s correlation energy in its separately reportable pieces</p><a href="../proc/correlation_parts.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/count_hydrogen_caps.html'>count_hydrogen_caps</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -2062,6 +2074,12 @@ there is no older spelling to keep working.</p></td>
                  <td><p>Fail the calculation when a deck asked xTB for excited states</p><a href="../proc/excited_states_refused.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/expand_by_level.html'>expand_by_level</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The many-body recursion over one per-term quantity</p><a href="../proc/expand_by_level.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/expand_orbit.html'>expand_orbit</a></td>
                  <td><a href='../module/mqc_lebedev.html'>mqc_lebedev</a></td>
                  <td>Subroutine</td>
@@ -2300,6 +2318,12 @@ there is no older spelling to keep working.</p></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
                  <td><p>Which fragment each atom belongs to, from the declared monomers</p><a href="../proc/fragment_owner_map.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragment_real_element_numbers.html'>fragment_real_element_numbers</a></td>
+                 <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
+                 <td>Function</td>
+                 <td><p>The atomic numbers of the fragment&rsquo;s real atoms, in order</p><a href="../proc/fragment_real_element_numbers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/fragment_refusal.html'>fragment_refusal</a></td>
@@ -2679,15 +2703,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -2697,27 +2721,27 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -2727,15 +2751,15 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -3085,6 +3109,24 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/long_combination.html'>long_combination</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>combined = sum_i coefficients(i) history(:, slots(i)), by all threads</p><a href="../proc/long_combination.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/long_copy.html'>long_copy</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>dst = src, by all threads when the vectors are long</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/long_dot.html'>long_dot</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Function</td>
+                 <td><p>sum(x*y), by all threads when the vectors are long</p><a href="../proc/long_dot.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/lowercase.html'>lowercase</a></td>
@@ -4095,6 +4137,12 @@ orthonormalise what is left among itself in the metric <code>overlap</code></p><
                  <td><p>Print the combinations held in <code>out_array</code>, one line each</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/print_correlation_parts.html'>print_correlation_parts</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Print the correlation energy of each level split into its parts</p><a href="../proc/print_correlation_parts.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/print_detailed_breakdown.html'>print_detailed_breakdown</a></td>
                  <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
                  <td>Subroutine</td>
@@ -4148,7 +4196,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><a href='../proc/print_mbe_energy_breakdown.html'>print_mbe_energy_breakdown</a></td>
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
-                 <td><p>Print MBE energy breakdown to logger</p></td>
+                 <td><p>Print MBE energy breakdown to logger</p><a href="../proc/print_mbe_energy_breakdown.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/print_mbe_gradient_info.html'>print_mbe_gradient_info</a></td>
@@ -5798,7 +5846,7 @@ a solvent or dielectric was given without one</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-10-01 09:14 +0000             </p>
+ on 2026-10-01 22:10 +0000             </p>
           </div>
         </div>
         <br>

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for modules and submodules.">289 statements</a>
+                 title=" 1.2% of total for modules and submodules.">351 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -139,7 +139,9 @@
             <a class="list-group-item" href="../module/mqc_diis.html#variable-accel_diis">ACCEL_DIIS</a>
             <a class="list-group-item" href="../module/mqc_diis.html#variable-accel_ediis">ACCEL_EDIIS</a>
             <a class="list-group-item" href="../module/mqc_diis.html#variable-accel_switch">ACCEL_SWITCH</a>
+            <a class="list-group-item" href="../module/mqc_diis.html#variable-dot_chunk">DOT_CHUNK</a>
             <a class="list-group-item" href="../module/mqc_diis.html#variable-pivot_floor">PIVOT_FLOOR</a>
+            <a class="list-group-item" href="../module/mqc_diis.html#variable-thread_min">THREAD_MIN</a>
         </div>
       </div>
     </div>
@@ -174,6 +176,7 @@
             <a class="list-group-item" href="../module/mqc_diis.html#proc-accelerator_name">accelerator_name</a>
             <a class="list-group-item" href="../module/mqc_diis.html#proc-diis_slot_of_age">diis_slot_of_age</a>
             <a class="list-group-item" href="../module/mqc_diis.html#proc-diis_count">diis_count</a>
+            <a class="list-group-item" href="../module/mqc_diis.html#proc-long_dot">long_dot</a>
             <a class="list-group-item" href="../module/mqc_diis.html#proc-slot_of_age">slot_of_age</a>
         </div>
       </div>
@@ -193,6 +196,8 @@
             <a class="list-group-item" href="../module/mqc_diis.html#proc-diis_extrapolate_with">diis_extrapolate_with</a>
             <a class="list-group-item" href="../module/mqc_diis.html#proc-diis_init">diis_init</a>
             <a class="list-group-item" href="../module/mqc_diis.html#proc-diis_push">diis_push</a>
+            <a class="list-group-item" href="../module/mqc_diis.html#proc-long_combination">long_combination</a>
+            <a class="list-group-item" href="../module/mqc_diis.html#proc-long_copy">long_copy</a>
             <a class="list-group-item" href="../module/mqc_diis.html#proc-solve_diis">solve_diis</a>
         </div>
       </div>
@@ -225,9 +230,9 @@ Extrapolation weights from a cached overlap matrix</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_ediis.html'>mqc_ediis</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -470,6 +475,23 @@ correctness.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-dot_chunk"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DOT_CHUNK</strong></td>
+<td> =</td>
+                <td>65536_int64</td>
+            <td>
+                <p>Below this a pivot is treated as singular and extrapolation is skipped</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-pivot_floor"></span>
               real(kind=dp),
             </td>
@@ -482,7 +504,24 @@ parameter
 <td> =</td>
                 <td>1.0e-14_dp</td>
             <td>
-                <p>Below this a pivot is treated as singular and extrapolation is skipped</p>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-thread_min"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>THREAD_MIN</strong></td>
+<td> =</td>
+                <td>8388608_int64</td>
+            <td>
+                
             </td>
         </tr>
     </tbody>
@@ -538,7 +577,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-df"></span>
+              <span class="anchor" id="variable-df~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -551,7 +590,7 @@ parameter
                 <td></td>
             <td>
 <p>(max_vectors, max_vectors) cached <D_i | F_j> in slot coordinates,
-which is everything EDIIS and ADIIS need from the history.</p><a href="../type/diis_state_t.html#variable-df" class="pull-right"><emph>Read more&hellip;</emph></a>
+which is everything EDIIS and ADIIS need from the history.</p><a href="../type/diis_state_t.html#variable-df~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -677,7 +716,7 @@ doubles the history&rsquo;s footprint.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored"></span>
+              <span class="anchor" id="variable-n_stored~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -711,7 +750,7 @@ doubles the history&rsquo;s footprint.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~3"></span>
+              <span class="anchor" id="variable-overlap~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -745,7 +784,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-destroy~9'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-destroy~12'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_destroy.html'>diis_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -760,7 +799,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/diis_state_t.html#boundprocedure-init'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a></td>
+  <strong><a href='../type/diis_state_t.html#boundprocedure-init~5'>init</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/diis_init.html'>diis_init</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -798,7 +837,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~10"></span>
+              <span class="anchor" id="variable-scheme~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -858,7 +897,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~2"></span>
+              <span class="anchor" id="variable-n_stored~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -933,7 +972,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~21"></span>
+              <span class="anchor" id="variable-this~63"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -952,6 +991,66 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <h4>
     Return Value
     <small>integer</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-long_dot"></span> <h3>private  function <a href='../proc/long_dot.html'>long_dot</a>(x, y) result(d)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>sum(x*y), by all threads when the vectors are long</p><a href="../proc/long_dot.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>x</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>y</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=dp)</small>
     </h4>
     
 
@@ -978,7 +1077,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~22"></span>
+              <span class="anchor" id="variable-this~64"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1043,7 +1142,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-overlap~4"></span>
+              <span class="anchor" id="variable-overlap~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1073,7 +1172,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_stored~3"></span>
+              <span class="anchor" id="variable-n_stored~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1103,7 +1202,7 @@ O(n_stored^2 * n_error) where O(n_stored * n_error) suffices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~4"></span>
+              <span class="anchor" id="variable-coefficients~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1120,7 +1219,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~9"></span>
+              <span class="anchor" id="variable-ok~10"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1160,7 +1259,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-name~24"></span>
+              <span class="anchor" id="variable-name~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1175,7 +1274,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~9"></span>
+              <span class="anchor" id="variable-scheme~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1190,7 +1289,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~7"></span>
+              <span class="anchor" id="variable-ok~8"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1205,7 +1304,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-second_order~2"></span>
+              <span class="anchor" id="variable-second_order"></span>
               logical,
             </td>
 <td>intent(out),</td>
@@ -1216,7 +1315,7 @@ multiplier enforcing sum(c) = 1 and is not a weight &ndash; read
             <td><strong>second_order</strong></td>
             <td>
 <p>Whether the name asked for the second-order SCF, and <strong>the
-caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/parse_accelerator_name.html#variable-second_order~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/parse_accelerator_name.html#variable-second_order" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
     </tbody>
@@ -1246,7 +1345,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~26"></span>
+              <span class="anchor" id="variable-this~68"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1286,7 +1385,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~25"></span>
+              <span class="anchor" id="variable-this~67"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1301,7 +1400,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~3"></span>
+              <span class="anchor" id="variable-fock~4"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1316,7 +1415,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~8"></span>
+              <span class="anchor" id="variable-ok~9"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1356,7 +1455,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~24"></span>
+              <span class="anchor" id="variable-this~66"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1371,7 +1470,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scheme~8"></span>
+              <span class="anchor" id="variable-scheme~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1386,7 +1485,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock~2"></span>
+              <span class="anchor" id="variable-fock~3"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1401,7 +1500,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~6"></span>
+              <span class="anchor" id="variable-ok~7"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1441,7 +1540,7 @@ caller&rsquo;s declaration that it can run one</strong>.</p><a href="../proc/par
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~20"></span>
+              <span class="anchor" id="variable-this~62"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1542,7 +1641,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~23"></span>
+              <span class="anchor" id="variable-this~65"></span>
               class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1557,7 +1656,7 @@ false, so a plain DIIS caller allocates exactly what it did before.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fock"></span>
+              <span class="anchor" id="variable-fock~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1620,7 +1719,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~79"></span>
+              <span class="anchor" id="variable-error~62"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout),</td>
@@ -1631,6 +1730,146 @@ the trace both energy models want.</p>
             <td><strong>error</strong></td>
             <td>
 <p>Set when an <code>energy_based</code> state is pushed without a <code>density</code>.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-long_combination"></span> <h3>private  subroutine <a href='../proc/long_combination.html'>long_combination</a>(history, slots, coefficients, combined)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>combined = sum_i coefficients(i) history(:, slots(i)), by all threads</p><a href="../proc/long_combination.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-history"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>history</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-slots~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>slots</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coefficients~8"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coefficients</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combined"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combined</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-long_copy"></span> <h3>private  subroutine <a href='../proc/long_copy.html'>long_copy</a>(src, dst)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>dst = src, by all threads when the vectors are long</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-src"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>src</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dst"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dst</strong>(:)</td>
+            <td>
+
             </td>
         </tr>
     </tbody>
@@ -1675,7 +1914,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~5"></span>
+              <span class="anchor" id="variable-coefficients~10"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -1690,7 +1929,7 @@ the trace both energy models want.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ok~10"></span>
+              <span class="anchor" id="variable-ok~11"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -1733,7 +1972,7 @@ the trace both energy models want.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-10-01 09:14 +0000             </p>
+ on 2026-10-01 22:10 +0000             </p>
           </div>
         </div>
         <br>
