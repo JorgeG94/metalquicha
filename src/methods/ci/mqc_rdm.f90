@@ -26,17 +26,18 @@ module mqc_rdm
    !! GAMESS's. A factor of two and an index transposition are the two ways a
    !! two-particle density matrix is usually wrong, and both give a plausible
    !! energy, so the convention is worth stating.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_determinants, only: link_table_t
+   use mqc_determinants, only: link_table_t, generate_strings, string_address
    use mqc_ci, only: excitations_block, beta_strings_per_block
    implicit none
    private
 
    public :: active_space_rdms
    public :: rdm_energy
+   public :: spin_squared
 
    integer, parameter :: COLUMN_CHUNK = 2048
       !! Determinant columns per thread-local contraction. Large enough that
@@ -199,5 +200,81 @@ contains
          end do
       end do
    end function rdm_energy
+
+   function spin_squared(n_active, n_alpha, n_beta, ci, error) result(s2)
+      !! `<S^2>` of a determinant-basis CI vector, by explicit construction of
+      !! `S_+ |Psi>` in its own (shifted-electron-count) sector
+      !!
+      !! `S^2 = Sz(Sz + 1) + S_-S_+`, with `Sz = (n_alpha - n_beta)/2` exact for
+      !! a fixed-`(n_alpha, n_beta)` CI, and `<S_-S_+> = ||S_+ Psi||^2` for a
+      !! real vector. `S_+ Psi` lives in the `(n_alpha + 1, n_beta - 1)` string
+      !! space, which is built here. `ci` is indexed by `generate_strings`
+      !! order, as `run_czt_casci`'s vectors are. The spin-traced RDMs cannot
+      !! give this: it needs the opposite-spin exchange part of the 2-RDM.
+      !! Zero whenever `error` is set, on entry or on return.
+      integer, intent(in) :: n_active, n_alpha, n_beta
+      real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
+      type(error_t), intent(inout) :: error
+      real(dp) :: s2
+
+      integer(int64), allocatable :: strings_a(:), strings_b(:)
+      integer(int64), allocatable :: strings_a2(:), strings_b2(:)
+      integer(int64) :: sa, sb, sa2, sb2
+      real(dp), allocatable :: shifted(:, :)
+      real(dp) :: sz
+      integer :: na, nb, na2, nb2, ia, ib, p, ia2, ib2, phase
+
+      s2 = 0.0_dp
+      if (error%has_error()) return
+      na = size(ci, 1)
+      nb = size(ci, 2)
+      sz = 0.5_dp*real(n_alpha - n_beta, dp)
+      s2 = sz*(sz + 1.0_dp)
+
+      if (n_beta <= 0 .or. n_alpha >= n_active) return
+
+      call generate_strings(n_active, n_alpha, strings_a, error)
+      call generate_strings(n_active, n_beta, strings_b, error)
+      call generate_strings(n_active, n_alpha + 1, strings_a2, error)
+      call generate_strings(n_active, n_beta - 1, strings_b2, error)
+      if (error%has_error()) then
+         s2 = 0.0_dp
+         return
+      end if
+      na2 = size(strings_a2)
+      nb2 = size(strings_b2)
+
+      allocate (shifted(na2, nb2))
+      shifted = 0.0_dp
+      do ib = 1, nb
+         sb = strings_b(ib)
+         do ia = 1, na
+            sa = strings_a(ia)
+            do p = 1, n_active
+               if (.not. btest(sb, p - 1)) cycle       ! nothing to move
+               if (btest(sa, p - 1)) cycle              ! nowhere to put it
+               phase = above_parity(sb, p)*above_parity(sa, p)
+               sa2 = ibset(sa, p - 1)
+               sb2 = ibclr(sb, p - 1)
+               ia2 = string_address(n_active, n_alpha + 1, sa2)
+               ib2 = string_address(n_active, n_beta - 1, sb2)
+               shifted(ia2, ib2) = shifted(ia2, ib2) + real(phase, dp)*ci(ia, ib)
+            end do
+         end do
+      end do
+
+      s2 = s2 + sum(shifted**2)
+      deallocate (shifted, strings_a, strings_b, strings_a2, strings_b2)
+   end function spin_squared
+
+   pure function above_parity(string, p) result(parity)
+      !! `+1`/`-1` by the parity of how many occupied orbitals sit above `p`
+      integer(int64), intent(in) :: string
+      integer, intent(in) :: p
+      integer :: parity
+
+      parity = 1
+      if (mod(popcnt(iand(string, not(shiftl(1_int64, p) - 1_int64))), 2) == 1) parity = -1
+   end function above_parity
 
 end module mqc_rdm

@@ -169,6 +169,7 @@ contains
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
+      call write_mcscf_states_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
@@ -819,6 +820,49 @@ contains
       end do
    end subroutine write_excited_states_section
 
+   subroutine write_mcscf_states_section(json, parent, data)
+      !! State-averaged CASSCF: every root, its `<S^2>` and its weight
+      !!
+      !! `total_energy` on the parent object is `E_SA = sum_J weight(J) *
+      !! energy(J)` for this run, not any one root's own energy -- said here
+      !! rather than only in the docstring, since it is the one fact a
+      !! consumer reading this section cannot see from the numbers alone.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, entry
+      integer :: i, n_states
+
+      if (.not. data%has_mcscf_states) return
+      if (.not. allocated(data%mcscf_state_energies)) return
+      n_states = size(data%mcscf_state_energies)
+
+      call json%create_object(section, "mcscf_states")
+      call json%add(parent, section)
+      call json%add(section, "n_states", n_states)
+      call json%add(section, "e_sa_hartree", data%total_energy)
+
+      call json%create_array(arr, "states")
+      call json%add(section, arr)
+      do i = 1, n_states
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         ! Numbered from one, ascending in energy -- the order the CI
+         ! converged them and `weights`/`n_states` were given in.
+         call json%add(entry, "state", i)
+         call json%add(entry, "energy_hartree", data%mcscf_state_energies(i))
+         if (allocated(data%mcscf_state_spins) .and. &
+             size(data%mcscf_state_spins) >= n_states) then
+            call json%add(entry, "s2", data%mcscf_state_spins(i))
+         end if
+         if (allocated(data%mcscf_state_weights) .and. &
+             size(data%mcscf_state_weights) >= n_states) then
+            call json%add(entry, "weight", data%mcscf_state_weights(i))
+         end if
+      end do
+   end subroutine write_mcscf_states_section
+
    pure function state_spin_label(data, i) result(label)
       !! The `STATE_SPIN_*` code of state `i` as the word a reader expects
       !!
@@ -1104,6 +1148,7 @@ contains
       ! imaginary modes below.
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
+      call write_mcscf_states_section(json, main_obj, data)
 
       ! Dipole
       if (data%has_dipole .and. allocated(data%dipole)) then
