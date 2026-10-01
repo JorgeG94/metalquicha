@@ -407,6 +407,13 @@ same many-body recursion on its own, and the document gains
 * ``correlation`` and ``correlation_delta`` as the last two columns of the CSV
   sidecar, blank for a method without correlation.
 
+* ``correlation_parts`` at the top level and on each ``levels[]`` entry, the
+  correlation split further and each piece expanded on its own: an MP2 run's
+  ``mp2_same_spin`` and ``mp2_opposite_spin`` (spin-component scaled where the
+  method scales them), a coupled cluster run's ``cc_singles``,
+  ``cc_doubles`` and, with triples, ``cc_triples``. Only the parts some term
+  has are written, and they add up to the ``correlation_energy`` beside them.
+
 The two parts add to the total at every level, so the SCF part of anything is
 its total minus its correlation part. The many-body behaviour of the two is
 different -- for water clusters the SCF part needs three-body terms while the

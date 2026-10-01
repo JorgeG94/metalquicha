@@ -363,6 +363,11 @@ contains
       data%correlation_deltas = [-0.2_dp, -0.21_dp, -0.004_dp]
       allocate (data%correlation_by_level(2))
       data%correlation_by_level = [-0.41_dp, -0.004_dp]
+      allocate (data%correlation_parts_by_level(2, 5))
+      data%correlation_parts_by_level = 0.0_dp
+      data%correlation_parts_by_level(:, 4) = [-0.40_dp, -0.003_dp]
+      data%correlation_parts_by_level(:, 5) = [-0.01_dp, -0.001_dp]
+      data%correlation_part_present = [.false., .false., .false., .true., .true.]
 
       call written_document(data, json, "jw_corr.json")
 
@@ -390,6 +395,23 @@ contains
       if (allocated(error)) return
       call check(error, value, -0.006_dp, thr=1.0e-12_dp, &
                  message="the dimer level's SCF energy is not total minus correlation")
+      if (allocated(error)) return
+
+      ! The parts some term had, and only those, under their own names.
+      call json%get("jw_corr.levels(2).correlation_parts.cc_triples", value, found)
+      call check(error, found, "the dimer level carries no (T) part")
+      if (allocated(error)) return
+      call check(error, value, -0.001_dp, thr=1.0e-12_dp, &
+                 message="the dimer level's (T) part is wrong")
+      if (allocated(error)) return
+      call json%get("jw_corr.correlation_parts.cc_doubles", value, found)
+      call check(error, found, "the top level carries no doubles part")
+      if (allocated(error)) return
+      call check(error, value, -0.403_dp, thr=1.0e-12_dp, &
+                 message="the top-level doubles part is not the levels' sum")
+      if (allocated(error)) return
+      call json%get("jw_corr.correlation_parts.mp2_same_spin", value, found)
+      call check(error,.not. found, "a part no term had was written")
       if (allocated(error)) return
 
       call json%get("jw_corr.levels(2).fragments(1).correlation_delta_energy", value, found)

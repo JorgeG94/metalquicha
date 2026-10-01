@@ -12,7 +12,8 @@ module mqc_mbe
    use mqc_mbe_io, only: print_detailed_breakdown
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE, interaction_bonding_term_t
    use mqc_interaction_bonding, only: collect_interaction_bonding, print_interaction_bonding
-   use mqc_result_types, only: SCF_UNKNOWN, SCF_NOT_CONVERGED
+   use mqc_result_types, only: SCF_UNKNOWN, SCF_NOT_CONVERGED, N_CORRELATION_PARTS, &
+                               CORRELATION_PART_NAMES, correlation_parts
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
@@ -675,6 +676,52 @@ contains
       call logger%info(trim(energy_line))
    end subroutine print_mbe_energy_breakdown
 
+   subroutine print_correlation_parts(mbe_result, max_level)
+      !! Print the correlation energy of each level split into its parts
+      !!
+      !! One column per part some term had: the MP2 spin components, or the CC
+      !! singles, doubles and triples. Nothing is printed for a method with only
+      !! one part, whose column would repeat the correlation one.
+      use mqc_result_types, only: mbe_result_t
+      type(mbe_result_t), intent(in) :: mbe_result
+      integer, intent(in) :: max_level
+
+      integer :: nlevel, part, pos
+      character(len=512) :: line
+
+      if (count(mbe_result%correlation_part_present) < 2) return
+
+      call logger%info("MBE Correlation energy by part (Hartree):")
+      line = ""
+      pos = 11
+      do part = 1, N_CORRELATION_PARTS
+         if (.not. mbe_result%correlation_part_present(part)) cycle
+         write (line(pos:pos + 19), "(a20)") trim(CORRELATION_PART_NAMES(part))
+         pos = pos + 20
+      end do
+      call logger%info(trim(line))
+      do nlevel = 1, max_level
+         line = ""
+         write (line(1:10), "(a,i0,a)") "  ", nlevel, "-body:"
+         pos = 11
+         do part = 1, N_CORRELATION_PARTS
+            if (.not. mbe_result%correlation_part_present(part)) cycle
+            write (line(pos:pos + 19), "(f20.10)") mbe_result%correlation_parts_by_level(nlevel, part)
+            pos = pos + 20
+         end do
+         call logger%info(trim(line))
+      end do
+      line = "  Total:"
+      pos = 11
+      do part = 1, N_CORRELATION_PARTS
+         if (.not. mbe_result%correlation_part_present(part)) cycle
+         write (line(pos:pos + 19), "(f20.10)") &
+            sum(mbe_result%correlation_parts_by_level(1:max_level, part))
+         pos = pos + 20
+      end do
+      call logger%info(trim(line))
+   end subroutine print_correlation_parts
+
    subroutine print_mbe_gradient_info(total_gradient, sys_geom, current_log_level)
       !! Print MBE gradient information
       real(dp), intent(in) :: total_gradient(:, :)
@@ -832,6 +879,9 @@ contains
       logical :: use_vmfc, interaction, split_correlation
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: correlation(:), correlation_deltas(:)
+      real(dp), allocatable :: parts(:, :)  !! (fragment_count, N_CORRELATION_PARTS)
+      real(dp), allocatable :: part_deltas(:)
+      integer :: part
       real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
       real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
       real(dp), allocatable :: ir_intensities(:)  !! IR intensities in km/mol
@@ -1008,6 +1058,25 @@ contains
                               correlation_deltas, mbe_result%correlation_by_level, use_vmfc, &
                               world_comm)
          mbe_result%correlation_energy = sum(mbe_result%correlation_by_level)
+
+         ! And each piece of it on its own -- the MP2 spin components, or the
+         ! CC singles, doubles and triples -- whose many-body behaviour need
+         ! not match the total's. Only the pieces some term has are expanded.
+         allocate (parts(fragment_count, N_CORRELATION_PARTS))
+         do i = 1_int64, fragment_count
+            parts(i, :) = correlation_parts(results(i)%energy)
+         end do
+         allocate (mbe_result%correlation_parts_by_level(max_level, N_CORRELATION_PARTS))
+         allocate (part_deltas(fragment_count))
+         mbe_result%correlation_parts_by_level = 0.0_dp
+         do part = 1, N_CORRELATION_PARTS
+            mbe_result%correlation_part_present(part) = any(parts(:, part) /= 0.0_dp)
+            if (.not. mbe_result%correlation_part_present(part)) cycle
+            part_deltas = 0.0_dp
+            call expand_by_level(polymers, fragment_count, max_level, lookup, parts(:, part), &
+                                 part_deltas, mbe_result%correlation_parts_by_level(:, part), &
+                                 use_vmfc, world_comm)
+         end do
          mbe_result%has_correlation = .true.
       end if
 
@@ -1135,6 +1204,7 @@ contains
          if (mbe_result%has_correlation) then
             call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy, &
                                             mbe_result%correlation_by_level)
+            call print_correlation_parts(mbe_result, max_level)
          else
             call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
          end if
@@ -1329,6 +1399,8 @@ contains
                json_data%fragment_correlation = correlation
                json_data%correlation_deltas = correlation_deltas
                json_data%correlation_by_level = mbe_result%correlation_by_level
+               json_data%correlation_parts_by_level = mbe_result%correlation_parts_by_level
+               json_data%correlation_part_present = mbe_result%correlation_part_present
             end if
          end if
 

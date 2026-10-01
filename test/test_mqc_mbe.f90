@@ -2,7 +2,7 @@ module test_mqc_mbe
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_mbe, only: compute_mbe, collect_unconverged, score_unconverged
    use mqc_result_types, only: SCF_CONVERGED, SCF_NOT_CONVERGED, SCF_UNKNOWN
-   use mqc_result_types, only: calculation_result_t, mbe_result_t
+   use mqc_result_types, only: calculation_result_t, mbe_result_t, N_CORRELATION_PARTS
    use mqc_frag_utils, only: apply_reference_closure, generate_fragment_list, &
                              create_monomer_list, get_nfrags, binomial
    use pic_types, only: dp, int64
@@ -32,7 +32,9 @@ contains
                   new_unittest("failures_name_their_culprit", test_failures_name_their_culprit), &
                   new_unittest("correlation_expands_on_its_own", test_correlation_split), &
                   new_unittest("scf_only_run_has_no_split", test_no_correlation_no_split), &
-                  new_unittest("checkpointed_term_withholds_split", test_checkpoint_withholds_split) &
+                  new_unittest("checkpointed_term_withholds_split", test_checkpoint_withholds_split), &
+                  new_unittest("mp2_spin_parts_add_up_by_level", test_mp2_parts), &
+                  new_unittest("cc_triples_expand_on_their_own", test_cc_parts) &
                   ]
    end subroutine collect_mqc_mbe_tests
 
@@ -180,6 +182,77 @@ contains
       call check(error, mbe_result%total_energy, reference%total_energy, thr=1.0e-12_dp, &
                  message="a checkpointed term changed the total")
    end subroutine test_checkpoint_withholds_split
+
+   subroutine test_mp2_parts(error)
+      !! The scaled same- and opposite-spin parts are reported, and only they,
+      !! and at every level they add up to the correlation energy
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
+      integer, allocatable :: polymers(:, :)
+      integer :: n
+
+      call three_body_terms(polymers, results)
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+
+      call check(error, all(mbe_result%correlation_part_present .eqv. &
+                            [.true., .true., .false., .false., .false.]), &
+                 "an MP2 expansion should report its two spin parts and nothing else")
+      if (allocated(error)) return
+      do n = 1, 3
+         call check(error, sum(mbe_result%correlation_parts_by_level(n, :)), &
+                    mbe_result%correlation_by_level(n), thr=1.0e-12_dp, &
+                    message="the spin parts of a level do not add up to its correlation")
+         if (allocated(error)) return
+      end do
+   end subroutine test_mp2_parts
+
+   subroutine test_cc_parts(error)
+      !! The (T) part of each level is the expansion of the terms' triples alone
+      !!
+      !! Checked against a separate expansion holding only the triples, so the
+      !! part is shown to be its own many-body series and not a share of the
+      !! total's.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:), triples_only(:)
+      type(mbe_result_t) :: mbe_result, triples_mbe
+      integer, allocatable :: polymers(:, :)
+      integer :: i, n
+
+      call three_body_terms(polymers, results)
+      allocate (triples_only(7))
+      do i = 1, 7
+         call results(i)%energy%mp2%reset()
+         results(i)%energy%cc%singles = 0.001_dp*real(i, dp)
+         results(i)%energy%cc%doubles = -0.2_dp*count(polymers(i, :) > 0) - 0.0005_dp*real(i, dp)**2
+         results(i)%energy%cc%triples = -0.01_dp*count(polymers(i, :) > 0) + 0.0002_dp*real(i, dp)**3
+         triples_only(i)%has_energy = .true.
+         triples_only(i)%energy%scf = results(i)%energy%cc%triples
+      end do
+
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+      call compute_mbe(polymers, 7_int64, 3, triples_only, triples_mbe)
+
+      call check(error, all(mbe_result%correlation_part_present .eqv. &
+                            [.false., .false., .true., .true., .true.]), &
+                 "a CCSD(T) expansion should report singles, doubles and triples")
+      if (allocated(error)) return
+      call check(error, size(mbe_result%correlation_parts_by_level, 2), N_CORRELATION_PARTS, &
+                 "the parts are not one column each")
+      if (allocated(error)) return
+      call check(error, sum(mbe_result%correlation_parts_by_level(:, 5)), &
+                 triples_mbe%total_energy, thr=1.0e-12_dp, &
+                 message="the (T) part is not the expansion of the triples")
+      if (allocated(error)) return
+      do n = 1, 3
+         call check(error, sum(mbe_result%correlation_parts_by_level(n, :)), &
+                    mbe_result%correlation_by_level(n), thr=1.0e-12_dp, &
+                    message="the CC parts of a level do not add up to its correlation")
+         if (allocated(error)) return
+      end do
+   end subroutine test_cc_parts
 
    subroutine test_interaction_energy(error)
       !! The reduced expansion's interaction energy is the full expansion's,
