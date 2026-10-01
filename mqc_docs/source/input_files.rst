@@ -673,7 +673,8 @@ The integration grid, and how the quadrature walks it:
   <https://github.com/dftd3/simple-dftd3>`_ and `dftd4
   <https://github.com/dftd4/dftd4>`_, both LGPL against this program's MIT, so
   each is **off at build time unless asked for**: configure with
-  ``-DMQC_ENABLE_DFTD3=ON``, ``-DMQC_ENABLE_DFTD4=ON``, or both. The two are
+  ``-DMQC_ENABLE_DFTD3=ON``, ``-DMQC_ENABLE_DFTD4=ON``, or both
+  (``-DMQC_ENABLE_DCORR=ON`` is shorthand for both). The two are
   independent, and a build without the library a deck asks for refuses the deck
   -- naming the option that would have supplied it -- rather than quietly
   returning an undispersed energy. The correction is reported on its own line

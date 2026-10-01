@@ -181,6 +181,19 @@ set(MQC_DFTD4_TAG
     "v4.2.0"
     CACHE STRING "dftd4 revision to build against")
 
+# Both dispersion libraries at once, for a build that wants every correction
+# `keywords.dft.dispersion` accepts. It costs both fetches and both LGPL shared
+# libraries. The two options above stay independent; this only turns both on.
+#
+# Normal (non-cache) sets, as MQC_ENABLE_SERIAL does, so turning this off again
+# on a reconfigure of the same tree restores whatever the two options say rather
+# than leaving them forced on in the cache.
+option(MQC_ENABLE_DCORR "Enable both MQC_ENABLE_DFTD3 and MQC_ENABLE_DFTD4" OFF)
+if(MQC_ENABLE_DCORR)
+  set(MQC_ENABLE_DFTD3 ON)
+  set(MQC_ENABLE_DFTD4 ON)
+endif()
+
 # Which CODATA revision the Bohr radius in mqc_physical_constants follows. Only
 # the length conversion is selected this way; see that module for why.
 set(MQC_CODATA_YEAR

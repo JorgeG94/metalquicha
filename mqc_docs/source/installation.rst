@@ -98,6 +98,9 @@ with, run ``mqc --version``, which prints a ``features:`` line.
    * - ``MQC_ENABLE_DFTD4``
      - ``OFF``
      - Charge-dependent dispersion on DFT, through dftd4
+   * - ``MQC_ENABLE_DCORR``
+     - ``OFF``
+     - Both of the above at once
 
 ``MQC_ENABLE_DLFIND`` is off for a licensing reason rather than a technical one:
 DL-FIND is LGPL-3 and metalquicha is MIT. It is fetched and linked as a shared
@@ -113,6 +116,7 @@ without the correction. See :doc:`input_files`.
 ``"d4"``. The two are independent: neither implies the other, a build may have
 either, both or neither, and a deck naming a correction whose library is absent
 is refused with the name of the option that would have supplied it.
+``MQC_ENABLE_DCORR`` turns both on with one flag; it adds nothing else.
 
 ``MQC_ENABLE_CREST`` is off for the same reason -- CREST is LGPL-3.0 -- and for
 a second one: it needs ``WITH_GFN0=ON`` to be useful, and CREST's own tblite pin
