@@ -905,21 +905,24 @@ contains
          end do
       end do
 
-      if (n_roots < 2) return
-      call json%create_array(diff_arr, "gradient_differences")
-      call json%add(section, diff_arr)
-      do ir = 1, n_roots
-         do jr = ir + 1, n_roots
-            call json%create_object(diff_entry, "")
-            call json%add(diff_arr, diff_entry)
-            call json%create_array(state_pair, "states")
-            call json%add(diff_entry, state_pair)
-            call json%add(state_pair, "", data%mcscf_gradient_roots(ir))
-            call json%add(state_pair, "", data%mcscf_gradient_roots(jr))
-            diff = data%mcscf_state_gradients(:, :, ir) - data%mcscf_state_gradients(:, :, jr)
-            call add_gradient(json, diff_entry, diff)
+      ! Only the differences need two roots. The couplings are independent of
+      ! them: `nac_pairs` may name a pair whose roots `gradient_roots` left out.
+      if (n_roots >= 2) then
+         call json%create_array(diff_arr, "gradient_differences")
+         call json%add(section, diff_arr)
+         do ir = 1, n_roots
+            do jr = ir + 1, n_roots
+               call json%create_object(diff_entry, "")
+               call json%add(diff_arr, diff_entry)
+               call json%create_array(state_pair, "states")
+               call json%add(diff_entry, state_pair)
+               call json%add(state_pair, "", data%mcscf_gradient_roots(ir))
+               call json%add(state_pair, "", data%mcscf_gradient_roots(jr))
+               diff = data%mcscf_state_gradients(:, :, ir) - data%mcscf_state_gradients(:, :, jr)
+               call add_gradient(json, diff_entry, diff)
+            end do
          end do
-      end do
+      end if
 
       call write_mcscf_nac_section(json, section, data)
    end subroutine write_mcscf_states_section
