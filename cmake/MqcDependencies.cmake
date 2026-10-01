@@ -191,10 +191,32 @@ function(mqc_exclude_project_executables _dir)
   endforeach()
 endfunction()
 
+# Every source directory this configure has added, collected so the sweep below
+# can ask whether a project is part of *this* run. `<name>_SOURCE_DIR` is a
+# cache entry and outlives the run that fetched it: turn D3 or D4 off on a tree
+# that once had them on and it is still defined, while `get_property(DIRECTORY)`
+# on a directory nobody added this time is a hard error.
+function(mqc_processed_directories _dir _out)
+  set(_all "${_dir}")
+  get_property(
+    _subdirs
+    DIRECTORY "${_dir}"
+    PROPERTY SUBDIRECTORIES)
+  foreach(_subdir IN LISTS _subdirs)
+    mqc_processed_directories("${_subdir}" _below)
+    list(APPEND _all ${_below})
+  endforeach()
+  set(${_out}
+      "${_all}"
+      PARENT_SCOPE)
+endfunction()
+mqc_processed_directories("${CMAKE_SOURCE_DIR}" _mqc_processed_dirs)
+
 # The projects that tree brings in, named because they are few and stable --
 # unlike their targets. A name absent from this build is simply skipped.
 foreach(_mqc_dep IN ITEMS s-dftd3 dftd4 mctc-lib toml-f multicharge mstore)
-  if(DEFINED ${_mqc_dep}_SOURCE_DIR)
+  if(DEFINED ${_mqc_dep}_SOURCE_DIR AND "${${_mqc_dep}_SOURCE_DIR}" IN_LIST
+                                        _mqc_processed_dirs)
     mqc_exclude_project_executables("${${_mqc_dep}_SOURCE_DIR}")
   endif()
 endforeach()
