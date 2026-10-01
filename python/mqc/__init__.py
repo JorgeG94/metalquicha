@@ -47,6 +47,7 @@ __all__ = [
     "ELEMENTS",
     "DRIVERS",
     "pka",
+    "bde",
 ]
 
 HARTREE_TO_EV = 27.211386245988
@@ -1353,6 +1354,7 @@ def _merge(into, extra):
             into[key] = value
 
 
-# Last, because `pka` reaches back for `MBE`, `System` and `_check_label` and those
-# have to exist by the time it is called; its arithmetic imports nothing from here.
-from . import pka  # noqa: E402
+# Last, because `pka` and `bde` reach back for `MBE`, `System` and `_check_label` and
+# those have to exist by the time they are called; their arithmetic imports nothing
+# from here.
+from . import bde, pka  # noqa: E402

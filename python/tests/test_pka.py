@@ -8,9 +8,9 @@ is to hand. Nothing here imports `mqc` the ordinary way, because that loads
 
   * the arithmetic, `mqc/_pka_math.py`, is loaded by path -- it imports nothing
     from the package, which is the reason it is a separate file;
-  * `mqc/pka.py` is imported under a stand-in package whose `MBE` and
-    `_check_label` are the *real* ones, lifted out of `mqc/__init__.py` by
-    parsing it, with only the calls that reach Fortran replaced. So the decks
+  * `mqc/pka.py` is imported under the stand-in package of `_standin.py`, whose
+    `MBE` and `_check_label` are the *real* ones, lifted out of `mqc/__init__.py`
+    by parsing it, with only the calls that reach Fortran replaced. So the decks
     the workflow writes, the settings it passes and the labels it chooses are
     the real thing, and the physics is invented.
 
@@ -21,9 +21,6 @@ read from the Fortran and the JSON writer, and are checked by running
 `python/examples/pka.py` against a real build.
 """
 
-import ast
-import contextlib
-import importlib
 import importlib.util
 import json
 import math
@@ -31,10 +28,12 @@ import os
 import shutil
 import sys
 import tempfile
-import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PKG = os.path.join(HERE, "..", "mqc")
+sys.path.insert(0, HERE)
+
+from _standin import fake_package  # noqa: E402  (the stand-in `mqc`, shared with test_bde.py)
 
 
 def _load_math():
@@ -498,83 +497,6 @@ def test_result_json_and_warnings():
 # ---------------------------------------------------------------------------
 #  The workflow, against a stand-in for the library
 # ---------------------------------------------------------------------------
-
-
-def _lift_from_init():
-    """The real `MBE`, `_check_label`, `_merge` and `DRIVERS`, without `_ffi`."""
-    with open(os.path.join(PKG, "__init__.py")) as handle:
-        tree = ast.parse(handle.read())
-    keep = []
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "DRIVERS" for t in node.targets):
-            keep.append(node)
-        elif isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in ("MBE", "_check_label", "_merge", "MQCError"):
-            keep.append(node)
-    namespace = {"json": json, "os": os, "ctypes": None, "_ffi": None, "HARTREE_TO_EV": 27.211386245988}
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "mqc/__init__.py (lifted)", "exec"), namespace)
-    return namespace
-
-
-class _FakeResult:
-    def __init__(self, energy, label, freqs=None, thermo=None):
-        self.energy = energy
-        self.label = label
-        self.frequencies = freqs
-        self.thermochemistry = thermo
-
-
-@contextlib.contextmanager
-def fake_package(log):
-    """`mqc` with the real settings and label check, and invented physics."""
-    ns = _lift_from_init()
-    pkg = types.ModuleType("mqc")
-    pkg.__path__ = [PKG]
-    pkg._check_label = ns["_check_label"]
-    pkg.MQCError = ns["MQCError"]
-    real_mbe = ns["MBE"]
-    counter = {"n": 0}
-
-    class System:
-        def __init__(self, symbols=None, coords=None, charge=0, multiplicity=1):
-            self._handle = object()
-            self.symbols, self.coords, self.charge, self.multiplicity = symbols, coords, charge, multiplicity
-            self.n_atoms = len(symbols)
-
-        def set_monomers(self, monomers, charges=None, multiplicities=None):
-            self.monomers, self.charges = monomers, charges
-            return self
-
-    class MBE(real_mbe):
-        def run(self, label="mqc", write_to_file=True):
-            pkg._check_label(label)  # the real one: a bad label fails here as it would there
-            counter["n"] += 1
-            n = counter["n"]
-            log.append({"label": label, "driver": self.driver, "kwargs": self.settings(), "system": self.system})
-            energy = -50.0 - 0.001 * (n % 3)
-            if str(self.driver).lower() == "hessian":
-                n_atoms = self.system.n_atoms
-                freqs = [0.0, 0.1, -0.1, 0.2, 0.3, -0.2] + [300.0 + 100.0 * i for i in range(3 * n_atoms - 6)]
-                if "imag" in label:
-                    freqs[6] = -80.0
-                thermo = _thermo()
-                thermo["total_energies_hartree"] = {"electronic": energy}
-                return _FakeResult(energy, label, freqs, thermo)
-            return _FakeResult(energy, label)
-
-    pkg.System, pkg.MBE, pkg.DRIVERS = System, MBE, ns["DRIVERS"]
-    saved = {k: sys.modules.get(k) for k in ("mqc", "mqc.pka", "mqc._pka_math")}
-    for k in saved:
-        sys.modules.pop(k, None)
-    sys.modules["mqc"] = pkg
-    try:
-        module = importlib.import_module("mqc.pka")
-        pkg.pka = module
-        yield module
-    finally:
-        for k in ("mqc", "mqc.pka", "mqc._pka_math"):
-            sys.modules.pop(k, None)
-            if saved[k] is not None:
-                sys.modules[k] = saved[k]
 
 
 def _water(pka):
