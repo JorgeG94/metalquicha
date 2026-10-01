@@ -116,6 +116,19 @@ contains
       call omp_set_num_threads(threads)
       call check(error, all(g_fused(:, :, 1) == g_base), &
                  "the n_states=1 short-circuit should be bit-identical")
+      if (allocated(error)) return
+
+      ! The short-circuit returns before the general path's range check, so
+      ! it carries its own: with one state there is no root 2.
+      block
+         real(dp), allocatable :: g_bad(:, :, :)
+         type(error_t) :: bad
+         call czt_sa_casscf_gradients(mol, result%orbitals, 1, 2, 1, 1, ci3, en1, &
+                                      [1.0_dp], [1, 2], g_bad, bad)
+         call check(error, bad%has_error(), &
+                    "root 2 of a one-state average should be refused, not "// &
+                    "answered with root 1")
+      end block
       call mol%destroy()
    end subroutine test_short_circuit
 

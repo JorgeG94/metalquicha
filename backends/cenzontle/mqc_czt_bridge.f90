@@ -3973,15 +3973,17 @@ contains
          result%has_error = .true.
          return
       end if
-      result%has_gradient = .true.
-
+      ! Set last, so a failed per-root solve leaves an error and no gradient
+      ! rather than an error beside a valid-looking `E_SA` one.
       if (settings%mcscf%n_states > 1) then
          call sa_state_gradients_into(settings, mol, casscf, space, result)
          if (result%has_error) return
          if (allocated(settings%mcscf%nac_pairs)) then
             call sa_state_nacs_into(settings, mol, casscf, space, result)
+            if (result%has_error) return
          end if
       end if
+      result%has_gradient = .true.
    end subroutine mcscf_gradient_into
 
    subroutine sa_state_gradients_into(settings, mol, casscf, space, result)

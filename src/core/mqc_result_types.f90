@@ -222,9 +222,10 @@ module mqc_result_types
       ! gradient.
       ! TODO(mqc): not threaded through `result_send`/`result_recv` (and their
       ! `i`-prefixed twins) below, unlike the excited-states arrays beside
-      ! them. This is also why `mqc_driver` refuses `n_states > 1` under
-      ! fragmentation by name: nothing carries this section through the
-      ! fragment machinery or MPI packing yet.
+      ! them. Unreachable today: the reader's `check_state_averaged_run` refuses
+      ! `n_states > 1` on a fragmented deck, and `mqc_driver` refuses it again
+      ! for callers that never come through one. Lifting either without adding
+      ! these to the wire would silently drop them.
       real(dp), allocatable :: mcscf_state_energies(:)
          !! (n_states) every state's own total energy, in the order `weights`
          !! was given.
