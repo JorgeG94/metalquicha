@@ -774,9 +774,7 @@ contains
       !! `total_energy` on the parent object, and the top-level `gradient`
       !! written beside it when the run asked for one, are `E_SA = sum_J
       !! weight(J) * energy(J)` and `dE_SA/dR` -- not any one root's own
-      !! energy or gradient -- said here rather than only in the docstring,
-      !! since it is the one fact a consumer reading this section cannot see
-      !! from the numbers alone.
+      !! energy or gradient.
       !!
       !! A root's own gradient and gradient norm are added only for the roots
       !! named in `mcscf_gradient_roots` (`keywords.mcscf.gradient_roots`).
