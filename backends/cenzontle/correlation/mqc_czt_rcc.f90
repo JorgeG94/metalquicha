@@ -1866,57 +1866,18 @@ contains
    ! a space one, and hold no `t3`.
    !===========================================================================
 
-   pure subroutine permuted_triple(p, i, j, k, pi, pj, pk)
-      !! The six orderings of (i,j,k), in the same order as those of (a,b,c)
+   subroutine triples_term2(oop_u, t2_vw, no, w)
+      !! w(i,j,k) -= sum_m (iu|jm) t2(m,k,v,w3), the hole half of W
       !!
-      !! The permutation applied to the virtual labels is mirrored in the
-      !! occupied ones, so one index into a table of six covers both.
-      integer, intent(in) :: p, i, j, k
-      integer, intent(out) :: pi, pj, pk
+      !! One gemm, (n_occ^2 x n_occ)(n_occ x n_occ): `oop_u` is `ooov` for this
+      !! u repacked so (i,j) leads, `t2_vw` the (m,k) block of t2 at (v,w3), and
+      !! `w` takes the product as the (i,j)-by-k matrix it already is.
+      integer, intent(in) :: no
+      real(dp), intent(in) :: oop_u(no*no, no)
+      real(dp), intent(in) :: t2_vw(no, no)
+      real(dp), intent(inout) :: w(no*no, no)
 
-      integer, parameter :: SLOT(3, N_TRIPLE_PERMS) = reshape([ &
-                                                              1, 2, 3, &
-                                                              1, 3, 2, &
-                                                              2, 1, 3, &
-                                                              2, 3, 1, &
-                                                              3, 1, 2, &
-                                                              3, 2, 1], [3, N_TRIPLE_PERMS])
-         !! Which of (i,j,k) lands in each slot, for the six orderings in the
-         !! order the reference names them: ijk, ikj, jik, jki, kij, kji.
-
-      integer :: t(3)
-
-      t = [i, j, k]
-      pi = t(SLOT(1, p))
-      pj = t(SLOT(2, p))
-      pk = t(SLOT(3, p))
-   end subroutine permuted_triple
-
-   subroutine triples_term2(eris, t2, no, u, v, w3, w)
-      !! w(i,j,k) -= sum_m (iu|jm) t2(m,k,v,w3), the ring half of W
-      !!
-      !! Left as a loop nest: O(n_occ^4 n_vir^3) against the other half's
-      !! O(n_occ^3 n_vir^4), and the gemm that would replace it is n_occ^2 by
-      !! n_occ by n_occ -- too small to pay for the call.
-      type(rcc_eris_t), intent(in) :: eris
-      real(dp), intent(in) :: t2(:, :, :, :)
-      integer, intent(in) :: no, u, v, w3
-      real(dp), intent(inout) :: w(:, :, :)
-
-      integer :: i, j, k, m
-      real(dp) :: acc
-
-      do k = 1, no
-         do j = 1, no
-            do i = 1, no
-               acc = 0.0_dp
-               do m = 1, no
-                  acc = acc + eris%ooov(j, m, i, u)*t2(m, k, v, w3)
-               end do
-               w(i, j, k) = w(i, j, k) - acc
-            end do
-         end do
-      end do
+      call pic_gemm(oop_u, t2_vw, w, alpha=-1.0_dp, beta=1.0_dp)
    end subroutine triples_term2
 
    subroutine triples_v(eris, t1, no, a, b, c, v)
@@ -2034,8 +1995,11 @@ contains
       !! sum -- is unchanged and still runs one (a,b,c) at a time.
       type(rcc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps_o(:), eps_v(:)
-      real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
+      real(dp), intent(in) :: t1(:, :)
+      ! Explicit shape, so a (m,k) block of it can be handed to the hole-half
+      ! gemm by its first element.
+      real(dp), intent(in) :: t2(no, no, nv, nv)
       real(dp), intent(out) :: e_triples
 
       integer, parameter :: WMAP(N_TRIPLE_PERMS, N_TRIPLE_PERMS) = reshape([ &
@@ -2054,9 +2018,12 @@ contains
 
       real(dp), allocatable :: w(:, :, :, :, :), z(:, :, :, :), x(:, :, :), d3(:, :, :)
       real(dp), allocatable :: tt(:, :), mfix(:, :), mmt(:, :), r1(:, :), r2(:, :)
-      integer, allocatable :: pidx(:, :), alist(:), blist(:)
+      integer, allocatable :: alist(:), blist(:)
       real(dp), allocatable :: e_pair(:)
-      integer :: a, b, c, cl, c0, c1, i, j, k, p, q, pi, pj, pk, nc, no2
+      real(dp), allocatable :: oop(:, :, :, :)
+         !! (n_occ, n_occ, n_occ, n_vir) ooov(j,m,i,u) stored as (i,j,m,u), so the
+         !! hole half of W is a gemm over m with (i,j) as one row index
+      integer :: a, b, c, cl, c0, c1, i, j, k, m, p, nc, no2
       integer :: idx, npair
       integer :: trip(3), perm(3, N_TRIPLE_PERMS)
       real(dp) :: scale
@@ -2070,23 +2037,21 @@ contains
       ! a per-thread copy of the wrong size.
       allocate (tt(nv, no2*nv))
 
-      ! Where each occupied permutation sends each (i,j,k), once. The
-      ! thirty-six-term sum below touches n_occ^3 elements for each of
-      ! thirty-six pairings of every triple, so the permutation is resolved by a
-      ! table lookup rather than by a call.
-      allocate (pidx(no*no*no, N_TRIPLE_PERMS))
-      do q = 1, N_TRIPLE_PERMS
-         do k = 1, no
+      call triples_pack_t2(t2, no, nv, tt)
+
+      allocate (oop(no, no, no, nv))
+      !$omp parallel do default(none) shared(oop, eris, no, nv) &
+      !$omp    private(a, m, j, i) schedule(static)
+      do a = 1, nv
+         do m = 1, no
             do j = 1, no
                do i = 1, no
-                  call permuted_triple(q, i, j, k, pi, pj, pk)
-                  pidx(i + (j - 1)*no + (k - 1)*no2, q) = pi + (pj - 1)*no + (pk - 1)*no2
+                  oop(i, j, m, a) = eris%ooov(j, m, i, a)
                end do
             end do
          end do
       end do
-
-      call triples_pack_t2(t2, no, nv, tt)
+      !$omp end parallel do
 
       ! The (a,b) loop is triangular, so it is flattened before being handed to
       ! OpenMP: a triangular nest cannot be collapsed, and the work per outer
@@ -2111,11 +2076,11 @@ contains
       ! thread keeps its own W and its own scratch, which is what TRIPLES_C_BATCH
       ! is sized against.
       !$omp parallel default(none) &
-      !$omp    shared(eris, t1, t2, eps_o, eps_v, no, nv, no2, tt, pidx, &
-      !$omp           alist, blist, npair) &
+      !$omp    shared(eris, t1, t2, eps_o, eps_v, no, nv, no2, tt, &
+      !$omp           alist, blist, npair, oop) &
       !$omp    shared(e_pair) &
       !$omp    private(w, z, x, d3, mfix, mmt, r1, r2, &
-      !$omp            a, b, c, cl, c0, c1, nc, i, j, k, p, q, trip, perm, scale)
+      !$omp            a, b, c, cl, c0, c1, nc, i, j, k, p, trip, perm, scale)
       allocate (w(no, no, no, N_TRIPLE_PERMS, TRIPLES_C_BATCH))
       allocate (z(no, no, no, N_TRIPLE_PERMS))
       allocate (x(no, no, no), d3(no, no, no))
@@ -2176,11 +2141,11 @@ contains
                perm(:, 5) = [c, a, b]
                perm(:, 6) = [c, b, a]
 
-               ! The ring half, still one permutation at a time.
+               ! The hole half, one small gemm per permutation.
                do p = 1, N_TRIPLE_PERMS
                   trip = perm(:, p)
-                  call triples_term2(eris, t2, no, trip(1), trip(2), trip(3), &
-                                     w(:, :, :, p, cl))
+                  call triples_term2(oop(1, 1, 1, trip(1)), t2(1, 1, trip(2), trip(3)), &
+                                     no, w(1, 1, 1, p, cl))
                end do
 
                scale = 1.0_dp
@@ -2208,13 +2173,7 @@ contains
 
                ! The thirty-six terms: every Z against every occupied
                ! permutation of the W the table pairs it with.
-               do p = 1, N_TRIPLE_PERMS
-                  do q = 1, N_TRIPLE_PERMS
-                     e_pair(idx) = e_pair(idx) &
-                                   + triples_dot(no*no*no, pidx(1, q), &
-                                                 w(1, 1, 1, WMAP(p, q), cl), z(1, 1, 1, p))
-                  end do
-               end do
+               e_pair(idx) = e_pair(idx) + triples_energy_block(no, WMAP, w(1, 1, 1, 1, cl), z)
             end do
          end do
       end do
@@ -2232,27 +2191,41 @@ contains
       ! a term and not noise.
       e_triples = 2.0_dp*sum(e_pair)
 
-      deallocate (tt, pidx, alist, blist, e_pair)
+      deallocate (tt, alist, blist, e_pair, oop)
    end subroutine triples_correction
 
-   pure function triples_dot(no3, permuted, wblk, zblk) result(acc)
-      !! sum over one occupied permutation of W against Z
+   pure function triples_energy_block(no, wmap, w, z) result(acc)
+      !! sum_pq sum_ijk W_wmap(p,q)(perm_q(i,j,k)) Z_p(i,j,k), one triple's share
       !!
-      !! Both blocks are n_occ^3 contiguous doubles -- one permutation's W and
-      !! one Z, taken by sequence association out of the arrays holding all six
-      !! of each. `permuted` is where the permutation sends each flat index.
-      integer, intent(in) :: no3
-      integer, intent(in) :: permuted(no3)
-      real(dp), intent(in) :: wblk(no3), zblk(no3)
+      !! The thirty-six-term sum, taken one (i,j,k) at a time: the six Z there
+      !! are read once and each meets the six occupied permutations of its
+      !! paired W, addressed directly rather than through a table of permuted
+      !! offsets. The occupied permutations run ijk, ikj, jik, jki, kij, kji --
+      !! the order the virtual ones take in `perm` -- which is the column order
+      !! of `wmap`.
+      integer, intent(in) :: no
+      integer, intent(in) :: wmap(N_TRIPLE_PERMS, N_TRIPLE_PERMS)
+      real(dp), intent(in) :: w(no, no, no, N_TRIPLE_PERMS)
+      real(dp), intent(in) :: z(no, no, no, N_TRIPLE_PERMS)
       real(dp) :: acc
 
-      integer :: n
+      integer :: i, j, k, p
+      real(dp) :: s
 
       acc = 0.0_dp
-      do n = 1, no3
-         acc = acc + wblk(permuted(n))*zblk(n)
+      do k = 1, no
+         do j = 1, no
+            do i = 1, no
+               do p = 1, N_TRIPLE_PERMS
+                  s = w(i, j, k, wmap(p, 1)) + w(i, k, j, wmap(p, 2)) &
+                      + w(j, i, k, wmap(p, 3)) + w(j, k, i, wmap(p, 4)) &
+                      + w(k, i, j, wmap(p, 5)) + w(k, j, i, wmap(p, 6))
+                  acc = acc + z(i, j, k, p)*s
+               end do
+            end do
+         end do
       end do
-   end function triples_dot
+   end function triples_energy_block
 
    subroutine scatter_w_third(r, no, nc, p, w)
       !! R(i, (c,j,k)) -> w(i,j,k,p,c), for the permutations where c is third
