@@ -437,9 +437,9 @@ contains
       !! routine's own docstring for what is shared and how.
       !!
       !! `n_states = 1` (`size(weights) == 1`) is the same bit-identical
-      !! short-circuit to `czt_mcscf_gradient` `czt_sa_casscf_gradient` takes,
-      !! applied to whichever root(s) of `roots` are asked for (there is only
-      !! one root to ask for).
+      !! short-circuit to `czt_mcscf_gradient` `czt_sa_casscf_gradient` takes;
+      !! every entry of `roots` must then be 1, and the one gradient is copied
+      !! into each slot.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)         !! (n_ao, n_mo), the SA orbitals
       integer, intent(in) :: n_inactive, n_active, n_alpha, n_beta
@@ -462,18 +462,30 @@ contains
       if (error%has_error()) return
 
       if (size(weights) == 1) then
+         ! The general path's range check, repeated because this branch never
+         ! reaches it: without it, any root number returns root 1.
+         do ir = 1, size(roots)
+            if (roots(ir) /= 1) then
+               call error%set(ERROR_VALIDATION, "sa_casscf_gradients: root "// &
+                              to_char(roots(ir))//" is not one of the 1 averaged "// &
+                              "states.")
+               return
+            end if
+         end do
          call build_link_table(n_active, n_alpha, alpha, error)
+         if (error%has_error()) return
          call build_link_table(n_active, n_beta, beta, error)
          if (error%has_error()) return
          call active_space_rdms(ci_vectors(:, :, 1), alpha, beta, dm1_i, dm2_i, error)
          call alpha%destroy()
          call beta%destroy()
          if (error%has_error()) return
+         ! Every slot asks for the same root, so the gradient is built once.
+         call czt_mcscf_gradient(mol, orbitals, n_inactive, n_active, dm1_i, dm2_i, &
+                                 gradient, error)
+         if (error%has_error()) return
          allocate (gradients(3, mol%natm, size(roots)))
          do ir = 1, size(roots)
-            call czt_mcscf_gradient(mol, orbitals, n_inactive, n_active, dm1_i, dm2_i, &
-                                    gradient, error)
-            if (error%has_error()) return
             gradients(:, :, ir) = gradient
          end do
          return
@@ -491,10 +503,9 @@ contains
       !! The fused Z-vector machinery `czt_sa_casscf_gradients` takes for
       !! `n_states > 1` -- see that routine's docstring
       !!
-      !! **The cross-root fusion.** Everything through the block Z-vector
-      !! solve is as it was: one `build_sa_hessian`, one
-      !! `sa_block_zvector_solve` for every root's right-hand side. What
-      !! changes is the assembly after it. Every root's cheap (no
+      !! **The cross-root fusion.** One `build_sa_hessian` and one
+      !! `sa_block_zvector_solve` serve every root's right-hand side, and the
+      !! assembly after them is shared too. Every root's cheap (no
       !! derivative-integral) densities and energy-weighted matrices are built
       !! first (`orbital_response_pieces`, `ci_response_pieces`,
       !! `cumulant_two_particle_density`, `build_active_density`,
@@ -1007,9 +1018,12 @@ contains
 
    subroutine active_two_electron_gradient_stacked(mol, c_active, ddm2_all, cbar_active_all, &
                                                    dm2_sa, tdm2_total_all, gradients, error)
-      !! Every root's active two-body Gamma -- the base cumulant, the
-      !! orbital-response four-leg sum, and the CI-response transition
-      !! density -- summed in the AO basis one shell block at a time and
+      !! Add every root's active two-body Gamma term into `gradients`
+      !!
+      !! `gradients` is accumulated into, not overwritten: the caller zeroes
+      !! it or fills it with the other terms first. The terms are the base
+      !! cumulant, the orbital-response four-leg sum, and the CI-response
+      !! transition density -- summed in the AO basis one shell block at a time and
       !! contracted against the derivative integrals in **one** sweep for
       !! every root together (`active_two_electron_gradient_many`), instead of
       !! `n_root` separate sweeps (one per root, itself already one sweep
@@ -1021,10 +1035,12 @@ contains
       !! full every time it runs.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: c_active(:, :)                !! (n_ao, n_active)
-      real(dp), intent(in) :: ddm2_all(:, :, :, :, :)       !! (n_active^4, n_root), base cumulants
+      real(dp), intent(in) :: ddm2_all(:, :, :, :, :)
+         !! (n_active, n_active, n_active, n_active, n_root), base cumulants
       real(dp), intent(in) :: cbar_active_all(:, :, :)      !! (n_ao, n_active, n_root)
       real(dp), intent(in) :: dm2_sa(:, :, :, :)            !! The shared SA active density
-      real(dp), intent(in) :: tdm2_total_all(:, :, :, :, :)  !! (n_active^4, n_root)
+      real(dp), intent(in) :: tdm2_total_all(:, :, :, :, :)
+         !! (n_active, n_active, n_active, n_active, n_root)
       real(dp), intent(inout) :: gradients(:, :, :)         !! (3, natm, n_root), accumulated into
       type(error_t), intent(inout) :: error
 
@@ -1038,6 +1054,9 @@ contains
       n_ao = size(c_active, 1)
       n_root = size(ddm2_all, 5)
 
+      ! Two `(np, n_ao, n_ao, n_ao)` arrays per root live at once (`gamma_stack`'s
+      ! slice and `tmp`), at eight bytes a value -- the single-root sizing in
+      ! `mqc_czt_mcscf_gradient`, divided by `n_root`.
       per_block = max(1, int(BLOCK_TARGET/(2.0_dp*real(n_ao, dp)**3*8.0_dp*real(n_root, dp))))
 
       ish_lo = 1
