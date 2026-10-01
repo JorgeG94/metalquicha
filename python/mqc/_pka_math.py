@@ -6,34 +6,60 @@ against hand values, analytic limits and a model whose answer is known -- on a
 machine with no Fortran compiler, and so that a number which looks wrong can be
 checked without a session, MPI or a build.
 
-Units, throughout: free energies and corrections in **kcal/mol**, entropies in
-**cal/(mol K)** where they come from the Fortran thermochemistry block (which
-writes them that way) and in units of R where they are computed here, frequencies
-in cm^-1, temperature in K. Hartree appears only where an energy is read from or
-handed back to a calculation.
+The method-independent part -- quasi-RRHO, the standard state, Boltzmann
+combination, `Geometry` and the .xyz readers -- is in `mqc._thermo`, shared with
+`mqc.bde`, and is re-exported here under its old names. What is left is the
+protonation model: the proton, calibration, and the result.
+
+Units are `mqc._thermo`'s: free energies in kcal/mol, frequencies in cm^-1.
 """
 
 import json
 import math
 
-# -- constants --------------------------------------------------------------
-#
-# Values the Fortran side already has (`mqc_physical_constants.F90`) are
-# repeated here digit for digit rather than re-derived, so the two thermochemistry
-# paths differ by method and not by a constant. The SI ones are CODATA 2018 and
-# are used only by the free-rotor entropy, which has no Fortran counterpart.
+try:
+    from . import _thermo
+except ImportError:  # loaded by path, as python/tests/test_pka.py does: no parent package
+    import importlib.util as _util
+    import os as _os
+    import sys as _sys
 
-HARTREE_TO_KCAL = 627.5094740631
-R_KCAL = 1.98720425864e-3  #: kcal/(mol K)
-R_CAL = 1.98720425864  #: cal/(mol K)
-KB_HARTREE = 3.1668115634556e-6  #: Hartree/K
-CM1_TO_KELVIN = 1.4387773538277  #: hc/k in K per cm^-1
-LN10 = math.log(10.0)
+    _spec = _util.spec_from_file_location(
+        "mqc_thermo_under_test", _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "_thermo.py")
+    )
+    _thermo = _util.module_from_spec(_spec)
+    _sys.modules[_spec.name] = _thermo
+    _spec.loader.exec_module(_thermo)
 
-_H = 6.62607015e-34  #: J s
-_KB = 1.380649e-23  #: J/K
-_C = 299792458.0  #: m/s
-_R_L_ATM = 0.082057366080960  #: L atm/(mol K)
+# Re-exported: these are what `mqc.pka` and the tests have always found here.
+HARTREE_TO_KCAL = _thermo.HARTREE_TO_KCAL
+R_KCAL = _thermo.R_KCAL
+R_CAL = _thermo.R_CAL
+KB_HARTREE = _thermo.KB_HARTREE
+CM1_TO_KELVIN = _thermo.CM1_TO_KELVIN
+LN10 = _thermo.LN10
+_H = _thermo._H
+_KB = _thermo._KB
+_C = _thermo._C
+_R_L_ATM = _thermo._R_L_ATM
+QRRHO_NU0 = _thermo.QRRHO_NU0
+QRRHO_ALPHA = _thermo.QRRHO_ALPHA
+QRRHO_B_AV = _thermo.QRRHO_B_AV
+thermal_rt = _thermo.thermal_rt
+standard_state_correction = _thermo.standard_state_correction
+_s_rrho_over_r = _thermo._s_rrho_over_r
+_s_free_rotor_over_r = _thermo._s_free_rotor_over_r
+qrrho_weight = _thermo.qrrho_weight
+qrrho_entropy_over_r = _thermo.qrrho_entropy_over_r
+rrho_entropy_over_r = _thermo.rrho_entropy_over_r
+split_frequencies = _thermo.split_frequencies
+free_energy_correction = _thermo.free_energy_correction
+logsumexp = _thermo.logsumexp
+boltzmann_weights = _thermo.boltzmann_weights
+boltzmann_combine = _thermo.boltzmann_combine
+Geometry = _thermo.Geometry
+parse_xyz_ensemble = _thermo.parse_xyz_ensemble
+parse_optimized_xyz = _thermo.parse_optimized_xyz
 
 #: Literature proton, 1 atm gas -> 1 M aqueous, for the uncalibrated default.
 #: G_gas(H+) = H - TS = 5/2 RT - T S_trans, which is -6.28 kcal/mol at 298.15 K
@@ -43,362 +69,15 @@ _R_L_ATM = 0.082057366080960  #: L atm/(mol K)
 G_GAS_PROTON = -6.28
 DG_SOLV_PROTON = -265.9
 
-#: Grimme's quasi-RRHO parameters (Chem. Eur. J. 2012, 18, 9955).
-QRRHO_NU0 = 100.0  #: cm^-1, the switch between oscillator and rotor
-QRRHO_ALPHA = 4.0
-QRRHO_B_AV = 1.0e-44  #: kg m^2, the average moment of inertia of a free rotor
-
 DEFAULT_CLASS = "default"
 
-
-class PKaError(RuntimeError):
-    """The workflow could not produce a number it would stand behind."""
+#: The workflows' shared error. `PKaError` is another name for it, so that what
+#: the shared arithmetic raises is caught by the name this module has always had.
+PKaError = _thermo.WorkflowError
 
 
 class NoIsoelectricPoint(PKaError):
     """The net charge never changes sign on the pH interval asked for."""
-
-
-# ---------------------------------------------------------------------------
-#  Thermochemistry
-# ---------------------------------------------------------------------------
-
-
-def thermal_rt(temperature):
-    """RT in kcal/mol."""
-    return R_KCAL * temperature
-
-
-def standard_state_correction(temperature=298.15, pressure_atm=1.0):
-    """The 1 atm gas to 1 M solution standard-state change, kcal/mol.
-
-    ``RT ln(R T / P)`` with R in L atm/(mol K) is the work of compressing the
-    ideal-gas molar volume (24.46 L at 298.15 K and 1 atm) to one litre. It is
-    added to a solute's free energy because the Fortran translational entropy
-    is evaluated at ``pressure_atm`` while an aqueous pKa is for 1 mol/L.
-    Computed from T so that a calculation at another temperature is not
-    silently given the 298.15 K constant.
-    """
-    return thermal_rt(temperature) * math.log(_R_L_ATM * temperature / pressure_atm)
-
-
-def _s_rrho_over_r(nu, temperature):
-    """Harmonic-oscillator entropy of one mode, in units of R."""
-    u = CM1_TO_KELVIN * nu / temperature
-    if u > 700.0:
-        return 0.0
-    em1 = math.expm1(u)
-    return u / em1 - math.log1p(-math.exp(-u))
-
-
-def _s_free_rotor_over_r(nu, temperature, b_av=QRRHO_B_AV):
-    """Free-rotor entropy of one mode, in units of R (Grimme's eq. 4 and 5).
-
-    The mode is treated as a rotor whose moment of inertia is the one the
-    oscillator would have, mu = h / (8 pi^2 nu), capped against the average
-    moment of inertia ``b_av`` of a free rotor: mu' = mu b_av / (mu + b_av).
-    """
-    nu_hz = _C * 100.0 * nu
-    mu = _H / (8.0 * math.pi**2 * nu_hz)
-    mu_prime = mu * b_av / (mu + b_av)
-    return 0.5 + math.log(math.sqrt(8.0 * math.pi**3 * mu_prime * _KB * temperature / _H**2))
-
-
-# TODO(mqc): the quasi-RRHO entropy, the free-rotor term, and the 1 atm -> 1 M
-# standard-state correction belong in `mqc_thermochemistry.f90`, next to the RRHO
-# vibrational entropy they replace, so that the deck path and `thermochemistry`
-# in the JSON report the same free energy as this module. They are here because
-# a Python-side change needs no build; until they move, `thermal_corrections_hartree
-# .to_gibbs` in the JSON is plain RRHO and does not agree with `g_corr` below.
-
-
-def qrrho_weight(nu, nu0=QRRHO_NU0, alpha=QRRHO_ALPHA):
-    """Grimme's damping function, w = 1 / (1 + (nu0/nu)^alpha).
-
-    One at high frequency, where a mode is an oscillator, and zero as it
-    softens into a rotor; one half at ``nu0``.
-    """
-    if nu <= 0.0:
-        return 0.0
-    return 1.0 / (1.0 + (nu0 / nu) ** alpha)
-
-
-def qrrho_entropy_over_r(nu, temperature, nu0=QRRHO_NU0, alpha=QRRHO_ALPHA, b_av=QRRHO_B_AV):
-    """Quasi-RRHO entropy of one mode, in units of R.
-
-    ``w S_RRHO + (1 - w) S_FR``. Only the entropy is interpolated, as in the
-    paper; the enthalpy stays harmonic.
-    """
-    if nu <= 0.0:
-        raise ValueError("qrrho_entropy_over_r takes a real, positive frequency")
-    w = qrrho_weight(nu, nu0, alpha)
-    return w * _s_rrho_over_r(nu, temperature) + (1.0 - w) * _s_free_rotor_over_r(
-        nu, temperature, b_av
-    )
-
-
-def rrho_entropy_over_r(nu, temperature):
-    """Plain harmonic-oscillator entropy of one mode, in units of R."""
-    return _s_rrho_over_r(nu, temperature)
-
-
-def split_frequencies(frequencies, n_atoms, is_linear=False):
-    """Separate a 3N list into vibrations and the modes that are not.
-
-    The Fortran list has the translations and rotations *in it*, at or near
-    zero, and its ``n_imaginary_frequencies`` counts every negative entry,
-    including a -0.3 cm^-1 rotational residual. Neither is useful here, so the
-    ``3N - 6`` (``3N - 5`` linear, ``3N - 3`` for one atom) modes of smallest
-    magnitude are taken as the translations and rotations and the rest are the
-    vibrations; of those, a negative one is imaginary.
-
-    Returns ``(real, imaginary, tr_max)``: the positive vibrations, the
-    imaginary ones as negative numbers, and the largest magnitude among the
-    modes dropped as translation or rotation -- the number to look at if a
-    soft real mode might have been swallowed by them.
-    """
-    freqs = [float(f) for f in frequencies]
-    if len(freqs) != 3 * n_atoms:
-        raise PKaError(
-            f"{len(freqs)} frequencies for {n_atoms} atoms: the vibrational analysis "
-            f"is expected to return 3N = {3 * n_atoms}, translations and rotations included"
-        )
-    n_tr = 3 if n_atoms == 1 else (5 if is_linear else 6)
-    order = sorted(range(len(freqs)), key=lambda i: abs(freqs[i]))
-    dropped = set(order[:n_tr])
-    tr_max = max((abs(freqs[i]) for i in dropped), default=0.0)
-    vib = [f for i, f in enumerate(freqs) if i not in dropped]
-    real = [f for f in vib if f > 0.0]
-    imaginary = [f for f in vib if f < 0.0]
-    return real, imaginary, tr_max
-
-
-def free_energy_correction(
-    frequencies,
-    n_atoms,
-    thermo,
-    nu0=QRRHO_NU0,
-    alpha=QRRHO_ALPHA,
-    b_av=QRRHO_B_AV,
-    standard_state=True,
-    imaginary="drop",
-    qrrho=True,
-):
-    """G_corr for one structure from its frequencies and thermochemistry block.
-
-    ``thermo`` is the dict ``Result.thermochemistry`` returns. From it come the
-    conditions (``temperature_K``, ``pressure_atm``), whether the molecule is
-    linear, and the translational, rotational and electronic contributions,
-    which are used as they are: it is only the vibrational part that is
-    recomputed, because that is where the rigid-rotor-harmonic-oscillator
-    approximation is wrong for the soft modes of a flexible molecule.
-
-    The correction is ``ZPE + E_vib + E_trans + E_rot + RT - T S`` with the
-    entropy ``S_trans + S_rot + S_elec + S_vib`` and ``S_vib`` quasi-RRHO, plus
-    the 1 atm -> 1 M standard-state term when ``standard_state``. It is added to
-    an electronic energy to give a free energy; it contains none.
-
-    ``imaginary`` is ``"drop"`` (an imaginary mode contributes nothing, which is
-    what the Fortran thermochemistry does) or ``"flip"`` (taken at its absolute
-    value, the usual repair for the small imaginary mode of a loosely
-    converged structure). Either way they are counted and returned, never
-    discarded without a trace. ``qrrho=False`` gives plain RRHO, for comparison.
-
-    Returns a dict, all energies in kcal/mol: ``g_corr`` (the one to use) and
-    the pieces ``zpe``, ``e_vib``, ``e_trans``, ``e_rot``, ``rt``,
-    ``ts_total``, ``s_vib_cal`` (cal/mol/K), ``standard_state``, together with
-    ``temperature_K``, ``n_real``, ``n_imaginary``, ``imaginary_cm1`` and
-    ``tr_max_cm1``.
-    """
-    if imaginary not in ("drop", "flip"):
-        raise ValueError("imaginary must be 'drop' or 'flip'")
-    temperature = float(thermo["temperature_K"])
-    pressure = float(thermo.get("pressure_atm", 1.0))
-    contributions = thermo["contributions"]
-    is_linear = bool(thermo.get("is_linear", False))
-
-    real, imag, tr_max = split_frequencies(frequencies, n_atoms, is_linear)
-    modes = list(real)
-    if imaginary == "flip":
-        modes += [abs(f) for f in imag]
-
-    zpe = 0.0
-    e_vib = 0.0
-    s_vib_over_r = 0.0
-    for nu in modes:
-        theta = CM1_TO_KELVIN * nu
-        zpe += 0.5 * R_KCAL * theta
-        u = theta / temperature
-        if u < 700.0:
-            e_vib += R_KCAL * theta / math.expm1(u)
-        if qrrho:
-            s_vib_over_r += qrrho_entropy_over_r(nu, temperature, nu0, alpha, b_av)
-        else:
-            s_vib_over_r += rrho_entropy_over_r(nu, temperature)
-    s_vib_cal = R_CAL * s_vib_over_r
-
-    e_trans = contributions["translational"]["energy_hartree"] * HARTREE_TO_KCAL
-    e_rot = contributions["rotational"]["energy_hartree"] * HARTREE_TO_KCAL
-    s_other_cal = (
-        contributions["translational"]["entropy_cal_mol_K"]
-        + contributions["rotational"]["entropy_cal_mol_K"]
-        + contributions["electronic"]["entropy_cal_mol_K"]
-    )
-    rt = thermal_rt(temperature)
-    ts_total = temperature * (s_vib_cal + s_other_cal) / 1000.0
-    ss = standard_state_correction(temperature, pressure) if standard_state else 0.0
-    g_corr = zpe + e_vib + e_trans + e_rot + rt - ts_total + ss
-    return {
-        "g_corr": g_corr,
-        "zpe": zpe,
-        "e_vib": e_vib,
-        "e_trans": e_trans,
-        "e_rot": e_rot,
-        "rt": rt,
-        "ts_total": ts_total,
-        "s_vib_cal": s_vib_cal,
-        "standard_state": ss,
-        "temperature_K": temperature,
-        "pressure_atm": pressure,
-        "n_real": len(real),
-        "n_imaginary": len(imag),
-        "imaginary_cm1": imag,
-        "tr_max_cm1": tr_max,
-    }
-
-
-# ---------------------------------------------------------------------------
-#  Combining conformers and microstates
-# ---------------------------------------------------------------------------
-
-
-def logsumexp(values):
-    """log(sum(exp(v))), stable for large magnitudes."""
-    values = list(values)
-    top = max(values)
-    if top == float("-inf"):
-        return top
-    return top + math.log(sum(math.exp(v - top) for v in values))
-
-
-def boltzmann_weights(free_energies, temperature):
-    """Normalised weights exp(-G/RT) / sum, for free energies in kcal/mol."""
-    rt = thermal_rt(temperature)
-    logs = [-g / rt for g in free_energies]
-    norm = logsumexp(logs)
-    return [math.exp(v - norm) for v in logs]
-
-
-def boltzmann_combine(free_energies, temperature):
-    """One free energy for a set of conformers, -RT ln sum exp(-G_i/RT)."""
-    if not free_energies:
-        raise ValueError("no conformers to combine")
-    rt = thermal_rt(temperature)
-    return -rt * logsumexp([-g / rt for g in free_energies])
-
-
-# ---------------------------------------------------------------------------
-#  Geometry
-# ---------------------------------------------------------------------------
-
-
-class Geometry:
-    """Element symbols and Cartesian coordinates in Angstrom.
-
-    The library's ``System`` cannot be read back -- it has an atom count and
-    no coordinates -- and the conformer and optimization stages need to write
-    the structure out and read a different one back, so the workflow keeps its
-    own copy. Plain data, so a `Microstate` can be built and checked without a
-    session.
-    """
-
-    def __init__(self, symbols, coords):
-        self.symbols = [str(s).strip().capitalize() for s in symbols]
-        self.coords = [[float(x) for x in xyz] for xyz in coords]
-        if len(self.symbols) != len(self.coords) or any(len(c) != 3 for c in self.coords):
-            raise ValueError("symbols and coords must be N symbols and N rows of three numbers")
-        if not self.symbols:
-            raise ValueError("a geometry needs at least one atom")
-
-    @property
-    def n_atoms(self):
-        return len(self.symbols)
-
-    @classmethod
-    def from_xyz(cls, path):
-        with open(path) as handle:
-            geoms = parse_xyz_ensemble(handle.read())
-        if len(geoms) != 1:
-            raise ValueError(f"{path} holds {len(geoms)} structures, expected one")
-        return geoms[0][1]
-
-    def to_xyz(self, comment=""):
-        lines = [str(self.n_atoms), comment]
-        for sym, (x, y, z) in zip(self.symbols, self.coords):
-            lines.append(f"{sym:<3s} {x:18.10f} {y:18.10f} {z:18.10f}")
-        return "\n".join(lines) + "\n"
-
-    def __repr__(self):
-        return f"<Geometry {self.n_atoms} atoms>"
-
-
-def parse_xyz_ensemble(text):
-    """Read a (multi-)structure .xyz into ``[(energy_or_None, Geometry), ...]``.
-
-    The energy is the first number on the comment line, which is where CREST
-    puts the absolute energy (Hartree) and where mqc's own optimized-geometry
-    file puts nothing parseable at the start -- see `parse_optimized_xyz`.
-    """
-    lines = text.splitlines()
-    out = []
-    i = 0
-    while i < len(lines):
-        if not lines[i].strip():
-            i += 1
-            continue
-        n = int(lines[i].split()[0])
-        comment = lines[i + 1] if i + 1 < len(lines) else ""
-        body = lines[i + 2 : i + 2 + n]
-        if len(body) != n:
-            raise ValueError("truncated .xyz structure")
-        symbols, coords = [], []
-        for line in body:
-            parts = line.split()
-            symbols.append(parts[0])
-            coords.append([float(x) for x in parts[1:4]])
-        energy = None
-        for token in comment.split():
-            try:
-                energy = float(token)
-                break
-            except ValueError:
-                continue
-        out.append((energy, Geometry(symbols, coords)))
-        i += 2 + n
-    return out
-
-
-def parse_optimized_xyz(text):
-    """Read mqc's ``output_<label>_optimized.xyz``.
-
-    Returns ``(Geometry, converged, energy_hartree)``. The comment line is
-    ``metalquicha converged, E = <f20.12> Hartree`` or ``metalquicha NOT
-    CONVERGED, E = ...`` (`write_optimized_xyz` in the geometry optimizer); the
-    file is written whichever it was, so the word has to be read.
-    """
-    lines = text.splitlines()
-    comment = lines[1] if len(lines) > 1 else ""
-    structures = parse_xyz_ensemble(text)
-    if len(structures) != 1:
-        raise ValueError("an optimized-geometry file holds one structure")
-    converged = "NOT CONVERGED" not in comment.upper() and "CONVERGED" in comment.upper()
-    energy = None
-    if "E =" in comment:
-        try:
-            energy = float(comment.split("E =", 1)[1].split()[0])
-        except (ValueError, IndexError):
-            energy = None
-    return structures[0][1], converged, energy
 
 
 # ---------------------------------------------------------------------------
