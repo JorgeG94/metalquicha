@@ -19,7 +19,7 @@ module test_mqc_sa_nac
    !!    pairs, to the Z-vector solver's tolerance.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_error, only: error_t
+   use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_physical_constants, only: BOHR_TO_ANGSTROM
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -67,7 +67,8 @@ contains
       testsuite = [ &
                   new_unittest("lih_sto3g_sa2_nac_matches_pyscf", test_vs_pyscf), &
                   new_unittest("lih_sto3g_sa2_nac_identities", test_identities), &
-                  new_unittest("lih_sto3g_sa2_nac_fused_matches_single", test_fused) &
+                  new_unittest("lih_sto3g_sa2_nac_fused_matches_single", test_fused), &
+                  new_unittest("degenerate_pair_is_refused", test_degenerate) &
                   ]
    end subroutine collect_mqc_sa_nac_tests
 
@@ -185,6 +186,38 @@ contains
 
       call mol%destroy()
    end subroutine test_identities
+
+   subroutine test_degenerate(error)
+      !! A pair whose energies coincide is refused by name, not divided by zero
+      !!
+      !! The energies are made degenerate by hand on a real converged state:
+      !! nothing before the division reads them except `build_sa_hessian`'s
+      !! active energies, which this refusal precedes.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      type(czt_molecule_t) :: mol
+      type(casscf_result_t) :: result
+      real(dp), allocatable :: coupling(:, :), interstate(:, :), csf(:, :)
+      real(dp), allocatable :: energies(:)
+      real(dp) :: ediff
+
+      call converge_lih(mol, result, err)
+      call check(error,.not. err%has_error() .and. result%converged, &
+                 "LiH SA-2-CAS(2,2) should converge")
+      if (allocated(error)) return
+
+      energies = result%energies
+      energies(2) = energies(1)
+      call czt_sa_casscf_nac(mol, result%orbitals, 1, 2, 1, 1, result%ci_vectors, &
+                             energies, WEIGHTS, 1, 2, coupling, interstate, csf, ediff, err)
+      call check(error, err%has_error(), "a degenerate pair should be refused")
+      if (allocated(error)) return
+      call check(error, err%get_code() == ERROR_VALIDATION, &
+                 "and refused as a validation error: "//err%get_message())
+      if (allocated(error)) return
+      call check(error, all(coupling == coupling), "no NaN should be left in the coupling")
+   end subroutine test_degenerate
 
    subroutine test_fused(error)
       !! `czt_sa_casscf_nacs`, sharing one SA Hessian state across both pairs,

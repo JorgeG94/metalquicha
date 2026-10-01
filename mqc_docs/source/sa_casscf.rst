@@ -180,14 +180,16 @@ Each pair adds an entry to ``mcscf_states.nonadiabatic_couplings``:
   opposite sign.
 - ``csf_term``: the part of :math:`h_{IJ}` from the determinant (CSF)
   derivative. It is included in ``coupling`` and ``interstate_coupling``,
-  and corresponds to PySCF's ``use_etfs=False``. It is not translationally
-  invariant on its own.
+  and corresponds to PySCF's ``use_etfs=False``; no keyword turns it off, so
+  subtract it for ``use_etfs=True`` numbers. In Hartree/Bohr. It is not
+  translationally invariant on its own.
 - ``energy_difference_hartree``: :math:`E_J - E_I`.
 
 The overall sign of a coupling depends on the arbitrary phases of the CI
 vectors, so it can differ from another code's by a factor of -1 per pair.
 The same refusals as for gradients apply: equal weights only, not under
-fragmentation. See :doc:`developer_sa_casscf`, "Nonadiabatic couplings",
+fragmentation. A pair whose energies agree to within :math:`10^{-8}` Hartree
+is refused as well, since :math:`d_{IJ}` divides by their difference. See :doc:`developer_sa_casscf`, "Nonadiabatic couplings",
 for the equations. ``tools/sa_casscf/c2h4_twisted_sa2_nac_6-31gs.json`` is an
 example deck.
 
