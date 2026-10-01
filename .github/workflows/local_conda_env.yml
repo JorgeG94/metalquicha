@@ -194,12 +194,21 @@ jobs:
           # methods.py covers what each backend implements, which is where
           # libxc comes in: without it the Kohn-Sham cases are refused by the
           # build rather than run, and a skip is not a check.
+          #
+          # DL-FIND and CREST are here for the pKa and BDE workflows, which
+          # optimize every structure and search conformers before it. Without
+          # DL-FIND their optimize stage is refused outright; without CREST the
+          # conformer stage quietly falls back to one structure, and the
+          # ensemble parsing would never run anywhere. The "with crest" and
+          # "with dlfind" jobs still own the build checks for both.
           - name: "python interface"
             tblite: true
             legacy_mpi: false
             libcint: true
             libxc: true
             libfint: true
+            dlfind: true
+            crest: true
             python: true
     steps:
       - uses: actions/checkout@v4
@@ -281,7 +290,7 @@ jobs:
       # and are left as manual checks; they take tens of seconds and the
       # build above is what is actually fragile here.
       - name: Check the CREST gradient callback
-        if: matrix.crest
+        if: matrix.crest && !matrix.python
         shell: bash -el {0}
         run: |
           conda activate mqc
@@ -375,22 +384,21 @@ jobs:
           # The pKa workflow. Its arithmetic is tested without the library --
           # no build, no MPI -- and that comes first because it is the cheap
           # one and says whether a later failure is the formulas or the plumbing.
-          # The example then runs the stages for real: it skips when the build
-          # lacks tblite or the `mqc` executable, runs without a conformer search
-          # when CREST is off (this job has none), and asserts identities rather
+          # The example then runs all four stages for real -- CREST conformer
+          # search, DL-FIND optimization through the executable, Hessian and
+          # single point through the library -- and asserts identities rather
           # than agreement with experiment.
           python3 python/tests/test_pka.py
           MQC_LIBRARY=$PWD/build/libmqc.so MQC_EXECUTABLE=$PWD/build/mqc \
-            PYTHONPATH=$PWD/python python3 python/examples/pka.py --quick
+            PYTHONPATH=$PWD/python python3 python/examples/pka.py
           # The bond-dissociation workflow, on the same terms: its arithmetic and
           # its orchestration against a stand-in library first, then the example
-          # for real. It skips without tblite or the executable, runs without a
-          # conformer search when CREST is off, and asserts identities and one
-          # ordering (phenol O-H below methanol O-H) rather than agreement with
-          # experiment.
+          # for real, parent conformer search included, and asserts identities
+          # and one ordering (phenol O-H below methanol O-H) rather than
+          # agreement with experiment.
           python3 python/tests/test_bde.py
           MQC_LIBRARY=$PWD/build/libmqc.so MQC_EXECUTABLE=$PWD/build/mqc \
-            PYTHONPATH=$PWD/python python3 python/examples/bde.py --quick
+            PYTHONPATH=$PWD/python python3 python/examples/bde.py
 
       # A geometry optimization, which is the only thing here that drives
       # DL-FIND rather than merely linking it. Water in STO-3G from a distorted
@@ -409,7 +417,7 @@ jobs:
       # require tblite, which this job does not build, so they skip rather than
       # fail.
       - name: Run the optimizer validation
-        if: matrix.dlfind
+        if: matrix.dlfind && !matrix.python
         shell: bash -el {0}
         run: |
           conda activate mqc
