@@ -46,6 +46,7 @@ __all__ = [
     "MQCError",
     "ELEMENTS",
     "DRIVERS",
+    "pka",
 ]
 
 HARTREE_TO_EV = 27.211386245988
@@ -1350,3 +1351,8 @@ def _merge(into, extra):
             _merge(into[key], value)
         else:
             into[key] = value
+
+
+# Last, because `pka` reaches back for `MBE`, `System` and `_check_label` and those
+# have to exist by the time it is called; its arithmetic imports nothing from here.
+from . import pka  # noqa: E402
