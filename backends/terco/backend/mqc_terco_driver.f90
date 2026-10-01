@@ -326,7 +326,7 @@ contains
                return
             end if
             frozen = settings%n_frozen_core
-            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (frozen < 0) frozen = core_orbital_count(fragment%real_element_numbers())
             if (.not. settings%freeze_core) frozen = 0
             rc = trc_set_rimp2(h, int(frozen, c_int), 256_c_int)
             if (rc == TRC_OK) rc = trc_run_rimp2(h)

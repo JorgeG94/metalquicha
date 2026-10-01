@@ -81,6 +81,7 @@ contains
                ! run's bonding report. The MPI reuse path has the same gap.
                results(frag_idx)%energy%scf = known_energy
                results(frag_idx)%has_energy = .true.
+               results(frag_idx)%energy_total_only = .true.
                results(frag_idx)%scf_status = known_status
                results(frag_idx)%homo = known_homo
                results(frag_idx)%lumo = known_lumo

@@ -21,6 +21,7 @@ module test_mqc_counterpoise
    use mqc_combinatorics, only: vmfc_subset_key, vmfc_row_subset_key, is_auxiliary_row, &
                                 real_count_of
    use mqc_error, only: error_t
+   use mqc_elements, only: core_orbital_count
    use pic_io, only: to_char
    implicit none
    private
@@ -52,6 +53,7 @@ contains
                   new_unittest("the_pair_basis_lowers_a_monomer", test_bsse_is_real), &
                   new_unittest("an_isolated_ghost_changes_nothing", test_far_ghost), &
                   new_unittest("a_signed_index_ghosts_its_monomer", test_signed_indices), &
+                  new_unittest("a_ghost_has_no_core_to_freeze", test_ghost_core), &
                   new_unittest("vmfc_reproduces_the_supermolecule", test_vmfc_identity), &
                   new_unittest("the_subset_key_ghosts_the_complement", test_subset_key), &
                   new_unittest("a_ghosted_row_keeps_its_ghosts", test_row_subset_key), &
@@ -315,6 +317,40 @@ contains
       call check(error,.not. allocated(pair%is_ghost), &
                  "an unghosted fragment should carry no mask at all")
    end subroutine test_signed_indices
+
+   subroutine test_ghost_core(error)
+      !! A frozen core is counted over the real atoms, never over ghost centres
+      !!
+      !! A ghost keeps its element in `element_numbers`, for its basis. Counted
+      !! there, water in the pair basis froze two orbitals rather than one --
+      !! its own oxygen 1s and then its lowest valence orbital in the ghost
+      !! oxygen's place -- which put the counterpoise monomer 52 mHartree above
+      !! the isolated one at MP2/cc-pVDZ, and the VMFC dimer interaction at -75
+      !! kcal/mol.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: pair, a_in_pair
+      type(error_t) :: err
+
+      call two_water_system(sys_geom)
+      call build_fragment_from_indices(sys_geom, [1, 2], pair, err)
+      call build_fragment_from_indices(sys_geom, [1, -2], a_in_pair, err)
+      call check(error,.not. err%has_error(), "building: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, size(a_in_pair%real_element_numbers()), N_MONOMER, &
+                 "the ghosted fragment should report three real atoms")
+      if (allocated(error)) return
+      call check(error, all(a_in_pair%real_element_numbers() == pair%element_numbers(1:N_MONOMER)), &
+                 "the real atoms should be the first monomer's, in order")
+      if (allocated(error)) return
+      call check(error, core_orbital_count(a_in_pair%real_element_numbers()), 1, &
+                 "water in the pair basis has one core orbital, not one per oxygen centre")
+      if (allocated(error)) return
+      call check(error, core_orbital_count(pair%real_element_numbers()), 2, &
+                 "an unghosted fragment should count every atom")
+   end subroutine test_ghost_core
 
    subroutine test_vmfc_identity(error)
       !! VMFC(2) on two fragments is the supermolecule, exactly

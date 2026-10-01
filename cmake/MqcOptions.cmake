@@ -252,6 +252,13 @@ set(MQC_BASIS_SETS
     "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
     "def2-qzvp;def2-qzvp-rifit;def2-qzvpd;def2-qzvpp;def2-qzvpp-rifit;def2-qzvppd;def2-qzvppd-rifit"
     "def2-mtzvp;def2-mtzvpp;def2-mtzvpp-rij;def2-universal-jfit;def2-universal-jkfit;def2-ecp"
+    # every augmented Dunning RI fit the bundle carries, so a density-fitted
+    # correlated run in an aug- set can name its matching auxiliary: valence and
+    # core-valence, each with its -pp twin for the pseudopotential sets
+    "aug-cc-pvdz-rifit;aug-cc-pvtz-rifit;aug-cc-pvqz-rifit;aug-cc-pv5z-rifit;aug-cc-pv6z-rifit"
+    "aug-cc-pvdz-pp-rifit;aug-cc-pvtz-pp-rifit;aug-cc-pvqz-pp-rifit;aug-cc-pv5z-pp-rifit"
+    "aug-cc-pwcvdz-rifit;aug-cc-pwcvtz-rifit;aug-cc-pwcvqz-rifit;aug-cc-pwcv5z-rifit"
+    "aug-cc-pwcvdz-pp-rifit;aug-cc-pwcvtz-pp-rifit;aug-cc-pwcvqz-pp-rifit;aug-cc-pwcv5z-pp-rifit"
     # Fitted atomic potentials for the `sap` initial guess. Not basis sets: each
     # is one s shell per element whose coefficients expand -Z(r)/r, and the BSE
     # ships them with role `guess`. Both families, since which one is better

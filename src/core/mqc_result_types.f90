@@ -20,6 +20,19 @@ module mqc_result_types
    public :: frontier_orbitals
    public :: scf_not_converged_message
    public :: scf_status_label
+   public :: correlation_parts
+
+   integer, parameter, public :: N_CORRELATION_PARTS = 5
+      !! How many pieces `correlation_parts` splits a correlation energy into
+   character(len=*), parameter :: PART_MP2_SS = "mp2_same_spin"
+   character(len=*), parameter :: PART_MP2_OS = "mp2_opposite_spin"
+   character(len=*), parameter :: PART_CC_S = "cc_singles"
+   character(len=*), parameter :: PART_CC_D = "cc_doubles"
+   character(len=*), parameter :: PART_CC_T = "cc_triples"
+   character(len=17), parameter, public :: CORRELATION_PART_NAMES(N_CORRELATION_PARTS) = &
+                                           [character(len=17) :: PART_MP2_SS, PART_MP2_OS, &
+                                                                  PART_CC_S, PART_CC_D, PART_CC_T]
+      !! The names those pieces are reported under, in the order they come
 
    integer, parameter :: SCF_UNKNOWN = 0
       !! The method did not say. Not a claim that it converged.
@@ -235,6 +248,10 @@ module mqc_result_types
 
       ! Computation status flags
       logical :: has_energy = .false.    !! Energy has been computed
+      logical :: energy_total_only = .false.
+         !! Only the total is known, held in `energy%scf` with every other
+         !! component zero. Set on a fragment taken back from a checkpoint,
+         !! which records one number per term.
       logical :: has_gradient = .false.  !! Gradient has been computed
       logical :: has_sigma = .false.     !! Stress tensor has been computed
       logical :: has_hessian = .false.   !! Hessian has been computed
@@ -280,6 +297,20 @@ module mqc_result_types
       logical :: has_hessian = .false.               !! Hessian has been computed
       logical :: has_dipole = .false.                !! Dipole has been computed
       logical :: has_dipole_derivatives = .false.    !! Dipole derivatives have been computed
+
+      ! The same expansion carried out over each term's correlation energy
+      ! alone, `energy%mp2%total() + energy%cc%total()`. Set only when some
+      ! term has one; the reference part of any level is the total minus this.
+      real(dp) :: correlation_energy = 0.0_dp
+         !! Correlation part of `total_energy` (Hartree)
+      real(dp), allocatable :: correlation_by_level(:)
+         !! (max_level) correlation part of each level's sum (Hartree)
+      real(dp), allocatable :: correlation_parts_by_level(:, :)
+         !! (max_level, N_CORRELATION_PARTS) the same, split as
+         !! `correlation_parts` splits a term; a part no term has stays zero
+      logical :: correlation_part_present(N_CORRELATION_PARTS) = .false.
+         !! Which parts some term had, and so which columns above mean anything
+      logical :: has_correlation = .false.           !! The four above are set
 
       ! The interaction energy of one fragment, when `compute_mbe` was given
       ! a reference. `total_energy` and `has_energy` are then left unset: the
@@ -346,6 +377,20 @@ contains
          call logger%warning("MP2 opposite-spin correlation energy is positive - possible instability!")
       end if
    end subroutine mp2_check_stability
+
+   pure function correlation_parts(energy) result(parts)
+      !! A term's correlation energy in its separately reportable pieces
+      !!
+      !! In the order of `CORRELATION_PART_NAMES`: the MP2 same- and
+      !! opposite-spin parts, each scaled as the method scales it, then the CC
+      !! singles, doubles and triples. They add up to `mp2%total() +
+      !! cc%total()`; a method fills only its own, and leaves the rest zero.
+      type(energy_t), intent(in) :: energy
+      real(dp) :: parts(N_CORRELATION_PARTS)
+
+      parts = [energy%mp2%ss_scale*energy%mp2%ss, energy%mp2%os_scale*energy%mp2%os, &
+               energy%cc%singles, energy%cc%doubles, energy%cc%triples]
+   end function correlation_parts
 
    pure function cc_total(this) result(total)
       !! Compute total CC correlation energy
@@ -457,6 +502,7 @@ contains
       call this%energy%reset()
       call this%error%clear()
       this%has_energy = .false.
+      this%energy_total_only = .false.
       this%has_gradient = .false.
       this%has_sigma = .false.
       this%has_hessian = .false.
@@ -491,6 +537,8 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
+      if (allocated(this%correlation_parts_by_level)) deallocate (this%correlation_parts_by_level)
       if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
       if (allocated(this%interaction_count_by_level)) deallocate (this%interaction_count_by_level)
       call this%reset()
@@ -505,6 +553,9 @@ contains
       this%has_hessian = .false.
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
+      this%correlation_energy = 0.0_dp
+      this%correlation_part_present = .false.
+      this%has_correlation = .false.
       this%reference_fragment = 0
       this%reference_energy = 0.0_dp
       this%interaction_energy = 0.0_dp
@@ -664,6 +715,9 @@ contains
       ! Send energy components
       call send(comm, result%energy%scf, dest, tag)
       call send(comm, result%energy%dispersion, dest, tag)
+      call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%mp2%ss_scale, dest, tag)
+      call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
       call send(comm, result%energy%mp2%os, dest, tag)
       call send(comm, result%energy%cc%singles, dest, tag)
@@ -766,6 +820,9 @@ contains
 
       ! Send other energy components (blocking to avoid needing multiple request handles)
       call send(comm, result%energy%dispersion, dest, tag)
+      call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%mp2%ss_scale, dest, tag)
+      call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
       call send(comm, result%energy%mp2%os, dest, tag)
       call send(comm, result%energy%cc%singles, dest, tag)
@@ -876,6 +933,9 @@ contains
       ! Receive energy components
       call recv(comm, result%energy%scf, source, tag, status)
       call recv(comm, result%energy%dispersion, source, tag, status)
+      call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
+      call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
       call recv(comm, result%energy%mp2%os, source, tag, status)
       call recv(comm, result%energy%cc%singles, source, tag, status)
@@ -994,6 +1054,9 @@ contains
 
       ! Receive other energy components (blocking to avoid needing multiple request handles)
       call recv(comm, result%energy%dispersion, source, tag, status)
+      call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
+      call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
       call recv(comm, result%energy%mp2%os, source, tag, status)
       call recv(comm, result%energy%cc%singles, source, tag, status)

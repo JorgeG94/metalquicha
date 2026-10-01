@@ -2,7 +2,7 @@ module test_mqc_mbe
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_mbe, only: compute_mbe, collect_unconverged, score_unconverged
    use mqc_result_types, only: SCF_CONVERGED, SCF_NOT_CONVERGED, SCF_UNKNOWN
-   use mqc_result_types, only: calculation_result_t, mbe_result_t
+   use mqc_result_types, only: calculation_result_t, mbe_result_t, N_CORRELATION_PARTS
    use mqc_frag_utils, only: apply_reference_closure, generate_fragment_list, &
                              create_monomer_list, get_nfrags, binomial
    use pic_types, only: dp, int64
@@ -29,9 +29,230 @@ contains
                   new_unittest("unconverged_carry_their_monomers", test_unconverged_carry_their_monomers), &
                   new_unittest("unconverged_ignores_silent_methods", test_unconverged_ignores_silent_methods), &
                   new_unittest("converged_run_says_so", test_converged_run_says_so), &
-                  new_unittest("failures_name_their_culprit", test_failures_name_their_culprit) &
+                  new_unittest("failures_name_their_culprit", test_failures_name_their_culprit), &
+                  new_unittest("correlation_expands_on_its_own", test_correlation_split), &
+                  new_unittest("scf_only_run_has_no_split", test_no_correlation_no_split), &
+                  new_unittest("checkpointed_term_withholds_split", test_checkpoint_withholds_split), &
+                  new_unittest("mp2_spin_parts_add_up_by_level", test_mp2_parts), &
+                  new_unittest("cc_triples_expand_on_their_own", test_cc_parts) &
                   ]
    end subroutine collect_mqc_mbe_tests
+
+   subroutine three_body_terms(polymers, results)
+      !! Three monomers, their three pairs and the trimer, in size order, with
+      !! an SCF part and an SCS-scaled MP2 part that are neither additive nor
+      !! proportional to each other, so a split that mixed them would show
+      integer, allocatable, intent(out) :: polymers(:, :)
+      type(calculation_result_t), allocatable, intent(out) :: results(:)
+
+      integer :: i
+
+      allocate (polymers(7, 3), results(7))
+      polymers = 0
+      polymers(1, 1) = 1
+      polymers(2, 1) = 2
+      polymers(3, 1) = 3
+      polymers(4, 1:2) = [1, 2]
+      polymers(5, 1:2) = [1, 3]
+      polymers(6, 1:2) = [2, 3]
+      polymers(7, 1:3) = [1, 2, 3]
+      do i = 1, 7
+         results(i)%has_energy = .true.
+         results(i)%energy%scf = -76.0_dp*count(polymers(i, :) > 0) - 0.002_dp*real(i, dp)**2
+         results(i)%energy%mp2%ss = -0.05_dp*count(polymers(i, :) > 0) - 0.0007_dp*real(i, dp)
+         results(i)%energy%mp2%os = -0.15_dp*count(polymers(i, :) > 0) - 0.0003_dp*real(i, dp)**3
+         results(i)%energy%mp2%ss_scale = 1.0_dp/3.0_dp
+         results(i)%energy%mp2%os_scale = 1.2_dp
+      end do
+   end subroutine three_body_terms
+
+   subroutine test_correlation_split(error)
+      !! The correlation part of each level is the expansion of the terms'
+      !! correlation energies alone, and the SCF part is the expansion of their
+      !! SCF energies alone
+      !!
+      !! Checked against two independent expansions of the same terms, one
+      !! holding only the SCF energies and one only the scaled correlation, so
+      !! what is tested is that the split is the expansion of each part rather
+      !! than any particular arithmetic.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:), scf_only(:), corr_only(:)
+      type(mbe_result_t) :: mbe_result, scf_mbe, corr_mbe
+      integer, allocatable :: polymers(:, :)
+      integer :: i
+      real(dp) :: e1, e2, e3, e12, e13, e23, e123, three_body
+
+      call three_body_terms(polymers, results)
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+
+      call check(error, mbe_result%has_correlation, &
+                 "an MP2 expansion did not report its correlation part")
+      if (allocated(error)) return
+      call check(error, size(mbe_result%correlation_by_level), 3, &
+                 "the correlation breakdown is not one entry per level")
+      if (allocated(error)) return
+
+      allocate (scf_only(7), corr_only(7))
+      do i = 1, 7
+         scf_only(i)%has_energy = .true.
+         scf_only(i)%energy%scf = results(i)%energy%scf
+         corr_only(i)%has_energy = .true.
+         corr_only(i)%energy%scf = results(i)%energy%mp2%total()
+      end do
+      call compute_mbe(polymers, 7_int64, 3, scf_only, scf_mbe)
+      call compute_mbe(polymers, 7_int64, 3, corr_only, corr_mbe)
+
+      call check(error, mbe_result%correlation_energy, corr_mbe%total_energy, thr=1.0e-12_dp, &
+                 message="the correlation part is not the expansion of the correlation energies")
+      if (allocated(error)) return
+      call check(error, mbe_result%total_energy - mbe_result%correlation_energy, &
+                 scf_mbe%total_energy, thr=1.0e-12_dp, &
+                 message="total minus correlation is not the expansion of the SCF energies")
+      if (allocated(error)) return
+
+      ! The three-body correlation term written out, so the level a value
+      ! lands in is checked as well as the sum.
+      e1 = results(1)%energy%mp2%total()
+      e2 = results(2)%energy%mp2%total()
+      e3 = results(3)%energy%mp2%total()
+      e12 = results(4)%energy%mp2%total()
+      e13 = results(5)%energy%mp2%total()
+      e23 = results(6)%energy%mp2%total()
+      e123 = results(7)%energy%mp2%total()
+      three_body = e123 - e12 - e13 - e23 + e1 + e2 + e3
+      call check(error, mbe_result%correlation_by_level(1), e1 + e2 + e3, thr=1.0e-12_dp, &
+                 message="the one-body correlation is not the monomers' sum")
+      if (allocated(error)) return
+      call check(error, mbe_result%correlation_by_level(2), &
+                 (e12 - e1 - e2) + (e13 - e1 - e3) + (e23 - e2 - e3), thr=1.0e-12_dp, &
+                 message="the two-body correlation is not the pair increments' sum")
+      if (allocated(error)) return
+      call check(error, mbe_result%correlation_by_level(3), three_body, thr=1.0e-12_dp, &
+                 message="the three-body correlation is not the trimer increment")
+   end subroutine test_correlation_split
+
+   subroutine test_no_correlation_no_split(error)
+      !! An expansion with no correlation energy anywhere reports no split
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
+      integer, allocatable :: polymers(:, :)
+      integer :: i
+
+      call three_body_terms(polymers, results)
+      do i = 1, 7
+         call results(i)%energy%mp2%reset()
+      end do
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+
+      call check(error,.not. mbe_result%has_correlation, &
+                 "a Hartree-Fock expansion reported a correlation part")
+      if (allocated(error)) return
+      call check(error,.not. allocated(mbe_result%correlation_by_level), &
+                 "a Hartree-Fock expansion allocated a correlation breakdown")
+   end subroutine test_no_correlation_no_split
+
+   subroutine test_checkpoint_withholds_split(error)
+      !! One term known only by its total withholds the split, not the total
+      !!
+      !! A checkpoint records each term's total in `energy%scf`. Splitting
+      !! anyway would put that term's correlation in the SCF part, and the
+      !! breakdown would be wrong while still adding up.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result, reference
+      integer, allocatable :: polymers(:, :)
+      real(dp) :: restored
+
+      call three_body_terms(polymers, results)
+      call compute_mbe(polymers, 7_int64, 3, results, reference)
+
+      restored = results(5)%energy%total()
+      call results(5)%energy%reset()
+      results(5)%energy%scf = restored
+      results(5)%energy_total_only = .true.
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+
+      call check(error,.not. mbe_result%has_correlation, &
+                 "a term known only by its total was split as if it had no correlation")
+      if (allocated(error)) return
+      call check(error, mbe_result%total_energy, reference%total_energy, thr=1.0e-12_dp, &
+                 message="a checkpointed term changed the total")
+   end subroutine test_checkpoint_withholds_split
+
+   subroutine test_mp2_parts(error)
+      !! The scaled same- and opposite-spin parts are reported, and only they,
+      !! and at every level they add up to the correlation energy
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
+      integer, allocatable :: polymers(:, :)
+      integer :: n
+
+      call three_body_terms(polymers, results)
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+
+      call check(error, all(mbe_result%correlation_part_present .eqv. &
+                            [.true., .true., .false., .false., .false.]), &
+                 "an MP2 expansion should report its two spin parts and nothing else")
+      if (allocated(error)) return
+      do n = 1, 3
+         call check(error, sum(mbe_result%correlation_parts_by_level(n, :)), &
+                    mbe_result%correlation_by_level(n), thr=1.0e-12_dp, &
+                    message="the spin parts of a level do not add up to its correlation")
+         if (allocated(error)) return
+      end do
+   end subroutine test_mp2_parts
+
+   subroutine test_cc_parts(error)
+      !! The (T) part of each level is the expansion of the terms' triples alone
+      !!
+      !! Checked against a separate expansion holding only the triples, so the
+      !! part is shown to be its own many-body series and not a share of the
+      !! total's.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(calculation_result_t), allocatable :: results(:), triples_only(:)
+      type(mbe_result_t) :: mbe_result, triples_mbe
+      integer, allocatable :: polymers(:, :)
+      integer :: i, n
+
+      call three_body_terms(polymers, results)
+      allocate (triples_only(7))
+      do i = 1, 7
+         call results(i)%energy%mp2%reset()
+         results(i)%energy%cc%singles = 0.001_dp*real(i, dp)
+         results(i)%energy%cc%doubles = -0.2_dp*count(polymers(i, :) > 0) - 0.0005_dp*real(i, dp)**2
+         results(i)%energy%cc%triples = -0.01_dp*count(polymers(i, :) > 0) + 0.0002_dp*real(i, dp)**3
+         triples_only(i)%has_energy = .true.
+         triples_only(i)%energy%scf = results(i)%energy%cc%triples
+      end do
+
+      call compute_mbe(polymers, 7_int64, 3, results, mbe_result)
+      call compute_mbe(polymers, 7_int64, 3, triples_only, triples_mbe)
+
+      call check(error, all(mbe_result%correlation_part_present .eqv. &
+                            [.false., .false., .true., .true., .true.]), &
+                 "a CCSD(T) expansion should report singles, doubles and triples")
+      if (allocated(error)) return
+      call check(error, size(mbe_result%correlation_parts_by_level, 2), N_CORRELATION_PARTS, &
+                 "the parts are not one column each")
+      if (allocated(error)) return
+      call check(error, sum(mbe_result%correlation_parts_by_level(:, 5)), &
+                 triples_mbe%total_energy, thr=1.0e-12_dp, &
+                 message="the (T) part is not the expansion of the triples")
+      if (allocated(error)) return
+      do n = 1, 3
+         call check(error, sum(mbe_result%correlation_parts_by_level(n, :)), &
+                    mbe_result%correlation_by_level(n), thr=1.0e-12_dp, &
+                    message="the CC parts of a level do not add up to its correlation")
+         if (allocated(error)) return
+      end do
+   end subroutine test_cc_parts
 
    subroutine test_interaction_energy(error)
       !! The reduced expansion's interaction energy is the full expansion's,

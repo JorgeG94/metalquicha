@@ -24,6 +24,7 @@ module test_mqc_czt_rcc
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2
    use mqc_czt_cc, only: cc_result_t, run_czt_ccsd
    use mqc_czt_rcc, only: rcc_result_t, run_czt_rccsd, ri_ladder_prefers_direct
+   use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    implicit none
    private
    public :: collect_mqc_czt_rcc_tests
@@ -42,7 +43,8 @@ contains
                   new_unittest("fitted_path_agrees_with_spin_orbital", test_fitted_identity), &
                   new_unittest("direct_ri_ladder_agrees_with_assembled", test_ri_ladder_direct), &
                   new_unittest("frozen_core_agrees_between_formulations", test_frozen_identity), &
-                  new_unittest("spatial_triples_equal_spin_orbital_triples", test_triples_identity) &
+                  new_unittest("spatial_triples_equal_spin_orbital_triples", test_triples_identity), &
+                  new_unittest("spatial_ccsd_does_not_depend_on_thread_count", test_thread_count) &
                   ]
    end subroutine collect_mqc_czt_rcc_tests
 
@@ -489,6 +491,54 @@ contains
       call check(error, spatial%e_triples < 0.0_dp, &
                  "(T) must be negative here")
    end subroutine test_triples_identity
+
+   subroutine test_thread_count(error)
+      !! One thread and three must give the same CCSD
+      !!
+      !! Every loop nest in the iteration is split over an index it writes, and
+      !! each element sums its terms in the same order however the work is
+      !! divided, so nothing here should move with the thread count. Checked to
+      !! 1e-10 rather than exactly, because a column range handed to the BLAS is
+      !! not promised to round the same way at every split; a race, or a nest
+      !! split over the index it contracts, moves the energy by far more.
+      !!
+      !! Three rather than two so the splits fall unevenly across every extent.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(rcc_result_t) :: one, three
+      integer :: threads_before
+
+      call converged_water(mol, scf, err, "cc-pvdz")
+      call check(error,.not. err%has_error() .and. scf%converged, "the SCF must converge")
+      if (allocated(error)) return
+
+      threads_before = omp_get_max_threads()
+      call omp_set_num_threads(1)
+      call run_czt_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, 1, &
+                         60, 1.0e-10_dp, .false., .false., one, err)
+      call omp_set_num_threads(3)
+      if (.not. err%has_error()) then
+         call run_czt_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, 1, &
+                            60, 1.0e-10_dp, .false., .false., three, err)
+      end if
+      call omp_set_num_threads(threads_before)
+      call mol%destroy()
+
+      call check(error,.not. err%has_error() .and. one%converged .and. three%converged, &
+                 "CCSD must converge at both thread counts")
+      if (allocated(error)) return
+      call check(error, one%iterations, three%iterations, &
+                 "the thread count changed how many iterations CCSD took")
+      if (allocated(error)) return
+      call check(error, abs(one%e_correlation - three%e_correlation) < 1.0e-10_dp, &
+                 "the CCSD energy moved with the thread count")
+      if (allocated(error)) return
+      call check(error, abs(one%e_singles - three%e_singles) < 1.0e-10_dp, &
+                 "the singles energy moved with the thread count")
+   end subroutine test_thread_count
 
 end module test_mqc_czt_rcc
 

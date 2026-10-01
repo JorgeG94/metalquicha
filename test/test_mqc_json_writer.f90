@@ -41,6 +41,7 @@ contains
                   new_unittest("mbe_document_carries_its_levels", test_mbe), &
                   new_unittest("connected_pairs_are_flagged_noted_and_sorted_last", &
                                test_connected_pairs), &
+                  new_unittest("mbe_correlation_split_is_written", test_correlation_split), &
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
@@ -324,6 +325,110 @@ contains
       call json%get("jw_connected.levels(1).fragments(1).connected", flag, found)
       call check(error,.not. found, "a monomer carried a connected flag")
    end subroutine test_connected_pairs
+
+   subroutine test_correlation_split(error)
+      !! A correlated expansion writes its SCF and correlation parts beside
+      !! every total, and the two add up to it
+      !!
+      !! Two monomers and their pair. Only the correlation numbers are given;
+      !! the SCF ones are written as the difference, so a sign slip there would
+      !! show as a pair that no longer sums to the total.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      real(dp) :: value, scf, correlation
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_MBE
+      data%total_energy = -152.5_dp
+      data%has_energy = .true.
+      data%fragment_count = 3_int64
+      data%max_level = 2
+      data%fragment_breakdown = "json"
+      allocate (data%polymers(3, 2))
+      data%polymers = 0
+      data%polymers(1, 1) = 1
+      data%polymers(2, 1) = 2
+      data%polymers(3, :) = [1, 2]
+      allocate (data%fragment_energies(3))
+      data%fragment_energies = [-76.24_dp, -76.25_dp, -152.5_dp]
+      allocate (data%delta_energies(3))
+      data%delta_energies = [-76.24_dp, -76.25_dp, -0.01_dp]
+      allocate (data%sum_by_level(2))
+      data%sum_by_level = [-152.49_dp, -0.01_dp]
+      allocate (data%fragment_correlation(3))
+      data%fragment_correlation = [-0.2_dp, -0.21_dp, -0.414_dp]
+      allocate (data%correlation_deltas(3))
+      data%correlation_deltas = [-0.2_dp, -0.21_dp, -0.004_dp]
+      allocate (data%correlation_by_level(2))
+      data%correlation_by_level = [-0.41_dp, -0.004_dp]
+      allocate (data%correlation_parts_by_level(2, 5))
+      data%correlation_parts_by_level = 0.0_dp
+      data%correlation_parts_by_level(:, 4) = [-0.40_dp, -0.003_dp]
+      data%correlation_parts_by_level(:, 5) = [-0.01_dp, -0.001_dp]
+      data%correlation_part_present = [.false., .false., .false., .true., .true.]
+
+      call written_document(data, json, "jw_corr.json")
+
+      call json%get("jw_corr.correlation_energy", correlation, found)
+      call check(error, found, "the top-level correlation energy is missing")
+      if (allocated(error)) return
+      call check(error, correlation, -0.414_dp, thr=1.0e-12_dp, &
+                 message="the top-level correlation energy is not the levels' sum")
+      if (allocated(error)) return
+      call json%get("jw_corr.scf_energy", scf, found)
+      call check(error, found, "the top-level SCF energy is missing")
+      if (allocated(error)) return
+      call check(error, scf + correlation, -152.5_dp, thr=1.0e-12_dp, &
+                 message="the top-level parts do not add up to the total")
+      if (allocated(error)) return
+
+      call json%get("jw_corr.levels(2).correlation_energy", value, found)
+      call check(error, found, "the dimer level carries no correlation energy")
+      if (allocated(error)) return
+      call check(error, value, -0.004_dp, thr=1.0e-12_dp, &
+                 message="the dimer level's correlation energy is wrong")
+      if (allocated(error)) return
+      call json%get("jw_corr.levels(2).scf_energy", value, found)
+      call check(error, found, "the dimer level carries no SCF energy")
+      if (allocated(error)) return
+      call check(error, value, -0.006_dp, thr=1.0e-12_dp, &
+                 message="the dimer level's SCF energy is not total minus correlation")
+      if (allocated(error)) return
+
+      ! The parts some term had, and only those, under their own names.
+      call json%get("jw_corr.levels(2).correlation_parts.cc_triples", value, found)
+      call check(error, found, "the dimer level carries no (T) part")
+      if (allocated(error)) return
+      call check(error, value, -0.001_dp, thr=1.0e-12_dp, &
+                 message="the dimer level's (T) part is wrong")
+      if (allocated(error)) return
+      call json%get("jw_corr.correlation_parts.cc_doubles", value, found)
+      call check(error, found, "the top level carries no doubles part")
+      if (allocated(error)) return
+      call check(error, value, -0.403_dp, thr=1.0e-12_dp, &
+                 message="the top-level doubles part is not the levels' sum")
+      if (allocated(error)) return
+      call json%get("jw_corr.correlation_parts.mp2_same_spin", value, found)
+      call check(error,.not. found, "a part no term had was written")
+      if (allocated(error)) return
+
+      call json%get("jw_corr.levels(2).fragments(1).correlation_delta_energy", value, found)
+      call check(error, found, "the pair carries no correlation increment")
+      if (allocated(error)) return
+      call check(error, value, -0.004_dp, thr=1.0e-12_dp, &
+                 message="the pair's correlation increment is wrong")
+      if (allocated(error)) return
+
+      ! A monomer's increment is its energy, so like `delta_energy` it is not
+      ! written there.
+      call json%get("jw_corr.levels(1).fragments(1).correlation_delta_energy", value, found)
+      call check(error,.not. found, "a monomer carried a correlation increment")
+      if (allocated(error)) return
+      call json%get("jw_corr.levels(1).fragments(1).correlation_energy", value, found)
+      call check(error, found, "a monomer carried no correlation energy")
+   end subroutine test_correlation_split
 
    subroutine test_pie(error)
       type(error_type), allocatable, intent(out) :: error

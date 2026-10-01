@@ -6,7 +6,7 @@ module mqc_diis
    !! it. Vectors are stored flat, one column per subspace entry, which serves
    !! the restricted case (one n_ao*n_ao Fock) and the unrestricted case (both
    !! spins stacked into one vector) through the same code.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_ediis, only: ediis_coefficients, adiis_coefficients
    implicit none
@@ -24,6 +24,16 @@ module mqc_diis
    ! than reimplementing them.
 
    real(dp), parameter :: PIVOT_FLOOR = 1.0e-14_dp
+
+   integer(int64), parameter :: THREAD_MIN = 8388608_int64
+   ! Vector length from which the history is read and written by all
+   ! threads. An SCF's vectors are n_bf^2 and stay below it up to about
+   ! 2900 basis functions, where they are serial and unchanged; a coupled
+   ! cluster amplitude vector is O(n_occ^2 n_vir^2) and passes it early.
+   integer(int64), parameter :: DOT_CHUNK = 65536_int64
+   ! Elements per partial sum of a threaded dot product. Fixed, not tied to
+   ! the thread count, so the overlap -- and the extrapolation it decides --
+   ! is the same number however many threads computed it.
       !! Below this a pivot is treated as singular and extrapolation is skipped
 
    real(dp), parameter, public :: ACCEL_SWITCH = 1.0e-2_dp
@@ -182,14 +192,14 @@ contains
       if (this%n_stored < this%max_vectors) this%n_stored = this%n_stored + 1
       slot = this%newest
 
-      this%fock_history(:, slot) = fock
-      this%error_history(:, slot) = error_vector
+      call long_copy(fock, this%fock_history(:, slot))
+      call long_copy(error_vector, this%error_history(:, slot))
 
       ! Only the new entry's row and column of the overlap matrix have changed.
       do age = 1, this%n_stored
          other = slot_of_age(this, age)
-         this%overlap(slot, other) = sum(this%error_history(:, slot)* &
-                                         this%error_history(:, other))
+         this%overlap(slot, other) = long_dot(this%error_history(:, slot), &
+                                              this%error_history(:, other))
          this%overlap(other, slot) = this%overlap(slot, other)
       end do
 
@@ -354,18 +364,109 @@ contains
 
       real(dp), allocatable :: coefficients(:)
       integer :: i
+      integer, allocatable :: slots(:)
 
       call diis_coefficients(this%overlap, this%newest, this%n_stored, &
                              this%max_vectors, coefficients, ok)
-      if (ok) then
+      if (ok .and. int(this%n_fock, int64) < THREAD_MIN) then
          fock = 0.0_dp
          do i = 1, this%n_stored
             fock = fock + coefficients(i)*this%fock_history(:, slot_of_age(this, i))
          end do
+      else if (ok) then
+         ! The same sum per element, oldest entry first, so the result does not
+         ! depend on whether this branch or the one above produced it.
+         allocate (slots(this%n_stored))
+         do i = 1, this%n_stored
+            slots(i) = slot_of_age(this, i)
+         end do
+         call long_combination(this%fock_history, slots, coefficients, fock)
       end if
 
       if (allocated(coefficients)) deallocate (coefficients)
    end subroutine diis_extrapolate
+
+   subroutine long_combination(history, slots, coefficients, combined)
+      !! combined = sum_i coefficients(i) history(:, slots(i)), by all threads
+      !!
+      !! Each element sums the entries in the order given, from zero, which is
+      !! the order the serial whole-array form uses.
+      real(dp), intent(in) :: history(:, :)
+      integer, intent(in) :: slots(:)
+      real(dp), intent(in) :: coefficients(:)
+      real(dp), intent(out) :: combined(:)
+
+      integer(int64) :: p
+      integer :: i
+      real(dp) :: acc
+
+      !$omp parallel do default(none) shared(history, slots, coefficients, combined) &
+      !$omp    private(p, i, acc) schedule(static)
+      do p = 1_int64, size(combined, kind=int64)
+         acc = 0.0_dp
+         do i = 1, size(slots)
+            acc = acc + coefficients(i)*history(p, slots(i))
+         end do
+         combined(p) = acc
+      end do
+      !$omp end parallel do
+   end subroutine long_combination
+
+   subroutine long_copy(src, dst)
+      !! dst = src, by all threads when the vectors are long
+      real(dp), intent(in) :: src(:)
+      real(dp), intent(out) :: dst(:)
+
+      integer(int64) :: p
+
+      if (size(src, kind=int64) < THREAD_MIN) then
+         dst = src
+         return
+      end if
+      !$omp parallel do default(none) shared(src, dst) private(p) schedule(static)
+      do p = 1_int64, size(src, kind=int64)
+         dst(p) = src(p)
+      end do
+      !$omp end parallel do
+   end subroutine long_copy
+
+   function long_dot(x, y) result(d)
+      !! sum(x*y), by all threads when the vectors are long
+      !!
+      !! Below `THREAD_MIN` it is exactly the serial sum it replaced. Above it,
+      !! partial sums over fixed chunks of `DOT_CHUNK` added in order, which is
+      !! deterministic at any thread count.
+      real(dp), intent(in) :: x(:), y(:)
+      real(dp) :: d
+
+      integer(int64) :: n, n_chunks, chunk, p, p0, p1
+      real(dp), allocatable :: partial(:)
+
+      n = size(x, kind=int64)
+      if (n < THREAD_MIN) then
+         d = sum(x*y)
+         return
+      end if
+
+      n_chunks = (n + DOT_CHUNK - 1_int64)/DOT_CHUNK
+      allocate (partial(n_chunks))
+      !$omp parallel do default(none) shared(x, y, n, n_chunks, partial) &
+      !$omp    private(chunk, p, p0, p1) schedule(static)
+      do chunk = 1_int64, n_chunks
+         p0 = (chunk - 1_int64)*DOT_CHUNK + 1_int64
+         p1 = min(chunk*DOT_CHUNK, n)
+         partial(chunk) = 0.0_dp
+         do p = p0, p1
+            partial(chunk) = partial(chunk) + x(p)*y(p)
+         end do
+      end do
+      !$omp end parallel do
+
+      d = 0.0_dp
+      do chunk = 1_int64, n_chunks
+         d = d + partial(chunk)
+      end do
+   end function long_dot
 
    subroutine diis_coefficients(overlap, newest, n_stored, max_vectors, coefficients, ok)
       !! Extrapolation weights, oldest-first, from a cached error overlap matrix

@@ -34,7 +34,7 @@ module mqc_czt_rcc
    !! **What is not held.** `(vv|vv)` is never materialised in the fitted case
    !! and is read once in the conventional one, by `particle_ladder`, a batch of
    !! `(cd)` columns at a time.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_blas_interfaces, only: pic_gemm
    use omp_lib, only: omp_get_max_threads
    use mqc_timing, only: timing_report_t
@@ -89,6 +89,31 @@ module mqc_czt_rcc
       real(dp), allocatable :: vvvv(:, :, :, :)   !! (ab|cd), conventional only
       real(dp), allocatable :: b_vv(:, :)         !! (ab, P), fitted only
    end type rcc_eris_t
+
+   type :: rcc_scratch_t
+      !! The large work arrays of one CCSD iteration, kept for the next
+      !!
+      !! A hexamer of water in aug-cc-pVDZ allocates about 6 GB of these per
+      !! iteration. Allocated fresh each time, every page is faulted in and
+      !! zeroed by the kernel and handed back with munmap, which interrupts
+      !! every core the process runs on to flush its translations -- a cost
+      !! that grows with the thread count rather than shrinking. Each routine
+      !! takes its arrays with move_alloc, allocates them only the first time,
+      !! and returns them the same way; nothing is copied and their contents
+      !! between calls mean nothing.
+      real(dp), allocatable :: tau(:, :, :, :), tmp(:, :, :, :)
+      real(dp), allocatable :: tmp2(:, :, :, :), tmp2b(:, :, :, :), woooo(:, :, :, :)
+      real(dp), allocatable :: wvoov(:, :, :, :), wvovo(:, :, :, :)
+      real(dp), allocatable :: x1(:, :), x2(:, :), x3(:, :), y1(:, :), y2(:, :), r(:, :)
+         !! The ring terms' gemm operands, (n_occ n_vir)^2 each
+      real(dp), allocatable :: voov_a1(:, :), voov_a2(:, :), voov_b1(:, :), voov_b2(:, :)
+      real(dp), allocatable :: voov_r(:, :)
+         !! `cc_wvoov`'s gemm operands
+      real(dp), allocatable :: vovo_a2(:, :), vovo_b3(:, :), vovo_r(:, :)
+         !! `cc_wvovo`'s gemm operands
+      real(dp), allocatable :: wblk(:, :, :)   !! The ladder's (ab|cd) batch
+      real(dp), allocatable :: taut(:, :)      !! tau with the virtual pair leading
+   end type rcc_scratch_t
 
    type :: rcc_result_t
       !! What a converged spin-adapted coupled cluster calculation leaves behind
@@ -269,19 +294,27 @@ contains
       real(dp), intent(out) :: fki(:, :)
 
       integer :: k, i, l, c, d
+      real(dp) :: acc
 
-      fki = 0.0_dp
+      ! Over the (k,i) pair rather than i alone: n_occ is a few dozen, too few
+      ! to share among a node's threads. Each element still sums d, c, l in
+      ! the order it always did.
+      !$omp parallel do default(none) shared(fki, eris, tau, no, nv) &
+      !$omp    private(i, k, d, c, l, acc) collapse(2) schedule(static)
       do i = 1, no
-         do d = 1, nv
-            do c = 1, nv
-               do l = 1, no
-                  do k = 1, no
-                     fki(k, i) = fki(k, i) + lvec(eris%ovov, k, c, l, d)*tau(i, l, c, d)
+         do k = 1, no
+            acc = 0.0_dp
+            do d = 1, nv
+               do c = 1, nv
+                  do l = 1, no
+                     acc = acc + lvec(eris%ovov, k, c, l, d)*tau(i, l, c, d)
                   end do
                end do
             end do
+            fki(k, i) = acc
          end do
       end do
+      !$omp end parallel do
    end subroutine cc_foo
 
    subroutine cc_fvv(eris, tau, no, nv, fac)
@@ -319,16 +352,19 @@ contains
 
       integer :: k, c, l, d
 
-      fkc = 0.0_dp
-      do d = 1, nv
-         do l = 1, no
-            do c = 1, nv
+      !$omp parallel do default(none) shared(fkc, eris, t1, no, nv) &
+      !$omp    private(c, d, l, k) schedule(static)
+      do c = 1, nv
+         fkc(:, c) = 0.0_dp
+         do d = 1, nv
+            do l = 1, no
                do k = 1, no
                   fkc(k, c) = fkc(k, c) + lvec(eris%ovov, k, c, l, d)*t1(l, d)
                end do
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine cc_fov
 
    subroutine cc_loo(eris, fki, t1, no, nv, lki)
@@ -343,10 +379,12 @@ contains
 
       integer :: k, i, l, c
 
-      lki = fki
-      do c = 1, nv
-         do l = 1, no
-            do i = 1, no
+      !$omp parallel do default(none) shared(lki, fki, eris, t1, no, nv) &
+      !$omp    private(i, c, l, k) schedule(static)
+      do i = 1, no
+         lki(:, i) = fki(:, i)
+         do c = 1, nv
+            do l = 1, no
                do k = 1, no
                   lki(k, i) = lki(k, i) &
                               + (2.0_dp*eris%ooov(k, i, l, c) - eris%ooov(l, i, k, c))*t1(l, c)
@@ -354,6 +392,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine cc_loo
 
    subroutine cc_lvv(eris, fac, t1, no, nv, lac)
@@ -365,10 +404,12 @@ contains
 
       integer :: a, c, k, d
 
-      lac = fac
-      do d = 1, nv
-         do k = 1, no
-            do c = 1, nv
+      !$omp parallel do default(none) shared(lac, fac, eris, t1, no, nv) &
+      !$omp    private(c, d, k, a) schedule(static)
+      do c = 1, nv
+         lac(:, c) = fac(:, c)
+         do d = 1, nv
+            do k = 1, no
                do a = 1, nv
                   lac(a, c) = lac(a, c) &
                               + (2.0_dp*eris%ovvv(k, d, a, c) - eris%ovvv(k, c, a, d))*t1(k, d)
@@ -376,6 +417,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine cc_lvv
 
    subroutine cc_woooo(eris, t1, tau, no, nv, w)
@@ -388,6 +430,13 @@ contains
 
       integer :: k, l, i, j, c, d
 
+      ! One pass per (i,j), which owns w(:,:,i,j): the copy, then the two t1
+      ! terms, then the tau term, so every element sums in the order the three
+      ! separate nests used. Over the pair rather than j alone, because n_occ
+      ! is too few to share among a node's threads -- the tau term is
+      ! O(n_occ^4 n_vir^2) and was running on n_occ of them.
+      !$omp parallel do default(none) shared(w, eris, t1, tau, no, nv) &
+      !$omp    private(j, i, c, d, l, k) collapse(2) schedule(static)
       do j = 1, no
          do i = 1, no
             do l = 1, no
@@ -395,14 +444,7 @@ contains
                   w(k, l, i, j) = eris%oooo(k, i, l, j)
                end do
             end do
-         end do
-      end do
-
-      !$omp parallel do default(none) shared(w, eris, t1, no, nv) &
-      !$omp    private(j, c, i, l, k) schedule(static)
-      do j = 1, no
-         do c = 1, nv
-            do i = 1, no
+            do c = 1, nv
                do l = 1, no
                   do k = 1, no
                      w(k, l, i, j) = w(k, l, i, j) &
@@ -411,16 +453,8 @@ contains
                   end do
                end do
             end do
-         end do
-      end do
-      !$omp end parallel do
-
-      !$omp parallel do default(none) shared(w, eris, tau, no, nv) &
-      !$omp    private(j, d, c, i, l, k) schedule(static)
-      do j = 1, no
-         do d = 1, nv
-            do c = 1, nv
-               do i = 1, no
+            do d = 1, nv
+               do c = 1, nv
                   do l = 1, no
                      do k = 1, no
                         w(k, l, i, j) = w(k, l, i, j) + eris%ovov(k, c, l, d)*tau(i, j, c, d)
@@ -433,7 +467,7 @@ contains
       !$omp end parallel do
    end subroutine cc_woooo
 
-   subroutine cc_wvoov(eris, t1, t2, no, nv, w)
+   subroutine cc_wvoov(eris, t1, t2, no, nv, w, scratch)
       !! W(a,k,i,c), rintermediates.cc_Wvoov
       !!
       !!   + sum_d ovvv(k,c,a,d) t1(i,d)
@@ -447,9 +481,22 @@ contains
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: w(:, :, :, :)
+      type(rcc_scratch_t), intent(inout) :: scratch
 
       integer :: a, k, i, c, d, l
+      ! The gemm operands below, declared here rather than in a block: a
+      ! parallel region's private variables are kept at routine scope.
+      real(dp), allocatable :: a1(:, :), a2(:, :), b1(:, :), b2(:, :), r(:, :)
+      integer :: nov, kc, ld, ia
 
+      call move_alloc(scratch%voov_a1, a1)
+      call move_alloc(scratch%voov_a2, a2)
+      call move_alloc(scratch%voov_b1, b1)
+      call move_alloc(scratch%voov_b2, b2)
+      call move_alloc(scratch%voov_r, r)
+
+      !$omp parallel do default(none) shared(w, eris, no, nv) &
+      !$omp    private(c, i, k, a) schedule(static)
       do c = 1, nv
          do i = 1, no
             do k = 1, no
@@ -459,6 +506,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       ! `c` is hoisted outermost in both nests so that each thread owns a
       ! disjoint slice of W. The contracted index moves inside, which costs a
@@ -501,50 +549,57 @@ contains
       ! innermost position. Grouped, it is two matrix products over compound
       ! indices, and the packing that makes them possible is
       ! O(n_occ^2 n_vir^2).
-      block
-         real(dp), allocatable :: a1(:, :), a2(:, :), b1(:, :), b2(:, :), r(:, :)
-         integer :: nov, kc, ld, ia
-
-         nov = no*nv
+      nov = no*nv
+      if (.not. allocated(a1)) then
          allocate (a1(nov, nov), a2(nov, nov), b1(nov, nov), b2(nov, nov), r(nov, nov))
+      end if
 
-         do d = 1, nv
-            do l = 1, no
-               ld = (d - 1)*no + l
-               do c = 1, nv
-                  do k = 1, no
-                     kc = (c - 1)*no + k
-                     a1(kc, ld) = eris%ovov(l, d, k, c)
-                     a2(kc, ld) = eris%ovov(l, c, k, d)
-                  end do
+      !$omp parallel do default(none) shared(a1, a2, eris, no, nv) &
+      !$omp    private(d, l, ld, c, k, kc) schedule(static)
+      do d = 1, nv
+         do l = 1, no
+            ld = (d - 1)*no + l
+            do c = 1, nv
+               do k = 1, no
+                  kc = (c - 1)*no + k
+                  a1(kc, ld) = eris%ovov(l, d, k, c)
+                  a2(kc, ld) = eris%ovov(l, c, k, d)
                end do
             end do
          end do
+      end do
+      !$omp end parallel do
 
-         do a = 1, nv
-            do i = 1, no
-               ia = (a - 1)*no + i
-               do d = 1, nv
-                  do l = 1, no
-                     ld = (d - 1)*no + l
-                     b1(ld, ia) = -0.5_dp*t2(i, l, d, a) - t1(i, d)*t1(l, a) &
-                                  + t2(i, l, a, d)
-                     b2(ld, ia) = -0.5_dp*t2(i, l, a, d)
-                  end do
+      !$omp parallel do default(none) shared(b1, b2, t1, t2, no, nv) &
+      !$omp    private(a, i, ia, d, l, ld) schedule(static)
+      do a = 1, nv
+         do i = 1, no
+            ia = (a - 1)*no + i
+            do d = 1, nv
+               do l = 1, no
+                  ld = (d - 1)*no + l
+                  b1(ld, ia) = -0.5_dp*t2(i, l, d, a) - t1(i, d)*t1(l, a) &
+                               + t2(i, l, a, d)
+                  b2(ld, ia) = -0.5_dp*t2(i, l, a, d)
                end do
             end do
          end do
+      end do
+      !$omp end parallel do
 
-         call gemm_over_columns(a1, b1, r)
-         call accumulate_wvoov(r, no, nv, w)
-         call gemm_over_columns(a2, b2, r)
-         call accumulate_wvoov(r, no, nv, w)
+      call gemm_over_columns(a1, b1, r)
+      call accumulate_wvoov(r, no, nv, w)
+      call gemm_over_columns(a2, b2, r)
+      call accumulate_wvoov(r, no, nv, w)
 
-         deallocate (a1, a2, b1, b2, r)
-      end block
+      call move_alloc(a1, scratch%voov_a1)
+      call move_alloc(a2, scratch%voov_a2)
+      call move_alloc(b1, scratch%voov_b1)
+      call move_alloc(b2, scratch%voov_b2)
+      call move_alloc(r, scratch%voov_r)
    end subroutine cc_wvoov
 
-   subroutine cc_wvovo(eris, t1, t2, no, nv, w)
+   subroutine cc_wvovo(eris, t1, t2, no, nv, w, scratch)
       !! W(a,k,c,i), rintermediates.cc_Wvovo
       !!
       !!   + sum_d ovvv(k,d,a,c) t1(i,d)
@@ -557,8 +612,18 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: w(:, :, :, :)
 
-      integer :: a, k, c, i, d, l
+      type(rcc_scratch_t), intent(inout) :: scratch
 
+      integer :: a, k, c, i, d, l
+      real(dp), allocatable :: a2(:, :), b3(:, :), r(:, :)
+      integer :: nov, kc, ld, ia
+
+      call move_alloc(scratch%vovo_a2, a2)
+      call move_alloc(scratch%vovo_b3, b3)
+      call move_alloc(scratch%vovo_r, r)
+
+      !$omp parallel do default(none) shared(w, eris, no, nv) &
+      !$omp    private(i, c, k, a) collapse(2) schedule(static)
       do i = 1, no
          do c = 1, nv
             do k = 1, no
@@ -568,6 +633,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       !$omp parallel do default(none) shared(w, eris, t1, no, nv) &
       !$omp    private(c, d, i, k, a) schedule(static)
@@ -601,42 +667,45 @@ contains
 
       ! Both amplitude terms carry the same integral ordering, so they are one
       ! gemm over (l,d) rather than two passes.
-      block
-         real(dp), allocatable :: a2(:, :), b3(:, :), r(:, :)
-         integer :: nov, kc, ld, ia
+      nov = no*nv
+      if (.not. allocated(a2)) allocate (a2(nov, nov), b3(nov, nov), r(nov, nov))
 
-         nov = no*nv
-         allocate (a2(nov, nov), b3(nov, nov), r(nov, nov))
-
-         do d = 1, nv
-            do l = 1, no
-               ld = (d - 1)*no + l
-               do c = 1, nv
-                  do k = 1, no
-                     kc = (c - 1)*no + k
-                     a2(kc, ld) = eris%ovov(l, c, k, d)
-                  end do
+      !$omp parallel do default(none) shared(a2, eris, no, nv) &
+      !$omp    private(d, l, ld, c, k, kc) schedule(static)
+      do d = 1, nv
+         do l = 1, no
+            ld = (d - 1)*no + l
+            do c = 1, nv
+               do k = 1, no
+                  kc = (c - 1)*no + k
+                  a2(kc, ld) = eris%ovov(l, c, k, d)
                end do
             end do
          end do
+      end do
+      !$omp end parallel do
 
-         do a = 1, nv
-            do i = 1, no
-               ia = (a - 1)*no + i
-               do d = 1, nv
-                  do l = 1, no
-                     ld = (d - 1)*no + l
-                     b3(ld, ia) = -0.5_dp*t2(i, l, d, a) - t1(i, d)*t1(l, a)
-                  end do
+      !$omp parallel do default(none) shared(b3, t1, t2, no, nv) &
+      !$omp    private(a, i, ia, d, l, ld) schedule(static)
+      do a = 1, nv
+         do i = 1, no
+            ia = (a - 1)*no + i
+            do d = 1, nv
+               do l = 1, no
+                  ld = (d - 1)*no + l
+                  b3(ld, ia) = -0.5_dp*t2(i, l, d, a) - t1(i, d)*t1(l, a)
                end do
             end do
          end do
+      end do
+      !$omp end parallel do
 
-         call gemm_over_columns(a2, b3, r)
-         call accumulate_wvovo(r, no, nv, w)
+      call gemm_over_columns(a2, b3, r)
+      call accumulate_wvovo(r, no, nv, w)
 
-         deallocate (a2, b3, r)
-      end block
+      call move_alloc(a2, scratch%vovo_a2)
+      call move_alloc(b3, scratch%vovo_b3)
+      call move_alloc(r, scratch%vovo_r)
    end subroutine cc_wvovo
 
    !===========================================================================
@@ -658,19 +727,34 @@ contains
 
       integer :: i, j, a, b
       real(dp) :: l
+      real(dp), allocatable :: part_s(:), part_d(:)
 
-      e_singles = 0.0_dp
-      e_doubles = 0.0_dp
+      ! One partial sum per `b`, added in order afterwards rather than reduced
+      ! by OpenMP, so the energy -- which decides convergence -- is the same
+      ! number at any thread count.
+      allocate (part_s(nv), part_d(nv))
+      !$omp parallel do default(none) shared(part_s, part_d, eris, t1, t2, no, nv) &
+      !$omp    private(b, a, j, i, l) schedule(static)
       do b = 1, nv
+         part_s(b) = 0.0_dp
+         part_d(b) = 0.0_dp
          do a = 1, nv
             do j = 1, no
                do i = 1, no
                   l = 2.0_dp*eris%ovov(i, a, j, b) - eris%ovov(i, b, j, a)
-                  e_doubles = e_doubles + l*t2(i, j, a, b)
-                  e_singles = e_singles + l*t1(i, a)*t1(j, b)
+                  part_d(b) = part_d(b) + l*t2(i, j, a, b)
+                  part_s(b) = part_s(b) + l*t1(i, a)*t1(j, b)
                end do
             end do
          end do
+      end do
+      !$omp end parallel do
+
+      e_singles = 0.0_dp
+      e_doubles = 0.0_dp
+      do b = 1, nv
+         e_singles = e_singles + part_s(b)
+         e_doubles = e_doubles + part_d(b)
       end do
    end subroutine rccsd_correlation_energy
 
@@ -691,6 +775,8 @@ contains
       integer :: i, j, a, b
       real(dp) :: d, dummy
 
+      !$omp parallel do default(none) shared(t2, eris, eps_o, eps_v, no, nv) &
+      !$omp    private(b, a, j, i, d) schedule(static)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
@@ -701,6 +787,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       block
          real(dp), allocatable :: t1zero(:, :)
@@ -738,7 +825,7 @@ contains
       !$omp end parallel do
    end subroutine add_symmetrised
 
-   subroutine rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n)
+   subroutine rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n, scratch)
       !! One amplitude update: Hirata Eqs. (35) and (36)
       !!
       !! Most contractions are written as loops that read as the einsum strings
@@ -749,15 +836,36 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       real(dp), intent(out) :: t1n(:, :), t2n(:, :, :, :)
+      type(rcc_scratch_t), intent(inout) :: scratch
+         !! Where the large arrays below live between iterations
 
       real(dp), allocatable :: tau(:, :, :, :), tmp(:, :, :, :)
       real(dp), allocatable :: fki(:, :), fac(:, :), fkc(:, :), lki(:, :), lac(:, :)
       real(dp), allocatable :: woooo(:, :, :, :), wvoov(:, :, :, :), wvovo(:, :, :, :)
       real(dp), allocatable :: tmp2(:, :, :, :), tmp2b(:, :, :, :)
+      ! The ring terms' gemm operands, at routine scope rather than in a block
+      ! because the packing loops that fill them are parallel regions.
+      real(dp), allocatable :: x1(:, :), x2(:, :), x3(:, :)
+      real(dp), allocatable :: y1(:, :), y2(:, :), r(:, :)
+      integer :: nov, ai, kc, jb
       integer :: i, j, k, l, a, b, c, d
       real(dp) :: acc, den
 
-      allocate (tau(no, no, nv, nv))
+      call move_alloc(scratch%tau, tau)
+      call move_alloc(scratch%tmp, tmp)
+      call move_alloc(scratch%tmp2, tmp2)
+      call move_alloc(scratch%tmp2b, tmp2b)
+      call move_alloc(scratch%woooo, woooo)
+      call move_alloc(scratch%wvoov, wvoov)
+      call move_alloc(scratch%wvovo, wvovo)
+      call move_alloc(scratch%x1, x1)
+      call move_alloc(scratch%x2, x2)
+      call move_alloc(scratch%x3, x3)
+      call move_alloc(scratch%y1, y1)
+      call move_alloc(scratch%y2, y2)
+      call move_alloc(scratch%r, r)
+
+      if (.not. allocated(tau)) allocate (tau(no, no, nv, nv))
       call build_tau(t1, t2, no, nv, tau)
 
       allocate (fki(no, no), fac(nv, nv), fkc(no, nv), lki(no, no), lac(nv, nv))
@@ -768,40 +876,39 @@ contains
       call cc_lvv(eris, fac, t1, no, nv, lac)
 
       ! ---- T1, Eq. (35) ----------------------------------------------------
-      t1n = 0.0_dp
+      ! The four small terms, one column of t1n per iteration of `a`. Each
+      ! element takes its terms in the order the separate nests gave them.
+      !$omp parallel do default(none) &
+      !$omp    shared(t1n, t1, t2, fac, fki, fkc, eris, no, nv) &
+      !$omp    private(a, c, k, i) schedule(static)
+      do a = 1, nv
+         t1n(:, a) = 0.0_dp
 
-      ! 'ac,ic->ia' and '-ki,ka->ia'
-      do c = 1, nv
-         do a = 1, nv
+         ! 'ac,ic->ia' and '-ki,ka->ia'
+         do c = 1, nv
             do i = 1, no
                t1n(i, a) = t1n(i, a) + fac(a, c)*t1(i, c)
             end do
          end do
-      end do
-      do k = 1, no
-         do i = 1, no
-            do a = 1, nv
+         do k = 1, no
+            do i = 1, no
                t1n(i, a) = t1n(i, a) - fki(k, i)*t1(k, a)
             end do
          end do
-      end do
 
-      ! '2 kc,kica->ia', '-kc,ikca->ia', 'kc,ic,ka->ia'
-      do c = 1, nv
-         do k = 1, no
-            do a = 1, nv
+         ! '2 kc,kica->ia', '-kc,ikca->ia', 'kc,ic,ka->ia'
+         do c = 1, nv
+            do k = 1, no
                do i = 1, no
                   t1n(i, a) = t1n(i, a) + fkc(k, c)*(2.0_dp*t2(k, i, c, a) - t2(i, k, c, a)) &
                               + fkc(k, c)*t1(i, c)*t1(k, a)
                end do
             end do
          end do
-      end do
 
-      ! '2 kcai,kc->ia' with (kc|ai) = ovov(k,c,i,a); '-kiac,kc->ia'
-      do c = 1, nv
-         do k = 1, no
-            do a = 1, nv
+         ! '2 kcai,kc->ia' with (kc|ai) = ovov(k,c,i,a); '-kiac,kc->ia'
+         do c = 1, nv
+            do k = 1, no
                do i = 1, no
                   t1n(i, a) = t1n(i, a) &
                               + (2.0_dp*eris%ovov(k, c, i, a) - eris%oovv(k, i, a, c))*t1(k, c)
@@ -809,6 +916,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       ! '2 kdac,ikcd->ia' - 'kcad,ikcd->ia', and the same pair with t2 -> t1 t1
       ! `a` outermost, so each thread owns its own columns of t1n.
@@ -855,10 +963,12 @@ contains
       end do
 
       ! ---- T2, Eq. (36) ----------------------------------------------------
-      allocate (tmp(no, no, nv, nv))
-      t2n = 0.0_dp
+      if (.not. allocated(tmp)) allocate (tmp(no, no, nv, nv))
 
-      ! t2new += ovov(i,a,j,b)   ['eris.ovov.transpose(0,2,1,3)']
+      ! t2new = ovov(i,a,j,b)   ['eris.ovov.transpose(0,2,1,3)'], which sets
+      ! every element, so there is nothing to zero first
+      !$omp parallel do default(none) shared(t2n, eris, no, nv) &
+      !$omp    private(b, a, j, i) schedule(static)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
@@ -868,10 +978,11 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       ! tmp2(a,b,i,c) = ovvv(i,a,c,b) - sum_k oovv(k,i,b,c) t1(k,a)
       ! tmp(i,j,a,b)  = sum_c tmp2(a,b,i,c) t1(j,c);  t2new += tmp + P(ij,ab) tmp
-      allocate (tmp2(nv, nv, no, nv))
+      if (.not. allocated(tmp2)) allocate (tmp2(nv, nv, no, nv))
       !$omp parallel do default(none) shared(tmp2, eris, t1, no, nv) &
       !$omp    private(c, i, b, a, k, acc) schedule(static)
       do c = 1, nv
@@ -888,11 +999,11 @@ contains
          end do
       end do
       !$omp end parallel do
-      tmp = 0.0_dp
-      ! `b` outermost: tmp(:,:,:,b) is one thread's alone.
+      ! `b` outermost: tmp(:,:,:,b) is one thread's alone, zeroed by it too.
       !$omp parallel do default(none) shared(tmp, tmp2, t1, no, nv) &
       !$omp    private(b, c, a, j, i) schedule(static)
       do b = 1, nv
+         tmp(:, :, :, b) = 0.0_dp
          do c = 1, nv
             do a = 1, nv
                do j = 1, no
@@ -905,11 +1016,12 @@ contains
       end do
       !$omp end parallel do
       call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
-      deallocate (tmp2)
 
       ! tmp2b(a,k,i,j) = sum_c ovov(k,c,i,a) t1(j,c) + ooov(j,k,i,a)
       ! tmp(i,j,a,b)   = sum_k tmp2b(a,k,i,j) t1(k,b);  t2new -= tmp + P tmp
-      allocate (tmp2b(nv, no, no, no))
+      if (.not. allocated(tmp2b)) allocate (tmp2b(nv, no, no, no))
+      !$omp parallel do default(none) shared(tmp2b, eris, t1, no, nv) &
+      !$omp    private(j, i, k, a, c, acc) collapse(2) schedule(static)
       do j = 1, no
          do i = 1, no
             do k = 1, no
@@ -923,9 +1035,13 @@ contains
             end do
          end do
       end do
-      tmp = 0.0_dp
-      do k = 1, no
-         do b = 1, nv
+      !$omp end parallel do
+      ! `b` outermost and `k` inside it, so each element still sums k in order.
+      !$omp parallel do default(none) shared(tmp, tmp2b, t1, no, nv) &
+      !$omp    private(b, k, a, j, i) schedule(static)
+      do b = 1, nv
+         tmp(:, :, :, b) = 0.0_dp
+         do k = 1, no
             do a = 1, nv
                do j = 1, no
                   do i = 1, no
@@ -935,12 +1051,14 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
       call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
-      deallocate (tmp2b)
 
       ! 'klij,klab->ijab' with the four-occupied intermediate
-      allocate (woooo(no, no, no, no))
+      if (.not. allocated(woooo)) allocate (woooo(no, no, no, no))
       call cc_woooo(eris, t1, tau, no, nv, woooo)
+      !$omp parallel do default(none) shared(t2n, woooo, tau, no, nv) &
+      !$omp    private(b, a, j, i, l, k, acc) schedule(static)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
@@ -956,16 +1074,16 @@ contains
             end do
          end do
       end do
-      deallocate (woooo)
+      !$omp end parallel do
 
       ! 'abcd,ijcd->ijab' -- the particle-particle ladder, never held whole
-      call particle_ladder(eris, t1, tau, no, nv, t2n)
+      call particle_ladder(eris, t1, tau, no, nv, t2n, scratch)
 
       ! 'ac,ijcb->ijab' and '-ki,kjab->ijab', each symmetrised
-      tmp = 0.0_dp
       !$omp parallel do default(none) shared(tmp, lac, t2, no, nv) &
       !$omp    private(b, c, a, j, i) schedule(static)
       do b = 1, nv
+         tmp(:, :, :, b) = 0.0_dp
          do c = 1, nv
             do a = 1, nv
                do j = 1, no
@@ -979,10 +1097,10 @@ contains
       !$omp end parallel do
       call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
 
-      tmp = 0.0_dp
       !$omp parallel do default(none) shared(tmp, lki, t2, no, nv) &
       !$omp    private(b, k, a, j, i) schedule(static)
       do b = 1, nv
+         tmp(:, :, :, b) = 0.0_dp
          do k = 1, no
             do a = 1, nv
                do j = 1, no
@@ -1009,70 +1127,66 @@ contains
       !
       !     X1 = 2 X2 - X3        so only X2 and X3 are built
       !     term C reuses Y2       with its free virtual named a instead of b
-      allocate (wvoov(nv, no, no, nv), wvovo(nv, no, nv, no))
-      call cc_wvoov(eris, t1, t2, no, nv, wvoov)
-      call cc_wvovo(eris, t1, t2, no, nv, wvovo)
+      if (.not. allocated(wvoov)) allocate (wvoov(nv, no, no, nv), wvovo(nv, no, nv, no))
+      call cc_wvoov(eris, t1, t2, no, nv, wvoov, scratch)
+      call cc_wvovo(eris, t1, t2, no, nv, wvovo, scratch)
 
-      block
-         real(dp), allocatable :: x1(:, :), x2(:, :), x3(:, :)
-         real(dp), allocatable :: y1(:, :), y2(:, :), r(:, :)
-         integer :: nov, ai, kc, jb
-
-         nov = no*nv
+      nov = no*nv
+      if (.not. allocated(x1)) then
          allocate (x1(nov, nov), x2(nov, nov), x3(nov, nov))
          allocate (y1(nov, nov), y2(nov, nov), r(nov, nov))
+      end if
 
-         ! X2(ai,kc) = Wvoov(a,k,i,c);  X3(ai,kc) = Wvovo(a,k,c,i)
-         do c = 1, nv
-            do k = 1, no
-               kc = (c - 1)*no + k
-               do i = 1, no
-                  do a = 1, nv
-                     ai = (i - 1)*nv + a
-                     x2(ai, kc) = wvoov(a, k, i, c)
-                     x3(ai, kc) = wvovo(a, k, c, i)
-                  end do
+      ! X2(ai,kc) = Wvoov(a,k,i,c);  X3(ai,kc) = Wvovo(a,k,c,i);  X1 = 2 X2 - X3
+      !$omp parallel do default(none) shared(x1, x2, x3, wvoov, wvovo, no, nv) &
+      !$omp    private(c, k, kc, i, a, ai) schedule(static)
+      do c = 1, nv
+         do k = 1, no
+            kc = (c - 1)*no + k
+            do i = 1, no
+               do a = 1, nv
+                  ai = (i - 1)*nv + a
+                  x2(ai, kc) = wvoov(a, k, i, c)
+                  x3(ai, kc) = wvovo(a, k, c, i)
+                  x1(ai, kc) = 2.0_dp*x2(ai, kc) - x3(ai, kc)
                end do
             end do
          end do
-         x1 = 2.0_dp*x2 - x3
+      end do
+      !$omp end parallel do
 
-         ! Y1(kc,jb) = t2(k,j,c,b);  Y2(kc,jb) = t2(k,j,b,c)
-         do b = 1, nv
-            do j = 1, no
-               jb = (b - 1)*no + j
-               do c = 1, nv
-                  do k = 1, no
-                     kc = (c - 1)*no + k
-                     y1(kc, jb) = t2(k, j, c, b)
-                     y2(kc, jb) = t2(k, j, b, c)
-                  end do
+      ! Y1(kc,jb) = t2(k,j,c,b);  Y2(kc,jb) = t2(k,j,b,c)
+      !$omp parallel do default(none) shared(y1, y2, t2, no, nv) &
+      !$omp    private(b, j, jb, c, k, kc) schedule(static)
+      do b = 1, nv
+         do j = 1, no
+            jb = (b - 1)*no + j
+            do c = 1, nv
+               do k = 1, no
+                  kc = (c - 1)*no + k
+                  y1(kc, jb) = t2(k, j, c, b)
+                  y2(kc, jb) = t2(k, j, b, c)
                end do
             end do
          end do
+      end do
+      !$omp end parallel do
 
-         ! '2 akic,kjcb->ijab' - 'akci,kjcb->ijab'
-         call gemm_over_columns(x1, y1, r)
-         tmp = 0.0_dp
-         call scatter_ring(r, no, nv, .false., tmp)
-         call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
+      ! '2 akic,kjcb->ijab' - 'akci,kjcb->ijab'
+      call gemm_over_columns(x1, y1, r)
+      call scatter_ring(r, no, nv, .false., tmp)
+      call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
 
-         ! '-akic,kjbc->ijab'
-         call gemm_over_columns(x2, y2, r)
-         tmp = 0.0_dp
-         call scatter_ring(r, no, nv, .false., tmp)
-         call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
+      ! '-akic,kjbc->ijab'
+      call gemm_over_columns(x2, y2, r)
+      call scatter_ring(r, no, nv, .false., tmp)
+      call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
 
-         ! '-bkci,kjac->ijab'. The only one whose free indices come out paired
-         ! the other way round, (b,i) with (j,a), which `swapped` says.
-         call gemm_over_columns(x3, y2, r)
-         tmp = 0.0_dp
-         call scatter_ring(r, no, nv, .true., tmp)
-         call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
-
-         deallocate (x1, x2, x3, y1, y2, r)
-      end block
-      deallocate (wvoov, wvovo)
+      ! '-bkci,kjac->ijab'. The only one whose free indices come out paired
+      ! the other way round, (b,i) with (j,a), which `swapped` says.
+      call gemm_over_columns(x3, y2, r)
+      call scatter_ring(r, no, nv, .true., tmp)
+      call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
 
       !$omp parallel do default(none) shared(t2n, eps_o, eps_v, no, nv) &
       !$omp    private(b, a, j, i, den) schedule(static)
@@ -1087,6 +1201,20 @@ contains
          end do
       end do
       !$omp end parallel do
+
+      call move_alloc(tau, scratch%tau)
+      call move_alloc(tmp, scratch%tmp)
+      call move_alloc(tmp2, scratch%tmp2)
+      call move_alloc(tmp2b, scratch%tmp2b)
+      call move_alloc(woooo, scratch%woooo)
+      call move_alloc(wvoov, scratch%wvoov)
+      call move_alloc(wvovo, scratch%wvovo)
+      call move_alloc(x1, scratch%x1)
+      call move_alloc(x2, scratch%x2)
+      call move_alloc(x3, scratch%x3)
+      call move_alloc(y1, scratch%y1)
+      call move_alloc(y2, scratch%y2)
+      call move_alloc(r, scratch%r)
    end subroutine rccsd_iteration
 
    subroutine accumulate_wvoov(r, no, nv, w)
@@ -1097,6 +1225,8 @@ contains
 
       integer :: a, k, i, c
 
+      !$omp parallel do default(none) shared(w, r, no, nv) &
+      !$omp    private(c, i, k, a) schedule(static)
       do c = 1, nv
          do i = 1, no
             do k = 1, no
@@ -1106,6 +1236,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine accumulate_wvoov
 
    subroutine accumulate_wvovo(r, no, nv, w)
@@ -1120,6 +1251,8 @@ contains
 
       integer :: a, k, c, i
 
+      !$omp parallel do default(none) shared(w, r, no, nv) &
+      !$omp    private(i, c, k, a) collapse(2) schedule(static)
       do i = 1, no
          do c = 1, nv
             do k = 1, no
@@ -1129,10 +1262,11 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine accumulate_wvovo
 
    subroutine scatter_ring(r, no, nv, swapped, tmp)
-      !! Add a ring term's gemm result back into (i,j,a,b) order
+      !! Write a ring term's gemm result into (i,j,a,b) order, overwriting `tmp`
       !!
       !! The product comes out indexed by the two compound indices the
       !! contraction left free. Two of the three terms leave (a,i) against
@@ -1142,10 +1276,12 @@ contains
       real(dp), intent(in) :: r(:, :)
       integer, intent(in) :: no, nv
       logical, intent(in) :: swapped
-      real(dp), intent(inout) :: tmp(:, :, :, :)
+      real(dp), intent(out) :: tmp(:, :, :, :)
 
       integer :: i, j, a, b, row, col
 
+      !$omp parallel do default(none) shared(tmp, r, no, nv, swapped) &
+      !$omp    private(b, a, j, i, row, col) schedule(static)
       do b = 1, nv
          do a = 1, nv
             do j = 1, no
@@ -1157,11 +1293,12 @@ contains
                      row = (i - 1)*nv + a
                      col = (b - 1)*no + j
                   end if
-                  tmp(i, j, a, b) = tmp(i, j, a, b) + r(row, col)
+                  tmp(i, j, a, b) = r(row, col)
                end do
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine scatter_ring
 
    subroutine ladder_accumulate(no2, nv2, nb, tau_cols, wblk, t2n)
@@ -1301,7 +1438,7 @@ contains
       !$omp end parallel
    end subroutine ri_ladder_direct
 
-   subroutine ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+   subroutine ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
       !! The t1 half of the particle-particle ladder, without forming it
       !!
       !! Wvvvv carries two singles terms beside `(ac|bd)`, and contracting them
@@ -1323,14 +1460,18 @@ contains
       real(dp), intent(in) :: t1(no, nv)
       real(dp), intent(in) :: tau(no, no, nv, nv)
       real(dp), intent(inout) :: t2n(no, no, nv, nv)
+      type(rcc_scratch_t), intent(inout) :: scratch  !! Work arrays kept between iterations
 
       real(dp), allocatable :: taut(:, :), p(:, :), z(:, :), cmat(:, :)
       ! TODO(mqc): `ij` is declared and never used here.
       integer :: i, j, a, b, c, d, k, v, cd, ij
 
-      allocate (taut(nv*nv, no*no))
+      call move_alloc(scratch%taut, taut)
+      if (.not. allocated(taut)) allocate (taut(nv*nv, no*no))
 
       ! tau with the virtual pair leading, once per iteration.
+      !$omp parallel do default(none) shared(taut, tau, no, nv) &
+      !$omp    private(d, c, cd, j, i) schedule(static)
       do d = 1, nv
          do c = 1, nv
             cd = (d - 1)*nv + c
@@ -1341,6 +1482,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
 
       ! Z1 and Z2 are threaded as two loops rather than one. Within a single v
       ! they touch disjoint parts of `t2n` -- Z1 writes t2n(:,:,v,:) and Z2
@@ -1402,10 +1544,10 @@ contains
       deallocate (p, z, cmat)
       !$omp end parallel
 
-      deallocate (taut)
+      call move_alloc(taut, scratch%taut)
    end subroutine ladder_t1_dressing
 
-   subroutine particle_ladder(eris, t1, tau, no, nv, t2n)
+   subroutine particle_ladder(eris, t1, tau, no, nv, t2n, scratch)
       !! t2new(i,j,a,b) += sum_cd Wvvvv(a,b,c,d) tau(i,j,c,d), never holding Wvvvv
       !!
       !!     Wvvvv(a,b,c,d) = (ac|bd) - sum_k ovvv(k,d,a,c) t1(k,b)
@@ -1437,6 +1579,7 @@ contains
       ! sliced that way.
       real(dp), intent(in) :: tau(no, no, nv, nv)
       real(dp), intent(inout) :: t2n(no, no, nv, nv)
+      type(rcc_scratch_t), intent(inout) :: scratch  !! Work arrays kept between iterations
 
       ! TODO(mqc): `i`, `j`, `k` and `acc` are declared and never used here --
       ! left behind when the loop nest became a batched gemm.
@@ -1452,12 +1595,13 @@ contains
          ! Which way round to do the fitted ladder. See `ri_ladder_prefers_direct`.
          if (ri_ladder_prefers_direct(no, nv, naux)) then
             call ri_ladder_direct(eris, tau, no, nv, naux, t2n)
-            call ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+            call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
             return
          end if
       end if
 
-      allocate (wblk(nv, nv, LADDER_BATCH))
+      call move_alloc(scratch%wblk, wblk)
+      if (.not. allocated(wblk)) allocate (wblk(nv, nv, LADDER_BATCH))
 
       do cd0 = 1, nv2, LADDER_BATCH
          cd1 = min(cd0 + LADDER_BATCH - 1, nv2)
@@ -1515,9 +1659,9 @@ contains
          call ladder_accumulate(no*no, nv*nv, nb, tau(1, 1, c, d), wblk, t2n(1, 1, 1, 1))
       end do
 
-      deallocate (wblk)
+      call move_alloc(wblk, scratch%wblk)
 
-      call ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+      call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
    end subroutine particle_ladder
 
    !===========================================================================
@@ -1547,6 +1691,7 @@ contains
       type(czt_molecule_t), intent(in), optional :: aux
 
       type(rcc_eris_t) :: eris
+      type(rcc_scratch_t) :: scratch  !! The iteration's work arrays, kept across iterations
       real(dp), allocatable :: c_act(:, :), eps_o(:), eps_v(:)
       real(dp), allocatable :: t1(:, :), t2(:, :, :, :), t1n(:, :), t2n(:, :, :, :)
       real(dp), allocatable :: flat(:), err_flat(:)
@@ -1641,7 +1786,7 @@ contains
 
       do iter = 1, max_iter
          t_iter = clk%seconds_of(STAGE_ITER)
-         call rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n)
+         call rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n, scratch)
          call clk%lap(STAGE_ITER)
          t_iter = clk%seconds_of(STAGE_ITER) - t_iter
 
@@ -1652,7 +1797,7 @@ contains
          if (extrapolated) call unpack_amplitudes(flat, no, nv, t1n, t2n)
 
          t1 = t1n
-         t2 = t2n
+         call copy_flat(size(t2, kind=int64), t2n, t2)
 
          call rccsd_correlation_energy(eris, t1, t2, no, nv, result%e_singles, result%e_doubles)
          e_corr = result%e_singles + result%e_doubles
@@ -1711,28 +1856,31 @@ contains
 
    subroutine pack_amplitudes(t1, t2, no, nv, flat)
       !! t1 then t2, one contiguous vector for DIIS
-      real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
+      !!
+      !! Explicit shape throughout, so the amplitudes arrive as the flat
+      !! vectors their memory already is and the copy is one threaded pass.
       integer, intent(in) :: no, nv
-      real(dp), intent(out) :: flat(:)
+      real(dp), intent(in) :: t1(no*nv), t2(no*no*nv*nv)
+      real(dp), intent(out) :: flat(no*nv + no*no*nv*nv)
 
       integer :: n1
 
       n1 = no*nv
-      flat(1:n1) = reshape(t1, [n1])
-      flat(n1 + 1:) = reshape(t2, [no*no*nv*nv])
+      flat(1:n1) = t1
+      call copy_flat(size(t2, kind=int64), t2, flat(n1 + 1))
    end subroutine pack_amplitudes
 
    subroutine unpack_amplitudes(flat, no, nv, t1, t2)
       !! The inverse of `pack_amplitudes`
-      real(dp), intent(in) :: flat(:)
       integer, intent(in) :: no, nv
-      real(dp), intent(out) :: t1(:, :), t2(:, :, :, :)
+      real(dp), intent(in) :: flat(no*nv + no*no*nv*nv)
+      real(dp), intent(out) :: t1(no*nv), t2(no*no*nv*nv)
 
       integer :: n1
 
       n1 = no*nv
-      t1 = reshape(flat(1:n1), [no, nv])
-      t2 = reshape(flat(n1 + 1:), [no, no, nv, nv])
+      t1 = flat(1:n1)
+      call copy_flat(size(t2, kind=int64), flat(n1 + 1), t2)
    end subroutine unpack_amplitudes
 
    subroutine pack_step(t1n, t2n, t1, t2, no, nv, err_flat)
@@ -1740,16 +1888,40 @@ contains
       !!
       !! DIIS extrapolates the amplitudes against the change in them: the step
       !! vanishes exactly at convergence. Same choice as the spin-orbital path.
-      real(dp), intent(in) :: t1n(:, :), t2n(:, :, :, :), t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
-      real(dp), intent(out) :: err_flat(:)
+      real(dp), intent(in) :: t1n(no*nv), t2n(no*no*nv*nv), t1(no*nv), t2(no*no*nv*nv)
+      real(dp), intent(out) :: err_flat(no*nv + no*no*nv*nv)
 
       integer :: n1
+      integer(int64) :: p
 
       n1 = no*nv
-      err_flat(1:n1) = reshape(t1n - t1, [n1])
-      err_flat(n1 + 1:) = reshape(t2n - t2, [no*no*nv*nv])
+      err_flat(1:n1) = t1n - t1
+      !$omp parallel do default(none) shared(err_flat, t2n, t2, n1) private(p) &
+      !$omp    schedule(static)
+      do p = 1_int64, size(t2, kind=int64)
+         err_flat(n1 + p) = t2n(p) - t2(p)
+      end do
+      !$omp end parallel do
    end subroutine pack_step
+
+   subroutine copy_flat(n, src, dst)
+      !! dst = src over n elements, in one threaded pass
+      !!
+      !! An amplitude vector is O(n_occ^2 n_vir^2), and copied serially it is a
+      !! pass over memory that one core makes while the rest of the node waits.
+      integer(int64), intent(in) :: n
+      real(dp), intent(in) :: src(n)
+      real(dp), intent(out) :: dst(n)
+
+      integer(int64) :: p
+
+      !$omp parallel do default(none) shared(n, src, dst) private(p) schedule(static)
+      do p = 1_int64, n
+         dst(p) = src(p)
+      end do
+      !$omp end parallel do
+   end subroutine copy_flat
 
    !===========================================================================
    ! Perturbative triples
@@ -1771,57 +1943,18 @@ contains
    ! a space one, and hold no `t3`.
    !===========================================================================
 
-   pure subroutine permuted_triple(p, i, j, k, pi, pj, pk)
-      !! The six orderings of (i,j,k), in the same order as those of (a,b,c)
+   subroutine triples_term2(oop_u, t2_vw, no, w)
+      !! w(i,j,k) -= sum_m (iu|jm) t2(m,k,v,w3), the hole half of W
       !!
-      !! The permutation applied to the virtual labels is mirrored in the
-      !! occupied ones, so one index into a table of six covers both.
-      integer, intent(in) :: p, i, j, k
-      integer, intent(out) :: pi, pj, pk
+      !! One gemm, (n_occ^2 x n_occ)(n_occ x n_occ): `oop_u` is `ooov` for this
+      !! u repacked so (i,j) leads, `t2_vw` the (m,k) block of t2 at (v,w3), and
+      !! `w` takes the product as the (i,j)-by-k matrix it already is.
+      integer, intent(in) :: no
+      real(dp), intent(in) :: oop_u(no*no, no)
+      real(dp), intent(in) :: t2_vw(no, no)
+      real(dp), intent(inout) :: w(no*no, no)
 
-      integer, parameter :: SLOT(3, N_TRIPLE_PERMS) = reshape([ &
-                                                              1, 2, 3, &
-                                                              1, 3, 2, &
-                                                              2, 1, 3, &
-                                                              2, 3, 1, &
-                                                              3, 1, 2, &
-                                                              3, 2, 1], [3, N_TRIPLE_PERMS])
-         !! Which of (i,j,k) lands in each slot, for the six orderings in the
-         !! order the reference names them: ijk, ikj, jik, jki, kij, kji.
-
-      integer :: t(3)
-
-      t = [i, j, k]
-      pi = t(SLOT(1, p))
-      pj = t(SLOT(2, p))
-      pk = t(SLOT(3, p))
-   end subroutine permuted_triple
-
-   subroutine triples_term2(eris, t2, no, u, v, w3, w)
-      !! w(i,j,k) -= sum_m (iu|jm) t2(m,k,v,w3), the ring half of W
-      !!
-      !! Left as a loop nest: O(n_occ^4 n_vir^3) against the other half's
-      !! O(n_occ^3 n_vir^4), and the gemm that would replace it is n_occ^2 by
-      !! n_occ by n_occ -- too small to pay for the call.
-      type(rcc_eris_t), intent(in) :: eris
-      real(dp), intent(in) :: t2(:, :, :, :)
-      integer, intent(in) :: no, u, v, w3
-      real(dp), intent(inout) :: w(:, :, :)
-
-      integer :: i, j, k, m
-      real(dp) :: acc
-
-      do k = 1, no
-         do j = 1, no
-            do i = 1, no
-               acc = 0.0_dp
-               do m = 1, no
-                  acc = acc + eris%ooov(j, m, i, u)*t2(m, k, v, w3)
-               end do
-               w(i, j, k) = w(i, j, k) - acc
-            end do
-         end do
-      end do
+      call pic_gemm(oop_u, t2_vw, w, alpha=-1.0_dp, beta=1.0_dp)
    end subroutine triples_term2
 
    subroutine triples_v(eris, t1, no, a, b, c, v)
@@ -1877,6 +2010,11 @@ contains
 
       integer :: c, f, j, k
 
+      ! Written by every thread, a block of c each, so that its pages land in
+      ! both sockets' memory rather than all in the first: every thread reads
+      ! the whole of it, over and over, for the rest of the (T).
+      !$omp parallel do default(none) shared(tt, t2, no, nv) &
+      !$omp    private(c, f, j, k) schedule(static)
       do c = 1, nv
          do f = 1, nv
             do j = 1, no
@@ -1886,6 +2024,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine triples_pack_t2
 
    subroutine triples_pack_ovvv(eris, no, nv, c0, nc, fixed, fixed_first, mmt)
@@ -1939,8 +2078,11 @@ contains
       !! sum -- is unchanged and still runs one (a,b,c) at a time.
       type(rcc_eris_t), intent(in) :: eris
       real(dp), intent(in) :: eps_o(:), eps_v(:)
-      real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
+      real(dp), intent(in) :: t1(:, :)
+      ! Explicit shape, so a (m,k) block of it can be handed to the hole-half
+      ! gemm by its first element.
+      real(dp), intent(in) :: t2(no, no, nv, nv)
       real(dp), intent(out) :: e_triples
 
       integer, parameter :: WMAP(N_TRIPLE_PERMS, N_TRIPLE_PERMS) = reshape([ &
@@ -1959,9 +2101,12 @@ contains
 
       real(dp), allocatable :: w(:, :, :, :, :), z(:, :, :, :), x(:, :, :), d3(:, :, :)
       real(dp), allocatable :: tt(:, :), mfix(:, :), mmt(:, :), r1(:, :), r2(:, :)
-      integer, allocatable :: pidx(:, :), alist(:), blist(:)
+      integer, allocatable :: alist(:), blist(:)
       real(dp), allocatable :: e_pair(:)
-      integer :: a, b, c, cl, c0, c1, i, j, k, p, q, pi, pj, pk, nc, no2
+      real(dp), allocatable :: oop(:, :, :, :)
+         !! (n_occ, n_occ, n_occ, n_vir) ooov(j,m,i,u) stored as (i,j,m,u), so the
+         !! hole half of W is a gemm over m with (i,j) as one row index
+      integer :: a, b, c, cl, c0, c1, i, j, k, m, p, nc, no2
       integer :: idx, npair
       integer :: trip(3), perm(3, N_TRIPLE_PERMS)
       real(dp) :: scale
@@ -1975,23 +2120,21 @@ contains
       ! a per-thread copy of the wrong size.
       allocate (tt(nv, no2*nv))
 
-      ! Where each occupied permutation sends each (i,j,k), once. The
-      ! thirty-six-term sum below touches n_occ^3 elements for each of
-      ! thirty-six pairings of every triple, so the permutation is resolved by a
-      ! table lookup rather than by a call.
-      allocate (pidx(no*no*no, N_TRIPLE_PERMS))
-      do q = 1, N_TRIPLE_PERMS
-         do k = 1, no
+      call triples_pack_t2(t2, no, nv, tt)
+
+      allocate (oop(no, no, no, nv))
+      !$omp parallel do default(none) shared(oop, eris, no, nv) &
+      !$omp    private(a, m, j, i) schedule(static)
+      do a = 1, nv
+         do m = 1, no
             do j = 1, no
                do i = 1, no
-                  call permuted_triple(q, i, j, k, pi, pj, pk)
-                  pidx(i + (j - 1)*no + (k - 1)*no2, q) = pi + (pj - 1)*no + (pk - 1)*no2
+                  oop(i, j, m, a) = eris%ooov(j, m, i, a)
                end do
             end do
          end do
       end do
-
-      call triples_pack_t2(t2, no, nv, tt)
+      !$omp end parallel do
 
       ! The (a,b) loop is triangular, so it is flattened before being handed to
       ! OpenMP: a triangular nest cannot be collapsed, and the work per outer
@@ -2016,11 +2159,11 @@ contains
       ! thread keeps its own W and its own scratch, which is what TRIPLES_C_BATCH
       ! is sized against.
       !$omp parallel default(none) &
-      !$omp    shared(eris, t1, t2, eps_o, eps_v, no, nv, no2, tt, pidx, &
-      !$omp           alist, blist, npair) &
+      !$omp    shared(eris, t1, t2, eps_o, eps_v, no, nv, no2, tt, &
+      !$omp           alist, blist, npair, oop) &
       !$omp    shared(e_pair) &
       !$omp    private(w, z, x, d3, mfix, mmt, r1, r2, &
-      !$omp            a, b, c, cl, c0, c1, nc, i, j, k, p, q, trip, perm, scale)
+      !$omp            a, b, c, cl, c0, c1, nc, i, j, k, p, trip, perm, scale)
       allocate (w(no, no, no, N_TRIPLE_PERMS, TRIPLES_C_BATCH))
       allocate (z(no, no, no, N_TRIPLE_PERMS))
       allocate (x(no, no, no), d3(no, no, no))
@@ -2081,11 +2224,11 @@ contains
                perm(:, 5) = [c, a, b]
                perm(:, 6) = [c, b, a]
 
-               ! The ring half, still one permutation at a time.
+               ! The hole half, one small gemm per permutation.
                do p = 1, N_TRIPLE_PERMS
                   trip = perm(:, p)
-                  call triples_term2(eris, t2, no, trip(1), trip(2), trip(3), &
-                                     w(:, :, :, p, cl))
+                  call triples_term2(oop(1, 1, 1, trip(1)), t2(1, 1, trip(2), trip(3)), &
+                                     no, w(1, 1, 1, p, cl))
                end do
 
                scale = 1.0_dp
@@ -2113,13 +2256,7 @@ contains
 
                ! The thirty-six terms: every Z against every occupied
                ! permutation of the W the table pairs it with.
-               do p = 1, N_TRIPLE_PERMS
-                  do q = 1, N_TRIPLE_PERMS
-                     e_pair(idx) = e_pair(idx) &
-                                   + triples_dot(no*no*no, pidx(1, q), &
-                                                 w(1, 1, 1, WMAP(p, q), cl), z(1, 1, 1, p))
-                  end do
-               end do
+               e_pair(idx) = e_pair(idx) + triples_energy_block(no, WMAP, w(1, 1, 1, 1, cl), z)
             end do
          end do
       end do
@@ -2137,27 +2274,41 @@ contains
       ! a term and not noise.
       e_triples = 2.0_dp*sum(e_pair)
 
-      deallocate (tt, pidx, alist, blist, e_pair)
+      deallocate (tt, alist, blist, e_pair, oop)
    end subroutine triples_correction
 
-   pure function triples_dot(no3, permuted, wblk, zblk) result(acc)
-      !! sum over one occupied permutation of W against Z
+   pure function triples_energy_block(no, wmap, w, z) result(acc)
+      !! sum_pq sum_ijk W_wmap(p,q)(perm_q(i,j,k)) Z_p(i,j,k), one triple's share
       !!
-      !! Both blocks are n_occ^3 contiguous doubles -- one permutation's W and
-      !! one Z, taken by sequence association out of the arrays holding all six
-      !! of each. `permuted` is where the permutation sends each flat index.
-      integer, intent(in) :: no3
-      integer, intent(in) :: permuted(no3)
-      real(dp), intent(in) :: wblk(no3), zblk(no3)
+      !! The thirty-six-term sum, taken one (i,j,k) at a time: the six Z there
+      !! are read once and each meets the six occupied permutations of its
+      !! paired W, addressed directly rather than through a table of permuted
+      !! offsets. The occupied permutations run ijk, ikj, jik, jki, kij, kji --
+      !! the order the virtual ones take in `perm` -- which is the column order
+      !! of `wmap`.
+      integer, intent(in) :: no
+      integer, intent(in) :: wmap(N_TRIPLE_PERMS, N_TRIPLE_PERMS)
+      real(dp), intent(in) :: w(no, no, no, N_TRIPLE_PERMS)
+      real(dp), intent(in) :: z(no, no, no, N_TRIPLE_PERMS)
       real(dp) :: acc
 
-      integer :: n
+      integer :: i, j, k, p
+      real(dp) :: s
 
       acc = 0.0_dp
-      do n = 1, no3
-         acc = acc + wblk(permuted(n))*zblk(n)
+      do k = 1, no
+         do j = 1, no
+            do i = 1, no
+               do p = 1, N_TRIPLE_PERMS
+                  s = w(i, j, k, wmap(p, 1)) + w(i, k, j, wmap(p, 2)) &
+                      + w(j, i, k, wmap(p, 3)) + w(j, k, i, wmap(p, 4)) &
+                      + w(k, i, j, wmap(p, 5)) + w(k, j, i, wmap(p, 6))
+                  acc = acc + z(i, j, k, p)*s
+               end do
+            end do
+         end do
       end do
-   end function triples_dot
+   end function triples_energy_block
 
    subroutine scatter_w_third(r, no, nc, p, w)
       !! R(i, (c,j,k)) -> w(i,j,k,p,c), for the permutations where c is third
