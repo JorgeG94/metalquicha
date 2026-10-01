@@ -746,6 +746,114 @@ page (``mqc_docs/source/sa_casscf.rst`` or folded into an existing MCSCF page);
 an example deck, C2H4/6-31G*/SA-2-CAS(2,2); a ``run_validation.py`` entry if
 cheap enough for the default manifest.
 
+Nonadiabatic couplings
+======================
+
+Between two states :math:`I \ne J` of a converged SA-CASSCF,
+:math:`d_{IJ} = \langle \Psi_I | \partial/\partial R\, \Psi_J\rangle`, following
+Lengsfield/Yarkony and matching PySCF 2.14's ``pyscf.nac.sacasscf`` (checked
+against it directly, in ``mqc_czt_sa_nac.f90``, ``test/test_mqc_sa_nac.f90``):
+
+.. math::
+
+   (E_J - E_I)\, d_{IJ} = h_{IJ} = \langle I|\partial H/\partial R|J\rangle
+   + \text{orbital response} + \text{CI response} + \text{CSF term}
+
+**The interstate coupling** :math:`h_{IJ}`. Restricted to the active space --
+the core/inactive part of :math:`\langle I|H|J\rangle` multiplies
+:math:`\langle I|J\rangle = 0`, since :math:`I` and :math:`J` are orthogonal
+CI vectors on the same inactive core, and drops out entirely -- this is
+exactly the quantity the CI-response machinery of the gradient project already
+differentiates (``ci_response_gradient``/``ci_response_pieces``), with the
+transition density between a Lagrange multiplier and a reference state
+replaced by the transition density **between the two states themselves**,
+symmetrised as PySCF's ``make_fcasscf_nacs`` does:
+:math:`D^{sym}_{IJ} = \tfrac12(D_{IJ} + D_{JI})`, with
+:math:`D_{IJ}(p,q) = \langle I|E_{pq}|J\rangle` (``transition_rdms``). Because
+a real, symmetric one/two-electron Hamiltonian sandwiched between two real
+vectors gives :math:`\langle I|H|J\rangle = \langle J|H|I\rangle` already,
+this symmetrisation changes no contracted energy, only makes the matrix the
+existing ``cheap_generalized_fock``/``gather_from_general`` machinery needs
+(built for a Hermitian density) well-formed. :math:`h_{base}` is
+``response_separable_gradient`` (no ``d_core_resp``: a transition density
+lives on the active space alone) plus ``active_two_electron_gradient`` on
+:math:`D^{sym}_{IJ}`'s two-particle counterpart directly, not a cumulant.
+
+**Orbital and CI response.** The same Z-vector equation
+:math:`H_{SA}\,[\bar\kappa;\bar x_1..\bar x_N] = -\text{RHS}` the gradient
+uses, with a different right-hand side:
+
+- orbital block: :math:`-\text{gather\_from\_general}(\text{cheap\_generalized\_fock}(D^{sym}_{IJ}, d^{sym}_{IJ}, \text{delta\_only}=\text{true}))`;
+- CI block, state :math:`I`'s slot: :math:`-H_{active}\,c_J`, projected off
+  every averaged state -- :math:`\langle I|H|J\rangle` is *linear* in
+  :math:`c_I`, so its gradient wrt :math:`c_I` is :math:`H_{active}\,c_J`
+  itself, with no factor of 2 (that factor belongs to differentiating a
+  *quadratic* form :math:`\langle c|H|c\rangle` wrt its one shared argument);
+- CI block, state :math:`J`'s slot: :math:`-H_{active}\,c_I`, by the same
+  argument with :math:`I`/:math:`J` swapped;
+- every other state's CI block: zero.
+
+Given :math:`(\bar\kappa, \{\bar x_J\})`, the response pieces are
+``orbital_response_gradient`` and ``ci_response_gradient`` **unchanged**: the
+Lagrangian's constraint terms enforce the same SA stationarity condition
+regardless of what the multipliers were solved for.
+
+**The CSF term.** PySCF's ``nac_csf``: the antisymmetric part of the *raw*
+(unsymmetrised) transition 1-RDM, :math:`D_{IJ}^T - D_{IJ}`, dotted with the
+AO overlap derivative and scaled by :math:`E_J - E_I`. It is what
+``use_etfs`` (electron translation factors) omits; PySCF includes it by
+default, so ``include_csf`` defaults true here to match. **Sign**: PySCF's
+own raw (pre-``kernel``-division) :math:`h_{IJ}` is scaled by
+:math:`e_{bra}-e_{ket} = E_I - E_J`, the opposite of this convention's
+:math:`E_J - E_I` -- every piece of PySCF's :math:`h_{IJ}` inherits that
+flip, and every piece here except the CSF term shares the Z-vector machinery
+and so flips together automatically against it; the CSF term, built
+independently, needed the extra sign written in by hand
+(``mqc_czt_sa_nac.f90``, ``sa_casscf_nac_pair``) -- found by the numerical
+gate below disagreeing by almost exactly the CSF term's own size while the
+CSF-free piece already agreed. It is *not* translationally invariant on its
+own (an overlap-derivative contraction between two different orbital sets,
+not a Hellmann-Feynman-type energy derivative): expected, not a bug.
+
+**What is fused, what is not.** ``czt_sa_casscf_nacs`` builds the SA Hessian
+state once and shares it across every requested pair, the same expensive
+precompute ``czt_sa_casscf_gradients`` shares across roots. Each pair still
+solves its own single-column Z-vector equation and its own two
+derivative-integral sweeps rather than joining a cross-pair block solve or a
+cross-pair fused sweep: a NAC's right-hand side and its :math:`h_{base}` both
+depend on the pair :math:`(I,J)` itself in a way that would need re-deriving
+the gradient's cross-root fusion from scratch. Left for later if NACs for
+many pairs turn out to dominate a run's cost.
+
+**Gates run** (``test/test_mqc_sa_nac.f90``, LiH/STO-3G SA-2-CAS(2,2)):
+:math:`d_{IJ}` and :math:`h_{IJ}`, with and without the CSF term, vs PySCF's
+``pyscf.nac.sacasscf.NonAdiabaticCouplings`` (phase-aware: PySCF's CI phase is
+arbitrary, so the comparison takes whichever overall sign of the pair agrees)
+-- :math:`4.6\times 10^{-8}` to :math:`7.0\times 10^{-8}` max absolute
+difference; :math:`d_{IJ} = -d_{JI}` and :math:`h_{IJ}` symmetric under
+:math:`I \leftrightarrow J`, to machine precision; translational invariance
+of :math:`h_{IJ}` without the CSF term, to machine precision; the fused
+(``czt_sa_casscf_nacs``) and single-pair (``czt_sa_casscf_nac``) paths agree
+to :math:`10^{-16}` (effectively bit-identical, since both build the same SA
+Hessian state and the same Z-vector solve). **Not yet run**: the wider PySCF
+sweep across C2H4 planar/twisted and an SA-3 case, and an independent
+finite-difference gate built from this code's own CI overlaps between
+displaced geometries (needs a mixed-geometry AO overlap the integral library
+was not confirmed to expose) -- left for a follow-up pass.
+
+**Driver/JSON.** Not yet wired to a keyword or the JSON output: only the
+library-level routines (``czt_sa_casscf_nac``/``czt_sa_casscf_nacs``) and
+their unit tests exist so far. A ``keywords.mcscf.nac_pairs`` keyword and a
+``nonadiabatic_couplings`` array under ``mcscf_states`` would follow
+``gradient_roots``'s own path through ``mqc_config_types.f90``,
+``mqc_json_schema.f90``, ``mqc_json_config_reader.f90`` (a list of ``[i, j]``
+pairs reads the same way ``read_connectivity`` reads a list of bond
+triples), ``mqc_config_adapter.f90``, ``mqc_method_config.f90``/
+``mqc_method_mcscf.f90``/``mqc_method_factory.F90``, ``mqc_czt_bridge.f90``
+(refusing what the gradient refuses, plus a pair index range check),
+``mqc_result_types.f90``/``mqc_json_output_types.f90`` and
+``mqc_json_writer.f90``.
+
 Open questions
 ==============
 

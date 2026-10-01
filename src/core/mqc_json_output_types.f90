@@ -119,6 +119,12 @@ module mqc_json_output_types
          !! gradient, Hartree/Bohr. Unallocated off a Gradient driver.
       integer, allocatable :: mcscf_gradient_roots(:)
          !! (size(mcscf_state_gradients, 3)) 1-based root index of each slice.
+      integer, allocatable :: mcscf_nac_pairs(:, :)
+         !! (2, n_pairs) 1-based `[state_i, state_j]` of each NAC slice below.
+      real(dp), allocatable :: mcscf_nac_couplings(:, :, :)     !! (3, n_atoms, n_pairs), 1/Bohr
+      real(dp), allocatable :: mcscf_nac_interstate(:, :, :)    !! (3, n_atoms, n_pairs), Hartree/Bohr
+      real(dp), allocatable :: mcscf_nac_csf(:, :, :)           !! (3, n_atoms, n_pairs), Hartree/Bohr
+      real(dp), allocatable :: mcscf_nac_energy_diff(:)         !! (n_pairs), Hartree
       logical :: has_mcscf_states = .false.
 
       !----- MBE-specific data (store ALL fragments for detailed output) -----
@@ -546,6 +552,11 @@ contains
       if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
       if (allocated(this%mcscf_state_gradients)) deallocate (this%mcscf_state_gradients)
       if (allocated(this%mcscf_gradient_roots)) deallocate (this%mcscf_gradient_roots)
+      if (allocated(this%mcscf_nac_pairs)) deallocate (this%mcscf_nac_pairs)
+      if (allocated(this%mcscf_nac_couplings)) deallocate (this%mcscf_nac_couplings)
+      if (allocated(this%mcscf_nac_interstate)) deallocate (this%mcscf_nac_interstate)
+      if (allocated(this%mcscf_nac_csf)) deallocate (this%mcscf_nac_csf)
+      if (allocated(this%mcscf_nac_energy_diff)) deallocate (this%mcscf_nac_energy_diff)
 
       call this%reset()
    end subroutine json_output_data_destroy

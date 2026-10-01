@@ -53,6 +53,30 @@ contains
 
    end subroutine add_gradient
 
+   subroutine add_vector_field(json, parent, name, vector)
+      !! A per-atom `[x, y, z]` array under an arbitrary key, plus its norm --
+      !! `add_gradient`'s array shape, for a quantity that is not itself a
+      !! nuclear gradient (a nonadiabatic coupling's `d_IJ`/`h_IJ`/CSF term).
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      character(len=*), intent(in) :: name
+      real(dp), intent(in) :: vector(:, :)  !! (3, natoms)
+
+      type(json_value), pointer :: vec_arr, atom_arr
+      integer :: iatom, icomp
+
+      call json%add(parent, name//"_norm", sqrt(sum(vector**2)))
+      call json%create_array(vec_arr, name)
+      call json%add(parent, vec_arr)
+      do iatom = 1, size(vector, 2)
+         call json%create_array(atom_arr, "")
+         call json%add(vec_arr, atom_arr)
+         do icomp = 1, size(vector, 1)
+            call json%add(atom_arr, "", vector(icomp, iatom))
+         end do
+      end do
+   end subroutine add_vector_field
+
    subroutine add_hessian(json, parent, hessian)
       !! Second derivatives, as the Frobenius norm and as the matrix itself
       !!
@@ -881,22 +905,66 @@ contains
          end do
       end do
 
-      if (n_roots < 2) return
-      call json%create_array(diff_arr, "gradient_differences")
-      call json%add(section, diff_arr)
-      do ir = 1, n_roots
-         do jr = ir + 1, n_roots
-            call json%create_object(diff_entry, "")
-            call json%add(diff_arr, diff_entry)
-            call json%create_array(state_pair, "states")
-            call json%add(diff_entry, state_pair)
-            call json%add(state_pair, "", data%mcscf_gradient_roots(ir))
-            call json%add(state_pair, "", data%mcscf_gradient_roots(jr))
-            diff = data%mcscf_state_gradients(:, :, ir) - data%mcscf_state_gradients(:, :, jr)
-            call add_gradient(json, diff_entry, diff)
+      ! Only the differences need two roots. The couplings are independent of
+      ! them: `nac_pairs` may name a pair whose roots `gradient_roots` left out.
+      if (n_roots >= 2) then
+         call json%create_array(diff_arr, "gradient_differences")
+         call json%add(section, diff_arr)
+         do ir = 1, n_roots
+            do jr = ir + 1, n_roots
+               call json%create_object(diff_entry, "")
+               call json%add(diff_arr, diff_entry)
+               call json%create_array(state_pair, "states")
+               call json%add(diff_entry, state_pair)
+               call json%add(state_pair, "", data%mcscf_gradient_roots(ir))
+               call json%add(state_pair, "", data%mcscf_gradient_roots(jr))
+               diff = data%mcscf_state_gradients(:, :, ir) - data%mcscf_state_gradients(:, :, jr)
+               call add_gradient(json, diff_entry, diff)
+            end do
          end do
-      end do
+      end if
+
+      call write_mcscf_nac_section(json, section, data)
    end subroutine write_mcscf_states_section
+
+   subroutine write_mcscf_nac_section(json, parent, data)
+      !! `nonadiabatic_couplings`: one entry per pair in `mcscf_nac_pairs`
+      !! (`keywords.mcscf.nac_pairs`), from `czt_sa_casscf_nacs`. `coupling`
+      !! is `d_IJ` (1/Bohr), `interstate_coupling` is `h_IJ = (E_J-E_I) d_IJ`
+      !! (Hartree/Bohr, always including the CSF term -- no keyword turns it
+      !! off; subtract `csf_term` for PySCF's `use_etfs=True` numbers),
+      !! `csf_term` is that CSF piece alone (Hartree/Bohr), and `energy_difference` is
+      !! `E_J - E_I` in Hartree -- `mqc_czt_sa_nac`'s conventions exactly.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: nac_arr, nac_entry, nac_pair
+      integer :: n_pairs, ip
+
+      if (.not. allocated(data%mcscf_nac_pairs)) return
+      n_pairs = size(data%mcscf_nac_pairs, 2)
+      if (n_pairs < 1) return
+
+      call json%create_array(nac_arr, "nonadiabatic_couplings")
+      call json%add(parent, nac_arr)
+      do ip = 1, n_pairs
+         call json%create_object(nac_entry, "")
+         call json%add(nac_arr, nac_entry)
+         call json%create_array(nac_pair, "states")
+         call json%add(nac_entry, nac_pair)
+         call json%add(nac_pair, "", data%mcscf_nac_pairs(1, ip))
+         call json%add(nac_pair, "", data%mcscf_nac_pairs(2, ip))
+         call json%add(nac_entry, "energy_difference_hartree", data%mcscf_nac_energy_diff(ip))
+         call add_vector_field(json, nac_entry, "coupling", data%mcscf_nac_couplings(:, :, ip))
+         call json%add(nac_entry, "coupling_units", "1/bohr")
+         call add_vector_field(json, nac_entry, "interstate_coupling", &
+                               data%mcscf_nac_interstate(:, :, ip))
+         call json%add(nac_entry, "interstate_coupling_units", "hartree/bohr")
+         call add_vector_field(json, nac_entry, "csf_term", data%mcscf_nac_csf(:, :, ip))
+         call json%add(nac_entry, "csf_term_units", "hartree/bohr")
+      end do
+   end subroutine write_mcscf_nac_section
 
    pure function state_spin_label(data, i) result(label)
       !! The `STATE_SPIN_*` code of state `i` as the word a reader expects

@@ -273,6 +273,13 @@ contains
                               json_data%mcscf_state_gradients = result%mcscf_state_gradients
                               json_data%mcscf_gradient_roots = result%mcscf_gradient_roots
                            end if
+                           if (allocated(result%mcscf_nac_pairs)) then
+                              json_data%mcscf_nac_pairs = result%mcscf_nac_pairs
+                              json_data%mcscf_nac_couplings = result%mcscf_nac_couplings
+                              json_data%mcscf_nac_interstate = result%mcscf_nac_interstate
+                              json_data%mcscf_nac_csf = result%mcscf_nac_csf
+                              json_data%mcscf_nac_energy_diff = result%mcscf_nac_energy_diff
+                           end if
                            json_data%has_mcscf_states = .true.
                         end if
 
@@ -481,6 +488,13 @@ contains
                if (allocated(result%mcscf_state_gradients)) then
                   json_data%mcscf_state_gradients = result%mcscf_state_gradients
                   json_data%mcscf_gradient_roots = result%mcscf_gradient_roots
+               end if
+               if (allocated(result%mcscf_nac_pairs)) then
+                  json_data%mcscf_nac_pairs = result%mcscf_nac_pairs
+                  json_data%mcscf_nac_couplings = result%mcscf_nac_couplings
+                  json_data%mcscf_nac_interstate = result%mcscf_nac_interstate
+                  json_data%mcscf_nac_csf = result%mcscf_nac_csf
+                  json_data%mcscf_nac_energy_diff = result%mcscf_nac_energy_diff
                end if
                json_data%has_mcscf_states = .true.
             end if

@@ -79,9 +79,8 @@ one root, so a single root's energy is not stationary in the orbitals and
 needs its own Lagrangian (the Z-vector / CP-MCSCF equation) to
 differentiate correctly. Every requested root shares one Hessian state and
 one block preconditioned-CG solve, so asking for several roots together
-costs little more than one. See :doc:`developer_sa_casscf` for the
-equations, and ``SA_CASSCF_GRADIENT_PLAN.md`` at the repository root for how
-they were arrived at and validated.
+costs less than computing them one at a time. See :doc:`developer_sa_casscf`
+for the equations.
 
 **The top-level ``gradient`` is** :math:`dE_{SA}/dR` **, not any one root's
 own gradient.** It equals the weight-averaged sum of every root's own
@@ -108,20 +107,20 @@ surface-hopping trajectory needs to find where two surfaces come close:
        {
          "state": 1, "energy_hartree": -77.920166075660, "s2": 0.0,
          "weight": 0.5,
-         "gradient_norm": 0.083,
+         "gradient_norm": 0.159,
          "gradient_units": "hartree/bohr",
          "gradient": [[...], "..."]
        },
        {
          "state": 2, "energy_hartree": -77.807933612710, "s2": 0.0,
          "weight": 0.5,
-         "gradient_norm": 0.091,
+         "gradient_norm": 0.068,
          "gradient_units": "hartree/bohr",
          "gradient": [[...], "..."]
        }
      ],
      "gradient_differences": [
-       {"states": [1, 2], "gradient_norm": 0.14, "gradient": [[...], "..."]}
+       {"states": [1, 2], "gradient_norm": 0.137, "gradient": [[...], "..."]}
      ]
    }
 
@@ -161,6 +160,56 @@ a CAS(2,2), 6-31G*, both roots' gradients on a Gradient driver:
 ``tools/sa_casscf/pyscf_ref.py`` produces the independent PySCF reference
 this deck's numbers are checked against.
 
+Nonadiabatic couplings
+======================
+
+A Gradient run can also return the derivative coupling
+:math:`d_{IJ} = \langle \Psi_I|\partial/\partial R\,\Psi_J\rangle` between
+pairs of averaged roots. List the pairs, 1-based:
+
+.. code-block:: json
+
+   "mcscf": {"n_states": 2, "gradient_roots": "all", "nac_pairs": [[1, 2]]}
+
+Each pair adds an entry to ``mcscf_states.nonadiabatic_couplings``:
+
+- ``coupling``: :math:`d_{IJ}`, per atom, in 1/Bohr.
+- ``interstate_coupling``: :math:`h_{IJ} = (E_J - E_I)\,d_{IJ} =
+  \langle I|\partial H/\partial R|J\rangle`, in Hartree/Bohr. PySCF's
+  ``mult_ediff=True`` scales by :math:`E_I - E_J` instead, so it has the
+  opposite sign.
+- ``csf_term``: the part of :math:`h_{IJ}` from the determinant (CSF)
+  derivative. It is included in ``coupling`` and ``interstate_coupling``,
+  and corresponds to PySCF's ``use_etfs=False``; no keyword turns it off, so
+  subtract it for ``use_etfs=True`` numbers. In Hartree/Bohr. It is not
+  translationally invariant on its own.
+- ``energy_difference_hartree``: :math:`E_J - E_I`.
+
+The overall sign of a coupling depends on the arbitrary phases of the CI
+vectors, so it can differ from another code's by a factor of -1 per pair.
+The same refusals as for gradients apply: equal weights only, not under
+fragmentation. A pair whose energies agree to within :math:`10^{-8}` Hartree
+is refused as well, since :math:`d_{IJ}` divides by their difference. See :doc:`developer_sa_casscf`, "Nonadiabatic couplings",
+for the equations. ``tools/sa_casscf/c2h4_twisted_sa2_nac_6-31gs.json`` is an
+example deck.
+
+Against PySCF 2.14's ``pyscf.nac.sacasscf``, up to that sign, largest
+difference over all components of :math:`d_{IJ}` and :math:`h_{IJ}`, with and
+without the CSF term:
+
+=====================================================  =====================
+system                                                 max difference
+=====================================================  =====================
+C2H4 planar, 6-31G*, SA-2-CAS(2,2)                     :math:`1\times10^{-8}`
+C2H4 twisted, 6-31G*, SA-2-CAS(2,2)                    :math:`2\times10^{-7}`
+H2O (one bond stretched), 6-31G, SA-3-CAS(4,4), pairs  :math:`9\times10^{-7}`
+=====================================================  =====================
+
+A symmetric molecule whose averaged states break its symmetry has two
+mirror-image SA solutions, and a coupling computed at either is correct. This
+happens for H2O SA-3 at the equilibrium geometry and for C2H4 at the
+symmetric 90 degree twist. Two codes, or two runs, can land on different ones.
+
 Accuracy against PySCF
 =======================
 
@@ -172,5 +221,4 @@ PySCF's own iterative-solver floor. A finite difference of this code's own
 root energies (central, tight CASSCF convergence) agrees with the analytic
 gradient to :math:`3\times10^{-8}` to :math:`3\times10^{-6}` on the twisted
 geometry, where PySCF's own analytic gradient is the sharper of the two
-references. See ``SA_CASSCF_GRADIENT_PLAN.md``'s progress log for the full
-gate-by-gate numbers.
+references.

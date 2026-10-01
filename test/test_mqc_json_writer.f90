@@ -49,9 +49,73 @@ contains
                   new_unittest("efmo_pair_map_round_trips_strongest_first", &
                                test_efmo_pairs), &
                   new_unittest("unrestricted_roots_carry_their_own_spin_word", &
-                               test_unrestricted_spin) &
+                               test_unrestricted_spin), &
+                  new_unittest("couplings_are_written_with_a_single_gradient_root", &
+                               test_nac_with_one_root) &
                   ]
    end subroutine collect_mqc_json_writer_tests
+
+   subroutine test_nac_with_one_root(error)
+      !! A coupling between roots `gradient_roots` did not all name is still written
+      !!
+      !! `gradient_differences` needs two differentiated roots; the couplings do
+      !! not. With `gradient_roots: [1]` and `nac_pairs: [[1, 2]]` the section
+      !! once returned before reaching them, so the coupling was computed and
+      !! then left out of the file.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      real(dp) :: value
+      logical :: found
+
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = -77.86_dp
+      data%has_energy = .true.
+      data%mcscf_state_energies = [-77.92_dp, -77.81_dp, -77.70_dp]
+      data%mcscf_state_spins = [0.0_dp, 0.0_dp, 0.0_dp]
+      data%mcscf_state_weights = [1.0_dp/3.0_dp, 1.0_dp/3.0_dp, 1.0_dp/3.0_dp]
+      data%mcscf_gradient_roots = [1]
+      allocate (data%mcscf_state_gradients(3, 2, 1))
+      data%mcscf_state_gradients = 0.01_dp
+      data%mcscf_nac_pairs = reshape([1, 2], [2, 1])
+      allocate (data%mcscf_nac_couplings(3, 2, 1), data%mcscf_nac_interstate(3, 2, 1))
+      allocate (data%mcscf_nac_csf(3, 2, 1))
+      data%mcscf_nac_couplings = 0.2_dp
+      data%mcscf_nac_interstate = 0.022_dp
+      data%mcscf_nac_csf = 0.001_dp
+      data%mcscf_nac_energy_diff = [0.11_dp]
+      data%has_mcscf_states = .true.
+
+      call written_document(data, json, "jw_nac_one_root.json")
+
+      call json%get("jw_nac_one_root.mcscf_states.nonadiabatic_couplings(1)."// &
+                    "energy_difference_hartree", value, found)
+      call check(error, found, "the coupling was computed but not written: "// &
+                 "nonadiabatic_couplings is missing with one gradient root")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.11_dp) < 1.0e-12_dp, &
+                 "the energy difference came back changed")
+      if (allocated(error)) return
+
+      call json%get("jw_nac_one_root.mcscf_states.nonadiabatic_couplings(1).coupling(2)(3)", &
+                    value, found)
+      call check(error, found, "the coupling vector is missing")
+      if (allocated(error)) return
+      call check(error, abs(value - 0.2_dp) < 1.0e-12_dp, "the coupling came back changed")
+      if (allocated(error)) return
+
+      ! One differentiated root: there is no pair to difference.
+      call json%info("jw_nac_one_root.mcscf_states.gradient_differences", found=found)
+      call check(error,.not. found, "gradient_differences needs two roots and was written for one")
+      if (allocated(error)) return
+
+      call json%get("jw_nac_one_root.mcscf_states.states(1).gradient_norm", value, found)
+      call check(error, found, "the requested root's own gradient is missing")
+      if (allocated(error)) return
+      call json%info("jw_nac_one_root.mcscf_states.states(2).gradient_norm", found=found)
+      call check(error,.not. found, "a root gradient_roots did not name carries a gradient")
+   end subroutine test_nac_with_one_root
 
    subroutine written_document(data, json, path)
       !! Write `data` and open what came out, under a name of this test's own.

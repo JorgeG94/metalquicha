@@ -369,6 +369,9 @@ contains
          allocate (m%options%gradient_roots(size(config%mcscf%gradient_roots)))
          m%options%gradient_roots = config%mcscf%gradient_roots
       end if
+      if (allocated(config%mcscf%nac_pairs)) then
+         m%options%nac_pairs = config%mcscf%nac_pairs
+      end if
 
       ! Convergence
       m%options%max_macro_iter = config%mcscf%max_macro_iter
