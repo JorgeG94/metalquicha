@@ -2030,7 +2030,7 @@ contains
                   call mol%destroy()
                   return
                end if
-               fukui_frozen = core_orbital_count(fragment%element_numbers)
+               fukui_frozen = core_orbital_count(fragment%real_element_numbers())
             end if
             if (.not. settings%freeze_core) fukui_frozen = 0
             ! TODO(mqc): `fukui_indices` takes the grid level alone, so a deck
@@ -2486,7 +2486,7 @@ contains
                   call mol%destroy()
                   return
                end if
-               frozen = core_orbital_count(fragment%element_numbers)
+               frozen = core_orbital_count(fragment%real_element_numbers())
             end if
             if (.not. settings%freeze_core) frozen = 0
 
@@ -2706,7 +2706,7 @@ contains
                   call mol%destroy()
                   return
                end if
-               frozen = core_orbital_count(fragment%element_numbers)
+               frozen = core_orbital_count(fragment%real_element_numbers())
             end if
             if (.not. settings%freeze_core) frozen = 0
 
@@ -2849,7 +2849,7 @@ contains
                   call mol%destroy()
                   return
                end if
-               dh_frozen = core_orbital_count(fragment%element_numbers)
+               dh_frozen = core_orbital_count(fragment%real_element_numbers())
                end if
                if (.not. settings%freeze_core) dh_frozen = 0
 

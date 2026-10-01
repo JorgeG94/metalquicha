@@ -78,6 +78,8 @@ module mqc_physical_fragment
    contains
       procedure :: destroy => fragment_destroy          !! Memory cleanup
       procedure :: compute_nelec => fragment_compute_nelec  !! Calculate electron count
+      procedure :: real_element_numbers => fragment_real_element_numbers
+         !! Atomic numbers of the real atoms only, ghost centres left out
       procedure :: set_basis => fragment_set_basis      !! Assign basis set
    end type physical_fragment_t
 
@@ -1012,6 +1014,23 @@ contains
       this%nelec = 0
       this%n_caps = 0
    end subroutine fragment_destroy
+
+   pure function fragment_real_element_numbers(this) result(z)
+      !! The atomic numbers of the fragment's real atoms, in order
+      !!
+      !! A ghost centre keeps its element in `element_numbers` -- its basis
+      !! functions are that element's -- but it has no nucleus and no electrons,
+      !! so anything counted per atom of the molecule, a frozen core among them,
+      !! is counted over this instead.
+      class(physical_fragment_t), intent(in) :: this
+      integer, allocatable :: z(:)
+
+      if (allocated(this%is_ghost)) then
+         z = pack(this%element_numbers,.not. this%is_ghost)
+      else
+         z = this%element_numbers
+      end if
+   end function fragment_real_element_numbers
 
    subroutine fragment_compute_nelec(this)
       !! Compute number of electrons from atomic numbers and charge
