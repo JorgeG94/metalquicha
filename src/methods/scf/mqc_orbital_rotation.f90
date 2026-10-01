@@ -83,6 +83,9 @@ module mqc_orbital_rotation
       !! step whose *predicted* gain is below this is taken without being
       !! tested rather than rejected on the noise of the objective.
    real(dp), parameter :: TRUST_GROWTH = 1.3_dp
+      !! How fast the trust radius recovers after a successful step. Slower than
+      !! it shrinks: an over-long step costs a wasted objective evaluation, an
+      !! over-short one only an iteration.
 
    integer, parameter :: DEFAULT_SUBSPACE = 20
       !! Largest Krylov subspace `subspace_newton_step` builds unless told
@@ -112,9 +115,6 @@ module mqc_orbital_rotation
          type(error_t), intent(inout) :: error
       end subroutine apply_rotation_hessian
    end interface
-      !! How fast the trust radius recovers after a successful step. Slower than
-      !! it shrinks: an over-long step costs a wasted objective evaluation, an
-      !! over-short one only an iteration.
 
 contains
 
@@ -321,6 +321,11 @@ contains
       gradient_norm = sqrt(dot_product(gradient, gradient))
 
       ! ---- the seeds ------------------------------------------------------
+      ! A negative diagonal element is floored to `PRECONDITION_FLOOR`, which
+      ! weights that mode up in the normalised direction rather than flipping
+      ! it. Only the subspace depends on this: the step comes from the
+      ! projected Hessian, so a soft or negative mode drawn in is what the
+      ! saddle escape needs.
       nsub = 0
       direction = -gradient/max(diagonal, PRECONDITION_FLOOR)
       call add_direction(basis, nsub, direction)
@@ -328,9 +333,11 @@ contains
       direction(minloc(diagonal, 1)) = 1.0_dp
       call add_direction(basis, nsub, direction)
       if (nsub == 0) then
-         ! No gradient and a rotation space of one direction that vanished
-         ! under projection: nothing to do, and saying so beats an undefined
-         ! step.
+         ! Unreachable for `n_param >= 1`: the second seed is a unit vector and
+         ! there is nothing yet to project it against. Refused rather than
+         ! returned, because `lowest = 0` would read as a marginal curvature.
+         call error%set(ERROR_VALIDATION, "subspace_newton_step: no direction to "// &
+                        "build a subspace from.")
          return
       end if
       do i = 1, nsub
