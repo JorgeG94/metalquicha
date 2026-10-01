@@ -2010,6 +2010,11 @@ contains
 
       integer :: c, f, j, k
 
+      ! Written by every thread, a block of c each, so that its pages land in
+      ! both sockets' memory rather than all in the first: every thread reads
+      ! the whole of it, over and over, for the rest of the (T).
+      !$omp parallel do default(none) shared(tt, t2, no, nv) &
+      !$omp    private(c, f, j, k) schedule(static)
       do c = 1, nv
          do f = 1, nv
             do j = 1, no
@@ -2019,6 +2024,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end subroutine triples_pack_t2
 
    subroutine triples_pack_ovvv(eris, no, nv, c0, nc, fixed, fixed_first, mmt)
