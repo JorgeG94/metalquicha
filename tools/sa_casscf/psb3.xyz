@@ -1,0 +1,16 @@
+14
+PSB3 (penta-2,4-dieniminium cation, CH2=CH-CH=CH-CH=NH2+, charge +1, singlet), all-trans, planar. Built from standard bond lengths/angles (C=C 1.35, C-C 1.44, C=N 1.30, C-H 1.08, N-H 1.01 Angstrom, 120 degree sp2 angles, zigzag), then optimised at RHF/6-31G* with PySCF 2.14 (pyscf.geomopt.geometric_solver, this repository's basis JSON via tools/cpu_validation/gen_cpu_validation.bse_to_pyscf, cart=True), 13 steps to |grad| = 1.1e-4 Hartree/Bohr. Angstrom.
+C      0.00370489    -0.05103774    -0.00000000
+C      1.11900869     0.67603172    -0.00000000
+C      2.41564022     0.04610394    -0.00000000
+C      3.59754549     0.71053179    -0.00000000
+C      4.80239601    -0.02131695    -0.00000000
+N      5.98559633     0.50262760     0.00000000
+H     -0.96513394     0.41185645    -0.00000000
+H      0.02310333    -1.12642786     0.00000000
+H      1.07780722     1.75013103    -0.00000000
+H      2.42630449    -1.03175504     0.00000000
+H      3.63381571     1.78500997    -0.00000000
+H      4.76799191    -1.09647567    -0.00000000
+H      6.80855581    -0.06379908    -0.00000000
+H      6.12403059     1.49351982     0.00000000

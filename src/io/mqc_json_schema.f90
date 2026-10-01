@@ -548,7 +548,8 @@ contains
       !! also carries fields for a CASPT2/NEVPT2 correction that nothing
       !! implements, so those keys stay off the list. `n_states`/`weights`
       !! select a state-averaged CASSCF (see `run_czt_mcscf` for what it is
-      !! refused with).
+      !! refused with). `gradient_roots` names which of those states the
+      !! (not yet driver-reachable) fused multi-root gradient would build.
       !!
       !! `max_micro_iter` and a CI threshold are absent because neither routine
       !! underneath takes them: the macro loop pins its CASCI at 1e-11, so the
@@ -565,6 +566,7 @@ contains
       call allow(keys, "orbital_convergence")
       call allow(keys, "n_states")
       call allow(keys, "weights")
+      call allow(keys, "gradient_roots")
    end function mcscf_keys
 
    function hessian_keys() result(keys)

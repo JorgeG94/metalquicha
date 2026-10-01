@@ -71,7 +71,7 @@ module mqc_czt_sa_hessian
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_casci, only: active_space_integrals
    use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, &
-                            orbital_hessian, rotation_parameters, rotation_matrix, &
+                            rotation_parameters, rotation_matrix, &
                             one_index_fock, transformed_potential, sa_density_matrices
    use mqc_czt_mp2, only: transform_block
    use mqc_determinants, only: link_table_t, build_link_table
@@ -120,7 +120,7 @@ module mqc_czt_sa_hessian
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)   !! The reference active Hamiltonian
       real(dp), allocatable :: folded(:, :)           !! From `absorb_one_electron`
       real(dp), allocatable :: diagonal(:, :)         !! From `ci_diagonal`, (na, nb)
-      real(dp), allocatable :: orbital_hessian_diag(:)   !! (n_rot), the exact diagonal
+      real(dp), allocatable :: orbital_hessian_diag(:)   !! (n_rot), approximate (see `build_sa_hessian`)
    end type sa_hessian_t
 
 contains
@@ -151,8 +151,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: eri_packed(:, :)
-      real(dp), allocatable :: full_hessian(:, :)
-      integer :: n_occ, j, l
+      integer :: n_occ, j, l, p, q
 
       if (error%has_error()) return
       if (n_alpha /= n_beta) then
@@ -225,19 +224,21 @@ contains
          state%active_energies(j) = energies(j) - state%core_energy
       end do
 
-      ! Built once, purely for its diagonal (the preconditioner). It costs one
-      ! `one_index_fock` per rotation -- the same as one CASSCF
-      ! macro-iteration's Hessian -- because `run_czt_casscf` does not return
-      ! the one its last iteration built.
-      call orbital_hessian(mol, orbitals, n_inactive, n_active, state%dm1_sa, &
-                           state%dm2_sa, state%fock_sa, state%rows, state%cols, &
-                           full_hessian, error)
-      if (error%has_error()) return
+      ! The orbital preconditioner: the one-electron approximation to the
+      ! Hessian diagonal, 2 (n_q f_pp + n_p f_qq) - 2 (F_pp + F_qq), with
+      ! f = FI + FA and F the generalised Fock. For an inactive-virtual pair
+      ! it is 4 (f_aa - f_ii). Building the exact diagonal would take one
+      ! `one_index_fock` per rotation.
       allocate (state%orbital_hessian_diag(state%n_rot))
       do l = 1, state%n_rot
-         state%orbital_hessian_diag(l) = full_hessian(l, l)
+         p = state%rows(l)
+         q = state%cols(l)
+         state%orbital_hessian_diag(l) = 2.0_dp*(state%fock_sa%occupation(q)* &
+                                                 (state%fock_sa%inactive(p, p) + state%fock_sa%active(p, p)) &
+                                                 + state%fock_sa%occupation(p)* &
+                                                 (state%fock_sa%inactive(q, q) + state%fock_sa%active(q, q))) &
+                                         - 2.0_dp*(state%fock_sa%general(p, p) + state%fock_sa%general(q, q))
       end do
-      deallocate (full_hessian)
    end subroutine build_sa_hessian
 
    subroutine destroy_sa_hessian(state)
@@ -705,8 +706,8 @@ contains
    end subroutine sa_hessian_apply_one
 
    subroutine sa_hessian_precondition(state, x, px)
-      !! A diagonal preconditioner: the orbital block from the exact orbital
-      !! Hessian's diagonal (already built once, in `build_sa_hessian`), the
+      !! A diagonal preconditioner: the orbital block from the one-electron
+      !! approximation to the orbital Hessian's diagonal, the
       !! CI block from `2 w_J (H_diag - E_J)`, both floored so a near-zero
       !! curvature is not divided by
       type(sa_hessian_t), intent(in) :: state

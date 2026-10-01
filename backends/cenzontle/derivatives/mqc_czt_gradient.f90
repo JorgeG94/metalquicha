@@ -69,6 +69,8 @@ module mqc_czt_gradient
    public :: two_electron_deriv
       !! Exposed for the MCSCF gradient, whose inactive and active blocks are
       !! separable and contract exactly as a closed-shell reference does.
+   public :: two_electron_deriv_many
+      !! Exposed for the SA-CASSCF gradient, which contracts several densities.
    ! `two_electron_gradient` and `hellmann_feynman_gradient` are deliberately
    ! NOT public: nothing outside this module calls either, and both are steps of
    ! `czt_scf_gradient` rather than pieces a caller assembles for itself.
@@ -2029,6 +2031,182 @@ contains
 
       deallocate (bounds, bq, bra_bound, dsh, esh, dims, offs)
    end subroutine two_electron_deriv
+
+   subroutine two_electron_deriv_many(mol, densities, vhfs, error, screen_tol)
+      !! `two_electron_deriv` for a stack of densities, in one pass over the
+      !! differentiated ERIs
+      !!
+      !! Each set gets `-(J - K/2)` derivative potentials of its own density,
+      !! full range, as `two_electron_deriv` gives with no optional arguments;
+      !! the exchange-scaling and range-separation options are not offered.
+      !! Screening uses the largest density element over the whole batch, so
+      !! a set can pick up quartets it would have screened alone: results
+      !! agree with one-at-a-time calls to within the screening threshold, not
+      !! bit for bit.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: densities(:, :, :)   !! (n_ao, n_ao, n_set), each symmetric
+      real(dp), allocatable, intent(out) :: vhfs(:, :, :, :)   !! (n_ao, n_ao, 3, n_set)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
+
+      real(dp), allocatable :: buf(:), vj(:, :, :, :), vk(:, :, :, :)
+      real(dp), allocatable :: vj_local(:, :, :, :), vk_local(:, :, :, :)
+      real(dp), allocatable :: bounds(:, :), bq(:, :), bra_bound(:, :)
+      real(dp), allocatable :: dsh(:, :), dsh_set(:, :)
+      integer, allocatable :: dims(:), offs(:)
+      real(dp) :: g, tol, bra, est, amax
+      type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
+      type(eri_grad_dispatch_t) :: disp
+      integer :: shls(4)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx, nao, nbas
+      integer :: nprim, ptr, iset, n_set
+
+      if (error%has_error()) return
+      nao = mol%nao
+      n_set = size(densities, 3)
+      if (size(densities, 1) /= nao .or. size(densities, 2) /= nao) then
+         call error%set(ERROR_VALIDATION, "two_electron_deriv_many: a density does not "// &
+                        "match this basis")
+         return
+      end if
+      if (n_set < 1) then
+         call error%set(ERROR_VALIDATION, "two_electron_deriv_many: no densities to "// &
+                        "contract against")
+         return
+      end if
+
+      call eri_shell_table(mol, tab)
+      call build_eri_grad_dispatch(tab%bas, tab%nbas, disp)
+      mx = tab%block_max
+      nbas = tab%nbas
+      allocate (vj(nao, nao, 3, n_set), vk(nao, nao, 3, n_set))
+      vj = 0.0_dp
+      vk = 0.0_dp
+
+      tol = DERIV_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+
+      opt = c_null_ptr
+      if (mol%cartesian) then
+         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
+      else
+         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
+      end if
+
+      dims = tab%dims
+      offs = tab%offs(1:nbas)
+
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      call eri_schwarz_collapse(mol, bounds, bq)
+
+      allocate (bra_bound(nbas, nbas))
+      do ish = 1, nbas
+         nprim = tab%bas(LIBCINT_NPRIM_OF, ish)
+         ptr = tab%bas(LIBCINT_PTR_EXP, ish)
+         amax = maxval(tab%env(ptr + 1:ptr + nprim))
+         bra_bound(ish, :) = 2.0_dp*sqrt(amax)*bq(ish, :)
+      end do
+
+      ! The per-quartet density bound, maximised over every set in the batch.
+      ! `block_density_max` assumes a
+      ! symmetric density, which every caller's is (each set is a total
+      ! one-particle density or a symmetrised transition density).
+      allocate (dsh(nbas, nbas))
+      dsh = 0.0_dp
+      do iset = 1, n_set
+         call block_density_max(densities(:, :, iset), nbas, offs, dims, dsh_set)
+         dsh = max(dsh, dsh_set)
+         deallocate (dsh_set)
+      end do
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, tab, densities, opt, vj, vk, mx, nao, nbas, disp, &
+      !$omp           dims, offs, bq, bra_bound, dsh, tol, n_set) &
+      !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
+      !$omp            bra, est, iset)
+      allocate (buf(mx**4*3))
+      allocate (vj_local(nao, nao, 3, n_set), vk_local(nao, nao, 3, n_set))
+      vj_local = 0.0_dp
+      vk_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
+      do ish = 1, nbas
+         di = dims(ish)
+         io = offs(ish)
+         do jsh = 1, nbas
+            dj = dims(jsh)
+            jo = offs(jsh)
+            bra = bra_bound(ish, jsh)
+            do ksh = 1, nbas
+               dk = dims(ksh)
+               ko = offs(ksh)
+               do lsh = 1, ksh
+                  dl = dims(lsh)
+                  lo = offs(lsh)
+
+                  est = bra*bq(ksh, lsh)* &
+                        max(dsh(lsh, ksh), dsh(ksh, lsh), dsh(jsh, ksh), dsh(jsh, lsh))
+                  if (est < tol) cycle
+
+                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+
+                  if (.not. two_electron_ip1_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                                   tab%bas, nbas, tab%env, opt, disp)) cycle
+
+                  ! One set at a time over the whole quartet, so `buf` stays in
+                  ! cache and each set's density is read contiguously.
+                  do iset = 1, n_set
+                     do comp = 1, 3
+                        do l = 1, dl
+                           do k = 1, dk
+                              do j = 1, dj
+                                 do i = 1, di
+                                    idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
+                                    g = buf(idx)
+                                    vj_local(io + i, jo + j, comp, iset) = &
+                                       vj_local(io + i, jo + j, comp, iset) &
+                                       + g*densities(lo + l, ko + k, iset)
+                                    vk_local(io + i, lo + l, comp, iset) = &
+                                       vk_local(io + i, lo + l, comp, iset) &
+                                       + g*densities(jo + j, ko + k, iset)
+                                    if (lsh /= ksh) then
+                                       vj_local(io + i, jo + j, comp, iset) = &
+                                          vj_local(io + i, jo + j, comp, iset) &
+                                          + g*densities(ko + k, lo + l, iset)
+                                       vk_local(io + i, ko + k, comp, iset) = &
+                                          vk_local(io + i, ko + k, comp, iset) &
+                                          + g*densities(jo + j, lo + l, iset)
+                                    end if
+                                 end do
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+
+      !$omp critical
+      vj = vj + vj_local
+      vk = vk + vk_local
+      !$omp end critical
+      deallocate (buf, vj_local, vk_local)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+
+      allocate (vhfs(nao, nao, 3, n_set))
+      vhfs = -(vj - 0.5_dp*vk)
+
+      deallocate (bounds, bq, bra_bound, dsh, dims, offs, vj, vk)
+   end subroutine two_electron_deriv_many
 
    subroutine two_electron_gradient(mol, density, gradient, error, density_alpha, density_beta, &
                                     exx_fraction, screen_tol, omega, with_coulomb)

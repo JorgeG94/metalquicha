@@ -517,6 +517,10 @@ module mqc_method_config
          !! Number of states for SA-CASSCF
       real(dp), allocatable :: state_weights(:)
          !! State weights (must sum to 1)
+      integer, allocatable :: gradient_roots(:)
+         !! `keywords.mcscf.gradient_roots`, 1-based. Unallocated means every
+         !! state. Not read by anything downstream yet (phase 6 of
+         !! `SA_CASSCF_GRADIENT_PLAN.md` wires the driver to it).
 
       ! Convergence
       integer :: max_macro_iter = 100
@@ -847,6 +851,7 @@ contains
       this%mcscf%optimize_orbitals = .true.
       this%mcscf%n_states = 1
       if (allocated(this%mcscf%state_weights)) deallocate (this%mcscf%state_weights)
+      if (allocated(this%mcscf%gradient_roots)) deallocate (this%mcscf%gradient_roots)
       this%mcscf%max_macro_iter = 100
       this%mcscf%max_micro_iter = 50
       this%mcscf%orbital_convergence = 1.0e-6_dp
