@@ -180,14 +180,14 @@ Hessian from central differences of gradients</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_finite_differences.html'>mqc_finite_differences</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_finite_differences.html'>mqc_finite_differences</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1091,18 +1091,18 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1132.47,-324.87C1109.93,-328.34 1077.59,-334.09 1050,-342 1033.5,-346.73 1030.43,-351.03 1014,-356 990.22,-363.18 963.2,-369.27 940.97,-373.74"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="940.26,-370.31 931.13,-375.68 941.62,-377.18 940.26,-370.31"/>
 </g>
-<!-- proc~worker_loop -->
+<!-- proc~worker_loop~2 -->
 <g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node24" class="node">
-<title>proc~worker_loop</title>
-<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node24"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<title>proc~worker_loop~2</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node24"><a xlink:href="../proc/worker_loop~2.html" xlink:title="worker_loop">
 <polygon fill="#d9534f" stroke="#d9534f" points="1200.5,-543 1122.5,-543 1122.5,-519 1200.5,-519 1200.5,-543"/>
 <text text-anchor="middle" x="1161.5" y="-528.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
 </a>
 </g>
 </g>
-<!-- proc~worker_loop&#45;&gt;module~mqc_driver -->
+<!-- proc~worker_loop~2&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge15" class="edge">
-<title>proc~worker_loop&#45;&gt;module~mqc_driver</title>
+<title>proc~worker_loop~2&#45;&gt;module~mqc_driver</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1122.47,-528.51C1100.46,-525.93 1072.7,-520.68 1050,-510 992.96,-483.16 939.35,-430.29 912.83,-401.62"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="915.41,-399.25 906.09,-394.21 910.23,-403.96 915.41,-399.25"/>
 </g>
@@ -1265,7 +1265,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~12"></span>
+              <span class="anchor" id="variable-method~4"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1280,7 +1280,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~14"></span>
+              <span class="anchor" id="variable-fragment~4"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1295,7 +1295,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~27"></span>
+              <span class="anchor" id="variable-result~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1310,7 +1310,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~2"></span>
+              <span class="anchor" id="variable-verbose~3"></span>
               logical,
             </td>
 <td>intent(in),</td>
@@ -1365,7 +1365,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~28"></span>
+              <span class="anchor" id="variable-result~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1395,7 +1395,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-direction"></span>
+              <span class="anchor" id="variable-direction~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1450,7 +1450,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~3"></span>
+              <span class="anchor" id="variable-dipole_derivatives"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1465,7 +1465,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~8"></span>
+              <span class="anchor" id="variable-charge"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1480,7 +1480,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~3"></span>
+              <span class="anchor" id="variable-verbose~4"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1523,7 +1523,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-10-01 22:10 +0000             </p>
+ on 2026-10-01 22:12 +0000             </p>
           </div>
         </div>
         <br>
