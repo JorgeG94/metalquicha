@@ -47,6 +47,7 @@ contains
       logical :: have_energy, have_delta, have_distance
       logical :: have_charmult
       logical :: have_connected
+      logical :: have_correlation
       type(timer_type) :: table_timer
       character(len=256) :: filename
       character(len=32) :: col
@@ -70,7 +71,8 @@ contains
          write (col, "(a,i0)") ",m", j
          write (unit, "(a)", advance="no") trim(col)
       end do
-      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev,charge,mult,connected"
+      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev,charge,mult,connected,"// &
+         "correlation,correlation_delta"
 
       ! Presence of the value columns is fixed for the whole run, so decide once
       ! rather than per row.
@@ -86,6 +88,7 @@ contains
       have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo)
       have_charmult = allocated(data%fragment_charges) .and. allocated(data%fragment_multiplicities)
       have_connected = allocated(data%fragment_connected)
+      have_correlation = allocated(data%fragment_correlation) .and. allocated(data%correlation_deltas)
 
       ! Explicit repeat count for the monomer columns rather than an unlimited "*"
       ! group: the unlimited form emits the separator before it discovers the data is
@@ -155,13 +158,18 @@ contains
             ! would read as a reassurance the column is not making.
             if (have_connected .and. level == 2) then
                if (data%fragment_connected(i)) then
-                  write (unit, "(a)") ",YES"
+                  write (unit, "(a)", advance="no") ",YES"
                else
-                  write (unit, "(a)") ",NO"
+                  write (unit, "(a)", advance="no") ",NO"
                end if
             else
-               write (unit, "(a)") ","
+               write (unit, "(a)", advance="no") ","
             end if
+
+            ! A correlated method's share of the energy and of the correction,
+            ! blank for a method without one. The SCF part is the difference.
+            call write_optional_value(unit, have_correlation, data%fragment_correlation, i, .false.)
+            call write_optional_value(unit, have_correlation, data%correlation_deltas, i, .true.)
          end do
          deallocate (row_order)
       end do

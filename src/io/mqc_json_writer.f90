@@ -249,6 +249,12 @@ contains
          call write_interaction_section(json, main_obj, data)
       else
          call json%add(main_obj, "total_energy", data%total_energy)
+         ! The total split in two, so a correlated expansion's SCF and
+         ! correlation parts can be followed separately level by level.
+         if (allocated(data%correlation_by_level)) then
+            call json%add(main_obj, "scf_energy", data%total_energy - sum(data%correlation_by_level))
+            call json%add(main_obj, "correlation_energy", sum(data%correlation_by_level))
+         end if
       end if
 
       call write_unconverged_section(json, main_obj, data)
@@ -286,6 +292,11 @@ contains
             call json%add(level_obj, "count", int(count_by_level))
             if (allocated(data%sum_by_level)) then
                call json%add(level_obj, "total_energy", data%sum_by_level(frag_level))
+               if (allocated(data%correlation_by_level)) then
+                  call json%add(level_obj, "scf_energy", data%sum_by_level(frag_level) - &
+                                data%correlation_by_level(frag_level))
+                  call json%add(level_obj, "correlation_energy", data%correlation_by_level(frag_level))
+               end if
             end if
 
             ! Per-fragment detail only when this is the chosen sink for it
@@ -314,8 +325,16 @@ contains
                   call json%add(frag_obj, "distance", data%fragment_distances(i))
                end if
 
+               if (allocated(data%fragment_correlation)) then
+                  call json%add(frag_obj, "correlation_energy", data%fragment_correlation(i))
+               end if
+
                if (frag_level > 1 .and. allocated(data%delta_energies)) then
                   call json%add(frag_obj, "delta_energy", data%delta_energies(i))
+               end if
+
+               if (frag_level > 1 .and. allocated(data%correlation_deltas)) then
+                  call json%add(frag_obj, "correlation_delta_energy", data%correlation_deltas(i))
                end if
 
                ! Only on a two-body term, where the question means something.

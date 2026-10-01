@@ -235,6 +235,10 @@ module mqc_result_types
 
       ! Computation status flags
       logical :: has_energy = .false.    !! Energy has been computed
+      logical :: energy_total_only = .false.
+         !! Only the total is known, held in `energy%scf` with every other
+         !! component zero. Set on a fragment taken back from a checkpoint,
+         !! which records one number per term.
       logical :: has_gradient = .false.  !! Gradient has been computed
       logical :: has_sigma = .false.     !! Stress tensor has been computed
       logical :: has_hessian = .false.   !! Hessian has been computed
@@ -280,6 +284,15 @@ module mqc_result_types
       logical :: has_hessian = .false.               !! Hessian has been computed
       logical :: has_dipole = .false.                !! Dipole has been computed
       logical :: has_dipole_derivatives = .false.    !! Dipole derivatives have been computed
+
+      ! The same expansion carried out over each term's correlation energy
+      ! alone, `energy%mp2%total() + energy%cc%total()`. Set only when some
+      ! term has one; the reference part of any level is the total minus this.
+      real(dp) :: correlation_energy = 0.0_dp
+         !! Correlation part of `total_energy` (Hartree)
+      real(dp), allocatable :: correlation_by_level(:)
+         !! (max_level) correlation part of each level's sum (Hartree)
+      logical :: has_correlation = .false.           !! The two above are set
 
       ! The interaction energy of one fragment, when `compute_mbe` was given
       ! a reference. `total_energy` and `has_energy` are then left unset: the
@@ -457,6 +470,7 @@ contains
       call this%energy%reset()
       call this%error%clear()
       this%has_energy = .false.
+      this%energy_total_only = .false.
       this%has_gradient = .false.
       this%has_sigma = .false.
       this%has_hessian = .false.
@@ -491,6 +505,7 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
       if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
       if (allocated(this%interaction_count_by_level)) deallocate (this%interaction_count_by_level)
       call this%reset()
@@ -505,6 +520,8 @@ contains
       this%has_hessian = .false.
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
+      this%correlation_energy = 0.0_dp
+      this%has_correlation = .false.
       this%reference_fragment = 0
       this%reference_energy = 0.0_dp
       this%interaction_energy = 0.0_dp

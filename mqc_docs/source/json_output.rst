@@ -391,6 +391,35 @@ the two-body terms whose ``indices`` contain it. For the ligand as fragment 7:
 The same selection on the CSV sidecar is a filter on the ``m1`` and ``m2``
 columns with ``level == 2`` and ``connected != "YES"``.
 
+SCF and correlation parts
+-------------------------
+
+A correlated method -- the MP2 family, CCSD, CCSD(T) -- also gets its
+expansion split in two. The correlation energy of every term runs through the
+same many-body recursion on its own, and the document gains
+
+* ``scf_energy`` and ``correlation_energy`` beside the top-level
+  ``total_energy``;
+* ``scf_energy`` and ``correlation_energy`` on each ``levels[]`` entry, beside
+  its ``total_energy``;
+* ``correlation_energy`` and, above level one, ``correlation_delta_energy`` on
+  each fragment, when the breakdown goes to JSON;
+* ``correlation`` and ``correlation_delta`` as the last two columns of the CSV
+  sidecar, blank for a method without correlation.
+
+The two parts add to the total at every level, so the SCF part of anything is
+its total minus its correlation part. The many-body behaviour of the two is
+different -- for water clusters the SCF part needs three-body terms while the
+correlation part is converged at two -- and following them separately is how
+that shows. The log carries the same split as a table under the usual
+breakdown.
+
+"Correlation" is ``mp2`` plus ``cc`` from each term's energy, spin-component
+scaled where the method is. A double hybrid's perturbative term is part of its
+functional and stays in the SCF part, as does an empirical dispersion. The
+split is not reported when any fragment was taken from a checkpoint, which
+records a term's total and nothing else, nor for an interaction energy run.
+
 Interaction Energy Output
 -------------------------
 

@@ -584,14 +584,68 @@ contains
       end if
    end subroutine report_unconverged
 
-   subroutine print_mbe_energy_breakdown(sum_by_level, max_level, total_energy)
+   subroutine expand_by_level(polymers, fragment_count, max_level, lookup, values, &
+                              deltas, by_level, vmfc, world_comm)
+      !! The many-body recursion over one per-term quantity
+      !!
+      !! `deltas` (fragment_count) receives each term's correction and
+      !! `by_level` (max_level) the sum of the corrections of each level's real
+      !! terms. A counterpoise auxiliary row gets a delta, for its parent to
+      !! subtract, and is never summed. Both must be zero on entry.
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: max_level
+      type(fragment_lookup_t), intent(in) :: lookup
+      real(dp), intent(in) :: values(:)  !! (fragment_count) each term's own value
+      real(dp), intent(inout) :: deltas(:)
+      real(dp), intent(inout) :: by_level(:)
+      logical, intent(in) :: vmfc
+      type(comm_t), intent(in), optional :: world_comm
+
+      integer(int64) :: i
+      integer :: nlevel, fragment_size, row_width
+
+      ! By n-mer level, so every subset is computed before it is needed and the
+      ! result does not depend on the order the fragments arrived in.
+      do nlevel = 1, max_level
+         do i = 1_int64, fragment_count
+            ! The *real* monomers set the level, so a counterpoise row like
+            ! [1,-2] is a one-body term with no subsets to subtract, and it is
+            ! computed at level 1 -- before the pair that needs it.
+            fragment_size = int(real_count_of(polymers(i, :)))
+            if (fragment_size /= nlevel) cycle
+            row_width = fragment_size_of(polymers(i, :))
+
+            if (fragment_size == 1) then
+               deltas(i) = values(i)
+            else
+               deltas(i) = compute_mbe_delta(i, polymers(i, 1:row_width), lookup, values, &
+                                             deltas, fragment_size, world_comm, vmfc=vmfc)
+            end if
+
+            ! An auxiliary row exists to be subtracted by its parent, never to
+            ! be summed: the one-body term is each monomer in its *own* basis,
+            ! so adding the ghosted one here would count it twice.
+            if (.not. is_auxiliary_row(polymers(i, :))) then
+               by_level(nlevel) = by_level(nlevel) + deltas(i)
+            end if
+         end do
+      end do
+   end subroutine expand_by_level
+
+   subroutine print_mbe_energy_breakdown(sum_by_level, max_level, total_energy, correlation_by_level)
       !! Print MBE energy breakdown to logger
+      !!
+      !! With `correlation_by_level` (max_level) each level is also split into
+      !! its SCF and correlation parts.
       real(dp), intent(in) :: sum_by_level(:)
       integer, intent(in) :: max_level
       real(dp), intent(in) :: total_energy
+      real(dp), intent(in), optional :: correlation_by_level(:)
 
       integer :: nlevel
       character(len=256) :: energy_line
+      real(dp) :: correlation
 
       call logger%info("MBE Energy breakdown:")
       do nlevel = 1, max_level
@@ -601,6 +655,23 @@ contains
          end if
       end do
       write (energy_line, "(a,f20.10)") "  Total:   ", total_energy
+      call logger%info(trim(energy_line))
+
+      if (.not. present(correlation_by_level)) return
+      call logger%info("MBE Energy by component (Hartree):")
+      write (energy_line, "(a,3a20)") "          ", "SCF", "correlation", "total"
+      call logger%info(trim(energy_line))
+      do nlevel = 1, max_level
+         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
+            write (energy_line, "(a,i0,a,3f20.10)") "  ", nlevel, "-body:  ", &
+               sum_by_level(nlevel) - correlation_by_level(nlevel), &
+               correlation_by_level(nlevel), sum_by_level(nlevel)
+            call logger%info(trim(energy_line))
+         end if
+      end do
+      correlation = sum(correlation_by_level(1:max_level))
+      write (energy_line, "(a,3f20.10)") "  Total:   ", total_energy - correlation, &
+         correlation, total_energy
       call logger%info(trim(energy_line))
    end subroutine print_mbe_energy_breakdown
 
@@ -758,12 +829,12 @@ contains
       ! Local variables
       integer(int64) :: i
       integer :: fragment_size, row_width, nlevel, current_log_level, hess_dim
-      logical :: use_vmfc, interaction
+      logical :: use_vmfc, interaction, split_correlation
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
+      real(dp), allocatable :: correlation(:), correlation_deltas(:)
       real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
       real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
       real(dp), allocatable :: ir_intensities(:)  !! IR intensities in km/mol
-      real(dp) :: delta_E
       logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole, compute_dipole_derivs
       type(fragment_lookup_t) :: lookup
       type(timer_type) :: assembly_timer
@@ -862,6 +933,21 @@ contains
          energies(i) = results(i)%energy%total()
       end do
 
+      ! The correlation part of each term, split out when any term has one. A
+      ! term taken back from a checkpoint holds its total and nothing else, so
+      ! one of those makes the split unknowable rather than zero.
+      allocate (correlation(fragment_count))
+      do i = 1_int64, fragment_count
+         correlation(i) = results(i)%energy%mp2%total() + results(i)%energy%cc%total()
+      end do
+      split_correlation = .not. interaction .and. any(correlation /= 0.0_dp)
+      if (split_correlation .and. any(results(1:fragment_count)%energy_total_only)) then
+         call logger%info("Some fragments were taken from a checkpoint, which records "// &
+                          "only their total energy; the correlation contributions "// &
+                          "are not reported")
+         split_correlation = .false.
+      end if
+
       ! Derivatives are accumulated straight into the system-sized totals below, so
       ! no per-fragment delta arrays are needed for them -- only the zeroed targets.
       if (compute_grad) mbe_result%gradient = 0.0_dp
@@ -905,58 +991,50 @@ contains
          end if
       end do
 
-      ! By n-mer level, so every subset is computed before it is needed and the
-      ! result does not depend on the order the fragments arrived in.
-      do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            ! The *real* monomers set the level, so a counterpoise row like
-            ! [1,-2] is a one-body term with no subsets to subtract, and it is
-            ! computed at level 1 -- before the pair that needs it.
-            fragment_size = int(real_count_of(polymers(i, :)))
-            row_width = fragment_size_of(polymers(i, :))
+      call expand_by_level(polymers, fragment_count, max_level, lookup, energies, &
+                           delta_energies, sum_by_level, use_vmfc, world_comm)
 
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
+      ! The correlation part runs through the same recursion on its own. The
+      ! expansion is linear, so the reference part of any term or level is the
+      ! total minus this one, and nothing is gained by expanding it as well.
+      mbe_result%has_correlation = .false.
+      if (allocated(mbe_result%correlation_by_level)) deallocate (mbe_result%correlation_by_level)
+      if (split_correlation) then
+         allocate (correlation_deltas(fragment_count))
+         allocate (mbe_result%correlation_by_level(max_level))
+         correlation_deltas = 0.0_dp
+         mbe_result%correlation_by_level = 0.0_dp
+         call expand_by_level(polymers, fragment_count, max_level, lookup, correlation, &
+                              correlation_deltas, mbe_result%correlation_by_level, use_vmfc, &
+                              world_comm)
+         mbe_result%correlation_energy = sum(mbe_result%correlation_by_level)
+         mbe_result%has_correlation = .true.
+      end if
 
-            if (fragment_size == 1) then
-               ! 1-body: delta = value (no subsets to subtract)
-               delta_energies(i) = energies(i)
-               ! An auxiliary row exists to be subtracted by its parent, never
-               ! to be summed: the one-body term is each monomer in its *own*
-               ! basis, so adding the ghosted one here would count it twice.
-               if (.not. is_auxiliary_row(polymers(i, :))) then
-                  sum_by_level(1) = sum_by_level(1) + delta_energies(i)
-               end if
+      if (compute_dipole) then
+         ! By n-mer level, for the reason `expand_by_level` gives.
+         do nlevel = 1, max_level
+            do i = 1_int64, fragment_count
+               fragment_size = int(real_count_of(polymers(i, :)))
+               row_width = fragment_size_of(polymers(i, :))
+               if (fragment_size /= nlevel) cycle
 
-               if (compute_dipole) then
+               if (fragment_size == 1) then
                   ! For 1-body, delta dipole is just the fragment dipole
                   delta_dipoles(:, i) = results(i)%dipole
-               end if
-
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
-               ! n-body: delta = value - sum(all subset deltas)
-               delta_E = compute_mbe_delta(i, polymers(i, 1:row_width), lookup, &
-                                           energies, delta_energies, fragment_size, world_comm, &
-                                           vmfc=use_vmfc)
-               delta_energies(i) = delta_E
-               if (.not. is_auxiliary_row(polymers(i, :))) then
-                  sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
-               end if
-
-               if (compute_dipole) then
-                  ! `row_width`, matching the energy call above. Slicing to
-                  ! `fragment_size` counts only the real monomers, so an
-                  ! auxiliary row like [1,2,-3] lost its ghost and the subset
-                  ! was looked up in the AB basis rather than the parent ABC
-                  ! one -- the wrong number at VMFC(2), and the wrong basis
-                  ! recursed at VMFC(3) and above.
+               else
+                  ! `row_width`, not `fragment_size`: slicing to the real
+                  ! monomers drops an auxiliary row's ghosts, so a row like
+                  ! [1,2,-3] was looked up in the AB basis rather than the
+                  ! parent ABC one -- the wrong number at VMFC(2), and the
+                  ! wrong basis recursed at VMFC(3) and above.
                   call compute_mbe_dipole(i, polymers(i, 1:row_width), lookup, &
                                           results, delta_dipoles, fragment_size, world_comm, &
                                           vmfc=use_vmfc)
                end if
-            end if
+            end do
          end do
-      end do
+      end if
 
       ! Collapse the delta recursion into one weight per fragment while the lookup
       ! table is still alive. Only needed for the quantities that are mapped into
@@ -1054,7 +1132,12 @@ contains
             end block
          end if
       else
-         call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
+         if (mbe_result%has_correlation) then
+            call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy, &
+                                            mbe_result%correlation_by_level)
+         else
+            call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
+         end if
       end if
 
       ! Print gradient info if computed
@@ -1242,6 +1325,11 @@ contains
          else
             allocate (json_data%sum_by_level(max_level))
             json_data%sum_by_level = sum_by_level
+            if (mbe_result%has_correlation) then
+               json_data%fragment_correlation = correlation
+               json_data%correlation_deltas = correlation_deltas
+               json_data%correlation_by_level = mbe_result%correlation_by_level
+            end if
          end if
 
          ! Copy fragment distances if available

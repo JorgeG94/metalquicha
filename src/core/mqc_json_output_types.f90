@@ -117,6 +117,13 @@ module mqc_json_output_types
          !! them the bond energy. A true row's `delta_energy` includes the
          !! energy of re-forming that bond and is not an interaction energy.
       real(dp), allocatable :: sum_by_level(:)        !! Energy sum per level
+      real(dp), allocatable :: fragment_correlation(:)
+         !! (fragment_count) each term's correlation energy, MP2 and CC parts.
+         !! Allocated, with the two below, only when some term has one.
+      real(dp), allocatable :: correlation_deltas(:)
+         !! (fragment_count) the correlation part of `delta_energies`
+      real(dp), allocatable :: correlation_by_level(:)
+         !! (max_level) the correlation part of `sum_by_level`
       real(dp), allocatable :: fragment_distances(:)  !! Per-fragment min distances (Angstrom)
       integer, allocatable :: fragment_charges(:)         !! Per-fragment total charge
       integer, allocatable :: fragment_multiplicities(:)  !! Per-fragment spin multiplicity
@@ -445,6 +452,9 @@ contains
       if (allocated(this%delta_energies)) deallocate (this%delta_energies)
       if (allocated(this%fragment_connected)) deallocate (this%fragment_connected)
       if (allocated(this%sum_by_level)) deallocate (this%sum_by_level)
+      if (allocated(this%fragment_correlation)) deallocate (this%fragment_correlation)
+      if (allocated(this%correlation_deltas)) deallocate (this%correlation_deltas)
+      if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
       if (allocated(this%fragment_distances)) deallocate (this%fragment_distances)
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)

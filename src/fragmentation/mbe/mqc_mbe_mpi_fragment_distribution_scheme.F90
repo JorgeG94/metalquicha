@@ -544,6 +544,7 @@ contains
             if (.not. reuse_found) cycle
             results(task_idx)%energy%scf = reuse_energy
             results(task_idx)%has_energy = .true.
+            results(task_idx)%energy_total_only = .true.
             results(task_idx)%scf_status = reuse_status
             results(task_idx)%homo = reuse_homo
             results(task_idx)%lumo = reuse_lumo
