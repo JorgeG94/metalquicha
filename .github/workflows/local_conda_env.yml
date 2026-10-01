@@ -382,6 +382,15 @@ jobs:
           python3 python/tests/test_pka.py
           MQC_LIBRARY=$PWD/build/libmqc.so MQC_EXECUTABLE=$PWD/build/mqc \
             PYTHONPATH=$PWD/python python3 python/examples/pka.py --quick
+          # The bond-dissociation workflow, on the same terms: its arithmetic and
+          # its orchestration against a stand-in library first, then the example
+          # for real. It skips without tblite or the executable, runs without a
+          # conformer search when CREST is off, and asserts identities and one
+          # ordering (phenol O-H below methanol O-H) rather than agreement with
+          # experiment.
+          python3 python/tests/test_bde.py
+          MQC_LIBRARY=$PWD/build/libmqc.so MQC_EXECUTABLE=$PWD/build/mqc \
+            PYTHONPATH=$PWD/python python3 python/examples/bde.py --quick
 
       # A geometry optimization, which is the only thing here that drives
       # DL-FIND rather than merely linking it. Water in STO-3G from a distorted

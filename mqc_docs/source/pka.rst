@@ -120,8 +120,9 @@ Thermochemistry
 ===============
 
 The Hessian run already writes a thermochemistry block, and the workflow reads
-the translational, rotational and electronic terms from it as they are. It
-recomputes the vibrational part, for three reasons.
+the translational and rotational terms from it as they are. It recomputes the
+vibrational part, for three reasons, and the electronic entropy, for a fourth
+(`Open shells and single atoms`_).
 
 **Quasi-RRHO entropy.** A flexible molecule has soft modes, and a harmonic
 oscillator's entropy diverges as its frequency goes to zero while a real hindered
@@ -313,8 +314,20 @@ for a methyl group, and is the same on both sides of a pKa when the group is
 unchanged.
 
 **Closed shells only in practice.** ``Microstate`` takes a ``multiplicity`` and the
-electronic entropy term uses it, but nothing here has been exercised on an open
-shell.
+electronic entropy :math:`R\ln(2S+1)` uses it, but nothing here has been exercised
+on an open shell. The radical workflow is :doc:`bde`, which shares this
+thermochemistry.
+Open shells and single atoms
+============================
+
+Two things the thermochemistry does for every species and that only matter off a
+closed shell, both shared with :doc:`bde`. The Fortran thermochemistry has an
+electronic entropy :math:`R\ln(2S+1)` but no caller gives it the multiplicity, so
+its block reports multiplicity 1 and a zero term for a radical; the workflow
+computes the term from the microstate's own ``multiplicity``, and for a closed
+shell the number is the same as before. A one-atom microstate (a chloride, say) has
+no vibrations to ask a Hessian for: it is one single point plus the analytic
+:math:`H = E + \tfrac52 RT` and the Sackur-Tetrode entropy.
 
 Swapping in a DFT single point
 ==============================
