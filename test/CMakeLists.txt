@@ -251,7 +251,7 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_sa_gradient_driver)
   target_link_libraries(test_mqc_sa_gradient_driver PRIVATE cint_fortran cint)
 
-  # Phase 7: nonadiabatic couplings between two SA-CASSCF states.
+  # Nonadiabatic couplings between two SA-CASSCF states.
   addtest(mqc_sa_nac)
   target_link_libraries(test_mqc_sa_nac PRIVATE cint_fortran cint)
   addlongtest(mqc_sa_nac_pyscf_long)

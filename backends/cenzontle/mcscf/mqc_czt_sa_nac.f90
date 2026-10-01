@@ -107,8 +107,19 @@ module mqc_czt_sa_nac
    implicit none
    private
 
+   ! `czt_sa_casscf_nac` is public for the tests, which check one pair at a
+   ! time against PySCF; the bridge calls `czt_sa_casscf_nacs`.
    public :: czt_sa_casscf_nac
    public :: czt_sa_casscf_nacs
+
+   real(dp), parameter :: DEFAULT_CG_TOL = 1.0e-10_dp
+      !! Relative residual each pair's Z-vector solve stops at, as
+      !! `mqc_czt_sa_gradient`'s
+   integer, parameter :: DEFAULT_CG_MAX_ITER = 200
+      !! As `mqc_czt_sa_gradient`'s
+   real(dp), parameter :: DEGENERATE_ENERGY_TOL = 1.0e-8_dp
+      !! Hartree. `|E_J - E_I|` below this is refused: `d_IJ = h_IJ/(E_J - E_I)`
+      !! would be Inf or NaN, or numerically meaningless, at a degeneracy
 
 contains
 
@@ -304,9 +315,20 @@ contains
 
       want_csf = .true.
       if (present(include_csf)) want_csf = include_csf
-      use_tol = 1.0e-10_dp
+      ! Refused before any work: `coupling` divides by this. At a conical
+      ! intersection `h_IJ` is still finite, but returning it alone would make
+      ! `coupling` mean something different pair by pair.
+      if (abs(energy_difference) < DEGENERATE_ENERGY_TOL) then
+         call error%set(ERROR_VALIDATION, "nonadiabatic coupling: states "// &
+                        to_char(state_i)//" and "//to_char(state_j)//" are degenerate "// &
+                        "(|E_J - E_I| below "//to_char(DEGENERATE_ENERGY_TOL)// &
+                        " Hartree), where d_IJ = h_IJ/(E_J - E_I) is not defined.")
+         return
+      end if
+
+      use_tol = DEFAULT_CG_TOL
       if (present(cg_tol)) use_tol = cg_tol
-      use_max_iter = 200
+      use_max_iter = DEFAULT_CG_MAX_ITER
       if (present(cg_max_iter)) use_max_iter = cg_max_iter
 
       ! ---- the symmetrised transition density between I and J, PySCF's
