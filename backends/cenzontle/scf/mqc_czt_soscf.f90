@@ -109,6 +109,8 @@ module mqc_czt_soscf
    type, extends(rotation_hessian_t) :: scaled_ov_hessian_t
       !! `ov_hessian_t` in true energy units: `HESSIAN_SCALE` times `(A+B)`
       type(ov_hessian_t), pointer :: ov => null()
+         !! The caller's operator, viewed rather than owned: nothing here
+         !! allocates or destroys it, so it must outlive this wrapper
    contains
       procedure :: apply => scaled_ov_apply
    end type scaled_ov_hessian_t

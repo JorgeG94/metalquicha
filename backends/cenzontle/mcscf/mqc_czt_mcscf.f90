@@ -90,8 +90,6 @@ module mqc_czt_mcscf
    ! potential, from `transformed_potential`.
    public :: one_index_fock
    public :: transformed_potential
-   public :: transformed_potential_many
-   public :: one_index_fock_many
    public :: sa_density_matrices
 
    ! The step-control constants and the matrix exponential are
@@ -598,6 +596,9 @@ contains
       allocate (hessian(n_param, n_param))
       if (n_param == 0) return
 
+      ! `one_index_fock_many` calls the BLAS from inside these threads, so this
+      ! scales only with a sequential BLAS (AGENTS.md, "Performance"); a
+      ! threaded one contends with the loop instead.
       !$omp parallel do schedule(dynamic) default(shared) &
       !$omp    private(k0, k1, nk, k, l, kappa_block, transformed)
       do k0 = 1, n_param, COLUMN_BLOCK
