@@ -664,6 +664,9 @@ contains
       ! Send energy components
       call send(comm, result%energy%scf, dest, tag)
       call send(comm, result%energy%dispersion, dest, tag)
+      call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%mp2%ss_scale, dest, tag)
+      call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
       call send(comm, result%energy%mp2%os, dest, tag)
       call send(comm, result%energy%cc%singles, dest, tag)
@@ -766,6 +769,9 @@ contains
 
       ! Send other energy components (blocking to avoid needing multiple request handles)
       call send(comm, result%energy%dispersion, dest, tag)
+      call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%mp2%ss_scale, dest, tag)
+      call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
       call send(comm, result%energy%mp2%os, dest, tag)
       call send(comm, result%energy%cc%singles, dest, tag)
@@ -876,6 +882,9 @@ contains
       ! Receive energy components
       call recv(comm, result%energy%scf, source, tag, status)
       call recv(comm, result%energy%dispersion, source, tag, status)
+      call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
+      call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
       call recv(comm, result%energy%mp2%os, source, tag, status)
       call recv(comm, result%energy%cc%singles, source, tag, status)
@@ -994,6 +1003,9 @@ contains
 
       ! Receive other energy components (blocking to avoid needing multiple request handles)
       call recv(comm, result%energy%dispersion, source, tag, status)
+      call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
+      call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
       call recv(comm, result%energy%mp2%os, source, tag, status)
       call recv(comm, result%energy%cc%singles, source, tag, status)
