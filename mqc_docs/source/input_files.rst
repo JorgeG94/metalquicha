@@ -1300,6 +1300,18 @@ alongside the CI coefficients.
 - ``orbital_convergence``: Largest orbital gradient element accepted as
   converged (default: 1e-6)
 
+Each macro-iteration solves the CI exactly at the current orbitals, then takes
+one trust-region Newton step on the orbitals and backtracks if the energy rises.
+The step is level shifted so every curvature is at least 1e-3, and a direction
+of negative curvature with no gradient on it (a saddle) is followed out rather
+than accepted as converged. Up to 800 orbital rotations the orbital Hessian is
+built and diagonalised. Above that the step comes from a Krylov subspace of
+Hessian-vector products, with the same shift and saddle rule applied to the
+projected Hessian. That is the solver the second-order SCF uses. It reaches the
+same orbitals in the same number of iterations and is several times faster for
+large rotation spaces: PSB3 CAS(6,6)/6-31G* (2139 rotations) takes about 2.5 s
+per macro-iteration on 4 threads. There is no keyword for the choice.
+
 The spin split is not a keyword. ``molecular_multiplicity`` settles it: every
 inactive orbital is doubly occupied and contributes nothing to Ms, so the whole
 of the excess alpha population sits in the active space and

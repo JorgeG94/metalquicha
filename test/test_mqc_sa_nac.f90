@@ -216,7 +216,9 @@ contains
       call check(error, err%get_code() == ERROR_VALIDATION, &
                  "and refused as a validation error: "//err%get_message())
       if (allocated(error)) return
-      call check(error, all(coupling == coupling), "no NaN should be left in the coupling")
+      if (allocated(coupling)) then
+         call check(error, all(coupling == coupling), "no NaN should be left in the coupling")
+      end if
    end subroutine test_degenerate
 
    subroutine test_fused(error)

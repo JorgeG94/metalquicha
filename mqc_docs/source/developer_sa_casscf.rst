@@ -508,66 +508,45 @@ Reference systems
 The fused-kernel data flow
 =============================
 
-What already exists, and can likely be reused as-is
--------------------------------------------------------
+What was built, in the order a Gradient run reaches it. The timings are
+PSB3 SA-2-CAS(6,6)/6-31G*, two roots, 4 threads, from the VTune profile that
+drove each change.
 
-**The multi-density Fock build the plan calls "new" already exists.**
-``build_fock_direct_many`` (``backends/cenzontle/integrals/mqc_czt_direct.f90``)
-builds :math:`F = H + J - K/2` for an arbitrary stack of densities,
-``densities(n_ao, n_ao, n_set)``, over **one** pass of the shell-quartet loop,
-with Schwarz screening shared across the whole batch (so a batch is bit-for-bit
-the same as the densities run one at a time). It already supports an
-antisymmetric-density mode (for the antisymmetric one-index-transformed
-densities phase 3/4/5 need), a ``k_scale``/``j_scale`` split, and range
-separation. It is already used by ``mqc_czt_response_product.f90`` and
-``mqc_czt_cphf.F90`` (the RHF CPHF solver) to batch several perturbations'
-Fock builds together. **Phase 5's "multi-density Fock build variant" should
-start by trying `build_fock_direct_many` directly**, and only write something
-new if the SA Hessian's density shapes (inactive+active decomposition,
-occupied-column-only potentials as in `transformed_potential`) do not fit its
-`(n_ao, n_ao, n_set)` contract.
+**One MO integral pass per macro-iteration.** ``mo_integral_blocks`` evaluates
+the packed AO integrals once and transforms two blocks: ``a_block``
+:math:`(pq|rs)` with :math:`q, s` occupied, and ``b_block`` with :math:`r, s`
+occupied. ``fock_from_blocks`` reads the inactive and active Fock matrices out
+of them over every orbital pair (:math:`F^I = h + \sum_i 2(pq|ii) - (pi|qi)`,
+and :math:`F^A` likewise over the active density), so no direct AO Fock build
+is needed, and :math:`(nu|vw)` is a slice of ``a_block``.
+``orbital_hessian_from_blocks`` and ``build_sa_hessian`` take the same blocks.
 
-**The block-CG-with-many-RHS pattern already exists**, in
-``mqc_czt_cphf.F90``'s ``cphf_solve``: it takes ``perturbations(n_ao, n_ao,
-n_perturbations)``, solves every right-hand side together through
-``response_operator``/``response_product`` (which is what calls
-``build_fock_direct_many``), and returns one response `U_ai` per perturbation.
-This is architecturally the template for the SA block PCG (phase 3/5) -- same
-"one operator apply builds every RHS's Fock at once" idea -- but it is *not*
-reusable directly: CPHF solves only the occupied-virtual MO block of a
-single-determinant reference, with no CI coupling and no inactive-active or
-active-virtual distinction. The plan's own phrase, "a pattern to borrow, not
-reuse," is confirmed by reading it.
+**Hessian-vector products as matrix products.** ``one_index_fock_many`` and
+``transformed_potential_many`` apply the orbital Hessian to a stack of
+rotations. The Coulomb and both exchange contractions are GEMMs over the stack,
+with integral slices passed to ``pic_dgemm_x`` as an element and a leading
+dimension, so nothing is copied. The kernel threads over row blocks; called from
+the explicit Hessian's own parallel loop over column blocks, it runs on one
+thread. This took a macro-iteration from 213 s to 10.9 s.
 
-What does not exist and needs a stacked variant
-----------------------------------------------------
+**The Newton step.** Up to ``ITERATIVE_HESSIAN_ABOVE`` (800) rotations the
+Hessian is built and diagonalised with ``pic_syevd``. Above that,
+``iterative_newton_step`` hands ``orbital_hessian_operator_t`` to
+``mqc_orbital_rotation``'s ``subspace_newton_step``, the Krylov solver the
+second-order SCF shares, with ``approximate_hessian_diagonal`` as the
+preconditioner. Both paths end in ``level_shifted_step``. PSB3 converges in the
+same 14 iterations either way, 101 s explicit against 35 s iterative.
 
-``one_electron_deriv``/``two_electron_deriv``/``iprinv_deriv_at``
-(``backends/cenzontle/derivatives/mqc_czt_gradient.f90``) take **one**
-density (or none, for the raw derivative-integral matrices) and return **one**
-gradient contribution. Concretely:
-
-- ``one_electron_deriv(mol, matrix, which)`` returns the bare derivative
-  integral matrix ``(n_ao, n_ao, 3)`` -- it takes no density at all, so it
-  needs no stacking; it is reused unchanged for every root, and only the
-  *contraction* against it (done by hand in ``czt_mcscf_gradient``, not inside
-  this routine) needs to run once per root or be batched.
-- ``two_electron_deriv(mol, density, vhf, error, ...)`` **does** take a single
-  ``density(:,:)`` and return a single ``vhf(:,:,:)``. This is the routine a
-  fused multi-root pass needs a stacked twin of: `two_electron_deriv_many(mol,
-  densities(n_ao,n_ao,n_set), vhfs(n_ao,n_ao,3,n_set), ...)`, sharing the
-  shell-quartet loop and the screening the same way
-  ``build_fock_direct_many`` shares it for the ordinary (non-derivative) case.
-  No such routine exists yet.
-- The active two-electron gradient path (``active_two_electron_gradient``,
-  ``gamma_block``, both in ``mqc_czt_mcscf_gradient.f90``) is per-root already
-  in a different sense: it is driven by ``ddm2``, which is :math:`n_{active}^4`
-  and cheap to hold for every root simultaneously, so the natural fusion there
-  is stacking the **first-index AO block** dimension across roots inside
-  ``gamma_block``'s existing shell-blocked loop, not touching
-  ``two_electron_mp2_terms`` itself (it already takes one ``gamma_blk`` per
-  call; a stacked call would pass a wider one and expect a wider gradient
-  return, which is the actual interface change needed there).
+**The gradient.** ``czt_sa_casscf_gradients`` builds one ``sa_hessian_t`` and
+solves every root's Z-vector equation in one block PCG (2.0 s). Each root's
+right-hand side and base-term Fock come from ``cheap_generalized_fock`` on the
+held blocks. The separable derivative terms of every root and piece go through
+one ``two_electron_deriv_many`` call over the union of their densities (4.5 s,
+integral-bound). Each root's active two-body Gamma (base cumulant, orbital
+response, CI response) is summed per root and contracted in one
+``active_two_electron_gradient_many`` sweep. That Gamma is built only over the
+AOs where some leg has amplitude above 1e-12 of the largest, which for a planar
+pi system is the pi-type AOs alone (0.3 s, from 17.5 s).
 
 File-level plan, phase by phase
 ==================================
@@ -730,9 +709,8 @@ Phase 5 -- fused multi-root
 -------------------------------
 
 Block PCG (all :math:`N` RHS at once, reusing phase 3's HVP applied to a block
-of trial vectors), the multi-density Fock build (try
-``build_fock_direct_many`` first, per above), and the stacked
-derivative-integral contraction (``two_electron_deriv_many``, new, per above).
+of trial vectors) and one derivative-integral pass for every root; see "The
+fused-kernel data flow" above for what that became.
 ``keywords.mcscf.gradient_roots`` (``"all"`` default under SA, or an explicit
 list) added the same way as the phase 1 keys. Gate: per-root agreement with
 phase 4 to :math:`\le 10^{-10}`; repeated timings, :math:`N=1..4` on PSB3,
@@ -809,21 +787,26 @@ own raw (pre-``kernel``-division) :math:`h_{IJ}` is scaled by
 flip, and every piece here except the CSF term shares the Z-vector machinery
 and so flips together automatically against it; the CSF term, built
 independently, needed the extra sign written in by hand
-(``mqc_czt_sa_nac.f90``, ``sa_casscf_nac_pair``) -- found by the numerical
+(``mqc_czt_sa_nac.f90``, ``czt_sa_casscf_gradients_nacs``) -- found by the numerical
 gate below disagreeing by almost exactly the CSF term's own size while the
 CSF-free piece already agreed. It is *not* translationally invariant on its
 own (an overlap-derivative contraction between two different orbital sets,
 not a Hellmann-Feynman-type energy derivative): expected, not a bug.
 
-**What is fused, what is not.** ``czt_sa_casscf_nacs`` builds the SA Hessian
-state once and shares it across every requested pair, the same expensive
-precompute ``czt_sa_casscf_gradients`` shares across roots. Each pair still
-solves its own single-column Z-vector equation and its own two
-derivative-integral sweeps rather than joining a cross-pair block solve or a
-cross-pair fused sweep: a NAC's right-hand side and its :math:`h_{base}` both
-depend on the pair :math:`(I,J)` itself in a way that would need re-deriving
-the gradient's cross-root fusion from scratch. Left for later if NACs for
-many pairs turn out to dominate a run's cost.
+**Fused with the gradients.** A pair is one more Lagrangian column beside
+the roots. ``nac_pair_inputs`` builds its right-hand side and its
+:math:`h_{base}` densities without a derivative integral:
+
+- the symmetrised transition 2-RDM, which goes where a root's cumulant goes
+  in the stacked active :math:`\Gamma`;
+- the transition 1-RDM's AO density and energy-weighted matrix, which take
+  the same form as the CI-response piece and are added to it.
+
+``sa_gradients_on_state`` then solves every root and every pair in one block
+Z-vector solve and one pass of each derivative-integral sweep.
+``czt_sa_casscf_gradients_nacs`` adds the CSF term afterwards.
+On twisted C2F4 SA-2-CAS(2,2)/6-31G* at one thread, gradients plus one pair
+went from 122 s to 64 s.
 
 **Gates run** (``test/test_mqc_sa_nac.f90``, LiH/STO-3G SA-2-CAS(2,2)):
 :math:`d_{IJ}` and :math:`h_{IJ}`, with and without the CSF term, vs PySCF's
