@@ -824,14 +824,14 @@ MCSCF_GRADIENT_CASES = [
     ("n2",      "cc-pvdz", 6,       6),
 ]
 
-# State-averaged CASSCF gradient, through the real driver's Gradient path
-# (`SA_CASSCF_GRADIENT_PLAN.md` phase 6). One cheap case for the default
-# manifest: only the SA total energy and the norm of dE_SA/dR are checked
-# (not every component), since a component-by-component reference for a
-# weighted sum of several roots' relaxed densities is a bigger reference
-# script than this generator needs for one smoke-test-sized deck -- the
-# per-root, per-component agreement is what the phase's own unit tests
-# (test/test_mqc_sa_gradient_pyscf_long.f90) already check to 1e-9-1e-8.
+# State-averaged CASSCF gradient, through the real driver's Gradient path.
+# One cheap case for the default manifest: only the SA total energy and the
+# norm of dE_SA/dR are checked (not every component), since a
+# component-by-component reference for a weighted sum of several roots'
+# relaxed densities is a bigger reference script than this generator needs
+# for one smoke-test-sized deck. A norm cannot see a sign or a permutation
+# error; the per-root, per-component agreement that can is checked by
+# test/test_mqc_sa_gradient_pyscf_long.f90, to 1e-9-1e-8.
 # molecule       basis     nelecas  ncas  nroots  weights
 SA_MCSCF_GRADIENT_CASES = [
     ("c2h4_twisted", "6-31g*", 2, 2, 2, (0.5, 0.5)),
@@ -3568,7 +3568,7 @@ def main():
         print(f"{mol.label:6s} {basis:12s} CASSCF grad CAS({nelecas},{ncas}) "
               f"|g|={norm:.10f} E={energy:.12f}", flush=True)
 
-    # State-averaged CASSCF gradient (SA_CASSCF_GRADIENT_PLAN.md phase 6): the
+    # State-averaged CASSCF gradient: the
     # Gradient driver's top-level output, dE_SA/dR, on a deck with
     # keywords.mcscf.n_states > 1.
     for name, basis, nelecas, ncas, nroots, weights in SA_MCSCF_GRADIENT_CASES:
