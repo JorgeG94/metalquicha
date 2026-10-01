@@ -227,6 +227,20 @@ contains
                                    "packing yet. Run an unfragmented calculation "// &
                                    "(drop keywords.fragmentation), or set n_states to 1.")
          end if
+         ! The reader refuses this for a deck; repeated for a session and the C
+         ! API. Several ranks would take `distributed_unfragmented_hessian`,
+         ! which differences `calc_gradient` and so would return a Hessian of
+         ! `E_SA` where one rank is refused by `mcscf_calc_hessian`.
+         if (.not. support_error%has_error() .and. &
+             config%calc_type == CALC_TYPE_HESSIAN .and. &
+             config%method_config%method_type == METHOD_TYPE_MCSCF .and. &
+             config%method_config%mcscf%n_states > 1) then
+            call support_error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 "// &
+                                   "cannot be combined with driver 'Hessian': there is "// &
+                                   "no state-averaged CASSCF Hessian, analytic or by "// &
+                                   "differences of the gradient. Use driver 'Gradient', "// &
+                                   "or set n_states to 1.")
+         end if
          if (support_error%has_error()) then
             if (resources%mpi_comms%world_comm%rank() == 0) then
                call logger%error(support_error%get_message())

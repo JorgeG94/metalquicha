@@ -99,9 +99,15 @@ module mqc_czt_sa_nac
    implicit none
    private
 
+   ! `czt_sa_casscf_nac` is public for the tests, which check one pair at a
+   ! time against PySCF; the bridge calls `czt_sa_casscf_nacs`.
    public :: czt_sa_casscf_nac
    public :: czt_sa_casscf_nacs
    public :: czt_sa_casscf_gradients_nacs
+
+   real(dp), parameter :: DEGENERATE_ENERGY_TOL = 1.0e-8_dp
+      !! Hartree. `|E_J - E_I|` below this is refused: `d_IJ = h_IJ/(E_J - E_I)`
+      !! would be Inf or NaN, or numerically meaningless, at a degeneracy
 
 contains
 
@@ -267,6 +273,21 @@ contains
       csf_terms = 0.0_dp
       do ip = 1, n_pairs
          energy_differences(ip) = energies(pairs(2, ip)) - energies(pairs(1, ip))
+      end do
+
+      ! Refused before any work: `couplings` divides by these. At a conical
+      ! intersection `h_IJ` is still finite, but returning it alone would make
+      ! `couplings` mean something different pair by pair.
+      do ip = 1, n_pairs
+         if (pairs(1, ip) == pairs(2, ip)) cycle
+         if (abs(energy_differences(ip)) < DEGENERATE_ENERGY_TOL) then
+            call error%set(ERROR_VALIDATION, "nonadiabatic coupling: states "// &
+                           to_char(pairs(1, ip))//" and "//to_char(pairs(2, ip))// &
+                           " are degenerate (|E_J - E_I| below "// &
+                           to_char(DEGENERATE_ENERGY_TOL)//" Hartree), where d_IJ = "// &
+                           "h_IJ/(E_J - E_I) is not defined.")
+            return
+         end if
       end do
 
       ! d_II is identically zero (PySCF's kernel() short-circuit): no column.

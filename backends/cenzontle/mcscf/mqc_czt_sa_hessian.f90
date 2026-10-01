@@ -43,9 +43,7 @@ module mqc_czt_sa_hessian
    !!   every call) -- called with `delta_only = .true.`, because
    !!   `generalized_fock`'s inactive row is `2*(FI + FA(dm1))` and `FI` is a
    !!   density-independent constant that must NOT reappear when `(dm1, dm2)`
-   !!   is a perturbation rather than a state (see that flag's docstring:
-   !!   this was a real bug, caught by gate A comparing against
-   !!   `orbital_hessian` on a converged SA point).
+   !!   is a perturbation rather than a state (see that flag's docstring).
    !! - CI-orbital (into the CI output, from `kappa`): `2 w_J (H[kappa] -
    !!   <c_J|H[kappa]|c_J>) c_J`, with `H[kappa]` the active-space Hamiltonian
    !!   one-index-transformed along `kappa` -- `one_index_active_hamiltonian`
@@ -89,12 +87,15 @@ module mqc_czt_sa_hessian
    public :: sa_hessian_apply
    public :: sa_hessian_precondition
    public :: project_ci_block
-   public :: cheap_generalized_fock   !! Exposed for the tests, against `generalized_fock`
-   public :: one_index_active_hamiltonian   !! Exposed for the tests, against `active_space_integrals`
+   ! Public for the tests only: each is checked directly against the routine
+   ! it stands in for (`generalized_fock`, `active_space_integrals`) and
+   ! against the projection's defining property.
+   public :: cheap_generalized_fock
+   public :: one_index_active_hamiltonian
+   ! Public for `mqc_czt_sa_nac`, which applies the same orbital-gradient
+   ! extraction to `cheap_generalized_fock`'s output for the interstate
+   ! coupling's orbital right-hand side.
    public :: gather_from_general
-      !! Exposed for `mqc_czt_sa_nac`: the same orbital-gradient extraction it
-      !! applies to `cheap_generalized_fock`'s output when building the
-      !! interstate-coupling Z-vector's orbital right-hand side.
 
    real(dp), parameter :: CURVATURE_FLOOR = 1.0e-3_dp
       !! Smallest magnitude the diagonal preconditioner divides by, matching
@@ -162,6 +163,11 @@ contains
                         to_char(n_beta)//" given).")
          return
       end if
+      if (size(weights) < 1) then
+         call error%set(ERROR_VALIDATION, "sa_hessian: no states to average over "// &
+                        "(an empty weights list).")
+         return
+      end if
       if (size(ci_vectors, 3) < size(weights) .or. size(energies) < size(weights)) then
          call error%set(ERROR_VALIDATION, "sa_hessian: fewer CI vectors or energies "// &
                         "than the "//to_char(size(weights))//" states requested.")
@@ -183,6 +189,7 @@ contains
       state%ci_vectors = ci_vectors(:, :, 1:state%n_states)
 
       call build_link_table(n_active, n_alpha, state%alpha, error)
+      if (error%has_error()) return
       call build_link_table(n_active, n_beta, state%beta, error)
       if (error%has_error()) return
       state%n_det = state%alpha%n_strings*state%beta%n_strings
@@ -223,12 +230,41 @@ contains
    end subroutine build_sa_hessian
 
    subroutine destroy_sa_hessian(state)
-      !! Release the molecule and the excitation tables the state owns
+      !! Release everything the state owns, leaving it as a fresh `sa_hessian_t`
       type(sa_hessian_t), intent(inout) :: state
 
       call state%mol%destroy()
       call state%alpha%destroy()
       call state%beta%destroy()
+      if (allocated(state%orbitals)) deallocate (state%orbitals)
+      if (allocated(state%weights)) deallocate (state%weights)
+      if (allocated(state%ci_vectors)) deallocate (state%ci_vectors)
+      if (allocated(state%active_energies)) deallocate (state%active_energies)
+      if (allocated(state%rows)) deallocate (state%rows)
+      if (allocated(state%cols)) deallocate (state%cols)
+      if (allocated(state%dm1_sa)) deallocate (state%dm1_sa)
+      if (allocated(state%dm2_sa)) deallocate (state%dm2_sa)
+      if (allocated(state%a_block)) deallocate (state%a_block)
+      if (allocated(state%b_block)) deallocate (state%b_block)
+      if (allocated(state%h_eff)) deallocate (state%h_eff)
+      if (allocated(state%eri_act)) deallocate (state%eri_act)
+      if (allocated(state%folded)) deallocate (state%folded)
+      if (allocated(state%diagonal)) deallocate (state%diagonal)
+      if (allocated(state%orbital_hessian_diag)) deallocate (state%orbital_hessian_diag)
+      if (allocated(state%fock_sa%general)) deallocate (state%fock_sa%general)
+      if (allocated(state%fock_sa%inactive)) deallocate (state%fock_sa%inactive)
+      if (allocated(state%fock_sa%active)) deallocate (state%fock_sa%active)
+      if (allocated(state%fock_sa%occupation)) deallocate (state%fock_sa%occupation)
+      state%n_ao = 0
+      state%n_mo = 0
+      state%n_inactive = 0
+      state%n_active = 0
+      state%n_alpha = 0
+      state%n_beta = 0
+      state%n_states = 0
+      state%n_rot = 0
+      state%n_det = 0
+      state%core_energy = 0.0_dp
    end subroutine destroy_sa_hessian
 
    subroutine cheap_generalized_fock(state, dm1, dm2, general, delta_only)
@@ -286,15 +322,19 @@ contains
 
       allocate (general(n_mo, n_mo))
       general = 0.0_dp
-      do i = 1, n_inactive
-         do n = 1, n_mo
-            if (skip_constant) then
+      if (skip_constant) then
+         do i = 1, n_inactive
+            do n = 1, n_mo
                general(i, n) = 2.0_dp*potential(n, i)
-            else
-               general(i, n) = 2.0_dp*(state%fock_sa%inactive(n, i) + potential(n, i))
-            end if
+            end do
          end do
-      end do
+      else
+         do i = 1, n_inactive
+            do n = 1, n_mo
+               general(i, n) = 2.0_dp*(state%fock_sa%inactive(n, i) + potential(n, i))
+            end do
+         end do
+      end if
 
       do t = 1, n_active
          do n = 1, n_mo
@@ -548,7 +588,19 @@ contains
       real(dp), intent(out) :: hx(:, :)   !! (n_param, n_vec)
       type(error_t), intent(inout) :: error
 
-      integer :: iv
+      integer :: iv, n_param
+
+      if (error%has_error()) return
+      n_param = sa_hessian_n_param(state)
+      if (size(x, 1) /= n_param .or. size(hx, 1) /= n_param .or. &
+          size(hx, 2) /= size(x, 2)) then
+         call error%set(ERROR_VALIDATION, "sa_hessian_apply: x is "// &
+                        to_char(size(x, 1))//" by "//to_char(size(x, 2))// &
+                        " and hx "//to_char(size(hx, 1))//" by "//to_char(size(hx, 2))// &
+                        ", but both must be "//to_char(n_param)//" by the same number "// &
+                        "of vectors.")
+         return
+      end if
 
       do iv = 1, size(x, 2)
          call sa_hessian_apply_one(state, x(:, iv), hx(:, iv), error)

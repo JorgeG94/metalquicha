@@ -798,9 +798,7 @@ contains
       !! `total_energy` on the parent object, and the top-level `gradient`
       !! written beside it when the run asked for one, are `E_SA = sum_J
       !! weight(J) * energy(J)` and `dE_SA/dR` -- not any one root's own
-      !! energy or gradient -- said here rather than only in the docstring,
-      !! since it is the one fact a consumer reading this section cannot see
-      !! from the numbers alone.
+      !! energy or gradient.
       !!
       !! A root's own gradient and gradient norm are added only for the roots
       !! named in `mcscf_gradient_roots` (`keywords.mcscf.gradient_roots`).
@@ -877,8 +875,9 @@ contains
       !! `nonadiabatic_couplings`: one entry per pair in `mcscf_nac_pairs`
       !! (`keywords.mcscf.nac_pairs`), from `czt_sa_casscf_nacs`. `coupling`
       !! is `d_IJ` (1/Bohr), `interstate_coupling` is `h_IJ = (E_J-E_I) d_IJ`
-      !! (Hartree/Bohr, already including the CSF term unless it was asked
-      !! off), `csf_term` is that CSF piece alone, and `energy_difference` is
+      !! (Hartree/Bohr, always including the CSF term -- no keyword turns it
+      !! off; subtract `csf_term` for PySCF's `use_etfs=True` numbers),
+      !! `csf_term` is that CSF piece alone (Hartree/Bohr), and `energy_difference` is
       !! `E_J - E_I` in Hartree -- `mqc_czt_sa_nac`'s conventions exactly.
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
@@ -907,6 +906,7 @@ contains
                                data%mcscf_nac_interstate(:, :, ip))
          call json%add(nac_entry, "interstate_coupling_units", "hartree/bohr")
          call add_vector_field(json, nac_entry, "csf_term", data%mcscf_nac_csf(:, :, ip))
+         call json%add(nac_entry, "csf_term_units", "hartree/bohr")
       end do
    end subroutine write_mcscf_nac_section
 
