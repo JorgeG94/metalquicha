@@ -90,6 +90,31 @@ module mqc_czt_rcc
       real(dp), allocatable :: b_vv(:, :)         !! (ab, P), fitted only
    end type rcc_eris_t
 
+   type :: rcc_scratch_t
+      !! The large work arrays of one CCSD iteration, kept for the next
+      !!
+      !! A hexamer of water in aug-cc-pVDZ allocates about 6 GB of these per
+      !! iteration. Allocated fresh each time, every page is faulted in and
+      !! zeroed by the kernel and handed back with munmap, which interrupts
+      !! every core the process runs on to flush its translations -- a cost
+      !! that grows with the thread count rather than shrinking. Each routine
+      !! takes its arrays with move_alloc, allocates them only the first time,
+      !! and returns them the same way; nothing is copied and their contents
+      !! between calls mean nothing.
+      real(dp), allocatable :: tau(:, :, :, :), tmp(:, :, :, :)
+      real(dp), allocatable :: tmp2(:, :, :, :), tmp2b(:, :, :, :), woooo(:, :, :, :)
+      real(dp), allocatable :: wvoov(:, :, :, :), wvovo(:, :, :, :)
+      real(dp), allocatable :: x1(:, :), x2(:, :), x3(:, :), y1(:, :), y2(:, :), r(:, :)
+         !! The ring terms' gemm operands, (n_occ n_vir)^2 each
+      real(dp), allocatable :: voov_a1(:, :), voov_a2(:, :), voov_b1(:, :), voov_b2(:, :)
+      real(dp), allocatable :: voov_r(:, :)
+         !! `cc_wvoov`'s gemm operands
+      real(dp), allocatable :: vovo_a2(:, :), vovo_b3(:, :), vovo_r(:, :)
+         !! `cc_wvovo`'s gemm operands
+      real(dp), allocatable :: wblk(:, :, :)   !! The ladder's (ab|cd) batch
+      real(dp), allocatable :: taut(:, :)      !! tau with the virtual pair leading
+   end type rcc_scratch_t
+
    type :: rcc_result_t
       !! What a converged spin-adapted coupled cluster calculation leaves behind
       real(dp) :: e_singles = 0.0_dp
@@ -442,7 +467,7 @@ contains
       !$omp end parallel do
    end subroutine cc_woooo
 
-   subroutine cc_wvoov(eris, t1, t2, no, nv, w)
+   subroutine cc_wvoov(eris, t1, t2, no, nv, w, scratch)
       !! W(a,k,i,c), rintermediates.cc_Wvoov
       !!
       !!   + sum_d ovvv(k,c,a,d) t1(i,d)
@@ -456,12 +481,19 @@ contains
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: w(:, :, :, :)
+      type(rcc_scratch_t), intent(inout) :: scratch
 
       integer :: a, k, i, c, d, l
       ! The gemm operands below, declared here rather than in a block: a
       ! parallel region's private variables are kept at routine scope.
       real(dp), allocatable :: a1(:, :), a2(:, :), b1(:, :), b2(:, :), r(:, :)
       integer :: nov, kc, ld, ia
+
+      call move_alloc(scratch%voov_a1, a1)
+      call move_alloc(scratch%voov_a2, a2)
+      call move_alloc(scratch%voov_b1, b1)
+      call move_alloc(scratch%voov_b2, b2)
+      call move_alloc(scratch%voov_r, r)
 
       !$omp parallel do default(none) shared(w, eris, no, nv) &
       !$omp    private(c, i, k, a) schedule(static)
@@ -518,7 +550,9 @@ contains
       ! indices, and the packing that makes them possible is
       ! O(n_occ^2 n_vir^2).
       nov = no*nv
-      allocate (a1(nov, nov), a2(nov, nov), b1(nov, nov), b2(nov, nov), r(nov, nov))
+      if (.not. allocated(a1)) then
+         allocate (a1(nov, nov), a2(nov, nov), b1(nov, nov), b2(nov, nov), r(nov, nov))
+      end if
 
       !$omp parallel do default(none) shared(a1, a2, eris, no, nv) &
       !$omp    private(d, l, ld, c, k, kc) schedule(static)
@@ -558,10 +592,14 @@ contains
       call gemm_over_columns(a2, b2, r)
       call accumulate_wvoov(r, no, nv, w)
 
-      deallocate (a1, a2, b1, b2, r)
+      call move_alloc(a1, scratch%voov_a1)
+      call move_alloc(a2, scratch%voov_a2)
+      call move_alloc(b1, scratch%voov_b1)
+      call move_alloc(b2, scratch%voov_b2)
+      call move_alloc(r, scratch%voov_r)
    end subroutine cc_wvoov
 
-   subroutine cc_wvovo(eris, t1, t2, no, nv, w)
+   subroutine cc_wvovo(eris, t1, t2, no, nv, w, scratch)
       !! W(a,k,c,i), rintermediates.cc_Wvovo
       !!
       !!   + sum_d ovvv(k,d,a,c) t1(i,d)
@@ -574,9 +612,15 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(out) :: w(:, :, :, :)
 
+      type(rcc_scratch_t), intent(inout) :: scratch
+
       integer :: a, k, c, i, d, l
       real(dp), allocatable :: a2(:, :), b3(:, :), r(:, :)
       integer :: nov, kc, ld, ia
+
+      call move_alloc(scratch%vovo_a2, a2)
+      call move_alloc(scratch%vovo_b3, b3)
+      call move_alloc(scratch%vovo_r, r)
 
       !$omp parallel do default(none) shared(w, eris, no, nv) &
       !$omp    private(i, c, k, a) collapse(2) schedule(static)
@@ -624,7 +668,7 @@ contains
       ! Both amplitude terms carry the same integral ordering, so they are one
       ! gemm over (l,d) rather than two passes.
       nov = no*nv
-      allocate (a2(nov, nov), b3(nov, nov), r(nov, nov))
+      if (.not. allocated(a2)) allocate (a2(nov, nov), b3(nov, nov), r(nov, nov))
 
       !$omp parallel do default(none) shared(a2, eris, no, nv) &
       !$omp    private(d, l, ld, c, k, kc) schedule(static)
@@ -659,7 +703,9 @@ contains
       call gemm_over_columns(a2, b3, r)
       call accumulate_wvovo(r, no, nv, w)
 
-      deallocate (a2, b3, r)
+      call move_alloc(a2, scratch%vovo_a2)
+      call move_alloc(b3, scratch%vovo_b3)
+      call move_alloc(r, scratch%vovo_r)
    end subroutine cc_wvovo
 
    !===========================================================================
@@ -779,7 +825,7 @@ contains
       !$omp end parallel do
    end subroutine add_symmetrised
 
-   subroutine rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n)
+   subroutine rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n, scratch)
       !! One amplitude update: Hirata Eqs. (35) and (36)
       !!
       !! Most contractions are written as loops that read as the einsum strings
@@ -790,6 +836,8 @@ contains
       integer, intent(in) :: no, nv
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       real(dp), intent(out) :: t1n(:, :), t2n(:, :, :, :)
+      type(rcc_scratch_t), intent(inout) :: scratch
+         !! Where the large arrays below live between iterations
 
       real(dp), allocatable :: tau(:, :, :, :), tmp(:, :, :, :)
       real(dp), allocatable :: fki(:, :), fac(:, :), fkc(:, :), lki(:, :), lac(:, :)
@@ -803,7 +851,21 @@ contains
       integer :: i, j, k, l, a, b, c, d
       real(dp) :: acc, den
 
-      allocate (tau(no, no, nv, nv))
+      call move_alloc(scratch%tau, tau)
+      call move_alloc(scratch%tmp, tmp)
+      call move_alloc(scratch%tmp2, tmp2)
+      call move_alloc(scratch%tmp2b, tmp2b)
+      call move_alloc(scratch%woooo, woooo)
+      call move_alloc(scratch%wvoov, wvoov)
+      call move_alloc(scratch%wvovo, wvovo)
+      call move_alloc(scratch%x1, x1)
+      call move_alloc(scratch%x2, x2)
+      call move_alloc(scratch%x3, x3)
+      call move_alloc(scratch%y1, y1)
+      call move_alloc(scratch%y2, y2)
+      call move_alloc(scratch%r, r)
+
+      if (.not. allocated(tau)) allocate (tau(no, no, nv, nv))
       call build_tau(t1, t2, no, nv, tau)
 
       allocate (fki(no, no), fac(nv, nv), fkc(no, nv), lki(no, no), lac(nv, nv))
@@ -901,7 +963,7 @@ contains
       end do
 
       ! ---- T2, Eq. (36) ----------------------------------------------------
-      allocate (tmp(no, no, nv, nv))
+      if (.not. allocated(tmp)) allocate (tmp(no, no, nv, nv))
 
       ! t2new = ovov(i,a,j,b)   ['eris.ovov.transpose(0,2,1,3)'], which sets
       ! every element, so there is nothing to zero first
@@ -920,7 +982,7 @@ contains
 
       ! tmp2(a,b,i,c) = ovvv(i,a,c,b) - sum_k oovv(k,i,b,c) t1(k,a)
       ! tmp(i,j,a,b)  = sum_c tmp2(a,b,i,c) t1(j,c);  t2new += tmp + P(ij,ab) tmp
-      allocate (tmp2(nv, nv, no, nv))
+      if (.not. allocated(tmp2)) allocate (tmp2(nv, nv, no, nv))
       !$omp parallel do default(none) shared(tmp2, eris, t1, no, nv) &
       !$omp    private(c, i, b, a, k, acc) schedule(static)
       do c = 1, nv
@@ -954,11 +1016,10 @@ contains
       end do
       !$omp end parallel do
       call add_symmetrised(t2n, tmp, no, nv, 1.0_dp)
-      deallocate (tmp2)
 
       ! tmp2b(a,k,i,j) = sum_c ovov(k,c,i,a) t1(j,c) + ooov(j,k,i,a)
       ! tmp(i,j,a,b)   = sum_k tmp2b(a,k,i,j) t1(k,b);  t2new -= tmp + P tmp
-      allocate (tmp2b(nv, no, no, no))
+      if (.not. allocated(tmp2b)) allocate (tmp2b(nv, no, no, no))
       !$omp parallel do default(none) shared(tmp2b, eris, t1, no, nv) &
       !$omp    private(j, i, k, a, c, acc) collapse(2) schedule(static)
       do j = 1, no
@@ -992,10 +1053,9 @@ contains
       end do
       !$omp end parallel do
       call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
-      deallocate (tmp2b)
 
       ! 'klij,klab->ijab' with the four-occupied intermediate
-      allocate (woooo(no, no, no, no))
+      if (.not. allocated(woooo)) allocate (woooo(no, no, no, no))
       call cc_woooo(eris, t1, tau, no, nv, woooo)
       !$omp parallel do default(none) shared(t2n, woooo, tau, no, nv) &
       !$omp    private(b, a, j, i, l, k, acc) schedule(static)
@@ -1015,10 +1075,9 @@ contains
          end do
       end do
       !$omp end parallel do
-      deallocate (woooo)
 
       ! 'abcd,ijcd->ijab' -- the particle-particle ladder, never held whole
-      call particle_ladder(eris, t1, tau, no, nv, t2n)
+      call particle_ladder(eris, t1, tau, no, nv, t2n, scratch)
 
       ! 'ac,ijcb->ijab' and '-ki,kjab->ijab', each symmetrised
       !$omp parallel do default(none) shared(tmp, lac, t2, no, nv) &
@@ -1068,13 +1127,15 @@ contains
       !
       !     X1 = 2 X2 - X3        so only X2 and X3 are built
       !     term C reuses Y2       with its free virtual named a instead of b
-      allocate (wvoov(nv, no, no, nv), wvovo(nv, no, nv, no))
-      call cc_wvoov(eris, t1, t2, no, nv, wvoov)
-      call cc_wvovo(eris, t1, t2, no, nv, wvovo)
+      if (.not. allocated(wvoov)) allocate (wvoov(nv, no, no, nv), wvovo(nv, no, nv, no))
+      call cc_wvoov(eris, t1, t2, no, nv, wvoov, scratch)
+      call cc_wvovo(eris, t1, t2, no, nv, wvovo, scratch)
 
       nov = no*nv
-      allocate (x1(nov, nov), x2(nov, nov), x3(nov, nov))
-      allocate (y1(nov, nov), y2(nov, nov), r(nov, nov))
+      if (.not. allocated(x1)) then
+         allocate (x1(nov, nov), x2(nov, nov), x3(nov, nov))
+         allocate (y1(nov, nov), y2(nov, nov), r(nov, nov))
+      end if
 
       ! X2(ai,kc) = Wvoov(a,k,i,c);  X3(ai,kc) = Wvovo(a,k,c,i);  X1 = 2 X2 - X3
       !$omp parallel do default(none) shared(x1, x2, x3, wvoov, wvovo, no, nv) &
@@ -1127,9 +1188,6 @@ contains
       call scatter_ring(r, no, nv, .true., tmp)
       call add_symmetrised(t2n, tmp, no, nv, -1.0_dp)
 
-      deallocate (x1, x2, x3, y1, y2, r)
-      deallocate (wvoov, wvovo)
-
       !$omp parallel do default(none) shared(t2n, eps_o, eps_v, no, nv) &
       !$omp    private(b, a, j, i, den) schedule(static)
       do b = 1, nv
@@ -1143,6 +1201,20 @@ contains
          end do
       end do
       !$omp end parallel do
+
+      call move_alloc(tau, scratch%tau)
+      call move_alloc(tmp, scratch%tmp)
+      call move_alloc(tmp2, scratch%tmp2)
+      call move_alloc(tmp2b, scratch%tmp2b)
+      call move_alloc(woooo, scratch%woooo)
+      call move_alloc(wvoov, scratch%wvoov)
+      call move_alloc(wvovo, scratch%wvovo)
+      call move_alloc(x1, scratch%x1)
+      call move_alloc(x2, scratch%x2)
+      call move_alloc(x3, scratch%x3)
+      call move_alloc(y1, scratch%y1)
+      call move_alloc(y2, scratch%y2)
+      call move_alloc(r, scratch%r)
    end subroutine rccsd_iteration
 
    subroutine accumulate_wvoov(r, no, nv, w)
@@ -1366,7 +1438,7 @@ contains
       !$omp end parallel
    end subroutine ri_ladder_direct
 
-   subroutine ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+   subroutine ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
       !! The t1 half of the particle-particle ladder, without forming it
       !!
       !! Wvvvv carries two singles terms beside `(ac|bd)`, and contracting them
@@ -1388,12 +1460,14 @@ contains
       real(dp), intent(in) :: t1(no, nv)
       real(dp), intent(in) :: tau(no, no, nv, nv)
       real(dp), intent(inout) :: t2n(no, no, nv, nv)
+      type(rcc_scratch_t), intent(inout) :: scratch  !! Work arrays kept between iterations
 
       real(dp), allocatable :: taut(:, :), p(:, :), z(:, :), cmat(:, :)
       ! TODO(mqc): `ij` is declared and never used here.
       integer :: i, j, a, b, c, d, k, v, cd, ij
 
-      allocate (taut(nv*nv, no*no))
+      call move_alloc(scratch%taut, taut)
+      if (.not. allocated(taut)) allocate (taut(nv*nv, no*no))
 
       ! tau with the virtual pair leading, once per iteration.
       !$omp parallel do default(none) shared(taut, tau, no, nv) &
@@ -1470,10 +1544,10 @@ contains
       deallocate (p, z, cmat)
       !$omp end parallel
 
-      deallocate (taut)
+      call move_alloc(taut, scratch%taut)
    end subroutine ladder_t1_dressing
 
-   subroutine particle_ladder(eris, t1, tau, no, nv, t2n)
+   subroutine particle_ladder(eris, t1, tau, no, nv, t2n, scratch)
       !! t2new(i,j,a,b) += sum_cd Wvvvv(a,b,c,d) tau(i,j,c,d), never holding Wvvvv
       !!
       !!     Wvvvv(a,b,c,d) = (ac|bd) - sum_k ovvv(k,d,a,c) t1(k,b)
@@ -1505,6 +1579,7 @@ contains
       ! sliced that way.
       real(dp), intent(in) :: tau(no, no, nv, nv)
       real(dp), intent(inout) :: t2n(no, no, nv, nv)
+      type(rcc_scratch_t), intent(inout) :: scratch  !! Work arrays kept between iterations
 
       ! TODO(mqc): `i`, `j`, `k` and `acc` are declared and never used here --
       ! left behind when the loop nest became a batched gemm.
@@ -1520,12 +1595,13 @@ contains
          ! Which way round to do the fitted ladder. See `ri_ladder_prefers_direct`.
          if (ri_ladder_prefers_direct(no, nv, naux)) then
             call ri_ladder_direct(eris, tau, no, nv, naux, t2n)
-            call ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+            call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
             return
          end if
       end if
 
-      allocate (wblk(nv, nv, LADDER_BATCH))
+      call move_alloc(scratch%wblk, wblk)
+      if (.not. allocated(wblk)) allocate (wblk(nv, nv, LADDER_BATCH))
 
       do cd0 = 1, nv2, LADDER_BATCH
          cd1 = min(cd0 + LADDER_BATCH - 1, nv2)
@@ -1583,9 +1659,9 @@ contains
          call ladder_accumulate(no*no, nv*nv, nb, tau(1, 1, c, d), wblk, t2n(1, 1, 1, 1))
       end do
 
-      deallocate (wblk)
+      call move_alloc(wblk, scratch%wblk)
 
-      call ladder_t1_dressing(eris, t1, tau, no, nv, t2n)
+      call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
    end subroutine particle_ladder
 
    !===========================================================================
@@ -1615,6 +1691,7 @@ contains
       type(czt_molecule_t), intent(in), optional :: aux
 
       type(rcc_eris_t) :: eris
+      type(rcc_scratch_t) :: scratch  !! The iteration's work arrays, kept across iterations
       real(dp), allocatable :: c_act(:, :), eps_o(:), eps_v(:)
       real(dp), allocatable :: t1(:, :), t2(:, :, :, :), t1n(:, :), t2n(:, :, :, :)
       real(dp), allocatable :: flat(:), err_flat(:)
@@ -1709,7 +1786,7 @@ contains
 
       do iter = 1, max_iter
          t_iter = clk%seconds_of(STAGE_ITER)
-         call rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n)
+         call rccsd_iteration(eris, eps_o, eps_v, no, nv, t1, t2, t1n, t2n, scratch)
          call clk%lap(STAGE_ITER)
          t_iter = clk%seconds_of(STAGE_ITER) - t_iter
 
