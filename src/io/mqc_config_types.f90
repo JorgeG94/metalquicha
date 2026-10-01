@@ -288,13 +288,10 @@ module mqc_config_types
       integer, allocatable :: mcscf_gradient_roots(:)
          !! `keywords.mcscf.gradient_roots`, 1-based root indices the fused
          !! multi-root SA-CASSCF gradient (`czt_sa_casscf_gradients`) is asked
-         !! for. Unallocated means "every state" -- the default under state
-         !! averaging, and the only sensible reading when `mcscf_n_states` is
-         !! 1. The JSON spelling is either the string `"all"` (resolved to
-         !! unallocated here, same as absent) or an explicit list; the driver
-         !! does not yet read this field (phase 6 of
-         !! `SA_CASSCF_GRADIENT_PLAN.md`), so it only reaches as far as
-         !! `mcscf_options_t` for now.
+         !! for on a Gradient driver. Unallocated means "every state", the
+         !! default. The JSON spelling is either the string `"all"` (resolved
+         !! to unallocated here, same as absent) or an explicit list. Refused
+         !! when `mcscf_n_states` is 1 or the driver is not Gradient.
       ! keywords.dft -- the quadrature, not the functional
       real(dp) :: dft_screening_tolerance = 1.0e-12_dp
          !! From `keywords.dft.screening_tolerance`. The AO value below which a

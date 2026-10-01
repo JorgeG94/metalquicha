@@ -65,6 +65,7 @@ module mqc_czt_bridge
    use mqc_czt_mcscf, only: casscf_result_t, run_czt_casscf, &
                             natural_orbitals
    use mqc_czt_mcscf_gradient, only: czt_mcscf_gradient
+   use mqc_czt_sa_gradient, only: czt_sa_casscf_gradients, UNEQUAL_WEIGHT_TOL
    implicit none
    private
 
@@ -3381,6 +3382,7 @@ contains
       type(scf_convergence_t) :: scf_conv
       logical :: conv_ok
       integer :: space(4)
+      logical :: is_gradient_request
 
       if (settings%pcm%enabled) then
          call result%error%set(ERROR_VALIDATION, "continuum solvation (keywords.pcm) is "// &
@@ -3448,19 +3450,53 @@ contains
          return
       end if
 
-      ! A state-averaged CASSCF gradient needs the Z-vector equation (the
-      ! orbital and CI Lagrangian of `E_SA`), which is not implemented yet --
-      ! refused rather than silently returning the single-state gradient of a
-      ! different energy than the one that was optimised.
-      if (present(want_gradient)) then
-         if (want_gradient .and. settings%mcscf%n_states > 1) then
-            call result%error%set(ERROR_VALIDATION, "a state-averaged CASSCF gradient "// &
-                                  "is not implemented: it needs the orbital and CI "// &
-                                  "Lagrangian of E_SA (the Z-vector equation), which "// &
-                                  "has not been coded yet. Run driver 'Energy', or set "// &
-                                  "n_states to 1.")
+      ! `keywords.mcscf.gradient_roots` only means something for a
+      ! state-averaged CASSCF gradient -- refused by name wherever it would
+      ! otherwise be parsed and silently ignored, rather than only documented.
+      if (allocated(settings%mcscf%gradient_roots)) then
+         if (settings%mcscf%n_states <= 1) then
+            call result%error%set(ERROR_VALIDATION, "keywords.mcscf.gradient_roots "// &
+                                  "selects among several state-averaged roots, and "// &
+                                  "keywords.mcscf.n_states is 1: there is only one root "// &
+                                  "to select. Drop gradient_roots, or raise n_states.")
             result%has_error = .true.
             return
+         end if
+         is_gradient_request = .false.
+         if (present(want_gradient)) is_gradient_request = want_gradient
+         if (.not. is_gradient_request) then
+            call result%error%set(ERROR_VALIDATION, "keywords.mcscf.gradient_roots only "// &
+                                  "matters for a state-averaged CASSCF gradient, and this "// &
+                                  "is not a Gradient driver: it would be parsed and then "// &
+                                  "silently ignored. Drop gradient_roots, or set driver "// &
+                                  "to 'Gradient'.")
+            result%has_error = .true.
+            return
+         end if
+      end if
+
+      ! A state-averaged CASSCF gradient needs equal weights: an
+      ! unequal-weight rotation between averaged states is not redundant and
+      ! needs a curvature term the Z-vector projection does not carry, as in
+      ! PySCF's own SA-CASSCF gradient code. `czt_sa_casscf_gradients` refuses
+      ! this too, but only after the orbital optimisation has already run --
+      ! checked here first so a doomed request costs nothing.
+      if (present(want_gradient)) then
+         if (want_gradient .and. settings%mcscf%n_states > 1) then
+            if (allocated(settings%mcscf%state_weights)) then
+               if (maxval(settings%mcscf%state_weights) - &
+                   minval(settings%mcscf%state_weights) > UNEQUAL_WEIGHT_TOL) then
+                  call result%error%set(ERROR_VALIDATION, "a state-averaged CASSCF "// &
+                                        "gradient needs equal weights: an unequal-weight "// &
+                                        "rotation between averaged states is not "// &
+                                        "redundant, and needs a curvature term this code "// &
+                                        "does not carry (PySCF's own SA-CASSCF gradient "// &
+                                        "code has the same restriction). Use equal "// &
+                                        "weights, or run driver 'Energy'.")
+                  result%has_error = .true.
+                  return
+               end if
+            end if
          end if
       end if
 
@@ -3902,6 +3938,10 @@ contains
          return
       end if
 
+      ! `casscf%dm1`/`%dm2` are the SA densities under state averaging (what
+      ! the orbital optimiser actually used) and root 1's own under a plain
+      ! CASSCF, so this one call is `dE_SA/dR` in the first case and the
+      ! ordinary single-state gradient in the second -- no branch needed here.
       call czt_mcscf_gradient(mol, casscf%orbitals, space(1), space(2), &
                               casscf%dm1, casscf%dm2, result%gradient, error)
       if (error%has_error()) then
@@ -3909,8 +3949,76 @@ contains
          result%has_error = .true.
          return
       end if
+      ! Set last, so a failed per-root solve leaves an error and no gradient
+      ! rather than an error beside a valid-looking `E_SA` one.
+      if (settings%mcscf%n_states > 1) then
+         call sa_state_gradients_into(settings, mol, casscf, space, result)
+         if (result%has_error) return
+      end if
       result%has_gradient = .true.
    end subroutine mcscf_gradient_into
+
+   subroutine sa_state_gradients_into(settings, mol, casscf, space, result)
+      !! Every requested root's own gradient, onto the result
+      !!
+      !! `keywords.mcscf.gradient_roots` names the roots (1-based); absent
+      !! means every averaged state. The bridge has already refused unequal
+      !! weights before the CASSCF ran, so every root here shares one SA
+      !! Hessian and one block Z-vector solve (`czt_sa_casscf_gradients`).
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(czt_molecule_t), intent(in) :: mol
+      type(casscf_result_t), intent(in) :: casscf
+      integer, intent(in) :: space(:)
+      type(calculation_result_t), intent(inout) :: result
+
+      type(error_t) :: error
+      integer, allocatable :: roots(:)
+      integer, allocatable :: cg_iterations(:)
+      real(dp), allocatable :: cg_residual(:)
+      real(dp), allocatable :: gradients(:, :, :)
+      character(len=MAX_LINE_LENGTH) :: line
+      integer :: i, iatom, icomp
+      real(dp) :: gnorm
+
+      if (allocated(settings%mcscf%gradient_roots)) then
+         roots = settings%mcscf%gradient_roots
+      else
+         allocate (roots(settings%mcscf%n_states))
+         roots = [(i, i=1, settings%mcscf%n_states)]
+      end if
+
+      allocate (cg_iterations(size(roots)), cg_residual(size(roots)))
+      call czt_sa_casscf_gradients(mol, casscf%orbitals, space(1), space(2), space(3), &
+                                   space(4), casscf%ci_vectors, casscf%energies, &
+                                   settings%mcscf%state_weights, roots, gradients, error, &
+                                   cg_iterations=cg_iterations, cg_residual=cg_residual)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, "state-averaged CASSCF gradient: "// &
+                               error%get_message())
+         result%has_error = .true.
+         return
+      end if
+
+      result%mcscf_state_gradients = gradients
+      result%mcscf_gradient_roots = roots
+
+      do i = 1, size(roots)
+         gnorm = sqrt(sum(gradients(:, :, i)**2))
+         write (line, "(a,i0,a,f18.10,a,es10.3,a,i0,a,es8.1)") "  root ", roots(i), &
+            "  E ", casscf%energies(roots(i)), "  |gradient| ", gnorm, &
+            "  Z-vector CG iterations ", cg_iterations(i), " residual ", cg_residual(i)
+         call logger%info(trim(line))
+      end do
+
+      do i = 1, size(roots)
+         write (line, "(a,i0,a)") "  root ", roots(i), " gradient, hartree/bohr (x, y, z):"
+         call logger%verbose(trim(line))
+         do iatom = 1, mol%natm
+            write (line, "(3f18.10)") (gradients(icomp, iatom, i), icomp=1, 3)
+            call logger%verbose(trim(line))
+         end do
+      end do
+   end subroutine sa_state_gradients_into
 
    subroutine store_decomposition(result, atom_energy, free_atom_energy, &
                                   pair_energy, pair_classical, formation_energy)

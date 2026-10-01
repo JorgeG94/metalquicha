@@ -34,7 +34,7 @@ module mqc_json_config_reader
    use pic_ascii, only: to_lower
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, &
                              CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY, &
-                             CALC_TYPE_INTERACTION_ENERGY
+                             CALC_TYPE_INTERACTION_ENERGY, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
@@ -690,19 +690,32 @@ contains
    end subroutine check_excited_states_run
 
    subroutine check_state_averaged_run(config, error)
-      !! Refuse `keywords.mcscf.n_states > 1` in a fragmented calculation
-      !!
-      !! Each fragment would optimise its orbitals for its own state average,
-      !! and the expansion would sum those `E_SA` values into a total no
-      !! unfragmented calculation reproduces: which roots are lowest, and so
-      !! what is averaged, changes from monomer to dimer. The per-state
-      !! energies are not carried back from a fragment worker either.
-      !! Gradient and Hessian drivers are refused in the backend, which is
-      !! where the unfragmented path first meets them.
+      !! Refuse `keywords.mcscf.n_states > 1` where it has no implementation:
+      !! a fragmented calculation, or a Hessian driver
       type(mqc_config_t), intent(in) :: config
       type(error_t), intent(inout) :: error
 
+      ! Fragmented: each fragment would optimise its orbitals for its own state
+      ! average, and the expansion would sum those `E_SA` values into a total
+      ! no unfragmented calculation reproduces -- which roots are lowest, and
+      ! so what is averaged, changes from monomer to dimer. The per-state
+      ! energies are not carried back from a fragment worker either.
+      !
+      ! Hessian: one rank reaches `mcscf_calc_hessian`, which refuses, but
+      ! several reach `distributed_unfragmented_hessian`, which differences
+      ! `calc_gradient` and would return a Hessian of `E_SA` with nothing to
+      ! say so. Refused here so the answer does not depend on the rank count.
+
       if (config%mcscf_n_states <= 1) return
+
+      if (config%calc_type == CALC_TYPE_HESSIAN) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 cannot be "// &
+                        "combined with driver 'Hessian': there is no state-averaged "// &
+                        "CASSCF Hessian, analytic or by differences of the gradient. "// &
+                        "Use driver 'Gradient' for each root's gradient, or set "// &
+                        "n_states to 1.")
+         return
+      end if
 
       if (is_fragmented(config)) then
          call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 cannot be "// &
@@ -1715,8 +1728,8 @@ contains
 
    subroutine read_mcscf_gradient_roots(json, config, error)
       !! `keywords.mcscf.gradient_roots`: the string `"all"` or a list of
-      !! 1-based root indices -- which states the (not yet driver-reachable)
-      !! fused multi-root SA-CASSCF gradient would build. `"all"` and an
+      !! 1-based root indices -- which states a Gradient driver's fused
+      !! multi-root SA-CASSCF gradient builds. `"all"` and an
       !! absent key both resolve to `config%mcscf_gradient_roots` left
       !! unallocated; called from `read_mcscf_state_averaging`, after
       !! `mcscf_n_states` is already set, since a list is validated against it.

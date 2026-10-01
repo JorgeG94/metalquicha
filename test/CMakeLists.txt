@@ -245,6 +245,12 @@ if(MQC_ENABLE_CZT)
   target_link_libraries(test_mqc_sa_gradient_psb3_bench PRIVATE cint_fortran
                                                                 cint)
 
+  # Phase 6: the driver path (`mqc_czt_bridge`'s `run_czt_mcscf`) a Gradient
+  # driver deck actually reaches -- top-level gradient, per-root storage, and
+  # the gradient_roots/unequal-weight refusals.
+  addtest(mqc_sa_gradient_driver)
+  target_link_libraries(test_mqc_sa_gradient_driver PRIVATE cint_fortran cint)
+
   # Choosing an active space from atomic orbital labels.
   addtest(mqc_avas)
   target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)

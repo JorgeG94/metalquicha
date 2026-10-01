@@ -9,7 +9,7 @@ module mqc_driver
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
-   use mqc_method_types, only: needs_serial_execution
+   use mqc_method_types, only: needs_serial_execution, METHOD_TYPE_MCSCF
    use mqc_mbe_fragment_distribution_scheme, only: unfragmented_calculation, distributed_unfragmented_hessian
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t, &
                                       fmo_context_t
@@ -207,6 +207,39 @@ contains
          end if
          if (.not. support_error%has_error()) then
             call check_pieda_support(config, support_error)
+         end if
+         ! A state-averaged CASSCF (`keywords.mcscf.n_states > 1`) has no
+         ! fragmented path: nothing carries a fragment's per-root energies,
+         ! spins or gradients through the fragment machinery or MPI packing
+         ! (`mqc_result_types`' `mcscf_state_*` fields are not in
+         ! `result_send`/`result_recv`), so a fragmented run would silently
+         ! report only `E_SA` and drop the rest. Refused here rather than
+         ! left to lose data quietly. An unfragmented run (`max_level == 0`)
+         ! is unaffected.
+         if (.not. support_error%has_error() .and. max_level > 0 .and. &
+             config%method_config%method_type == METHOD_TYPE_MCSCF .and. &
+             config%method_config%mcscf%n_states > 1) then
+            call support_error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 "// &
+                                   "(a state-averaged CASSCF) is not implemented under "// &
+                                   "fragmentation (keywords.fragmentation): nothing "// &
+                                   "carries a fragment's per-root energies, spins or "// &
+                                   "gradients through the fragment machinery or MPI "// &
+                                   "packing yet. Run an unfragmented calculation "// &
+                                   "(drop keywords.fragmentation), or set n_states to 1.")
+         end if
+         ! The reader refuses this for a deck; repeated for a session and the C
+         ! API. Several ranks would take `distributed_unfragmented_hessian`,
+         ! which differences `calc_gradient` and so would return a Hessian of
+         ! `E_SA` where one rank is refused by `mcscf_calc_hessian`.
+         if (.not. support_error%has_error() .and. &
+             config%calc_type == CALC_TYPE_HESSIAN .and. &
+             config%method_config%method_type == METHOD_TYPE_MCSCF .and. &
+             config%method_config%mcscf%n_states > 1) then
+            call support_error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 "// &
+                                   "cannot be combined with driver 'Hessian': there is "// &
+                                   "no state-averaged CASSCF Hessian, analytic or by "// &
+                                   "differences of the gradient. Use driver 'Gradient', "// &
+                                   "or set n_states to 1.")
          end if
          if (support_error%has_error()) then
             if (resources%mpi_comms%world_comm%rank() == 0) then

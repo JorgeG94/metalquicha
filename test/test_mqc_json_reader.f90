@@ -2229,6 +2229,28 @@ contains
                       '"fragments": [[0, 1], [2, 3]]')
       call read_deck(config, parse_error)
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+
+      ! A Hessian driver is refused at read time: several ranks would
+      ! difference the state-averaged gradient where one rank is refused, so
+      ! the answer would depend on the launch.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Hessian", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 2}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a state-averaged Hessian deck was accepted")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "Hessian") > 0, &
+                 "refused, but not for the driver: "//parse_error%get_message())
+      if (allocated(error)) return
+
+      ! The same deck asking for a gradient is the supported path.
+      call write_deck('"method": "casscf", "basis": "sto-3g"', "Gradient", &
+                      '"mcscf": {"n_active_electrons": 2, "n_active_orbitals": 2, '// &
+                      '"n_states": 2}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
    end subroutine test_mcscf_state_averaging
 
    subroutine test_mcscf_gradient_roots(error)

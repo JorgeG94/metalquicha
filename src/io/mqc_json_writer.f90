@@ -821,18 +821,28 @@ contains
    end subroutine write_excited_states_section
 
    subroutine write_mcscf_states_section(json, parent, data)
-      !! State-averaged CASSCF: every root, its `<S^2>` and its weight
+      !! State-averaged CASSCF: every root, its `<S^2>`, its weight and,
+      !! off a Gradient driver, its own analytic gradient
       !!
-      !! `total_energy` on the parent object is `E_SA = sum_J weight(J) *
-      !! energy(J)` for this run, not any one root's own energy -- said here
-      !! rather than only in the docstring, since it is the one fact a
-      !! consumer reading this section cannot see from the numbers alone.
+      !! `total_energy` on the parent object, and the top-level `gradient`
+      !! written beside it when the run asked for one, are `E_SA = sum_J
+      !! weight(J) * energy(J)` and `dE_SA/dR` -- not any one root's own
+      !! energy or gradient.
+      !!
+      !! A root's own gradient and gradient norm are added only for the roots
+      !! named in `mcscf_gradient_roots` (`keywords.mcscf.gradient_roots`).
+      !! `gradient_differences` follows with `g_i - g_j` for every pair `i <
+      !! j` among those same roots -- what a conical-intersection search or a
+      !! surface-hopping trajectory reads to find where two surfaces come
+      !! close.
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
 
-      type(json_value), pointer :: section, arr, entry
-      integer :: i, n_states
+      type(json_value), pointer :: section, arr, entry, diff_arr, diff_entry
+      type(json_value), pointer :: state_pair
+      integer :: i, n_states, n_roots, ir, jr
+      real(dp), allocatable :: diff(:, :)
 
       if (.not. data%has_mcscf_states) return
       if (.not. allocated(data%mcscf_state_energies)) return
@@ -842,6 +852,9 @@ contains
       call json%add(parent, section)
       call json%add(section, "n_states", n_states)
       call json%add(section, "e_sa_hartree", data%total_energy)
+
+      n_roots = 0
+      if (allocated(data%mcscf_gradient_roots)) n_roots = size(data%mcscf_gradient_roots)
 
       call json%create_array(arr, "states")
       call json%add(section, arr)
@@ -860,6 +873,28 @@ contains
              size(data%mcscf_state_weights) >= n_states) then
             call json%add(entry, "weight", data%mcscf_state_weights(i))
          end if
+         do ir = 1, n_roots
+            if (data%mcscf_gradient_roots(ir) == i) then
+               call add_gradient(json, entry, data%mcscf_state_gradients(:, :, ir))
+               exit
+            end if
+         end do
+      end do
+
+      if (n_roots < 2) return
+      call json%create_array(diff_arr, "gradient_differences")
+      call json%add(section, diff_arr)
+      do ir = 1, n_roots
+         do jr = ir + 1, n_roots
+            call json%create_object(diff_entry, "")
+            call json%add(diff_arr, diff_entry)
+            call json%create_array(state_pair, "states")
+            call json%add(diff_entry, state_pair)
+            call json%add(state_pair, "", data%mcscf_gradient_roots(ir))
+            call json%add(state_pair, "", data%mcscf_gradient_roots(jr))
+            diff = data%mcscf_state_gradients(:, :, ir) - data%mcscf_state_gradients(:, :, jr)
+            call add_gradient(json, diff_entry, diff)
+         end do
       end do
    end subroutine write_mcscf_states_section
 

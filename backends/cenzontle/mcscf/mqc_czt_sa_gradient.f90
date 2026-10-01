@@ -77,6 +77,9 @@ module mqc_czt_sa_gradient
       !! to the solver tolerance.
    public :: sa_casscf_gradients_general   !! Exposed for the tests
    public :: sa_block_zvector_solve   !! Exposed for the tests
+   ! Public so `mqc_czt_bridge` can refuse unequal weights before the
+   ! orbital optimisation runs, with the threshold this module uses.
+   public :: UNEQUAL_WEIGHT_TOL
 
    real(dp), parameter :: DEFAULT_CG_TOL = 1.0e-10_dp
    integer, parameter :: DEFAULT_CG_MAX_ITER = 200
