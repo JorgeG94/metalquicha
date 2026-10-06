@@ -5146,6 +5146,14 @@
             "oscillator_tolerance": 1e-07,
             "type": "unfragmented",
             "requires": "libxc"
+        },
+        {
+            "name": "SA-2-CASSCF gradient CAS(2,2) C2H4-twisted 6-31g* (CPU)",
+            "input": "inputs/cpu/mqc/mcscf/cpu_c2h4_twisted_6-31g_st__sa2_2e2o_grad.json",
+            "expected_energy": -77.864049844183,
+            "expected_gradient_norm": 0.1014804581,
+            "tolerance": 5e-06,
+            "type": "unfragmented"
         }
     ]
 }

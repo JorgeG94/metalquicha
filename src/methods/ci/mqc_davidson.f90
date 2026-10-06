@@ -149,7 +149,8 @@ contains
    end subroutine cas_apply
 
    subroutine davidson_lowest(folded, diagonal, alpha, beta, n_roots, result, error, &
-                              tolerance, max_iterations, max_subspace, guess, verbose, energy_offset)
+                              tolerance, max_iterations, max_subspace, guess, verbose, &
+                              energy_offset, symmetrize_singlet)
       !! The `n_roots` lowest eigenpairs of the CI Hamiltonian
       !!
       !! The complete-space spelling of `davidson_flat`: the same method, with
@@ -173,15 +174,38 @@ contains
          !! Davidson solves the active-space problem, so its own eigenvalue is
          !! the active energy alone; the caller knows the inactive-plus-nuclear
          !! constant this adds back.
+      logical, intent(in), optional :: symmetrize_singlet
+         !! Restrict the search to singlets by symmetrising every guess and
+         !! correction vector under `c(ia, ib) -> (c(ia,ib) + c(ib,ia))/2`,
+         !! which excludes every odd-`S` state exactly when `n_alpha ==
+         !! n_beta` -- alpha and beta strings are then built from the same
+         !! `(n_active, n_electrons)`, so `build_link_table` gives them
+         !! identical tables and the swap is well defined (see
+         !! `mqc_docs/source/developer_sa_casscf.rst`, "Spin"). Off by default,
+         !! so an ordinary CASCI/CASSCF is unaffected; refused when `n_alpha /=
+         !! n_beta`, where the swap does not make sense.
 
       type(cas_operator_t) :: operator
       real(dp), allocatable :: vectors(:, :), flat_guess(:, :)
+      integer, allocatable :: singlet_na
       integer :: na, nb, ndet, iroot
 
       if (error%has_error()) return
       na = alpha%n_strings
       nb = beta%n_strings
       ndet = na*nb
+
+      if (present(symmetrize_singlet)) then
+         if (symmetrize_singlet) then
+            if (na /= nb) then
+               call error%set(ERROR_VALIDATION, "singlet symmetrisation needs equal "// &
+                              "alpha and beta string counts, and this active space has "// &
+                              to_char(na)//" and "//to_char(nb)//".")
+               return
+            end if
+            singlet_na = na
+         end if
+      end if
 
       operator%folded => folded
       operator%alpha => alpha
@@ -198,14 +222,15 @@ contains
                             result%values, vectors, result%residuals, &
                             result%iterations, result%sigma_products, &
                             result%converged, error, tolerance, max_iterations, &
-                            max_subspace, flat_guess, verbose, energy_offset)
+                            max_subspace, flat_guess, verbose, energy_offset, &
+                            singlet_na=singlet_na)
       else
          call davidson_flat(operator, reshape(diagonal, [ndet]), n_roots, &
                             result%values, vectors, result%residuals, &
                             result%iterations, result%sigma_products, &
                             result%converged, error, tolerance, max_iterations, &
                             max_subspace, verbose=verbose, &
-                            energy_offset=energy_offset)
+                            energy_offset=energy_offset, singlet_na=singlet_na)
       end if
       if (error%has_error()) return
 
@@ -218,7 +243,7 @@ contains
    subroutine davidson_flat(operator, diagonal, n_roots, values, vectors, residuals, &
                             iterations_taken, sigma_products, converged, error, &
                             tolerance, max_iterations, max_subspace, guess, verbose, &
-                            energy_offset, label, value_label)
+                            energy_offset, label, value_label, singlet_na)
       !! The `n_roots` lowest eigenpairs of anything that can multiply a vector
       !!
       !! The method itself, over a flat vector. Everything that knows what a
@@ -269,6 +294,10 @@ contains
          !! What the eigenvalue column is called, `energy` by default. The same
          !! reason: the lowest eigenvalue of an orbital-rotation Hessian is a
          !! curvature, not an energy.
+      integer, intent(in), optional :: singlet_na
+         !! Forwarded from `davidson_lowest`'s `symmetrize_singlet`; present
+         !! only for the CI operator, never the orbital-rotation Hessian, which
+         !! has no alpha/beta strings to swap.
 
       real(dp), allocatable :: basis(:, :), sigma(:, :), small(:, :), small_values(:)
       character(len=128) :: line, header, name_of_value
@@ -337,7 +366,7 @@ contains
       end if
 
       call system_clock(last, rate)
-      call initial_basis(diagonal, nstart, ndet, basis, error, guess)
+      call initial_basis(diagonal, nstart, ndet, basis, error, guess, singlet_na)
       if (error%has_error()) return
       nsub = nstart
 
@@ -416,6 +445,14 @@ contains
                correction(i) = residual(i)/denominator
             end do
 
+            ! Excludes odd-S content from the new direction exactly, rather
+            ! than trusting that it was never there: the operator conserves
+            ! the symmetric subspace only up to the non-associativity of
+            ! floating-point sums, and a correction built from a residual with
+            ! a little of that noise would otherwise let it back into the
+            ! basis. See `symmetrize_singlet_vector`.
+            if (present(singlet_na)) call symmetrize_singlet_vector(correction, singlet_na)
+
             ! Normalise before projecting, so the linear-dependence test below
             ! measures direction rather than magnitude.
             norm = sqrt(dot_product(correction, correction))
@@ -467,7 +504,30 @@ contains
       deallocate (root_converged)
    end subroutine davidson_flat
 
-   subroutine initial_basis(diagonal, n_start, ndet, basis, error, guess)
+   pure subroutine symmetrize_singlet_vector(v, na)
+      !! `c(ia, ib) -> (c(ia,ib) + c(ib,ia))/2` on a flat `(na*na)` CI vector
+      !!
+      !! Excludes every odd-`S` component exactly when `na` is both the alpha
+      !! and the beta string count for the same `(n_active, n_electrons)`, so
+      !! that the two string orders are the same table (see
+      !! `davidson_lowest`'s `symmetrize_singlet`). `v` is addressed the way
+      !! `reshape(v, [na, na])` would shape it: `v(ia + (ib-1)*na)`.
+      real(dp), intent(inout) :: v(:)
+      integer, intent(in) :: na
+
+      real(dp) :: averaged
+      integer :: ia, ib
+
+      do ib = 1, na
+         do ia = 1, ib
+            averaged = 0.5_dp*(v(ia + (ib - 1)*na) + v(ib + (ia - 1)*na))
+            v(ia + (ib - 1)*na) = averaged
+            v(ib + (ia - 1)*na) = averaged
+         end do
+      end do
+   end subroutine symmetrize_singlet_vector
+
+   subroutine initial_basis(diagonal, n_start, ndet, basis, error, guess, singlet_na)
       !! Starting vectors: the supplied ones, or the lowest determinants
       !!
       !! The linear-dependence test here is on the *fraction* of a guess
@@ -492,13 +552,56 @@ contains
       type(error_t), intent(inout) :: error
          !! Set when a guess column cannot be replaced by any determinant
       real(dp), intent(in), optional :: guess(:, :)
+      integer, intent(in), optional :: singlet_na
+         !! Present only under singlet symmetrisation (see `davidson_flat`).
+         !! Every column, guess or fallback unit vector, is symmetrised before
+         !! it is measured or projected, so a guess (or a fallback unit vector
+         !! that happens to be the swap of an earlier one) that carries no
+         !! singlet content is correctly treated as dependent and replaced,
+         !! rather than seeding the subspace with a vector the operator will
+         !! never move.
 
       logical, allocatable :: taken(:)
       real(dp) :: norm, length
-      integer :: iroot, pick
+      integer :: iroot, pick, n_guess
 
       allocate (taken(ndet))
       taken = .false.
+
+      if (present(singlet_na)) then
+         n_guess = 0
+         if (present(guess)) n_guess = size(guess, 2)
+         do iroot = 1, n_start
+            if (iroot <= n_guess) then
+               basis(:, iroot) = guess(:, iroot)
+            else
+               basis(:, iroot) = 0.0_dp
+            end if
+            call symmetrize_singlet_vector(basis(:, iroot), singlet_na)
+            length = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
+            norm = project_out_earlier(basis, iroot)
+            do while (norm <= LINEAR_DEPENDENCE*max(length, tiny(1.0_dp)))
+               pick = lowest_free(diagonal, taken)
+               if (pick == 0) then
+                  call error%set(ERROR_VALIDATION, "starting vector "//to_char(iroot)// &
+                                 " is spanned by the ones before it, and all "// &
+                                 to_char(ndet)//" determinants have already been "// &
+                                 "used to replace one.")
+                  deallocate (taken)
+                  return
+               end if
+               taken(pick) = .true.
+               basis(:, iroot) = 0.0_dp
+               basis(pick, iroot) = 1.0_dp
+               call symmetrize_singlet_vector(basis(:, iroot), singlet_na)
+               length = sqrt(dot_product(basis(:, iroot), basis(:, iroot)))
+               norm = project_out_earlier(basis, iroot)
+            end do
+            basis(:, iroot) = basis(:, iroot)/norm
+         end do
+         deallocate (taken)
+         return
+      end if
 
       if (present(guess)) then
          do iroot = 1, n_start

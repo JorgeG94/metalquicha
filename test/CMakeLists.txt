@@ -197,7 +197,30 @@ if(MQC_ENABLE_CZT)
   target_link_libraries(test_mqc_casci PRIVATE cint_fortran cint)
 
   addtest(mqc_mcscf)
+  addtest(mqc_mcscf_iterative)
   addtest(mqc_scf_level_shift)
+
+  # State-averaged CASSCF: energy, singlet selection, n_states = 1 unchanged.
+  addtest(mqc_sa_casscf)
+  target_link_libraries(test_mqc_sa_casscf PRIVATE cint_fortran cint)
+
+  # Matrix-free SA-CASSCF Hessian-vector product (phase 3).
+  addtest(mqc_sa_hessian)
+  target_link_libraries(test_mqc_sa_hessian PRIVATE cint_fortran cint)
+
+  # Same HVP, but on a CI space with more than one non-redundant direction per
+  # state (LiH/6-31G CAS(4,4) SA-3), which the CAS(2,2) case above cannot
+  # exercise.
+  addtest(mqc_sa_hessian_multistate)
+  target_link_libraries(test_mqc_sa_hessian_multistate PRIVATE cint_fortran
+                                                               cint)
+
+  # The same system's explicit dense Hessian and its eigenvalues -- correct, but
+  # 136 unit-vector applies, slow enough next to the routine suite to be long
+  # rather than routine.
+  addlongtest(mqc_sa_hessian_redundancy_long)
+  target_link_libraries(test_mqc_sa_hessian_redundancy_long PRIVATE cint_fortran
+                                                                    cint)
 
   # `incremental_fock` changes no number the SCF reports, so it is tested by the
   # count of full Fock builds rather than by timing -- see the module's own note
@@ -205,6 +228,35 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_incremental_fock)
   addtest(mqc_mcscf_gradient)
   target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
+
+  # Single-root SA-CASSCF gradient via the Z-vector (phase 4).
+  addtest(mqc_sa_gradient)
+  target_link_libraries(test_mqc_sa_gradient PRIVATE cint_fortran cint)
+  addlongtest(mqc_sa_gradient_pyscf_long)
+  target_link_libraries(test_mqc_sa_gradient_pyscf_long PRIVATE cint_fortran
+                                                                cint)
+
+  # Phase 5: every requested root's gradient built together.
+  addtest(mqc_sa_gradient_fused)
+  target_link_libraries(test_mqc_sa_gradient_fused PRIVATE cint_fortran cint)
+
+  # Phase 5: the benchmark/profiling harness for the fused multi-root gradient,
+  # on PSB3 SA-N-CAS(6,6)/6-31G*.
+  addlongtest(mqc_sa_gradient_psb3_bench)
+  target_link_libraries(test_mqc_sa_gradient_psb3_bench PRIVATE cint_fortran
+                                                                cint)
+
+  # Phase 6: the driver path (`mqc_czt_bridge`'s `run_czt_mcscf`) a Gradient
+  # driver deck actually reaches -- top-level gradient, per-root storage, and
+  # the gradient_roots/unequal-weight refusals.
+  addtest(mqc_sa_gradient_driver)
+  target_link_libraries(test_mqc_sa_gradient_driver PRIVATE cint_fortran cint)
+
+  # Nonadiabatic couplings between two SA-CASSCF states.
+  addtest(mqc_sa_nac)
+  target_link_libraries(test_mqc_sa_nac PRIVATE cint_fortran cint)
+  addlongtest(mqc_sa_nac_pyscf_long)
+  target_link_libraries(test_mqc_sa_nac_pyscf_long PRIVATE cint_fortran cint)
 
   # Choosing an active space from atomic orbital labels.
   addtest(mqc_avas)
@@ -489,7 +541,10 @@ if(MQC_ENABLE_CZT)
   # and knows nothing about integrals -- which is why it sits outside.
   addtest(mqc_afo_model)
   addtest(mqc_afo_orbital)
-  addtest(mqc_afo_fmo)
+  # LONG: 3265 s on a coverage build, over half its 90-minute budget alone.
+  # Twenty-one FMO runs, the GAMESS-parity butane- and glycine-tripeptide-
+  # with-water cases among them.
+  addlongtest(mqc_afo_fmo)
 
   # The pairs FMO exports, against the sums they were taken out of: every pair
   # adds up to the pair sum at level two, falls short by exactly the three-body
@@ -668,6 +723,7 @@ addtest(mqc_ci)
 addtest(mqc_ci_transform)
 addtest(mqc_davidson)
 addtest(mqc_rdm)
+addtest(mqc_transition_rdm)
 addtest(mqc_ormas_space)
 addtest(mqc_ormas_ci)
 addtest(mqc_lebedev)

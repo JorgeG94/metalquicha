@@ -69,6 +69,9 @@ module mqc_czt_gradient
    public :: two_electron_deriv
       !! Exposed for the MCSCF gradient, whose inactive and active blocks are
       !! separable and contract exactly as a closed-shell reference does.
+   public :: two_electron_deriv_many
+      !! Exposed for the SA-CASSCF gradient, which contracts several densities.
+   public :: gamma_fill_i   !! The Gamma callback `two_electron_deriv_many` takes
    ! `two_electron_gradient` and `hellmann_feynman_gradient` are deliberately
    ! NOT public: nothing outside this module calls either, and both are steps of
    ! `czt_scf_gradient` rather than pieces a caller assembles for itself.
@@ -101,6 +104,18 @@ module mqc_czt_gradient
       !! Measured on a 74-atom 6-31G* Hartree-Fock gradient, this value
       !! reproduces the unscreened result to 1e-9 Hartree/Bohr, which is what
       !! the older loop gave at its own default; 1e-10 here would be 1e-7.
+
+   abstract interface
+      subroutine gamma_fill_i(p_lo, p_hi, gamma)
+         !! Fill the AO Gamma tensors over compressed first-index positions
+         !! `p_lo..p_hi`, for `two_electron_deriv_many`
+         import :: dp
+         implicit none
+         integer, intent(in) :: p_lo, p_hi
+         real(dp), allocatable, intent(inout) :: gamma(:, :, :, :, :)
+            !! (p_hi - p_lo + 1, n_sig, n_sig, n_sig, n_gamma)
+      end subroutine gamma_fill_i
+   end interface
 
 contains
 
@@ -2029,6 +2044,312 @@ contains
 
       deallocate (bounds, bq, bra_bound, dsh, esh, dims, offs)
    end subroutine two_electron_deriv
+
+   subroutine two_electron_deriv_many(mol, densities, vhfs, error, screen_tol, gamma_ao_map, &
+                                      gamma_width, gamma_fill, gamma_grads)
+      !! `two_electron_deriv` for a stack of densities, in one pass over the
+      !! differentiated ERIs, optionally contracting general four-index AO
+      !! densities against the same integrals
+      !!
+      !! Each set gets `-(J - K/2)` derivative potentials of its own density,
+      !! full range, as `two_electron_deriv` gives with no optional arguments;
+      !! the exchange-scaling and range-separation options are not offered.
+      !! Screening uses the largest density element over the whole batch, so
+      !! a set can pick up quartets it would have screened alone: results
+      !! agree with one-at-a-time calls to within the screening threshold, not
+      !! bit for bit.
+      !!
+      !! With `gamma_fill` present, `gamma_grads(:, a, g)` also receives
+      !! `-2 sum (i' j|k l) Gamma_g(i j k l)` over the AOs `i` of atom `a`, for
+      !! each tensor `g` the callback supplies -- the non-separable two-body
+      !! term of an MCSCF gradient. Gamma is supplied one block of its first
+      !! index at a time, in the compressed numbering `gamma_ao_map` gives
+      !! (0 for an AO that carries none), at most `gamma_width` wide.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: densities(:, :, :)   !! (n_ao, n_ao, n_set), each symmetric
+      real(dp), allocatable, intent(out) :: vhfs(:, :, :, :)   !! (n_ao, n_ao, 3, n_set)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
+      integer, intent(in), optional :: gamma_ao_map(:)   !! (n_ao)
+      integer, intent(in), optional :: gamma_width
+      procedure(gamma_fill_i), optional :: gamma_fill
+      real(dp), intent(inout), optional :: gamma_grads(:, :, :)   !! (3, natm, n_gamma), accumulated
+
+      real(dp), allocatable :: buf(:), vj(:, :, :, :), vk(:, :, :, :)
+      real(dp), allocatable :: vj_local(:, :, :, :), vk_local(:, :, :, :)
+      real(dp), allocatable :: bounds(:, :), bq(:, :), bra_bound(:, :)
+      real(dp), allocatable :: dsh(:, :), dsh_set(:, :)
+      real(dp), allocatable :: gamma(:, :, :, :, :), de_local(:, :, :)
+      integer, allocatable :: dims(:), offs(:), shell_atom(:), map(:)
+      integer, allocatable :: block_lo(:), block_hi(:), block_p_lo(:), block_p_hi(:)
+      integer, allocatable :: offsets(:), counts(:)
+      real(dp) :: g, tol, bra, est, amax, gmax
+      type(c_ptr) :: opt
+      type(eri_shell_table_t) :: tab
+      type(eri_grad_dispatch_t) :: disp
+      integer :: shls(4)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: io, jo, ko, lo, i, j, k, l, comp, ret, mx, idx, nao, nbas
+      integer :: nprim, ptr, iset, n_set, n_gamma, n_block, ib, ia, ig, p_off
+      integer :: mi, mj, mk, ml, first, last, lo_idx, hi_idx
+      logical :: with_gamma
+
+      if (error%has_error()) return
+      nao = mol%nao
+      n_set = size(densities, 3)
+      if (size(densities, 1) /= nao .or. size(densities, 2) /= nao) then
+         call error%set(ERROR_VALIDATION, "two_electron_deriv_many: a density does not "// &
+                        "match this basis")
+         return
+      end if
+      if (n_set < 1) then
+         call error%set(ERROR_VALIDATION, "two_electron_deriv_many: no densities to "// &
+                        "contract against")
+         return
+      end if
+      with_gamma = present(gamma_fill)
+      n_gamma = 0
+      if (with_gamma) n_gamma = size(gamma_grads, 3)
+
+      call eri_shell_table(mol, tab)
+      call build_eri_grad_dispatch(tab%bas, tab%nbas, disp)
+      mx = tab%block_max
+      nbas = tab%nbas
+      allocate (vj(nao, nao, 3, n_set), vk(nao, nao, 3, n_set))
+      vj = 0.0_dp
+      vk = 0.0_dp
+
+      tol = DERIV_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+
+      opt = c_null_ptr
+      if (mol%cartesian) then
+         call libcint_2e_ip1_cart_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
+      else
+         call libcint_2e_ip1_sph_optimizer(opt, mol%atm, mol%natm, tab%bas, tab%nbas, tab%env)
+      end if
+
+      dims = tab%dims
+      offs = tab%offs(1:nbas)
+
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      call eri_schwarz_collapse(mol, bounds, bq)
+
+      allocate (bra_bound(nbas, nbas))
+      do ish = 1, nbas
+         nprim = tab%bas(LIBCINT_NPRIM_OF, ish)
+         ptr = tab%bas(LIBCINT_PTR_EXP, ish)
+         amax = maxval(tab%env(ptr + 1:ptr + nprim))
+         bra_bound(ish, :) = 2.0_dp*sqrt(amax)*bq(ish, :)
+      end do
+
+      ! The per-quartet density bound, maximised over every set in the batch.
+      ! `block_density_max` assumes a
+      ! symmetric density, which every caller's is (each set is a total
+      ! one-particle density or a symmetrised transition density).
+      allocate (dsh(nbas, nbas))
+      dsh = 0.0_dp
+      do iset = 1, n_set
+         call block_density_max(densities(:, :, iset), nbas, offs, dims, dsh_set)
+         dsh = max(dsh, dsh_set)
+         deallocate (dsh_set)
+      end do
+
+      ! The first-index shells in blocks: one covering everything without
+      ! Gamma, and with it runs of shells whose mapped AOs span at most
+      ! `gamma_width` compressed positions.
+      allocate (map(nao))
+      map = 0
+      if (with_gamma) map = gamma_ao_map
+      allocate (block_lo(nbas), block_hi(nbas), block_p_lo(nbas), block_p_hi(nbas))
+      n_block = 1
+      block_lo(1) = 1
+      block_hi(1) = nbas
+      block_p_lo(1) = 1
+      block_p_hi(1) = 0
+      if (with_gamma) then
+         n_block = 0
+         lo_idx = huge(1)
+         hi_idx = 0
+         do ish = 1, nbas
+            first = huge(1)
+            last = 0
+            do i = 1, dims(ish)
+               if (map(offs(ish) + i) > 0) then
+                  first = min(first, map(offs(ish) + i))
+                  last = max(last, map(offs(ish) + i))
+               end if
+            end do
+            if (n_block == 0) then
+               n_block = 1
+               block_lo(1) = ish
+            else if (last > 0 .and. hi_idx > 0 .and. &
+                     max(hi_idx, last) - min(lo_idx, first) + 1 > gamma_width) then
+               block_hi(n_block) = ish - 1
+               block_p_lo(n_block) = lo_idx
+               block_p_hi(n_block) = hi_idx
+               n_block = n_block + 1
+               block_lo(n_block) = ish
+               lo_idx = huge(1)
+               hi_idx = 0
+            end if
+            if (last > 0) then
+               lo_idx = min(lo_idx, first)
+               hi_idx = max(hi_idx, last)
+            end if
+         end do
+         block_hi(n_block) = nbas
+         block_p_lo(n_block) = lo_idx
+         block_p_hi(n_block) = hi_idx
+      end if
+
+      allocate (offsets(mol%natm), counts(mol%natm), shell_atom(nbas))
+      call atom_ao_blocks(mol, offsets, counts)
+      do ish = 1, nbas
+         shell_atom(ish) = 1
+         do ia = 1, mol%natm
+            if (offs(ish) >= offsets(ia) .and. offs(ish) < offsets(ia) + counts(ia)) then
+               shell_atom(ish) = ia
+            end if
+         end do
+      end do
+      gmax = 0.0_dp
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, tab, densities, opt, vj, vk, mx, nao, nbas, disp, &
+      !$omp           dims, offs, bq, bra_bound, dsh, tol, n_set, n_block, block_lo, block_hi, &
+      !$omp           block_p_lo, block_p_hi, with_gamma, gamma, gmax, map, shell_atom, &
+      !$omp           n_gamma, gamma_grads) &
+      !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
+      !$omp            bra, est, iset, ib, ia, ig, p_off, mi, mj, mk, ml, de_local)
+      allocate (buf(mx**4*3))
+      allocate (vj_local(nao, nao, 3, n_set), vk_local(nao, nao, 3, n_set))
+      allocate (de_local(3, mol%natm, max(n_gamma, 1)))
+      vj_local = 0.0_dp
+      vk_local = 0.0_dp
+      de_local = 0.0_dp
+
+      do ib = 1, n_block
+         !$omp single
+         if (with_gamma .and. block_p_hi(ib) >= block_p_lo(ib)) then
+            call gamma_fill(block_p_lo(ib), block_p_hi(ib), gamma)
+            gmax = maxval(abs(gamma))
+         else
+            gmax = 0.0_dp
+         end if
+         !$omp end single
+         p_off = block_p_lo(ib) - 1
+
+         !$omp do collapse(2) schedule(dynamic)
+         do ish = block_lo(ib), block_hi(ib)
+            do jsh = 1, nbas
+               di = dims(ish)
+               io = offs(ish)
+               ia = shell_atom(ish)
+               dj = dims(jsh)
+               jo = offs(jsh)
+               bra = bra_bound(ish, jsh)
+               do ksh = 1, nbas
+                  dk = dims(ksh)
+                  ko = offs(ksh)
+                  do lsh = 1, ksh
+                     dl = dims(lsh)
+                     lo = offs(lsh)
+
+                     est = bra*bq(ksh, lsh)* &
+                           max(dsh(lsh, ksh), dsh(ksh, lsh), dsh(jsh, ksh), dsh(jsh, lsh), gmax)
+                     if (est < tol) cycle
+
+                     shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+
+                     if (.not. two_electron_ip1_block(mol%cartesian, buf, shls, mol%atm, &
+                                                      mol%natm, tab%bas, nbas, tab%env, opt, &
+                                                      disp)) cycle
+
+                     ! One set at a time over the whole quartet, so `buf` stays
+                     ! in cache and each set's density is read contiguously.
+                     do iset = 1, n_set
+                        do comp = 1, 3
+                           do l = 1, dl
+                              do k = 1, dk
+                                 do j = 1, dj
+                                    do i = 1, di
+                                       idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
+                                       g = buf(idx)
+                                       vj_local(io + i, jo + j, comp, iset) = &
+                                          vj_local(io + i, jo + j, comp, iset) &
+                                          + g*densities(lo + l, ko + k, iset)
+                                       vk_local(io + i, lo + l, comp, iset) = &
+                                          vk_local(io + i, lo + l, comp, iset) &
+                                          + g*densities(jo + j, ko + k, iset)
+                                       if (lsh /= ksh) then
+                                          vj_local(io + i, jo + j, comp, iset) = &
+                                             vj_local(io + i, jo + j, comp, iset) &
+                                             + g*densities(ko + k, lo + l, iset)
+                                          vk_local(io + i, ko + k, comp, iset) = &
+                                             vk_local(io + i, ko + k, comp, iset) &
+                                             + g*densities(jo + j, lo + l, iset)
+                                       end if
+                                    end do
+                                 end do
+                              end do
+                           end do
+                        end do
+                     end do
+
+                     if (gmax == 0.0_dp) cycle
+                     do comp = 1, 3
+                        do l = 1, dl
+                           ml = map(lo + l)
+                           if (ml == 0) cycle
+                           do k = 1, dk
+                              mk = map(ko + k)
+                              if (mk == 0) cycle
+                              do j = 1, dj
+                                 mj = map(jo + j)
+                                 if (mj == 0) cycle
+                                 do i = 1, di
+                                    mi = map(io + i)
+                                    if (mi == 0) cycle
+                                    idx = i + di*(j - 1 + dj*(k - 1 + dk*(l - 1 + dl*(comp - 1))))
+                                    g = buf(idx)
+                                    do ig = 1, n_gamma
+                                       de_local(comp, ia, ig) = de_local(comp, ia, ig) &
+                                                                - 2.0_dp*g*gamma(mi - p_off, mj, mk, ml, ig)
+                                       if (lsh /= ksh) then
+                                          de_local(comp, ia, ig) = de_local(comp, ia, ig) &
+                                                                   - 2.0_dp*g*gamma(mi - p_off, mj, ml, mk, ig)
+                                       end if
+                                    end do
+                                 end do
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+         !$omp end do
+      end do
+
+      !$omp critical
+      vj = vj + vj_local
+      vk = vk + vk_local
+      if (with_gamma) gamma_grads = gamma_grads + de_local(:, :, 1:n_gamma)
+      !$omp end critical
+      deallocate (buf, vj_local, vk_local, de_local)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+
+      allocate (vhfs(nao, nao, 3, n_set))
+      vhfs = -(vj - 0.5_dp*vk)
+
+      deallocate (bounds, bq, bra_bound, dsh, dims, offs, vj, vk)
+   end subroutine two_electron_deriv_many
 
    subroutine two_electron_gradient(mol, density, gradient, error, density_alpha, density_beta, &
                                     exx_fraction, screen_tol, omega, with_coulomb)

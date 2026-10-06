@@ -34,6 +34,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    vibrational_analysis
    analytic_hessians
    excited_states
+   sa_casscf
    geometry_optimization
    conformer_sampling
    fmo
@@ -56,3 +57,4 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    developer_json_output
    developer_method_config
    developer_fragment_solver
+   developer_sa_casscf

@@ -76,7 +76,7 @@ module mqc_czt_soscf
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_ov_hessian, only: ov_hessian_t
-   use mqc_orbital_rotation, only: level_shifted_step
+   use mqc_orbital_rotation, only: rotation_hessian_t, subspace_newton_step
    implicit none
    private
 
@@ -105,17 +105,15 @@ module mqc_czt_soscf
       !! model to ten digits buys nothing -- the model itself is only good to
       !! the trust radius. Tightening it spends Fock builds and saves
       !! iterations, which is the wrong trade for the one measure that matters.
-   real(dp), parameter :: PRECONDITION_FLOOR = 1.0e-6_dp
-      !! Smallest curvature the diagonal preconditioner will divide by. The
-      !! gaps are positive by `build_scf_ov_hessian`'s own check, so this only
-      !! guards a pathologically small one.
-   real(dp), parameter :: LINEAR_DEPENDENCE = 1.0e-8_dp
-      !! How much of an expansion direction has to survive projection out of
-      !! the subspace, as a fraction of its own length, for it to be worth a
-      !! Fock build. Tested after normalising, for the reason `mqc_davidson`'s
-      !! threshold of the same name is: against the raw residual the test
-      !! scales with the residual and the subspace stops growing just when it
-      !! is needed.
+
+   type, extends(rotation_hessian_t) :: scaled_ov_hessian_t
+      !! `ov_hessian_t` in true energy units: `HESSIAN_SCALE` times `(A+B)`
+      type(ov_hessian_t), pointer :: ov => null()
+         !! The caller's operator, viewed rather than owned: nothing here
+         !! allocates or destroys it, so it must outlive this wrapper
+   contains
+      procedure :: apply => scaled_ov_apply
+   end type scaled_ov_hessian_t
 
 contains
 
@@ -230,18 +228,9 @@ contains
                                 products, error, max_subspace)
       !! The trust-region Newton step, from Hessian-vector products alone
       !!
-      !! Builds a Krylov subspace off the preconditioned gradient, projects the
-      !! Hessian and the gradient into it, and hands the small dense problem to
-      !! `level_shifted_step` -- so the level shift, the saddle escape and the
-      !! predicted gain are the CASSCF optimiser's, applied to a projected
-      !! matrix instead of a full one.
-      !!
-      !! The softest diagonal direction is seeded alongside the gradient. Two
-      !! reasons, and the second is the important one: it is where an
-      !! instability lives, so the bound on `lowest` is tight; and at a saddle
-      !! the gradient is zero and the preconditioned-gradient seed is the zero
-      !! vector, leaving nothing to build a subspace from.
-      type(ov_hessian_t), intent(inout) :: hessian
+      !! `mqc_orbital_rotation`'s `subspace_newton_step` on the scaled
+      !! occupied-virtual Hessian, with the step laid out as `kappa`.
+      type(ov_hessian_t), intent(inout), target :: hessian
       real(dp), intent(in) :: gradient(:)
          !! (n_vir*n_occ), in true energy units -- `soscf_gradient`'s
       real(dp), intent(in) :: escape
@@ -260,11 +249,9 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_subspace
 
-      real(dp), allocatable :: basis(:, :), image(:, :), diag(:)
-      real(dp), allocatable :: small(:, :), small_gradient(:), amplitude(:)
-      real(dp), allocatable :: step(:), residual(:), direction(:)
-      real(dp) :: norm, overlap, gradient_norm
-      integer :: n_ov, n_mo, n_occ, n_vir, nmax, nsub, i, j, a, pass
+      type(scaled_ov_hessian_t) :: scaled
+      real(dp), allocatable :: step(:)
+      integer :: n_ov, n_mo, n_occ, n_vir, nmax, i, a
 
       lowest = 0.0_dp
       predicted = 0.0_dp
@@ -287,79 +274,13 @@ contains
 
       nmax = DEFAULT_SOSCF_SUBSPACE
       if (present(max_subspace)) nmax = max_subspace
-      nmax = max(1, min(nmax, n_ov))
 
-      diag = HESSIAN_SCALE*hessian%diagonal()
-      allocate (basis(n_ov, nmax), image(n_ov, nmax))
-      allocate (step(n_ov), residual(n_ov), direction(n_ov))
-      gradient_norm = sqrt(dot_product(gradient, gradient))
-
-      ! ---- the seeds ------------------------------------------------------
-      nsub = 0
-      direction = -gradient/max(diag, PRECONDITION_FLOOR)
-      call add_direction(basis, nsub, direction)
-      direction = 0.0_dp
-      direction(minloc(diag, 1)) = 1.0_dp
-      call add_direction(basis, nsub, direction)
-      if (nsub == 0) then
-         ! No gradient and a rotation space of one direction that vanished
-         ! under projection: nothing to do, and saying so beats an undefined
-         ! step.
-         return
-      end if
-      do i = 1, nsub
-         call apply_scaled(hessian, basis(:, i), image(:, i), products, error)
-         if (error%has_error()) return
-      end do
-
-      ! ---- solve, expand, repeat ------------------------------------------
-      do
-         if (allocated(small)) deallocate (small, small_gradient)
-         allocate (small(nsub, nsub), small_gradient(nsub))
-         do j = 1, nsub
-            do i = 1, nsub
-               small(i, j) = dot_product(basis(:, i), image(:, j))
-            end do
-            small_gradient(j) = dot_product(basis(:, j), gradient)
-         end do
-         ! Symmetric to rounding only; the average is what a symmetric solver
-         ! would read anyway.
-         small = 0.5_dp*(small + transpose(small))
-
-         if (allocated(amplitude)) deallocate (amplitude)
-         call level_shifted_step(small, small_gradient, escape, amplitude, lowest, &
-                                 predicted, error)
-         if (error%has_error()) return
-
-         step = 0.0_dp
-         residual = gradient
-         do i = 1, nsub
-            step = step + amplitude(i)*basis(:, i)
-            residual = residual + amplitude(i)*image(:, i)
-         end do
-
-         if (nsub >= nmax) exit
-         norm = sqrt(dot_product(residual, residual))
-         if (norm <= SUBSPACE_TOLERANCE*max(gradient_norm, tiny(1.0_dp))) exit
-
-         direction = -residual/max(diag, PRECONDITION_FLOOR)
-         norm = sqrt(dot_product(direction, direction))
-         if (norm < tiny(1.0_dp)) exit
-         direction = direction/norm
-         do pass = 1, 2
-            do j = 1, nsub
-               overlap = dot_product(basis(:, j), direction)
-               direction = direction - overlap*basis(:, j)
-            end do
-         end do
-         norm = sqrt(dot_product(direction, direction))
-         if (norm < LINEAR_DEPENDENCE) exit
-
-         nsub = nsub + 1
-         basis(:, nsub) = direction/norm
-         call apply_scaled(hessian, basis(:, nsub), image(:, nsub), products, error)
-         if (error%has_error()) return
-      end do
+      scaled%ov => hessian
+      call subspace_newton_step(scaled, HESSIAN_SCALE*hessian%diagonal(), gradient, escape, &
+                                step, lowest, predicted, products, error, &
+                                max_subspace=nmax, tolerance=SUBSPACE_TOLERANCE)
+      nullify (scaled%ov)
+      if (error%has_error()) return
 
       do i = 1, n_occ
          do a = 1, n_vir
@@ -367,58 +288,25 @@ contains
             kappa(i, n_occ + a) = -step(a + (i - 1)*n_vir)
          end do
       end do
-
-      deallocate (basis, image, step, residual, direction)
-      if (allocated(small)) deallocate (small, small_gradient)
-      if (allocated(amplitude)) deallocate (amplitude)
    end subroutine soscf_newton_step
 
-   subroutine add_direction(basis, nsub, direction)
-      !! Orthonormalise a candidate against the subspace and keep it if anything survives
-      real(dp), intent(inout) :: basis(:, :)
-      integer, intent(inout) :: nsub
-      real(dp), intent(in) :: direction(:)
-
-      real(dp), allocatable :: work(:)
-      real(dp) :: norm, overlap
-      integer :: j, pass
-
-      work = direction
-      norm = sqrt(dot_product(work, work))
-      if (norm < tiny(1.0_dp)) return
-      work = work/norm
-      do pass = 1, 2
-         do j = 1, nsub
-            overlap = dot_product(basis(:, j), work)
-            work = work - overlap*basis(:, j)
-         end do
-      end do
-      norm = sqrt(dot_product(work, work))
-      if (norm < LINEAR_DEPENDENCE) return
-      if (nsub >= size(basis, 2)) return
-      nsub = nsub + 1
-      basis(:, nsub) = work/norm
-   end subroutine add_direction
-
-   subroutine apply_scaled(hessian, x, hx, products, error)
+   subroutine scaled_ov_apply(this, x, hx, error)
       !! `H x` in true energy units: `HESSIAN_SCALE` times `(A+B) x`
-      type(ov_hessian_t), intent(inout) :: hessian
+      class(scaled_ov_hessian_t), intent(inout) :: this
       real(dp), intent(in) :: x(:)
       real(dp), intent(out) :: hx(:)
-      integer, intent(inout) :: products
       type(error_t), intent(inout) :: error
 
       if (error%has_error()) return
-      call hessian%apply(x, hx)
-      products = products + 1
-      if (hessian%error%has_error()) then
-         error = hessian%error
+      call this%ov%apply(x, hx)
+      if (this%ov%error%has_error()) then
+         error = this%ov%error
          call error%add_context("applying the electronic Hessian for the "// &
                                 "second-order SCF step")
          hx = 0.0_dp
          return
       end if
       hx = HESSIAN_SCALE*hx
-   end subroutine apply_scaled
+   end subroutine scaled_ov_apply
 
 end module mqc_czt_soscf

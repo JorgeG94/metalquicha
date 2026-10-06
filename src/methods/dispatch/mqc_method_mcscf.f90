@@ -58,10 +58,12 @@ module mqc_method_mcscf
          !! Number of states for state-averaged CASSCF
       real(dp), allocatable :: state_weights(:)
          !! Weights for state averaging (must sum to 1)
-         !!
-         !! Not reachable from a deck: the optimiser underneath solves for one
-         !! state, so `mqc_json_schema` allows no key that would set these. The
-         !! fields stay because the config type they are copied from has them.
+      integer, allocatable :: gradient_roots(:)
+         !! `keywords.mcscf.gradient_roots`, 1-based. Unallocated means every
+         !! state; only meaningful on a Gradient driver with `n_states > 1`.
+      integer, allocatable :: nac_pairs(:, :)
+         !! `keywords.mcscf.nac_pairs`, shape (2, n_pairs), 1-based, opt-in
+         !! only; only meaningful on a Gradient driver with `n_states > 1`.
 
       ! Convergence settings
       integer :: max_macro_iter = 100
@@ -156,6 +158,16 @@ contains
       end if
       settings%mcscf%max_macro_iter = this%options%max_macro_iter
       settings%mcscf%orbital_convergence = this%options%orbital_tol
+      settings%mcscf%n_states = this%options%n_states
+      if (allocated(this%options%state_weights)) then
+         settings%mcscf%state_weights = this%options%state_weights
+      end if
+      if (allocated(this%options%gradient_roots)) then
+         settings%mcscf%gradient_roots = this%options%gradient_roots
+      end if
+      if (allocated(this%options%nac_pairs)) then
+         settings%mcscf%nac_pairs = this%options%nac_pairs
+      end if
 
       call run_czt_mcscf(settings, fragment, result, want_gradient=want_gradient)
    end subroutine mcscf_run

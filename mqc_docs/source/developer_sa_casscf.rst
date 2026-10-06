@@ -1,0 +1,847 @@
+.. _developer_sa_casscf:
+
+===============================================
+SA-CASSCF Gradients: Conventions and Equations
+===============================================
+
+This page fixes the equations for state-averaged CASSCF energies and
+analytic gradients in the conventions this code already uses, and names the
+existing routine each term reuses and the routines that are new. The
+reference implementation checked against is PySCF 2.14's
+``pyscf/grad/sacasscf.py`` and ``pyscf/mcscf/newton_casscf.py``.
+
+Conventions this code already has
+==================================
+
+One- and two-particle density matrices
+---------------------------------------
+
+``active_space_rdms`` (``src/methods/ci/mqc_rdm.f90``) builds
+
+.. math::
+
+   D_{pq} = \langle \Psi | E_{pq} | \Psi \rangle, \qquad
+   d_{pqrs} = \langle \Psi | E_{pq} E_{rs} - \delta_{qr} E_{ps} | \Psi \rangle
+
+with :math:`E_{pq}` summed over both spins -- **spin-traced**, not spin-orbital
+-- and in **chemist ordering**: :math:`d_{pqrs}` contracts against
+:math:`(pq|rs)`, not the physicist's :math:`\langle pq|rs\rangle`. The module
+docstring states the convention is PySCF's ``make_rdm12``, which is also
+Helgaker's and GAMESS's, so nothing here is a private choice.
+
+There is **no extra factor of 1/2 folded into** :math:`d_{pqrs}` itself; the
+1/2 appears only in the energy contraction. ``rdm_energy`` (same file) rebuilds
+the active-space energy as
+
+.. math::
+
+   E = \sum_{pq} h_{pq} D_{pq} + \frac12 \sum_{pqrs} (pq|rs)\, d_{pqrs}
+
+and is used as a self-check against the CI eigenvalue, which catches exactly
+the two failure modes the module docstring calls out: a transposed index or a
+missing factor of two, either of which still gives a plausible-looking energy.
+
+``run_czt_casci`` (``mqc_czt_casci.f90``) calls ``active_space_rdms`` **once**,
+on ``result%ci_vector`` -- the lowest root only -- regardless of how many roots
+``n_roots`` asked the Davidson to converge. ``davidson_lowest`` returns every
+root's vector in ``davidson_result_t%vectors(n_alpha, n_beta, n_roots)`` and
+every root's energy in ``%values(n_roots)``, both already computed; only the
+1- and 2-RDM of root 1 are ever built from them.  ``casci_result_t%energies``
+carries every root's total energy (core + active), ascending, but
+``casci_result_t%dm1``/``%dm2`` belong to root 1 alone. State averaging needs
+every root's density, so building the others is new work (a loop over
+``result%vectors(:, :, i)`` through ``active_space_rdms``, not a new routine),
+covered under the file-level plan below.
+
+Orbital rotation parameter :math:`\kappa`
+------------------------------------------
+
+Orbitals move as :math:`C \to C \exp(\kappa)` with :math:`\kappa` antisymmetric
+(``mqc_czt_mcscf.f90`` module header). The sign is fixed by finite differences
+in ``test_mqc_mcscf.f90``, not asserted -- both :math:`C\exp(\kappa)` and
+:math:`C\exp(-\kappa)` appear in the literature as "the" parametrization, and
+the two give gradients that are the same expression with opposite sign.  The
+resulting orbital gradient is
+
+.. math::
+
+   g_{pq} = \frac{\partial E}{\partial \kappa_{pq}} = 2\,(F_{qp} - F_{pq})
+
+built by ``orbital_gradient`` from the generalised Fock matrix :math:`F`
+(``mcscf_fock_t%general``, built by ``generalized_fock``). :math:`g_{pq}` is
+antisymmetric by construction, which is what makes it the gradient of an
+antisymmetric parametrization at all.
+
+**Non-redundant blocks.** ``is_redundant`` (same file) marks a rotation
+:math:`(p,q)` redundant when :math:`p` and :math:`q` fall in the same orbital
+class (inactive/active/virtual) -- for a *complete* active space; an
+occupation-restricted (ORMAS) space additionally splits the active-active case
+by subspace, through ``subspace_of``. The three non-redundant blocks for a
+CAS are exactly **inactive-active, inactive-virtual and active-virtual**;
+``rotation_parameters`` enumerates them as a flat `(rows, cols)` list with
+:math:`p > q` only, since :math:`\kappa_{pq} = -\kappa_{qp}` is one variable.
+
+**The rows of** :math:`F` **depend on the orbital's class**:
+
+.. math::
+
+   F_{in} = 2\,(FI_{ni} + FA_{ni}) \quad (n\ \text{inactive}), \qquad
+   F_{tn} = \sum_u D_{tu} FI_{nu} + \sum_{uvw} d_{tuvw}\,(nu|vw) \quad (t\ \text{active}), \qquad
+   F_{an} = 0 \quad (a\ \text{virtual})
+
+with :math:`FI` the inactive (closed-shell) Fock and :math:`FA` the mean field
+of the active density alone, both built by one call each to
+``build_fock_direct`` inside ``generalized_fock``. **Both** :math:`FI` and
+:math:`FA` **and the accumulation over** :math:`D_{tu}`, :math:`d_{tuvw}` are
+**exactly linear in** ``dm1``/``dm2``: every term is one of the density
+matrices multiplying integrals that do not depend on the density. This is
+stated by the module ("nothing here can have a Hessian that disagrees with its
+gradient") but is worth making explicit for state averaging, since it is the
+fact phase 1 leans on (below).
+
+``one_index_fock`` differentiates :math:`F` along one rotation
+:math:`\kappa`: it is *the same construction*, with each coefficient matrix in
+turn replaced by :math:`C\kappa`, so
+
+.. math::
+
+   (H\kappa)_{pq} = 2\,(\tilde F_{qp} - \tilde F_{pq})
+
+with :math:`\tilde F` built by ``one_index_fock`` exactly as ``F`` is built by
+``generalized_fock``. ``orbital_hessian`` reads the full non-redundant Hessian
+out of this by calling ``one_index_fock`` once per parameter (one unit
+:math:`\kappa` per column) and symmetrising. **`one_index_fock` is also
+exactly linear in `dm1`/`dm2`**, for the same reason: the two densities enter
+only as multiplicative weights on integrals or one-index-transformed
+integrals, never multiplied by each other.
+
+``czt_mcscf_gradient``'s two-electron split
+---------------------------------------------
+
+``czt_mcscf_gradient`` (``mqc_czt_mcscf_gradient.f90``) is explicitly a
+**single-state, no-Z-vector** gradient: valid only because a fully optimised
+CASSCF is stationary in both orbitals and CI, so every response term is
+identically zero and what remains is a contraction of differentiated integrals
+against the densities already in hand.
+
+The two-electron term is split by how many active indices it carries, to keep
+the cost at :math:`n_{ao}^4` (once) rather than :math:`n_{ao}^4` per active
+index combination:
+
+.. math::
+
+   E_{2e} = \frac12\, D \cdot (J - K/2)(D) \;+\; \frac12 \sum_{tuvw} \delta d_{tuvw}\,(tu|vw)
+
+with :math:`D = D_{\text{inactive}} + D_{\text{active}}` the **total**
+one-particle density in the AO basis, and
+
+.. math::
+
+   \delta d_{tuvw} = d_{tuvw} - D_{tu} D_{vw} + \tfrac12 D_{tv} D_{uw}
+
+the active two-particle density with its own mean-field part subtracted
+(``cumulant_two_particle_density``). This is an **algebraic identity** true
+for any consistent :math:`(D, d)` pair, not a physicality assumption -- it
+holds equally for a relaxed effective density, which is what phase 4 needs
+(below). The first term goes through the same ``two_electron_deriv`` contraction
+a closed-shell SCF gradient uses; only the second needs the general four-index
+machinery (``active_two_electron_gradient``, ``gamma_block``), built from
+:math:`n_{active}^4` rather than from the basis. At :math:`n_{active}=0`,
+:math:`\delta d` is empty and the whole module reduces to the closed-shell SCF
+gradient -- the check the module's own docstring names.
+
+The Pulay term contracts the overlap derivative against the **generalised
+Fock** :math:`\tfrac12(F + F^T)` (called ``weighted`` in the code), which for a
+converged, single-state MCSCF is the energy-weighted density.  For SA-CASSCF
+this is exactly the piece that changes: which :math:`(D, d)` (and hence which
+:math:`F`) feeds this contraction is what phase 4's relaxed density answers.
+
+``n_roots`` in CASCI
+---------------------
+
+``run_czt_casci``'s ``n_roots`` argument already asks ``davidson_lowest`` for
+that many roots and returns every one of their energies and vectors (see
+above); nothing about **converging several roots** is new. What is new is
+*acting* on more than the first: no state averaging, no transition density,
+and no Z-vector exist anywhere in this tree yet. ``run_czt_casscf``
+(``mqc_czt_mcscf.f90``) always calls ``solve_ci`` with an implicit
+``n_roots = 1`` (the optional argument is never passed), and takes the ground
+state's density matrices alone into ``generalized_fock``/``orbital_gradient``/
+``orbital_hessian`` each macro-iteration.
+
+Spin
+----
+
+The CI (``mqc_ci.f90``, after PySCF's ``direct_spin1``) works in the
+determinant basis at fixed :math:`M_S` and imposes no :math:`S`. Its lowest
+roots can be of any spin, and that matters here: for CAS(2,2) at planar
+C2H4/6-31G* the second root is the triplet, and at twisted C2H4 the triplet is
+the lowest root. A singlet state average needs the CI restricted to singlets.
+When :math:`n_\alpha = n_\beta`, a CI vector :math:`c(i_\alpha, i_\beta)`
+of even :math:`S` is symmetric under :math:`i_\alpha \leftrightarrow
+i_\beta` and one of odd :math:`S` is antisymmetric. Symmetrising every
+Davidson guess and correction vector therefore excludes the triplets exactly,
+which is what PySCF's ``direct_spin0`` does. A spin penalty
+(``fix_spin_``) is the approximate alternative; on twisted C2H4 it stalled
+PySCF's orbital gradient near :math:`10^{-6}`. The CI Lagrange multipliers
+:math:`\bar c_{I,J}` live in the same symmetric subspace, so the phase 3
+projector also symmetrises. Every root's :math:`\langle S^2\rangle` is
+reported so that a spin mix-up is visible.
+
+The SA-CASSCF Lagrangian and Z-vector, in these conventions
+=============================================================
+
+Orbitals are shared across states, so write the active-space integrals and
+generalised-Fock machinery as functions of :math:`\kappa` alone (at fixed
+reference orbitals :math:`C`), and each state's CI vector :math:`c_J` as an
+eigenvector of the active-space Hamiltonian :math:`H(\kappa)` built at those
+orbitals. Weights :math:`w_J \ge 0`, :math:`\sum_J w_J = 1`, are fixed (not
+optimised).
+
+.. math::
+
+   E_J(\kappa, c_J) = \langle c_J | H(\kappa) | c_J \rangle, \qquad
+   E_{SA}(\kappa, \{c_J\}) = \sum_J w_J\, E_J(\kappa, c_J)
+
+**The key simplification this code gets for free.** Because
+``generalized_fock``/``orbital_gradient``/``orbital_hessian`` are exactly
+linear in :math:`(D, d)`,
+
+.. math::
+
+   \frac{\partial E_{SA}}{\partial \kappa}
+   = \sum_J w_J \frac{\partial E_J}{\partial \kappa}
+   = g\big(D_{SA}, d_{SA}\big), \qquad
+   D_{SA} = \sum_J w_J D_J,\quad d_{SA} = \sum_J w_J d_J
+
+i.e. the **SA orbital gradient and orbital Hessian are `orbital_gradient` and
+`orbital_hessian` called once, at the weighted-summed densities** -- not a sum
+of :math:`N` separate gradients/Hessians. This is what makes phase 1 (the SA
+*energy*) a small change: build :math:`D_{SA}, d_{SA}` from every root's
+``active_space_rdms`` and hand them to the orbital optimiser exactly as today's
+single-root :math:`D, d` are.
+
+The Lagrangian for one root's energy :math:`E_I`
+--------------------------------------------------
+
+The orbitals are stationary for :math:`E_{SA}`, not for :math:`E_I` alone, so
+:math:`E_I` needs a Lagrangian carrying that constraint and the CI
+eigenvalue constraints for every state:
+
+.. math::
+
+   L_I = E_I(\kappa, c_I)
+       + \bar\kappa_I \cdot \left.\frac{\partial E_{SA}}{\partial \kappa}\right|_{\kappa=0}
+       + \sum_J w_J\, \bar c_{I,J} \cdot \big(H(\kappa{=}0) - E_J\big) c_J
+
+:math:`\bar\kappa_I` (an antisymmetric matrix, one non-redundant parameter per
+entry of ``rotation_parameters``) and :math:`\bar c_{I,J}` (one vector per
+state :math:`J`, same shape as :math:`c_J`) are Lagrange multipliers,
+determined by making :math:`L_I` stationary in :math:`\kappa` and every
+:math:`c_J` at the converged point. That stationarity condition is the
+**Z-vector / CP-MCSCF equation**:
+
+.. math::
+
+   H_{SA}\,\begin{bmatrix}\bar\kappa_I \\ \{\bar c_{I,J}\}\end{bmatrix}
+   = -\begin{bmatrix}\partial E_I/\partial\kappa \\ \{\partial E_I/\partial c_J\}\end{bmatrix}
+
+:math:`H_{SA}` is the Hessian of :math:`E_{SA}` (not of :math:`E_I`) in the
+joint orbital+CI space, and **does not depend on which root's RHS is being
+solved** -- the fusion argument the plan is built on.
+
+The right-hand side, precisely
+--------------------------------
+
+**CI part is zero.** :math:`c_I` is an exact eigenvector of :math:`H(\kappa=0)`
+(the Davidson converged it to whatever tolerance ``run_czt_casci`` was given),
+so :math:`\partial E_I/\partial c_J` vanishes identically for :math:`J = I`
+(the usual variational-eigenvector argument) and is not defined/needed for
+:math:`J \ne I` (:math:`E_I` does not depend on another state's coefficients
+at all). PySCF's own code computes this generically through
+``newton_casscf.gen_g_hop`` on a *single-state* CASCI object pinned to
+:math:`c_I`, and that CI block is zero to numerical precision for a converged
+CI -- confirmed by reading ``get_wfn_response`` in ``sacasscf.py``, which
+builds the joint gradient of a plain (non-averaged) CASSCF at
+:math:`(\kappa=0, c_I)` and only ever *inserts* it at state :math:`I`'s slot,
+leaving every other state's CI RHS at zero. So in this code's language:
+
+.. math::
+
+   \text{RHS}_{\text{orb}} = \left.\frac{\partial E_I}{\partial\kappa}\right|_{c_I}
+   = \texttt{orbital\_gradient}\big(\texttt{generalized\_fock}(D_I, d_I)\big), \qquad
+   \text{RHS}_{\text{CI},J} = 0 \ \ \forall J
+
+i.e. the RHS orbital block is **exactly today's single-root orbital gradient**,
+evaluated at root :math:`I`'s own densities but at the shared (SA-optimised)
+orbitals -- one call to routines that already exist, no new physics. Only
+:math:`H_{SA}` (left-hand side) is new.
+
+The SA Hessian blocks
+-----------------------
+
+**Orbital-orbital.** By the same linearity argument as the gradient, this
+block is ``orbital_hessian`` called once at :math:`(D_{SA}, d_{SA})` --
+weighted SA densities, not a sum of per-root Hessians.
+
+**CI-CI, block** :math:`J`. Acting on a trial vector :math:`\bar c_J`, this
+block is :math:`w_J \cdot 2(H(\kappa{=}0) - E_J)\,\bar c_J` -- the ordinary CI
+Hamiltonian shifted by that state's own energy, scaled by its weight, and
+**block-diagonal across states before projection** (a state's CI space only
+talks to itself through this block; the Hessian couples states only through
+the orbital-CI block below and through the redundancy projector).
+
+**Orbital-CI coupling (into the orbital output, from** :math:`x_J`\ **).** The
+mixed second derivative :math:`\partial^2 E_{SA}/\partial\kappa\,\partial c_J`,
+weighted by :math:`w_J` and summed over :math:`J`. **Not**
+``one_index_fock`` -- that routine differentiates a Fock built at a *fixed*
+density along an *additional* rotation :math:`\kappa`, which is the
+orbital-orbital block's question, not this one. This block instead
+differentiates the *density* at fixed :math:`\kappa = 0`: since
+:math:`D_{SA}(\{c_J\}) = \sum_J w_J D_J(c_J)` and
+:math:`\partial D_J/\partial x_J` is exactly the symmetrised transition
+density between :math:`c_J` and the trial vector :math:`x_J` (``transition_rdms``,
+phase 2), the same linearity of ``generalized_fock``/``orbital_gradient`` in
+:math:`(D, d)` used for the SA gradient applies again: this block is
+``orbital_gradient`` of ``generalized_fock`` fed that transition density,
+weighted by :math:`w_J`, summed over :math:`J` -- no differentiation along
+:math:`\kappa` anywhere in it. (``mqc_czt_sa_hessian.f90``'s
+``cheap_generalized_fock`` reuses ``a_block``/``b_block``/the inactive Fock
+instead of a fresh AO pass; see its ``delta_only`` flag below.)
+
+**CI-orbital (into the CI output, from** :math:`\kappa`\ **).** The same mixed
+derivative read the other way: :math:`2 w_J\,(H[\kappa] - \langle
+c_J|H[\kappa]|c_J\rangle)\,c_J`, with :math:`H[\kappa]` the active-space
+Hamiltonian's *own* one-index transform along :math:`\kappa` -- ``h_eff`` and
+``eri_act`` (``active_space_integrals``) differentiated, not the generalised
+Fock. Built by ``one_index_active_hamiltonian``, folded with the existing
+``absorb_one_electron`` (linear, so folding the derivative is the derivative
+of the folded tensor) and applied with the existing ``sigma_vector``.
+
+**A trap worth naming, because it cost a wrong first version of this block.**
+``h_eff`` (`active_space_integrals`) is *already* the active-active block of
+the *whole* inactive Fock, :math:`C_{\text{active}}^T\,(h_{ao} +
+J(D_{\text{inactive}}) - K(D_{\text{inactive}})/2)\,C_{\text{active}}` -- not
+a bare one-electron integral with the mean field added on top as a second,
+separate term. Differentiating a *separate* ``C^T h_{ao} C`` commutator in
+addition to the inactive Fock's own one-index transform double-counts the
+:math:`h_{ao}` piece, which is already inside that Fock's commutator (`h_ao`
+does not depend on the inactive density, so it needs no potential term of its
+own, but its re-expression in rotating orbitals is not a separate event from
+the whole Fock's). The finite-difference gate this document specifies is
+exactly what catches it -- ``test_one_index_active_hamiltonian`` in
+``test/test_mqc_sa_hessian.f90`` checks ``dh_eff``/``deri_act`` against a
+central difference of ``active_space_integrals`` directly, isolated from the
+folding/sigma/projection around it.
+
+**A second trap, in the orbital-CI direction above.** ``generalized_fock`` is
+*affine*, not linear, in :math:`(D, d)`: its inactive row is :math:`2(F_I +
+F_A(D))`, and :math:`F_I` does not depend on the density fed in at all, so it
+survives even at :math:`D = d = 0`. That is exactly right for a genuine
+state's density (which is what makes the SA-averaging identity work: weights
+summing to one preserve the shared :math:`F_I` term correctly), and exactly
+wrong for a *transition* density, which is a perturbation rather than a state
+and whose own derivative through the orbital-independent :math:`F_I` constant
+is zero. ``cheap_generalized_fock``'s ``delta_only`` flag drops that constant
+for exactly this call; caught by the orbital-orbital gate (below) reporting a
+spurious non-zero orbital output at zero CI input.
+
+**Redundancy projection.** With equal weights, :math:`E_{SA}` is the trace of
+:math:`H` over :math:`\mathrm{span}\{c_1,\dots,c_N\}`, so rotations that mix
+the averaged states into each other leave it unchanged: they are redundant and
+are projected out. With unequal weights they are not redundant. A rotation by
+:math:`\theta` between eigenstates :math:`J` and :math:`K` changes
+:math:`E_{SA}` by :math:`(w_J - w_K)(E_K - E_J)\,\theta^2`, so the direction has
+non-zero curvature and has to stay in the Hessian. PySCF's gradient code does
+not handle that case: ``Gradients.__init__`` in ``pyscf/grad/sacasscf.py``
+raises ``NotImplementedError`` when :math:`\max(w) - \min(w) > 10^{-8}`. The
+gradient here is likewise **equal weights only**; the energy (phase 1) takes
+any weights.
+
+The projector PySCF actually applies (``project_Aop`` in the same file) removes,
+from the CI part of a Hessian-vector product for state :math:`i`, its overlap
+with **every** :math:`c_j` in the SA space sharing its spin sector, not only
+:math:`c_i`:
+
+.. math::
+
+   (Ax_{ci})_i \;\leftarrow\; (Ax_{ci})_i - \sum_{j:\ \text{spin}(j)=\text{spin}(i)} \langle (Ax_{ci})_i, c_j\rangle\, c_j
+
+i.e. **project onto the complement of** :math:`\mathrm{span}\{c_1,\dots,c_N\}`
+**restricted to the matching spin/spatial-symmetry sector**, applied
+separately to every :math:`\bar c_J`'s residual during the iterative solve.
+This is the precise form to implement in phase 3; "orthogonal to :math:`c_J`
+alone" (only the same-index state) is not what PySCF does and would leave a
+near-null direction in the Hessian whenever two averaged states are close in
+energy.
+
+Relaxed density assembly for :math:`dE_I/dR`
+================================================
+
+PySCF's own total gradient (``lagrange.Gradients.kernel``) is literally a sum
+of two pieces, computed by two independent calls:
+
+.. math::
+
+   \frac{dE_I}{dR} = \underbrace{\frac{dE_I}{dR}\bigg|_{\kappa,\,c_I\ \text{fixed}}}_{\texttt{get\_ham\_response}}
+   \;+\; \underbrace{\bar\kappa_I \cdot \frac{d}{dR}\frac{\partial E_{SA}}{\partial\kappa}
+   + \sum_J w_J\, \bar c_{I,J}\cdot\frac{d}{dR}(H-E_J)c_J}_{\texttt{get\_LdotJnuc}}
+
+The first term is **exactly today's `czt_mcscf_gradient`, called on root**
+:math:`I`\ **'s own** :math:`(D_I, d_I)` at the shared SA orbitals -- no new
+code. The second term ("the Lagrange response") is what is new, and it
+decomposes into an orbital-response piece and a CI-response piece that both
+land on the *same* contraction machinery ``czt_mcscf_gradient`` already has,
+fed a different effective density:
+
+Orbital-response piece (from :math:`\bar\kappa_I`)
+-----------------------------------------------------
+
+Implemented as ``orbital_response_gradient`` (``mqc_czt_sa_gradient.f90``).
+:math:`\bar\kappa_I\cdot\partial E_{SA}/\partial\kappa` at :math:`\kappa=0` is
+:math:`\mathrm{Tr}(\bar\kappa_I, F_{SA}(C))` for the explicit AO-integral
+formula ``generalized_fock`` builds, at fixed :math:`(D_{SA}, d_{SA})`. Its
+*total* :math:`R`-derivative -- through both the explicit AO-integral
+dependence and the orbital connection :math:`C(R)` -- splits into three
+pieces, all built inside that one routine:
+
+- the fixed-:math:`C` one-particle piece: the one-index transform of
+  :math:`D_{SA}` along :math:`\bar\kappa_I` (:math:`d_{\text{core}}^{\bar\kappa}`,
+  :math:`d_{\text{active}}^{\bar\kappa}` -- the same construction
+  ``one_index_fock`` uses internally), contracted against the reference
+  densities' *derivative* integrals via ``response_separable_gradient``;
+- the fixed-:math:`C` active two-body piece: a product rule over which of the
+  four AO-transform legs of ``active_two_electron_gradient`` carries
+  :math:`C_{\text{active}}\bar\kappa_I` instead of :math:`C_{\text{active}}`,
+  contracted against the **full** active two-particle density :math:`d_{SA}`
+  -- not the cumulant, since ``generalized_fock``'s active-row block never
+  separates a classical mean-field piece from a cumulant correction for the
+  active-active interaction the way the stationary *energy* does;
+- the overlap/connection piece: :math:`-S^{(1)}\cdot\mathrm{sym}(W)`, with
+  :math:`W` the derivative of :math:`\bar\kappa_I\cdot\partial E_{SA}/\partial\kappa`
+  wrt a *general* (non-antisymmetric) orbital change :math:`C\to C(1+A)`,
+  built from ``one_index_fock`` and a commutator with :math:`F_{SA}`
+  (derived via Clairaut's theorem in the routine's own comment).
+
+(PySCF's ``Lorb_dot_dgorb_dx`` builds the analogous quantities, calling them
+``dm1L``/the implicit two-particle piece from ``Lorb`` -- the code's
+:math:`\bar\kappa_I`; its ``dme0`` is this section's :math:`W`.)
+
+CI-response piece (from :math:`\bar c_{I,J}`)
+------------------------------------------------
+
+Implemented as ``ci_response_gradient``. The symmetrised **transition**
+density between the Lagrange multiplier and the state it is attached to,
+summed over the SA space:
+
+.. math::
+
+   \tilde D^{ci} = \sum_J w_J\, \big(\langle \bar c_{I,J} | E_{pq} | c_J\rangle + \langle c_J | E_{pq} | \bar c_{I,J}\rangle\big), \qquad
+   \tilde d^{ci} \text{ likewise from the transition 2-RDM}
+
+matching PySCF's ``Lci_dot_dgci_dx``, which forms ``trans_rdm12(Lci, ci)``
+symmetrised, via ``transition_rdms`` (bra :math:`\ne` ket). Because there is
+no orbital rotation in this piece at all, its split is the same shape as the
+orbital-response piece minus the active-two-body factor-of-product-rule
+business: a fixed-:math:`C` piece (``response_separable_gradient`` plus a
+single, undoubled ``active_two_electron_gradient`` call against
+:math:`\tilde d^{ci}` directly, again the full density, not a cumulant) and
+an overlap piece built from ``cheap_generalized_fock`` on
+:math:`(\tilde D^{ci}, \tilde d^{ci})` in place of ``one_index_fock``.
+The multiplier vectors are projected off every averaged state first. The
+Z-vector solution can carry components along them: they are null directions
+of the projected Hessian, and their multipliers are zero for non-degenerate
+states. A reference that leaves them in picks up
+:math:`d\langle c_K|H|c_J\rangle/dR`, which is not part of the gradient.
+
+Why every piece needs its own overlap term
+-----------------------------------------------
+
+``czt_mcscf_gradient``'s own overlap (Pulay) term is the derivative of the
+orthonormality connection :math:`C(R) = C_0(C_0^T S(R) C_0)^{-1/2}` that keeps
+a fixed numerical :math:`C_0` orthonormal as :math:`R` moves -- valid for
+*any* quantity built from :math:`C(R)`, stationary or not, not only a
+stationary energy. Both Lagrange terms above depend on :math:`C(R)` the same
+way the root energy does, so each needs its own overlap term, built from
+that term's own generalised-Fock-like object rather than the base term's
+:math:`F`. A finite-difference check of a response piece has to use the
+same connection. One that holds :math:`C(R) = C_0` fixed while the atoms move
+agrees with the piece minus its overlap term, so it hides a missing overlap
+term instead of catching it.
+
+Checks
+========
+
+- :math:`n_{states}=1` must give :math:`\bar\kappa_I = 0` and every
+  :math:`\bar c_{I,J}=0` **exactly**: with one state the RHS orbital block is
+  the only nonzero piece of the RHS, and it already equals
+  :math:`\partial E_{SA}/\partial\kappa` (since :math:`E_{SA}=E_1`), so the
+  Z-vector equation reads :math:`H_{SA}\,\bar\kappa_I = -\partial
+  E_{SA}/\partial\kappa`, which is solved at :math:`\bar\kappa_I=0` because a
+  converged CASSCF has :math:`\partial E_{SA}/\partial\kappa = 0` already. The
+  relaxed density then collapses to :math:`D_1, d_1` and phase 4 must
+  reproduce ``czt_mcscf_gradient`` **bit for bit** on this path.
+- :math:`\sum_I w_I\, dE_I/dR = dE_{SA}/dR`, and the right-hand side needs no
+  response at all (:math:`E_{SA}` is stationary in both :math:`\kappa` and
+  every :math:`c_J` by construction) -- a pure sanity identity with no
+  tolerance-fitting escape hatch.
+
+Reference systems
+-----------------
+
+``tools/sa_casscf/pyscf_ref.py`` produces the PySCF numbers.
+
+- ``c2h4_twisted.xyz`` is twisted by 90 degrees **and** has its second CH2
+  group pyramidalised. At the unpyramidalised D2d geometry, SA-2-CAS(2,2)
+  breaks the symmetry: the zwitterionic S1 puts its charge on one carbon, so
+  there are two mirror-image solutions with equal energies and gradients that
+  swap C1 and C2. An implementation can converge to either one, so a correct
+  gradient can fail a comparison. Pyramidalising one end leaves one lowest
+  solution.
+- PySCF's SA-CASSCF orbital gradient stalls near :math:`10^{-7}` even with the
+  Newton solver. A root energy is not stationary in the orbitals, so that
+  residual leaves about :math:`10^{-6}` Hartree/Bohr of scatter in a central
+  difference with :math:`h = 10^{-3}`. PySCF's analytic gradient is the
+  sharper reference, and finite differences of this code's own energies,
+  which converge further, arbitrate below :math:`10^{-6}`.
+
+The fused-kernel data flow
+=============================
+
+What was built, in the order a Gradient run reaches it. The timings are
+PSB3 SA-2-CAS(6,6)/6-31G*, two roots, 4 threads, from the VTune profile that
+drove each change.
+
+**One MO integral pass per macro-iteration.** ``mo_integral_blocks`` evaluates
+the packed AO integrals once and transforms two blocks: ``a_block``
+:math:`(pq|rs)` with :math:`q, s` occupied, and ``b_block`` with :math:`r, s`
+occupied. ``fock_from_blocks`` reads the inactive and active Fock matrices out
+of them over every orbital pair (:math:`F^I = h + \sum_i 2(pq|ii) - (pi|qi)`,
+and :math:`F^A` likewise over the active density), so no direct AO Fock build
+is needed, and :math:`(nu|vw)` is a slice of ``a_block``.
+``orbital_hessian_from_blocks`` and ``build_sa_hessian`` take the same blocks.
+
+**Hessian-vector products as matrix products.** ``one_index_fock_many`` and
+``transformed_potential_many`` apply the orbital Hessian to a stack of
+rotations. The Coulomb and both exchange contractions are GEMMs over the stack,
+with integral slices passed to ``pic_dgemm_x`` as an element and a leading
+dimension, so nothing is copied. The kernel threads over row blocks; called from
+the explicit Hessian's own parallel loop over column blocks, it runs on one
+thread. This took a macro-iteration from 213 s to 10.9 s.
+
+**The Newton step.** Up to ``ITERATIVE_HESSIAN_ABOVE`` (800) rotations the
+Hessian is built and diagonalised with ``pic_syevd``. Above that,
+``iterative_newton_step`` hands ``orbital_hessian_operator_t`` to
+``mqc_orbital_rotation``'s ``subspace_newton_step``, the Krylov solver the
+second-order SCF shares, with ``approximate_hessian_diagonal`` as the
+preconditioner. Both paths end in ``level_shifted_step``. PSB3 converges in the
+same 14 iterations either way, 101 s explicit against 35 s iterative.
+
+**The gradient.** ``czt_sa_casscf_gradients`` builds one ``sa_hessian_t`` and
+solves every root's Z-vector equation in one block PCG (2.0 s). Each root's
+right-hand side and base-term Fock come from ``cheap_generalized_fock`` on the
+held blocks. The separable derivative terms of every root and piece go through
+one ``two_electron_deriv_many`` call over the union of their densities (4.5 s,
+integral-bound). Each root's active two-body Gamma (base cumulant, orbital
+response, CI response) is summed per root and contracted in one
+``active_two_electron_gradient_many`` sweep. That Gamma is built only over the
+AOs where some leg has amplitude above 1e-12 of the largest, which for a planar
+pi system is the pi-type AOs alone (0.3 s, from 17.5 s).
+
+File-level plan, phase by phase
+==================================
+
+Phase 1 -- SA-CASSCF energy (this branch, after this document)
+-----------------------------------------------------------------
+
+**Confirmed exactly as the plan states**: ``mqc_json_schema.f90``'s
+``mcscf_keys()`` allow-lists neither ``n_states`` nor a weights key, and its
+own docstring says why -- "`mcscf_config_t` carries fields for state averaging
+... and none of that is implemented." The fields already exist, at every layer
+that is *not* the JSON path:
+
+- ``mcscf_config_t`` in ``src/methods/dispatch/mqc_method_config.f90`` already
+  has ``n_states`` (default 1) and ``state_weights`` (unallocated).
+- ``mcscf_options_t`` in ``src/methods/dispatch/mqc_method_mcscf.f90`` already
+  has the same two fields, with a comment stating plainly they are "not
+  reachable from a deck."
+- ``mqc_method_factory.F90``'s ``configure_mcscf`` already copies
+  ``config%mcscf%n_states``/``state_weights`` into ``m%options``.
+
+**What is actually missing**, traced end to end:
+
+1. The **flat** ``mqc_config_t`` in ``src/io/mqc_config_types.f90`` (what the
+   JSON reader fills in directly) has no ``mcscf_n_states``/
+   ``mcscf_state_weights`` fields at all -- add them, defaulting to ``1`` and
+   unallocated, next to the other ``mcscf_*`` fields.
+2. ``mcscf_keys()`` in ``mqc_json_schema.f90`` must allow ``"n_states"`` and a
+   weights key (``"weights"``, an array) -- and its docstring's justification
+   for refusing them needs to be replaced, not just its allow-list.
+3. ``mqc_json_config_reader.f90`` needs an ``optional_int`` for
+   ``keywords.mcscf.n_states`` and a new array reader for
+   ``keywords.mcscf.weights`` (there is no existing ``optional_real_array``
+   helper for a top-level array at time of writing; check
+   ``read_ormas_partition`` in the same file for the pattern a JSON array of
+   numbers is read with, since ORMAS's ``subspaces`` is the nearest existing
+   example of an array key, even though its elements are integers).
+4. ``mqc_config_adapter.f90`` needs to copy the two new flat fields into
+   ``driver_config%method_config%mcscf%n_states``/``%state_weights`` --
+   currently **not copied at all**, which is why ``config%mcscf%n_states``
+   always reads back its default of 1 regardless of what a deck might someday
+   say.
+5. ``src/methods/dispatch/mqc_method_mcscf.f90``'s ``mcscf_run`` builds
+   ``settings%mcscf`` (a ``cuest_scf_settings_t``'s ``mcscf_config_t``,
+   ``mqc_cuest_iface.f90``) field by field from ``this%options``, and **does
+   not copy** ``n_states``/``state_weights`` into it -- add that copy.
+6. ``run_czt_mcscf`` in ``backends/cenzontle/mqc_czt_bridge.f90`` must refuse
+   ``settings%mcscf%n_states > 1`` combined with
+   ``allocated(settings%mcscf%ormas_subspaces)`` by name (SA + ORMAS is out of
+   scope; there is no transition-density machinery for a restricted space and
+   no reason to build it before the CAS case works), following the existing
+   refusal style in that routine (``result%error%set(ERROR_VALIDATION, ...)``,
+   ``result%has_error = .true.``, early ``return`` -- see the PCM/charges/
+   bond-order refusals a few lines above the CASSCF dispatch, or
+   ``mcscf_gradient_into``'s CASCI-gradient refusal).
+7. **Singlet selection** (see Spin, above): when the target multiplicity is 1
+   and :math:`n_\alpha = n_\beta`, the Davidson symmetrises its guess and
+   correction vectors under alpha/beta transposition, behind an option so
+   that single-state CASSCF and CASCI results do not move. Every root's
+   :math:`\langle S^2\rangle` goes to the output.
+8. ``run_czt_casscf`` (``mqc_czt_mcscf.f90``) needs new optional
+   ``n_states``/``weights`` arguments. Inside the macro loop, replace
+   ``call solve_ci(..., ci, ...)`` (implicit one root) with a request for
+   ``n_states`` roots, then build :math:`D_{SA}, d_{SA}` as
+   :math:`\sum_J w_J D_J, \sum_J w_J d_J` by calling ``active_space_rdms`` once
+   per root on ``ci%vectors(:, :, J)`` (the restricted-space ORMAS path is
+   refused before this point, so no equivalent change is needed in
+   ``ormas_density_matrices`` for phase 1). Feed :math:`(D_{SA}, d_{SA})`
+   into ``generalized_fock``/``orbital_gradient``/``orbital_hessian`` exactly
+   where ``dm1``/``dm2`` are used today -- this is the linearity payoff above:
+   no change to any of those three routines. ``casscf_result_t`` needs an
+   ``energies(n_states)`` field (mirroring ``casci_result_t``) so every root's
+   energy reaches the bridge; ``%dm1``/``%dm2`` should probably become the SA
+   densities (what the orbital optimiser actually used), with a note that a
+   per-root density is not carried here yet (phase 4 territory).
+9. JSON output: every root's energy plus :math:`E_{SA}`, following the
+   ``excitation_energies``-style array pattern already in
+   ``mqc_json_output_types.f90``/``mqc_json_writer.f90`` for excited states.
+
+Phase 2 -- transition RDMs
+------------------------------
+
+New routine beside ``active_space_rdms`` in ``mqc_rdm.f90`` (proposed:
+``transition_space_rdms(bra, ket, alpha, beta, tdm1, tdm2, error)``), same
+spin-traced, chemist-ordered convention, ``bra /= ket`` in general. Reuses the
+same ``apply_excitations``/``excitations_block`` machinery
+``active_space_rdms`` already calls, contracting the bra's excited vectors
+against the ket's rather than a vector against itself. Gate: ``bra = ket``
+reproduces ``active_space_rdms`` bit for bit; orthogonal states give trace
+zero; compare against PySCF's ``trans_rdm12``.
+
+Phase 3 -- matrix-free SA Hessian-vector product [done]
+----------------------------------------------------------
+
+``mqc_czt_sa_hessian.f90``, building the HVP described above. A joint flat
+parameter vector ``[kappa (n_rot) ; x_1 (n_det) ; ... ; x_N (n_det)]``, one
+``sa_hessian_t`` built once (``build_sa_hessian``) off a converged SA-CASSCF
+result -- ``a_block``/``b_block``, the SA generalised Fock, the folded active
+Hamiltonian and the CI diagonal, all reused rather than rebuilt per
+application. Orbital-orbital via ``one_index_fock`` at the SA densities
+(reused, unchanged); CI-CI via the existing ``sigma_vector``/
+``absorb_one_electron`` machinery; orbital-CI **not** via ``one_index_fock``
+as first planned but via ``generalized_fock``/``orbital_gradient`` fed a
+symmetrised transition density (see the corrected "Orbital-CI coupling"
+section above); CI-orbital via a new ``one_index_active_hamiltonian``,
+differentiating ``h_eff``/``eri_act`` themselves along :math:`\kappa`. The
+redundancy projector is PySCF's ``project_Aop``, applied to both the input and
+the output of every CI block, plus a plain
+:math:`v \to (v + v^T)/2` in place of ``symmetrize_singlet_vector`` (the same
+identity for a square array, so no export from ``mqc_davidson`` was needed
+after all).
+
+Two bugs were found only by the finite-difference gate, both recorded above
+where they belong (the double-counted bare integral, and the affine-vs-linear
+``generalized_fock`` trap) -- the reason this document calls the gate
+load-bearing rather than a formality.
+
+**Gates, on LiH/STO-3G SA-2-CAS(2,2), gradient_tol** :math:`10^{-10}`:
+orbital-orbital block vs ``orbital_hessian`` at the SA densities, and again at
+:math:`n_{states}=1`, to :math:`10^{-10}` relative, on a random (not unit)
+rotation; the full HVP symmetric to :math:`10^{-10}`; the explicit
+:math:`19\times 19` Hessian's null space exactly
+:math:`n_{states}(n_{states} + n_a(n_a-1)/2)` near-zero eigenvalues (state
+mixing, **plus** the antisymmetric-CI directions this parametrisation's own
+singlet symmetrisation excludes by construction -- not :math:`n_{states}^2`
+alone, which undercounts by the antisymmetric term whenever the active space
+has more than one determinant per spin) and every other eigenvalue positive;
+the full HVP vs central difference (:math:`h=10^{-4}`) of ``sa_gradient``,
+orbital-only/CI-only/mixed directions, :math:`3\times 10^{-10}` to
+:math:`3\times 10^{-8}` relative -- **the finite-difference side must itself be
+projected** onto the complement of every reference state before comparing:
+PySCF's ``project_Aop`` gauge is a convention the raw ``sa_gradient`` does not
+itself impose, so a component of the true derivative along another state is
+real but gauge-dependent, and comparing an un-gauge-fixed finite difference
+against the gauge-fixed analytic HVP is comparing two different (if both
+individually correct) objects.
+
+Cost of the new CI-orbital block, per state per :math:`\kappa` vector: no
+fresh AO integral pass at all -- :math:`O(n_{active}^4\,n_{mo})` to build
+``dh_eff``/``deri_act`` from the already-held ``a_block``/``b_block`` (a strict
+subset of what one ``one_index_fock`` call already costs, since the outer
+index is restricted from every MO to the active range alone), plus one
+ordinary CI sigma build to apply the folded result. The orbital-CI block costs
+one ``transition_rdms`` pair and one ``cheap_generalized_fock``/
+``orbital_gradient`` pair per state, all off ``a_block``/``b_block`` rather
+than a fresh Fock build.
+
+Phase 4 -- single-root gradient via Z-vector
+------------------------------------------------
+
+New routine (proposed ``czt_sa_casscf_gradient`` beside
+``czt_mcscf_gradient`` in a new ``mqc_czt_mcscf_gradient`` sibling or the same
+file): one PCG solve of :math:`H_{SA}\,x = -\text{RHS}_I` (one RHS), assembling
+the relaxed :math:`(D_I, d_I)` per the section above, and calling a
+generalised ``czt_mcscf_gradient``-shaped contraction on it. Gate: vs PySCF
+per root and vs finite differences; :math:`n_{states}=1` bit-identical to
+``czt_mcscf_gradient``; the weighted-sum identity; C2H4 planar and twisted.
+
+Phase 5 -- fused multi-root
+-------------------------------
+
+Block PCG (all :math:`N` RHS at once, reusing phase 3's HVP applied to a block
+of trial vectors) and one derivative-integral pass for every root; see "The
+fused-kernel data flow" above for what that became.
+``keywords.mcscf.gradient_roots`` (``"all"`` default under SA, or an explicit
+list) added the same way as the phase 1 keys. Gate: per-root agreement with
+phase 4 to :math:`\le 10^{-10}`; repeated timings, :math:`N=1..4` on PSB3,
+reported as cost(N)/cost(1).
+
+Phase 6 -- driver/JSON, docs, example deck
+-----------------------------------------------
+
+All-root gradients and pairwise differences in JSON output; a user-facing doc
+page (``mqc_docs/source/sa_casscf.rst`` or folded into an existing MCSCF page);
+an example deck, C2H4/6-31G*/SA-2-CAS(2,2); a ``run_validation.py`` entry if
+cheap enough for the default manifest.
+
+Nonadiabatic couplings
+======================
+
+Between two states :math:`I \ne J` of a converged SA-CASSCF,
+:math:`d_{IJ} = \langle \Psi_I | \partial/\partial R\, \Psi_J\rangle`, following
+Lengsfield/Yarkony and matching PySCF 2.14's ``pyscf.nac.sacasscf`` (checked
+against it directly, in ``mqc_czt_sa_nac.f90``, ``test/test_mqc_sa_nac.f90``):
+
+.. math::
+
+   (E_J - E_I)\, d_{IJ} = h_{IJ} = \langle I|\partial H/\partial R|J\rangle
+   + \text{orbital response} + \text{CI response} + \text{CSF term}
+
+**The interstate coupling** :math:`h_{IJ}`. Restricted to the active space --
+the core/inactive part of :math:`\langle I|H|J\rangle` multiplies
+:math:`\langle I|J\rangle = 0`, since :math:`I` and :math:`J` are orthogonal
+CI vectors on the same inactive core, and drops out entirely -- this is
+exactly the quantity the CI-response machinery of the gradient project already
+differentiates (``ci_response_gradient``/``ci_response_pieces``), with the
+transition density between a Lagrange multiplier and a reference state
+replaced by the transition density **between the two states themselves**,
+symmetrised as PySCF's ``make_fcasscf_nacs`` does:
+:math:`D^{sym}_{IJ} = \tfrac12(D_{IJ} + D_{JI})`, with
+:math:`D_{IJ}(p,q) = \langle I|E_{pq}|J\rangle` (``transition_rdms``). Because
+a real, symmetric one/two-electron Hamiltonian sandwiched between two real
+vectors gives :math:`\langle I|H|J\rangle = \langle J|H|I\rangle` already,
+this symmetrisation changes no contracted energy, only makes the matrix the
+existing ``cheap_generalized_fock``/``gather_from_general`` machinery needs
+(built for a Hermitian density) well-formed. :math:`h_{base}` is
+``response_separable_gradient`` (no ``d_core_resp``: a transition density
+lives on the active space alone) plus ``active_two_electron_gradient`` on
+:math:`D^{sym}_{IJ}`'s two-particle counterpart directly, not a cumulant.
+
+**Orbital and CI response.** The same Z-vector equation
+:math:`H_{SA}\,[\bar\kappa;\bar x_1..\bar x_N] = -\text{RHS}` the gradient
+uses, with a different right-hand side:
+
+- orbital block: :math:`-\text{gather\_from\_general}(\text{cheap\_generalized\_fock}(D^{sym}_{IJ}, d^{sym}_{IJ}, \text{delta\_only}=\text{true}))`;
+- CI block, state :math:`I`'s slot: :math:`-H_{active}\,c_J`, projected off
+  every averaged state -- :math:`\langle I|H|J\rangle` is *linear* in
+  :math:`c_I`, so its gradient wrt :math:`c_I` is :math:`H_{active}\,c_J`
+  itself, with no factor of 2 (that factor belongs to differentiating a
+  *quadratic* form :math:`\langle c|H|c\rangle` wrt its one shared argument);
+- CI block, state :math:`J`'s slot: :math:`-H_{active}\,c_I`, by the same
+  argument with :math:`I`/:math:`J` swapped;
+- every other state's CI block: zero.
+
+Given :math:`(\bar\kappa, \{\bar x_J\})`, the response pieces are
+``orbital_response_gradient`` and ``ci_response_gradient`` **unchanged**: the
+Lagrangian's constraint terms enforce the same SA stationarity condition
+regardless of what the multipliers were solved for.
+
+**The CSF term.** PySCF's ``nac_csf``: the antisymmetric part of the *raw*
+(unsymmetrised) transition 1-RDM, :math:`D_{IJ}^T - D_{IJ}`, dotted with the
+AO overlap derivative and scaled by :math:`E_J - E_I`. It is what
+``use_etfs`` (electron translation factors) omits; PySCF includes it by
+default, so ``include_csf`` defaults true here to match. **Sign**: PySCF's
+own raw (pre-``kernel``-division) :math:`h_{IJ}` is scaled by
+:math:`e_{bra}-e_{ket} = E_I - E_J`, the opposite of this convention's
+:math:`E_J - E_I` -- every piece of PySCF's :math:`h_{IJ}` inherits that
+flip, and every piece here except the CSF term shares the Z-vector machinery
+and so flips together automatically against it; the CSF term, built
+independently, needed the extra sign written in by hand
+(``mqc_czt_sa_nac.f90``, ``czt_sa_casscf_gradients_nacs``) -- found by the numerical
+gate below disagreeing by almost exactly the CSF term's own size while the
+CSF-free piece already agreed. It is *not* translationally invariant on its
+own (an overlap-derivative contraction between two different orbital sets,
+not a Hellmann-Feynman-type energy derivative): expected, not a bug.
+
+**Fused with the gradients.** A pair is one more Lagrangian column beside
+the roots. ``nac_pair_inputs`` builds its right-hand side and its
+:math:`h_{base}` densities without a derivative integral:
+
+- the symmetrised transition 2-RDM, which goes where a root's cumulant goes
+  in the stacked active :math:`\Gamma`;
+- the transition 1-RDM's AO density and energy-weighted matrix, which take
+  the same form as the CI-response piece and are added to it.
+
+``sa_gradients_on_state`` then solves every root and every pair in one block
+Z-vector solve and one pass of each derivative-integral sweep.
+``czt_sa_casscf_gradients_nacs`` adds the CSF term afterwards.
+On twisted C2F4 SA-2-CAS(2,2)/6-31G* at one thread, gradients plus one pair
+went from 122 s to 64 s.
+
+**Gates run** (``test/test_mqc_sa_nac.f90``, LiH/STO-3G SA-2-CAS(2,2)):
+:math:`d_{IJ}` and :math:`h_{IJ}`, with and without the CSF term, vs PySCF's
+``pyscf.nac.sacasscf.NonAdiabaticCouplings`` (phase-aware: PySCF's CI phase is
+arbitrary, so the comparison takes whichever overall sign of the pair agrees)
+-- :math:`4.6\times 10^{-8}` to :math:`7.0\times 10^{-8}` max absolute
+difference; :math:`d_{IJ} = -d_{JI}` and :math:`h_{IJ}` symmetric under
+:math:`I \leftrightarrow J`, to machine precision; translational invariance
+of :math:`h_{IJ}` without the CSF term, to machine precision; the fused
+(``czt_sa_casscf_nacs``) and single-pair (``czt_sa_casscf_nac``) paths agree
+to :math:`10^{-16}` (effectively bit-identical, since both build the same SA
+Hessian state and the same Z-vector solve). **Not yet run**: the wider PySCF
+sweep across C2H4 planar/twisted and an SA-3 case, and an independent
+finite-difference gate built from this code's own CI overlaps between
+displaced geometries (needs a mixed-geometry AO overlap the integral library
+was not confirmed to expose) -- left for a follow-up pass.
+
+**Driver/JSON.** Not yet wired to a keyword or the JSON output: only the
+library-level routines (``czt_sa_casscf_nac``/``czt_sa_casscf_nacs``) and
+their unit tests exist so far. A ``keywords.mcscf.nac_pairs`` keyword and a
+``nonadiabatic_couplings`` array under ``mcscf_states`` would follow
+``gradient_roots``'s own path through ``mqc_config_types.f90``,
+``mqc_json_schema.f90``, ``mqc_json_config_reader.f90`` (a list of ``[i, j]``
+pairs reads the same way ``read_connectivity`` reads a list of bond
+triples), ``mqc_config_adapter.f90``, ``mqc_method_config.f90``/
+``mqc_method_mcscf.f90``/``mqc_method_factory.F90``, ``mqc_czt_bridge.f90``
+(refusing what the gradient refuses, plus a pair index range check),
+``mqc_result_types.f90``/``mqc_json_output_types.f90`` and
+``mqc_json_writer.f90``.
+
+Open questions
+==============
+
+- **Unequal weights.** The gradient is equal weights only, as in PySCF.
+  Unequal weights would need the in-space rotations kept in the Hessian, not
+  projected (see Redundancy projection).
+- **Spin selection.** Singlets by alpha/beta symmetrisation of the CI vectors,
+  as in PySCF's ``direct_spin0``. Other target spins are not handled.

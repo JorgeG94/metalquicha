@@ -53,6 +53,30 @@ contains
 
    end subroutine add_gradient
 
+   subroutine add_vector_field(json, parent, name, vector)
+      !! A per-atom `[x, y, z]` array under an arbitrary key, plus its norm --
+      !! `add_gradient`'s array shape, for a quantity that is not itself a
+      !! nuclear gradient (a nonadiabatic coupling's `d_IJ`/`h_IJ`/CSF term).
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      character(len=*), intent(in) :: name
+      real(dp), intent(in) :: vector(:, :)  !! (3, natoms)
+
+      type(json_value), pointer :: vec_arr, atom_arr
+      integer :: iatom, icomp
+
+      call json%add(parent, name//"_norm", sqrt(sum(vector**2)))
+      call json%create_array(vec_arr, name)
+      call json%add(parent, vec_arr)
+      do iatom = 1, size(vector, 2)
+         call json%create_array(atom_arr, "")
+         call json%add(vec_arr, atom_arr)
+         do icomp = 1, size(vector, 1)
+            call json%add(atom_arr, "", vector(icomp, iatom))
+         end do
+      end do
+   end subroutine add_vector_field
+
    subroutine add_hessian(json, parent, hessian)
       !! Second derivatives, as the Frobenius norm and as the matrix itself
       !!
@@ -169,6 +193,7 @@ contains
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
+      call write_mcscf_states_section(json, main_obj, data)
 
       ! Only where one SCF covered one system. A fragmented run never sets
       ! this, because a gap assembled from fragment gaps would be arithmetic
@@ -819,6 +844,128 @@ contains
       end do
    end subroutine write_excited_states_section
 
+   subroutine write_mcscf_states_section(json, parent, data)
+      !! State-averaged CASSCF: every root, its `<S^2>`, its weight and,
+      !! off a Gradient driver, its own analytic gradient
+      !!
+      !! `total_energy` on the parent object, and the top-level `gradient`
+      !! written beside it when the run asked for one, are `E_SA = sum_J
+      !! weight(J) * energy(J)` and `dE_SA/dR` -- not any one root's own
+      !! energy or gradient.
+      !!
+      !! A root's own gradient and gradient norm are added only for the roots
+      !! named in `mcscf_gradient_roots` (`keywords.mcscf.gradient_roots`).
+      !! `gradient_differences` follows with `g_i - g_j` for every pair `i <
+      !! j` among those same roots -- what a conical-intersection search or a
+      !! surface-hopping trajectory reads to find where two surfaces come
+      !! close.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, entry, diff_arr, diff_entry
+      type(json_value), pointer :: state_pair
+      integer :: i, n_states, n_roots, ir, jr
+      real(dp), allocatable :: diff(:, :)
+
+      if (.not. data%has_mcscf_states) return
+      if (.not. allocated(data%mcscf_state_energies)) return
+      n_states = size(data%mcscf_state_energies)
+
+      call json%create_object(section, "mcscf_states")
+      call json%add(parent, section)
+      call json%add(section, "n_states", n_states)
+      call json%add(section, "e_sa_hartree", data%total_energy)
+
+      n_roots = 0
+      if (allocated(data%mcscf_gradient_roots)) n_roots = size(data%mcscf_gradient_roots)
+
+      call json%create_array(arr, "states")
+      call json%add(section, arr)
+      do i = 1, n_states
+         call json%create_object(entry, "")
+         call json%add(arr, entry)
+         ! Numbered from one, ascending in energy -- the order the CI
+         ! converged them and `weights`/`n_states` were given in.
+         call json%add(entry, "state", i)
+         call json%add(entry, "energy_hartree", data%mcscf_state_energies(i))
+         if (allocated(data%mcscf_state_spins) .and. &
+             size(data%mcscf_state_spins) >= n_states) then
+            call json%add(entry, "s2", data%mcscf_state_spins(i))
+         end if
+         if (allocated(data%mcscf_state_weights) .and. &
+             size(data%mcscf_state_weights) >= n_states) then
+            call json%add(entry, "weight", data%mcscf_state_weights(i))
+         end if
+         do ir = 1, n_roots
+            if (data%mcscf_gradient_roots(ir) == i) then
+               call add_gradient(json, entry, data%mcscf_state_gradients(:, :, ir))
+               exit
+            end if
+         end do
+      end do
+
+      ! Only the differences need two roots. The couplings are independent of
+      ! them: `nac_pairs` may name a pair whose roots `gradient_roots` left out.
+      if (n_roots >= 2) then
+         call json%create_array(diff_arr, "gradient_differences")
+         call json%add(section, diff_arr)
+         do ir = 1, n_roots
+            do jr = ir + 1, n_roots
+               call json%create_object(diff_entry, "")
+               call json%add(diff_arr, diff_entry)
+               call json%create_array(state_pair, "states")
+               call json%add(diff_entry, state_pair)
+               call json%add(state_pair, "", data%mcscf_gradient_roots(ir))
+               call json%add(state_pair, "", data%mcscf_gradient_roots(jr))
+               diff = data%mcscf_state_gradients(:, :, ir) - data%mcscf_state_gradients(:, :, jr)
+               call add_gradient(json, diff_entry, diff)
+            end do
+         end do
+      end if
+
+      call write_mcscf_nac_section(json, section, data)
+   end subroutine write_mcscf_states_section
+
+   subroutine write_mcscf_nac_section(json, parent, data)
+      !! `nonadiabatic_couplings`: one entry per pair in `mcscf_nac_pairs`
+      !! (`keywords.mcscf.nac_pairs`), from `czt_sa_casscf_nacs`. `coupling`
+      !! is `d_IJ` (1/Bohr), `interstate_coupling` is `h_IJ = (E_J-E_I) d_IJ`
+      !! (Hartree/Bohr, always including the CSF term -- no keyword turns it
+      !! off; subtract `csf_term` for PySCF's `use_etfs=True` numbers),
+      !! `csf_term` is that CSF piece alone (Hartree/Bohr), and `energy_difference` is
+      !! `E_J - E_I` in Hartree -- `mqc_czt_sa_nac`'s conventions exactly.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: nac_arr, nac_entry, nac_pair
+      integer :: n_pairs, ip
+
+      if (.not. allocated(data%mcscf_nac_pairs)) return
+      n_pairs = size(data%mcscf_nac_pairs, 2)
+      if (n_pairs < 1) return
+
+      call json%create_array(nac_arr, "nonadiabatic_couplings")
+      call json%add(parent, nac_arr)
+      do ip = 1, n_pairs
+         call json%create_object(nac_entry, "")
+         call json%add(nac_arr, nac_entry)
+         call json%create_array(nac_pair, "states")
+         call json%add(nac_entry, nac_pair)
+         call json%add(nac_pair, "", data%mcscf_nac_pairs(1, ip))
+         call json%add(nac_pair, "", data%mcscf_nac_pairs(2, ip))
+         call json%add(nac_entry, "energy_difference_hartree", data%mcscf_nac_energy_diff(ip))
+         call add_vector_field(json, nac_entry, "coupling", data%mcscf_nac_couplings(:, :, ip))
+         call json%add(nac_entry, "coupling_units", "1/bohr")
+         call add_vector_field(json, nac_entry, "interstate_coupling", &
+                               data%mcscf_nac_interstate(:, :, ip))
+         call json%add(nac_entry, "interstate_coupling_units", "hartree/bohr")
+         call add_vector_field(json, nac_entry, "csf_term", data%mcscf_nac_csf(:, :, ip))
+         call json%add(nac_entry, "csf_term_units", "hartree/bohr")
+      end do
+   end subroutine write_mcscf_nac_section
+
    pure function state_spin_label(data, i) result(label)
       !! The `STATE_SPIN_*` code of state `i` as the word a reader expects
       !!
@@ -1104,6 +1251,7 @@ contains
       ! imaginary modes below.
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
+      call write_mcscf_states_section(json, main_obj, data)
 
       ! Dipole
       if (data%has_dipole .and. allocated(data%dipole)) then

@@ -504,6 +504,16 @@ contains
       driver_config%method_config%mcscf%max_macro_iter = mqc_config%mcscf_max_macro_iter
       driver_config%method_config%mcscf%orbital_convergence = &
          mqc_config%mcscf_orbital_convergence
+      driver_config%method_config%mcscf%n_states = mqc_config%mcscf_n_states
+      if (allocated(mqc_config%mcscf_state_weights)) then
+         driver_config%method_config%mcscf%state_weights = mqc_config%mcscf_state_weights
+      end if
+      if (allocated(mqc_config%mcscf_gradient_roots)) then
+         driver_config%method_config%mcscf%gradient_roots = mqc_config%mcscf_gradient_roots
+      end if
+      if (allocated(mqc_config%mcscf_nac_pairs)) then
+         driver_config%method_config%mcscf%nac_pairs = mqc_config%mcscf_nac_pairs
+      end if
       ! `guess_type` is the current spelling and `scf_guess` the superseded one.
       ! The schema has already refused a deck that sets both, so whichever is
       ! allocated is the one the user meant.

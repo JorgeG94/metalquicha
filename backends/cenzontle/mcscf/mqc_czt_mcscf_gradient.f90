@@ -38,18 +38,34 @@ module mqc_czt_mcscf_gradient
    !! closed-shell gradient.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_integrals, only: czt_molecule_t, shell_dim, atom_ao_blocks
+   use mqc_czt_integrals, only: czt_molecule_t, shell_dim, atom_ao_blocks, max_block, &
+                                eri_grad_dispatch_t, build_eri_grad_dispatch, &
+                                two_electron_ip1_block
    use mqc_czt_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
                                iprinv_deriv_at, two_electron_deriv, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_mp2_gradient, only: two_electron_mp2_terms
    use mqc_czt_mcscf, only: generalized_fock, mcscf_fock_t
    use pic_blas_interfaces, only: pic_gemm
+   use libcint_fortran, only: libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
+                              libcint_del_optimizer
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
 
    public :: czt_mcscf_gradient
    public :: cumulant_two_particle_density   !! Exposed for the tests
+   public :: active_two_electron_gradient
+      !! Exposed for `mqc_czt_sa_gradient`: the SA-CASSCF orbital-response
+      !! gradient needs the same active-space two-electron derivative-integral
+      !! contraction, fed the one-index-transformed cumulant (`deri_act`) and,
+      !! one leg at a time, the kappa-bar-rotated coefficient matrix rather than
+      !! `c_active` on every leg -- the optional `c2`/`c3`/`c4` arguments below.
+   public :: active_two_electron_gradient_response
+      !! Exposed for `mqc_czt_sa_gradient`: the sum of the four one-index-
+      !! transformed legs `active_two_electron_gradient` would otherwise take
+      !! four separate derivative-integral sweeps to add up, built here as one.
+   public :: gamma_block   !! Exposed for `mqc_czt_sa_gradient`'s cross-root fusion
 
    real(dp), parameter :: BLOCK_TARGET = 2.0e8_dp
       !! Bytes the first-index block of the AO two-particle density may reach, so
@@ -238,7 +254,8 @@ contains
       end do
    end subroutine cumulant_two_particle_density
 
-   subroutine active_two_electron_gradient(mol, c_active, ddm2, gradient, error)
+   subroutine active_two_electron_gradient(mol, c_active, ddm2, gradient, error, &
+                                           c2, c3, c4)
       !! The genuinely non-separable term, a block of the first index at a time
       !!
       !! The density is transformed out of the active space and into the AO
@@ -249,11 +266,22 @@ contains
       !!
       !! Blocks are cut on shell boundaries because a shell's functions share a
       !! quartet and cannot be split across two passes.
+      !!
+      !! `c2`/`c3`/`c4` default to `c_active`, reproducing the four-fold
+      !! transform by the same coefficient matrix on every leg -- the
+      !! stationary-density case. A caller differentiating this contraction
+      !! along an orbital rotation `kappa_bar` (SA-CASSCF's orbital-response
+      !! gradient) instead passes `c_active @ kappa_bar` on exactly one leg at a
+      !! time, holding `ddm2` fixed: the product-rule sum over which leg carries
+      !! the rotated coefficient.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: c_active(:, :)       !! (n_ao, n_active)
       real(dp), intent(in) :: ddm2(:, :, :, :)
       real(dp), intent(inout) :: gradient(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: c2(:, :), c3(:, :), c4(:, :)
+         !! (n_ao, n_active) each, in place of `c_active` on the second, third
+         !! and fourth legs of the transform
 
       real(dp), allocatable :: gamma_blk(:, :, :, :), eri_blk(:, :, :, :)
       real(dp), allocatable :: dummy_vhf1(:, :, :, :), hf_density(:, :)
@@ -282,7 +310,7 @@ contains
          p_hi = mol%shell_offset(ish_hi) + shell_dim(mol%cartesian, ish_hi - 1, mol%bas)
          np = p_hi - p_lo + 1
 
-         call gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk)
+         call gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk, c2, c3, c4)
 
          allocate (eri_blk(np, n_ao, n_ao, n_ao))
          eri_blk = 0.0_dp
@@ -297,7 +325,81 @@ contains
       deallocate (dummy_vhf1, hf_density)
    end subroutine active_two_electron_gradient
 
-   subroutine gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk)
+   subroutine active_two_electron_gradient_response(mol, c_active, cbar_active, dm2, &
+                                                    gradient, error)
+      !! The sum of the four one-index-transformed legs of `dm2` -- `cbar_active`
+      !! on exactly one leg at a time, `c_active` on the other three -- added
+      !! into `gradient` from **one** sweep over the derivative integrals
+      !! rather than the four `active_two_electron_gradient` calls that sum
+      !! (linearity of the contraction) would otherwise repeat: each of those
+      !! four AO Gamma tensors is cheap to build (`gamma_block`'s four gemms
+      !! are bounded by `n_active`), and it is the shell-quartet loop that
+      !! costs, so building all four and summing them before that loop turns
+      !! four sweeps into one.
+      !!
+      !! `orbital_response_gradient`'s own docstring has the physics; this is
+      !! its four `active_two_electron_gradient` calls fused.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: c_active(:, :)       !! (n_ao, n_active)
+      real(dp), intent(in) :: cbar_active(:, :)    !! (n_ao, n_active)
+      real(dp), intent(in) :: dm2(:, :, :, :)
+      real(dp), intent(inout) :: gradient(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: gamma_blk(:, :, :, :), leg_blk(:, :, :, :), eri_blk(:, :, :, :)
+      real(dp), allocatable :: dummy_vhf1(:, :, :, :), hf_density(:, :)
+      integer :: n_ao, ish, ish_lo, ish_hi, p_lo, p_hi, np, per_block
+
+      if (error%has_error()) return
+      n_ao = size(c_active, 1)
+
+      allocate (dummy_vhf1(1, 1, 1, 1), hf_density(n_ao, n_ao))
+      dummy_vhf1 = 0.0_dp
+      hf_density = 0.0_dp
+
+      per_block = max(1, int(BLOCK_TARGET/(2.0_dp*real(n_ao, dp)**3*8.0_dp)))
+
+      ish_lo = 1
+      do while (ish_lo <= mol%nbas)
+         p_lo = mol%shell_offset(ish_lo) + 1
+         ish_hi = ish_lo
+         do ish = ish_lo, mol%nbas
+            p_hi = mol%shell_offset(ish) + shell_dim(mol%cartesian, ish - 1, mol%bas)
+            if (ish > ish_lo .and. p_hi - p_lo + 1 > per_block) exit
+            ish_hi = ish
+         end do
+         p_hi = mol%shell_offset(ish_hi) + shell_dim(mol%cartesian, ish_hi - 1, mol%bas)
+         np = p_hi - p_lo + 1
+
+         call gamma_block(cbar_active, dm2, p_lo, p_hi, gamma_blk, c2=c_active, c3=c_active, &
+                          c4=c_active)
+         call gamma_block(c_active, dm2, p_lo, p_hi, leg_blk, c2=cbar_active, c3=c_active, &
+                          c4=c_active)
+         gamma_blk = gamma_blk + leg_blk
+         deallocate (leg_blk)
+         call gamma_block(c_active, dm2, p_lo, p_hi, leg_blk, c2=c_active, c3=cbar_active, &
+                          c4=c_active)
+         gamma_blk = gamma_blk + leg_blk
+         deallocate (leg_blk)
+         call gamma_block(c_active, dm2, p_lo, p_hi, leg_blk, c2=c_active, c3=c_active, &
+                          c4=cbar_active)
+         gamma_blk = gamma_blk + leg_blk
+         deallocate (leg_blk)
+
+         allocate (eri_blk(np, n_ao, n_ao, n_ao))
+         eri_blk = 0.0_dp
+         call two_electron_mp2_terms(mol, gamma_blk, hf_density, gradient, dummy_vhf1, &
+                                     ish_lo=ish_lo, ish_hi=ish_hi, &
+                                     p_offset=p_lo - 1, eri_blk=eri_blk, &
+                                     with_gamma=.true., with_reference=.false.)
+         deallocate (eri_blk, gamma_blk)
+         ish_lo = ish_hi + 1
+      end do
+
+      deallocate (dummy_vhf1, hf_density)
+   end subroutine active_two_electron_gradient_response
+
+   subroutine gamma_block(c_active, ddm2, p_lo, p_hi, gamma_blk, c2, c3, c4)
       !! `ddm2` transformed to the AO basis over one range of the first index
       !!
       !! **Four gemms and no copies.** Each step contracts the *first* index and
@@ -309,20 +411,34 @@ contains
       !! bounds remapped, as `build_two_particle_density` does next door. The
       !! memory order is identical either way, so a `reshape` between steps would
       !! only be telling the compiler what it already had.
+      !!
+      !! `c2`/`c3`/`c4` default to `c_active`: absent, the four gemms transform
+      !! every leg by the same matrix, bit-identical to before this argument
+      !! existed. Present, that leg's transform uses the given matrix instead --
+      !! `active_two_electron_gradient`'s docstring says what that is for.
       real(dp), intent(in), target :: c_active(:, :)
       real(dp), intent(in), target, contiguous :: ddm2(:, :, :, :)
          !! `contiguous` because its bounds are remapped below, and a rank
          !! remapping needs a target the compiler knows is not a stride.
       integer, intent(in) :: p_lo, p_hi
       real(dp), allocatable, target, intent(out) :: gamma_blk(:, :, :, :)
+      real(dp), intent(in), optional, target :: c2(:, :), c3(:, :), c4(:, :)
 
       real(dp), allocatable, target :: buf1(:), buf2(:)
       real(dp), pointer :: src(:, :), dst(:, :)
+      real(dp), pointer :: leg2(:, :), leg3(:, :), leg4(:, :)
       integer :: n_ao, n_act, np, need
 
       n_ao = size(c_active, 1)
       n_act = size(c_active, 2)
       np = p_hi - p_lo + 1
+
+      leg2 => c_active
+      if (present(c2)) leg2 => c2
+      leg3 => c_active
+      if (present(c3)) leg3 => c3
+      leg4 => c_active
+      if (present(c4)) leg4 => c4
 
       allocate (gamma_blk(np, n_ao, n_ao, n_ao))
       need = max(n_act**3*np, n_act*np*n_ao*n_ao, n_act**2*np*n_ao)
@@ -337,19 +453,19 @@ contains
       ! (u v w p) -> (v w p q)
       src(1:n_act, 1:n_act**2*np) => buf1
       dst(1:n_act**2*np, 1:n_ao) => buf2
-      call pic_gemm(src, c_active, dst, transa="T", transb="T", beta=0.0_dp)
+      call pic_gemm(src, leg2, dst, transa="T", transb="T", beta=0.0_dp)
 
       ! (v w p q) -> (w p q r)
       src(1:n_act, 1:n_act*np*n_ao) => buf2
       dst(1:n_act*np*n_ao, 1:n_ao) => buf1
-      call pic_gemm(src, c_active, dst, transa="T", transb="T", beta=0.0_dp)
+      call pic_gemm(src, leg3, dst, transa="T", transb="T", beta=0.0_dp)
 
       ! (w p q r) -> (p q r s), straight into the result
       src(1:n_act, 1:np*n_ao*n_ao) => buf1
       dst(1:np*n_ao*n_ao, 1:n_ao) => gamma_blk
-      call pic_gemm(src, c_active, dst, transa="T", transb="T", beta=0.0_dp)
+      call pic_gemm(src, leg4, dst, transa="T", transb="T", beta=0.0_dp)
 
-      nullify (src, dst)
+      nullify (src, dst, leg2, leg3, leg4)
       deallocate (buf1, buf2)
    end subroutine gamma_block
 

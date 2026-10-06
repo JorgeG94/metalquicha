@@ -107,6 +107,26 @@ module mqc_json_output_types
          !! complete.
       logical :: has_excited_states = .false.
 
+      !----- State-averaged CASSCF (optional) -----
+      ! Copied unchanged from `calculation_result_t`. `total_energy` above is
+      ! `E_SA = sum_J weights(J) * mcscf_state_energies(J)` for this run, not
+      ! any one state's own energy -- these three say what it was built from.
+      real(dp), allocatable :: mcscf_state_energies(:)  !! (n_states) Hartree
+      real(dp), allocatable :: mcscf_state_spins(:)     !! (n_states) <S^2>
+      real(dp), allocatable :: mcscf_state_weights(:)   !! (n_states)
+      real(dp), allocatable :: mcscf_state_gradients(:, :, :)
+         !! (3, n_atoms, size(mcscf_gradient_roots)) each requested root's own
+         !! gradient, Hartree/Bohr. Unallocated off a Gradient driver.
+      integer, allocatable :: mcscf_gradient_roots(:)
+         !! (size(mcscf_state_gradients, 3)) 1-based root index of each slice.
+      integer, allocatable :: mcscf_nac_pairs(:, :)
+         !! (2, n_pairs) 1-based `[state_i, state_j]` of each NAC slice below.
+      real(dp), allocatable :: mcscf_nac_couplings(:, :, :)     !! (3, n_atoms, n_pairs), 1/Bohr
+      real(dp), allocatable :: mcscf_nac_interstate(:, :, :)    !! (3, n_atoms, n_pairs), Hartree/Bohr
+      real(dp), allocatable :: mcscf_nac_csf(:, :, :)           !! (3, n_atoms, n_pairs), Hartree/Bohr
+      real(dp), allocatable :: mcscf_nac_energy_diff(:)         !! (n_pairs), Hartree
+      logical :: has_mcscf_states = .false.
+
       !----- MBE-specific data (store ALL fragments for detailed output) -----
       integer, allocatable :: polymers(:, :)          !! Fragment composition (n_fragments, max_level)
       real(dp), allocatable :: fragment_energies(:)   !! Per-fragment total energies
@@ -527,6 +547,16 @@ contains
       end if
       if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
+      if (allocated(this%mcscf_state_energies)) deallocate (this%mcscf_state_energies)
+      if (allocated(this%mcscf_state_spins)) deallocate (this%mcscf_state_spins)
+      if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
+      if (allocated(this%mcscf_state_gradients)) deallocate (this%mcscf_state_gradients)
+      if (allocated(this%mcscf_gradient_roots)) deallocate (this%mcscf_gradient_roots)
+      if (allocated(this%mcscf_nac_pairs)) deallocate (this%mcscf_nac_pairs)
+      if (allocated(this%mcscf_nac_couplings)) deallocate (this%mcscf_nac_couplings)
+      if (allocated(this%mcscf_nac_interstate)) deallocate (this%mcscf_nac_interstate)
+      if (allocated(this%mcscf_nac_csf)) deallocate (this%mcscf_nac_csf)
+      if (allocated(this%mcscf_nac_energy_diff)) deallocate (this%mcscf_nac_energy_diff)
 
       call this%reset()
    end subroutine json_output_data_destroy
@@ -551,6 +581,7 @@ contains
       this%has_excited_states = .false.
       this%excited_method = ""
       this%excited_spin = ""
+      this%has_mcscf_states = .false.
       this%fragment_count = 0
       this%max_level = 0
       this%has_interaction = .false.

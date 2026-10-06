@@ -26,17 +26,19 @@ module mqc_rdm
    !! GAMESS's. A factor of two and an index transposition are the two ways a
    !! two-particle density matrix is usually wrong, and both give a plausible
    !! energy, so the convention is worth stating.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_determinants, only: link_table_t
+   use mqc_determinants, only: link_table_t, generate_strings, string_address
    use mqc_ci, only: excitations_block, beta_strings_per_block
    implicit none
    private
 
    public :: active_space_rdms
+   public :: transition_rdms
    public :: rdm_energy
+   public :: spin_squared
 
    integer, parameter :: COLUMN_CHUNK = 2048
       !! Determinant columns per thread-local contraction. Large enough that
@@ -165,6 +167,136 @@ contains
       deallocate (gathered, paired, flat, pair_column)
    end subroutine active_space_rdms
 
+   subroutine transition_rdms(bra, ket, alpha, beta, dm1, dm2, error)
+      !! Spin-traced one- and two-particle transition density matrices
+      !!
+      !!     dm1(p,q)     = <bra| E_pq |ket>
+      !!     dm2(p,q,r,s) = <bra| E_pq E_rs - delta_qr E_ps |ket>
+      !!
+      !! the generalisation of `active_space_rdms`, which is its `bra == ket`
+      !! case, in the same spin-traced, chemist-ordered convention. Not
+      !! symmetric in general: `transition_rdms(bra, ket, ...)`'s `dm1(p,q)`
+      !! equals `transition_rdms(ket, bra, ...)`'s `dm1(q,p)`, and likewise
+      !! `dm2(p,q,r,s)` of `(bra,ket)` equals `dm2(q,p,s,r)` of `(ket,bra)`.
+      !! `dm1` and `dm2` are left unallocated when `error` is set.
+      real(dp), intent(in) :: bra(:, :)      !! (n_alpha_strings, n_beta_strings)
+      real(dp), intent(in) :: ket(:, :)      !! (n_alpha_strings, n_beta_strings)
+      type(link_table_t), intent(in) :: alpha, beta
+      real(dp), allocatable, intent(out) :: dm1(:, :)
+         !! (n_active, n_active)
+      real(dp), allocatable, intent(out) :: dm2(:, :, :, :)
+         !! (n_active, n_active, n_active, n_active)
+      type(error_t), intent(inout) :: error
+
+      ! Neither ordering is symmetrised here: the sum over both, which is what
+      ! a CI-response density needs, is the caller's to form.
+
+      real(dp), allocatable :: gathered_bra(:, :), gathered_ket(:, :), paired(:, :)
+      real(dp), allocatable :: flat_bra(:, :), pair_column(:, :)
+      integer :: norb, na, nb, npair, p, q, r, s, qp, rs
+      integer :: per_block, first, last, width, c0, c1
+      real(dp), allocatable :: mine(:, :), chunk_product(:, :)
+
+      if (error%has_error()) return
+      norb = alpha%n_orbitals
+      na = alpha%n_strings
+      nb = beta%n_strings
+      npair = norb*norb
+
+      if (beta%n_orbitals /= norb) then
+         call error%set(ERROR_VALIDATION, "the alpha and beta excitation tables "// &
+                        "describe different active spaces: "//to_char(norb)//" and "// &
+                        to_char(beta%n_orbitals)//" orbitals.")
+         return
+      end if
+      if (size(bra, 1) /= na .or. size(bra, 2) /= nb) then
+         call error%set(ERROR_VALIDATION, "the bra vector is "//to_char(size(bra, 1))// &
+                        " by "//to_char(size(bra, 2))//" but the tables have "// &
+                        to_char(na)//" alpha and "//to_char(nb)//" beta strings.")
+         return
+      end if
+      if (size(ket, 1) /= na .or. size(ket, 2) /= nb) then
+         call error%set(ERROR_VALIDATION, "the ket vector is "//to_char(size(ket, 1))// &
+                        " by "//to_char(size(ket, 2))//" but the tables have "// &
+                        to_char(na)//" alpha and "//to_char(nb)//" beta strings.")
+         return
+      end if
+
+      ! Two gathered buffers instead of `active_space_rdms`'s one -- the bra's
+      ! excited vectors and the ket's, contracted against each other rather
+      ! than against themselves. `beta_strings_per_block` already sizes a block
+      ! for two `(npair, na)`-per-string buffers (its own docstring), so the
+      ! same block width is reused here rather than halved.
+      per_block = beta_strings_per_block(npair, na, nb)
+      allocate (gathered_bra(npair, na*per_block), gathered_ket(npair, na*per_block))
+      allocate (dm1(norb, norb), paired(npair, npair))
+      allocate (flat_bra(na*per_block, 1), pair_column(npair, 1))
+      pair_column = 0.0_dp
+      dm1 = 0.0_dp
+      paired = 0.0_dp
+
+      do first = 1, nb, per_block
+         last = min(first + per_block - 1, nb)
+         width = na*(last - first + 1)
+
+         call excitations_block(bra, alpha, beta, first, last, gathered_bra(:, 1:width))
+         call excitations_block(ket, alpha, beta, first, last, gathered_ket(:, 1:width))
+         flat_bra(1:width, 1) = reshape(bra(:, first:last), [width])
+
+         ! dm1(p,q) = <bra| E_pq |ket>: the ket's excited vectors dotted
+         ! against the bra, not against the ket itself.
+         call pic_gemm(gathered_ket(:, 1:width), flat_bra(1:width, 1:1), pair_column, &
+                       alpha=1.0_dp, beta=1.0_dp)
+
+         ! <bra| E_pq E_rs |ket> = <E_qp bra | E_rs ket>, the bra's
+         ! intermediate against the ket's.
+         !$omp parallel default(shared) private(c0, c1, mine, chunk_product)
+         allocate (mine(npair, npair), chunk_product(npair, npair))
+         mine = 0.0_dp
+         !$omp do schedule(dynamic)
+         do c0 = 1, width, COLUMN_CHUNK
+            c1 = min(c0 + COLUMN_CHUNK - 1, width)
+            call pic_gemm(gathered_bra(:, c0:c1), gathered_ket(:, c0:c1), chunk_product, &
+                          transb="T")
+            mine = mine + chunk_product
+         end do
+         !$omp end do
+         !$omp critical
+         paired = paired + mine
+         !$omp end critical
+         deallocate (mine, chunk_product)
+         !$omp end parallel
+      end do
+
+      do q = 1, norb
+         do p = 1, norb
+            dm1(p, q) = pair_column(p + (q - 1)*norb, 1)
+         end do
+      end do
+
+      allocate (dm2(norb, norb, norb, norb))
+      do s = 1, norb
+         do r = 1, norb
+            rs = r + (s - 1)*norb
+            do q = 1, norb
+               do p = 1, norb
+                  qp = q + (p - 1)*norb
+                  dm2(p, q, r, s) = paired(qp, rs)
+               end do
+            end do
+         end do
+      end do
+      do s = 1, norb
+         do r = 1, norb
+            do p = 1, norb
+               dm2(p, r, r, s) = dm2(p, r, r, s) - dm1(p, s)
+            end do
+         end do
+      end do
+
+      deallocate (gathered_bra, gathered_ket, paired, flat_bra, pair_column)
+   end subroutine transition_rdms
+
    pure function rdm_energy(h1e, eri, dm1, dm2) result(energy)
       !! The active-space energy rebuilt from the density matrices
       !!
@@ -199,5 +331,81 @@ contains
          end do
       end do
    end function rdm_energy
+
+   function spin_squared(n_active, n_alpha, n_beta, ci, error) result(s2)
+      !! `<S^2>` of a determinant-basis CI vector, by explicit construction of
+      !! `S_+ |Psi>` in its own (shifted-electron-count) sector
+      !!
+      !! `S^2 = Sz(Sz + 1) + S_-S_+`, with `Sz = (n_alpha - n_beta)/2` exact for
+      !! a fixed-`(n_alpha, n_beta)` CI, and `<S_-S_+> = ||S_+ Psi||^2` for a
+      !! real vector. `S_+ Psi` lives in the `(n_alpha + 1, n_beta - 1)` string
+      !! space, which is built here. `ci` is indexed by `generate_strings`
+      !! order, as `run_czt_casci`'s vectors are. The spin-traced RDMs cannot
+      !! give this: it needs the opposite-spin exchange part of the 2-RDM.
+      !! Zero whenever `error` is set, on entry or on return.
+      integer, intent(in) :: n_active, n_alpha, n_beta
+      real(dp), intent(in) :: ci(:, :)      !! (n_alpha_strings, n_beta_strings)
+      type(error_t), intent(inout) :: error
+      real(dp) :: s2
+
+      integer(int64), allocatable :: strings_a(:), strings_b(:)
+      integer(int64), allocatable :: strings_a2(:), strings_b2(:)
+      integer(int64) :: sa, sb, sa2, sb2
+      real(dp), allocatable :: shifted(:, :)
+      real(dp) :: sz
+      integer :: na, nb, na2, nb2, ia, ib, p, ia2, ib2, phase
+
+      s2 = 0.0_dp
+      if (error%has_error()) return
+      na = size(ci, 1)
+      nb = size(ci, 2)
+      sz = 0.5_dp*real(n_alpha - n_beta, dp)
+      s2 = sz*(sz + 1.0_dp)
+
+      if (n_beta <= 0 .or. n_alpha >= n_active) return
+
+      call generate_strings(n_active, n_alpha, strings_a, error)
+      call generate_strings(n_active, n_beta, strings_b, error)
+      call generate_strings(n_active, n_alpha + 1, strings_a2, error)
+      call generate_strings(n_active, n_beta - 1, strings_b2, error)
+      if (error%has_error()) then
+         s2 = 0.0_dp
+         return
+      end if
+      na2 = size(strings_a2)
+      nb2 = size(strings_b2)
+
+      allocate (shifted(na2, nb2))
+      shifted = 0.0_dp
+      do ib = 1, nb
+         sb = strings_b(ib)
+         do ia = 1, na
+            sa = strings_a(ia)
+            do p = 1, n_active
+               if (.not. btest(sb, p - 1)) cycle       ! nothing to move
+               if (btest(sa, p - 1)) cycle              ! nowhere to put it
+               phase = above_parity(sb, p)*above_parity(sa, p)
+               sa2 = ibset(sa, p - 1)
+               sb2 = ibclr(sb, p - 1)
+               ia2 = string_address(n_active, n_alpha + 1, sa2)
+               ib2 = string_address(n_active, n_beta - 1, sb2)
+               shifted(ia2, ib2) = shifted(ia2, ib2) + real(phase, dp)*ci(ia, ib)
+            end do
+         end do
+      end do
+
+      s2 = s2 + sum(shifted**2)
+      deallocate (shifted, strings_a, strings_b, strings_a2, strings_b2)
+   end function spin_squared
+
+   pure function above_parity(string, p) result(parity)
+      !! `+1`/`-1` by the parity of how many occupied orbitals sit above `p`
+      integer(int64), intent(in) :: string
+      integer, intent(in) :: p
+      integer :: parity
+
+      parity = 1
+      if (mod(popcnt(iand(string, not(shiftl(1_int64, p) - 1_int64))), 2) == 1) parity = -1
+   end function above_parity
 
 end module mqc_rdm

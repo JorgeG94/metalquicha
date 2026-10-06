@@ -86,7 +86,7 @@ module mqc_czt_casci
 contains
 
    subroutine active_space_integrals(mol, orbitals, n_inactive, n_active, &
-                                     h_eff, eri_act, core_energy, error)
+                                     h_eff, eri_act, core_energy, error, eri_packed)
       !! The Hamiltonian the active electrons see
       !!
       !! Returns the effective one-electron integrals over active orbitals, the
@@ -102,9 +102,12 @@ contains
       real(dp), allocatable, intent(out) :: eri_act(:, :, :, :)
       real(dp), intent(out) :: core_energy
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: eri_packed(:, :)
+         !! `mol%eris_packed`, when the caller already holds it; the inactive
+         !! Fock matrix is then built from it rather than directly
 
       real(dp), allocatable :: h_ao(:, :), density(:, :), fock(:, :), bounds(:, :)
-      real(dp), allocatable :: eri_packed(:, :), work(:, :)
+      real(dp), allocatable :: own(:, :), work(:, :)
       real(dp), allocatable :: c_inactive(:, :), c_active(:, :)
       type(direct_stats_t) :: stats
       integer :: n_ao, n_mo, p, q
@@ -146,10 +149,14 @@ contains
          deallocate (c_inactive)
       end if
 
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
-      call build_fock_direct(mol, h_ao, density, bounds, fock, stats, error)
-      if (error%has_error()) return
+      if (present(eri_packed)) then
+         call fock_from_packed(eri_packed, h_ao, density, fock)
+      else
+         call schwarz_bounds(mol, bounds, error)
+         if (error%has_error()) return
+         call build_fock_direct(mol, h_ao, density, bounds, fock, stats, error)
+         if (error%has_error()) return
+      end if
 
       ! E_core = E_nuc + (1/2) sum_pq D_pq (h_pq + F_pq). The half is because
       ! the two-electron part of F double counts the interaction it describes.
@@ -165,15 +172,80 @@ contains
       call pic_gemm(c_active, work, h_eff, transa="T")
       deallocate (work)
 
-      call mol%eris_packed(eri_packed)
-      call transform_block(eri_packed, c_active, c_active, c_active, c_active, eri_act)
-
-      deallocate (h_ao, density, fock, bounds, eri_packed, c_active)
+      if (present(eri_packed)) then
+         call transform_block(eri_packed, c_active, c_active, c_active, c_active, eri_act)
+      else
+         call mol%eris_packed(own)
+         call transform_block(own, c_active, c_active, c_active, c_active, eri_act)
+      end if
    end subroutine active_space_integrals
+
+   subroutine fock_from_packed(eri, h_ao, density, fock)
+      !! `h + J(D) - K(D)/2` from the packed AO integrals held in memory,
+      !! the same matrix `build_fock_direct` returns for a closed-shell `D`
+      !!
+      !! J is one product with the packed matrix. K walks the ket pairs: each
+      !! column `(r s)`, unpacked to `(p q|r s)` over `p q`, adds `M D(:, s)`
+      !! to column `r` of K and, off the diagonal, `M D(:, r)` to column `s`.
+      real(dp), intent(in) :: eri(:, :)          !! (n_pair, n_pair), `pair_index` order
+      real(dp), intent(in) :: h_ao(:, :)         !! (n_ao, n_ao)
+      real(dp), intent(in) :: density(:, :)      !! (n_ao, n_ao), symmetric
+      real(dp), allocatable, intent(out) :: fock(:, :)   !! (n_ao, n_ao)
+
+      real(dp), allocatable :: d_packed(:), j_packed(:), exchange(:, :), m(:, :)
+      integer :: n_ao, n_pair, p, q, r, s, k, rs
+
+      n_ao = size(h_ao, 1)
+      n_pair = n_ao*(n_ao + 1)/2
+      allocate (d_packed(n_pair), j_packed(n_pair))
+      k = 0
+      do p = 1, n_ao
+         do q = 1, p
+            k = k + 1
+            d_packed(k) = merge(1.0_dp, 2.0_dp, p == q)*density(p, q)
+         end do
+      end do
+      j_packed = matmul(d_packed, eri)
+
+      allocate (exchange(n_ao, n_ao))
+      exchange = 0.0_dp
+      !$omp parallel default(none) shared(eri, density, n_ao) private(m, rs, r, s, p, q, k) &
+      !$omp    reduction(+:exchange)
+      allocate (m(n_ao, n_ao))
+      !$omp do schedule(dynamic)
+      do r = 1, n_ao
+         do s = 1, r
+            rs = r*(r - 1)/2 + s
+            k = 0
+            do p = 1, n_ao
+               do q = 1, p
+                  k = k + 1
+                  m(p, q) = eri(k, rs)
+                  m(q, p) = eri(k, rs)
+               end do
+            end do
+            exchange(:, r) = exchange(:, r) + matmul(m, density(:, s))
+            if (r /= s) exchange(:, s) = exchange(:, s) + matmul(m, density(:, r))
+         end do
+      end do
+      !$omp end do
+      deallocate (m)
+      !$omp end parallel
+
+      fock = h_ao - 0.5_dp*exchange
+      k = 0
+      do p = 1, n_ao
+         do q = 1, p
+            k = k + 1
+            fock(p, q) = fock(p, q) + j_packed(k)
+            if (p /= q) fock(q, p) = fock(q, p) + j_packed(k)
+         end do
+      end do
+   end subroutine fock_from_packed
 
    subroutine run_czt_casci(mol, orbitals, n_inactive, n_active, &
                             n_alpha, n_beta, result, error, n_roots, verbose, &
-                            tolerance, guess)
+                            tolerance, guess, symmetrize_singlet, eri_packed)
       !! A complete-active-space CI on converged orbitals
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)
@@ -185,6 +257,12 @@ contains
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: tolerance
       real(dp), intent(in), optional :: guess(:, :, :)
+      logical, intent(in), optional :: symmetrize_singlet
+         !! Restrict every root to a singlet by alpha/beta symmetrisation of
+         !! the Davidson (`davidson_lowest`). Off by default; refused there
+         !! unless `n_alpha == n_beta`.
+      real(dp), intent(in), optional :: eri_packed(:, :)
+         !! `mol%eris_packed`, when the caller already holds it
 
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: folded(:, :), diagonal(:, :)
@@ -213,7 +291,7 @@ contains
       call clk%start()
 
       call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
-                                  eri_act, result%core_energy, error)
+                                  eri_act, result%core_energy, error, eri_packed)
       if (error%has_error()) return
       call clk%lap("active space integrals")
 
@@ -259,7 +337,8 @@ contains
 
       call davidson_lowest(folded, diagonal, alpha, beta, roots, davidson, error, &
                            tolerance=tolerance, guess=guess, verbose=loud, &
-                           energy_offset=result%core_energy)
+                           energy_offset=result%core_energy, &
+                           symmetrize_singlet=symmetrize_singlet)
       if (error%has_error()) return
       call clk%lap("Davidson")
 
@@ -304,7 +383,7 @@ contains
 
    subroutine run_czt_ormas_ci(mol, orbitals, n_inactive, n_active, n_alpha, n_beta, &
                                subspaces, min_electrons, max_electrons, result, &
-                               error, n_roots, verbose, tolerance, guess)
+                               error, n_roots, verbose, tolerance, guess, eri_packed)
       !! A CI over an occupation-restricted active space, on converged orbitals
       !!
       !! The same integrals as a CASCI -- a restricted space changes which
@@ -326,6 +405,8 @@ contains
       logical, intent(in), optional :: verbose
       real(dp), intent(in), optional :: tolerance
       real(dp), intent(in), optional :: guess(:, :)   !! (n_determinants, n_roots)
+      real(dp), intent(in), optional :: eri_packed(:, :)
+         !! `mol%eris_packed`, when the caller already holds it
 
       real(dp), allocatable :: h_eff(:, :), eri_act(:, :, :, :)
       real(dp), allocatable :: energies(:), vectors(:, :)
@@ -348,7 +429,7 @@ contains
 
       call clk%lap("restricted space")
       call active_space_integrals(mol, orbitals, n_inactive, n_active, h_eff, &
-                                  eri_act, result%core_energy, error)
+                                  eri_act, result%core_energy, error, eri_packed)
       if (error%has_error()) return
       call clk%lap("active space integrals")
 

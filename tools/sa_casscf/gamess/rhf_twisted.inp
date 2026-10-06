@@ -1,0 +1,14 @@
+ $contrl scftyp=rhf runtyp=energy icharg=0 mult=1 ispher=-1 $end
+ $system mwords=200 $end
+ $basis  gbasis=n31 ngauss=6 ndfunc=1 $end
+ $scf    conv=1.0d-10 $end
+ $data
+C2F4 twisted 90 deg, second CF2 pyramidalised (F y += 0.15 A)
+C1
+C  6.0      0.00000      0.00000      0.65550
+C  6.0      0.00000      0.00000     -0.65550
+F  9.0      0.00000      1.09607      1.38925
+F  9.0      0.00000     -1.09607      1.38925
+F  9.0      1.09607      0.15000     -1.38925
+F  9.0     -1.09607      0.15000     -1.38925
+ $end

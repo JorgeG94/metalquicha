@@ -228,6 +228,46 @@ module mqc_result_types
          !! nothing in an excitation energy says which kind it is.
       logical :: has_excited_states = .false.
 
+      ! State-averaged CASSCF, when `keywords.mcscf.n_states` asked for more
+      ! than one. `energy%scf` is `E_SA = sum_J w_J E_J`, the quantity the
+      ! orbitals were actually optimised against -- these five carry what it
+      ! was built from and, for a Gradient driver, every requested root's own
+      ! gradient.
+      ! TODO(mqc): not threaded through `result_send`/`result_recv` (and their
+      ! `i`-prefixed twins) below, unlike the excited-states arrays beside
+      ! them. Unreachable today: the reader's `check_state_averaged_run` refuses
+      ! `n_states > 1` on a fragmented deck, and `mqc_driver` refuses it again
+      ! for callers that never come through one. Lifting either without adding
+      ! these to the wire would silently drop them.
+      real(dp), allocatable :: mcscf_state_energies(:)
+         !! (n_states) every state's own total energy, in the order `weights`
+         !! was given.
+      real(dp), allocatable :: mcscf_state_spins(:)
+         !! (n_states) `<S^2>` of each state above, same order.
+      real(dp), allocatable :: mcscf_state_weights(:)
+         !! (n_states) the weights `E_SA` was built from.
+      real(dp), allocatable :: mcscf_state_gradients(:, :, :)
+         !! (3, n_atoms, size(mcscf_gradient_roots)) the analytic nuclear
+         !! gradient of each root named in `mcscf_gradient_roots`, from
+         !! `czt_sa_casscf_gradients`. Unallocated unless a Gradient driver
+         !! asked for a state-averaged CASSCF. The top-level `gradient` is
+         !! `dE_SA/dR`, not any one of these.
+      integer, allocatable :: mcscf_gradient_roots(:)
+         !! (size(mcscf_state_gradients, 3)) 1-based root index each slice of
+         !! `mcscf_state_gradients` belongs to, in the order computed.
+      integer, allocatable :: mcscf_nac_pairs(:, :)
+         !! (2, n_pairs) 1-based `[state_i, state_j]` each slice of the NAC
+         !! arrays below belongs to, from `keywords.mcscf.nac_pairs`.
+      real(dp), allocatable :: mcscf_nac_couplings(:, :, :)
+         !! (3, n_atoms, n_pairs) `d_IJ`, 1/Bohr, from `czt_sa_casscf_nacs`.
+      real(dp), allocatable :: mcscf_nac_interstate(:, :, :)
+         !! (3, n_atoms, n_pairs) `h_IJ = (E_J - E_I) d_IJ`, Hartree/Bohr.
+      real(dp), allocatable :: mcscf_nac_csf(:, :, :)
+         !! (3, n_atoms, n_pairs) the CSF-term part of `mcscf_nac_interstate`.
+      real(dp), allocatable :: mcscf_nac_energy_diff(:)
+         !! (n_pairs) `E_J - E_I`, Hartree.
+      logical :: has_mcscf_states = .false.
+
       logical :: stability_stable = .true.
          !! Whether the converged SCF is a minimum with respect to real
          !! closed-shell orbital rotations. Meaningful only with
@@ -489,6 +529,16 @@ contains
       end if
       if (allocated(this%nto_leading_weight)) deallocate (this%nto_leading_weight)
       if (allocated(this%state_spin)) deallocate (this%state_spin)
+      if (allocated(this%mcscf_state_energies)) deallocate (this%mcscf_state_energies)
+      if (allocated(this%mcscf_state_spins)) deallocate (this%mcscf_state_spins)
+      if (allocated(this%mcscf_state_weights)) deallocate (this%mcscf_state_weights)
+      if (allocated(this%mcscf_state_gradients)) deallocate (this%mcscf_state_gradients)
+      if (allocated(this%mcscf_gradient_roots)) deallocate (this%mcscf_gradient_roots)
+      if (allocated(this%mcscf_nac_pairs)) deallocate (this%mcscf_nac_pairs)
+      if (allocated(this%mcscf_nac_couplings)) deallocate (this%mcscf_nac_couplings)
+      if (allocated(this%mcscf_nac_interstate)) deallocate (this%mcscf_nac_interstate)
+      if (allocated(this%mcscf_nac_csf)) deallocate (this%mcscf_nac_csf)
+      if (allocated(this%mcscf_nac_energy_diff)) deallocate (this%mcscf_nac_energy_diff)
       call this%quao_rows%destroy()
       call this%reset()
    end subroutine result_destroy
@@ -518,6 +568,7 @@ contains
       this%has_quao_rows = .false.
       this%has_fukui = .false.
       this%has_excited_states = .false.
+      this%has_mcscf_states = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.

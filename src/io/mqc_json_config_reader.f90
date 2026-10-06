@@ -34,7 +34,7 @@ module mqc_json_config_reader
    use pic_ascii, only: to_lower
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, &
                              CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY, &
-                             CALC_TYPE_INTERACTION_ENERGY
+                             CALC_TYPE_INTERACTION_ENERGY, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
@@ -372,6 +372,8 @@ contains
       ! in the adapter, one hop after the spelling has been discarded.
       call optional_logical(json, "keywords.mcscf.optimize_orbitals", &
                             config%mcscf_optimize_orbitals)
+      call read_mcscf_state_averaging(json, config, error)
+      if (error%has_error()) return
       call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
       call optional_int(json, "keywords.dft.nlc_grid_level", &
                         config%dft_nlc_grid_level)
@@ -556,6 +558,8 @@ contains
       ! fragmentation block and the molecules together.
       call check_excited_states_run(config, error)
       if (error%has_error()) return
+      call check_state_averaged_run(config, error)
+      if (error%has_error()) return
       call check_interaction_energy_run(config, error)
    end subroutine populate_config
 
@@ -656,9 +660,6 @@ contains
       type(mqc_config_t), intent(in) :: config
       type(error_t), intent(inout) :: error
 
-      integer :: imol
-      logical :: fragmented
-
       if (config%excited_n_states <= 0) return
 
       if (config%calc_type /= CALC_TYPE_ENERGY) then
@@ -675,18 +676,9 @@ contains
          return
       end if
 
-      ! What the adapter calls fragmented: declared fragments and a level
-      ! above zero. Fragments with no expansion over them is the unfragmented
-      ! path, and reads the spectrum like any other.
-      fragmented = config%nfrag > 0
-      if (allocated(config%molecules)) then
-         do imol = 1, size(config%molecules)
-            if (config%molecules(imol)%nfrag > 0) fragmented = .true.
-         end do
-      end if
-      fragmented = fragmented .and. config%frag_level > 0
-
-      if (fragmented) then
+      ! Fragments with no expansion over them is the unfragmented path, and
+      ! reads the spectrum like any other.
+      if (is_fragmented(config)) then
          call error%set(ERROR_VALIDATION, "keywords.excited_states cannot be combined "// &
                         "with a fragmented calculation. Every fragment would converge "// &
                         "its own spectrum and every one of them would be thrown away: "// &
@@ -696,6 +688,64 @@ contains
          return
       end if
    end subroutine check_excited_states_run
+
+   subroutine check_state_averaged_run(config, error)
+      !! Refuse `keywords.mcscf.n_states > 1` where it has no implementation:
+      !! a fragmented calculation, or a Hessian driver
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(inout) :: error
+
+      ! Fragmented: each fragment would optimise its orbitals for its own state
+      ! average, and the expansion would sum those `E_SA` values into a total
+      ! no unfragmented calculation reproduces -- which roots are lowest, and
+      ! so what is averaged, changes from monomer to dimer. The per-state
+      ! energies are not carried back from a fragment worker either.
+      !
+      ! Hessian: one rank reaches `mcscf_calc_hessian`, which refuses, but
+      ! several reach `distributed_unfragmented_hessian`, which differences
+      ! `calc_gradient` and would return a Hessian of `E_SA` with nothing to
+      ! say so. Refused here so the answer does not depend on the rank count.
+
+      if (config%mcscf_n_states <= 1) return
+
+      if (config%calc_type == CALC_TYPE_HESSIAN) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 cannot be "// &
+                        "combined with driver 'Hessian': there is no state-averaged "// &
+                        "CASSCF Hessian, analytic or by differences of the gradient. "// &
+                        "Use driver 'Gradient' for each root's gradient, or set "// &
+                        "n_states to 1.")
+         return
+      end if
+
+      if (is_fragmented(config)) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states > 1 cannot be "// &
+                        "combined with a fragmented calculation. Each fragment would "// &
+                        "average over its own lowest roots, which are not the same "// &
+                        "states from one fragment to the next, so the many-body sum "// &
+                        "of those averages is not the state average of the whole "// &
+                        "system. Run the whole system unfragmented, or set n_states "// &
+                        "to 1.")
+         return
+      end if
+   end subroutine check_state_averaged_run
+
+   pure function is_fragmented(config) result(fragmented)
+      !! Whether the deck asks for a many-body expansion: fragments declared on
+      !! any molecule, and a level above zero -- what the adapter calls
+      !! fragmented
+      type(mqc_config_t), intent(in) :: config
+      logical :: fragmented
+
+      integer :: imol
+
+      fragmented = config%nfrag > 0
+      if (allocated(config%molecules)) then
+         do imol = 1, size(config%molecules)
+            if (config%molecules(imol)%nfrag > 0) fragmented = .true.
+         end do
+      end if
+      fragmented = fragmented .and. config%frag_level > 0
+   end function is_fragmented
 
    subroutine read_fragmentation(json, config, error)
       !! The keywords.fragmentation block, including per-level cutoffs
@@ -1605,6 +1655,204 @@ contains
       end do
    end subroutine read_ormas_partition
 
+   subroutine read_mcscf_state_averaging(json, config, error)
+      !! `keywords.mcscf.n_states` and `.weights`: how many roots the
+      !! orbitals average over, and how much each one counts
+      !!
+      !! Absent weights default to an equal average over `n_states` roots --
+      !! the one default that needs `n_states` first, so it is filled in here
+      !! rather than on the field itself. Left unallocated when `n_states` is
+      !! 1, since nothing downstream reads a single-state weight and an
+      !! always-allocated `[1.0]` would be one more thing to keep in sync with
+      !! the default.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      real(dp), parameter :: WEIGHT_SUM_TOLERANCE = 1.0e-10_dp
+         !! How far the weights may sum from one: loose enough for a deck's
+         !! decimal thirds, tight enough that a typo is caught.
+      real(dp) :: total
+      integer :: n_weights, i
+      logical :: found
+
+      if (error%has_error()) return
+      call optional_int(json, "keywords.mcscf.n_states", config%mcscf_n_states)
+      if (config%mcscf_n_states < 1) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.n_states is "// &
+                        trim(to_char(config%mcscf_n_states))//"; a state average "// &
+                        "needs at least one root.")
+         return
+      end if
+
+      call json%info("keywords.mcscf.weights", found=found, n_children=n_weights)
+      if (.not. found) then
+         if (config%mcscf_n_states > 1) then
+            allocate (config%mcscf_state_weights(config%mcscf_n_states))
+            config%mcscf_state_weights = 1.0_dp/real(config%mcscf_n_states, dp)
+         end if
+         call read_mcscf_gradient_roots(json, config, error)
+         if (error%has_error()) return
+         call read_mcscf_nac_pairs(json, config, error)
+         return
+      end if
+
+      if (n_weights /= config%mcscf_n_states) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.weights has "// &
+                        trim(to_char(n_weights))//" entries but keywords.mcscf.n_states "// &
+                        "asks for "//trim(to_char(config%mcscf_n_states))// &
+                        ": one weight per state.")
+         return
+      end if
+
+      allocate (config%mcscf_state_weights(n_weights))
+      total = 0.0_dp
+      do i = 1, n_weights
+         call require_real(json, "keywords.mcscf.weights("//int_to_key(i)//")", &
+                           config%mcscf_state_weights(i), error)
+         if (error%has_error()) return
+         if (config%mcscf_state_weights(i) < 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "keywords.mcscf.weights("// &
+                           trim(to_char(i))//") is "// &
+                           trim(to_char(config%mcscf_state_weights(i)))// &
+                           "; a state weight cannot be negative.")
+            return
+         end if
+         total = total + config%mcscf_state_weights(i)
+      end do
+      if (abs(total - 1.0_dp) > WEIGHT_SUM_TOLERANCE) then
+         call error%set(ERROR_VALIDATION, "keywords.mcscf.weights sums to "// &
+                        trim(to_char(total))//", not 1. State weights must add to one.")
+         return
+      end if
+      call read_mcscf_gradient_roots(json, config, error)
+      if (error%has_error()) return
+      call read_mcscf_nac_pairs(json, config, error)
+   end subroutine read_mcscf_state_averaging
+
+   subroutine read_mcscf_gradient_roots(json, config, error)
+      !! `keywords.mcscf.gradient_roots`: the string `"all"` or a list of
+      !! 1-based root indices -- which states a Gradient driver's fused
+      !! multi-root SA-CASSCF gradient builds. `"all"` and an
+      !! absent key both resolve to `config%mcscf_gradient_roots` left
+      !! unallocated; called from `read_mcscf_state_averaging`, after
+      !! `mcscf_n_states` is already set, since a list is validated against it.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: PATH = "keywords.mcscf.gradient_roots"
+      character(len=:), allocatable :: text
+      integer, allocatable :: roots(:)
+      logical :: found
+      integer :: kind, n, i, j
+
+      if (error%has_error()) return
+      call json%info(PATH, found=found, n_children=n)
+      if (.not. found) return
+      call json%info(PATH, found=found, var_type=kind)
+
+      if (kind == json_string) then
+         call require_string(json, PATH, text, error)
+         if (error%has_error()) return
+         if (trim(adjustl(text)) /= "all") then
+            call error%set(ERROR_VALIDATION, PATH//" is '"//trim(text)//"'; the only "// &
+                           "accepted string is 'all' (or give an explicit list of roots).")
+         end if
+         return
+      end if
+
+      if (n < 1) then
+         call error%set(ERROR_VALIDATION, PATH//" is empty; give at least one root.")
+         return
+      end if
+      allocate (roots(n))
+      do i = 1, n
+         call require_int(json, PATH//"("//int_to_key(i)//")", roots(i), error)
+         if (error%has_error()) return
+         if (roots(i) < 1 .or. roots(i) > config%mcscf_n_states) then
+            call error%set(ERROR_VALIDATION, PATH//"("//trim(to_char(i))//") is "// &
+                           trim(to_char(roots(i)))//"; roots are 1-based and there are "// &
+                           trim(to_char(config%mcscf_n_states))//" averaged states.")
+            return
+         end if
+         do j = 1, i - 1
+            if (roots(j) == roots(i)) then
+               call error%set(ERROR_VALIDATION, PATH//" repeats root "// &
+                              trim(to_char(roots(i)))//".")
+               return
+            end if
+         end do
+      end do
+      config%mcscf_gradient_roots = roots
+   end subroutine read_mcscf_gradient_roots
+
+   subroutine read_mcscf_nac_pairs(json, config, error)
+      !! `keywords.mcscf.nac_pairs`: an explicit list of `[state_i, state_j]`
+      !! pairs (1-based, distinct) -- which nonadiabatic couplings a Gradient
+      !! driver's `czt_sa_casscf_nacs` builds. Absent leaves
+      !! `config%mcscf_nac_pairs` unallocated (no NAC requested); unlike
+      !! `gradient_roots` there is no `"all"` spelling, since the pair count
+      !! grows with the square of `n_states`. Called from
+      !! `read_mcscf_state_averaging`, after `mcscf_n_states` is set, since
+      !! each pair is validated against it.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: PATH = "keywords.mcscf.nac_pairs"
+      character(len=:), allocatable :: pair_path
+      integer, allocatable :: pair(:), pairs(:, :)
+      logical :: found
+      integer :: n, ip, jp, k
+
+      if (error%has_error()) return
+      call json%info(PATH, found=found, n_children=n)
+      if (.not. found) return
+      if (n < 1) then
+         call error%set(ERROR_VALIDATION, PATH//" is empty; give at least one pair.")
+         return
+      end if
+
+      allocate (pairs(2, n))
+      do ip = 1, n
+         pair_path = PATH//"("//int_to_key(ip)//")"
+         call json%get(pair_path, pair, found)
+         if (.not. found .or. .not. allocated(pair)) then
+            call error%set(ERROR_PARSE, pair_path//" is not a list")
+            return
+         end if
+         if (size(pair) /= 2) then
+            call error%set(ERROR_VALIDATION, pair_path//" must be [state_i, state_j]")
+            return
+         end if
+         do k = 1, 2
+            if (pair(k) < 1 .or. pair(k) > config%mcscf_n_states) then
+               call error%set(ERROR_VALIDATION, pair_path//" entry "// &
+                              trim(to_char(pair(k)))//" is not one of the "// &
+                              trim(to_char(config%mcscf_n_states))//" averaged states.")
+               return
+            end if
+         end do
+         if (pair(1) == pair(2)) then
+            call error%set(ERROR_VALIDATION, pair_path//": a coupling needs two "// &
+                           "different states, not ["//trim(to_char(pair(1)))//", "// &
+                           trim(to_char(pair(2)))//"].")
+            return
+         end if
+         pairs(:, ip) = pair
+         do jp = 1, ip - 1
+            if ((pairs(1, jp) == pair(1) .and. pairs(2, jp) == pair(2)) .or. &
+                (pairs(1, jp) == pair(2) .and. pairs(2, jp) == pair(1))) then
+               call error%set(ERROR_VALIDATION, PATH//" repeats the pair ["// &
+                              trim(to_char(pair(1)))//", "//trim(to_char(pair(2)))//"].")
+               return
+            end if
+         end do
+      end do
+      config%mcscf_nac_pairs = pairs
+   end subroutine read_mcscf_nac_pairs
+
    subroutine read_avas_orbitals(json, config, error)
       !! `keywords.mcscf.avas.orbitals`, a list of atomic orbital labels
       type(json_file), intent(inout) :: json
@@ -1937,6 +2185,19 @@ contains
       call json%get(path, value, found)
       if (.not. found) call error%set(ERROR_VALIDATION, "Missing required key: "//path)
    end subroutine require_int
+
+   subroutine require_real(json, path, value, error)
+      !! Fetch a real, or record a missing-key error
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: path
+      real(dp), intent(out) :: value
+      type(error_t), intent(out) :: error
+
+      logical :: found
+
+      call json%get(path, value, found)
+      if (.not. found) call error%set(ERROR_VALIDATION, "Missing required key: "//path)
+   end subroutine require_real
 
    subroutine optional_string(json, path, value)
       !! Fetch a string if present, leaving `value` untouched otherwise
