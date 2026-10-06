@@ -541,7 +541,10 @@ if(MQC_ENABLE_CZT)
   # and knows nothing about integrals -- which is why it sits outside.
   addtest(mqc_afo_model)
   addtest(mqc_afo_orbital)
-  addtest(mqc_afo_fmo)
+  # LONG: 3265 s on a coverage build, over half its 90-minute budget alone.
+  # Twenty-one FMO runs, the GAMESS-parity butane- and glycine-tripeptide-
+  # with-water cases among them.
+  addlongtest(mqc_afo_fmo)
 
   # The pairs FMO exports, against the sums they were taken out of: every pair
   # adds up to the pair sum at level two, falls short by exactly the three-body
