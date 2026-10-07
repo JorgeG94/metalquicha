@@ -1505,11 +1505,14 @@ contains
       integer :: nlive, nnz
       real(dp) :: threshold, worst, per_set
       logical :: talk
+      logical :: tolerated
       type(timer_type) :: clock
       character(len=MAX_LINE_LENGTH) :: line
 
       talk = .false.
       if (present(progress)) talk = progress
+      tolerated = .false.
+      if (present(allow_unconverged)) tolerated = allow_unconverged
       n_vir = size(gaps, 1)
       n_occ = size(gaps, 2)
       n_pert = size(h, 3)
@@ -1743,25 +1746,20 @@ contains
       if (any(.not. done)) then
          ! Loud even when it is allowed: nothing downstream of here can tell an
          ! unconverged polarizability from a converged one by looking.
-         ! TODO(mqc): `goto 100` jumps out of the warning branch, which the house
-         ! style forbids outright.
-         if (present(allow_unconverged)) then
-            if (allow_unconverged) then
-               write (line, "(A,I0,A,ES9.2,A)") "          WARNING: ", &
-                  count(.not. done), " systems did not converge, worst residual ", &
-                  maxval(rnorm, mask=.not. done), " -- the potential is wrong"
-               call logger%warning(trim(line))
-               flush (output_unit)
-               goto 100
-            end if
+         if (tolerated) then
+            write (line, "(A,I0,A,ES9.2,A)") "          WARNING: ", &
+               count(.not. done), " systems did not converge, worst residual ", &
+               maxval(rnorm, mask=.not. done), " -- the potential is wrong"
+            call logger%warning(trim(line))
+            flush (output_unit)
+         else
+            call error%set(ERROR_VALIDATION, "the frequency-dependent response did not "// &
+                           "converge. The operator is positive definite when the "// &
+                           "reference is a minimum, so a reference that is not one is "// &
+                           "the first thing to check.")
+            return
          end if
-         call error%set(ERROR_VALIDATION, "the frequency-dependent response did not "// &
-                        "converge. The operator is positive definite when the "// &
-                        "reference is a minimum, so a reference that is not one is "// &
-                        "the first thing to check.")
-         return
       end if
-100   continue
 
       if (talk) then
          write (line, "(A,I0,A)") "          where the passes went (", prof_calls, &

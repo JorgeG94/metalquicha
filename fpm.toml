@@ -38,7 +38,11 @@ json-fortran = { git = "https://github.com/jacobwilliams/json-fortran.git", tag 
 
 openmp = "*"
 [extra.fortitude.check]
-select = ["C", "E", "S", "PORT"]
+select = ["C", "E", "S", "PORT", "OB041"]
+# OB041 is the computed GOTO. Plain GOTO and arithmetic IF are MQC004 and
+# MQC005 in tools/lint/mqc_lint.py: fortitude has no rule for the first, and
+# its arithmetic-IF rule (OB081) is preview-only in 0.9, where selecting it
+# does nothing but warn.
 
 # S212 is the warning that a program and a module are in the same file, this would make our tests stupid
 # C003 is 'implicit none' missing 'external', this does not always work with other compilers, so we ignore it
