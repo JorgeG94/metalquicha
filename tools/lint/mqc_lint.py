@@ -2,11 +2,13 @@
 """House rules for metalquicha's Fortran that no other linter covers.
 
 fprettify enforces layout and fortitude enforces language-level hygiene.
-Neither has an opinion about the two things this checks:
+Neither has an opinion about the things this checks:
 
   MQC001  a comment marker other than ``!`` or ``!!``
   MQC002  a parameter whose name already exists in mqc_physical_constants
   MQC003  a parameter whose value already exists there under another name
+  MQC004  a GOTO statement, in any spelling
+  MQC005  an arithmetic IF
 
 MQC002 and MQC003 exist because mqc_physical_constants says in its own header
 that it is the only place a constant may be written down -- the Bohr radius had
@@ -396,6 +398,109 @@ def check_constants(path, lines, consts, is_constants_module):
 
 
 # --------------------------------------------------------------------------
+# MQC004 -- GOTO
+# --------------------------------------------------------------------------
+
+# `goto 10`, `go to 10`, and the computed `go to (10, 20) i`. The lookbehind
+# keeps a derived-type component (`x%goto`) out; `\b` keeps `go_to` and
+# `ngoto` out, since `_` and letters are word characters.
+GOTO = re.compile(r"(?<![%\w])go\s*to\b", re.I)
+
+
+def blank_strings(code: str) -> str:
+    """``code`` with the contents of every string literal blanked out.
+
+    Lengths are kept, so a match still points at the right column; a doubled
+    quote inside a literal is its escape and stays inside it.
+    """
+    out = []
+    quote = None
+    i = 0
+    while i < len(code):
+        c = code[i]
+        if quote is not None:
+            if c == quote:
+                if i + 1 < len(code) and code[i + 1] == quote:
+                    out.append("  ")
+                    i += 2
+                    continue
+                quote = None
+                out.append(c)
+            else:
+                out.append(" ")
+        else:
+            if c in "'\"":
+                quote = c
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def check_goto(path, lines):
+    findings = []
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            continue  # a preprocessor line, not Fortran
+        code = blank_strings(code_before_comment(line))
+        if GOTO.search(code) and not suppressed(lines, i, "MQC004"):
+            findings.append(
+                Finding(
+                    path,
+                    i + 1,
+                    "MQC004",
+                    "GOTO is forbidden by the house style; use structured "
+                    "control flow (if/else, exit, cycle, or an early return)",
+                )
+            )
+    return findings
+
+
+# --------------------------------------------------------------------------
+# MQC005 -- arithmetic IF
+# --------------------------------------------------------------------------
+
+IF_OPEN = re.compile(r"^\s*(\d+\s+)?if\s*\(", re.I)
+THREE_LABELS = re.compile(r"^\s*\d+\s*,\s*\d+\s*,\s*\d+\s*$")
+
+
+def is_arithmetic_if(statement: str) -> bool:
+    """True for ``if (expr) n1, n2, n3``: the condition, then three labels."""
+    m = IF_OPEN.match(statement)
+    if not m:
+        return False
+    depth = 0
+    for j in range(m.end() - 1, len(statement)):
+        if statement[j] == "(":
+            depth += 1
+        elif statement[j] == ")":
+            depth -= 1
+            if depth == 0:
+                return bool(THREE_LABELS.match(statement[j + 1 :]))
+    return False
+
+
+def check_arithmetic_if(path, lines):
+    findings = []
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            continue
+        code = blank_strings(code_before_comment(line))
+        if any(is_arithmetic_if(st) for st in code.split(";")) and not suppressed(
+            lines, i, "MQC005"
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    i + 1,
+                    "MQC005",
+                    "arithmetic IF is forbidden by the house style; use "
+                    "if/else if/else on the sign of the expression",
+                )
+            )
+    return findings
+
+
+# --------------------------------------------------------------------------
 
 
 def gather(root: Path, explicit):
@@ -418,7 +523,7 @@ def main(argv=None):
     ap.add_argument("--all", action="store_true", help="check the whole tree")
     ap.add_argument(
         "--rules",
-        default="MQC001,MQC002,MQC003",
+        default="MQC001,MQC002,MQC003,MQC004,MQC005",
         help="comma-separated rules to apply (default: all)",
     )
     ap.add_argument(
@@ -471,6 +576,10 @@ def main(argv=None):
                 print(f"{rel}: rewrote {n} inline comment marker(s)")
         if "MQC001" in rules:
             findings += check_comment_markers(rel, lines, args.allow_predoc)
+        if "MQC004" in rules:
+            findings += check_goto(rel, lines)
+        if "MQC005" in rules:
+            findings += check_arithmetic_if(rel, lines)
         if rules & {"MQC002", "MQC003"}:
             same = Path(rel).as_posix() == CONSTANTS_MODULE.as_posix()
             findings += [

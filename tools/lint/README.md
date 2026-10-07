@@ -2,7 +2,7 @@
 
 House rules for metalquicha's Fortran that no other linter has an opinion
 about. fprettify owns layout, fortitude owns language-level hygiene, this owns
-the two conventions below.
+the conventions below.
 
 It runs from `.pre-commit-config.yaml` on every staged Fortran file, so CI
 enforces it through the existing `Check Pre-commit Hooks` workflow. Nothing new
@@ -57,6 +57,30 @@ This is the rule with teeth. When it was first run it found
 1.8897261254578281_dp` — a value matching neither CODATA revision the module
 offers, and drifted from the one it computes by 4.4e-10 relative. Every copy
 was self-consistent, so no test could have caught any of it.
+
+### MQC004 — GOTO
+
+Every spelling of the statement: `goto 10`, `go to 10`, and the computed
+`go to (10, 20) i`. The house style forbids it outright; use `if`/`else`,
+`exit`, `cycle` or an early `return` instead.
+
+Comments and string literals are not code and are not checked, so prose like
+"the blocks go to BLAS" is fine. Identifiers such as `go_to` or `ngoto` and a
+component `x%goto` are not the statement and are not flagged.
+
+fortitude's `OB041` also catches the computed form; it has no rule for a plain
+`GOTO`, which is why this one exists. The last `GOTO` in the tree, in the CPHF
+module's `dynamic_response_iterative`, was removed when this rule was added.
+
+### MQC005 — arithmetic IF
+
+`if (expr) n1, n2, n3`: branching on the sign of an expression to one of three
+labels. Also forbidden; write `if`/`else if`/`else` on the sign. A logical
+`IF` with a statement after it, such as `if (x > 0) call foo(1, 2, 3)`, is not
+matched.
+
+fortitude has this as `OB081`, but only as a preview rule in 0.9, where
+selecting it has no effect.
 
 ## Suppressing
 
