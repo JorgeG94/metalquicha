@@ -281,8 +281,8 @@ What is not here
 ================
 
 **Excited-state gradients.** There is no ``"driver": "Gradient"`` on top of a
-spectrum, analytic or numerical, and asking for one gives a ground-state
-gradient rather than an error. The Z-vector machinery it would need mostly
+spectrum, analytic or numerical: the reader refuses any driver but ``Energy``
+together with ``keywords.excited_states``. The Z-vector machinery it would need mostly
 exists -- the coupled-perturbed solver, the second kernel derivative, the
 non-symmetric Fock builds -- but the assembly does not.
 
