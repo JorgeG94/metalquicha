@@ -252,6 +252,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_sa_gradient_driver)
   target_link_libraries(test_mqc_sa_gradient_driver PRIVATE cint_fortran cint)
 
+  # The abstract effective-density provider a gradient or coupling is contracted
+  # from: a toy method extending it, dispatched through the base class, with the
+  # coupling column's overrides of the two defaults.
+  addtest(mqc_effective_density)
+
   # Nonadiabatic couplings between two SA-CASSCF states.
   addtest(mqc_sa_nac)
   target_link_libraries(test_mqc_sa_nac PRIVATE cint_fortran cint)
