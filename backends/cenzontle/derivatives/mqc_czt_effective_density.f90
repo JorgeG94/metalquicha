@@ -21,7 +21,8 @@ module mqc_czt_effective_density
    !! 3. `separable_pairs`: the separable two-particle part, as pairs of
    !!    densities from `density_pool` with Coulomb and exchange weights
    !! 4. `gamma_block`: the non-separable two-particle density in the AO
-   !!    basis, one block of its first index at a time
+   !!    basis, one block of its first index at a time; absent for a method
+   !!    whose two-particle part is all separable, such as Hartree-Fock
    !! 5. `overlap_antisymmetric`: the antisymmetric overlap term a coupling
    !!    carries; absent for an energy gradient
    !!
@@ -29,7 +30,7 @@ module mqc_czt_effective_density
    !! replaces object 4 with a three-index and a two-index density, is not
    !! defined here yet.
    use pic_types, only: dp
-   use mqc_error, only: error_t
+   use mqc_error, only: error_t, ERROR_GENERIC
    implicit none
    private
 
@@ -66,11 +67,12 @@ module mqc_czt_effective_density
          !! columns is held and contracted once.
       procedure(separable_pairs_i), deferred :: separable_pairs
          !! Object 3: the separable pairs of one column
-      procedure(gamma_ao_map_i), deferred :: gamma_ao_map
+      procedure :: gamma_ao_map => no_gamma_ao_map
          !! Which AOs carry any column's Gamma, as the compressed index
-         !! `gamma_block` is written in
-      procedure(gamma_block_i), deferred :: gamma_block
-         !! Object 4: every column's Gamma over one first-index block
+         !! `gamma_block` is written in. Unallocated unless overridden.
+      procedure :: gamma_block => no_gamma_block
+         !! Object 4: every column's Gamma over one first-index block. An
+         !! error unless overridden, since there is no block to ask for.
       procedure :: overlap_antisymmetric => no_antisymmetric_overlap
          !! Object 5: unallocated unless overridden
       procedure :: nuclear_weight => full_nuclear_weight
@@ -127,7 +129,8 @@ module mqc_czt_effective_density
          class(effective_density_t), intent(in) :: self
          integer, allocatable, intent(out) :: ao_map(:)
             !! (n_ao); position of each AO in the compressed numbering, or 0
-            !! for one that carries no Gamma. All zero: no column has Gamma.
+            !! for one that carries no Gamma. Unallocated or all zero: no
+            !! column has Gamma, and `gamma_block` must not be called.
       end subroutine gamma_ao_map_i
 
       subroutine gamma_block_i(self, p_lo, p_hi, gamma, error)
@@ -158,6 +161,31 @@ contains
       associate (unused_self => self, unused_ic => ic, unused_error => error)
       end associate
    end subroutine no_antisymmetric_overlap
+
+   subroutine no_gamma_ao_map(self, ao_map)
+      !! No non-separable two-particle density: `ao_map` comes back unallocated
+      class(effective_density_t), intent(in) :: self
+      integer, allocatable, intent(out) :: ao_map(:)
+         !! Unallocated; (n_ao) where overridden
+      associate (unused_self => self)
+      end associate
+   end subroutine no_gamma_ao_map
+
+   subroutine no_gamma_block(self, p_lo, p_hi, gamma, error)
+      !! Refuses: a provider with no Gamma has no block to fill, and the empty
+      !! `gamma_ao_map` already told the caller not to ask
+      class(effective_density_t), intent(in) :: self
+      integer, intent(in) :: p_lo, p_hi
+         !! Compressed first-index range, 1-based, inclusive
+      real(dp), allocatable, intent(inout) :: gamma(:, :, :, :, :)
+         !! Deallocated, so nothing stale reads as a filled block
+      type(error_t), intent(inout) :: error
+      associate (unused_self => self, unused_lo => p_lo, unused_hi => p_hi)
+      end associate
+      if (allocated(gamma)) deallocate (gamma)
+      call error%set(ERROR_GENERIC, "gamma_block called on an effective density with "// &
+                     "no non-separable Gamma; check gamma_ao_map first")
+   end subroutine no_gamma_block
 
    function full_nuclear_weight(self, ic) result(weight)
       !! The weight of the nuclear-repulsion derivative in column `ic`: 1, as

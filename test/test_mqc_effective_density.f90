@@ -6,9 +6,14 @@ module test_mqc_effective_density
    !! coupling -- and a Gamma on one AO only. Every check here goes through
    !! `class(effective_density_t)`, as the contraction will.
    !!
-   !! The coupling column is where the two non-deferred bindings matter: it
-   !! overrides `nuclear_weight` to 0 and supplies an antisymmetric overlap
+   !! The coupling column is where two of the non-deferred bindings matter:
+   !! it overrides `nuclear_weight` to 0 and supplies an antisymmetric overlap
    !! term, while the gradient column keeps both defaults.
+   !!
+   !! `separable_density_t` is the other shape a method can have: one
+   !! gradient column whose two-particle part is all separable, as for
+   !! Hartree-Fock. It overrides neither Gamma binding, and the defaults must
+   !! say there is no Gamma rather than leave the contraction to guess.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -36,6 +41,16 @@ module test_mqc_effective_density
       procedure :: nuclear_weight => toy_nuclear_weight
    end type toy_density_t
 
+   type, extends(effective_density_t) :: separable_density_t
+      !! One gradient column with no Gamma: only the deferred bindings
+   contains
+      procedure :: n_columns => separable_n_columns
+      procedure :: energy_weighted => separable_matrix
+      procedure :: one_particle => separable_matrix
+      procedure :: density_pool => separable_density_pool
+      procedure :: separable_pairs => separable_separable_pairs
+   end type separable_density_t
+
 contains
 
    subroutine collect_mqc_effective_density_tests(testsuite)
@@ -46,7 +61,8 @@ contains
                   new_unittest("separable_pairs_index_one_shared_pool", test_pool), &
                   new_unittest("gamma_comes_in_compressed_blocks", test_gamma), &
                   new_unittest("a_coupling_overrides_the_defaults", test_coupling), &
-                  new_unittest("a_column_out_of_range_is_refused", test_refuse) &
+                  new_unittest("a_column_out_of_range_is_refused", test_refuse), &
+                  new_unittest("a_separable_method_needs_no_gamma", test_no_gamma) &
                   ]
    end subroutine collect_mqc_effective_density_tests
 
@@ -169,6 +185,52 @@ contains
       if (ic == COLUMN_COUPLING) weight = 0.0_dp
    end function toy_nuclear_weight
 
+   ! ---- the separable toy: what Hartree-Fock would look like ---------------
+
+   function separable_n_columns(self) result(n)
+      class(separable_density_t), intent(in) :: self
+      integer :: n
+      associate (unused_self => self)
+      end associate
+      n = 1
+   end function separable_n_columns
+
+   subroutine separable_matrix(self, ic, matrix, error)
+      class(separable_density_t), intent(in) :: self
+      integer, intent(in) :: ic
+      real(dp), allocatable, intent(out) :: matrix(:, :)
+      type(error_t), intent(inout) :: error
+      associate (unused_self => self)
+      end associate
+      if (ic /= 1) then
+         call error%set(ERROR_VALIDATION, "separable toy: no such column")
+         return
+      end if
+      allocate (matrix(N_AO, N_AO))
+      matrix = 1.0_dp
+   end subroutine separable_matrix
+
+   subroutine separable_density_pool(self, pool, error)
+      class(separable_density_t), intent(in) :: self
+      real(dp), allocatable, intent(out) :: pool(:, :, :)
+      type(error_t), intent(inout) :: error
+      associate (unused_self => self, unused_error => error)
+      end associate
+      allocate (pool(N_AO, N_AO, 1))
+      pool = 1.0_dp
+   end subroutine separable_density_pool
+
+   subroutine separable_separable_pairs(self, ic, pairs, error)
+      !! The Hartree-Fock form: D . (J - K/2)(D)
+      class(separable_density_t), intent(in) :: self
+      integer, intent(in) :: ic
+      type(separable_pair_t), allocatable, intent(out) :: pairs(:)
+      type(error_t), intent(inout) :: error
+      associate (unused_self => self, unused_ic => ic, unused_error => error)
+      end associate
+      pairs = [separable_pair_t(left=1, right=1, coulomb=0.5_dp, exchange=0.25_dp)]
+   end subroutine separable_separable_pairs
+
    ! ---- the tests: everything through the base class -----------------------
 
    subroutine test_dispatch(error)
@@ -272,6 +334,31 @@ contains
       if (allocated(error)) return
       call check(error,.not. allocated(w), "and returns no matrix")
    end subroutine test_refuse
+
+   subroutine test_no_gamma(error)
+      type(error_type), allocatable, intent(out) :: error
+      class(effective_density_t), allocatable :: provider
+      type(error_t) :: err
+      integer, allocatable :: ao_map(:)
+      real(dp), allocatable :: gamma(:, :, :, :, :)
+
+      allocate (separable_density_t :: provider)
+      call provider%gamma_ao_map(ao_map)
+      call check(error,.not. allocated(ao_map), &
+                 "the default map says no column has Gamma")
+      if (allocated(error)) return
+
+      ! A stale block from an earlier provider must not survive the refusal.
+      allocate (gamma(1, 1, 1, 1, 1))
+      call provider%gamma_block(1, 1, gamma, err)
+      call check(error, err%has_error(), "asking for a block that does not exist is an error")
+      if (allocated(error)) return
+      call check(error,.not. allocated(gamma), "and leaves no block behind")
+      if (allocated(error)) return
+
+      call check(error, provider%nuclear_weight(1) == 1.0_dp, &
+                 "the other defaults still hold")
+   end subroutine test_no_gamma
 
 end module test_mqc_effective_density
 
