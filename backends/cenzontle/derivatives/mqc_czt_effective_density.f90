@@ -61,7 +61,15 @@ module mqc_czt_effective_density
    type :: separable_pair_t
       !! One separable two-particle term of a column:
       !! `coulomb * D_left . J^x(D_right) - exchange * D_left . K^x(D_right)`,
-      !! with both densities taken from the provider's `density_pool`
+      !! with both densities taken from the provider's `density_pool`.
+      !!
+      !! Spin enters through the pool: an unrestricted method pools the total,
+      !! alpha and beta densities, pairs the total with itself for Coulomb and
+      !! each spin density with itself for exchange. The pool is symmetric, so
+      !! a method whose density is not (a coupled-cluster response density, a
+      !! transition density) pools its symmetric part. That is exact whenever
+      !! the other density of the pair is symmetric, because the antisymmetric
+      !! part then drops out of both `J^x` and `K^x`.
       integer :: left = 0
          !! Index of the left density in `density_pool`, 1-based
       integer :: right = 0
@@ -71,6 +79,9 @@ module mqc_czt_effective_density
       real(dp) :: exchange = 0.0_dp
          !! Weight of the exchange derivative term
    end type separable_pair_t
+   ! TODO(mqc): there is no attenuated-exchange weight, so the second K^x pass
+   ! a range-separated hybrid makes at the screened omega cannot be expressed;
+   ! a Kohn-Sham provider for such a functional would miss that term.
 
    type, abstract :: effective_density_t
       !! The effective densities of `n_columns()` gradient or coupling columns,
