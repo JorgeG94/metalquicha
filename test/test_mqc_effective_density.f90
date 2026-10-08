@@ -6,9 +6,10 @@ module test_mqc_effective_density
    !! coupling -- and a Gamma on one AO only. Every check here goes through
    !! `class(effective_density_t)`, as the contraction will.
    !!
-   !! The coupling column is where two of the non-deferred bindings matter:
-   !! it overrides `nuclear_weight` to 0 and supplies an antisymmetric overlap
-   !! term, while the gradient column keeps both defaults.
+   !! The coupling column is where the column description matters: it says
+   !! which pair of states it couples, gets a `nuclear_weight` of 0 from that
+   !! description, and supplies an antisymmetric overlap term, while the
+   !! gradient column names its one state and keeps both defaults.
    !!
    !! `separable_density_t` is the other shape a method can have: one
    !! gradient column whose two-particle part is all separable, as for
@@ -17,7 +18,8 @@ module test_mqc_effective_density
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_effective_density, only: effective_density_t, separable_pair_t
+   use mqc_czt_effective_density, only: effective_density_t, separable_pair_t, column_t, &
+                                        COLUMN_KIND_GRADIENT, COLUMN_KIND_COUPLING
    implicit none
    private
 
@@ -26,11 +28,15 @@ module test_mqc_effective_density
    integer, parameter :: N_AO = 2
    integer, parameter :: COLUMN_GRADIENT = 1
    integer, parameter :: COLUMN_COUPLING = 2
+   integer, parameter :: GRADIENT_STATE = 2
+      !! The toy differentiates root 2, so a column is not just its index
+   integer, parameter :: COUPLED_STATES(2) = [1, 3]
 
    type, extends(effective_density_t) :: toy_density_t
       !! Two columns over two AOs, with fixed matrices
    contains
       procedure :: n_columns => toy_n_columns
+      procedure :: column => toy_column
       procedure :: energy_weighted => toy_energy_weighted
       procedure :: one_particle => toy_one_particle
       procedure :: density_pool => toy_density_pool
@@ -38,13 +44,13 @@ module test_mqc_effective_density
       procedure :: gamma_ao_map => toy_gamma_ao_map
       procedure :: gamma_block => toy_gamma_block
       procedure :: overlap_antisymmetric => toy_overlap_antisymmetric
-      procedure :: nuclear_weight => toy_nuclear_weight
    end type toy_density_t
 
    type, extends(effective_density_t) :: separable_density_t
       !! One gradient column with no Gamma: only the deferred bindings
    contains
       procedure :: n_columns => separable_n_columns
+      procedure :: column => separable_column
       procedure :: energy_weighted => separable_matrix
       procedure :: one_particle => separable_matrix
       procedure :: density_pool => separable_density_pool
@@ -60,6 +66,7 @@ contains
                   new_unittest("a_method_extends_it_and_dispatches", test_dispatch), &
                   new_unittest("separable_pairs_index_one_shared_pool", test_pool), &
                   new_unittest("gamma_comes_in_compressed_blocks", test_gamma), &
+                  new_unittest("each_column_names_its_states", test_columns), &
                   new_unittest("a_coupling_overrides_the_defaults", test_coupling), &
                   new_unittest("a_column_out_of_range_is_refused", test_refuse), &
                   new_unittest("a_separable_method_needs_no_gamma", test_no_gamma) &
@@ -175,15 +182,19 @@ contains
       matrix = reshape([0.0_dp, -1.0_dp, 1.0_dp, 0.0_dp], [N_AO, N_AO])
    end subroutine toy_overlap_antisymmetric
 
-   function toy_nuclear_weight(self, ic) result(weight)
+   function toy_column(self, ic) result(col)
+      !! Column 1 is root 2's gradient; column 2 couples roots 1 and 3
       class(toy_density_t), intent(in) :: self
       integer, intent(in) :: ic
-      real(dp) :: weight
+      type(column_t) :: col
       associate (unused_self => self)
       end associate
-      weight = 1.0_dp
-      if (ic == COLUMN_COUPLING) weight = 0.0_dp
-   end function toy_nuclear_weight
+      if (ic == COLUMN_COUPLING) then
+         col = column_t(kind=COLUMN_KIND_COUPLING, bra=COUPLED_STATES(1), ket=COUPLED_STATES(2))
+      else
+         col = column_t(kind=COLUMN_KIND_GRADIENT, bra=GRADIENT_STATE, ket=GRADIENT_STATE)
+      end if
+   end function toy_column
 
    ! ---- the separable toy: what Hartree-Fock would look like ---------------
 
@@ -194,6 +205,16 @@ contains
       end associate
       n = 1
    end function separable_n_columns
+
+   function separable_column(self, ic) result(col)
+      !! The ground state's gradient
+      class(separable_density_t), intent(in) :: self
+      integer, intent(in) :: ic
+      type(column_t) :: col
+      associate (unused_self => self, unused_ic => ic)
+      end associate
+      col = column_t(kind=COLUMN_KIND_GRADIENT, bra=1, ket=1)
+   end function separable_column
 
    subroutine separable_matrix(self, ic, matrix, error)
       class(separable_density_t), intent(in) :: self
@@ -299,6 +320,21 @@ contains
       call check(error, gamma(1, 1, 1, 1, 2) == 200.0_dp, "column 2's Gamma")
    end subroutine test_gamma
 
+   subroutine test_columns(error)
+      type(error_type), allocatable, intent(out) :: error
+      class(effective_density_t), allocatable :: provider
+      type(column_t) :: col
+
+      allocate (toy_density_t :: provider)
+      col = provider%column(COLUMN_GRADIENT)
+      call check(error, col%kind == COLUMN_KIND_GRADIENT .and. col%bra == GRADIENT_STATE &
+                 .and. col%ket == GRADIENT_STATE, "the gradient column names its root")
+      if (allocated(error)) return
+      col = provider%column(COLUMN_COUPLING)
+      call check(error, col%kind == COLUMN_KIND_COUPLING .and. col%bra == COUPLED_STATES(1) &
+                 .and. col%ket == COUPLED_STATES(2), "the coupling column names its pair, in order")
+   end subroutine test_columns
+
    subroutine test_coupling(error)
       type(error_type), allocatable, intent(out) :: error
       class(effective_density_t), allocatable :: provider
@@ -310,7 +346,7 @@ contains
                  "a gradient column carries the nuclear repulsion")
       if (allocated(error)) return
       call check(error, provider%nuclear_weight(COLUMN_COUPLING) == 0.0_dp, &
-                 "a coupling column does not")
+                 "a coupling column does not, from its description alone")
       if (allocated(error)) return
 
       call provider%overlap_antisymmetric(COLUMN_GRADIENT, anti, err)
