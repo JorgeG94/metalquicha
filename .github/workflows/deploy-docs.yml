@@ -4,12 +4,26 @@ on:
   push:
     branches:
       - main
+  # Lets a deploy be run by hand, e.g. right after the Pages source is changed.
+  workflow_dispatch:
 
+# The site is deployed as a Pages artifact rather than committed to a branch.
+# Every deploy used to land as a commit on gh-pages-docs, and every clone of the
+# repository carried all of them: about 1 GiB against main's 37 MiB.
+# Requires Settings -> Pages -> Source: "GitHub Actions".
 permissions:
-  contents: write  # needed to push to gh-pages
+  contents: read
+  pages: write     # to deploy to Pages
+  id-token: write  # to verify the deployment originates from this workflow
+
+# One deploy at a time. A newer push waits rather than cancelling a deploy that
+# is already running.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,9 +47,19 @@ jobs:
       - name: Build FORD docs
         run: ford -m "PIC_HAVE_BLAS" ford.md
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/fpm-ford
-          publish_branch: gh-pages-docs
+          path: ./docs/fpm-ford
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
