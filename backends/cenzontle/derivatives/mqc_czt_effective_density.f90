@@ -26,7 +26,10 @@ module mqc_czt_effective_density
    !! 5. `overlap_antisymmetric`: the antisymmetric overlap term a coupling
    !!    carries; absent for an energy gradient
    !!
-   !! plus the scalar `nuclear_weight`. The density-fitted form, which
+   !! plus the scalar `nuclear_weight`. `column` says which state a gradient
+   !! column belongs to, or which pair of states a coupling column couples,
+   !! so a caller can file each contracted column under the right root or
+   !! pair. The density-fitted form, which
    !! replaces object 4 with a three-index and a two-index density, is not
    !! defined here yet.
    use pic_types, only: dp
@@ -36,6 +39,24 @@ module mqc_czt_effective_density
 
    public :: effective_density_t
    public :: separable_pair_t
+   public :: column_t
+   public :: COLUMN_KIND_GRADIENT, COLUMN_KIND_COUPLING
+
+   integer, parameter :: COLUMN_KIND_GRADIENT = 1
+      !! The nuclear gradient of one state's energy
+   integer, parameter :: COLUMN_KIND_COUPLING = 2
+      !! The nonadiabatic coupling between two states
+
+   type :: column_t
+      !! What one column is the derivative of
+      integer :: kind = COLUMN_KIND_GRADIENT
+         !! `COLUMN_KIND_GRADIENT` or `COLUMN_KIND_COUPLING`
+      integer :: bra = 1
+         !! The state, 1-based; the first state of a coupling
+      integer :: ket = 1
+         !! Equal to `bra` for a gradient; the second state of a coupling,
+         !! in the `[state_i, state_j]` order of `keywords.mcscf.nac_pairs`
+   end type column_t
 
    type :: separable_pair_t
       !! One separable two-particle term of a column:
@@ -57,6 +78,8 @@ module mqc_czt_effective_density
    contains
       procedure(column_count_i), deferred :: n_columns
          !! How many columns this provider carries
+      procedure(column_describe_i), deferred :: column
+         !! Which state, or pair of states, one column belongs to
       procedure(column_matrix_i), deferred :: energy_weighted
          !! Object 1: W of one column, (n_ao, n_ao)
       procedure(column_matrix_i), deferred :: one_particle
@@ -75,8 +98,9 @@ module mqc_czt_effective_density
          !! error unless overridden, since there is no block to ask for.
       procedure :: overlap_antisymmetric => no_antisymmetric_overlap
          !! Object 5: unallocated unless overridden
-      procedure :: nuclear_weight => full_nuclear_weight
-         !! 1 unless overridden
+      procedure :: nuclear_weight => kind_nuclear_weight
+         !! 1 for a gradient column and 0 for a coupling, from `column`,
+         !! unless overridden
    end type effective_density_t
 
    abstract interface
@@ -87,6 +111,16 @@ module mqc_czt_effective_density
          class(effective_density_t), intent(in) :: self
          integer :: n
       end function column_count_i
+
+      function column_describe_i(self, ic) result(col)
+         !! The state, or pair of states, column `ic` belongs to
+         import :: effective_density_t, column_t
+         implicit none
+         class(effective_density_t), intent(in) :: self
+         integer, intent(in) :: ic
+            !! Column, 1-based
+         type(column_t) :: col
+      end function column_describe_i
 
       subroutine column_matrix_i(self, ic, matrix, error)
          !! One AO matrix of column `ic`
@@ -187,16 +221,17 @@ contains
                      "no non-separable Gamma; check gamma_ao_map first")
    end subroutine no_gamma_block
 
-   function full_nuclear_weight(self, ic) result(weight)
-      !! The weight of the nuclear-repulsion derivative in column `ic`: 1, as
-      !! for an energy gradient. A coupling column overrides this to 0.
+   function kind_nuclear_weight(self, ic) result(weight)
+      !! The weight of the nuclear-repulsion derivative in column `ic`: 1 for
+      !! an energy gradient, 0 for a coupling, which has no nuclear term
       class(effective_density_t), intent(in) :: self
       integer, intent(in) :: ic
          !! Column, 1-based
       real(dp) :: weight
-      associate (unused_self => self, unused_ic => ic)
-      end associate
-      weight = 1.0_dp
-   end function full_nuclear_weight
+      type(column_t) :: col
+      col = self%column(ic)
+      weight = 0.0_dp
+      if (col%kind == COLUMN_KIND_GRADIENT) weight = 1.0_dp
+   end function kind_nuclear_weight
 
 end module mqc_czt_effective_density
