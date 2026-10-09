@@ -673,8 +673,10 @@ contains
             ! For now: total_fragments = n_pie_terms (each PIE term is a subsystem to evaluate)
             total_fragments = n_pie_terms
          else
-            ! Standard MBE mode. Monomers, then n-mers, then screening, then
-            ! the size sort, all of it in `generate_mbe_term_list` -- which a
+            ! Standard MBE mode. Monomers, then n-mers, then screening, the
+            ! counterpoise rows if any, and the sort (by size, or by real
+            ! monomers for the full-basis scheme), all of it in
+            ! `generate_mbe_term_list` -- which a
             ! geometry optimization also calls, so the list it freezes is the
             ! one this would have built.
             call generate_mbe_term_list(sys_geom, config, max_level, polymers, total_fragments, &

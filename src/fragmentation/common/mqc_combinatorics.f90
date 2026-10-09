@@ -74,7 +74,7 @@ contains
       !! `"none"` included, gives `COUNTERPOISE_NONE`.
       ! `check_counterpoise_support` refuses every spelling it does not know
       ! before a term list is built, so the fall-through is not reached by a
-      ! deck that got that far. It does not accept "ssfc" yet.
+      ! deck that got that far.
       character(len=*), intent(in) :: name
       integer :: scheme
 

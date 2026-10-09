@@ -15,7 +15,8 @@ module test_mqc_term_list
    !! the optimizer backend is set to.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_frag_utils, only: generate_mbe_term_list, get_nfrags, binomial, fragment_lookup_t
-   use mqc_combinatorics, only: is_auxiliary_row, real_count_of, COUNTERPOISE_VMFC
+   use mqc_combinatorics, only: is_auxiliary_row, real_count_of, rows_match_counterpoise, &
+                                COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_adapter, only: driver_config_t
    use pic_types, only: dp, int64
@@ -36,6 +37,12 @@ contains
                   new_unittest("list_moves_with_geometry", test_list_moves_with_geometry), &
                   new_unittest("counterpoise_gives_every_n_mer_its_subsets", test_vmfc_rows), &
                   new_unittest("counterpoise_follows_screening", test_vmfc_after_screening), &
+                  new_unittest("full_basis_counterpoise_rows_ghost_the_whole_system", test_ssfc_rows), &
+                  new_unittest("full_basis_counterpoise_follows_screening", test_ssfc_after_screening), &
+                  new_unittest("full_basis_counterpoise_ghosts_the_system_under_a_reference", &
+                               test_ssfc_with_reference), &
+                  new_unittest("full_basis_counterpoise_of_two_monomers_is_vmfc", test_ssfc_two_monomers), &
+                  new_unittest("full_basis_counterpoise_is_ordered_by_real_monomers", test_ssfc_order), &
                   new_unittest("reference_closure_has_the_derived_length", test_reference_count), &
                   new_unittest("reference_closure_is_closed_complete_minimal", test_reference_closure), &
                   new_unittest("reference_closure_follows_screening", test_reference_after_screening) &
@@ -303,6 +310,317 @@ contains
                  "each surviving pair owes exactly two ghosted monomers, and a "// &
                  "screened one owes none")
    end subroutine test_vmfc_after_screening
+
+   subroutine test_ssfc_rows(error)
+      !! The full-basis list: one own-basis and one full-basis row per monomer,
+      !! one full-basis row per term of two or more
+      !!
+      !! Levels 2 to 4 over four monomers, so the whole system is a term at the
+      !! last, where its complement is empty and it stays all-real. Level 1 adds
+      !! nothing under either scheme.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms
+      integer :: level
+
+      call make_chain(sys_geom, 4.0_dp)
+      config%counterpoise = "ssfc"
+
+      config%nlevel = 1
+      call generate_mbe_term_list(sys_geom, config, 1, polymers, n_terms)
+      call check(error, n_terms == 4_int64, "level 1 adds no rows under the full-basis scheme")
+      if (allocated(error)) return
+      call check(error,.not. any(polymers(1:n_terms, :) < 0), "level 1 ghosts nothing")
+      if (allocated(error)) return
+
+      do level = 2, 4
+         config%nlevel = level
+         call generate_mbe_term_list(sys_geom, config, level, polymers, n_terms)
+
+         ! 4 own-basis monomers, 4 full-basis ones, and a row for every term
+         ! of 2 to `level` monomers: 6, then 4 more, then 1 more.
+         call check(error, n_terms == 8_int64 + get_nfrags(4, level) - 4_int64, &
+                    "SSFC("//int_str(int(level, int64))//") over 4 monomers is 8 monomer rows "// &
+                    "and one per term of order 2 and above, not "//int_str(n_terms))
+         if (allocated(error)) return
+
+         call check_full_basis_list(error, polymers, n_terms, 4, level)
+         if (allocated(error)) return
+         call check(error,.not. rows_match_counterpoise(polymers, n_terms, 4, COUNTERPOISE_VMFC), &
+                    "a full-basis list of four monomers is not a VMFC list")
+         if (allocated(error)) return
+      end do
+   end subroutine test_ssfc_rows
+
+   subroutine test_ssfc_after_screening(error)
+      !! Screening decides the terms, and the full-basis rows follow it
+      !!
+      !! A 3 Angstrom cutoff on the 4 Bohr chain keeps the three adjacent pairs;
+      !! a 1 Angstrom one keeps none, leaving the monomers alone -- two rows
+      !! each and no summed term. A kept pair still ghosts the monomers on both
+      !! sides of it, kept terms or not. In a chain with one monomer out of
+      !! reach of the rest, that monomer keeps both its rows and the kept pairs
+      !! are the only summed terms.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms
+
+      call make_chain(sys_geom, 4.0_dp)
+      config%nlevel = 2
+      config%counterpoise = "ssfc"
+      allocate (config%fragment_cutoffs(2))
+
+      config%fragment_cutoffs = [0.0_dp, 3.0_dp]
+      call generate_mbe_term_list(sys_geom, config, 2, polymers, n_terms)
+      call check(error, n_terms == 11_int64, &
+                 "4 monomers twice and the 3 adjacent pairs once is 11 rows, not "//int_str(n_terms))
+      if (allocated(error)) return
+      call check_full_basis_list(error, polymers, n_terms, 4, 2)
+      if (allocated(error)) return
+
+      config%fragment_cutoffs = [0.0_dp, 1.0_dp]
+      call generate_mbe_term_list(sys_geom, config, 2, polymers, n_terms)
+      call check(error, n_terms == 8_int64, &
+                 "with every pair screened only the monomers remain, twice each: "//int_str(n_terms))
+      if (allocated(error)) return
+      call check_full_basis_list(error, polymers, n_terms, 4, 2)
+      if (allocated(error)) return
+
+      ! Mixed: the fourth monomer is moved far from the others, so a 3 Angstrom
+      ! cutoff keeps the pairs 1-2 and 2-3 and leaves monomer 4 with no pair.
+      ! It still has both its own-basis and its full-basis row.
+      sys_geom%coordinates(1, 4) = 40.0_dp
+      config%fragment_cutoffs = [0.0_dp, 3.0_dp]
+      call generate_mbe_term_list(sys_geom, config, 2, polymers, n_terms)
+      call check(error, n_terms == 10_int64, &
+                 "4 monomers twice and the 2 kept pairs once is 10 rows, not "//int_str(n_terms))
+      if (allocated(error)) return
+      call check_full_basis_list(error, polymers, n_terms, 4, 2)
+      if (allocated(error)) return
+      call check(error, count(polymers(1:n_terms, 1) == 4 .and. all(polymers(1:n_terms, 2:) == 0, dim=2)) == 1, &
+                 "the isolated monomer keeps its own-basis row")
+      if (allocated(error)) return
+      call check(error, count(polymers(1:n_terms, 1) == 4 .and. polymers(1:n_terms, 2) < 0) == 1, &
+                 "the isolated monomer keeps its full-basis row")
+   end subroutine test_ssfc_after_screening
+
+   subroutine test_ssfc_with_reference(error)
+      !! Reducing to one fragment's interactions keeps the whole system's basis
+      !!
+      !! The reduced list drops far monomers and the terms only they need, but
+      !! the basis is still the cluster's: every summed row ghosts the monomers
+      !! the list no longer has as well as the ones it does. Full-basis monomer
+      !! rows are built for the monomers kept, and the count is the reduced
+      !! ordinary list's plus one row for each of those. `n_full` is what the
+      !! same deck gives with no reference.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config, plain
+      integer, allocatable :: polymers(:, :), reduced(:, :), everything(:, :)
+      integer(int64) :: n_terms, n_reduced, n_all, n_full
+      integer :: ref, level
+
+      call make_line(sys_geom, 6, 4.0_dp)
+
+      ! Unscreened at levels 2 and 3, then screened so that some monomers are
+      ! dropped by the reduction.
+      do level = 2, 3
+         do ref = 1, 6
+            config%nlevel = level
+            config%reference_fragment = ref
+            config%counterpoise = "ssfc"
+            call generate_mbe_term_list(sys_geom, config, level, polymers, n_terms, n_full=n_full)
+
+            plain = config
+            plain%counterpoise = "none"
+            call generate_mbe_term_list(sys_geom, plain, level, reduced, n_reduced)
+            call check(error, n_terms == n_reduced + count_rows_of_size(reduced, n_reduced, 1), &
+                       "the reduced full-basis list is the reduced ordinary list and one row "// &
+                       "for each monomer")
+            if (allocated(error)) return
+
+            plain%reference_fragment = 0
+            plain%counterpoise = "ssfc"
+            call generate_mbe_term_list(sys_geom, plain, level, everything, n_all)
+            call check(error, n_full == n_all, "n_full should be the unreduced full-basis count")
+            if (allocated(error)) return
+
+            call check_full_basis_list(error, polymers, n_terms, 6, level)
+            if (allocated(error)) return
+         end do
+      end do
+
+      allocate (config%fragment_cutoffs(3))
+      config%fragment_cutoffs = [0.0_dp, 5.0_dp, 3.0_dp]
+      do ref = 1, 6
+         config%nlevel = 3
+         config%reference_fragment = ref
+         call generate_mbe_term_list(sys_geom, config, 3, polymers, n_terms)
+         call check_full_basis_list(error, polymers, n_terms, 6, 3)
+         if (allocated(error)) return
+
+         plain = config
+         plain%counterpoise = "none"
+         call generate_mbe_term_list(sys_geom, plain, 3, reduced, n_reduced)
+         call check(error, n_terms == n_reduced + count_rows_of_size(reduced, n_reduced, 1), &
+                    "screened and reduced: the ordinary list and one row for each kept monomer")
+         if (allocated(error)) return
+      end do
+   end subroutine test_ssfc_with_reference
+
+   subroutine test_ssfc_two_monomers(error)
+      !! For two monomers the two schemes are one list
+      !!
+      !! `[1]`, `[2]`, `[1,-2]`, `[-1,2]` and `[1,2]`: the pair's complement is
+      !! empty, so it is all-real, and each monomer in the basis of both is the
+      !! VMFC subset. Asserted so that nobody "fixes" it, and so that either
+      !! scheme's check accepts the other's list.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: vmfc, ssfc
+      integer, allocatable :: from_vmfc(:, :), from_ssfc(:, :)
+      integer(int64) :: n_vmfc, n_ssfc, i, j
+      integer :: a(2), b(2)
+      logical :: found
+
+      call make_line(sys_geom, 2, 4.0_dp)
+      vmfc%nlevel = 2
+      vmfc%counterpoise = "vmfc"
+      ssfc%nlevel = 2
+      ssfc%counterpoise = "ssfc"
+      call generate_mbe_term_list(sys_geom, vmfc, 2, from_vmfc, n_vmfc)
+      call generate_mbe_term_list(sys_geom, ssfc, 2, from_ssfc, n_ssfc)
+
+      call check(error, n_ssfc == 5_int64 .and. n_vmfc == 5_int64, &
+                 "two monomers give 5 rows under either scheme")
+      if (allocated(error)) return
+
+      ! As sets: the order within a list is the scheme's own.
+      do i = 1, n_ssfc
+         found = .false.
+         a = from_ssfc(i, 1:2)
+         call ascending(a)
+         do j = 1, n_vmfc
+            b = from_vmfc(j, 1:2)
+            call ascending(b)
+            if (all(a == b)) found = .true.
+         end do
+         call check(error, found, "an SSFC row of two monomers is missing from the VMFC list")
+         if (allocated(error)) return
+      end do
+
+      call check(error, rows_match_counterpoise(from_ssfc, n_ssfc, 2, COUNTERPOISE_VMFC), &
+                 "the VMFC check should accept the SSFC list of two monomers")
+      if (allocated(error)) return
+      call check(error, rows_match_counterpoise(from_vmfc, n_vmfc, 2, COUNTERPOISE_SSFC), &
+                 "the SSFC check should accept the VMFC list of two monomers")
+   end subroutine test_ssfc_two_monomers
+
+   subroutine test_ssfc_order(error)
+      !! The list is ordered by real monomers, largest first
+      !!
+      !! Every full-basis row names the whole system, so the size of a row says
+      !! nothing about its cost; the real monomers set the electron count. The
+      !! summation does not depend on the order -- it groups by real monomers
+      !! itself -- so this is about the load balance, not the answer.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(system_geometry_t) :: sys_geom
+      type(driver_config_t) :: config
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: n_terms, i
+
+      call make_line(sys_geom, 5, 4.0_dp)
+      config%nlevel = 3
+      config%counterpoise = "ssfc"
+      call generate_mbe_term_list(sys_geom, config, 3, polymers, n_terms)
+
+      do i = 2, n_terms
+         call check(error, real_count_of(polymers(i, :)) <= real_count_of(polymers(i - 1, :)), &
+                    "a row with more real monomers follows one with fewer")
+         if (allocated(error)) return
+      end do
+      call check(error, all(polymers(n_terms, 2:) == 0) .and. polymers(n_terms, 1) > 0, &
+                 "the cheapest row is an own-basis monomer, last of all")
+   end subroutine test_ssfc_order
+
+   subroutine check_full_basis_list(error, polymers, n_terms, n_monomers, level)
+      !! What the full-basis scheme promises of a list, row by row
+      !!
+      !! Every ghosted row names each monomer of the system once, so its
+      !! ghosts are exactly the system's complement of its real monomers. No
+      !! all-real row has two to `n_monomers - 1` monomers, and the whole
+      !! system is a row only at full level, all-real. Each own-basis monomer
+      !! has its full-basis row. The scheme's own check accepts the list.
+      type(error_type), allocatable, intent(inout) :: error
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: n_terms
+      integer, intent(in) :: n_monomers, level
+
+      integer(int64) :: i, n_whole, n_own, n_full_basis_monomers
+      integer :: n_real, k
+      integer :: support(n_monomers)
+
+      call check(error, size(polymers, 2) >= n_monomers, "the rows are as wide as the system")
+      if (allocated(error)) return
+
+      n_whole = 0_int64
+      n_own = 0_int64
+      n_full_basis_monomers = 0_int64
+      do i = 1, n_terms
+         n_real = real_count_of(polymers(i, :))
+         if (any(polymers(i, :) < 0)) then
+            call check(error, count(polymers(i, :) /= 0) == n_monomers, &
+                       "a ghosted row names every monomer of the system")
+            if (allocated(error)) return
+            support = abs(polymers(i, 1:n_monomers))
+            call ascending(support)
+            call check(error, all(support == [(k, k=1, n_monomers)]), &
+                       "a ghosted row ghosts exactly the system's complement of its real monomers")
+            if (allocated(error)) return
+            if (n_real == 1) n_full_basis_monomers = n_full_basis_monomers + 1_int64
+         else if (n_real == 1) then
+            n_own = n_own + 1_int64
+         else
+            call check(error, n_real == n_monomers, &
+                       "no all-real row of 2 to N-1 monomers remains")
+            if (allocated(error)) return
+            n_whole = n_whole + 1_int64
+         end if
+      end do
+
+      call check(error, n_whole == merge(1_int64, 0_int64, level == n_monomers), &
+                 "the whole system is a row at full level and only then")
+      if (allocated(error)) return
+      call check(error, n_own == n_full_basis_monomers, &
+                 "each own-basis monomer row has a full-basis row")
+      if (allocated(error)) return
+      call check(error, rows_match_counterpoise(polymers, n_terms, n_monomers, COUNTERPOISE_SSFC), &
+                 "the full-basis check should accept the list the generator made")
+   end subroutine check_full_basis_list
+
+   pure function count_rows_of_size(polymers, n_terms, n) result(n_rows)
+      !! How many of the first `n_terms` rows name exactly `n` monomers
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: n_terms
+      integer, intent(in) :: n
+      integer(int64) :: n_rows
+
+      integer(int64) :: i
+
+      n_rows = 0_int64
+      do i = 1, n_terms
+         if (count(polymers(i, :) /= 0) == n) n_rows = n_rows + 1_int64
+      end do
+   end function count_rows_of_size
 
    logical function has_parent(polymers, n_terms, support)
       !! Is this row's full support -- real and ghosted alike -- a real term
