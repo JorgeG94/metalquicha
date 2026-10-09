@@ -18,7 +18,8 @@ module test_mqc_config_roundtrip
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, &
                                  check_counterpoise_support, check_interaction_energy_support
-   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_INTERACTION_ENERGY
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
+                             CALC_TYPE_OPTIMIZE, CALC_TYPE_INTERACTION_ENERGY
    use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
    use mqc_method_base, only: qc_method_t
    use mqc_method_factory, only: create_method
@@ -42,6 +43,8 @@ contains
                   new_unittest("counterpoise_roundtrip", test_counterpoise_roundtrip), &
                   new_unittest("counterpoise_is_refused_where_it_is_ignored", &
                                test_counterpoise_refusals), &
+                  new_unittest("counterpoise_derivatives_are_refused_up_front", &
+                               test_counterpoise_derivatives_refused), &
                   new_unittest("interaction_energy_is_refused_where_it_is_not_defined", &
                                test_interaction_energy_support), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
@@ -144,7 +147,42 @@ contains
                  "counterpoise must survive the config adapter")
       if (allocated(error)) return
 
+      ! The full-basis scheme is read the same way, and the spelling it is
+      ! given is the one the driver sees.
+      call write_counterpoise_input("ssfc")
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call check(error,.not. parse_error%has_error(), &
+                 "a deck naming ssfc should parse: "//parse_error%get_full_trace())
+      if (allocated(error)) return
+      call config_to_driver(config, driver)
+      call check(error, trim(driver%counterpoise), "ssfc", &
+                 "ssfc must survive the config adapter")
+      if (allocated(error)) return
+      call check_counterpoise_support(driver, parse_error)
+      call check(error,.not. parse_error%has_error(), &
+                 "a parsed ssfc deck over an ab initio method must be allowed: "// &
+                 parse_error%get_message())
+      if (allocated(error)) return
+
+      ! An unknown spelling parses, because the schema checks keys and not
+      ! values, and is refused where the scheme is first needed, by a message
+      ! that lists what is accepted.
+      call parse_error%clear()
+      call write_counterpoise_input("boys-bernardi")
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
+      call remove_input()
+      call config_to_driver(config, driver)
+      call parse_error%clear()
+      call check_counterpoise_support(driver, parse_error)
+      call check(error, parse_error%has_error(), "an unknown counterpoise value must be refused")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "vmfc, ssfc, or none") > 0, &
+                 "the refusal should list the accepted values: "//parse_error%get_message())
+      if (allocated(error)) return
+
       ! And the default is the uncorrected expansion, not an error.
+      call parse_error%clear()
       call write_counterpoise_input("none")
       call read_json_config_file(SCRATCH_FILE, config, parse_error)
       call remove_input()
@@ -196,10 +234,119 @@ contains
       call must_refuse(error, err, "EFP2", "vmfc", "mbe", .false., METHOD_TYPE_EFP2)
       if (allocated(error)) return
 
+      ! The full-basis scheme is held to every refusal VMFC is.
+      call must_refuse(error, err, "GMBE", "ssfc", "mbe", .true., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "EE-MBE", "ssfc", "ee-mbe", .false., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "FMO", "ssfc", "fmo", .false., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "EFMO", "ssfc", "efmo", .false., METHOD_TYPE_HF)
+      if (allocated(error)) return
+      call must_refuse(error, err, "GFN2", "ssfc", "mbe", .false., METHOD_TYPE_GFN2)
+      if (allocated(error)) return
+      call must_refuse(error, err, "EFP2", "ssfc", "mbe", .false., METHOD_TYPE_EFP2)
+      if (allocated(error)) return
+
       ! A scheme this program does not implement must not read as `none`
-      call must_refuse(error, err, "an unknown scheme", "ssfc", "mbe", .false., &
+      call must_refuse(error, err, "an unknown scheme", "boys-bernardi", "mbe", .false., &
                        METHOD_TYPE_HF)
+      if (allocated(error)) return
+
+      ! A caller's own term list never gets the ghosted rows, so counterpoise
+      ! there would return an uncorrected energy without saying so.
+      call err%clear()
+      driver%counterpoise = "vmfc"
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .false.
+      driver%method_config%method_type = METHOD_TYPE_HF
+      call check_counterpoise_support(driver, err, terms_supplied=.true.)
+      call check(error, err%has_error(), &
+                 "counterpoise with a supplied fragment list must be refused, not ignored")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "supplied fragment list") > 0, &
+                 "the refusal should say why: "//err%get_message())
+      if (allocated(error)) return
+
+      ! Neither half of the combination is a problem on its own.
+      call err%clear()
+      call check_counterpoise_support(driver, err, terms_supplied=.false.)
+      call check(error,.not. err%has_error(), &
+                 "vmfc over a generated list must still be allowed: "//err%get_message())
+      if (allocated(error)) return
+      driver%counterpoise = "none"
+      call check_counterpoise_support(driver, err, terms_supplied=.true.)
+      call check(error,.not. err%has_error(), &
+                 "a supplied fragment list without counterpoise must still be allowed: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      driver%counterpoise = "ssfc"
+      call check_counterpoise_support(driver, err, terms_supplied=.true.)
+      call check(error, err%has_error(), &
+                 "ssfc with a supplied fragment list must be refused, not ignored")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "supplied fragment list") > 0, &
+                 "the refusal should say why: "//err%get_message())
    end subroutine test_counterpoise_refusals
+
+   subroutine test_counterpoise_derivatives_refused(error)
+      !! Counterpoise with a derivative is refused before any fragment runs
+      !!
+      !! Both schemes, every driver that needs a derivative, and the optimizer's
+      !! shape of the request -- a gradient over a supplied list -- which has to
+      !! be told it asked for a derivative and not that its list was supplied.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: driver
+      type(error_t) :: err
+      character(len=4), parameter :: SCHEMES(2) = ["vmfc", "ssfc"]
+      integer, parameter :: DRIVERS(3) = [CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_OPTIMIZE]
+      integer :: s, d
+
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .false.
+      driver%method_config%method_type = METHOD_TYPE_HF
+
+      do s = 1, size(SCHEMES)
+         driver%counterpoise = SCHEMES(s)
+
+         driver%calc_type = CALC_TYPE_ENERGY
+         call err%clear()
+         call check_counterpoise_support(driver, err)
+         call check(error,.not. err%has_error(), &
+                    SCHEMES(s)//" with an energy must be allowed: "//err%get_message())
+         if (allocated(error)) return
+
+         do d = 1, size(DRIVERS)
+            driver%calc_type = DRIVERS(d)
+            call err%clear()
+            call check_counterpoise_support(driver, err)
+            call check(error, err%has_error(), &
+                       SCHEMES(s)//" with a derivative driver must be refused up front")
+            if (allocated(error)) return
+            call check(error, index(err%get_message(), "energies only") > 0, &
+                       "the refusal should name the derivative, not something else: "// &
+                       err%get_message())
+            if (allocated(error)) return
+
+            ! An optimization hands its steps a frozen list as a supplied one.
+            call err%clear()
+            call check_counterpoise_support(driver, err, terms_supplied=.true.)
+            call check(error, index(err%get_message(), "energies only") > 0, &
+                       "a derivative over a supplied list is a derivative refusal first: "// &
+                       err%get_message())
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! The same derivative without counterpoise is not this check's business.
+      driver%counterpoise = "none"
+      driver%calc_type = CALC_TYPE_GRADIENT
+      call err%clear()
+      call check_counterpoise_support(driver, err, terms_supplied=.true.)
+      call check(error,.not. err%has_error(), &
+                 "a gradient without counterpoise must still be allowed: "//err%get_message())
+   end subroutine test_counterpoise_derivatives_refused
 
    subroutine must_refuse(error, err, label, scheme, expansion, overlapping, method_type)
       !! This combination must come back as an error rather than as a number

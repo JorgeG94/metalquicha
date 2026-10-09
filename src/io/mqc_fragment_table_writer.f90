@@ -34,12 +34,14 @@ contains
    subroutine write_fragment_table(data)
       !! Write one row per fragment: identity, energy, many-body correction, distance
       !!
-      !! Monomer indices go out as fixed columns m1..m<max_level>, zero-filled, rather
-      !! than a packed list. That keeps the file rectangular, and (level, m1..mL) is a
-      !! stable key for joining the same system computed with different methods.
+      !! Monomer indices go out as fixed columns m1..m<width>, zero-filled, rather
+      !! than a packed list. That keeps the file rectangular, and (level, m1..mW) is a
+      !! stable key for joining the same system computed with different methods. The
+      !! width is that of the term list, which is `max_level` unless a counterpoise
+      !! row carries more ghosts than that; a ghosted monomer is a negative entry.
       type(json_output_data_t), intent(in) :: data
 
-      integer :: unit, ios, j, level, r
+      integer :: unit, ios, j, level, r, row_width
       integer(int64) :: i
       integer(int64), allocatable :: row_order(:)
       logical :: have_scf
@@ -65,9 +67,11 @@ contains
 
       call table_timer%start()
 
+      row_width = size(data%polymers, 2)
+
       ! Header
       write (unit, "(a)", advance="no") "frag_index,level"
-      do j = 1, data%max_level
+      do j = 1, row_width
          write (col, "(a,i0)") ",m", j
          write (unit, "(a)", advance="no") trim(col)
       end do
@@ -93,7 +97,7 @@ contains
       ! Explicit repeat count for the monomer columns rather than an unlimited "*"
       ! group: the unlimited form emits the separator before it discovers the data is
       ! exhausted, which leaves a trailing comma and an extra column on every row.
-      write (row_fmt, "(a,i0,a)") '(i0,",",i0,', data%max_level, '(",",i0))'
+      write (row_fmt, "(a,i0,a)") '(i0,",",i0,', row_width, '(",",i0))'
 
       ! Two write statements per row rather than one per column: statement overhead
       ! dominates at this row count. Reals go out at full precision, not a rounded
@@ -111,7 +115,7 @@ contains
             i = row_order(r)
 
             write (unit, trim(row_fmt), advance="no") &
-               i, level, (data%polymers(i, j), j=1, data%max_level)
+               i, level, (data%polymers(i, j), j=1, row_width)
 
             if (have_energy .and. have_delta .and. have_distance) then
                write (unit, '(3(",",es24.16))', advance="no") &

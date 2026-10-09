@@ -751,6 +751,11 @@ addtest(mqc_optimizer_types)
 # The term list a frozen optimization is built on. Fragment layer, so this runs
 # regardless of MQC_ENABLE_DLFIND.
 addtest(mqc_term_list)
+# Which counterpoise scheme a term list belongs to and which rows each sums.
+# Fragment layer, no integrals: the energies are made up.
+addtest(mqc_counterpoise_schemes)
+# Term-list rows wider than the level: a counterpoise row ghosts the system.
+addtest(mqc_wide_rows)
 addtest(mqc_work_queue)
 
 # C-API / external-interface layer. These call the bind(C) entry points the way

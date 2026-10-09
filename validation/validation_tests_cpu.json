@@ -5154,6 +5154,55 @@
             "expected_gradient_norm": 0.1014804581,
             "tolerance": 5e-06,
             "type": "unfragmented"
+        },
+        {
+            "name": "SSFC(2) RHF (H2O)3 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/counterpoise/cpu_w3_6-31g_ssfc2.json",
+            "expected_energy": -227.966598564166,
+            "type": "fragmented",
+            "reference_note": "reference is PySCF 2.14.0 fed this repository's own basis JSON, assembled in Python by plain inclusion-exclusion bookkeeping over frozensets of PySCF energies, sharing nothing with the code under test: each monomer in its own basis, then every term of size 1 to 2 in the basis of the whole cluster, the waters outside a term present as ghost atoms. 9 PySCF calculations stand behind it."
+        },
+        {
+            "name": "SSFC(3) RHF (H2O)3 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/counterpoise/cpu_w3_6-31g_ssfc3.json",
+            "expected_energy": -227.967208810805,
+            "type": "fragmented",
+            "reference_note": "reference is PySCF 2.14.0 fed this repository's own basis JSON, assembled in Python by plain inclusion-exclusion bookkeeping over frozensets of PySCF energies, sharing nothing with the code under test: each monomer in its own basis, then every term of size 1 to 3 in the basis of the whole cluster, the waters outside a term present as ghost atoms. 10 PySCF calculations stand behind it."
+        },
+        {
+            "name": "SSFC(2) MP2 (H2O)3 cc-pvdz (CPU)",
+            "input": "inputs/cpu/mqc/counterpoise/cpu_w3_cc-pvdz_mp2_ssfc2.json",
+            "expected_energy": -228.690269333011,
+            "type": "fragmented",
+            "reference_note": "reference is PySCF 2.14.0 fed this repository's own basis JSON, assembled in Python by plain inclusion-exclusion bookkeeping over frozensets of PySCF energies, sharing nothing with the code under test: each monomer in its own basis, then every term of size 1 to 2 in the basis of the whole cluster, the waters outside a term present as ghost atoms. 9 PySCF calculations stand behind it. The frozen core is one orbital per real oxygen, none for a ghost water, whose oxygen carries basis functions and no core electrons."
+        },
+        {
+            "name": "SSFC(2) RHF water prism sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/counterpoise/cpu_prism_sto-3g_ssfc2.json",
+            "expected_energy": -449.796498069767,
+            "type": "fragmented",
+            "reference_note": "reference is PySCF 2.14.0 fed this repository's own basis JSON, assembled in Python by plain inclusion-exclusion bookkeeping over frozensets of PySCF energies, sharing nothing with the code under test: each monomer in its own basis, then every term of size 1 to 2 in the basis of the whole cluster, the waters outside a term present as ghost atoms. 27 PySCF calculations stand behind it."
+        },
+        {
+            "name": "SSFC(3) RHF water prism sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/counterpoise/cpu_prism_sto-3g_ssfc3.json",
+            "expected_energy": -449.805172012065,
+            "type": "fragmented",
+            "reference_note": "reference is PySCF 2.14.0 fed this repository's own basis JSON, assembled in Python by plain inclusion-exclusion bookkeeping over frozensets of PySCF energies, sharing nothing with the code under test: each monomer in its own basis, then every term of size 1 to 3 in the basis of the whole cluster, the waters outside a term present as ghost atoms. 47 PySCF calculations stand behind it."
+        },
+        {
+            "name": "InteractionEnergy water prism STO-3G, SSFC(2), last water (CPU)",
+            "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l2_ssfc.json",
+            "expected_interaction_energy": -0.002753327408,
+            "type": "fragmented",
+            "reference_note": "reference is the sum over the dimers holding water 5 of their full-cluster-basis increments, each the alternating sum of its subsets' energies all in the basis of the whole cluster, evaluated in Python as plain inclusion-exclusion bookkeeping over frozensets of PySCF 2.14.0 energies, fed this repository's own basis JSON with the waters outside a term as ghost atoms, and sharing nothing with the code under test. 21 PySCF calculations stand behind it."
+        },
+        {
+            "name": "InteractionEnergy water prism STO-3G, SSFC(3), last water (CPU)",
+            "input": "inputs/cpu/mqc/interaction_energy/ie_prism_sto-3g_l3_ssfc.json",
+            "expected_interaction_energy": -0.004990668756,
+            "type": "fragmented",
+            "reference_note": "reference is the sum over the terms of size 2 to 3 holding water 5 of their full-cluster-basis increments, each the alternating sum of its subsets' energies all in the basis of the whole cluster, evaluated in Python as plain inclusion-exclusion bookkeeping over frozensets of PySCF 2.14.0 energies, fed this repository's own basis JSON with the waters outside a term as ghost atoms, and sharing nothing with the code under test. 41 PySCF calculations stand behind it."
         }
     ]
 }

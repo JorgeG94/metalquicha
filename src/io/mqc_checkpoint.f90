@@ -44,8 +44,11 @@ module mqc_checkpoint
          !! so the sign of this says nothing about whether it is open.
 
       integer(int64) :: n_loaded = 0
-      integer :: max_level = 0
-      integer, allocatable :: terms(:, :)      !! (n_loaded, max_level), sorted
+      integer :: term_width = 0
+         !! Entries in every term this file holds: the term list's row width and
+         !! the displacement code after it. A term of any other length is
+         !! refused rather than cut or padded.
+      integer, allocatable :: terms(:, :)      !! (n_loaded, term_width), sorted
       real(dp), allocatable :: energies(:)
       integer, allocatable :: scf_status(:)
       real(dp), allocatable :: homo(:), lumo(:)
@@ -66,7 +69,7 @@ module mqc_checkpoint
 
 contains
 
-   subroutine checkpoint_open(this, path, fingerprint, max_level, energy_only, error)
+   subroutine checkpoint_open(this, path, fingerprint, term_width, energy_only, error)
       !! Load an existing checkpoint if there is one, then open for appending
       !!
       !! Refuses rather than starting fresh when the fingerprint disagrees.
@@ -76,7 +79,11 @@ contains
       class(checkpoint_t), intent(inout) :: this
       character(len=*), intent(in) :: path
       character(len=*), intent(in) :: fingerprint
-      integer, intent(in) :: max_level
+      integer, intent(in) :: term_width
+         !! Entries in each term that will be recorded and looked up. Its
+         !! callers pass the width of the whole term list plus the displacement
+         !! code, which is wider than `max_level + 1` only for a
+         !! full-cluster-basis list.
       logical, intent(in) :: energy_only
          !! Whether this run computes energies alone
       type(error_t), intent(inout) :: error
@@ -84,8 +91,12 @@ contains
       logical :: exists
       integer :: ios
 
+      ! TODO(mqc): the width a file was written at is recorded nowhere, and it
+      ! is not in the fingerprint of an ordinary run, so resuming a file at a
+      ! different MBE level reads every line at the wrong width and finds no
+      ! term. Counterpoise runs are safe: their fingerprint carries the level.
       this%path = trim(path)
-      this%max_level = max_level
+      this%term_width = term_width
       if (len_trim(path) == 0) return
 
       ! The backend is chosen, not configured. A run needing derivatives has to
@@ -104,7 +115,7 @@ contains
       end if
 
       if (this%use_hdf5) then
-         call this%h5%open(this%path, fingerprint, max_level, error)
+         call this%h5%open(this%path, fingerprint, term_width, error)
          if (error%has_error()) return
          this%active = .true.
          call logger%info("Checkpoint: HDF5 at "//this%path//" ("// &
@@ -144,9 +155,9 @@ contains
 
       integer :: unit, ios, level, islot, capacity
       integer(int64) :: n
-      character(len=512) :: line
+      character(len=:), allocatable :: line
       character(len=:), allocatable :: stored
-      integer :: row(this%max_level)
+      integer :: row(this%term_width)
       real(dp) :: energy
       integer :: status_code
       real(dp) :: homo_in, lumo_in
@@ -158,7 +169,7 @@ contains
          return
       end if
 
-      read (unit, "(a)", iostat=ios) line
+      call read_record(unit, line, ios)
       if (ios /= 0 .or. index(line, MAGIC) /= 1) then
          close (unit)
          call error%set(ERROR_VALIDATION, this%path//" is not a checkpoint file")
@@ -176,14 +187,14 @@ contains
       end if
 
       capacity = 1024
-      allocate (this%terms(capacity, this%max_level))
+      allocate (this%terms(capacity, this%term_width))
       allocate (this%energies(capacity))
       allocate (this%scf_status(capacity))
       allocate (this%homo(capacity), this%lumo(capacity), this%has_orbitals(capacity))
       n = 0
 
       do
-         read (unit, "(a)", iostat=ios) line
+         call read_record(unit, line, ios)
          if (ios /= 0) exit
          if (len_trim(line) == 0) cycle
          ! A short read here is the last line of a job that was killed while
@@ -193,15 +204,15 @@ contains
          orbitals_in = 0
          homo_in = 0.0_dp
          lumo_in = 0.0_dp
-         read (line, *, iostat=ios) level, (row(islot), islot=1, this%max_level), &
+         read (line, *, iostat=ios) level, (row(islot), islot=1, this%term_width), &
             energy, status_code, orbitals_in, homo_in, lumo_in
          if (ios /= 0) then
             orbitals_in = 0
-            read (line, *, iostat=ios) level, (row(islot), islot=1, this%max_level), &
+            read (line, *, iostat=ios) level, (row(islot), islot=1, this%term_width), &
                energy, status_code
          end if
          if (ios /= 0) cycle
-         if (level < 1 .or. level > this%max_level) cycle
+         if (level < 1 .or. level > this%term_width) cycle
 
          n = n + 1
          if (n > capacity) call grow(this, capacity)
@@ -218,6 +229,34 @@ contains
       call sort_terms(this)
    end subroutine load_existing
 
+   subroutine read_record(unit, line, ios)
+      !! The next line of a text file, of whatever length
+      !!
+      !! A record holds the whole term, so its length grows with the width of
+      !! the term list and no fixed buffer is long enough for every list.
+      !! `ios` is zero for a line read, including a last line with no newline,
+      !! and the end-of-file code when there is nothing left.
+      integer, intent(in) :: unit
+      character(len=:), allocatable, intent(out) :: line
+      integer, intent(out) :: ios
+
+      integer, parameter :: CHUNK = 256
+      character(len=CHUNK) :: piece
+      integer :: n_read
+
+      line = ""
+      do
+         read (unit, "(a)", advance="no", size=n_read, iostat=ios) piece
+         line = line//piece(1:n_read)
+         if (ios /= 0) exit
+      end do
+      if (is_iostat_eor(ios)) then
+         ios = 0
+      else if (is_iostat_end(ios) .and. len(line) > 0) then
+         ios = 0
+      end if
+   end subroutine read_record
+
    subroutine grow(this, capacity)
       !! Double the loaded arrays
       class(checkpoint_t), intent(inout) :: this
@@ -226,7 +265,7 @@ contains
       integer, allocatable :: t(:, :), s(:)
       real(dp), allocatable :: e(:)
 
-      allocate (t(2*capacity, this%max_level))
+      allocate (t(2*capacity, this%term_width))
       allocate (e(2*capacity))
       allocate (s(2*capacity))
       t(1:capacity, :) = this%terms
@@ -275,6 +314,7 @@ contains
       logical :: orbitals_out
 
       if (.not. this%active) return
+      call require_term_width(this, term)
 
       if (this%use_hdf5) then
          natoms_local = 0
@@ -292,7 +332,7 @@ contains
       end if
       level = count(term > 0)
       write (this%unit, "(i0,*(1x,i0))", advance="no") level, &
-         (term(islot), islot=1, this%max_level)
+         (term(islot), islot=1, this%term_width)
       write (this%unit, "(1x,es24.16,1x,i0)", advance="no") energy, scf_status
       orbitals_out = .false.
       if (present(has_orbitals)) orbitals_out = has_orbitals
@@ -333,6 +373,7 @@ contains
       if (present(has_orbitals)) has_orbitals = .false.
 
       if (this%use_hdf5) then
+         call require_term_width(this, term)
          if (present(gradient) .and. present(hessian)) then
             call this%h5%lookup(term, found, energy, scf_status, natoms_local, &
                                 gradient=gradient, hessian=hessian)
@@ -348,12 +389,13 @@ contains
       end if
 
       if (this%n_loaded <= 0) return
+      call require_term_width(this, term)
 
       lo = 1
       hi = this%n_loaded
       do while (lo <= hi)
          mid = (lo + hi)/2
-         order = compare(this%terms(mid, :), term, this%max_level)
+         order = compare(this%terms(mid, :), term, this%term_width)
          if (order == 0) then
             found = .true.
             energy = this%energies(mid)
@@ -370,6 +412,20 @@ contains
          end if
       end do
    end subroutine checkpoint_lookup
+
+   subroutine require_term_width(this, term)
+      !! Stop on a term that is not as long as the file's terms
+      !!
+      !! A longer term would match on its first `term_width` entries and so
+      !! find the wrong row; a shorter one would be read past its end.
+      class(checkpoint_t), intent(in) :: this
+      integer, intent(in) :: term(:)
+
+      if (size(term) == this%term_width) return
+      call logger%error("checkpoint: a term of "//to_char(size(term))//" entries was offered to a "// &
+                        "file whose terms have "//to_char(this%term_width))
+      error stop "checkpoint term width mismatch"
+   end subroutine require_term_width
 
    pure function compare(a, b, n) result(order)
       !! Lexicographic order on two zero-padded monomer rows
@@ -401,7 +457,7 @@ contains
       class(checkpoint_t), intent(inout) :: this
 
       integer(int64) :: i, j
-      integer :: key_term(this%max_level)
+      integer :: key_term(this%term_width)
       integer :: key_status
       real(dp) :: key_energy
       real(dp) :: key_homo, key_lumo
@@ -416,7 +472,7 @@ contains
          key_orbitals = this%has_orbitals(i)
          j = i - 1
          do while (j >= 1)
-            if (compare(this%terms(j, :), key_term, this%max_level) <= 0) exit
+            if (compare(this%terms(j, :), key_term, this%term_width) <= 0) exit
             this%terms(j + 1, :) = this%terms(j, :)
             this%energies(j + 1) = this%energies(j)
             this%scf_status(j + 1) = this%scf_status(j)

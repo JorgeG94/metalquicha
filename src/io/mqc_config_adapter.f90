@@ -8,7 +8,8 @@ module mqc_config_adapter
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_string_utils, only: int_to_text
-   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_INTERACTION_ENERGY, calc_type_to_string
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_OPTIMIZE, &
+                             CALC_TYPE_INTERACTION_ENERGY, calc_type_to_string
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    use mqc_optimizer_types, only: optimizer_settings_t, &
                                   coordinates_from_string, algorithm_from_string, &
@@ -40,7 +41,7 @@ module mqc_config_adapter
    type :: driver_config_t
       !! Runtime configuration for the driver (internal use only)
       ! Core calculation settings
-      integer(int32) :: calc_type   !! Calculation type constant
+      integer(int32) :: calc_type = CALC_TYPE_ENERGY   !! Calculation type constant
 
       ! Method configuration (includes XTB solvation, DFT settings, etc.)
       type(method_config_t) :: method_config  !! Complete method configuration
@@ -69,7 +70,7 @@ module mqc_config_adapter
          !! deck's 0-based list
       real(dp) :: cap_scale = 1.0_dp
          !! Where a cap sits along the bond it closes
-      character(len=16) :: counterpoise = "none"   !! "none" or "vmfc"
+      character(len=16) :: counterpoise = "none"   !! "none", "vmfc" or "ssfc"
       integer :: reference_fragment = 0
          !! The fragment a `driver: "InteractionEnergy"` run reports the
          !! interactions of, as a monomer number -- 1-based, the way a term list
@@ -821,7 +822,7 @@ contains
       end do
    end subroutine set_optimization_constraints
 
-   subroutine check_counterpoise_support(driver_config, error)
+   subroutine check_counterpoise_support(driver_config, error, terms_supplied)
       !! Refuse a counterpoise request the chosen expansion cannot honour
       !!
       !! Counterpoise is carried by ghosted rows in the MBE term list and by
@@ -840,20 +841,51 @@ contains
       !!
       !! An unrecognised spelling is refused too: once it reaches the term list
       !! it cannot be told from `none`.
+      !!
+      !! Counterpoise with a **gradient, Hessian or optimization** is refused
+      !! too, ahead of the checks on the expansion, so that no fragment has run
+      !! when it fires. Every refusal here applies to `vmfc` and `ssfc` alike.
+      !!
+      !! A **supplied term list** is refused as well. It is used as the caller
+      !! wrote it, and the ghosted rows are built only by the driver's own list
+      !! generation, so counterpoise there would be ignored and an uncorrected
+      !! energy returned.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: terms_supplied
+         !! Whether the caller brought its own term list. Absent means not.
 
       character(len=:), allocatable :: scheme
 
       scheme = trim(driver_config%counterpoise)
       if (scheme == "none" .or. len(scheme) == 0) return
 
-      if (scheme /= "vmfc") then
+      if (scheme /= "vmfc" .and. scheme /= "ssfc") then
          call error%set(ERROR_VALIDATION, &
                         "Unknown keywords.fragmentation.counterpoise: '"//scheme// &
-                        "'. Use vmfc, or none.")
+                        "'. Use vmfc, ssfc, or none.")
          return
       end if
+
+      ! Before the supplied-list check below: an optimization hands every step
+      ! a frozen list as a supplied one, and it should be told that it asked
+      ! for derivatives, which is the reason, rather than about the list.
+      ! `compute_mbe` refuses the same late, as a backstop; this fires before
+      ! any fragment has run. `freeze_term_list` cuts a full-basis row to the
+      ! level, and `validate_terms` and `check_subset_closure` would reject it,
+      ! so a counterpoise optimization could not run if this let it through.
+      select case (driver_config%calc_type)
+      case (CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_OPTIMIZE)
+         call error%set(ERROR_VALIDATION, &
+                        "counterpoise is available for energies only. The gradient, "// &
+                        "Hessian and dipole-derivative path collapses the expansion "// &
+                        "with uncorrected subset weights, so it would return a wrong "// &
+                        "derivative rather than fail. Run driver 'Energy', or drop "// &
+                        "counterpoise.")
+         return
+      case default
+         ! An energy, which is what counterpoise corrects.
+      end select
 
       if (driver_config%allow_overlapping_fragments) then
          call error%set(ERROR_VALIDATION, &
@@ -872,6 +904,19 @@ contains
                         "expansion builds its own term list and would ignore the "// &
                         "request. Use the plain expansion, or drop counterpoise.")
          return
+      end if
+
+      if (present(terms_supplied)) then
+         if (terms_supplied) then
+            call error%set(ERROR_VALIDATION, &
+                           "counterpoise is not available with a supplied fragment "// &
+                           "list. A supplied list is used as given and the ghosted "// &
+                           "rows are built only when the driver generates the list, "// &
+                           "so the request would be ignored and an uncorrected energy "// &
+                           "returned. Let the driver generate the terms, or drop "// &
+                           "counterpoise.")
+            return
+         end if
       end if
 
       select case (driver_config%method_config%method_type)

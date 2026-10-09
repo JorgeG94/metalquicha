@@ -72,7 +72,7 @@ contains
       !! Monomers first, then every n-mer up to `max_level`, then distance
       !! screening, the reduction to one fragment's interactions when
       !! `driver_config%reference_fragment` names one, the counterpoise rows if
-      !! any, and the size sort. This is the same list the driver evaluates,
+      !! any, and the sort. This is the same list the driver evaluates,
       !! for a caller that needs it in advance -- an optimization freezing the
       !! term list, say.
       !!
@@ -89,6 +89,10 @@ contains
       type(driver_config_t), intent(in) :: driver_config
       integer, intent(in) :: max_level
       integer, allocatable, intent(out) :: polymers(:, :)
+         !! (rows allocated, row width), zero-padded; a negative entry is a
+         !! ghosted monomer. Only the first `total_fragments` rows are terms.
+         !! A row is as wide as the widest term of the scheme, never narrower
+         !! than `max_level`.
       integer(int64), intent(out) :: total_fragments
       integer(int64), intent(out), optional :: n_full
          !! How long the list would have been with no reference fragment:
@@ -98,12 +102,23 @@ contains
 
       integer, allocatable :: monomers(:)
       integer(int64) :: n_rows, i
-      integer :: imon, n
+      integer :: imon, n, row_width
+      logical :: vmfc, ssfc
 
       n_rows = get_nfrags(sys_geom%n_monomers, max_level)
 
+      vmfc = driver_config%counterpoise == "vmfc"
+      ssfc = driver_config%counterpoise == "ssfc"
+
+      ! Every row built before the counterpoise rows names at most `max_level`
+      ! monomers. The full-basis scheme ghosts the rest of the system in every
+      ! term, so its rows are `n_monomers` wide; nothing downstream reads the
+      ! width as `max_level`, only as the second extent of the array.
+      row_width = max_level
+      if (ssfc .and. max_level >= 2) row_width = max(max_level, sys_geom%n_monomers)
+
       allocate (monomers(sys_geom%n_monomers))
-      allocate (polymers(n_rows, max_level))
+      allocate (polymers(n_rows, row_width))
       polymers = 0
 
       call create_monomer_list(monomers)
@@ -120,15 +135,18 @@ contains
       call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
 
       ! Counted before the reduction below, and with the rows counterpoise
-      ! would add -- 2^n - 2 for every n-mer -- so the figure is the one the
-      ! ordinary run would have evaluated, not merely the list this started as.
+      ! would add -- 2^n - 2 for every n-mer under VMFC, one more row for every
+      ! monomer under SSFC -- so the figure is the one the ordinary run would
+      ! have evaluated, not merely the list this started as.
       if (present(n_full)) then
          n_full = total_fragments
-         if (driver_config%counterpoise == "vmfc") then
+         if (vmfc) then
             do i = 1_int64, total_fragments
                n = fragment_size_of(polymers(i, :))
                if (n >= 2) n_full = n_full + 2_int64**n - 2_int64
             end do
+         else if (ssfc .and. max_level >= 2 .and. sys_geom%n_monomers >= 2) then
+            n_full = n_full + count_monomer_rows(polymers, total_fragments)
          end if
       end if
 
@@ -142,12 +160,16 @@ contains
 
       ! Counterpoise rows are added after screening, so a pair that was screened
       ! out does not bring its ghosted monomers along with it, and before the
-      ! size sort, so they are ordered with everything else.
-      if (driver_config%counterpoise == "vmfc") then
+      ! sort, so they are ordered with everything else.
+      if (vmfc) then
          call add_vmfc_rows(polymers, total_fragments, max_level)
+      else if (ssfc .and. max_level >= 2) then
+         call add_ssfc_rows(polymers, total_fragments, sys_geom%n_monomers)
       end if
 
-      call sort_fragments_by_size(polymers, total_fragments, max_level)
+      ! Every full-basis row is `n_monomers` wide, so the size of a row says
+      ! nothing about its cost there; the real monomers do.
+      call sort_fragments_by_size(polymers, total_fragments, max_level, by_real_count=ssfc)
 
    end subroutine generate_mbe_term_list
 
@@ -176,7 +198,7 @@ contains
       ! Every n-mer of size n contributes 2^n - 2 proper subsets, so the worst
       ! case is bounded but not small.
       capacity = total_fragments*(2_int64**max_level)
-      allocate (grown(capacity, max_level))
+      allocate (grown(capacity, size(polymers, 2)))
       grown = 0
       grown(1:total_fragments, :) = polymers(1:total_fragments, :)
       n_added = total_fragments
@@ -203,6 +225,76 @@ contains
       call move_alloc(grown, polymers)
       total_fragments = n_added
    end subroutine add_vmfc_rows
+
+   subroutine add_ssfc_rows(polymers, total_fragments, n_monomers)
+      !! Put every term of order 2 and above in the basis of the whole system
+      !!
+      !! `polymers` holds the kept terms with real monomers only, closed under
+      !! subsets, and must be at least `n_monomers` wide. On return each kept
+      !! monomer has two rows, `[i]` in its own basis, which is the one-body
+      !! term, and `[i,-others]` in the system's, which the higher terms
+      !! subtract. Each kept term T of 2 to `n_monomers - 1` monomers is
+      !! replaced by `[T,-complement]`, the complement being every monomer of
+      !! the *system* not in T whether or not the list kept it. The whole
+      !! system, when it is a term, stays all-real: its complement is empty.
+      !!
+      !! A full-basis row with two or more real monomers is a summed term and
+      !! one with a single real monomer is auxiliary -- see `is_auxiliary_row`.
+      !! Called only for an expansion of level 2 or above; a system of one
+      !! monomer has no complement and is left alone.
+      integer, allocatable, intent(inout) :: polymers(:, :)
+      integer(int64), intent(inout) :: total_fragments
+      integer, intent(in) :: n_monomers
+
+      integer, allocatable :: grown(:, :)
+      integer(int64) :: f, n_out
+      integer :: n, i, next
+      logical :: present_in_row(n_monomers)
+
+      if (n_monomers < 2) return
+
+      allocate (grown(total_fragments + count_monomer_rows(polymers, total_fragments), size(polymers, 2)))
+      grown = 0
+      n_out = 0_int64
+
+      do f = 1_int64, total_fragments
+         n = int(real_count_of(polymers(f, :)))
+         present_in_row = .false.
+         present_in_row(polymers(f, 1:n)) = .true.
+
+         if (n == 1) then
+            ! Its own basis stays, for the one-body term.
+            n_out = n_out + 1_int64
+            grown(n_out, :) = polymers(f, :)
+         end if
+
+         n_out = n_out + 1_int64
+         grown(n_out, 1:n) = polymers(f, 1:n)
+         next = n
+         do i = 1, n_monomers
+            if (present_in_row(i)) cycle
+            next = next + 1
+            grown(n_out, next) = -i
+         end do
+      end do
+
+      call move_alloc(grown, polymers)
+      total_fragments = n_out
+   end subroutine add_ssfc_rows
+
+   function count_monomer_rows(polymers, total_fragments) result(n_monomer_rows)
+      !! How many of the first `total_fragments` rows name a single monomer
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: total_fragments
+      integer(int64) :: n_monomer_rows
+
+      integer(int64) :: f
+
+      n_monomer_rows = 0_int64
+      do f = 1_int64, total_fragments
+         if (fragment_size_of(polymers(f, :)) == 1) n_monomer_rows = n_monomer_rows + 1_int64
+      end do
+   end function count_monomer_rows
 
    subroutine apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
       !! Drop the fragments beyond their level's cutoff, in place
@@ -426,7 +518,7 @@ contains
    end function fragment_should_be_screened
 
    ! cannot make this pure because sort is not pure
-   subroutine sort_fragments_by_size(polymers, total_fragments, max_level)
+   subroutine sort_fragments_by_size(polymers, total_fragments, max_level, by_real_count)
       !! Reorder `polymers` in place, largest fragment first
       !!
       !! The expensive terms then start first, which is what balances the load
@@ -436,12 +528,20 @@ contains
       integer, intent(inout) :: polymers(:, :)
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: max_level
+      logical, intent(in), optional :: by_real_count
+         !! Order by the number of real monomers, and among equals by the
+         !! number named, ghosts included. Absent means false: by the number
+         !! named alone.
 
       integer(int64), allocatable :: fragment_sizes(:)
       integer(int_index), allocatable :: sort_indices(:)
       integer, allocatable :: polymers_copy(:, :)
       integer(int64) :: i, j, sorted_idx
       integer :: fragment_size
+      logical :: real_first
+
+      real_first = .false.
+      if (present(by_real_count)) real_first = by_real_count
 
       ! Nothing to sort if we have 1 or fewer fragments
       if (total_fragments <= 1) return
@@ -454,6 +554,10 @@ contains
       do i = 0, total_fragments - 1
          fragment_size = fragment_size_of(polymers(i + 1, :))
          fragment_sizes(i) = int(fragment_size, int64)
+         if (real_first) then
+            fragment_sizes(i) = fragment_sizes(i) + &
+                                int(real_count_of(polymers(i + 1, :)), int64)*(int(size(polymers, 2), int64) + 1_int64)
+         end if
       end do
 
       ! Get sort permutation in descending order (largest first)

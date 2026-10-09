@@ -247,7 +247,7 @@ contains
       integer :: k
       ! TODO(mqc): `j` is dead here.
       integer :: fragment_size, j, frag_level, iunit, io_stat
-      integer, allocatable :: indices(:)
+      integer, allocatable :: indices(:), ghosts(:)
       character(len=32) :: level_name
       character(len=256) :: output_file, basename
 
@@ -265,6 +265,12 @@ contains
       ! Stamped by every writer; a restart reads it before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+      end if
+
+      ! Named where it applies, so a reader of the table knows which rows are
+      ! summed. Absent without counterpoise, and a deck without it is unchanged.
+      if (len_trim(data%counterpoise) > 0) then
+         call json%add(main_obj, "counterpoise", trim(data%counterpoise))
       end if
 
       ! An interaction-energy run has no total: its term list was reduced to
@@ -340,14 +346,20 @@ contains
             call ordered_rows_for_level(data, frag_level, row_order)
             do k = 1, size(row_order)
                i = row_order(k)
-               fragment_size = count(data%polymers(i, :) > 0)
                call json%create_object(frag_obj, "")
                call json%add(frags_arr, frag_obj)
 
-               allocate (indices(fragment_size))
-               indices = data%polymers(i, 1:fragment_size)
+               indices = pack(data%polymers(i, :), data%polymers(i, :) > 0)
                call json%add(frag_obj, "indices", indices)
-               deallocate (indices)
+               ! A counterpoise row also names monomers that are present as
+               ! basis functions only. `indices` stays the real monomers and
+               ! the ghosts, as positive monomer numbers, go in their own key
+               ! -- written only where there are any, so a row without ghosts
+               ! is written exactly as before.
+               if (any(data%polymers(i, :) < 0)) then
+                  ghosts = -pack(data%polymers(i, :), data%polymers(i, :) < 0)
+                  call json%add(frag_obj, "ghosts", ghosts)
+               end if
 
                if (allocated(data%fragment_energies)) then
                   call json%add(frag_obj, "energy", data%fragment_energies(i))

@@ -600,19 +600,24 @@ module mqc_config_types
          !! rather than fixing the instance. The schema refuses unknown keys,
          !! so a deck still naming them fails at parse time and says which.
       character(len=:), allocatable :: counterpoise
-         !! How basis-set superposition error is handled: "none" (default) or
-         !! "vmfc".
+         !! How basis-set superposition error is handled: "none" (default),
+         !! "vmfc" or "ssfc".
          !!
          !! Under "none" each subfragment is solved in its own basis, so a pair
          !! borrows functions its monomers did not have and looks more bound
          !! than it is; that error lands in the pair term and survives
          !! truncation. "vmfc" solves every subfragment in its parent's basis
          !! instead -- valiron-mayer function counterpoise -- so the borrowing
-         !! appears on both sides of each difference and cancels.
+         !! appears on both sides of each difference and cancels. "ssfc" solves
+         !! every term of order 2 and above in the basis of the whole system,
+         !! the monomers' own basis being kept for the one-body term -- site-site
+         !! function counterpoise.
          !!
-         !! It is not free: a monomer's energy becomes one number per pair
-         !! rather than one reusable across every pair it belongs to, so a
-         !! level-2 expansion goes from N + C(N,2) subcalculations to 3*C(N,2).
+         !! Neither is free. Under "vmfc" a monomer's energy becomes one number
+         !! per pair rather than one reusable across every pair it belongs to,
+         !! so a level-2 expansion goes from N + C(N,2) subcalculations to
+         !! 3*C(N,2). Under "ssfc" it is one full-basis subcalculation per kept
+         !! term, monomers included, plus each monomer once in its own basis.
       integer :: reference_fragment = -1
          !! `keywords.fragmentation.reference_fragment`: which fragment a
          !! `driver: "InteractionEnergy"` run reports the interactions of. 0-based,

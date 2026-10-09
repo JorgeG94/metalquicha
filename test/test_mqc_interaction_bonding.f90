@@ -8,6 +8,7 @@ module test_mqc_interaction_bonding
                             QUAO_TYPE_LONE_PAIR
    use mqc_physical_fragment, only: system_geometry_t, bond_t
    use mqc_interaction_bonding, only: collect_interaction_bonding
+   use mqc_combinatorics, only: COUNTERPOISE_NONE
    implicit none
    private
    public :: collect_mqc_interaction_bonding_tests
@@ -105,8 +106,8 @@ contains
       call term_rows(results(1))
       call term_rows(results(3))
       call term_rows(results(4))
-      call collect_interaction_bonding(polymers, 4_int64, REFERENCE, results, sys_geom, &
-                                       terms, err)
+      call collect_interaction_bonding(polymers, 4_int64, REFERENCE, COUNTERPOISE_NONE, results, &
+                                       sys_geom, terms, err)
    end subroutine collected
 
    subroutine test_term_selection(error)

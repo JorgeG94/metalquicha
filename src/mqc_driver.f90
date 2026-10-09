@@ -36,6 +36,7 @@ module mqc_driver
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_config_types, only: bond_t, mqc_config_t
+   use mqc_combinatorics, only: counterpoise_scheme_of
    use mqc_scf_types, only: scf_numerics_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
@@ -350,7 +351,9 @@ contains
       ! Stamped whether or not it is written: a caller taking the energy back
       ! without files still needs to know what produced it.
       json_data%fingerprint = calculation_fingerprint(sys_geom, config%method_config, &
-                                                      config%calc_type)
+                                                      config%calc_type, &
+                                                      counterpoise_scheme_of(config%counterpoise), &
+                                                      config%nlevel)
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
       if (wants_output) then
@@ -552,7 +555,12 @@ contains
          ! Ahead of the branch, because each of the three expansions below
          ! ignores counterpoise in its own way and none of them says so.
          call validation_error%clear()
-         call check_counterpoise_support(config, validation_error)
+         ! A supplied list is refused here too: it never passes through
+         ! `generate_mbe_term_list`, which is where the ghosted rows are built,
+         ! so counterpoise would be dropped without a word.
+         call check_counterpoise_support(config, validation_error, &
+                                         terms_supplied=present(supplied_terms) .and. &
+                                         present(n_supplied_terms))
          if (validation_error%has_error()) then
             call logger%error(validation_error%get_message())
             call abort_comm(resources%mpi_comms%world_comm, 1)
@@ -665,8 +673,10 @@ contains
             ! For now: total_fragments = n_pie_terms (each PIE term is a subsystem to evaluate)
             total_fragments = n_pie_terms
          else
-            ! Standard MBE mode. Monomers, then n-mers, then screening, then
-            ! the size sort, all of it in `generate_mbe_term_list` -- which a
+            ! Standard MBE mode. Monomers, then n-mers, then screening, the
+            ! counterpoise rows if any, and the sort (by size, or by real
+            ! monomers for the full-basis scheme), all of it in
+            ! `generate_mbe_term_list` -- which a
             ! geometry optimization also calls, so the list it freezes is the
             ! one this would have built.
             call generate_mbe_term_list(sys_geom, config, max_level, polymers, total_fragments, &
@@ -936,6 +946,9 @@ contains
             ! Positive only for an interaction energy, whose reduced list
             ! `generate_mbe_term_list` has already built above.
             expansion%reference_fragment = config%reference_fragment
+            ! The scheme the list was built for, whichever path built it, so
+            ! `compute_mbe` can hold the rows to it.
+            expansion%counterpoise_scheme = counterpoise_scheme_of(config%counterpoise)
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
@@ -962,10 +975,15 @@ contains
       if (resources%mpi_comms%world_comm%rank() == 0 .and. &
           .not. allow_overlapping_fragments .and. &
           len_trim(config%checkpoint_file) > 0) then
+         ! Each term is a row of the list and the displacement code after it, so
+         ! the file is sized by the list's own width: `max_level`, unless its
+         ! rows carry more ghosts than the level has monomers.
          call expansion%checkpoint%open(trim(config%checkpoint_file), &
                                         calculation_fingerprint(sys_geom, config%method_config, &
-                                                                fragment_calc_type), &
-                                        max_level + 1, &
+                                                                fragment_calc_type, &
+                                                                counterpoise_scheme_of(config%counterpoise), &
+                                                                max_level), &
+                                        size(polymers, 2) + 1, &
                                         fragment_calc_type == CALC_TYPE_ENERGY, &
                                         checkpoint_error)
          if (checkpoint_error%has_error()) then

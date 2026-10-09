@@ -2,7 +2,7 @@ module mqc_mbe_io
    !! Non-JSON I/O utilities for MBE calculations
    !! JSON output has been centralized in mqc_json_writer module
    use pic_types, only: int32, int64, dp
-   use mqc_combinatorics, only: fragment_size_of
+   use mqc_combinatorics, only: fragment_size_of, real_count_of
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_physical_fragment, only: physical_fragment_t, to_angstrom
@@ -73,6 +73,10 @@ contains
       !! Print detailed energy breakdown for each fragment
       !! Shows full energy and deltaE correction for all monomers, dimers, trimers, etc.
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      !!
+      !! A term is listed at its number of *real* monomers, so a counterpoise row
+      !! such as `[1,-2]` is a monomer however many ghosts it carries, and a row wider
+      !! than `max_level` is still printed. Ghosts are printed as negative numbers.
       integer, intent(in) ::  max_level
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: fragment_count
@@ -80,7 +84,9 @@ contains
 
       integer(int64) :: i
       integer :: fragment_size, j, frag_level
-      character(len=512) :: fragment_str, energy_line
+      character(len=:), allocatable :: fragment_str
+      character(len=32) :: entry_text
+      character(len=20) :: energy_text, delta_text
       integer(int64) :: count_by_level
 
       call logger%verbose(" ")
@@ -97,8 +103,7 @@ contains
          count_by_level = 0_int64
 
          do i = 1_int64, fragment_count
-            fragment_size = fragment_size_of(polymers(i, :))
-            if (fragment_size == frag_level) count_by_level = count_by_level + 1_int64
+            if (real_count_of(polymers(i, :)) == frag_level) count_by_level = count_by_level + 1_int64
          end do
 
          if (count_by_level > 0_int64) then
@@ -119,28 +124,26 @@ contains
             call logger%verbose("--------------------------------------------")
 
             do i = 1_int64, fragment_count
-               fragment_size = fragment_size_of(polymers(i, :))
-
-               if (fragment_size == frag_level) then
+               if (real_count_of(polymers(i, :)) == frag_level) then
+                  fragment_size = fragment_size_of(polymers(i, :))
+                  ! Grown by concatenation: a row that ghosts a large system is
+                  ! longer than any fixed buffer would be.
                   fragment_str = "["
                   do j = 1, fragment_size
-                     if (j > 1) then
-                        write (fragment_str, "(a,a,i0)") trim(fragment_str), ",", polymers(i, j)
-                     else
-                        write (fragment_str, "(a,i0)") trim(fragment_str), polymers(i, j)
-                     end if
+                     write (entry_text, "(i0)") polymers(i, j)
+                     if (j > 1) fragment_str = fragment_str//","
+                     fragment_str = fragment_str//trim(entry_text)
                   end do
-                  write (fragment_str, "(a,a)") trim(fragment_str), "]"
+                  fragment_str = fragment_str//"]"
 
+                  write (energy_text, "(f20.10)") energies(i)
                   if (frag_level == 1) then
-                     write (energy_line, "(a,a,f20.10)") &
-                        "  Fragment ", trim(adjustl(fragment_str)), energies(i)
+                     call logger%verbose("  Fragment "//fragment_str//energy_text)
                   else
-                     write (energy_line, "(a,a,f20.10,a,f20.10)") &
-                        "  Fragment ", trim(adjustl(fragment_str)), energies(i), &
-                        "   deltaE: ", delta_energies(i)
+                     write (delta_text, "(f20.10)") delta_energies(i)
+                     call logger%verbose("  Fragment "//fragment_str//energy_text// &
+                                         "   deltaE: "//delta_text)
                   end if
-                  call logger%verbose(trim(energy_line))
                end if
             end do
          end if

@@ -3,7 +3,9 @@ module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
-   use mqc_combinatorics, only: fragment_size_of, vmfc_row_subset_key, is_auxiliary_row, real_count_of
+   use mqc_combinatorics, only: fragment_size_of, vmfc_row_subset_key, is_auxiliary_row, real_count_of, &
+                                rows_match_counterpoise, counterpoise_scheme_name, COUNTERPOISE_NONE, &
+                                COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
    use pic_timer, only: timer_type
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
@@ -39,7 +41,7 @@ module mqc_mbe
 
 contains
 
- function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm, vmfc) result(delta_E)
+ function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm, scheme) result(delta_E)
       !! Bottom-up computation of n-body correction (non-recursive, uses pre-computed subset deltas)
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all subset deltaE values
       !! All subsets must have been computed already (guaranteed by processing fragments in order)
@@ -49,21 +51,25 @@ contains
       type(fragment_lookup_t), intent(in) :: lookup  !! Pre-built hash table for lookups
       real(dp), intent(in) :: energies(:), delta_energies(:)  !! Pre-computed delta values
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
-      logical, intent(in), optional :: vmfc
-         !! Subtract each subset *in this fragment's basis* rather than in its
-         !! own -- the counterpoise correction. Absent means the ordinary
-         !! expansion.
+      integer, intent(in), optional :: scheme
+         !! A `COUNTERPOISE_*` constant. Under a counterpoise scheme each
+         !! subset is subtracted *in this fragment's basis* rather than in its
+         !! own. Absent means `COUNTERPOISE_NONE`, the ordinary expansion.
       real(dp) :: delta_E
 
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
-      integer :: key(MAX_MBE_LEVEL)
+      integer :: key(size(fragment))
       integer :: key_len
       logical :: has_next, counterpoise
 
+      ! `indices` and `subset` pick among the real monomers, of which a row has
+      ! at most the expansion level. `key` also carries every ghost the row
+      ! has, and a full-cluster-basis row ghosts the whole system, so it is as
+      ! wide as the row rather than as MAX_MBE_LEVEL.
       counterpoise = .false.
-      if (present(vmfc)) counterpoise = vmfc
+      if (present(scheme)) counterpoise = scheme /= COUNTERPOISE_NONE
 
       ! Start with the full n-mer energy
       delta_E = energies(fragment_idx)
@@ -98,14 +104,20 @@ contains
             subset_idx = lookup%find(key(1:key_len), key_len)
             if (subset_idx < 0) then
                block
-                  use pic_io, only: to_char
-                  character(len=512) :: error_msg
+                  ! Built by concatenation: the key names every ghost of the row,
+                  ! so it can be longer than any fixed buffer.
+                  character(len=:), allocatable :: error_msg
                   integer :: j
-                  write (error_msg, "(a,i0,a,*(i0,1x))") "Subset not found! Fragment idx=", fragment_idx, &
-                     " seeking subset: ", (key(j), j=1, key_len)
-                  call logger%error(trim(error_msg))
-                  write (error_msg, "(a,*(i0,1x))") "  Full fragment: ", (fragment(j), j=1, size(fragment))
-                  call logger%error(trim(error_msg))
+                  error_msg = "Subset not found! Fragment idx="//to_char(fragment_idx)//" seeking subset:"
+                  do j = 1, key_len
+                     error_msg = error_msg//" "//to_char(key(j))
+                  end do
+                  call logger%error(error_msg)
+                  error_msg = "  Full fragment:"
+                  do j = 1, size(fragment)
+                     error_msg = error_msg//" "//to_char(fragment(j))
+                  end do
+                  call logger%error(error_msg)
                   if (present(world_comm)) then
                      call abort_comm(world_comm, 1)
                   else
@@ -313,7 +325,7 @@ contains
 
    end subroutine accumulate_uncapped
 
-   subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm, vmfc)
+   subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm, scheme)
       !! Bottom-up computation of n-body dipole correction
       !!
       !! Mirrors the energy: deltaDipole = Dipole - sum(all subset deltaDipoles).
@@ -327,23 +339,23 @@ contains
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_dipoles(:, :)  !! (3, fragment_count)
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
-      logical, intent(in), optional :: vmfc
-         !! Whether the subsets were solved in the parent's basis. Absent means
-         !! the ordinary expansion, matching `compute_mbe_delta`.
+      integer, intent(in), optional :: scheme
+         !! A `COUNTERPOISE_*` constant, as in `compute_mbe_delta`. Absent
+         !! means the ordinary expansion.
 
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
-      integer :: key(MAX_MBE_LEVEL)
+      integer :: key(size(fragment))  ! As wide as the row; see `compute_mbe_delta`
       integer :: key_len
       logical :: has_next, counterpoise
 
       ! Declared and branched on but never assigned until now: this routine had
-      ! no `vmfc` argument at all, so under counterpoise it took whichever
+      ! no scheme argument at all, so under counterpoise it took whichever
       ! branch an undefined flag selected and looked the subset up with the
       ! wrong key. Its sibling `compute_mbe_delta` has always taken one.
       counterpoise = .false.
-      if (present(vmfc)) counterpoise = vmfc
+      if (present(scheme)) counterpoise = scheme /= COUNTERPOISE_NONE
 
       ! Start with the full n-mer dipole
       delta_dipoles(:, fragment_idx) = results(fragment_idx)%dipole
@@ -586,13 +598,14 @@ contains
    end subroutine report_unconverged
 
    subroutine expand_by_level(polymers, fragment_count, max_level, lookup, values, &
-                              deltas, by_level, vmfc, world_comm)
+                              deltas, by_level, scheme, world_comm)
       !! The many-body recursion over one per-term quantity
       !!
       !! `deltas` (fragment_count) receives each term's correction and
       !! `by_level` (max_level) the sum of the corrections of each level's real
-      !! terms. A counterpoise auxiliary row gets a delta, for its parent to
-      !! subtract, and is never summed. Both must be zero on entry.
+      !! terms. A counterpoise auxiliary row -- see `is_auxiliary_row` -- gets a
+      !! delta, for its parent to subtract, and is never summed. Both must be
+      !! zero on entry.
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: max_level
@@ -600,7 +613,7 @@ contains
       real(dp), intent(in) :: values(:)  !! (fragment_count) each term's own value
       real(dp), intent(inout) :: deltas(:)
       real(dp), intent(inout) :: by_level(:)
-      logical, intent(in) :: vmfc
+      integer, intent(in) :: scheme  !! A `COUNTERPOISE_*` constant
       type(comm_t), intent(in), optional :: world_comm
 
       integer(int64) :: i
@@ -621,13 +634,13 @@ contains
                deltas(i) = values(i)
             else
                deltas(i) = compute_mbe_delta(i, polymers(i, 1:row_width), lookup, values, &
-                                             deltas, fragment_size, world_comm, vmfc=vmfc)
+                                             deltas, fragment_size, world_comm, scheme=scheme)
             end if
 
             ! An auxiliary row exists to be subtracted by its parent, never to
             ! be summed: the one-body term is each monomer in its *own* basis,
             ! so adding the ghosted one here would count it twice.
-            if (.not. is_auxiliary_row(polymers(i, :))) then
+            if (.not. is_auxiliary_row(polymers(i, :), scheme)) then
                by_level(nlevel) = by_level(nlevel) + deltas(i)
             end if
          end do
@@ -746,7 +759,7 @@ contains
       end if
    end subroutine print_mbe_gradient_info
 
-   subroutine assemble_interaction(polymers, fragment_count, max_level, reference, &
+   subroutine assemble_interaction(polymers, fragment_count, max_level, reference, scheme, &
                                    energies, delta_energies, mbe_result, world_comm)
       !! The reference fragment's energy, and every correction whose term holds it
       !!
@@ -763,6 +776,7 @@ contains
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: max_level
       integer, intent(in) :: reference  !! Monomer number, 1-based
+      integer, intent(in) :: scheme     !! A `COUNTERPOISE_*` constant
       real(dp), intent(in) :: energies(:), delta_energies(:)
       type(mbe_result_t), intent(inout) :: mbe_result
       type(comm_t), intent(in), optional :: world_comm
@@ -783,7 +797,7 @@ contains
       found_reference = .false.
 
       do i = 1_int64, fragment_count
-         if (is_auxiliary_row(polymers(i, :))) cycle
+         if (is_auxiliary_row(polymers(i, :), scheme)) cycle
          if (.not. any(polymers(i, :) == reference)) cycle
          n = int(real_count_of(polymers(i, :)))
          if (n == 1) then
@@ -840,7 +854,7 @@ contains
    end subroutine print_interaction_breakdown
 
    subroutine compute_mbe(polymers, fragment_count, max_level, results, &
-                          mbe_result, sys_geom, world_comm, json_data, reference)
+                          mbe_result, sys_geom, world_comm, json_data, reference, counterpoise_scheme)
       !! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole
       !!
       !! What is computed follows what the caller pre-allocated in `mbe_result`:
@@ -856,6 +870,12 @@ contains
       !! `mbe_result%has_interaction` -- rather than a total: `has_energy`
       !! stays false, and the dipole, which would be the reduced sum's, is not
       !! assembled. Energies only; a derivative is refused.
+      !!
+      !! The counterpoise scheme is the caller's to name, and `polymers` is
+      !! checked against it by `rows_match_counterpoise` before anything is
+      !! summed: a list that disagrees with the scheme aborts the run rather
+      !! than returning a number. Derivatives are refused under any scheme
+      !! but `COUNTERPOISE_NONE`.
       use mqc_result_types, only: calculation_result_t, mbe_result_t
 
       ! Required arguments
@@ -872,11 +892,15 @@ contains
       integer, intent(in), optional :: reference
          !! The fragment whose interaction energy is wanted, as a monomer
          !! number, 1-based. Absent or 0 is the ordinary expansion.
+      integer, intent(in), optional :: counterpoise_scheme
+         !! A `COUNTERPOISE_*` constant naming how `polymers` was built. Absent
+         !! means `COUNTERPOISE_NONE`.
 
       ! Local variables
       integer(int64) :: i
       integer :: fragment_size, row_width, nlevel, current_log_level, hess_dim
-      logical :: use_vmfc, interaction, split_correlation
+      integer :: scheme, n_monomers
+      logical :: interaction, split_correlation
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: correlation(:), correlation_deltas(:)
       real(dp), allocatable :: parts(:, :)  !! (fragment_count, N_CORRELATION_PARTS)
@@ -1030,19 +1054,44 @@ contains
          end if
       end block
 
-      ! Counterpoise is read off the term list rather than passed in: the rows
-      ! are what a ghosted expansion differs by, so a flag could disagree with
-      ! them and this cannot. An all-positive table is the ordinary expansion.
-      use_vmfc = .false.
-      do i = 1_int64, fragment_count
-         if (is_auxiliary_row(polymers(i, :))) then
-            use_vmfc = .true.
-            exit
-         end if
-      end do
+      ! The scheme is named by the caller and the rows are held to it. Read off
+      ! the rows it could not be told apart from the other scheme at L = N, and
+      ! a flag alone could disagree with them, so the rows are checked against
+      ! it and a mismatch stops the run before any sum is taken.
+      scheme = COUNTERPOISE_NONE
+      if (present(counterpoise_scheme)) scheme = counterpoise_scheme
+      if (present(sys_geom)) then
+         n_monomers = sys_geom%n_monomers
+      else
+         ! The full-basis rows of a scheme name every monomer, so the largest
+         ! entry is the system size whenever there are any to check.
+         n_monomers = maxval(abs(polymers(1:fragment_count, :)))
+      end if
+      if (.not. rows_match_counterpoise(polymers, fragment_count, n_monomers, scheme)) then
+         call logger%error("compute_mbe: the term list does not match the counterpoise "// &
+                           "scheme it was given ("//counterpoise_scheme_name(scheme)// &
+                           "). The rows decide which terms are summed, so a list built "// &
+                           "for another scheme would return a wrong energy.")
+         if (present(world_comm)) call abort_comm(world_comm, 1)
+         error stop "term list does not match the counterpoise scheme"
+      end if
+
+      ! Said here and not where the scheme is read, so the line cannot name a
+      ! scheme the rows above did not just confirm.
+      select case (scheme)
+      case (COUNTERPOISE_VMFC)
+         call logger%info("Counterpoise: vmfc. Each subset of an n-mer is solved in that n-mer's "// &
+                          "basis; the 1-body term keeps each monomer's own basis.")
+      case (COUNTERPOISE_SSFC)
+         call logger%info("Counterpoise: ssfc. Every term of order 2 and above is solved in the "// &
+                          "basis of all "//to_char(n_monomers)//" monomers; the 1-body term keeps "// &
+                          "each monomer's own basis.")
+      case default
+         ! No counterpoise: nothing to say, and a run without it is unchanged.
+      end select
 
       call expand_by_level(polymers, fragment_count, max_level, lookup, energies, &
-                           delta_energies, sum_by_level, use_vmfc, world_comm)
+                           delta_energies, sum_by_level, scheme, world_comm)
 
       ! The correlation part runs through the same recursion on its own. The
       ! expansion is linear, so the reference part of any term or level is the
@@ -1055,7 +1104,7 @@ contains
          correlation_deltas = 0.0_dp
          mbe_result%correlation_by_level = 0.0_dp
          call expand_by_level(polymers, fragment_count, max_level, lookup, correlation, &
-                              correlation_deltas, mbe_result%correlation_by_level, use_vmfc, &
+                              correlation_deltas, mbe_result%correlation_by_level, scheme, &
                               world_comm)
          mbe_result%correlation_energy = sum(mbe_result%correlation_by_level)
 
@@ -1075,7 +1124,7 @@ contains
             part_deltas = 0.0_dp
             call expand_by_level(polymers, fragment_count, max_level, lookup, parts(:, part), &
                                  part_deltas, mbe_result%correlation_parts_by_level(:, part), &
-                                 use_vmfc, world_comm)
+                                 scheme, world_comm)
          end do
          mbe_result%has_correlation = .true.
       end if
@@ -1099,7 +1148,7 @@ contains
                   ! wrong basis recursed at VMFC(3) and above.
                   call compute_mbe_dipole(i, polymers(i, 1:row_width), lookup, &
                                           results, delta_dipoles, fragment_size, world_comm, &
-                                          vmfc=use_vmfc)
+                                          scheme=scheme)
                end if
             end do
          end do
@@ -1108,12 +1157,14 @@ contains
       ! Collapse the delta recursion into one weight per fragment while the lookup
       ! table is still alive. Only needed for the quantities that are mapped into
       ! system coordinates; energy and dipole stay on the O(fragment_count) path.
-      if (use_vmfc .and. (compute_grad .or. compute_hess .or. compute_dipole_derivs)) then
+      if (scheme /= COUNTERPOISE_NONE .and. &
+          (compute_grad .or. compute_hess .or. compute_dipole_derivs)) then
          ! `compute_mbe_coefficients` collapses the delta recursion with
          ! unghosted subset keys and cannot tell a ghosted row from an ordinary
-         ! one, so under VMFC it would assemble the weights from the wrong
-         ! terms and return a derivative that was wrong without looking wrong.
-         ! Refused until it learns the key rule `compute_mbe_delta` uses.
+         ! one, so under any counterpoise scheme it would assemble the weights
+         ! from the wrong terms and return a derivative that was wrong without
+         ! looking wrong. Refused until it learns the key rule
+         ! `compute_mbe_delta` uses.
          call logger%error("counterpoise: energies only for now. The gradient, "// &
                            "Hessian and dipole-derivative path collapses the "// &
                            "expansion with uncorrected subset weights, so it "// &
@@ -1134,7 +1185,7 @@ contains
       ! Compute totals and set status flags. A reduced expansion has no total
       ! to report, and its sum is not written anywhere a total would be read.
       if (interaction) then
-         call assemble_interaction(polymers, fragment_count, max_level, reference, &
+         call assemble_interaction(polymers, fragment_count, max_level, reference, scheme, &
                                    energies, delta_energies, mbe_result, world_comm)
       else
          mbe_result%total_energy = sum(sum_by_level)
@@ -1170,7 +1221,7 @@ contains
             ! subtract. It is not a term of the expansion, and the energy sum
             ! above excludes it for that reason -- adding its dipole here put
             ! the ghosted monomers back into the total.
-            if (is_auxiliary_row(polymers(i, :))) cycle
+            if (is_auxiliary_row(polymers(i, :), scheme)) cycle
             fragment_size = int(real_count_of(polymers(i, :)))
             if (fragment_size <= max_level) then
                mbe_result%dipole = mbe_result%dipole + delta_dipoles(:, i)
@@ -1189,7 +1240,7 @@ contains
 
                ! A failure here costs the bonding report and nothing else: the
                ! energy above is already assembled.
-               call collect_interaction_bonding(polymers, fragment_count, reference, results, &
+               call collect_interaction_bonding(polymers, fragment_count, reference, scheme, results, &
                                                 sys_geom, bonding_terms, bonding_error)
                if (bonding_error%has_error()) then
                   call logger%warning("the reference fragment's bonding could not be "// &
@@ -1342,10 +1393,13 @@ contains
          json_data%has_energy = mbe_result%has_energy
          json_data%max_level = max_level
          json_data%fragment_count = fragment_count
+         if (scheme /= COUNTERPOISE_NONE) json_data%counterpoise = counterpoise_scheme_name(scheme)
 
          ! Copy fragment breakdown data
-         allocate (json_data%polymers(fragment_count, max_level))
-         json_data%polymers = polymers(1:fragment_count, 1:max_level)
+         ! The rows as they ran, at their own width: a counterpoise row carries
+         ! ghosts and need not fit in `max_level` columns.
+         allocate (json_data%polymers(fragment_count, size(polymers, 2)))
+         json_data%polymers = polymers(1:fragment_count, :)
 
          allocate (json_data%fragment_energies(fragment_count))
          json_data%fragment_energies = energies
@@ -1364,8 +1418,8 @@ contains
          if (present(sys_geom)) then
             call severed_bond_pairs(sys_geom, joined_pairs)
             do i = 1_int64, fragment_count
-               if (count(polymers(i, 1:max_level) > 0) /= 2) cycle
-               pair_members = pack(polymers(i, 1:max_level), polymers(i, 1:max_level) > 0)
+               if (count(polymers(i, :) > 0) /= 2) cycle
+               pair_members = pack(polymers(i, :), polymers(i, :) > 0)
                json_data%fragment_connected(i) = joined_pairs(pair_members(1), pair_members(2))
             end do
             if (any(json_data%fragment_connected)) then
@@ -1418,7 +1472,7 @@ contains
             ! Same rule the fragment was built and run with, from the same
             ! helper, so the table cannot disagree with what the SCF saw.
             call fragment_charge_multiplicity(sys_geom, &
-                                              pack(polymers(i, 1:max_level), polymers(i, 1:max_level) > 0), &
+                                              pack(polymers(i, :), polymers(i, :) > 0), &
                                               json_data%fragment_charges(i), &
                                               json_data%fragment_multiplicities(i))
             ! Zero when the method did not report a pair, which the table
@@ -1436,7 +1490,7 @@ contains
          ! names the first ten in the log, which is right for a reader and
          ! useless to a follow-up job; this is the list one is built from.
          call collect_unconverged(json_data%fragment_scf_status, &
-                                  polymers(1:fragment_count, 1:max_level), &
+                                  polymers(1:fragment_count, :), &
                                   fragment_count, json_data%unconverged_ids, &
                                   json_data%unconverged_monomers)
          ! Unallocated means the method never reported, and there is nothing

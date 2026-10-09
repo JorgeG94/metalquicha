@@ -128,7 +128,11 @@ module mqc_json_output_types
       logical :: has_mcscf_states = .false.
 
       !----- MBE-specific data (store ALL fragments for detailed output) -----
-      integer, allocatable :: polymers(:, :)          !! Fragment composition (n_fragments, max_level)
+      integer, allocatable :: polymers(:, :)
+         !! Fragment composition (n_fragments, row width), zero-padded; a
+         !! negative entry is a ghosted monomer. The row width is the term
+         !! list's, which exceeds `max_level` when a row carries more ghosts
+         !! than the level has monomers.
       real(dp), allocatable :: fragment_energies(:)   !! Per-fragment total energies
       real(dp), allocatable :: delta_energies(:)      !! MBE delta corrections
       logical, allocatable :: fragment_connected(:)
@@ -175,8 +179,9 @@ module mqc_json_output_types
          !! converged, unallocated when the method does not report convergence
          !! at all, which is not the same thing.
       integer, allocatable :: unconverged_monomers(:, :)
-         !! (n_unconverged, max_level) the monomers each of those fragments is
-         !! built from, zero-padded, exactly as `polymers` holds them.
+         !! (n_unconverged, row width of `polymers`) the monomers each of those
+         !! fragments is built from, zero-padded, exactly as `polymers` holds
+         !! them.
       real(dp), allocatable :: unconverged_deltas(:)
          !! What each failed fragment contributes to the total, in the same
          !! units and sign as `delta_energies`. The list of failures says which
@@ -219,6 +224,9 @@ module mqc_json_output_types
          !! Identity of the calculation that produced this output. Stamped so a
          !! restart can check what it is about to reuse -- see `mqc_fingerprint`.
          !! Empty when nothing computed it.
+      character(len=8) :: counterpoise = ""
+         !! The counterpoise scheme the term list was built for, `"vmfc"` or
+         !! `"ssfc"`. Empty without counterpoise, and then not written.
 
       !----- GMBE PIE-specific data -----
       integer, allocatable :: pie_atom_sets(:, :)     !! Unique atom sets (max_atoms, n_terms)
@@ -584,6 +592,7 @@ contains
       this%has_mcscf_states = .false.
       this%fragment_count = 0
       this%max_level = 0
+      this%counterpoise = ""
       this%has_interaction = .false.
       this%has_interaction_bonding = .false.
       this%reference_fragment = 0
