@@ -33,7 +33,8 @@ module mqc_czt_atomic_guess
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, subshell_layout
    use mqc_czt_rhf, only: SCF_GUESS_PROJ, rhf_result_t, run_czt_uhf, &
                           SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
-                          SCF_GUESS_SAP
+                          SCF_GUESS_SAP, SCF_GUESS_MINAO
+   use mqc_czt_minao, only: build_minao_guess
    implicit none
    private
 
@@ -115,13 +116,15 @@ contains
          kind = SCF_GUESS_SAD
       case ("sap")
          kind = SCF_GUESS_SAP
+      case ("minao")
+         kind = SCF_GUESS_MINAO
       case ("basis_set_projection", "projection")
          kind = SCF_GUESS_PROJ
       case default
          kind = SCF_GUESS_SAD
          call error%set(ERROR_VALIDATION, "unknown initial guess '"//trim(adjustl(text))// &
-                        "'; the CPU backend has core, gwh, sac, sad, sap and "// &
-                        "basis_set_projection")
+                        "'; the CPU backend has core, gwh, sac, sad, sap, minao "// &
+                        "and basis_set_projection")
       end select
    end subroutine parse_guess_name
 
@@ -129,7 +132,7 @@ contains
       !! Resolve a deck guess name and build the density a restricted SCF starts from
       !!
       !! For SAD and SAC, the free-atom spin channels summed into the one total a
-      !! closed shell takes. An atomic guess that will not build warns and falls
+      !! closed shell takes; for minao, its projected density. An atomic guess that will not build warns and falls
       !! back to GWH rather than failing the run.
       !!
       !! Core, GWH and SAP need nothing here -- the SCF builds them from H, S and
@@ -155,7 +158,8 @@ contains
          return
       end if
 
-      if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD) then
+      if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD .or. &
+          guess_kind == SCF_GUESS_MINAO) then
          call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error)
          if (guess_error%has_error()) then
             call logger%warning("initial guess: "//guess_error%get_message()// &
@@ -185,6 +189,8 @@ contains
          name = "superposition of atomic potentials"
       case (SCF_GUESS_SAD)
          name = "sad"
+      case (SCF_GUESS_MINAO)
+         name = "minao"
       case default
          name = "unknown"
       end select
@@ -259,20 +265,34 @@ contains
       end do
    end subroutine spherical_average
 
-   subroutine build_atomic_guess(mol, kind, d_alpha, d_beta, error)
+   subroutine build_atomic_guess(mol, kind, d_alpha, d_beta, error, linear_dependence)
       !! Molecular guess densities, one atomic block at a time
       !!
       !! The blocks are neutral free atoms, so the guess carries sum(Z)
       !! electrons whatever the molecule's own charge is; the Fock matrix it
       !! builds is then occupied with the right number.
+      !!
+      !! `SCF_GUESS_MINAO` is handed to `build_minao_guess` and halved into the
+      !! two spins. It solves no free atom and is not block-diagonal.
       type(czt_molecule_t), intent(in) :: mol
-      integer, intent(in) :: kind    !! SCF_GUESS_SAC or SCF_GUESS_SAD
+      integer, intent(in) :: kind    !! SCF_GUESS_SAC, SCF_GUESS_SAD or SCF_GUESS_MINAO
       real(dp), allocatable, intent(out) :: d_alpha(:, :), d_beta(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: linear_dependence
+         !! The SCF's overlap threshold, used by minao's projection only
 
       type(czt_molecule_t) :: atom_mol
       integer, allocatable :: offsets(:), counts(:)
       integer :: iatom, idx, z, lo, hi
+      real(dp), allocatable :: total(:, :)
+
+      if (kind == SCF_GUESS_MINAO) then
+         call build_minao_guess(mol, total, error, linear_dependence)
+         if (error%has_error()) return
+         d_alpha = 0.5_dp*total
+         d_beta = d_alpha
+         return
+      end if
 
       if (kind /= SCF_GUESS_SAC .and. kind /= SCF_GUESS_SAD) then
          call error%set(ERROR_VALIDATION, "atomic guess: asked for a guess that needs no "// &

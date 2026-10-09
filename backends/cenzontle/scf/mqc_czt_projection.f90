@@ -38,6 +38,7 @@ module mqc_czt_projection
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_scf_types, only: guess_step_t, scf_numerics_t
+   use mqc_scf_common, only: build_orthogonalizer
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_SAD, SCF_GUESS_GWH
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
@@ -49,6 +50,7 @@ module mqc_czt_projection
    public :: merge_basis_sets
    public :: cross_overlap
    public :: project_occupied
+   public :: project_density
    public :: climb_basis_ladder
 
    ! Overlap eigenvalues below this are dropped when inverting. The same cutoff
@@ -378,6 +380,52 @@ contains
       call pic_gemm(rhs, rhs, density, transb="T")
       density = 2.0_dp*density
    end subroutine project_occupied
+
+   subroutine project_density(mol_target, mol_small, d_small, density, error, threshold)
+      !! A density carried from one basis into another, D_B = P D_A P^T
+      !!
+      !! P = S_BB^+ S_BA is the least-squares projection of each small-basis
+      !! function onto the target, with S_BB^+ = X X^T built from the canonical
+      !! orthogonaliser the SCF itself uses, so the directions a nearly
+      !! dependent target basis drops are dropped here too rather than divided
+      !! by. With nothing dropped this is PySCF's `project_dm_nr2nr`.
+      !!
+      !! Neither idempotency nor Tr(D S_BB) is enforced: both hold only as far
+      !! as the target basis spans the small one. `project_occupied` is the
+      !! routine that re-orthonormalises.
+      type(czt_molecule_t), intent(in) :: mol_target, mol_small
+      real(dp), intent(in) :: d_small(:, :)            !! (n_A, n_A)
+      real(dp), allocatable, intent(out) :: density(:, :)   !! (n_B, n_B)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: threshold
+         !! Overlap eigenvalues at or below this are dropped, as in
+         !! `build_orthogonalizer`; pass the SCF's own linear-dependence
+         !! threshold. Absent or non-positive takes that routine's default.
+
+      real(dp), allocatable :: s_target(:, :), s_cross(:, :), x(:, :)
+      real(dp), allocatable :: y(:, :), p(:, :), pd(:, :)
+      integer :: nb, na, n_mo
+
+      na = mol_small%nao
+      if (size(d_small, 1) /= na .or. size(d_small, 2) /= na) then
+         call error%set(ERROR_VALIDATION, "basis projection: the density is not the size "// &
+                        "of the basis it is said to be in")
+         return
+      end if
+
+      call cross_overlap(mol_target, mol_small, s_target, s_cross, error)
+      if (error%has_error()) return
+      nb = mol_target%nao
+
+      call build_orthogonalizer(s_target, x, n_mo, error, threshold=threshold)
+      if (error%has_error()) return
+
+      allocate (y(n_mo, na), p(nb, na), pd(nb, na), density(nb, nb))
+      call pic_gemm(x, s_cross, y, transa="T")      ! X^T S_BA
+      call pic_gemm(x, y, p)                         ! P = X X^T S_BA
+      call pic_gemm(p, d_small, pd)
+      call pic_gemm(pd, p, density, transb="T")
+   end subroutine project_density
 
    subroutine invert_overlap(overlap, inverse, kept, error)
       !! S^-1 with near-null directions dropped rather than amplified

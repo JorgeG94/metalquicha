@@ -366,6 +366,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_guess)
   target_link_libraries(test_mqc_czt_guess PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The minao guess against PySCF's init_guess_by_minao, element by element,
+  # with the reference numbers from tools/minao/minao_reference.py.
+  addtest(mqc_czt_minao)
+  target_link_libraries(test_mqc_czt_minao PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Unrestricted Kohn-Sham, on the closed-shell limit: with equal spin densities
   # it must reproduce the restricted energy exactly, for every rung. That is
   # what catches libxc's interleaved arrays being read with the wrong stride and

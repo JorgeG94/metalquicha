@@ -37,6 +37,8 @@ both has not said which it means.
 ``sac``                      Superposition of the free atoms' own spin densities.
 ``sap``                      Superposition of fitted atomic potentials. Needs no
                              atomic calculation.
+``minao``                    Minimal ANO atoms projected into the basis -- PySCF's
+                             default guess. Needs no atomic calculation.
 ``basis_set_projection``     Converge in smaller bases first and project forward.
 ``auto``                     Let the backend choose.
 ============================ =========================================================
@@ -79,6 +81,29 @@ densities rather than spherically averaging them. It therefore **arrives with it
 spatial symmetry already broken**, which is what a radical or a stretched bond
 wants and what a closed shell does not. Reach for it on an unrestricted
 calculation that keeps collapsing onto the restricted solution.
+
+**minao** is PySCF's default. Each atom contributes the leading ANO-RCC
+contractions of its occupied shells -- for oxygen 1s, 2s and 2p -- occupied with
+the spherically averaged ground-state configuration (oxygen's 2p carries 4/3
+electrons per component), and that density is projected into the calculation's
+basis by least squares, :math:`D = P D_{\text{min}} P^T` with
+:math:`P = S^{-1} S_{\text{cross}}`. The overlap inverse goes through the same
+canonical orthogonaliser as the SCF, so under ``linear_dependence_threshold``
+the projection drops what the SCF drops. As in PySCF the electron count is not
+renormalised: the atoms are neutral, and the first diagonalisation places any
+extra or missing electrons.
+
+Where it has mattered is an anion in a diffuse basis. On a nitrosamine anion in
+def2-TZVPD with continuum solvent, GPU4PySCF converged in 26 cycles when it started
+from ``minao``. When it started from free atoms it stalled 7-10 mEh above the
+solution.
+
+The data covers H-Kr and is taken from PySCF
+(``basis_sets/minao/minao.json``, written by ``tools/minao/gen_minao_basis.py``).
+An element above krypton, an atom carrying an effective core potential, or a
+Cartesian basis on an atom with occupied d is refused with a warning, and the
+run falls back to ``gwh``. Fragment SCFs under FMO cannot take it yet, for the
+same reason they cannot take ``sad``.
 
 .. _basis-set-projection:
 

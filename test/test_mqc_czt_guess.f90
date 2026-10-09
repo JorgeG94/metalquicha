@@ -29,7 +29,7 @@ module test_mqc_czt_guess
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, &
                           density_pseudo_orbitals, &
                           SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
-                          SCF_GUESS_SAP, SAP_BASIS_DEFAULT
+                          SCF_GUESS_SAP, SCF_GUESS_MINAO, SAP_BASIS_DEFAULT
    use mqc_czt_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                    hund_multiplicity, spherical_average, &
                                    clear_atomic_cache
@@ -94,7 +94,7 @@ contains
    end subroutine single_atom
 
    subroutine test_same_energy(error)
-      !! Five guesses, one answer
+      !! Six guesses, one answer
       !!
       !! A guess decides how the SCF gets there, not where. The exception is an
       !! open-shell system that can converge onto a different stationary point,
@@ -104,11 +104,12 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(czt_molecule_t) :: mol
       type(error_t) :: err
-      type(rhf_result_t) :: r(5)
+      type(rhf_result_t) :: r(6)
       real(dp), allocatable :: g_a(:, :), g_b(:, :), total(:, :)
       integer :: i
-      integer, parameter :: KINDS(5) = [SCF_GUESS_CORE, SCF_GUESS_GWH, &
-                                        SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_SAP]
+      integer, parameter :: KINDS(6) = [SCF_GUESS_CORE, SCF_GUESS_GWH, &
+                                        SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_SAP, &
+                                        SCF_GUESS_MINAO]
 
       call clear_atomic_cache()
       call water(mol, err, "cc-pvdz")
@@ -116,7 +117,8 @@ contains
       if (allocated(error)) return
 
       do i = 1, size(KINDS)
-         if (KINDS(i) == SCF_GUESS_SAC .or. KINDS(i) == SCF_GUESS_SAD) then
+         if (KINDS(i) == SCF_GUESS_SAC .or. KINDS(i) == SCF_GUESS_SAD .or. &
+             KINDS(i) == SCF_GUESS_MINAO) then
             call build_atomic_guess(mol, KINDS(i), g_a, g_b, err)
             call check(error,.not. err%has_error(), "the atomic guess must build: "//err%get_full_trace())
             if (allocated(error)) return
