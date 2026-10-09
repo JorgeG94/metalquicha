@@ -34,6 +34,11 @@ module mqc_fraglist
       !! closure works on stack arrays of this width to stay out of the heap in
       !! a loop that runs once per term.
 
+   ! TODO(mqc): `terms` here, the C API arrays of `mqc_capi_fraglist` and the
+   ! `supplied_terms` of a session are all `(n_terms, max_level)`. A
+   ! counterpoise row can be wider than `max_level` (a full-cluster-basis row
+   ! ghosts the whole system), so it cannot be handed out or read back through
+   ! them. The driver refuses counterpoise with a supplied list until they can.
    type :: fraglist_t
       !! A term list, and whatever has been computed about its terms
       integer(default_int) :: max_level = 0

@@ -6,8 +6,9 @@ module mqc_fingerprint
    !! In, because they change the number: coordinates, elements, charge and
    !! multiplicity; the monomer partition, since a term names monomers by index;
    !! the bonds, since they decide where caps go; the method, basis, functional
-   !! and the thresholds the SCF converges to. Out: log level, output paths,
-   !! rank counts, verbosity, GPU binding.
+   !! and the thresholds the SCF converges to; and, when a counterpoise scheme
+   !! is in use, which scheme and at what MBE level. Out: log level, output
+   !! paths, rank counts, verbosity, GPU binding.
    !!
    !! Reals are hashed as their IEEE bits rather than as text, with negative
    !! zero normalised to positive so that an identical geometry cannot hash
@@ -17,6 +18,7 @@ module mqc_fingerprint
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, &
                                METHOD_TYPE_HF, METHOD_TYPE_DFT
+   use mqc_combinatorics, only: COUNTERPOISE_NONE
    implicit none
    private
 
@@ -51,23 +53,47 @@ module mqc_fingerprint
 
 contains
 
-   function calculation_fingerprint(sys_geom, config, calc_type) result(hex)
+   function calculation_fingerprint(sys_geom, config, calc_type, counterpoise_scheme, mbe_level) result(hex)
       !! The identity of a calculation: what it computes, and on what
       !!
       !! Two runs agreeing here may share energies. Two runs disagreeing may
       !! not, and the difference need not be visible -- swapping a functional
       !! leaves every array shape identical.
+      !!
+      !! The counterpoise scheme and the MBE level are hashed only when a
+      !! scheme is in use.
+      ! A term list with ghosts is a different list at every level, and a
+      ! checkpoint of one scheme's rows must not satisfy another's. A run
+      ! without counterpoise hashes exactly as it did before they were added,
+      ! so its stored fingerprints still match.
       type(system_geometry_t), intent(in) :: sys_geom
       type(method_config_t), intent(in) :: config
       integer(int32), intent(in) :: calc_type
+      integer, intent(in), optional :: counterpoise_scheme
+         !! A `COUNTERPOISE_*` constant from `mqc_combinatorics`. Absent means
+         !! `COUNTERPOISE_NONE`.
+      integer, intent(in), optional :: mbe_level
+         !! The many-body expansion level, `nlevel` of the deck. Hashed only
+         !! with a counterpoise scheme; absent counts as 0.
       character(len=FINGERPRINT_LEN) :: hex
 
       type(hasher_t) :: h
+      integer :: scheme, level
+
+      scheme = COUNTERPOISE_NONE
+      if (present(counterpoise_scheme)) scheme = counterpoise_scheme
+      level = 0
+      if (present(mbe_level)) level = mbe_level
 
       call h%text("mqc-fingerprint-v1")
       call add_system(h, sys_geom)
       call add_method(h, config)
       call h%int(int(calc_type))
+      if (scheme /= COUNTERPOISE_NONE) then
+         call h%text("counterpoise")
+         call h%int(scheme)
+         call h%int(level)
+      end if
       hex = h%hex()
    end function calculation_fingerprint
 

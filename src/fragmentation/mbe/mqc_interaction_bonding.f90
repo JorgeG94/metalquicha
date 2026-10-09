@@ -233,6 +233,7 @@ contains
          !! Monomer number, 1-based
 
       character(len=200) :: line
+      character(len=:), allocatable :: members
       character(len=24) :: left, right
       character(len=12) :: direction
       integer :: t, k, a, b
@@ -247,11 +248,20 @@ contains
 
       do t = 1, size(terms)
          call logger%info("")
-         line = "  term "//to_char(terms(t)%term)//": monomers"
+         ! The real monomers, then any ghosted ones after a label. A full-cluster
+         ! basis term ghosts the rest of the system, so this line is as long as
+         ! the system.
+         members = "  term "//to_char(terms(t)%term)//": monomers"
          do k = 1, size(terms(t)%monomers)
-            line = trim(line)//" "//to_char(abs(terms(t)%monomers(k)) - 1)
+            if (terms(t)%monomers(k) > 0) members = members//" "//to_char(terms(t)%monomers(k) - 1)
          end do
-         call logger%info(trim(line))
+         if (any(terms(t)%monomers < 0)) then
+            members = members//", ghosts"
+            do k = 1, size(terms(t)%monomers)
+               if (terms(t)%monomers(k) < 0) members = members//" "//to_char(-terms(t)%monomers(k) - 1)
+            end do
+         end if
+         call logger%info(members)
 
          call logger%info("     atom pair                  index    kcal/mol")
          if (size(terms(t)%pair_kinetic_bond_order) == 0) then

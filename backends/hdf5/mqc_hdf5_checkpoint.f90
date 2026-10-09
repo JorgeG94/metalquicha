@@ -55,7 +55,9 @@ module mqc_hdf5_checkpoint
       integer(hid_t) :: file = -1
       integer(hid_t) :: d_terms = -1, d_energy = -1, d_status = -1, d_natoms = -1
       integer(hid_t) :: d_goff = -1, d_grad = -1, d_hoff = -1, d_hess = -1
-      integer :: max_level = 0
+      integer :: term_width = 0
+         !! Entries in every term this file holds, as `checkpoint_t` defines
+         !! it. `record` and `lookup` take terms of exactly this length.
 
       integer(int64) :: n_written = 0     !! Records appended this session
       integer(int64) :: n_committed = 0   !! Records a reader would be told about
@@ -90,17 +92,17 @@ contains
       available = .true.
    end function hdf5_checkpoint_available
 
-   subroutine h5ck_open(this, path, fingerprint, max_level, error)
+   subroutine h5ck_open(this, path, fingerprint, term_width, error)
       !! Load an existing file if there is one, then open for appending
       class(hdf5_checkpoint_t), intent(inout) :: this
       character(len=*), intent(in) :: path
       character(len=*), intent(in) :: fingerprint
-      integer, intent(in) :: max_level
+      integer, intent(in) :: term_width
       type(error_t), intent(inout) :: error
 
       logical :: exists
 
-      this%max_level = max_level
+      this%term_width = term_width
       if (.not. h5_start()) then
          call error%set(ERROR_IO, "HDF5 would not start, or is older than 1.10 "// &
                         "(found "//h5_version_text()//"); its ids would be the wrong width")
@@ -134,7 +136,7 @@ contains
       call write_count(this%file, 0_int64)
       call system_clock(this%last_tick)
 
-      this%d_terms = make_2d("terms", this%file, int(this%max_level, hsize_t), H5T_STD_I32LE)
+      this%d_terms = make_2d("terms", this%file, int(this%term_width, hsize_t), H5T_STD_I32LE)
       this%d_energy = make_1d("energies", this%file, H5T_NATIVE_DOUBLE)
       this%d_status = make_1d("scf_status", this%file, H5T_STD_I32LE)
       this%d_natoms = make_1d("n_atoms", this%file, H5T_STD_I32LE)
@@ -197,10 +199,10 @@ contains
       call system_clock(this%last_tick)
       if (n <= 0) return
 
-      allocate (this%terms(n, this%max_level))
+      allocate (this%terms(n, this%term_width))
       allocate (this%energies(n), this%scf_status(n), this%natoms(n))
       allocate (this%gstart(n), this%gcount(n), this%hstart(n), this%hcount(n))
-      call read_2d_int(this%d_terms, n, int(this%max_level, hsize_t), this%terms)
+      call read_2d_int(this%d_terms, n, int(this%term_width, hsize_t), this%terms)
       call read_1d_double(this%d_energy, n, this%energies)
       call read_1d_int(this%d_status, n, this%scf_status)
       call read_1d_int(this%d_natoms, n, this%natoms)
@@ -246,17 +248,16 @@ contains
       real(dp), intent(in), optional :: hessian(:, :)
 
       integer(int64) :: at, ng, nh
-      integer :: row(this%max_level)
+      integer :: row(this%term_width)
       real(dp) :: scalar(1)
       integer :: ivalue(1)
       integer(int64) :: lvalue(1)
 
       if (.not. this%active) return
       at = this%n_written
-      row = 0
-      row(1:min(size(term), this%max_level)) = term(1:min(size(term), this%max_level))
+      row = term
 
-      call append_2d_int(this%d_terms, at, int(this%max_level, hsize_t), row)
+      call append_2d_int(this%d_terms, at, int(this%term_width, hsize_t), row)
       scalar(1) = energy
       call append_1d_double(this%d_energy, at, 1_int64, scalar)
       ivalue(1) = scf_status
@@ -350,7 +351,7 @@ contains
       hi = this%n_loaded
       do while (lo <= hi)
          mid = (lo + hi)/2
-         order = compare(this%terms(mid, :), term, this%max_level)
+         order = compare(this%terms(mid, :), term, this%term_width)
          if (order == 0) then
             found = .true.
             energy = this%energies(mid)
@@ -743,7 +744,7 @@ contains
       class(hdf5_checkpoint_t), intent(inout) :: this
 
       integer(int64) :: i, j
-      integer :: key_term(this%max_level)
+      integer :: key_term(this%term_width)
       integer :: key_status, key_natoms
       real(dp) :: key_energy
       integer(int64) :: key_goff(2), key_hoff(2)
@@ -757,7 +758,7 @@ contains
          key_hoff = [this%hstart(i), this%hcount(i)]
          j = i - 1
          do while (j >= 1)
-            if (compare(this%terms(j, :), key_term, this%max_level) <= 0) exit
+            if (compare(this%terms(j, :), key_term, this%term_width) <= 0) exit
             this%terms(j + 1, :) = this%terms(j, :)
             this%energies(j + 1) = this%energies(j)
             this%scf_status(j + 1) = this%scf_status(j)

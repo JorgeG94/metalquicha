@@ -128,7 +128,11 @@ module mqc_json_output_types
       logical :: has_mcscf_states = .false.
 
       !----- MBE-specific data (store ALL fragments for detailed output) -----
-      integer, allocatable :: polymers(:, :)          !! Fragment composition (n_fragments, max_level)
+      integer, allocatable :: polymers(:, :)
+         !! Fragment composition (n_fragments, row width), zero-padded; a
+         !! negative entry is a ghosted monomer. The row width is the term
+         !! list's, which exceeds `max_level` when a row carries more ghosts
+         !! than the level has monomers.
       real(dp), allocatable :: fragment_energies(:)   !! Per-fragment total energies
       real(dp), allocatable :: delta_energies(:)      !! MBE delta corrections
       logical, allocatable :: fragment_connected(:)
@@ -175,8 +179,9 @@ module mqc_json_output_types
          !! converged, unallocated when the method does not report convergence
          !! at all, which is not the same thing.
       integer, allocatable :: unconverged_monomers(:, :)
-         !! (n_unconverged, max_level) the monomers each of those fragments is
-         !! built from, zero-padded, exactly as `polymers` holds them.
+         !! (n_unconverged, row width of `polymers`) the monomers each of those
+         !! fragments is built from, zero-padded, exactly as `polymers` holds
+         !! them.
       real(dp), allocatable :: unconverged_deltas(:)
          !! What each failed fragment contributes to the total, in the same
          !! units and sign as `delta_energies`. The list of failures says which

@@ -35,18 +35,18 @@ contains
       available = .false.
    end function hdf5_checkpoint_available
 
-   subroutine h5ck_open(this, path, fingerprint, max_level, error)
+   subroutine h5ck_open(this, path, fingerprint, term_width, error)
       class(hdf5_checkpoint_t), intent(inout) :: this
       character(len=*), intent(in) :: path
       character(len=*), intent(in) :: fingerprint
-      integer, intent(in) :: max_level
+      integer, intent(in) :: term_width
       type(error_t), intent(inout) :: error
 
       this%active = .false.
       call error%set(ERROR_VALIDATION, "this build has no HDF5, so "//trim(path)// &
                      " cannot be written; configure with -DMQC_ENABLE_HDF5=ON. "// &
                      "Energy-only runs need no HDF5 and use the text format.")
-      if (len_trim(fingerprint) == 0 .or. max_level < 0) return
+      if (len_trim(fingerprint) == 0 .or. term_width < 0) return
    end subroutine h5ck_open
 
    subroutine h5ck_record(this, term, energy, scf_status, n_atoms, gradient, hessian)

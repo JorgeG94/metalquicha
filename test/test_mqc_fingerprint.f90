@@ -20,6 +20,7 @@ module test_mqc_fingerprint
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_GFN2, METHOD_TYPE_DFT, METHOD_TYPE_HF
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
+   use mqc_combinatorics, only: COUNTERPOISE_NONE, COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
    implicit none
    private
 
@@ -48,7 +49,10 @@ contains
                   new_unittest("angular_form_moves_it", test_cartesian), &
                   new_unittest("root_count_moves_it", test_excited_roots), &
                   new_unittest("an_absent_excited_block_does_not", test_excited_absent), &
-                  new_unittest("a_fixed_calculation_keeps_its_hash", test_golden_hash) &
+                  new_unittest("a_fixed_calculation_keeps_its_hash", test_golden_hash), &
+                  new_unittest("counterpoise_scheme_moves_it", test_counterpoise_scheme), &
+                  new_unittest("counterpoise_level_moves_it", test_counterpoise_level), &
+                  new_unittest("level_without_counterpoise_does_not", test_level_without_counterpoise) &
                   ]
    end subroutine collect_mqc_fingerprint
 
@@ -386,6 +390,67 @@ contains
                  " and now hashes as "//calculation_fingerprint(sys, config, CALC_TYPE_ENERGY)// &
                  ". Every checkpoint written before this change is now unreadable")
    end subroutine test_golden_hash
+
+   subroutine test_counterpoise_scheme(error)
+      !! A VMFC checkpoint must not satisfy an SSFC run of the same deck, or none
+      !!
+      !! The two schemes can share rows and differ in which are summed, so the
+      !! term list alone does not tell a stored energy which expansion it
+      !! belongs to.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: config
+      character(len=16) :: plain, vmfc, ssfc
+
+      call water_dimer(sys)
+      call dft(config)
+      plain = calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_NONE, 2)
+      vmfc = calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_VMFC, 2)
+      ssfc = calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_SSFC, 2)
+
+      call check(error, vmfc /= ssfc, "VMFC and SSFC of one deck must not share a fingerprint")
+      if (allocated(error)) return
+      call check(error, plain /= vmfc, "a run with VMFC must not share a fingerprint with one without")
+      if (allocated(error)) return
+      call check(error, plain /= ssfc, "a run with SSFC must not share a fingerprint with one without")
+   end subroutine test_counterpoise_scheme
+
+   subroutine test_counterpoise_level(error)
+      !! One scheme at another level is another calculation
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: config
+
+      call water_dimer(sys)
+      call dft(config)
+      call check(error, calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_VMFC, 2) /= &
+                 calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_VMFC, 3), &
+                 "VMFC at two levels must not share a fingerprint")
+      if (allocated(error)) return
+      call check(error, calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_SSFC, 2) /= &
+                 calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_SSFC, 3), &
+                 "SSFC at two levels must not share a fingerprint")
+   end subroutine test_counterpoise_level
+
+   subroutine test_level_without_counterpoise(error)
+      !! Without counterpoise the arguments change nothing, so stored hashes stay valid
+      !!
+      !! The golden hash above pins the absolute value; this pins the way the
+      !! two new arguments reach it.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: config
+      character(len=16) :: bare
+
+      call water_dimer(sys)
+      call dft(config)
+      bare = calculation_fingerprint(sys, config, CALC_TYPE_ENERGY)
+      call check(error, bare == calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_NONE, 2), &
+                 "naming no counterpoise and a level changed the fingerprint")
+      if (allocated(error)) return
+      call check(error, bare == calculation_fingerprint(sys, config, CALC_TYPE_ENERGY, COUNTERPOISE_NONE, 3), &
+                 "the level moved the fingerprint of a run without counterpoise")
+   end subroutine test_level_without_counterpoise
 
    ! -- helpers ---------------------------------------------------------------
 

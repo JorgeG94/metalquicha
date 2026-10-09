@@ -89,6 +89,10 @@ contains
       type(driver_config_t), intent(in) :: driver_config
       integer, intent(in) :: max_level
       integer, allocatable, intent(out) :: polymers(:, :)
+         !! (rows allocated, row width), zero-padded; a negative entry is a
+         !! ghosted monomer. Only the first `total_fragments` rows are terms.
+         !! A row is as wide as the widest term of the scheme, never narrower
+         !! than `max_level`.
       integer(int64), intent(out) :: total_fragments
       integer(int64), intent(out), optional :: n_full
          !! How long the list would have been with no reference fragment:
@@ -98,12 +102,18 @@ contains
 
       integer, allocatable :: monomers(:)
       integer(int64) :: n_rows, i
-      integer :: imon, n
+      integer :: imon, n, row_width
 
       n_rows = get_nfrags(sys_geom%n_monomers, max_level)
 
+      ! Every row built so far names at most `max_level` monomers, ghosts
+      ! included. A scheme whose rows are wider sets the width here; nothing
+      ! downstream reads it as `max_level`, only as the second extent of the
+      ! array.
+      row_width = max_level
+
       allocate (monomers(sys_geom%n_monomers))
-      allocate (polymers(n_rows, max_level))
+      allocate (polymers(n_rows, row_width))
       polymers = 0
 
       call create_monomer_list(monomers)
@@ -176,7 +186,7 @@ contains
       ! Every n-mer of size n contributes 2^n - 2 proper subsets, so the worst
       ! case is bounded but not small.
       capacity = total_fragments*(2_int64**max_level)
-      allocate (grown(capacity, max_level))
+      allocate (grown(capacity, size(polymers, 2)))
       grown = 0
       grown(1:total_fragments, :) = polymers(1:total_fragments, :)
       n_added = total_fragments

@@ -59,10 +59,14 @@ contains
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
-      integer :: key(MAX_MBE_LEVEL)
+      integer :: key(size(fragment))
       integer :: key_len
       logical :: has_next, counterpoise
 
+      ! `indices` and `subset` pick among the real monomers, of which a row has
+      ! at most the expansion level. `key` also carries every ghost the row
+      ! has, and a full-cluster-basis row ghosts the whole system, so it is as
+      ! wide as the row rather than as MAX_MBE_LEVEL.
       counterpoise = .false.
       if (present(scheme)) counterpoise = scheme /= COUNTERPOISE_NONE
 
@@ -99,14 +103,20 @@ contains
             subset_idx = lookup%find(key(1:key_len), key_len)
             if (subset_idx < 0) then
                block
-                  use pic_io, only: to_char
-                  character(len=512) :: error_msg
+                  ! Built by concatenation: the key names every ghost of the row,
+                  ! so it can be longer than any fixed buffer.
+                  character(len=:), allocatable :: error_msg
                   integer :: j
-                  write (error_msg, "(a,i0,a,*(i0,1x))") "Subset not found! Fragment idx=", fragment_idx, &
-                     " seeking subset: ", (key(j), j=1, key_len)
-                  call logger%error(trim(error_msg))
-                  write (error_msg, "(a,*(i0,1x))") "  Full fragment: ", (fragment(j), j=1, size(fragment))
-                  call logger%error(trim(error_msg))
+                  error_msg = "Subset not found! Fragment idx="//to_char(fragment_idx)//" seeking subset:"
+                  do j = 1, key_len
+                     error_msg = error_msg//" "//to_char(key(j))
+                  end do
+                  call logger%error(error_msg)
+                  error_msg = "  Full fragment:"
+                  do j = 1, size(fragment)
+                     error_msg = error_msg//" "//to_char(fragment(j))
+                  end do
+                  call logger%error(error_msg)
                   if (present(world_comm)) then
                      call abort_comm(world_comm, 1)
                   else
@@ -335,7 +345,7 @@ contains
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
-      integer :: key(MAX_MBE_LEVEL)
+      integer :: key(size(fragment))  ! As wide as the row; see `compute_mbe_delta`
       integer :: key_len
       logical :: has_next, counterpoise
 
@@ -1370,8 +1380,10 @@ contains
          json_data%fragment_count = fragment_count
 
          ! Copy fragment breakdown data
-         allocate (json_data%polymers(fragment_count, max_level))
-         json_data%polymers = polymers(1:fragment_count, 1:max_level)
+         ! The rows as they ran, at their own width: a counterpoise row carries
+         ! ghosts and need not fit in `max_level` columns.
+         allocate (json_data%polymers(fragment_count, size(polymers, 2)))
+         json_data%polymers = polymers(1:fragment_count, :)
 
          allocate (json_data%fragment_energies(fragment_count))
          json_data%fragment_energies = energies
@@ -1390,8 +1402,8 @@ contains
          if (present(sys_geom)) then
             call severed_bond_pairs(sys_geom, joined_pairs)
             do i = 1_int64, fragment_count
-               if (count(polymers(i, 1:max_level) > 0) /= 2) cycle
-               pair_members = pack(polymers(i, 1:max_level), polymers(i, 1:max_level) > 0)
+               if (count(polymers(i, :) > 0) /= 2) cycle
+               pair_members = pack(polymers(i, :), polymers(i, :) > 0)
                json_data%fragment_connected(i) = joined_pairs(pair_members(1), pair_members(2))
             end do
             if (any(json_data%fragment_connected)) then
@@ -1444,7 +1456,7 @@ contains
             ! Same rule the fragment was built and run with, from the same
             ! helper, so the table cannot disagree with what the SCF saw.
             call fragment_charge_multiplicity(sys_geom, &
-                                              pack(polymers(i, 1:max_level), polymers(i, 1:max_level) > 0), &
+                                              pack(polymers(i, :), polymers(i, :) > 0), &
                                               json_data%fragment_charges(i), &
                                               json_data%fragment_multiplicities(i))
             ! Zero when the method did not report a pair, which the table
@@ -1462,7 +1474,7 @@ contains
          ! names the first ten in the log, which is right for a reader and
          ! useless to a follow-up job; this is the list one is built from.
          call collect_unconverged(json_data%fragment_scf_status, &
-                                  polymers(1:fragment_count, 1:max_level), &
+                                  polymers(1:fragment_count, :), &
                                   fragment_count, json_data%unconverged_ids, &
                                   json_data%unconverged_monomers)
          ! Unallocated means the method never reported, and there is nothing

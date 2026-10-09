@@ -351,7 +351,9 @@ contains
       ! Stamped whether or not it is written: a caller taking the energy back
       ! without files still needs to know what produced it.
       json_data%fingerprint = calculation_fingerprint(sys_geom, config%method_config, &
-                                                      config%calc_type)
+                                                      config%calc_type, &
+                                                      counterpoise_scheme_of(config%counterpoise), &
+                                                      config%nlevel)
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
       if (wants_output) then
@@ -971,10 +973,15 @@ contains
       if (resources%mpi_comms%world_comm%rank() == 0 .and. &
           .not. allow_overlapping_fragments .and. &
           len_trim(config%checkpoint_file) > 0) then
+         ! Each term is a row of the list and the displacement code after it, so
+         ! the file is sized by the list's own width: `max_level`, unless its
+         ! rows carry more ghosts than the level has monomers.
          call expansion%checkpoint%open(trim(config%checkpoint_file), &
                                         calculation_fingerprint(sys_geom, config%method_config, &
-                                                                fragment_calc_type), &
-                                        max_level + 1, &
+                                                                fragment_calc_type, &
+                                                                counterpoise_scheme_of(config%counterpoise), &
+                                                                max_level), &
+                                        size(polymers, 2) + 1, &
                                         fragment_calc_type == CALC_TYPE_ENERGY, &
                                         checkpoint_error)
          if (checkpoint_error%has_error()) then
