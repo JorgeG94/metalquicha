@@ -224,6 +224,9 @@ module mqc_json_output_types
          !! Identity of the calculation that produced this output. Stamped so a
          !! restart can check what it is about to reuse -- see `mqc_fingerprint`.
          !! Empty when nothing computed it.
+      character(len=8) :: counterpoise = ""
+         !! The counterpoise scheme the term list was built for, `"vmfc"` or
+         !! `"ssfc"`. Empty without counterpoise, and then not written.
 
       !----- GMBE PIE-specific data -----
       integer, allocatable :: pie_atom_sets(:, :)     !! Unique atom sets (max_atoms, n_terms)
@@ -589,6 +592,7 @@ contains
       this%has_mcscf_states = .false.
       this%fragment_count = 0
       this%max_level = 0
+      this%counterpoise = ""
       this%has_interaction = .false.
       this%has_interaction_bonding = .false.
       this%reference_fragment = 0

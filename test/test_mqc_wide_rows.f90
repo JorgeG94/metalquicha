@@ -304,6 +304,7 @@ contains
       type(json_output_data_t) :: data
       type(json_file) :: json
       integer, allocatable :: indices(:), ghosts(:), named(:)
+      character(len=:), allocatable :: scheme_name
       character(len=2048) :: line, header
       integer :: unit, ios, i
       logical :: found, seen_wide_row
@@ -362,6 +363,13 @@ contains
       call write_json_output(data)
       call json%initialize()
       call json%load_file(trim(get_output_json_filename()))
+
+      ! The scheme the rows ran under is written beside the table
+      call json%get("jw_wide.counterpoise", scheme_name, found)
+      call check(error, found, "a counterpoise run does not name its scheme")
+      if (allocated(error)) return
+      call check(error, scheme_name == "ssfc", "the scheme written is not the one the rows ran under")
+      if (allocated(error)) return
 
       call json%get("jw_wide.levels(2).fragments(1).indices", indices, found)
       call check(error, found, "a dimer has no indices")

@@ -256,7 +256,10 @@ What composes with it
   the ordinary 51 rows and VMFC(3) 121 of 191, and each matches the full run's
   terms holding that water: to the last digit at level 2, and to 1e-12 hartree
   at level 3 against the Valiron--Mayer sum evaluated from the full run's
-  fragment table.
+  fragment table. Under ``ssfc`` every term is a single full-basis row, so the
+  same water needs 17 of the 27 rows at level 2 and 37 of 47 at level 3. A row
+  still ghosts the whole system's complement, not only the monomers the reduced
+  list kept, so the basis is the cluster's. See :doc:`counterpoise`.
 - **Checkpoints.** A term's energy is the same whichever driver computed it, so
   a checkpoint written by an ``Energy`` run can seed an ``InteractionEnergy``
   run over the same system, and the other way round.
@@ -410,7 +413,9 @@ Where it is checked
   every refusal above, by its message.
 - ``validation/inputs/cpu/mqc/interaction_energy/``: the prism at level 2, 3,
   VMFC(2) and VMFC(3), and the gly3 and water deck, each pinned to the sum of
-  the same terms' corrections from the ordinary run of the same deck.
+  the same terms' corrections from the ordinary run of the same deck; and the
+  prism at SSFC(2) and SSFC(3), pinned to the same sum evaluated from PySCF
+  energies with the waters outside a term as ghost atoms.
 
 The identity itself -- every correction containing the reference equal to the
 full expansion's -- was checked term by term on the prism water hexamer

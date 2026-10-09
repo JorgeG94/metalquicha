@@ -391,6 +391,21 @@ the two-body terms whose ``indices`` contain it. For the ligand as fragment 7:
 The same selection on the CSV sidecar is a filter on the ``m1`` and ``m2``
 columns with ``level == 2`` and ``connected != "YES"``.
 
+Counterpoise
+------------
+
+A counterpoise run adds ``counterpoise``, ``"vmfc"`` or ``"ssfc"``, beside the
+fingerprint, naming the scheme the rows were generated for and checked against
+before they were summed. A run without counterpoise does not write the key. When
+the breakdown goes to JSON, a ghosted row lists the monomers present only as
+basis functions under ``ghosts``, and ``indices`` holds the real ones; a row
+without ghosts has no ``ghosts`` key. Of the ghosted rows, under ``ssfc`` those
+holding two or more real monomers are summed as terms and those holding one are
+auxiliary, and under ``vmfc`` every ghosted row is auxiliary: an auxiliary row is
+in the table because a term subtracts it, not because it is summed. The own-basis
+monomer rows have no ghosts and are summed as the one-body term. See
+:doc:`counterpoise`.
+
 SCF and correlation parts
 -------------------------
 

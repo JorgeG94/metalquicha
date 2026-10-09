@@ -4,7 +4,8 @@ module mqc_mbe
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
    use mqc_combinatorics, only: fragment_size_of, vmfc_row_subset_key, is_auxiliary_row, real_count_of, &
-                                rows_match_counterpoise, counterpoise_scheme_name, COUNTERPOISE_NONE
+                                rows_match_counterpoise, counterpoise_scheme_name, COUNTERPOISE_NONE, &
+                                COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
    use pic_timer, only: timer_type
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
@@ -1075,6 +1076,20 @@ contains
          error stop "term list does not match the counterpoise scheme"
       end if
 
+      ! Said here and not where the scheme is read, so the line cannot name a
+      ! scheme the rows above did not just confirm.
+      select case (scheme)
+      case (COUNTERPOISE_VMFC)
+         call logger%info("Counterpoise: vmfc. Each subset of an n-mer is solved in that n-mer's "// &
+                          "basis; the 1-body term keeps each monomer's own basis.")
+      case (COUNTERPOISE_SSFC)
+         call logger%info("Counterpoise: ssfc. Every term of order 2 and above is solved in the "// &
+                          "basis of all "//to_char(n_monomers)//" monomers; the 1-body term keeps "// &
+                          "each monomer's own basis.")
+      case default
+         ! No counterpoise: nothing to say, and a run without it is unchanged.
+      end select
+
       call expand_by_level(polymers, fragment_count, max_level, lookup, energies, &
                            delta_energies, sum_by_level, scheme, world_comm)
 
@@ -1378,6 +1393,7 @@ contains
          json_data%has_energy = mbe_result%has_energy
          json_data%max_level = max_level
          json_data%fragment_count = fragment_count
+         if (scheme /= COUNTERPOISE_NONE) json_data%counterpoise = counterpoise_scheme_name(scheme)
 
          ! Copy fragment breakdown data
          ! The rows as they ran, at their own width: a counterpoise row carries

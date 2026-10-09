@@ -267,6 +267,12 @@ contains
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
+      ! Named where it applies, so a reader of the table knows which rows are
+      ! summed. Absent without counterpoise, and a deck without it is unchanged.
+      if (len_trim(data%counterpoise) > 0) then
+         call json%add(main_obj, "counterpoise", trim(data%counterpoise))
+      end if
+
       ! An interaction-energy run has no total: its term list was reduced to
       ! what one fragment's interactions need, and the sum over it is not the
       ! system's energy. So the key a consumer reads a total from is absent,
