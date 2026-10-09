@@ -770,7 +770,7 @@ contains
       !! allocatable *variable* arrives absent at an optional dummy, where the
       !! same thing as a function *result* segfaults.
       use mqc_czt_atomic_guess, only: parse_guess_name
-      use mqc_czt_rhf, only: SCF_GUESS_SAD, SCF_GUESS_SAC, SCF_GUESS_PROJ
+      use mqc_czt_rhf, only: SCF_GUESS_SAD, SCF_GUESS_SAC, SCF_GUESS_PROJ, SCF_GUESS_MINAO
       type(fmo_options_t), intent(in) :: opts
       integer, allocatable, intent(out) :: kind
 
@@ -784,14 +784,14 @@ contains
          return
       end if
 
-      ! `sad`, `sac` and `projection` need a `guess_density` alongside the kind,
+      ! `sad`, `sac`, `minao` and `projection` need a `guess_density` with the kind,
       ! and a fragment SCF has nobody to build one for it -- `run_czt_rhf`
       ! refuses outright when the kind arrives without the density. Forwarding
       ! them would turn the most natural thing a user writes into a fatal error
       ! on every fragment, which is the opposite of what this routine is for, so
       ! they fall back to the backend's own choice and say so once.
       if (parsed == SCF_GUESS_SAD .or. parsed == SCF_GUESS_SAC .or. &
-          parsed == SCF_GUESS_PROJ) then
+          parsed == SCF_GUESS_PROJ .or. parsed == SCF_GUESS_MINAO) then
          call logger%warning("  the '"//trim(opts%scf%guess)//"' initial guess needs a "// &
                              "guess density, which a fragment SCF cannot be given yet; "// &
                              "fragments use the backend's default guess instead")

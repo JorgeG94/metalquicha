@@ -58,6 +58,7 @@ module mqc_czt_rhf
    integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
    integer, parameter, public :: SCF_GUESS_PROJ = 4   !! Projected from a smaller basis
    integer, parameter, public :: SCF_GUESS_SAP = 5    !! Superposition of atomic potentials
+   integer, parameter, public :: SCF_GUESS_MINAO = 6  !! Minimal ANO atoms projected in
    character(len=*), parameter, public :: SAP_BASIS_DEFAULT = "sap_helfem_large"
       !! Which fitted atomic potential `sap` uses unless a deck names another.
       !!
@@ -577,8 +578,8 @@ contains
          !! Exchange-correlation. Present turns this into a Kohn-Sham SCF;
          !! absent leaves it Hartree-Fock.
       real(dp), intent(in), optional :: guess_density(:, :)
-         !! Total starting density, required by SCF_GUESS_SAC and SCF_GUESS_SAD
-         !! and ignored otherwise. Built by `mqc_czt_atomic_guess`, which
+         !! Total starting density, required by SCF_GUESS_SAC, SCF_GUESS_SAD
+         !! and SCF_GUESS_MINAO and ignored otherwise. Built by `mqc_czt_atomic_guess`, which
          !! cannot be reached from here: it runs free-atom SCFs through this
          !! very module.
       real(dp), intent(in), optional :: h_extra(:, :)
@@ -769,7 +770,7 @@ contains
       case (SCF_GUESS_SAP)
          call sap_fock(mol, ops%h, st%fock, error)
          if (error%has_error()) return
-      case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
+      case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
          if (.not. present(guess_density)) then
             call error%set(ERROR_VALIDATION, "RHF: an atomic guess was asked for but no "// &
                            "guess density was supplied")
@@ -1739,7 +1740,8 @@ contains
          !! assumes it.
       real(dp), intent(in), optional :: guess_density_alpha(:, :)
       real(dp), intent(in), optional :: guess_density_beta(:, :)
-         !! Starting spin densities, required by SCF_GUESS_SAC and SCF_GUESS_SAD.
+         !! Starting spin densities, required by SCF_GUESS_SAC, SCF_GUESS_SAD
+         !! and SCF_GUESS_MINAO.
          !! The two are taken separately because whether they differ is the whole
          !! difference between those guesses: SAC hands over the free atom's own
          !! spin-polarised densities and so arrives already symmetry-broken,
@@ -1905,7 +1907,7 @@ contains
          call sap_fock(mol, h, st%fock_a, error)
          if (error%has_error()) return
          st%fock_b = st%fock_a
-      case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ)
+      case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
          if (.not. (present(guess_density_alpha) .and. present(guess_density_beta))) then
             call error%set(ERROR_VALIDATION, "UHF: an atomic guess was asked for but no "// &
                            "guess densities were supplied")

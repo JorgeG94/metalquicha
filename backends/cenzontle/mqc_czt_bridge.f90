@@ -28,7 +28,8 @@ module mqc_czt_bridge
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 angular_form_name
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf, &
-                          SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ
+                          SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, &
+                          SCF_GUESS_MINAO
    use mqc_czt_projection, only: climb_basis_ladder
    use mqc_diis, only: parse_accelerator_name, accelerator_name, ACCEL_DIIS
    use mqc_scf_types, only: scf_numerics_t
@@ -1557,8 +1558,10 @@ contains
          end if
       end if
 
-      if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD) then
-         call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error)
+      if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD .or. &
+          guess_kind == SCF_GUESS_MINAO) then
+         call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error, &
+                                 linear_dependence=settings%linear_dependence)
          if (guess_error%has_error()) then
             ! A free atom that will not converge is a reason to start somewhere
             ! else, not to fail a molecular calculation. A warning and not

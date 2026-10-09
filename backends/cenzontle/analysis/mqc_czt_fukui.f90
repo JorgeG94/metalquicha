@@ -27,7 +27,7 @@ module mqc_czt_fukui
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_czt_rhf, only: rhf_result_t, run_czt_uhf, &
-                          SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+                          SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_MINAO
    use mqc_czt_atomic_guess, only: build_atomic_guess
    use mqc_scf_common, only: build_density_spin
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
@@ -338,14 +338,16 @@ contains
       if (seeded) then
          guess_kind = SCF_GUESS_SAD
          allocate (d_guess_a(n_ao, n_ao), d_guess_b(n_ao, n_ao))
-      else if (guess_kind == SCF_GUESS_SAD .or. guess_kind == SCF_GUESS_SAC) then
+      else if (guess_kind == SCF_GUESS_SAD .or. guess_kind == SCF_GUESS_SAC .or. &
+               guess_kind == SCF_GUESS_MINAO) then
          ! Only when the deck asked for one. `SCF_GUESS_SAD` is the kind that
          ! says "the starting density is supplied", and in the seeded branch
          ! above it is the neutral's orbitals supplying it; asked for here with
          ! nothing to seed from, it has to come from the free atoms. The
          ! default stays GWH, so a deck that did not ask pays for no atomic
          ! solves.
-         call build_atomic_guess(mol, guess_kind, d_guess_a, d_guess_b, guess_error)
+         call build_atomic_guess(mol, guess_kind, d_guess_a, d_guess_b, guess_error, &
+                                 linear_dependence=linear_dependence)
          if (guess_error%has_error()) then
             ! A free atom that will not converge is a reason to start
             ! somewhere else, not to fail the ion. Loud, because an open-shell
