@@ -6,7 +6,7 @@ module mqc_czt_effective_density
    !! method:
    !!
    !!     dE/dx = tr(W S^x) + tr(P h^x) + sum_pairs D_l . (J^x, K^x)(D_r)
-   !!           + tr(Gamma (mn|ls)^x) + w_nuc V_nn^x
+   !!           + tr(Gamma (mn|ls)^x) + ...
    !!
    !! `effective_density_t` is what a method hands that contraction: the
    !! objects on the left of each trace, for one or more *columns*. A column
@@ -26,12 +26,19 @@ module mqc_czt_effective_density
    !! 5. `overlap_antisymmetric`: the antisymmetric overlap term a coupling
    !!    carries; absent for an energy gradient
    !!
-   !! plus the scalar `nuclear_weight`. `column` says which state a gradient
-   !! column belongs to, or which pair of states a coupling column couples,
-   !! so a caller can file each contracted column under the right root or
-   !! pair. The density-fitted form, which
-   !! replaces object 4 with a three-index and a two-index density, is not
-   !! defined here yet.
+   !! `column` says which state a gradient column belongs to, or which pair of
+   !! states a coupling column couples, so a caller can file each contracted
+   !! column under the right root or pair.
+   !!
+   !! Only traces against these objects are described here. A term that is not
+   !! one -- the nuclear repulsion, which a gradient column has and a coupling
+   !! does not, exchange-correlation, dispersion, the explicit terms of a
+   !! continuum solvent or an ECP -- is added by the code that assembles the
+   !! gradient. A term the method adds to its Lagrangian, such as a solvent's
+   !! response, is already in the densities it hands over.
+   !!
+   !! The density-fitted form, which replaces object 4 with a three-index and a
+   !! two-index density, is not defined here yet.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_GENERIC
    implicit none
@@ -109,9 +116,6 @@ module mqc_czt_effective_density
          !! error unless overridden, since there is no block to ask for.
       procedure :: overlap_antisymmetric => no_antisymmetric_overlap
          !! Object 5: unallocated unless overridden
-      procedure :: nuclear_weight => kind_nuclear_weight
-         !! 1 for a gradient column and 0 for a coupling, from `column`,
-         !! unless overridden
    end type effective_density_t
 
    abstract interface
@@ -231,18 +235,5 @@ contains
       call error%set(ERROR_GENERIC, "gamma_block called on an effective density with "// &
                      "no non-separable Gamma; check gamma_ao_map first")
    end subroutine no_gamma_block
-
-   function kind_nuclear_weight(self, ic) result(weight)
-      !! The weight of the nuclear-repulsion derivative in column `ic`: 1 for
-      !! an energy gradient, 0 for a coupling, which has no nuclear term
-      class(effective_density_t), intent(in) :: self
-      integer, intent(in) :: ic
-         !! Column, 1-based
-      real(dp) :: weight
-      type(column_t) :: col
-      col = self%column(ic)
-      weight = 0.0_dp
-      if (col%kind == COLUMN_KIND_GRADIENT) weight = 1.0_dp
-   end function kind_nuclear_weight
 
 end module mqc_czt_effective_density
