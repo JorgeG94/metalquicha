@@ -230,7 +230,7 @@ contains
       real(dp), allocatable :: extra_rhs(:, :), extra_gamma(:, :, :, :, :)
       real(dp), allocatable :: extra_d(:, :, :), extra_w(:, :, :), tm1_ao(:, :, :)
       real(dp), allocatable :: extra_out(:, :, :), s1(:, :, :)
-      integer, allocatable :: column(:), its(:)
+      integer, allocatable :: column(:), its(:), extra_states(:, :)
       real(dp), allocatable :: res(:)
       integer, allocatable :: offsets(:), counts(:)
       logical :: want_csf
@@ -309,10 +309,11 @@ contains
       allocate (extra_rhs(n_param, n_extra))
       allocate (extra_gamma(n_active, n_active, n_active, n_active, n_extra))
       allocate (extra_d(n_ao, n_ao, n_extra), extra_w(n_ao, n_ao, n_extra))
-      allocate (tm1_ao(n_ao, n_ao, n_extra))
+      allocate (tm1_ao(n_ao, n_ao, n_extra), extra_states(2, n_extra))
       do ip = 1, n_pairs
          ie = column(ip)
          if (ie == 0) cycle
+         extra_states(:, ie) = pairs(:, ip)
          call nac_pair_inputs(state, orbitals, n_inactive, n_active, pairs(1, ip), &
                               pairs(2, ip), extra_rhs(:, ie), extra_gamma(:, :, :, :, ie), &
                               extra_d(:, :, ie), extra_w(:, :, ie), tm1_ao(:, :, ie), error)
@@ -327,7 +328,7 @@ contains
                                  gradients, error, cg_tol, cg_max_iter, its, res, &
                                  extra_rhs=extra_rhs, extra_gamma=extra_gamma, &
                                  extra_d_active=extra_d, extra_weighted=extra_w, &
-                                 extra_out=extra_out)
+                                 extra_out=extra_out, extra_states=extra_states)
       call destroy_sa_hessian(state)
       if (present(cg_iterations)) cg_iterations = its(1:n_roots)
       if (present(cg_residual)) cg_residual = res(1:n_roots)
