@@ -57,8 +57,11 @@ self-consistency, rather than in vacuum:
   method scale
 - **Use cases**: hydrogen-bonded clusters, solvated molecules -- anywhere the
   monomers are substantially polarized
-- **Restrictions**: non-covalent fragments only (enforced), closed shell,
-  energies only
+- **Fragment methods**: Hartree-Fock, restricted Kohn-Sham (with D3/D4 per
+  fragment), and the MP2 family. PIEDA decomposes each pair's interaction
+- **Covalent cuts**: adjusted frozen orbitals (``bond_breaking: "afo"``), with
+  Hartree-Fock or Kohn-Sham; hydrogen caps are refused
+- **Restrictions**: closed shell, energies only
 
 Electrostatically Embedded MBE (EE-MBE)
 ----------------------------------------
@@ -81,7 +84,9 @@ Distance-Based Screening
 Intelligent fragment filtering based on inter-monomer distances:
 
 - **Cutoff specification**: Per n-mer level cutoffs (dimers, trimers, etc.)
-- **Distance metric**: Minimal atom-to-atom distance between constituent monomers, for now limited up to octamers
+- **Distance metric**: Minimal atom-to-atom distance between constituent
+  monomers, for levels 2 through 10 (named keys go up to ``octamer``; levels 9
+  and 10 take numeric keys). Cutoffs must not increase with level
 - **Screening scope**:
 
   - **MBE**: Screens all generated fragments before calculation
@@ -94,6 +99,12 @@ Intelligent fragment filtering based on inter-monomer distances:
 Quantum Chemistry Methods
 ==========================
 
+``model.method`` names the method and the root-level ``backend`` the engine
+that runs it. The engine is xTB through tblite, the CPU ab initio backend, or
+one of two GPU backends. A combination that an engine does not implement is refused by name
+before anything runs. It is never handed to an engine that would return a
+plausible number from the wrong formula.
+
 Extended Tight-Binding (XTB)
 -----------------------------
 
@@ -102,19 +113,42 @@ Semi-empirical quantum chemistry via the `tblite <https://github.com/tblite/tbli
 - **GFN2-xTB**: Latest parametrization, general-purpose, highest accuracy
 - **GFN1-xTB**: Earlier version, faster, good for large systems
 
-Ab Initio (CPU)
----------------
+Energies, gradients and finite-difference Hessians, with ALPB or GBSA solvation
+(below). tblite runs on one thread: threaded, it corrupts a result rather than
+failing, so xTB is the one method that is pinned. ``-DMQC_ENABLE_TBLITE=OFF``
+builds without it.
 
-Gaussian-basis methods over `libcint <https://github.com/sunqm/libcint>`_, on the
-CPU. This path exists to be checked against as much as to be run: it is the second
-implementation the GPU backend is compared with, and everything below is validated
-against PySCF on the same geometries and the same basis data.
+Ab Initio (CPU): cenzontle
+--------------------------
+
+Gaussian-basis methods on the CPU, in ``backends/cenzontle/``. Integrals come
+from `libfint <https://github.com/JorgeG94/libfint>`_ by default, an all-Fortran
+port of `libcint <https://github.com/sunqm/libcint>`_. ``-DMQC_USE_LIBFINT=OFF``
+takes libcint itself. Both libraries give the same integrals, but only libfint
+has effective core potentials. Everything below is validated against PySCF on
+the same geometries and the same basis data. Where it is named, the reference
+is GAMESS. The work is threaded with OpenMP throughout.
 
 - **Hartree-Fock**: restricted and unrestricted, with a direct, in-core or
-  density-fitted Fock build. Initial guesses are core, GWH, and superposition of
-  atomic densities or coefficients.
-- **MP2**: conventional and density-fitted (RI-MP2), with spin-component scaling
-  reported from separately-kept same- and opposite-spin components.
+  density-fitted Fock build. Density fitting is restricted only. Initial
+  guesses are ``core``, ``gwh``, ``sac``, ``sad`` and ``auto``; see
+  :doc:`scf_guess`.
+- **SCF convergence and stability**: DIIS, EDIIS and ADIIS, a level shift, and
+  a second-order finish. The second-order step is trust-region Newton on the
+  orbital rotations, and DIIS hands over to it once it is close. That finish
+  can escape a saddle point, not only detect one. ``keywords.scf.stability``
+  checks whether a converged restricted reference is a minimum. It does this
+  through the lowest eigenvalue of the real singlet orbital Hessian. See
+  :doc:`scf_convergence`.
+- **Effective core potentials**: ``model.ecp``, given in a file separate from
+  the basis. ECPs are energies only and need libfint (see the gradient table
+  below).
+- **MP2**: conventional and density-fitted (RI-MP2), with SCS and SOS scaling.
+  The same- and opposite-spin components are kept separately. The reference
+  must be restricted. ``freeze_core`` is on by default. Unrestricted MP2 is
+  only computed internally, for the perturbative term of an open-shell double
+  hybrid and for Fukui functions. An ``mp2`` deck over an open shell is
+  refused.
 - **Coupled cluster**: CCSD and CCSD(T) over a restricted or an unrestricted
   reference. Two formulations for the closed-shell case -- spin-adapted over
   spatial orbitals by default, and spin orbitals for checking it against
@@ -133,15 +167,27 @@ against PySCF on the same geometries and the same basis data.
   The quadrature drops basis functions that do not reach a block of grid points,
   which is what keeps its cost in proportion to the Fock build rather than
   dominating it; the threshold and the block size are both ``keywords.dft``.
-  Range separation uses libcint's erf-attenuated integrals, which puts ωB97X and
+  Range separation uses erf-attenuated integrals, which puts ωB97X and
   CAM-B3LYP in reach. Non-local correlation (VV10) is evaluated as the double
   integral it is, on a coarser grid of its own, which is what ωB97X-V, ωB97M-V and
   B97M-V need; it enters the Fock build, so the energy is self-consistent rather
-  than a correction applied afterwards, and its nuclear gradient is refused.
-  Laplacian-dependent meta-GGAs are still refused rather than approximated. Grids
-  are Treutler-Ahlrichs
-  radial times Lebedev angular with a Becke partition, from the same level tables
-  PySCF uses.
+  than a correction applied afterwards. Laplacian-dependent meta-GGAs are
+  refused rather than approximated. Grids are Treutler-Ahlrichs radial times
+  Lebedev angular with a Becke partition, from the same level tables PySCF
+  uses.
+- **Double hybrids**: ``b2plyp``, ``b2gp-plyp`` and ``mpw2plyp``, with
+  conventional or density-fitted perturbative terms. The energy works for
+  restricted and unrestricted references. The gradient and the Hessian need a
+  closed shell (below).
+- **Empirical dispersion**: ``keywords.dft.dispersion`` adds D3(BJ)
+  (``"d3bj"``) or D4 with its three-body term (``"d4"``) to a Kohn-Sham energy
+  and gradient. The values come from simple-dftd3 and dftd4. Both are LGPL, so
+  each is off at build time unless asked for: ``-DMQC_ENABLE_DFTD3``,
+  ``-DMQC_ENABLE_DFTD4``, or ``-DMQC_ENABLE_DCORR`` for both. A build without
+  the requested library refuses the deck. A Hessian with dispersion on takes
+  the finite-difference path. Under FMO and EE-MBE the correction is applied
+  per fragment and per n-mer. A ``-V`` functional is refused because it
+  already has its own dispersion. See :doc:`input_files`.
 - **Multiconfigurational**: CASSCF and CASCI over a complete active space, with
   the space named directly or chosen from atomic orbital character by AVAS. The
   active space can also be cut into subspaces with occupation windows (ORMAS),
@@ -149,7 +195,20 @@ against PySCF on the same geometries and the same basis data.
   or a fragment model with limited charge transfer -- and keeps the determinant
   count down where a complete space would be hopeless. Orbital optimisation is
   complete-space only; a restricted space runs its CI on the reference orbitals.
-  See :doc:`input_files`.
+  The SCF it starts from is closed-shell, so an odd electron count is refused.
+  An open-shell *state* of an even-electron molecule is allowed: set the
+  multiplicity and the CI finds it. See :doc:`input_files`.
+- **State-averaged CASSCF**: ``keywords.mcscf.n_states`` optimises one set of
+  orbitals against several singlet roots. With equal weights, analytic
+  gradients are available for any or all roots, and so are nonadiabatic
+  couplings between pairs of roots. State averaging is refused with ORMAS, on a
+  CASCI, with a Hessian driver and under fragmentation. See :doc:`sa_casscf`.
+- **Excited states**: TDA and RPA linear response over Hartree-Fock or Kohn-Sham
+  (see `Excited States`_ below and :doc:`excited_states`).
+- **NEO**: nuclear-electronic orbital Hartree-Fock and DFT, with the epc17-1
+  and epc17-2 electron-proton correlation functionals. Chosen protons are given
+  their own orbitals. Electrons must be closed-shell, only hydrogen can be
+  quantised, and only energies are computed. See :doc:`neo`.
 - **SAPT**: the interaction energy of two monomers as a sum of named physical
   terms -- electrostatics, exchange, induction, dispersion and their exchange
   counterparts -- rather than as a difference of two totals. ``sapt0`` is the
@@ -157,9 +216,33 @@ against PySCF on the same geometries and the same basis data.
   ``sapt2`` is the next one that exists, there being no SAPT1. Everything is in
   the dimer-centred basis, which is what makes the terms counterpoise-corrected
   by construction. Two fragments exactly -- see :doc:`sapt`.
+- **EFP and MakeFP**: MakeFP builds a complete effective fragment potential
+  from one closed-shell SCF and writes it as a ``.efp`` file GAMESS can read.
+  The potential has multipoles, polarizabilities, dispersion, exchange-repulsion
+  and charge transfer. An EFP run evaluates the EFP2 interaction energy of a
+  system made entirely of such fragments. A mixed quantum/EFP system is not
+  supported. EFMO uses both on the fly; see :doc:`makefp` and :doc:`efmo`.
 
 Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
 whether a set is Cartesian or spherical is taken from the file rather than assumed.
+
+Ab Initio (GPU)
+---------------
+
+Two GPU backends, both optional and both narrower than the CPU path:
+
+- **cuEST** (``"backend": "cuest"``), through NVIDIA's library. It covers
+  Hartree-Fock and Kohn-Sham, restricted and unrestricted, with analytic
+  gradients. The functionals are 20 built-ins from LDA through meta-hybrid,
+  range-separated and VV10. The VV10 gradient is refused. J and K are always
+  density-fitted. Hessians are finite differences of the gradient. Continuum
+  solvation is C-PCM only. MP2, coupled cluster, excited states, ECPs, EDIIS,
+  ADIIS, the second-order SCF, the level shift, ``model.cartesian`` and CHELPG
+  charges are all refused.
+- **terco** (``"backend": "terco"``, ``-DMQC_ENABLE_TERCO``). It runs a
+  whole Hartree-Fock or Kohn-Sham SCF, restricted or unrestricted, on the
+  device. It computes energies only, takes Cartesian shells through d, and has
+  no ECPs. See :doc:`installation`.
 
 Implicit Solvation
 ------------------
@@ -168,18 +251,17 @@ Implicit solvation models account for solvent effects without explicit solvent m
 
 **Supported models:**
 
-- **PCM**: a polarizable continuum on **both** backends, for Hartree-Fock and
-  Kohn-Sham, restricted and unrestricted, configured through ``keywords.pcm``.
-  The CPU implementation is the smooth switching/Gaussian (SWIG) discretization
-  of Lange and Herbert, solved as either C-PCM or IEF-PCM
-  (``keywords.pcm.method``: ``cpcm`` or ``iefpcm``), and follows
-  ``pyscf.solvent.pcm`` term for term -- the same Lebedev points per sphere, the
-  same switching function, the same fitted per-point Gaussian exponents -- so the
-  two can be compared directly. The cuEST (GPU) path is validated against
-  PySCF's C-PCM.
-- **ALPB**: Analytical Linearized Poisson-Boltzmann (recommended for GFN2-xTB)
-- **GBSA**: Generalized Born with Solvent-Accessible Surface Area
-- **CPCM**: Conductor-like Polarizable Continuum Model
+- **PCM**: a polarizable continuum for Hartree-Fock and Kohn-Sham, restricted
+  and unrestricted, configured through ``keywords.pcm``. The CPU implementation
+  is the smooth switching/Gaussian (SWIG) discretization of Lange and Herbert.
+  It is solved as either C-PCM or IEF-PCM (``keywords.pcm.method``: ``cpcm``
+  or ``iefpcm``), and follows ``pyscf.solvent.pcm`` term for term -- the same
+  Lebedev points per sphere, the same switching function, the same fitted
+  per-point Gaussian exponents -- so the two can be compared directly. cuEST
+  runs C-PCM only, validated against PySCF's, and refuses ``iefpcm``. See
+  :doc:`continuum_solvation`.
+- **ALPB**: Analytical Linearized Poisson-Boltzmann (xTB; recommended for GFN2-xTB)
+- **GBSA**: Generalized Born with Solvent-Accessible Surface Area (xTB)
 
 **Supported solvents:**
 
@@ -271,7 +353,7 @@ What has a gradient on the CPU backend, at a glance:
        path calls cuEST's own non-local entry points and is compiled but not
        yet run against the library
    * - Effective core potentials
-     - yes
+     - no
      - ``model.ecp``, a separate file from the basis. Energies only: every
        nuclear derivative is refused, as are MCSCF, xTB and the GPU backend,
        and an automatically counted frozen core. Needs libfint, which is the
@@ -299,7 +381,12 @@ What has a gradient on the CPU backend, at a glance:
    * - CASSCF and ORMAS-SCF
      - yes
      - No Z-vector: a converged MCSCF is stationary with respect to both the
-       orbital rotations and the CI coefficients, so the response terms vanish
+       orbital rotations and the CI coefficients, so the response terms vanish.
+       CASCI has no gradient
+   * - State-averaged CASSCF
+     - yes
+     - Equal weights only. Any or all roots, plus nonadiabatic couplings
+       between pairs; this does need a Z-vector. See :doc:`sa_casscf`
    * - Coupled cluster
      - no
      - Needs the Lambda amplitudes
@@ -434,8 +521,8 @@ number computed from a formula that does not apply:
        rescaled
    * - Double hybrid over an open shell
      - Needs an unrestricted MP2 relaxed density and a spin-resolved response,
-       neither of which is built. The *energy* is closed-shell only for the
-       same reason
+       neither of which is built. The *energy* is supported: its perturbative
+       term is evaluated over the unrestricted orbitals
    * - Meta-GGA or range-separated double hybrid
      - The kernel exists at the GGA rung. A meta-GGA one needs
        :math:`f_{xc}` in :math:`\tau`; a range-separated one needs the response
@@ -597,10 +684,13 @@ Automatic treatment of broken covalent bonds:
 - Maintains proper derivative continuity
 - Transparent to end user - handled automatically
 
-**Supported bond types:**
+**Placement:**
 
-- C-C, C-N, C-O single bonds
-- Configurable cap distance (typically 1.09 Å for C-H), ``cap_scale``
+- One hydrogen per broken bond, whatever the two elements are; every bond is
+  treated as single
+- The cap sits on the line from the kept atom to the removed one, at
+  ``cap_scale`` times the bond length. The default, 1.0, puts it exactly on the
+  removed atom; about 0.71 gives a physical C-H distance for a C-C bond
 
 **Or don't cap: adjusted frozen orbitals (AFO).** ``bond_breaking: "afo"`` takes
 the other route FMO offers. Rather than terminating the fragment with a hydrogen,
@@ -793,16 +883,21 @@ System Requirements
 
 **Compiler requirements:**
 
-- Modern Fortran compiler (gfortran 11+, Intel ifort/ifx)
-- C compiler for dependencies
-- CMake 3.20+
+- Modern Fortran compiler (gfortran 11+, Intel ifort/ifx); nvfortran and
+  LLVM Flang without tblite. ``-DMQC_ENABLE_SERIAL=ON`` builds without OpenMP,
+  MPI and tblite, for a compiler that cannot yet build those
+- A C compiler, which CMake's project setup requires. The default integral
+  library, libfint, is all Fortran
+- CMake 3.22+
 
 **Dependencies:**
 
 - MPI library (OpenMPI, MPICH, Intel MPI)
 - BLAS/LAPACK
-- tblite (for XTB methods)
-- Optional: DFTD4, mctc-lib, multicharge
+- libfint (default) or libcint, and libxc, for the CPU ab initio backend
+- tblite (for XTB methods, on by default)
+- Optional: simple-dftd3 and dftd4 (dispersion), DL-FIND (optimization),
+  CREST (conformers), HDF5 (checkpoints), cuEST and terco (GPU)
 
 **Memory considerations:**
 
@@ -816,60 +911,86 @@ Limitations and Future Work
 Current Limitations
 -------------------
 
-1. **Excited states**: none. No TD-DFT, no CIS, no linear-response excitation
-   energies. The coupled-perturbed solver in ``mqc_czt_response`` already
-   handles an electric-field perturbation, which is the piece such a method
-   would build on, but nothing consumes it yet
-2. **Relativistic Hamiltonians**: none -- no ZORA, DKH or X2C, and no spin-orbit
+Each of these is a refusal by name unless it says otherwise. A deck that asks
+for one gets an error naming what is missing, not a number from a formula that
+does not apply.
+
+1. **Relativistic Hamiltonians**: none -- no ZORA, DKH or X2C, and no spin-orbit
    coupling operator. An effective core potential is the nearest thing
    available and is a real one: a set fitted to a relativistic reference
    carries much of the effect for the valence, which is why ECPs are used on
    heavy elements as much for that as for the cost. It is not a relativistic
-   Hamiltonian and does not become one
-3. **Dispersion corrections**: no D3 or D4 for the ab initio path. The xTB
-   methods carry their own through tblite; a Kohn-Sham number from a functional
-   that does not include dispersion itself does not get it from anywhere here.
-   VV10 is the exception: the ``-V`` functionals carry their own non-local
-   correlation, evaluated for the energy, the nuclear gradient and the
-   analytic Hessian, so a ``-V`` functional can be optimized and its
-   frequencies computed -- see :doc:`analytic_hessians`
-4. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
-   reference, and there is no NEVPT2, CASPT2 or MRCI on top of it
-5. **Local correlation**: no DLPNO or equivalent, so coupled cluster is
-   canonical and scales like it
-6. **Periodic boundaries**: not implemented
-7. **AIMD**: keywords are defined and reach the driver config, but there is no
-   propagator behind them
-8. **Analytic second derivatives**: restricted references only, and within
+   Hamiltonian and does not become one. ECPs are energies only and need a
+   libfint build
+2. **Open-shell correlation**: MP2 and the double-hybrid derivatives need a
+   restricted reference. Coupled cluster does not, but density-fitted coupled
+   cluster does. Unrestricted density fitting is refused for the SCF itself,
+   Hartree-Fock or Kohn-Sham. An open-shell double hybrid has an energy and no
+   gradient
+3. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
+   reference, and there is no NEVPT2, CASPT2 or MRCI on top of it. The
+   multiconfigurational path also needs an even electron count, because it
+   starts from a closed-shell SCF. State averaging is singlets only
+4. **Local and explicitly correlated methods**: there is no DLPNO or
+   equivalent, so coupled cluster is canonical and scales like it. The F12
+   method names parse and are then refused
+5. **Derivatives that do not exist**: there are no nuclear gradients for
+   coupled cluster (no Lambda amplitudes), spin-scaled MP2, excited states,
+   NEO or anything with an ECP. There is also no CASSCF Hessian, single-state
+   or averaged. The gradient table above gives the full list. An excited-state
+   ``Gradient`` deck is refused by the reader
+6. **Analytic second derivatives**: restricted references only, and within
    those, everything except density fitting -- so Hartree-Fock, LDA, GGA,
-   meta-GGA, hybrids, range-separated hybrids and the VV10 ``-V`` functionals
-   are covered, and any open shell is not. What is not covered falls back to
-   the semi-numerical path rather than failing. The grid response is omitted,
-   as it is in the reference this is checked against. Agreement with PySCF is
-   1e-8 at STO-3G and loosens to 2e-5 on cc-pVDZ for a functional, which is
-   quadrature rather than the derivatives -- worth 0.16 cm-1 at worst. See
-   :doc:`analytic_hessians`
-9. **SCF convergence aids**: DIIS, the energy-based EDIIS and ADIIS, level
-   shifting, and a second-order finish -- trust-region Newton on the orbital
-   rotations, which DIIS hands over to once it has got close. There is no
-   damping and no Fermi smearing. The second-order path is closed-shell
+   meta-GGA, hybrids, range-separated hybrids, the VV10 ``-V`` functionals, MP2
+   and the GGA double hybrids are covered, and any open shell is not. What is
+   not covered falls back to the semi-numerical path rather than failing. That
+   includes a deck with D3/D4 dispersion on, since neither library supplies
+   second derivatives. The grid response is omitted, as it is in the reference
+   this is checked against. Agreement with PySCF is 1e-8 at STO-3G and loosens
+   to 2e-5 on cc-pVDZ for a functional, which is quadrature rather than the
+   derivatives -- worth 0.16 cm-1 at worst. See :doc:`analytic_hessians`
+7. **Wavefunction stability**: restricted references only, and only the
+   real singlet (RHF to RHF) instability. Triplet (RHF to UHF) and complex
+   instabilities are not looked for
+8. **SCF convergence aids**: there is no damping and no Fermi smearing (xTB has
+   its own electronic temperature). The second-order SCF is closed-shell
    restricted only, and refuses a continuum solvent or a frozen-orbital
-   projector rather than approximating either. The level shift is tapered off
-   before convergence, so what it costs is iterations and not the orbital
-   energies -- see :doc:`scf_convergence`. All of it is CPU-path; the GPU
-   backend accepts ``level_shift`` without applying it, and refuses every
-   accelerator but ``diis`` by name
+   projector rather than approximating either. All the aids are CPU-path: the
+   cuEST backend refuses every accelerator but ``diis``, and refuses
+   ``level_shift``, by name. See :doc:`scf_convergence`
+9. **Embedded fragment methods** (FMO, EE-MBE, EFMO): energies only and closed
+   shell. Under FMO and EE-MBE a fragment can be solved with Hartree-Fock,
+   restricted Kohn-Sham, or the MP2 family. Double hybrids and coupled cluster
+   are refused there, as is MP2 across an AFO cut. EFMO takes Hartree-Fock and
+   MP2 only. PIEDA is FMO only. See :doc:`fmo` and :doc:`efmo`
+10. **GPU backends**: cuEST covers Hartree-Fock and Kohn-Sham energies and
+    gradients, and terco energies only. Correlated methods, excited states and
+    ECPs are CPU only. See `Ab Initio (GPU)`_ above
+11. **EFP**: an EFP run covers systems made entirely of effective fragments. A
+    mixed quantum/EFP system is refused, and there is no EFP gradient
+12. **Periodic boundaries**: not implemented
+13. **AIMD**: the ``keywords.aimd`` keys are accepted and reach the driver
+    configuration, but there is no propagator behind them. This is the one
+    item here that is **silently ignored** rather than refused
+14. **Polarizabilities**: static and dynamic polarizabilities are computed
+    internally for MakeFP, but no deck can ask for one
 
 Planned Features
 ----------------
 
 1. **Additional QC methods**:
 
+   - Coupled-cluster gradients, through the Lambda equations
    - Density-fitted unrestricted coupled cluster. The conventional path takes an
      unrestricted reference; the fitted one does not, because its three-index
      block carries no spin blocks, and a deck asking for both is refused rather
      than given the restricted answer built from the alpha orbitals
-   - Unrestricted double hybrids, whose perturbative term keeps them closed-shell
+   - Unrestricted MP2 as a method in its own right, rather than only inside a
+     double hybrid, and the open-shell double-hybrid gradient that needs its
+     relaxed density
+   - Multireference perturbation theory (NEVPT2) on top of CASSCF
+   - Excited-state gradients. The Z-vector pieces mostly exist; the assembly
+     does not
    - F12 variants: these parse but have no implementation
 
 2. **Second derivatives beyond a restricted, exact reference**: unrestricted
@@ -878,16 +999,19 @@ Planned Features
    fitted one. See :doc:`analytic_hessians` for the table and for the four
    double-hybrid cases that still fall back
 
-3. **Advanced dynamics**:
+3. **Fragment methods**: gradients and open-shell fragments under FMO, EE-MBE
+   and EFMO, and coupled cluster as a fragment method
+
+4. **Advanced dynamics**:
 
    - AIMD implementation
    - Thermostats/barostats
    - Trajectory analysis
 
-4. **Property calculations**:
+5. **Property calculations**:
 
-   - Polarizabilities -- the coupled-perturbed solve exists and is used to
-     validate the kernel, but no deck can ask for one
+   - Polarizabilities as a deck property -- the coupled-perturbed solve exists
+     and MakeFP already uses it
    - NMR chemical shifts
 
 Performance Notes
