@@ -18,6 +18,14 @@ cd validation
 python3 run_validation.py --manifest validation_tests_cpu.json --exe ../build/mqc
 ```
 
+A regeneration rewrites every reference, and about three hundred of them move by
+~1e-12 for no reason. To add a family of cases without that diff, the generator
+takes `--only-counterpoise`, which writes just the full-cluster-basis
+counterpoise decks and splices their entries onto the end of the existing
+manifest, leaving everything else as it was. An entry already in the manifest
+with the same `input` is replaced rather than duplicated. A full regeneration
+produces the same entries in the same place, after the excited-state ones.
+
 To change the coverage, edit `MOLECULES` or `SWEEPS` at the top of the script
 and rerun it. Do not edit the manifest or the `cpu_*` decks: the script
 overwrites the manifest and deletes any `cpu_*.json` deck it did not just

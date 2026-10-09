@@ -3299,10 +3299,252 @@ MANUAL_CASES = [
 ]
 
 
+# Full-cluster-basis counterpoise (`counterpoise: "ssfc"`) on water clusters.
+#
+# As (name, geometry file, fragments, basis, method, level, driver). The
+# fragments are the deck's own `fragments`, whole waters in the order the file
+# lists them. A driver of "Energy" pins the total; "InteractionEnergy" pins the
+# reduced expansion around the last fragment, `reference_fragment` being the
+# index of that water.
+#
+# The references share no code with metalquicha. Each one is PySCF handed this
+# repository's own basis JSON, with the waters that are not part of a term
+# present as ghost atoms -- a basis and no nucleus, no electrons -- and the
+# scheme assembled by an explicit inclusion-exclusion over frozensets in
+# `ssfc_reference`, not by a recursion that mirrors the code's own.
+#
+# What each case is there for:
+#
+# * w3 HF/6-31G at orders 2 and 3: the trimer is the smallest system where
+#   SSFC and the Valiron-Mayer scheme differ at all (they coincide for two
+#   fragments), and order 3 is the level at which the top term is the whole
+#   system, an all-real row with no ghost in it, summed beside rows that have
+#   some.
+# * w3 MP2/cc-pVDZ at order 2 with the frozen core on. A ghost water carries
+#   an oxygen's basis functions and none of its core electrons, so a frozen
+#   core counted over every centre would freeze orbitals that are not cores.
+#   The reference freezes one orbital per *real* oxygen only.
+# * prism STO-3G at orders 2 and 3, as a total and as an interaction energy
+#   around water 5, beside the two Valiron-Mayer interaction decks.
+COUNTERPOISE_CASES = [
+    ("w3", "w3.xyz", [[0, 1, 2], [3, 4, 5], [6, 7, 8]], "6-31g", "hf", 2, "Energy"),
+    ("w3", "w3.xyz", [[0, 1, 2], [3, 4, 5], [6, 7, 8]], "6-31g", "hf", 3, "Energy"),
+    ("w3", "w3.xyz", [[0, 1, 2], [3, 4, 5], [6, 7, 8]], "cc-pvdz", "mp2", 2, "Energy"),
+    ("prism", "prism.xyz", [[3*i, 3*i + 1, 3*i + 2] for i in range(6)],
+     "sto-3g", "hf", 2, "Energy"),
+    ("prism", "prism.xyz", [[3*i, 3*i + 1, 3*i + 2] for i in range(6)],
+     "sto-3g", "hf", 3, "Energy"),
+    ("prism", "prism.xyz", [[3*i, 3*i + 1, 3*i + 2] for i in range(6)],
+     "sto-3g", "hf", 2, "InteractionEnergy"),
+    ("prism", "prism.xyz", [[3*i, 3*i + 1, 3*i + 2] for i in range(6)],
+     "sto-3g", "hf", 3, "InteractionEnergy"),
+]
+
+#: The cluster molecules above, for the label in a manifest entry's name.
+COUNTERPOISE_LABELS = {"w3": "(H2O)3", "prism": "water prism"}
+
+
+def frozen_core_orbitals(z):
+    """Orbitals a frozen core leaves out for one atom, by atomic number.
+
+    The same shells-below-the-valence rule as `core_orbital_count` in
+    src/core/mqc_elements.f90: none for H and He, the 1s for Li-Ne, then 5, 9,
+    18 and 27 for the rows after.
+    """
+    if z <= 2:
+        return 0
+    for last, n_core in ((10, 1), (18, 5), (36, 9), (54, 18)):
+        if z <= last:
+            return n_core
+    return 27
+
+
+def pyscf_ghosted_energy(atoms, real_atoms, ghosted, basis, method):
+    """PySCF energy of the atoms in `real_atoms`, optionally with ghosts.
+
+    `atoms` is the whole cluster and `real_atoms` the indices that carry a
+    nucleus and electrons. With `ghosted` every other atom is written
+    `ghost-X`, which PySCF gives the element's basis and no charge: the
+    calculation in the basis of the whole cluster. Without it the other atoms
+    are left out, which is the term in its own basis.
+
+    The frozen core, for MP2, is counted from the real atoms only, by the rule
+    of `core_orbital_count` in src/core/mqc_elements.f90, and is nothing for a
+    ghost. PySCF is handed the count rather than finding cores for itself, so a
+    ghost oxygen -- a 1s function and no 1s electrons -- is the one thing that
+    cannot be counted by accident.
+    """
+    from pyscf import gto, mp, scf
+
+    if method not in ("hf", "mp2"):
+        raise SystemExit(f"counterpoise reference has no method {method!r}")
+
+    rows = []
+    for i, (s, x, y, z) in enumerate(atoms):
+        if i in real_atoms:
+            rows.append((s, (x, y, z)))
+        elif ghosted:
+            rows.append((f"ghost-{s}", (x, y, z)))
+    symbols = {a[0] for a in atoms}
+    mol = gto.Mole()
+    mol.atom = rows
+    mol.unit = "Angstrom"
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    energy = mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF RHF did not converge for atoms {sorted(real_atoms)}")
+    if method == "mp2":
+        frozen = sum(frozen_core_orbitals(gto.charge(atoms[i][0])) for i in real_atoms)
+        pt = mp.MP2(mf, frozen=frozen)
+        pt.kernel()
+        energy += pt.e_corr
+    return float(energy)
+
+
+def ssfc_reference(atoms, fragments, basis, method, level, reference=None):
+    """SSFC total, or the share of one fragment, from PySCF energies alone.
+
+    Every monomer in its own basis, then every term of size 1..level in the
+    basis of the whole cluster, with the increment of a term its energy minus
+    the increments of all its proper subsets -- the plain inclusion-exclusion,
+    written out over frozensets and nothing else:
+
+        E = sum_i E_i(own) + sum_{|T|>=2} dE_T,   dE_T = E_T - sum_{S<T} dE_S
+
+    with dE_i = E_i in the full basis. With `reference` set the result is
+    instead the sum of dE_T over the terms of size 2..level containing that
+    fragment, which is what the InteractionEnergy driver reports. Returns the
+    number and how many PySCF calculations stood behind it.
+    """
+    from itertools import combinations
+
+    n = len(fragments)
+    calls = 0
+
+    def energy(term, ghosted):
+        nonlocal calls
+        calls += 1
+        real = {a for f in term for a in fragments[f]}
+        return pyscf_ghosted_energy(atoms, real, ghosted, basis, method)
+
+    delta = {}
+    for size in range(1, level + 1):
+        for term in combinations(range(n), size):
+            subsets = (frozenset(s) for k in range(1, size)
+                       for s in combinations(term, k))
+            delta[frozenset(term)] = (energy(term, True)
+                                      - sum(delta[s] for s in subsets))
+    if reference is not None:
+        value = sum(d for t, d in delta.items() if len(t) >= 2 and reference in t)
+    else:
+        own = sum(energy((i,), False) for i in range(n))
+        value = own + sum(d for t, d in delta.items() if len(t) >= 2)
+    return value, calls
+
+
+def counterpoise_entries(written, dry_run):
+    """Write the SSFC decks and return their manifest entries.
+
+    A function for the reason `excited_entries` is: it is also what splices
+    these cases into an existing manifest without regenerating the other three
+    hundred. `written` is added to in place, so the stale-deck sweep still
+    sees what this produced.
+    """
+    import pyscf
+
+    entries = []
+    for name, xyz, fragments, basis, method, level, driver in COUNTERPOISE_CASES:
+        atoms = read_xyz(XYZ_DIR / xyz)
+        energy_driver = driver == "Energy"
+        reference = None if energy_driver else len(fragments) - 1
+        value, n_calc = ssfc_reference(atoms, fragments, basis, method, level,
+                                       reference=reference)
+        stem = normalize_basis_name(basis)
+        if energy_driver:
+            tag = f"{method}_" if method != "hf" else ""
+            deck = deck_for(f"{CPU_MQC}/counterpoise",
+                            f"cpu_{name}_{stem}_{tag}ssfc{level}")
+        else:
+            deck = deck_for(f"{CPU_MQC}/interaction_energy",
+                            f"ie_{name}_{stem}_l{level}_ssfc")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(XYZ_UP + f"sample_inputs/{xyz}", basis, method=method,
+                          correlation={"freeze_core": True} if method == "mp2" else None)
+            d["molecules"][0]["fragments"] = fragments
+            d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
+            d["molecules"][0]["fragment_multiplicities"] = [1]*len(fragments)
+            d["keywords"]["fragmentation"] = {
+                "method": "mbe", "level": level, "embedding": "none",
+                "counterpoise": "ssfc",
+            }
+            if not energy_driver:
+                d["keywords"]["fragmentation"]["reference_fragment"] = reference
+                d["driver"] = driver
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        label = COUNTERPOISE_LABELS[name]
+        sizes = ("dimers" if level == 2
+                 else f"terms of size 2 to {level}")
+        theory = "MP2" if method == "mp2" else "RHF"
+        if energy_driver:
+            entry = {
+                "name": f"SSFC({level}) {theory} {label} {basis} (CPU)",
+                "input": deck,
+                "expected_energy": round(value, 12),
+                "type": "fragmented",
+                "reference_note": (
+                    f"reference is PySCF {pyscf.__version__} fed this repository's own "
+                    f"basis JSON, assembled in Python by plain inclusion-exclusion "
+                    f"bookkeeping over frozensets of PySCF energies, sharing nothing "
+                    f"with the code under test: each monomer in its own basis, then "
+                    f"every term of size 1 to {level} in the basis of the whole "
+                    f"cluster, the waters outside a term present as ghost atoms. "
+                    f"{n_calc} PySCF calculations stand behind it."
+                    + (" The frozen core is one orbital per real oxygen, none for a "
+                       "ghost water, whose oxygen carries basis functions and no "
+                       "core electrons." if method == "mp2" else "")
+                ),
+            }
+        else:
+            entry = {
+                "name": (f"InteractionEnergy {label} {basis.upper()}, "
+                         f"SSFC({level}), last water (CPU)"),
+                "input": deck,
+                "expected_interaction_energy": round(value, 12),
+                "type": "fragmented",
+                "reference_note": (
+                    f"reference is the sum over the {sizes} holding water "
+                    f"{reference} of their full-cluster-basis increments, each the "
+                    f"alternating sum of its subsets' energies all in the basis of "
+                    f"the whole cluster, evaluated in Python as plain "
+                    f"inclusion-exclusion bookkeeping over frozensets of PySCF "
+                    f"{pyscf.__version__} energies, fed this repository's own basis "
+                    f"JSON with the waters outside a term as ghost atoms, and "
+                    f"sharing nothing with the code under test. {n_calc} PySCF "
+                    f"calculations stand behind it."
+                ),
+            }
+        entries.append(entry)
+        print(f"{label:12s} {basis:10s} {theory:4s} SSFC({level}) {driver:17s} "
+              f"calcs={n_calc:3d} E={value:.12f}", flush=True)
+    return entries
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true",
                     help="compute and print, write nothing")
+    ap.add_argument("--only-counterpoise", action="store_true",
+                    help="write only the counterpoise decks and splice their "
+                         "entries into the existing manifest, leaving every "
+                         "other entry and deck untouched")
     args = ap.parse_args()
 
     # Reference energies must not depend on how many cores the generating
@@ -3318,6 +3560,22 @@ def main():
     _pyscf_lib.num_threads(1)
 
     os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+    # Regenerating the manifest moves ~300 unrelated references by ~1e-12, so a
+    # new family of cases is added to the committed file on its own: its entries
+    # replace any earlier ones for the same decks and go on the end, and nothing
+    # else is read, recomputed or rewritten.
+    if args.only_counterpoise:
+        entries = counterpoise_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
 
     # geometries first, so PySCF and the decks cannot drift apart
     # Both dictionaries: a molecule with no geometry file on disk has no path
@@ -4455,14 +4713,16 @@ def main():
             print(f"{entry['name']}: transcribed reference "
                   f"E={pinned:.10f}", flush=True)
 
-    # Last, and that is load-bearing rather than arbitrary. These eight were
-    # spliced onto the end of an existing manifest rather than produced by a
-    # full regeneration -- regenerating the other three hundred moves their
-    # references by ~1e-12 for no reason -- so this is where they sit in the
-    # committed file. Called anywhere earlier and a regeneration that changes
+    # Last, and that is load-bearing rather than arbitrary. The excited-state
+    # entries and then the counterpoise ones were spliced onto the end of an
+    # existing manifest rather than produced by a full regeneration --
+    # regenerating the other three hundred moves their references by ~1e-12 for
+    # no reason -- so this is where they sit in the committed file, in this
+    # order. Called anywhere earlier and a regeneration that changes
     # nothing still rewrites several hundred lines, which is a diff nobody can
     # read and a manifest nobody can check.
     tests.extend(excited_entries(written, args.dry_run))
+    tests.extend(counterpoise_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:
