@@ -7,9 +7,8 @@ module test_mqc_effective_density
    !! `class(effective_density_t)`, as the contraction will.
    !!
    !! The coupling column is where the column description matters: it says
-   !! which pair of states it couples, gets a `nuclear_weight` of 0 from that
-   !! description, and supplies an antisymmetric overlap term, while the
-   !! gradient column names its one state and keeps both defaults.
+   !! which pair of states it couples and supplies an antisymmetric overlap
+   !! term, while the gradient column names its one state and has none.
    !!
    !! `separable_density_t` is the other shape a method can have: one
    !! gradient column whose two-particle part is all separable, as for
@@ -342,13 +341,6 @@ contains
       real(dp), allocatable :: anti(:, :)
 
       allocate (toy_density_t :: provider)
-      call check(error, provider%nuclear_weight(COLUMN_GRADIENT) == 1.0_dp, &
-                 "a gradient column carries the nuclear repulsion")
-      if (allocated(error)) return
-      call check(error, provider%nuclear_weight(COLUMN_COUPLING) == 0.0_dp, &
-                 "a coupling column does not, from its description alone")
-      if (allocated(error)) return
-
       call provider%overlap_antisymmetric(COLUMN_GRADIENT, anti, err)
       call check(error,.not. allocated(anti), "a gradient column has no antisymmetric term")
       if (allocated(error)) return
@@ -377,6 +369,7 @@ contains
       type(error_t) :: err
       integer, allocatable :: ao_map(:)
       real(dp), allocatable :: gamma(:, :, :, :, :)
+      real(dp), allocatable :: anti(:, :)
 
       allocate (separable_density_t :: provider)
       call provider%gamma_ao_map(ao_map)
@@ -392,8 +385,9 @@ contains
       call check(error,.not. allocated(gamma), "and leaves no block behind")
       if (allocated(error)) return
 
-      call check(error, provider%nuclear_weight(1) == 1.0_dp, &
-                 "the other defaults still hold")
+      call provider%overlap_antisymmetric(1, anti, err)
+      call check(error,.not. allocated(anti), &
+                 "the default antisymmetric overlap is absent too")
    end subroutine test_no_gamma
 
 end module test_mqc_effective_density
