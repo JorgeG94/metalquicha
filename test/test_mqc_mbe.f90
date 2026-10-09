@@ -5,6 +5,7 @@ module test_mqc_mbe
    use mqc_result_types, only: calculation_result_t, mbe_result_t, N_CORRELATION_PARTS
    use mqc_frag_utils, only: apply_reference_closure, generate_fragment_list, &
                              create_monomer_list, get_nfrags, binomial
+   use mqc_combinatorics, only: COUNTERPOISE_VMFC
    use pic_types, only: dp, int64
    implicit none
    private
@@ -434,7 +435,8 @@ contains
       allocate (mbe_result%dipole(3))
       mbe_result%dipole = 0.0_dp
 
-      call compute_mbe(polymers, fragment_count, 3, results, mbe_result)
+      call compute_mbe(polymers, fragment_count, 3, results, mbe_result, &
+                       counterpoise_scheme=COUNTERPOISE_VMFC)
 
       expected = e(1) + e(2) + e(3) &
                  + (e(13) - e(4) - e(5)) + (e(14) - e(6) - e(7)) + (e(15) - e(8) - e(9)) &
@@ -512,7 +514,8 @@ contains
       allocate (mbe_result%dipole(3))
       mbe_result%dipole = 0.0_dp
 
-      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result, &
+                       counterpoise_scheme=COUNTERPOISE_VMFC)
 
       call check(error, mbe_result%has_dipole, "the MBE dipole was not computed")
       if (allocated(error)) return

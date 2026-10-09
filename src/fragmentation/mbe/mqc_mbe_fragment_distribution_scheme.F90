@@ -67,7 +67,7 @@ module mqc_mbe_fragment_distribution_scheme
 
       module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, &
                                                   method_config, calc_type, json_data, checkpoint, &
-                                                  reference_fragment)
+                                                  reference_fragment, counterpoise_scheme)
          use mqc_checkpoint, only: checkpoint_t
          implicit none
          integer(int64), intent(in) :: total_fragments
@@ -79,6 +79,7 @@ module mqc_mbe_fragment_distribution_scheme
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
          type(checkpoint_t), intent(inout), optional :: checkpoint
          integer, intent(in), optional :: reference_fragment
+         integer, intent(in), optional :: counterpoise_scheme
       end subroutine serial_fragment_processor
 
       module subroutine node_worker(ctx)

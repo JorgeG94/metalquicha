@@ -19,7 +19,7 @@ module test_mqc_counterpoise
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices
    use mqc_combinatorics, only: vmfc_subset_key, vmfc_row_subset_key, is_auxiliary_row, &
-                                real_count_of
+                                real_count_of, COUNTERPOISE_VMFC
    use mqc_error, only: error_t
    use mqc_elements, only: core_orbital_count
    use pic_io, only: to_char
@@ -548,16 +548,16 @@ contains
       !! hunting for subsets that were never generated.
       type(error_type), allocatable, intent(out) :: error
 
-      call check(error,.not. is_auxiliary_row([1, 2]), &
+      call check(error,.not. is_auxiliary_row([1, 2], COUNTERPOISE_VMFC), &
                  "an ordinary pair is not auxiliary")
       if (allocated(error)) return
-      call check(error,.not. is_auxiliary_row([1, 0]), &
+      call check(error,.not. is_auxiliary_row([1, 0], COUNTERPOISE_VMFC), &
                  "a padded monomer row is not auxiliary")
       if (allocated(error)) return
-      call check(error, is_auxiliary_row([1, -2]), &
+      call check(error, is_auxiliary_row([1, -2], COUNTERPOISE_VMFC), &
                  "a ghosted row is auxiliary")
       if (allocated(error)) return
-      call check(error, is_auxiliary_row([-1, 2]), &
+      call check(error, is_auxiliary_row([-1, 2], COUNTERPOISE_VMFC), &
                  "a ghosted row is auxiliary either way round")
       if (allocated(error)) return
 

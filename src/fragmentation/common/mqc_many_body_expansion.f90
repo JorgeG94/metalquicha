@@ -14,6 +14,7 @@ module mqc_many_body_expansion
    use mqc_scf_types, only: scf_numerics_t
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_method_types, only: needs_serial_execution
+   use mqc_combinatorics, only: COUNTERPOISE_NONE
    implicit none
    private
 
@@ -118,6 +119,9 @@ module mqc_many_body_expansion
          !! The fragment whose interaction energy is reported, as a monomer
          !! number, 1-based; 0 for the ordinary expansion. `polymers` is then
          !! already the reduced list, and this only changes what is reported.
+      integer :: counterpoise_scheme = COUNTERPOISE_NONE
+         !! A `COUNTERPOISE_*` constant: the scheme `polymers` was built for,
+         !! which `compute_mbe` checks the rows against.
 
    contains
       procedure :: run_serial => mbe_run_serial
@@ -336,6 +340,7 @@ contains
       this%total_fragments = 0
       this%max_level = 0
       this%reference_fragment = 0
+      this%counterpoise_scheme = COUNTERPOISE_NONE
 
       ! Clean up base class data
       call this%destroy_base()
@@ -626,7 +631,8 @@ contains
 
       call serial_fragment_processor(this%total_fragments, this%polymers, this%max_level, &
                                      this%sys_geom, this%method_config, this%calc_type, json_data, &
-                                     this%checkpoint, this%reference_fragment)
+                                     this%checkpoint, this%reference_fragment, &
+                                     this%counterpoise_scheme)
    end subroutine mbe_run_serial
 
    subroutine mbe_run_distributed(this, json_data)

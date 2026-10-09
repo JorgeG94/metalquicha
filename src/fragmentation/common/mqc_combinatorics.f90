@@ -3,6 +3,7 @@ module mqc_combinatorics
    !! Provides pure combinatorial functions for generating molecular fragments
    !! including binomial coefficients, combinations, and fragment counting
    use pic_types, only: default_int, int32, int64
+   use pic_sorting, only: sort
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_program_limits, only: MAX_LINE_LENGTH
@@ -13,7 +14,13 @@ module mqc_combinatorics
    public :: fragment_size_of      !! How many monomers a polymer row names
    public :: vmfc_subset_key       !! Counterpoise subset key: chosen real, rest ghosted
    public :: vmfc_row_subset_key   !! The same, for a row that may already carry ghosts
-   public :: is_auxiliary_row      !! A ghosted row: subtracted, never summed
+   public :: is_auxiliary_row      !! A row subtracted by its parent, never summed
+   public :: rows_match_counterpoise  !! Whether a term list is what a scheme produces
+   public :: counterpoise_scheme_of  !! The scheme constant a deck's spelling names
+   public :: counterpoise_scheme_name  !! The spelling of a scheme constant, for messages
+   public :: COUNTERPOISE_NONE     !! Every subfragment in its own basis
+   public :: COUNTERPOISE_VMFC     !! Every subfragment in its parent's basis
+   public :: COUNTERPOISE_SSFC     !! Every subfragment in the whole cluster's basis
    public :: real_count_of         !! Real (non-ghosted) monomers in a row
    public :: binomial              !! Binomial coefficient calculation
    public :: get_nfrags            !! Calculate total number of fragments
@@ -25,6 +32,10 @@ module mqc_combinatorics
    public :: next_combination      !! Generate next combination (alternate interface)
    public :: print_combos          !! Debug utility to print combinations
    public :: calculate_fragment_distances  !! Calculate minimal distances for all fragments
+
+   integer, parameter :: COUNTERPOISE_NONE = 0
+   integer, parameter :: COUNTERPOISE_VMFC = 1
+   integer, parameter :: COUNTERPOISE_SSFC = 2
 
 contains
 
@@ -56,21 +67,77 @@ contains
 
    end subroutine create_monomer_list
 
-   pure function is_auxiliary_row(row) result(aux)
+   pure function counterpoise_scheme_of(name) result(scheme)
+      !! The `COUNTERPOISE_*` constant for a `counterpoise` spelling
+      !!
+      !! `"vmfc"` and `"ssfc"` name their schemes; every other spelling,
+      !! `"none"` included, gives `COUNTERPOISE_NONE`.
+      ! `check_counterpoise_support` refuses every spelling it does not know
+      ! before a term list is built, so the fall-through is not reached by a
+      ! deck that got that far. It does not accept "ssfc" yet.
+      character(len=*), intent(in) :: name
+      integer :: scheme
+
+      select case (trim(name))
+      case ("vmfc")
+         scheme = COUNTERPOISE_VMFC
+      case ("ssfc")
+         scheme = COUNTERPOISE_SSFC
+      case default
+         scheme = COUNTERPOISE_NONE
+      end select
+   end function counterpoise_scheme_of
+
+   pure function counterpoise_scheme_name(scheme) result(name)
+      !! The deck's spelling of a `COUNTERPOISE_*` constant
+      integer, intent(in) :: scheme
+      character(len=:), allocatable :: name
+
+      select case (scheme)
+      case (COUNTERPOISE_NONE)
+         name = "none"
+      case (COUNTERPOISE_VMFC)
+         name = "vmfc"
+      case (COUNTERPOISE_SSFC)
+         name = "ssfc"
+      case default
+         name = "unknown"
+      end select
+   end function counterpoise_scheme_name
+
+   pure function is_auxiliary_row(row, scheme) result(aux)
       !! Whether a row exists only to be subtracted, not to be summed
       !!
-      !! A counterpoise expansion computes monomer A in the basis of the pair
-      !! AB. That energy belongs inside the pair's correction and nowhere else:
+      !! A counterpoise expansion computes monomer A in a basis larger than its
+      !! own. That energy belongs inside the correction of the term that
+      !! subtracts it, and nowhere else; adding its delta to the total as well
+      !! would count it twice. A negative entry marks a ghosted monomer, and
+      !! what a ghost means for the sum depends on the scheme:
       !!
-      !!     E = sum_i E_i(i)  +  sum_ij [ E_ij - E_i(ij) - E_j(ij) ]
+      !!     row                     VMFC        SSFC
+      !!     all real                summed      summed
+      !!     ghosted, 1 real         auxiliary   auxiliary
+      !!     ghosted, 2+ real        auxiliary   summed
       !!
-      !! The one-body term uses each monomer in its *own* basis, so the ghosted
-      !! rows are auxiliary -- adding their deltas to the total as well would
-      !! count them twice. A negative entry is what marks them.
+      !! Under VMFC every ghosted row is a subset solved in its parent's basis,
+      !! so none is a term of the expansion. Under SSFC every term of order 2
+      !! and above is itself a ghosted row, in the basis of the whole cluster;
+      !! only the one-real-monomer rows are subtracted and not summed, since
+      !! the one-body term is each monomer in its *own* basis. `COUNTERPOISE_NONE`
+      !! has no ghosted rows to classify.
       integer(default_int), intent(in) :: row(:)
+      integer, intent(in) :: scheme
+         !! One of the `COUNTERPOISE_*` constants
       logical :: aux
 
-      aux = any(row < 0)
+      select case (scheme)
+      case (COUNTERPOISE_VMFC)
+         aux = any(row < 0)
+      case (COUNTERPOISE_SSFC)
+         aux = any(row < 0) .and. count(row > 0) == 1
+      case default
+         aux = .false.
+      end select
    end function is_auxiliary_row
 
    pure function real_count_of(row) result(n)
@@ -155,6 +222,341 @@ contains
       key(n_real + 1:n_real + n_ghost) = ghosts(1:n_ghost)
       key_len = n_real + n_ghost
    end subroutine vmfc_row_subset_key
+
+   pure function rows_match_counterpoise(polymers, n_rows, n_monomers, scheme) result(ok)
+      !! Whether a term list is exactly what a counterpoise scheme produces
+      !!
+      !! The scheme is the caller's to name; the rows are checked against it by
+      !! regeneration, rule by rule:
+      !!
+      !! `COUNTERPOISE_NONE`: no entry is negative.
+      !!
+      !! `COUNTERPOISE_VMFC`: the all-real rows are closed under taking one
+      !! monomer away, every all-real row of size n >= 2 has all of its
+      !! `2^n - 2` ghosted subsets as rows, and there are no other ghosted rows.
+      !!
+      !! `COUNTERPOISE_SSFC`: every ghosted row names all `n_monomers` monomers
+      !! once, and no all-real row has 2 to `n_monomers - 1` monomers. Taking
+      !! one real monomer from a ghosted or whole-system row and ghosting it
+      !! gives another row of the list, down to the one-real-monomer rows,
+      !! whose own-basis `[i]` row is present. Each own-basis monomer row has
+      !! its full-basis row. A list with no ghosted row and no n-mer at all is
+      !! level 1, which adds no rows under either scheme, and is accepted.
+      !!
+      !! A list with two equal rows is refused under every scheme but NONE.
+      !! N = 2 is accepted by both VMFC and SSFC: the lists coincide.
+      ! The scheme cannot be read off the rows. At L = N the SSFC top term is
+      ! the whole system, whose complement is empty, so it is an all-real row
+      ! exactly like VMFC's, and its ghosted rows are the ghosted subsets of
+      ! that row. The VMFC closure rule is what tells the two lists apart: the
+      ! SSFC list has none of the all-real n-mers a VMFC list holds beneath
+      ! its top term.
+      integer(default_int), intent(in) :: polymers(:, :)
+         !! (rows, width), zero-padded; a negative entry is a ghosted monomer
+      integer(int64), intent(in) :: n_rows  !! Rows of `polymers` in use
+      integer, intent(in) :: n_monomers     !! Monomers in the whole system
+      integer, intent(in) :: scheme         !! One of the `COUNTERPOISE_*` constants
+      logical :: ok
+
+      select case (scheme)
+      case (COUNTERPOISE_NONE)
+         ok = .not. any(polymers(1:n_rows, :) < 0)
+      case (COUNTERPOISE_VMFC)
+         ok = rows_match_vmfc(polymers(1:n_rows, :))
+      case (COUNTERPOISE_SSFC)
+         ok = rows_match_ssfc(polymers(1:n_rows, :), n_monomers)
+      case default
+         ok = .false.
+      end select
+   end function rows_match_counterpoise
+
+   pure function rows_match_vmfc(rows) result(ok)
+      !! The VMFC rule of `rows_match_counterpoise`
+      !!
+      !! Each ghosted row names a parent, its monomers taken as all real, and
+      !! a real subset of it. Rows are distinct and a parent of n monomers has
+      !! `2^n - 2` such subsets, so the ghosted rows are exactly the subsets
+      !! when every one has a parent in the list and their number is the sum.
+      integer(default_int), intent(in) :: rows(:, :)
+      logical :: ok
+
+      integer, allocatable :: keys(:, :)
+      integer(int64), allocatable :: order(:)
+      integer(int64) :: i, n_ghosted, n_expected
+      integer :: n_real, p
+
+      ok = .false.
+      if (size(rows, 1) == 0) then
+         ok = .true.
+         return
+      end if
+
+      call canonical_rows(rows, keys)
+      call order_keys(keys, order)
+      if (has_equal_rows(keys, order)) return
+
+      n_ghosted = 0_int64
+      n_expected = 0_int64
+      do i = 1_int64, size(rows, 1, kind=int64)
+         n_real = count(rows(i, :) > 0)
+         if (any(rows(i, :) < 0)) then
+            if (n_real == 0) return
+            if (.not. has_key(keys, order, absolute_key(keys(i, :)))) return
+            n_ghosted = n_ghosted + 1_int64
+         else if (n_real >= 2) then
+            if (any(keys(i, 2:n_real) == keys(i, 1:n_real - 1))) return
+            do p = 1, n_real
+               if (.not. has_key(keys, order, without_entry(keys(i, :), p))) return
+            end do
+            n_expected = n_expected + 2_int64**n_real - 2_int64
+         end if
+      end do
+
+      ok = n_ghosted == n_expected
+   end function rows_match_vmfc
+
+   pure function rows_match_ssfc(rows, n_monomers) result(ok)
+      !! The SSFC rule of `rows_match_counterpoise`
+      integer(default_int), intent(in) :: rows(:, :)
+      integer, intent(in) :: n_monomers
+      logical :: ok
+
+      integer, allocatable :: keys(:, :), expected(:)
+      integer(int64), allocatable :: order(:)
+      integer(int64) :: i
+      integer :: n_real, n_ghost, p
+      logical :: has_ghosted
+
+      ok = .false.
+      if (size(rows, 1) == 0) then
+         ok = .true.
+         return
+      end if
+
+      call canonical_rows(rows, keys)
+      call order_keys(keys, order)
+      if (has_equal_rows(keys, order)) return
+      has_ghosted = any(rows < 0)
+
+      do i = 1_int64, size(rows, 1, kind=int64)
+         n_real = count(rows(i, :) > 0)
+         n_ghost = count(rows(i, :) < 0)
+         if (n_ghost == 0 .and. n_real < 2) cycle      ! an own-basis monomer row
+
+         ! The rest is a term in the whole cluster's basis, ghosted or, for the
+         ! whole system at L = N, with nothing left to ghost.
+         if (n_real == 0 .or. n_real + n_ghost /= n_monomers) return
+         if (.not. names_whole_system(keys(i, :), n_monomers)) return
+
+         if (n_real == 1) then
+            ! Its own-basis row, which is where the correction starts from.
+            expected = [keys(i, n_monomers), (0, p=1, size(keys, 2) - 1)]
+            if (.not. has_key(keys, order, expected)) return
+         else
+            ! Every subset one monomer smaller is in the list.
+            do p = 1, n_monomers
+               if (keys(i, p) < 0) cycle
+               if (.not. has_key(keys, order, ghosted_entry(keys(i, :), p))) return
+            end do
+         end if
+      end do
+
+      if (has_ghosted) then
+         ! Every kept monomer has its full-basis row as well as its own.
+         if (size(rows, 2) < n_monomers) return
+         do i = 1_int64, size(rows, 1, kind=int64)
+            if (count(rows(i, :) /= 0) /= 1 .or. any(rows(i, :) < 0)) cycle
+            if (keys(i, 1) > n_monomers) return
+            expected = full_basis_key(keys(i, 1), n_monomers, size(keys, 2))
+            if (.not. has_key(keys, order, expected)) return
+         end do
+      end if
+
+      ok = .true.
+   end function rows_match_ssfc
+
+   pure subroutine canonical_rows(rows, keys)
+      !! Each row's non-zero entries in ascending order, zero-padded again
+      !!
+      !! Two rows name the same term exactly when their keys are equal. Ghosts
+      !! sort before the real monomers, being negative.
+      integer(default_int), intent(in) :: rows(:, :)
+      integer, allocatable, intent(out) :: keys(:, :)
+
+      integer, allocatable :: entries(:)
+      integer(int64) :: i
+
+      allocate (keys(size(rows, 1), size(rows, 2)))
+      keys = 0
+      do i = 1_int64, size(rows, 1, kind=int64)
+         entries = pack(rows(i, :), rows(i, :) /= 0)
+         call sort(entries)
+         keys(i, 1:size(entries)) = entries
+      end do
+   end subroutine canonical_rows
+
+   pure function key_before(a, b) result(before)
+      !! Whether key `a` sorts strictly before key `b`, entry by entry
+      integer, intent(in) :: a(:), b(:)
+      logical :: before
+
+      integer :: j
+
+      before = .false.
+      do j = 1, size(a)
+         if (a(j) /= b(j)) then
+            before = a(j) < b(j)
+            return
+         end if
+      end do
+   end function key_before
+
+   pure subroutine order_keys(keys, order)
+      !! The permutation that sorts the rows of `keys`, by merging runs
+      integer, intent(in) :: keys(:, :)
+      integer(int64), allocatable, intent(out) :: order(:)
+
+      integer(int64), allocatable :: merged(:)
+      integer(int64) :: n, run, lo, mid, hi, left, right, slot
+
+      n = size(keys, 1, kind=int64)
+      allocate (order(n), merged(n))
+      do lo = 1_int64, n
+         order(lo) = lo
+      end do
+
+      run = 1_int64
+      do while (run < n)
+         lo = 1_int64
+         do while (lo <= n)
+            mid = min(lo + run - 1_int64, n)
+            hi = min(lo + 2_int64*run - 1_int64, n)
+            left = lo
+            right = mid + 1_int64
+            do slot = lo, hi
+               if (left > mid) then
+                  merged(slot) = order(right)
+                  right = right + 1_int64
+               else if (right > hi) then
+                  merged(slot) = order(left)
+                  left = left + 1_int64
+               else if (key_before(keys(order(right), :), keys(order(left), :))) then
+                  merged(slot) = order(right)
+                  right = right + 1_int64
+               else
+                  merged(slot) = order(left)
+                  left = left + 1_int64
+               end if
+            end do
+            lo = lo + 2_int64*run
+         end do
+         order = merged
+         run = 2_int64*run
+      end do
+   end subroutine order_keys
+
+   pure function has_key(keys, order, probe) result(found)
+      !! Whether `probe` equals a row of `keys`, which `order` sorts
+      integer, intent(in) :: keys(:, :), probe(:)
+      integer(int64), intent(in) :: order(:)
+      logical :: found
+
+      integer(int64) :: lo, hi, mid
+
+      found = .false.
+      lo = 1_int64
+      hi = size(order, kind=int64)
+      do while (lo <= hi)
+         mid = lo + (hi - lo)/2_int64
+         if (key_before(keys(order(mid), :), probe)) then
+            lo = mid + 1_int64
+         else if (key_before(probe, keys(order(mid), :))) then
+            hi = mid - 1_int64
+         else
+            found = .true.
+            return
+         end if
+      end do
+   end function has_key
+
+   pure function has_equal_rows(keys, order) result(equal)
+      !! Whether two rows of `keys`, sorted by `order`, name the same term
+      integer, intent(in) :: keys(:, :)
+      integer(int64), intent(in) :: order(:)
+      logical :: equal
+
+      integer(int64) :: i
+
+      equal = .false.
+      do i = 1_int64, size(order, kind=int64) - 1_int64
+         if (.not. key_before(keys(order(i), :), keys(order(i + 1_int64), :))) then
+            equal = .true.
+            return
+         end if
+      end do
+   end function has_equal_rows
+
+   pure function absolute_key(key) result(probe)
+      !! The key with every ghost made real again
+      integer, intent(in) :: key(:)
+      integer :: probe(size(key))
+
+      integer, allocatable :: entries(:)
+
+      entries = pack(abs(key), key /= 0)
+      call sort(entries)
+      probe = 0
+      probe(1:size(entries)) = entries
+   end function absolute_key
+
+   pure function without_entry(key, p) result(probe)
+      !! The key with its `p`-th entry removed
+      integer, intent(in) :: key(:)
+      integer, intent(in) :: p
+      integer :: probe(size(key))
+
+      probe = 0
+      probe(1:p - 1) = key(1:p - 1)
+      probe(p:size(key) - 1) = key(p + 1:size(key))
+   end function without_entry
+
+   pure function ghosted_entry(key, p) result(probe)
+      !! The key with its `p`-th entry made a ghost
+      integer, intent(in) :: key(:)
+      integer, intent(in) :: p
+      integer :: probe(size(key))
+
+      probe = key
+      probe(p) = -key(p)
+      call sort(probe(1:count(key /= 0)))
+   end function ghosted_entry
+
+   pure function full_basis_key(monomer, n_monomers, width) result(probe)
+      !! Monomer `monomer` real and every other monomer of the system ghosted
+      integer, intent(in) :: monomer, n_monomers, width
+      integer :: probe(width)
+
+      integer :: m
+
+      probe = 0
+      probe(1:n_monomers) = [(-m, m=1, n_monomers)]
+      probe(monomer) = monomer
+      call sort(probe(1:n_monomers))
+   end function full_basis_key
+
+   pure function names_whole_system(key, n_monomers) result(whole)
+      !! Whether the key names each of the system's monomers exactly once
+      integer, intent(in) :: key(:)
+      integer, intent(in) :: n_monomers
+      logical :: whole
+
+      integer :: m
+      integer :: named(size(key))
+
+      named = absolute_key(key)
+      whole = all(named(1:n_monomers) == [(m, m=1, n_monomers)])
+      if (size(key) > n_monomers) whole = whole .and. all(named(n_monomers + 1:) == 0)
+   end function names_whole_system
 
    pure function fragment_size_of(row) result(n)
       !! How many monomers a polymer row names, padding excluded

@@ -821,7 +821,7 @@ contains
       end do
    end subroutine set_optimization_constraints
 
-   subroutine check_counterpoise_support(driver_config, error)
+   subroutine check_counterpoise_support(driver_config, error, terms_supplied)
       !! Refuse a counterpoise request the chosen expansion cannot honour
       !!
       !! Counterpoise is carried by ghosted rows in the MBE term list and by
@@ -840,8 +840,15 @@ contains
       !!
       !! An unrecognised spelling is refused too: once it reaches the term list
       !! it cannot be told from `none`.
+      !!
+      !! A **supplied term list** is refused as well. It is used as the caller
+      !! wrote it, and the ghosted rows are built only by the driver's own list
+      !! generation, so counterpoise there would be ignored and an uncorrected
+      !! energy returned.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: terms_supplied
+         !! Whether the caller brought its own term list. Absent means not.
 
       character(len=:), allocatable :: scheme
 
@@ -872,6 +879,19 @@ contains
                         "expansion builds its own term list and would ignore the "// &
                         "request. Use the plain expansion, or drop counterpoise.")
          return
+      end if
+
+      if (present(terms_supplied)) then
+         if (terms_supplied) then
+            call error%set(ERROR_VALIDATION, &
+                           "counterpoise is not available with a supplied fragment "// &
+                           "list. A supplied list is used as given and the ghosted "// &
+                           "rows are built only when the driver generates the list, "// &
+                           "so the request would be ignored and an uncorrected energy "// &
+                           "returned. Let the driver generate the terms, or drop "// &
+                           "counterpoise.")
+            return
+         end if
       end if
 
       select case (driver_config%method_config%method_type)

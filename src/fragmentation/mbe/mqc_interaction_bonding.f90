@@ -31,8 +31,8 @@ module mqc_interaction_bonding
 
 contains
 
-   subroutine collect_interaction_bonding(polymers, fragment_count, reference, results, &
-                                          sys_geom, terms, error)
+   subroutine collect_interaction_bonding(polymers, fragment_count, reference, scheme, &
+                                          results, sys_geom, terms, error)
       !! One entry per real term holding the reference and another monomer
       !! whose result carries bonding rows, in term-list order
       !!
@@ -47,6 +47,8 @@ contains
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: reference
          !! Monomer number, 1-based
+      integer, intent(in) :: scheme
+         !! A `COUNTERPOISE_*` constant, which says what an auxiliary row is
       type(calculation_result_t), intent(in) :: results(:)
       type(system_geometry_t), intent(in) :: sys_geom
       type(interaction_bonding_term_t), allocatable, intent(out) :: terms(:)
@@ -67,7 +69,7 @@ contains
       allocate (picked(fragment_count))
       n_terms = 0
       do i = 1_int64, fragment_count
-         if (is_auxiliary_row(polymers(i, :))) cycle
+         if (is_auxiliary_row(polymers(i, :), scheme)) cycle
          if (.not. any(polymers(i, :) == reference)) cycle
          if (real_count_of(polymers(i, :)) < 2) cycle
          if (.not. results(i)%has_quao_rows) cycle

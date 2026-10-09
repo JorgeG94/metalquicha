@@ -36,6 +36,7 @@ module mqc_driver
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_config_types, only: bond_t, mqc_config_t
+   use mqc_combinatorics, only: counterpoise_scheme_of
    use mqc_scf_types, only: scf_numerics_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
@@ -552,7 +553,12 @@ contains
          ! Ahead of the branch, because each of the three expansions below
          ! ignores counterpoise in its own way and none of them says so.
          call validation_error%clear()
-         call check_counterpoise_support(config, validation_error)
+         ! A supplied list is refused here too: it never passes through
+         ! `generate_mbe_term_list`, which is where the ghosted rows are built,
+         ! so counterpoise would be dropped without a word.
+         call check_counterpoise_support(config, validation_error, &
+                                         terms_supplied=present(supplied_terms) .and. &
+                                         present(n_supplied_terms))
          if (validation_error%has_error()) then
             call logger%error(validation_error%get_message())
             call abort_comm(resources%mpi_comms%world_comm, 1)
@@ -936,6 +942,9 @@ contains
             ! Positive only for an interaction energy, whose reduced list
             ! `generate_mbe_term_list` has already built above.
             expansion%reference_fragment = config%reference_fragment
+            ! The scheme the list was built for, whichever path built it, so
+            ! `compute_mbe` can hold the rows to it.
+            expansion%counterpoise_scheme = counterpoise_scheme_of(config%counterpoise)
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes

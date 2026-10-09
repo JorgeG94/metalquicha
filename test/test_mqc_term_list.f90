@@ -15,7 +15,7 @@ module test_mqc_term_list
    !! the optimizer backend is set to.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_frag_utils, only: generate_mbe_term_list, get_nfrags, binomial, fragment_lookup_t
-   use mqc_combinatorics, only: is_auxiliary_row, real_count_of
+   use mqc_combinatorics, only: is_auxiliary_row, real_count_of, COUNTERPOISE_VMFC
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_adapter, only: driver_config_t
    use pic_types, only: dp, int64
@@ -232,7 +232,7 @@ contains
       n_aux = 0
       n_real = 0
       do i = 1, n_terms
-         if (is_auxiliary_row(polymers(i, :))) then
+         if (is_auxiliary_row(polymers(i, :), COUNTERPOISE_VMFC)) then
             n_aux = n_aux + 1
          else
             n_real = n_real + 1
@@ -247,7 +247,7 @@ contains
       ! Every auxiliary row must belong to a parent that is actually being
       ! computed, or it is subtracted from nothing.
       do i = 1, n_terms
-         if (.not. is_auxiliary_row(polymers(i, :))) cycle
+         if (.not. is_auxiliary_row(polymers(i, :), COUNTERPOISE_VMFC)) cycle
          call check(error, has_parent(polymers, n_terms, abs(polymers(i, :))), &
                     "a ghosted row has no parent n-mer in the list")
          if (allocated(error)) return
@@ -255,7 +255,7 @@ contains
 
       ! And no auxiliary row may be all-ghost: something has to be real.
       do i = 1, n_terms
-         if (.not. is_auxiliary_row(polymers(i, :))) cycle
+         if (.not. is_auxiliary_row(polymers(i, :), COUNTERPOISE_VMFC)) cycle
          call check(error, real_count_of(polymers(i, :)) >= 1, &
                     "a ghosted row with no real monomer is not a term")
          if (allocated(error)) return
@@ -289,7 +289,7 @@ contains
       n_pairs = 0
       n_aux = 0
       do i = 1, n_terms
-         if (is_auxiliary_row(polymers(i, :))) then
+         if (is_auxiliary_row(polymers(i, :), COUNTERPOISE_VMFC)) then
             n_aux = n_aux + 1
          else if (real_count_of(polymers(i, :)) == 2) then
             n_pairs = n_pairs + 1
@@ -322,7 +322,7 @@ contains
 
       has_parent = .false.
       do j = 1, n_terms
-         if (is_auxiliary_row(polymers(j, :))) cycle
+         if (is_auxiliary_row(polymers(j, :), COUNTERPOISE_VMFC)) cycle
          have = polymers(j, :)
          call ascending(have)
          if (all(have == want)) then

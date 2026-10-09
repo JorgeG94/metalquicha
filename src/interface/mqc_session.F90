@@ -28,7 +28,8 @@ module mqc_session
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_text
-   use mqc_config_adapter, only: driver_config_t, config_to_driver, get_logger_level
+   use mqc_config_adapter, only: driver_config_t, config_to_driver, get_logger_level, &
+                                 check_counterpoise_support
    use mqc_calc_types, only: CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS
    use mqc_method_factory, only: method_backend_built
    use mqc_method_types, only: method_type_to_string
@@ -269,6 +270,11 @@ contains
                         "through the mqc executable.")
          return
       end if
+
+      ! A counterpoise setting the expansion cannot honour, a caller's own term
+      ! list among them, which is used as given and never gets its ghosted rows.
+      call check_counterpoise_support(driver, error, terms_supplied=n_terms > 0)
+      if (error%has_error()) return
 
       call validate_system(sys_geom,.not. config%unchecked_input, error, &
                            check_bonds=allocated(sys_geom%bonds))
