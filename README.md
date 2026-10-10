@@ -315,3 +315,105 @@ an approximate answer is worse than none.
 
 Details, including density fitting and the current limitations, are in
 [the Python interface documentation](https://metalquicha.readthedocs.io/en/latest/python_interface.html).
+
+## Citing the software metalquicha builds on
+
+Metalquicha is a layer over other people's work. If you publish results from it,
+please cite the libraries your calculation used. Which ones that is depends on the
+build and the method. A Kohn-Sham run also logs the papers for its functional,
+read from libxc's own reference table.
+
+### Electronic structure
+
+- **libcint** (the integrals, `-DMQC_USE_LIBFINT=OFF`) and **libfint** (the
+  default, an all-Fortran port of libcint): Q. Sun, *J. Comput. Chem.* **36**, 1664
+  (2015), [doi:10.1002/jcc.23981](https://doi.org/10.1002/jcc.23981). Sources:
+  [libcint](https://github.com/JorgeG94/libcint),
+  [libfint](https://github.com/JorgeG94/libfint).
+- **libxc** (exchange-correlation functionals): S. Lehtola, C. Steigemann,
+  M. J. T. Oliveira and M. A. L. Marques, *SoftwareX* **7**, 1 (2018),
+  [doi:10.1016/j.softx.2017.11.002](https://doi.org/10.1016/j.softx.2017.11.002).
+  Cite the functional's own papers as well.
+- **tblite** (GFN1-xTB and GFN2-xTB; [source](https://github.com/tblite/tblite)):
+  - GFN2-xTB: C. Bannwarth, S. Ehlert and S. Grimme, *J. Chem. Theory Comput.*
+    **15**, 1652 (2019),
+    [doi:10.1021/acs.jctc.8b01176](https://doi.org/10.1021/acs.jctc.8b01176).
+  - GFN1-xTB: S. Grimme, C. Bannwarth and P. Shushkov, *J. Chem. Theory Comput.*
+    **13**, 1989 (2017),
+    [doi:10.1021/acs.jctc.7b00118](https://doi.org/10.1021/acs.jctc.7b00118).
+  - The xTB family: C. Bannwarth, E. Caldeweyher, S. Ehlert, A. Hansen,
+    P. Pracht, J. Seibert, S. Spicher and S. Grimme, *WIREs Comput. Mol. Sci.*
+    **11**, e1493 (2021), [doi:10.1002/wcms.1493](https://doi.org/10.1002/wcms.1493).
+- **simple-dftd3** (D3 dispersion; [source](https://github.com/dftd3/simple-dftd3)):
+  - D3: S. Grimme, J. Antony, S. Ehrlich and H. Krieg, *J. Chem. Phys.* **132**,
+    154104 (2010), [doi:10.1063/1.3382344](https://doi.org/10.1063/1.3382344).
+  - Becke-Johnson damping: S. Grimme, S. Ehrlich and L. Goerigk,
+    *J. Comput. Chem.* **32**, 1456 (2011),
+    [doi:10.1002/jcc.21759](https://doi.org/10.1002/jcc.21759).
+- **dftd4** (D4 dispersion; [source](https://github.com/dftd4/dftd4)):
+  - E. Caldeweyher, C. Bannwarth and S. Grimme, *J. Chem. Phys.* **147**, 034112
+    (2017), [doi:10.1063/1.4993215](https://doi.org/10.1063/1.4993215).
+  - E. Caldeweyher, S. Ehlert, A. Hansen, H. Neugebauer, S. Spicher, C. Bannwarth
+    and S. Grimme, *J. Chem. Phys.* **150**, 154122 (2019),
+    [doi:10.1063/1.5090222](https://doi.org/10.1063/1.5090222).
+  - E. Caldeweyher, J.-M. Mewes, S. Ehlert and S. Grimme, *Phys. Chem. Chem.
+    Phys.* **22**, 8499 (2020),
+    [doi:10.1039/D0CP00502A](https://doi.org/10.1039/D0CP00502A).
+- **cuEST** (the GPU backend): NVIDIA's library, linked from a local install.
+
+### Geometry and conformers
+
+- **DL-FIND** (geometry optimisation, through
+  [libdlfind](https://github.com/JorgeG94/libdlfind)): J. Kästner, J. M. Carr,
+  T. W. Keal, W. Thiel, A. Wander and P. Sherwood, *J. Phys. Chem. A* **113**,
+  11856 (2009), [doi:10.1021/jp9028968](https://doi.org/10.1021/jp9028968).
+- **CREST** (conformer search; [source](https://github.com/JorgeG94/crest)):
+  - P. Pracht, F. Bohle and S. Grimme, *Phys. Chem. Chem. Phys.* **22**, 7169
+    (2020), [doi:10.1039/C9CP06869D](https://doi.org/10.1039/C9CP06869D).
+  - P. Pracht *et al.*, *J. Chem. Phys.* **160**, 114110 (2024),
+    [doi:10.1063/5.0197592](https://doi.org/10.1063/5.0197592).
+
+### Data
+
+- **Basis Set Exchange** (every basis set extracted into `basis_sets/`, and the
+  6-311++G(3df,2p) under `basis_sets/pople/`, which is generated from one of them):
+  - B. P. Pritchard, D. Altarawy, B. Didier, T. D. Gibson and T. L. Windus,
+    *J. Chem. Inf. Model.* **59**, 4814 (2019),
+    [doi:10.1021/acs.jcim.9b00725](https://doi.org/10.1021/acs.jcim.9b00725).
+  - D. Feller, *J. Comput. Chem.* **17**, 1571 (1996).
+  - K. L. Schuchardt, B. T. Didier, T. Elsethagen, L. Sun, V. Gurumoorthi,
+    J. Chase, J. Li and T. L. Windus, *J. Chem. Inf. Model.* **47**, 1045 (2007),
+    [doi:10.1021/ci600510j](https://doi.org/10.1021/ci600510j).
+- **AAMBS**, the minimal basis the QUAO analysis projects onto, transcribed from
+  GAMESS: G. M. J. Barca *et al.*, *J. Chem. Phys.* **152**, 154102 (2020),
+  [doi:10.1063/5.0005188](https://doi.org/10.1063/5.0005188). Its exponents' own
+  sources are listed in `basis_sets/aambs/PROVENANCE.md`.
+- **MINAO**, the minimal basis of the `minao` initial guess, taken from PySCF's
+  copy of ANO-RCC: B. O. Roos, R. Lindh, P.-Å. Malmqvist, V. Veryazov and
+  P.-O. Widmark, *J. Phys. Chem. A* **108**, 2851 (2004) and **109**, 6575 (2005).
+  See `tools/minao/gen_minao_basis.py`.
+- **Nuclear basis sets** for NEO (PB4-D to PB6-H): Q. Yu, F. Pavošević and
+  S. Hammes-Schiffer, *J. Chem. Phys.* **152**, 244123 (2020). See
+  `basis_sets/neo/PROVENANCE.md`.
+
+### Validation
+
+The reference numbers in `validation/` come from **PySCF**:
+Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020),
+[doi:10.1063/5.0006074](https://doi.org/10.1063/5.0006074), and Q. Sun *et al.*,
+*WIREs Comput. Mol. Sci.* **8**, e1340 (2018),
+[doi:10.1002/wcms.1340](https://doi.org/10.1002/wcms.1340). The NEO references come
+from [Yang Yang's PySCF fork](https://github.com/theorychemyang/pyscf).
+
+### Infrastructure
+
+- **LAPACK** and a BLAS: E. Anderson *et al.*, *LAPACK Users' Guide*, 3rd ed.
+  (SIAM, 1999), [doi:10.1137/1.9780898719604](https://doi.org/10.1137/1.9780898719604).
+- **HDF5** (derivative checkpoints, optional): The HDF Group,
+  [Hierarchical Data Format, version 5](https://www.hdfgroup.org/solutions/hdf5/).
+- [json-fortran](https://github.com/jacobwilliams/json-fortran) (input and
+  output), [test-drive](https://github.com/fortran-lang/test-drive) (the unit
+  tests), and [pic](https://github.com/JorgeG94/pic),
+  [pic-mpi](https://github.com/JorgeG94/pic-mpi) and
+  [pic-blas](https://github.com/JorgeG94/pic-blas) (utilities, MPI and BLAS
+  layers).
