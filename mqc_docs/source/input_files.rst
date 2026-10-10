@@ -407,6 +407,19 @@ Named to `libxc <https://libxc.gitlab.io/>`_, so a functional is available by it
 libxc name -- ``gga_x_pbe``, ``hyb_gga_xc_b3lyp``, ``mgga_c_tpss`` and most of the
 several thousand others. Nothing here shadows that list.
 
+**What to cite comes from libxc too.** A Kohn-Sham run logs, at the default
+``info`` level and under its ``functional:`` line, the papers libxc records for
+every component of the functional, each with its DOI and each paper once::
+
+    functional: b3lyp, grid level 3
+    functional references (from libxc):
+      [B3LYP] P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch,  J. Phys. Chem. 98, 11623 (1994), doi:10.1021/j100096a001
+
+These are read through libxc's own reference API, so they follow whichever libxc
+the build linked. A double hybrid is assembled here from libxc components with
+weights of its own, so its list names the components' papers and not the paper
+that defined the double hybrid.
+
 **Range-separated hybrids are supported** -- CAM-B3LYP and the ωB97 family split
 their exchange into short and long range over an erf-attenuated kernel, and libcint
 computes those integrals from the same entry points with a range parameter set. So

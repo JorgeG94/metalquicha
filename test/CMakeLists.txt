@@ -378,6 +378,12 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_uks)
   target_link_libraries(test_mqc_czt_uks PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The papers libxc records for a functional, read through its own reference
+  # API: each component's list walked to the end, and a shared paper listed
+  # once.
+  addtest(mqc_xc_references)
+  target_link_libraries(test_mqc_xc_references PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The batched Fock build's decomposition, as three pure functions rather than
   # through an SCF. `pair_degeneracy` wrong by two is a Fock matrix wrong on its
   # diagonal blocks only; `pair_work_order` dropping a task is a missing block.

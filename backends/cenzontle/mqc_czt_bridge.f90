@@ -37,7 +37,8 @@ module mqc_czt_bridge
                                   CONV_METRIC_ENERGY
    use mqc_czt_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                    guess_display_name
-   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, xc_reference_t, &
+                         xc_functional_references
    use mqc_czt_ov_hessian, only: stability_result_t
    use mqc_czt_native_stability, only: native_scf_stability
    use mqc_czt_ecp, only: ECP_AVAILABLE
@@ -1158,6 +1159,8 @@ contains
       real(dp) :: ieda_formation
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
+      type(xc_reference_t), allocatable :: xc_refs(:)
+      integer :: iref
       logical :: kohn_sham
       type(timer_type) :: grad_clock
       real(dp), allocatable :: scf_b_ao(:, :)
@@ -1411,6 +1414,19 @@ contains
                   ", grid level ", settings%grid_level
             end if
             call logger%info(trim(line))
+            ! What to cite for the functional, as libxc records it rather than
+            ! as anyone here remembers it.
+            call xc_functional_references(xc, xc_refs)
+            if (size(xc_refs) > 0) call logger%info("  functional references (from libxc):")
+            do iref = 1, size(xc_refs)
+               if (len(xc_refs(iref)%doi) > 0) then
+                  call logger%info("    ["//xc_refs(iref)%functional//"] "// &
+                                   xc_refs(iref)%citation//", doi:"//xc_refs(iref)%doi)
+               else
+                  call logger%info("    ["//xc_refs(iref)%functional//"] "// &
+                                   xc_refs(iref)%citation)
+               end if
+            end do
          end if
          ! A double hybrid's perturbative term is an MP2 on top of the
          ! reference, and correlation over a solvated reference is refused

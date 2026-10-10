@@ -41,6 +41,9 @@ module mqc_czt_xc
                            xc_f03_lda_fxc, xc_f03_gga_fxc, xc_f03_mgga_fxc, &
                            xc_f03_lda_kxc, xc_f03_gga_kxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
+                           xc_f03_func_info_get_name, xc_f03_func_info_get_references, &
+                           xc_f03_func_reference_t, xc_f03_func_reference_get_ref, &
+                           xc_f03_func_reference_get_doi, &
                            XC_UNPOLARIZED, XC_POLARIZED, &
                            XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
                            XC_FAMILY_GGA, XC_FAMILY_HYB_GGA, &
@@ -65,6 +68,8 @@ module mqc_czt_xc
 
    public :: xc_context_t
    public :: xc_context_create
+   public :: xc_reference_t
+   public :: xc_functional_references
    public :: xc_add_potential
    public :: xc_add_potential_uks
    public :: xc_available
@@ -369,6 +374,16 @@ module mqc_czt_xc
       procedure :: destroy => xc_kernel_cache_uks_destroy
    end type xc_kernel_cache_uks_t
 
+   type :: xc_reference_t
+      !! One paper libxc names for a component of the functional
+      character(len=:), allocatable :: functional
+         !! libxc's name for the component, e.g. "Becke 88"
+      character(len=:), allocatable :: citation
+         !! The reference as libxc formats it: authors, journal, volume, page
+      character(len=:), allocatable :: doi
+         !! Empty when libxc gives none
+   end type xc_reference_t
+
 contains
 
    pure function xc_available() result(available)
@@ -380,6 +395,50 @@ contains
       available = .false.
 #endif
    end function xc_available
+
+   subroutine xc_functional_references(ctx, refs)
+      !! The papers behind every libxc component of `ctx`'s functional, as libxc
+      !! itself lists them, in component order and each paper once
+      !!
+      !! A paper two components share (a hybrid and the GGA inside it, say) is
+      !! listed under the first. The weights a double hybrid adds on top of its
+      !! components are this code's own and have no entry here.
+      type(xc_context_t), intent(in) :: ctx
+      type(xc_reference_t), allocatable, intent(out) :: refs(:)
+         !! Empty for a build without libxc or a context with no components
+#ifdef MQC_WITH_LIBXC
+      type(xc_f03_func_info_t) :: info
+      type(xc_f03_func_reference_t) :: ref
+      type(xc_reference_t) :: entry
+      character(len=:), allocatable :: name
+      integer :: i, k, number
+      logical :: seen
+
+      allocate (refs(0))
+      do i = 1, ctx%n_func
+         info = xc_f03_func_get_info(ctx%func(i))
+         name = trim(xc_f03_func_info_get_name(info))
+         ! libxc's own idiom: `number` starts at 0, comes back as the next
+         ! index while there is one, and as -1 after the last.
+         number = 0
+         do while (number >= 0)
+            ref = xc_f03_func_info_get_references(info, number)
+            entry%functional = name
+            entry%citation = trim(xc_f03_func_reference_get_ref(ref))
+            entry%doi = trim(xc_f03_func_reference_get_doi(ref))
+            seen = .false.
+            do k = 1, size(refs)
+               if (refs(k)%citation == entry%citation) seen = .true.
+            end do
+            if (.not. seen) refs = [refs, entry]
+         end do
+      end do
+#else
+      associate (unused_ctx => ctx)
+      end associate
+      allocate (refs(0))
+#endif
+   end subroutine xc_functional_references
 
    subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
                                 screen_tol, point_block, nlc_level, allow_half, &
