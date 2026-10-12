@@ -799,6 +799,18 @@ which is not what the residual means. **A pair beyond ``resdim``** is
 decomposed for free -- ``ees`` is its whole term, ``eex`` and ``ect_mix``
 exactly zero, no extra Fock build.
 
+**Only pairs are decomposed, at any level.** Under FMO3 (``"level": 3``) the
+pair table is the one FMO2 produces: FMO3 adds trimer corrections on top of the
+same monomers and dimers, so no pair's ``ees``, ``eex`` or ``ect_mix`` changes.
+The three-body correction goes into the total energy (``level_sums``) and is not
+split into PIEDA terms, so at FMO3 the pair rows no longer add up to the
+interaction energy. What FMO3 does change is the ``resdim`` default, ``0``
+instead of ``2.0``: every pair is solved and decomposed rather than taken as
+electrostatics, which FMO2 gives as well with ``resdim`` set to ``0``. For the
+decomposition alone, FMO2 is the run to make. Where the three-body term matters,
+as it can around charged fragments, report it beside the PIEDA table as one
+undecomposed number.
+
 **A pair next to a cut bond** -- not itself connected, but one of its
 monomers is cut elsewhere and so holds a frozen virtual -- is decomposed too,
 and ``keywords.fragmentation.pieda_hl`` picks how the union state accounts for
