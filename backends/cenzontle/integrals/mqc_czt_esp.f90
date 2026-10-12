@@ -7,25 +7,25 @@ module mqc_czt_esp
    !! charge-penetration screening fit is fitted to.
    !!
    !! **libcint's grid integral is shaped differently from its other one-electron
-   !! integrals, in three ways that all have to be right at once.**
+   !! integrals, in two ways that both have to be right at once.**
    !!
    !!   * The points live in `env`, at the offset stored in `env(PTR_GRIDS)` --
    !!     an offset into `env` itself, not a coordinate. `PTR_GRIDS` is 12 and,
    !!     like `PTR_COMMON_ORIG` and `PTR_RANGE_OMEGA`, is one of libcint's own
-   !!     0-based slot constants that the Fortran interface neither converts nor
-   !!     exports, so it carries a `+ 1` and a local parameter here.
+   !!     0-based slot constants that the Fortran interface does not convert, so it
+   !!     carries a `+ 1`. `LIBCINT_PTR_GRIDS` comes from `mqc_czt_cint_compat`.
    !!   * The grid range is passed in `shls`, which is four long rather than two:
    !!     `[ish, jsh, first_grid, last_grid]`, and libcint takes
    !!     `ngrids = shls(4) - shls(3)`.
-   !!   * The signature has ten arguments, not seven -- `dims`, an optimizer and a
-   !!     cache join the usual list. All three are passed null: null `dims` means
-   !!     the natural block shape, there is no optimizer for this integral, and a
-   !!     null cache makes libcint allocate and free its own.
    use pic_types, only: dp
-   use, intrinsic :: iso_c_binding, only: c_int, c_double, c_ptr, c_loc, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG
+   use mqc_czt_cint_compat, only: LIBCINT_PTR_GRIDS, &
+                                  libcint_1e_grids_cart, libcint_1e_grids_sph, &
+                                  libcint_1e_drinv_cart, libcint_1e_drinv_sph, &
+                                  libcint_1e_ipiprinv_cart, libcint_1e_ipiprinv_sph, &
+                                  libcint_1e_iprinvip_cart, libcint_1e_iprinvip_sph
    implicit none
    private
 
@@ -33,110 +33,6 @@ module mqc_czt_esp
    public :: esp_contract
    public :: drinv_matrices
    public :: ddrinv_matrices
-
-   ! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran interface,
-   ! and 0-based like every other `PTR_*`, so it is used as `+ 1`.
-   ! TODO(mqc): `mqc_czt_pcm` declares the same slot number under the same
-   ! name. Two spellings of one constant, which is what MQC002 exists to prevent.
-   integer, parameter :: LIBCINT_PTR_GRIDS = 12
-
-   interface
-      function cint1e_grids_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                cache) result(ret) bind(C, name="int1e_grids_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_grids_sph
-
-      function cint1e_grids_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                 cache) result(ret) bind(C, name="int1e_grids_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_grids_cart
-
-      function cint1e_drinv_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                cache) result(ret) bind(C, name="int1e_drinv_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_drinv_sph
-
-      function cint1e_drinv_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                 cache) result(ret) bind(C, name="int1e_drinv_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_drinv_cart
-
-      function cint1e_ipiprinv_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                   cache) result(ret) bind(C, name="int1e_ipiprinv_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_ipiprinv_sph
-
-      function cint1e_ipiprinv_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                    cache) result(ret) bind(C, name="int1e_ipiprinv_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_ipiprinv_cart
-
-      function cint1e_iprinvip_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                   cache) result(ret) bind(C, name="int1e_iprinvip_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_iprinvip_sph
-
-      function cint1e_iprinvip_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                    cache) result(ret) bind(C, name="int1e_iprinvip_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_iprinvip_cart
-   end interface
 
 contains
 
@@ -151,16 +47,16 @@ contains
       !! contracting as the blocks come out needs the grid vector and nothing
       !! else. Use the matrices when they are needed more than once.
       use omp_lib, only: omp_get_max_threads
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: grids(:, :)          !! (3, n_points), Bohr
       real(dp), intent(in) :: density(:, :)        !! AO density
       real(dp), allocatable, intent(out) :: values(:)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: env_local(:), buf(:)
+      real(dp), allocatable :: env_local(:), buf(:)
       real(dp), allocatable :: local(:)
       integer, allocatable :: pair_i(:), pair_j(:)
-      integer, target :: shls(4)
+      integer :: shls(4)
       integer :: ish, jsh, di, dj, i, j, g, ret, io, jo, block_max, n_grid
       integer :: grid_offset, n_pair, p
       real(dp) :: dij, wt
@@ -228,15 +124,11 @@ contains
          shls = [ish - 1, jsh - 1, 0, n_grid]
 
          if (mol%cartesian) then
-            ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                    c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                    mol%nbas, c_loc(env_local), c_null_ptr, &
-                                    c_null_ptr)
+            ret = libcint_1e_grids_cart(buf, shls, mol%atm, mol%natm, &
+                                        mol%bas, mol%nbas, env_local)
          else
-            ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                   c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                   mol%nbas, c_loc(env_local), c_null_ptr, &
-                                   c_null_ptr)
+            ret = libcint_1e_grids_sph(buf, shls, mol%atm, mol%natm, &
+                                       mol%bas, mol%nbas, env_local)
          end if
          if (ret == 0) cycle
 
@@ -282,13 +174,13 @@ contains
       !!
       !! Unlike the grid integral this takes **one centre per call**, in
       !! `env(PTR_RINV_ORIG)`, so `env` is rewritten per centre.
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: centres(:, :)        !! (3, n_centres), Bohr
       real(dp), allocatable, intent(out) :: matrices(:, :, :, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: buf(:), env_local(:)
-      integer, target :: shls(2)
+      real(dp), allocatable :: buf(:), env_local(:)
+      integer :: shls(2)
       integer :: ish, jsh, di, dj, i, j, c, x, ret, io, jo, block_max, n_centre
 
       if (size(centres, 1) /= 3) then
@@ -323,15 +215,11 @@ contains
                shls = [ish - 1, jsh - 1]
 
                if (mol%cartesian) then
-                  ret = cint1e_drinv_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                          c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                          mol%nbas, c_loc(env_local), c_null_ptr, &
-                                          c_null_ptr)
+                  ret = libcint_1e_drinv_cart(buf, shls, mol%atm, mol%natm, &
+                                              mol%bas, mol%nbas, env_local)
                else
-                  ret = cint1e_drinv_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                         c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                         mol%nbas, c_loc(env_local), c_null_ptr, &
-                                         c_null_ptr)
+                  ret = libcint_1e_drinv_sph(buf, shls, mol%atm, mol%natm, &
+                                             mol%bas, mol%nbas, env_local)
                end if
                if (ret == 0) cycle      ! screened away, leave the block zero
 
@@ -379,13 +267,13 @@ contains
       !!
       !! `test_mqc_czt_esp` requires this to reproduce a second difference of
       !! `esp_matrices`.
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: centres(:, :)        !! (3, n_centres), Bohr
       real(dp), allocatable, intent(out) :: matrices(:, :, :, :, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: buf_pp(:), buf_pip(:), env_local(:)
-      integer, target :: shls(2)
+      real(dp), allocatable :: buf_pp(:), buf_pip(:), env_local(:)
+      integer :: shls(2)
       integer :: ish, jsh, di, dj, i, j, c, a, b, io, jo, block_max, n_centre
       integer :: slot, ret_pp, ret_pip
 
@@ -425,23 +313,15 @@ contains
                ! screened away. Chaining them on one return code would drop a live
                ! contribution whenever the other one happened to be screened.
                if (mol%cartesian) then
-                  ret_pp = cint1e_ipiprinv_cart(c_loc(buf_pp), c_null_ptr, c_loc(shls), &
-                                                c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                                mol%nbas, c_loc(env_local), c_null_ptr, &
-                                                c_null_ptr)
-                  ret_pip = cint1e_iprinvip_cart(c_loc(buf_pip), c_null_ptr, c_loc(shls), &
-                                                 c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                                 mol%nbas, c_loc(env_local), c_null_ptr, &
-                                                 c_null_ptr)
+                  ret_pp = libcint_1e_ipiprinv_cart(buf_pp, shls, mol%atm, mol%natm, &
+                                                    mol%bas, mol%nbas, env_local)
+                  ret_pip = libcint_1e_iprinvip_cart(buf_pip, shls, mol%atm, mol%natm, &
+                                                     mol%bas, mol%nbas, env_local)
                else
-                  ret_pp = cint1e_ipiprinv_sph(c_loc(buf_pp), c_null_ptr, c_loc(shls), &
-                                               c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                               mol%nbas, c_loc(env_local), c_null_ptr, &
-                                               c_null_ptr)
-                  ret_pip = cint1e_iprinvip_sph(c_loc(buf_pip), c_null_ptr, c_loc(shls), &
-                                                c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                                mol%nbas, c_loc(env_local), c_null_ptr, &
-                                                c_null_ptr)
+                  ret_pp = libcint_1e_ipiprinv_sph(buf_pp, shls, mol%atm, mol%natm, &
+                                                   mol%bas, mol%nbas, env_local)
+                  ret_pip = libcint_1e_iprinvip_sph(buf_pip, shls, mol%atm, mol%natm, &
+                                                    mol%bas, mol%nbas, env_local)
                end if
                if (ret_pp == 0 .and. ret_pip == 0) cycle
                if (ret_pp == 0) buf_pp = 0.0_dp
@@ -483,13 +363,13 @@ contains
       !! Returns `(n_ao, n_ao, n_points)`. Contract with a density and negate to get
       !! the electronic potential; the nuclear part is `sum_A Z_A/|R_g - R_A|` and is
       !! the caller's, since a screening fit wants the electronic part alone.
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: grids(:, :)          !! (3, n_points), Bohr
       real(dp), allocatable, intent(out) :: matrices(:, :, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: buf(:), env_local(:)
-      integer, target :: shls(4)
+      real(dp), allocatable :: buf(:), env_local(:)
+      integer :: shls(4)
       integer :: ish, jsh, di, dj, i, j, g, ret, io, jo, block_max, n_grid
       integer :: grid_offset
 
@@ -534,15 +414,11 @@ contains
             shls = [ish - 1, jsh - 1, 0, n_grid]
 
             if (mol%cartesian) then
-               ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                       c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                       mol%nbas, c_loc(env_local), c_null_ptr, &
-                                       c_null_ptr)
+               ret = libcint_1e_grids_cart(buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, env_local)
             else
-               ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                      c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                      mol%nbas, c_loc(env_local), c_null_ptr, &
-                                      c_null_ptr)
+               ret = libcint_1e_grids_sph(buf, shls, mol%atm, mol%natm, &
+                                          mol%bas, mol%nbas, env_local)
             end if
             if (ret == 0) cycle      ! screened away, leave the block zero
 

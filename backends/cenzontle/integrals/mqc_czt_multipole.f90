@@ -7,12 +7,9 @@ module mqc_czt_multipole
    !! same shell-pair machinery as the overlap with one extra factor -- so this
    !! module is bindings and bookkeeping, not new integral code.
    !!
-   !! **The entry points are declared here rather than imported.** The Fortran
-   !! interface shipped with the libcint fork does not wrap the multipoles, so the
-   !! three `bind(C)` interfaces are declared locally. The signature is the same
-   !! seven-argument form the fork's own wrappers use, except that the array
-   !! arguments are `type(c_ptr), value` passed through `c_loc` rather than
-   !! assumed-size dummies, which FORTRAN_STYLE prohibits.
+   !! The entry points are `libcint_1e_r_*`, `_rr_*`, `_rrr_*` and `_irp_*`,
+   !! imported from `mqc_czt_cint_compat`: libfint's own procedures in the default
+   !! build, and declarations against libcint's CINT2 entry points in a libcint one.
    !!
    !! **The origin is passed through `env`, and that is the trap.** libcint reads
    !! it from `env(PTR_COMMON_ORIG)`, and the slot constants are libcint's own
@@ -22,10 +19,13 @@ module mqc_czt_multipole
    !! happened to be in the neighbouring slot, which for a neutral molecule's
    !! dipole is the right answer anyway and for every quadrupole is not.
    use pic_types, only: dp
-   use, intrinsic :: iso_c_binding, only: c_int, c_double, c_ptr, c_loc
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_PTR_COMMON_ORIG, LIBCINT_ATOM_OF
+   use mqc_czt_cint_compat, only: libcint_1e_r_cart, libcint_1e_r_sph, &
+                                  libcint_1e_rr_cart, libcint_1e_rr_sph, &
+                                  libcint_1e_rrr_cart, libcint_1e_rrr_sph, &
+                                  libcint_1e_irp_cart, libcint_1e_irp_sph
    implicit none
    private
 
@@ -57,120 +57,6 @@ module mqc_czt_multipole
    integer, parameter :: QUADRUPOLE_COMPONENTS = 9
    integer, parameter :: OCTOPOLE_COMPONENTS = 27
 
-   interface
-      function cint1e_r_sph(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_r_sph")
-         import :: c_double, c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_r_sph
-
-      function cint1e_irp_sph(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_irp_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_irp_sph
-
-      function cint1e_irp_cart(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_irp_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_irp_cart
-
-      function cint1e_r_cart(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_r_cart")
-         import :: c_double, c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_r_cart
-
-      function cint1e_rr_sph(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_rr_sph")
-         import :: c_double, c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_rr_sph
-
-      function cint1e_rr_cart(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_rr_cart")
-         import :: c_double, c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_rr_cart
-
-      function cint1e_rrr_sph(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_rrr_sph")
-         import :: c_double, c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_rrr_sph
-
-      function cint1e_rrr_cart(buf, shls, atm, natm, bas, nbas, env) result(ret) &
-         bind(C, name="cint1e_rrr_cart")
-         import :: c_double, c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf
-         type(c_ptr), value, intent(in) :: shls
-         type(c_ptr), value, intent(in) :: atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env
-         integer(c_int) :: ret
-      end function cint1e_rrr_cart
-   end interface
-
 contains
 
    subroutine multipole_matrices(mol, origin, order, matrices, error)
@@ -180,8 +66,7 @@ contains
       !! produces them: x,y,z for the dipole; xx,xy,xz,yx,...,zz for the
       !! quadrupole; and the 27 of the octopole with z fastest. The *full*
       !! Cartesian tensor, not the unique components.
-      type(czt_molecule_t), intent(in), target :: mol
-         !! `target` so its atm/bas/env can be addressed for the C call.
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: origin(3)
          !! Expansion origin, Bohr. A dipole is origin-independent only for a
          !! neutral charge distribution; every higher moment depends on it, so
@@ -190,8 +75,8 @@ contains
       real(dp), allocatable, intent(out) :: matrices(:, :, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: buf(:), env_local(:)
-      integer, target :: shls(2)
+      real(dp), allocatable :: buf(:), env_local(:)
+      integer :: shls(2)
       integer :: ish, jsh, di, dj, i, j, k, ret, io, jo, block_max, n_comp
       character(len=8) :: order_text
 
@@ -239,26 +124,26 @@ contains
             if (mol%cartesian) then
                select case (order)
                case (1)
-                  ret = cint1e_r_cart(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                      c_loc(mol%bas), mol%nbas, c_loc(env_local))
+                  ret = libcint_1e_r_cart(buf, shls, mol%atm, mol%natm, &
+                                          mol%bas, mol%nbas, env_local)
                case (2)
-                  ret = cint1e_rr_cart(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                       c_loc(mol%bas), mol%nbas, c_loc(env_local))
+                  ret = libcint_1e_rr_cart(buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, env_local)
                case default
-                  ret = cint1e_rrr_cart(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                        c_loc(mol%bas), mol%nbas, c_loc(env_local))
+                  ret = libcint_1e_rrr_cart(buf, shls, mol%atm, mol%natm, &
+                                            mol%bas, mol%nbas, env_local)
                end select
             else
                select case (order)
                case (1)
-                  ret = cint1e_r_sph(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                     c_loc(mol%bas), mol%nbas, c_loc(env_local))
+                  ret = libcint_1e_r_sph(buf, shls, mol%atm, mol%natm, &
+                                         mol%bas, mol%nbas, env_local)
                case (2)
-                  ret = cint1e_rr_sph(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                      c_loc(mol%bas), mol%nbas, c_loc(env_local))
+                  ret = libcint_1e_rr_sph(buf, shls, mol%atm, mol%natm, &
+                                          mol%bas, mol%nbas, env_local)
                case default
-                  ret = cint1e_rrr_sph(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                       c_loc(mol%bas), mol%nbas, c_loc(env_local))
+                  ret = libcint_1e_rrr_sph(buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, env_local)
                end select
             end if
             if (ret == 0) cycle   ! screened away, leave the block zero
@@ -302,7 +187,7 @@ contains
       !! matrix. `test_mqc_dipole_deriv` settles it by differencing
       !! `multipole_matrices` numerically, which is the only reading of the
       !! layout that cannot be wrong about the convention.
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: origin(3)
          !! Where `r` is measured from. A dipole *derivative* is
          !! origin-independent for any molecule, neutral or not -- translating
@@ -313,8 +198,8 @@ contains
       type(error_t), intent(inout) :: error
 
       integer, parameter :: IRP_COMPONENTS = 9
-      real(dp), allocatable, target :: buf(:), env_local(:)
-      integer, target :: shls(2)
+      real(dp), allocatable :: buf(:), env_local(:)
+      integer :: shls(2)
       integer :: ish, jsh, di, dj, i, j, a, b, k, ret, io, jo, block_max
       integer :: jatom
 
@@ -349,11 +234,11 @@ contains
             shls = [ish - 1, jsh - 1]
 
             if (mol%cartesian) then
-               ret = cint1e_irp_cart(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                     c_loc(mol%bas), mol%nbas, c_loc(env_local))
+               ret = libcint_1e_irp_cart(buf, shls, mol%atm, mol%natm, &
+                                         mol%bas, mol%nbas, env_local)
             else
-               ret = cint1e_irp_sph(c_loc(buf), c_loc(shls), c_loc(mol%atm), mol%natm, &
-                                    c_loc(mol%bas), mol%nbas, c_loc(env_local))
+               ret = libcint_1e_irp_sph(buf, shls, mol%atm, mol%natm, &
+                                        mol%bas, mol%nbas, env_local)
             end if
             if (ret == 0) cycle   ! screened away, leave the block zero
 

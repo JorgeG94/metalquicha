@@ -6,6 +6,7 @@ target_sources(
           mqc_czt_ecp.F90
           mqc_czt_screening.f90
           mqc_czt_direct.f90
+          mqc_czt_cint_compat.F90
           mqc_czt_hess_ints.f90
           mqc_czt_multipole.f90
           mqc_czt_esp.f90

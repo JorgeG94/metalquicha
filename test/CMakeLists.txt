@@ -141,7 +141,8 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_quao)
   target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
   # Second derivatives, the response solve and the assembled Hessian. Runs on
-  # either backend now that the entry points are reached through the C ABI.
+  # either backend now that the entry points are reached through
+  # mqc_czt_cint_compat.
   addtest(mqc_hess_ints)
   target_link_libraries(test_mqc_hess_ints PRIVATE cint_fortran cint)
   # The exchange-correlation Hessian, against differences of its own gradient.
