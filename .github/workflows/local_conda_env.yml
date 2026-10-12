@@ -4,7 +4,19 @@ name: Build MQC using local conda env (MPI, OpenMP, BLAS)
 # merges. There is no `pull_request` trigger here, so there is no PR event to
 # hang a pre-merge gate on; adding one would change when CI fires for every
 # branch, which is a bigger decision than this change.
-on: [push, workflow_dispatch]
+on:
+  push:
+    # Documentation alone builds nothing and tests nothing, so a change that
+    # touches only these does not start this workflow. Anything else does,
+    # including a file type nobody listed here -- the list names what is safe to
+    # skip, not what is needed to build.
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.rst"
+      - "mqc_docs/**"
+      - "**/*.png"
+      - "LICENSE"
+  workflow_dispatch:
 
 # One build per branch. A push supersedes the one before it on the same branch,
 # and the superseded run is cancelled rather than left to finish work nobody

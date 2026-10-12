@@ -5,6 +5,18 @@ on:
     branches: ["*"]
   pull_request:
     branches: ["*"]
+    # Documentation alone builds nothing and tests nothing, so a change that
+    # touches only these does not start this workflow. Anything else does,
+    # including a file type nobody listed here -- the list names what is safe to
+    # skip, not what is needed to build. Only the pull request is filtered: the
+    # push to `main` always runs, for the reason the concurrency comment below
+    # gives -- every later pull request is compared against its report.
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.rst"
+      - "mqc_docs/**"
+      - "**/*.png"
+      - "LICENSE"
   workflow_dispatch:
 
 # Supersede a branch's own earlier run, but never a run on `main`.
