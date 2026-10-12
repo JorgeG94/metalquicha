@@ -28,8 +28,8 @@
 # nothing else provides: libcint has no ECP code at all, so `mqc_czt_ecp`
 # refuses `model.ecp` outright in a `-DMQC_USE_LIBFINT=OFF` build rather than
 # failing at the linker. It also succeeds v0.1.1, the first release whose C ABI
-# carries the second derivatives -- which is what lets `mqc_czt_hess_abi`
-# declare one set of entry points for both backends -- and v0.1.2, the first
+# carries the second derivatives -- which a `-DMQC_USE_LIBFINT=OFF` build still
+# reaches through `mqc_czt_cint_compat` -- and v0.1.2, the first
 # whose F12 integrals build. Both are ancestors of it, so neither is given up
 # here.
 #

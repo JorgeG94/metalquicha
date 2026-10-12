@@ -2,10 +2,12 @@
 module mqc_czt_hess_ints
    !! What an analytic Hessian needs from the integral library, and nothing else.
    !!
-   !! **These come from libfint's native modules rather than through the
-   !! `libcint_fortran` compatibility layer**, which exposes first derivatives
-   !! and below only. So analytic Hessians are available in a libfint build --
-   !! the default -- and a libcint build keeps the finite-difference path.
+   !! **These come from `mqc_czt_cint_compat`**, which has libfint's second
+   !! derivatives under their `libcint_fortran` names and, in a libcint build,
+   !! declares the same names against libcint's CINT2 entry points. One source
+   !! therefore serves both libraries, and an analytic Hessian is available in
+   !! either. The first-derivative `libcint_2e_ip1_*` are in `libcint_fortran`
+   !! itself.
    !!
    !! **Both orderings of every derivative are needed, and they are different
    !! integrals.** `ipipovlp` puts both derivatives on the bra centre;
@@ -23,14 +25,19 @@ module mqc_czt_hess_ints
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
-                              LIBCINT_PTR_RANGE_OMEGA
-   use mqc_czt_hess_abi, only: &
-      cint1e_ipipovlp_sph, cint1e_ipipovlp_cart, cint1e_ipovlpip_sph, cint1e_ipovlpip_cart, &
-      cint1e_ipipkin_sph, cint1e_ipipkin_cart, cint1e_ipkinip_sph, cint1e_ipkinip_cart, &
-      cint1e_ipipnuc_sph, cint1e_ipipnuc_cart, cint1e_ipnucip_sph, cint1e_ipnucip_cart, &
-      cint1e_ipiprinv_sph, cint1e_ipiprinv_cart, cint1e_iprinvip_sph, cint1e_iprinvip_cart, &
-      cint2e_ipip1_sph, cint2e_ipip1_cart, cint2e_ipvip1_sph, cint2e_ipvip1_cart, &
-      cint2e_ip1ip2_sph, cint2e_ip1ip2_cart, cint2e_ip1_sph, cint2e_ip1_cart
+                              LIBCINT_PTR_RANGE_OMEGA, libcint_2e_ip1_sph, libcint_2e_ip1_cart
+   use mqc_czt_cint_compat, only: &
+      libcint_1e_ipipovlp_sph, libcint_1e_ipipovlp_cart, &
+      libcint_1e_ipovlpip_sph, libcint_1e_ipovlpip_cart, &
+      libcint_1e_ipipkin_sph, libcint_1e_ipipkin_cart, &
+      libcint_1e_ipkinip_sph, libcint_1e_ipkinip_cart, &
+      libcint_1e_ipipnuc_sph, libcint_1e_ipipnuc_cart, &
+      libcint_1e_ipnucip_sph, libcint_1e_ipnucip_cart, &
+      libcint_1e_ipiprinv_sph, libcint_1e_ipiprinv_cart, &
+      libcint_1e_iprinvip_sph, libcint_1e_iprinvip_cart, &
+      libcint_2e_ipip1_sph, libcint_2e_ipip1_cart, &
+      libcint_2e_ipvip1_sph, libcint_2e_ipvip1_cart, &
+      libcint_2e_ip1ip2_sph, libcint_2e_ip1ip2_cart
    implicit none
    private
 
@@ -179,44 +186,44 @@ contains
       if (mol%cartesian) then
          select case (which)
          case (HESS_OVLP_II)
-            have = cint1e_ipipovlp_cart(buf, shls, atm, mol%natm, &
-                                        bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipipovlp_cart(buf, shls, atm, mol%natm, &
+                                            bas, mol%nbas, mol%env) /= 0
          case (HESS_OVLP_IJ)
-            have = cint1e_ipovlpip_cart(buf, shls, atm, mol%natm, &
-                                        bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipovlpip_cart(buf, shls, atm, mol%natm, &
+                                            bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_II)
-            have = cint1e_ipipkin_cart(buf, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipipkin_cart(buf, shls, atm, mol%natm, &
+                                           bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_IJ)
-            have = cint1e_ipkinip_cart(buf, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipkinip_cart(buf, shls, atm, mol%natm, &
+                                           bas, mol%nbas, mol%env) /= 0
          case (HESS_NUC_II)
-            have = cint1e_ipipnuc_cart(buf, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipipnuc_cart(buf, shls, atm, mol%natm, &
+                                           bas, mol%nbas, mol%env) /= 0
          case default
-            have = cint1e_ipnucip_cart(buf, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipnucip_cart(buf, shls, atm, mol%natm, &
+                                           bas, mol%nbas, mol%env) /= 0
          end select
       else
          select case (which)
          case (HESS_OVLP_II)
-            have = cint1e_ipipovlp_sph(buf, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipipovlp_sph(buf, shls, atm, mol%natm, &
+                                           bas, mol%nbas, mol%env) /= 0
          case (HESS_OVLP_IJ)
-            have = cint1e_ipovlpip_sph(buf, shls, atm, mol%natm, &
-                                       bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipovlpip_sph(buf, shls, atm, mol%natm, &
+                                           bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_II)
-            have = cint1e_ipipkin_sph(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipipkin_sph(buf, shls, atm, mol%natm, &
+                                          bas, mol%nbas, mol%env) /= 0
          case (HESS_KIN_IJ)
-            have = cint1e_ipkinip_sph(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipkinip_sph(buf, shls, atm, mol%natm, &
+                                          bas, mol%nbas, mol%env) /= 0
          case (HESS_NUC_II)
-            have = cint1e_ipipnuc_sph(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipipnuc_sph(buf, shls, atm, mol%natm, &
+                                          bas, mol%nbas, mol%env) /= 0
          case default
-            have = cint1e_ipnucip_sph(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, mol%env) /= 0
+            have = libcint_1e_ipnucip_sph(buf, shls, atm, mol%natm, &
+                                          bas, mol%nbas, mol%env) /= 0
          end select
       end if
    end function drive
@@ -289,19 +296,19 @@ contains
 
             if (mol%cartesian) then
                if (which == HESS_RINV_II) then
-                  have = cint1e_ipiprinv_cart(buf, shls, atm_flat, mol%natm, &
-                                              bas_flat, mol%nbas, env) /= 0
+                  have = libcint_1e_ipiprinv_cart(buf, shls, atm_flat, mol%natm, &
+                                                  bas_flat, mol%nbas, env) /= 0
                else
-                  have = cint1e_iprinvip_cart(buf, shls, atm_flat, mol%natm, &
-                                              bas_flat, mol%nbas, env) /= 0
+                  have = libcint_1e_iprinvip_cart(buf, shls, atm_flat, mol%natm, &
+                                                  bas_flat, mol%nbas, env) /= 0
                end if
             else
                if (which == HESS_RINV_II) then
-                  have = cint1e_ipiprinv_sph(buf, shls, atm_flat, mol%natm, &
-                                             bas_flat, mol%nbas, env) /= 0
+                  have = libcint_1e_ipiprinv_sph(buf, shls, atm_flat, mol%natm, &
+                                                 bas_flat, mol%nbas, env) /= 0
                else
-                  have = cint1e_iprinvip_sph(buf, shls, atm_flat, mol%natm, &
-                                             bas_flat, mol%nbas, env) /= 0
+                  have = libcint_1e_iprinvip_sph(buf, shls, atm_flat, mol%natm, &
+                                                 bas_flat, mol%nbas, env) /= 0
                end if
             end if
             if (.not. have) cycle
@@ -398,15 +405,15 @@ contains
             do c = 1, natm
                env(LIBCINT_PTR_RINV_ORIG + 1:LIBCINT_PTR_RINV_ORIG + 3) = mol%coords(:, c)
                if (mol%cartesian) then
-                  have_ii = cint1e_ipiprinv_cart(buf_ii, shls, atm_flat, mol%natm, &
-                                                 bas_flat, mol%nbas, env) /= 0
-                  have_ij = cint1e_iprinvip_cart(buf_ij, shls, atm_flat, mol%natm, &
-                                                 bas_flat, mol%nbas, env) /= 0
+                  have_ii = libcint_1e_ipiprinv_cart(buf_ii, shls, atm_flat, mol%natm, &
+                                                     bas_flat, mol%nbas, env) /= 0
+                  have_ij = libcint_1e_iprinvip_cart(buf_ij, shls, atm_flat, mol%natm, &
+                                                     bas_flat, mol%nbas, env) /= 0
                else
-                  have_ii = cint1e_ipiprinv_sph(buf_ii, shls, atm_flat, mol%natm, &
-                                                bas_flat, mol%nbas, env) /= 0
-                  have_ij = cint1e_iprinvip_sph(buf_ij, shls, atm_flat, mol%natm, &
-                                                bas_flat, mol%nbas, env) /= 0
+                  have_ii = libcint_1e_ipiprinv_sph(buf_ii, shls, atm_flat, mol%natm, &
+                                                    bas_flat, mol%nbas, env) /= 0
+                  have_ij = libcint_1e_iprinvip_sph(buf_ij, shls, atm_flat, mol%natm, &
+                                                    bas_flat, mol%nbas, env) /= 0
                end if
                if (.not. (have_ii .or. have_ij)) cycle
                if (.not. have_ii) buf_ii(1:di*dj*N_COMPONENTS) = 0.0_dp
@@ -542,26 +549,26 @@ contains
       if (mol%cartesian) then
          select case (which)
          case (HESS_ERI_II)
-            have = cint2e_ipip1_cart(buf, shls, atm, mol%natm, &
-                                     bas, mol%nbas, env, c_null_ptr) /= 0
+            have = libcint_2e_ipip1_cart(buf, shls, atm, mol%natm, &
+                                         bas, mol%nbas, env, c_null_ptr) /= 0
          case (HESS_ERI_IJ)
-            have = cint2e_ipvip1_cart(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, env, c_null_ptr) /= 0
+            have = libcint_2e_ipvip1_cart(buf, shls, atm, mol%natm, &
+                                          bas, mol%nbas, env, c_null_ptr) /= 0
          case default
-            have = cint2e_ip1ip2_cart(buf, shls, atm, mol%natm, &
-                                      bas, mol%nbas, env, c_null_ptr) /= 0
+            have = libcint_2e_ip1ip2_cart(buf, shls, atm, mol%natm, &
+                                          bas, mol%nbas, env, c_null_ptr) /= 0
          end select
       else
          select case (which)
          case (HESS_ERI_II)
-            have = cint2e_ipip1_sph(buf, shls, atm, mol%natm, &
-                                    bas, mol%nbas, env, c_null_ptr) /= 0
+            have = libcint_2e_ipip1_sph(buf, shls, atm, mol%natm, &
+                                        bas, mol%nbas, env, c_null_ptr) /= 0
          case (HESS_ERI_IJ)
-            have = cint2e_ipvip1_sph(buf, shls, atm, mol%natm, &
-                                     bas, mol%nbas, env, c_null_ptr) /= 0
+            have = libcint_2e_ipvip1_sph(buf, shls, atm, mol%natm, &
+                                         bas, mol%nbas, env, c_null_ptr) /= 0
          case default
-            have = cint2e_ip1ip2_sph(buf, shls, atm, mol%natm, &
-                                     bas, mol%nbas, env, c_null_ptr) /= 0
+            have = libcint_2e_ip1ip2_sph(buf, shls, atm, mol%natm, &
+                                         bas, mol%nbas, env, c_null_ptr) /= 0
          end select
       end if
    end function drive_2e
@@ -614,11 +621,11 @@ contains
                   dims = [di, dj, dk, dl]
 
                   if (mol%cartesian) then
-                     have = cint2e_ip1_cart(buf, shls, atm_flat, mol%natm, &
-                                            bas_flat, mol%nbas, mol%env, c_null_ptr) /= 0
+                     have = libcint_2e_ip1_cart(buf, shls, atm_flat, mol%natm, &
+                                                bas_flat, mol%nbas, mol%env, c_null_ptr) /= 0
                   else
-                     have = cint2e_ip1_sph(buf, shls, atm_flat, mol%natm, &
-                                           bas_flat, mol%nbas, mol%env, c_null_ptr) /= 0
+                     have = libcint_2e_ip1_sph(buf, shls, atm_flat, mol%natm, &
+                                               bas_flat, mol%nbas, mol%env, c_null_ptr) /= 0
                   end if
                   if (.not. have) cycle
 
@@ -1518,9 +1525,9 @@ contains
       logical :: have
 
       if (mol%cartesian) then
-         have = cint2e_ip1_cart(buf, shls, atm, mol%natm, bas, nbas, env, c_null_ptr) /= 0
+         have = libcint_2e_ip1_cart(buf, shls, atm, mol%natm, bas, nbas, env, c_null_ptr) /= 0
       else
-         have = cint2e_ip1_sph(buf, shls, atm, mol%natm, bas, nbas, env, c_null_ptr) /= 0
+         have = libcint_2e_ip1_sph(buf, shls, atm, mol%natm, bas, nbas, env, c_null_ptr) /= 0
       end if
    end function ip1_block
 

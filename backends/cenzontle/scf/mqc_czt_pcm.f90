@@ -27,7 +27,6 @@ module mqc_czt_pcm
    !! potential of the charges, since the charges are determined variationally
    !! and the half does not appear in the derivative.
    use pic_types, only: dp
-   use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
    use pic_blas_interfaces, only: pic_gemm, pic_gemv
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -38,6 +37,8 @@ module mqc_czt_pcm
    use mqc_calculation_defaults, only: DEFAULT_PCM_ZETA
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_PTR_RANGE_OMEGA
+   use mqc_czt_cint_compat, only: LIBCINT_PTR_GRIDS, libcint_1e_grids_cart, &
+                                  libcint_1e_grids_sph
    use pic_io, only: to_char
    implicit none
    private
@@ -52,12 +53,6 @@ module mqc_czt_pcm
       !! Conductor-like: K = S, scaled by (eps-1)/eps
    integer, parameter :: PCM_MODEL_IEFPCM = 2
       !! Integral equation formalism: the D-matrix terms, scaled by (eps-1)/(eps+1)
-
-   ! `PTR_GRIDS` from libcint's `cint.h`. Not exported by the Fortran
-   ! interface, and 0-based like every other `PTR_*`, so it is used as `+ 1`.
-   ! TODO(mqc): `mqc_czt_esp` declares the same slot number under the same
-   ! name. Two spellings of one constant, which is what MQC002 exists to prevent.
-   integer, parameter :: LIBCINT_PTR_GRIDS = 12
 
    ! The Lebedev orders the SWIG exponents are fitted for, and the fitted
    ! values. Table II of [J. Chem. Phys. 122, 194110 (2005)], copied from
@@ -131,32 +126,6 @@ module mqc_czt_pcm
       procedure :: operator_matrix => pcm_operator_matrix
       procedure :: destroy => pcm_destroy
    end type pcm_context_t
-
-   interface
-      function cint1e_grids_sph(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                cache) result(ret) bind(C, name="int1e_grids_sph")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_grids_sph
-
-      function cint1e_grids_cart(buf, dims, shls, atm, natm, bas, nbas, env, opt, &
-                                 cache) result(ret) bind(C, name="int1e_grids_cart")
-         import :: c_int, c_ptr
-         implicit none
-         type(c_ptr), value, intent(in) :: buf, dims, shls, atm
-         integer(c_int), value, intent(in) :: natm
-         type(c_ptr), value, intent(in) :: bas
-         integer(c_int), value, intent(in) :: nbas
-         type(c_ptr), value, intent(in) :: env, opt, cache
-         integer(c_int) :: ret
-      end function cint1e_grids_cart
-   end interface
 
 contains
 
@@ -598,18 +567,18 @@ contains
       !! inside the integral loop rather than through an `(n_ao, n_ao,
       !! n_points)` tensor. `esp_contract`'s loop with the group batching and
       !! the omega attenuation added.
-      type(pcm_group_t), intent(in), target :: groups(:)
+      type(pcm_group_t), intent(in) :: groups(:)
       integer, intent(in) :: n_groups
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: n_points
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(out) :: values(:)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: buf(:)
+      real(dp), allocatable :: buf(:)
       real(dp), allocatable :: local(:)
       integer, allocatable :: pair_i(:), pair_j(:)
-      integer, target :: shls(4)
+      integer :: shls(4)
       integer :: block_max, max_group, n_pair, p, ish, jsh, di, dj, io, jo
       integer :: ig, ng, i, j, g, ret
       real(dp) :: dij, wt
@@ -661,15 +630,11 @@ contains
             ng = size(groups(ig)%idx)
             shls = [ish - 1, jsh - 1, 0, ng]
             if (mol%cartesian) then
-               ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                       c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                       mol%nbas, c_loc(groups(ig)%env), c_null_ptr, &
-                                       c_null_ptr)
+               ret = libcint_1e_grids_cart(buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, groups(ig)%env)
             else
-               ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                      c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                      mol%nbas, c_loc(groups(ig)%env), c_null_ptr, &
-                                      c_null_ptr)
+               ret = libcint_1e_grids_sph(buf, shls, mol%atm, mol%natm, &
+                                          mol%bas, mol%nbas, groups(ig)%env)
             end if
             if (ret == 0) cycle
             do j = 1, dj
@@ -698,17 +663,17 @@ contains
       !! The one-electron operator the surface charges add to the Fock matrix.
       !! The minus sign is the electron's charge against the apparent charges'
       !! potential. `surface_potential`'s loop contracted the other way.
-      type(pcm_group_t), intent(in), target :: groups(:)
+      type(pcm_group_t), intent(in) :: groups(:)
       integer, intent(in) :: n_groups
-      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: q(:)
       real(dp), intent(out) :: vmat(:, :)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable, target :: buf(:)
+      real(dp), allocatable :: buf(:)
       real(dp), allocatable :: blk(:, :)
       integer, allocatable :: pair_i(:), pair_j(:)
-      integer, target :: shls(4)
+      integer :: shls(4)
       integer :: block_max, max_group, n_pair, p, ish, jsh, di, dj, io, jo
       integer :: ig, ng, i, j, g, ret
 
@@ -755,15 +720,11 @@ contains
             ng = size(groups(ig)%idx)
             shls = [ish - 1, jsh - 1, 0, ng]
             if (mol%cartesian) then
-               ret = cint1e_grids_cart(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                       c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                       mol%nbas, c_loc(groups(ig)%env), c_null_ptr, &
-                                       c_null_ptr)
+               ret = libcint_1e_grids_cart(buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, groups(ig)%env)
             else
-               ret = cint1e_grids_sph(c_loc(buf), c_null_ptr, c_loc(shls), &
-                                      c_loc(mol%atm), mol%natm, c_loc(mol%bas), &
-                                      mol%nbas, c_loc(groups(ig)%env), c_null_ptr, &
-                                      c_null_ptr)
+               ret = libcint_1e_grids_sph(buf, shls, mol%atm, mol%natm, &
+                                          mol%bas, mol%nbas, groups(ig)%env)
             end if
             if (ret == 0) cycle
             do j = 1, dj
