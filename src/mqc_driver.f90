@@ -759,7 +759,9 @@ contains
          ! `fragment_refusal`, which `run_efmo_energy` asks for EFMO too.
          fmo_needs%cut = trim(config%bond_breaking) == "afo"
          fmo_needs%unrestricted = config%method_config%scf%unrestricted
-         fmo_needs%calc_type = config%calc_type
+         ! What each fragment computes, so an interaction energy is asked of
+         ! the backend as the energies it is made of.
+         fmo_needs%calc_type = fragment_calc_type
          fmo_needs%pieda = config%fmo_pieda
          fmo_needs%pieda_dispersion = trim(config%fmo_pieda_dispersion) /= "none"
          fmo_needs%dispersion = config%method_config%dft%use_dispersion
@@ -781,7 +783,7 @@ contains
          allocate (fmo_context_t :: expansion)
          select type (expansion)
          type is (fmo_context_t)
-            call expansion%init(config%method_config, config%calc_type)
+            call expansion%init(config%method_config, fragment_calc_type)
             allocate (expansion%sys_geom, source=sys_geom)
             if (present(bonds)) then
                if (allocated(expansion%sys_geom%bonds)) deallocate (expansion%sys_geom%bonds)
@@ -874,6 +876,10 @@ contains
             expansion%scf_density_tol = config%fmo_scf_density_tol
             expansion%pieda = config%fmo_pieda
             expansion%pieda_hl = config%fmo_pieda_hl
+            ! Positive only for an interaction energy, which
+            ! `check_interaction_energy_support` has held to FMO2: every
+            ! monomer, then only the pairs holding this fragment.
+            expansion%reference_fragment = config%reference_fragment
             expansion%pieda_dispersion = config%fmo_pieda_dispersion
             ! Per fragment and n-mer, as GAMESS does it; the whole system's is
             ! never distributed. Off unless the deck asked for it.
@@ -1007,7 +1013,15 @@ contains
       ! The saving, in the output rather than only the log: the reduced count
       ! is `fragment_count`, and this is what it is measured against.
       if (present(json_data) .and. resources%mpi_comms%world_comm%rank() == 0) then
-         if (json_data%has_interaction) json_data%full_expansion_count = n_full_terms
+         if (json_data%has_interaction) then
+            ! FMO enumerates its own terms and never reads the list built
+            ! above: its full expansion is every monomer and every pair.
+            if (config%expansion_kind == "fmo") then
+               n_full_terms = int(sys_geom%n_monomers, int64)* &
+                              int(sys_geom%n_monomers + 1, int64)/2_int64
+            end if
+            json_data%full_expansion_count = n_full_terms
+         end if
       end if
 
       ! Clean up expansion context

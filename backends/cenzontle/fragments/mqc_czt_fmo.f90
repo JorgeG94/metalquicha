@@ -367,6 +367,12 @@ module mqc_czt_fmo
          !! connected pairs never. Read only when `pieda` is true. Not
          !! available with an MP2-family method, whose `Edi` is its
          !! correlation. See `pieda_dispersion_term`.
+      integer :: reference_fragment = 0
+         !! A fragment, numbered from one, whose pair interaction energies are
+         !! all that is wanted: every monomer is still solved -- each in the
+         !! field of all the others -- and then only the pairs holding this
+         !! one. Zero, the default, solves every pair. FMO2 only (`level` 2,
+         !! `expansion = "fmo"`); refused otherwise.
       character(len=16) :: dispersion = "none"
          !! `keywords.dft.dispersion` under FMO and EE-MBE: `"none"` (the
          !! default), `"d3bj"` or `"d4"`. Every monomer and every n-mer carries
@@ -435,7 +441,10 @@ module mqc_czt_fmo
 
    type :: fmo_result_t
       !! The energy, and enough of the parts to see where it came from
-      real(dp) :: energy = 0.0_dp                !! The FMO2 total
+      real(dp) :: energy = 0.0_dp
+         !! The FMO2 total. Zero with `fmo_options_t%reference_fragment`, whose
+         !! run has no total: `pair_sum` is then the reference's interaction
+         !! energy and `monomer_sum` plus it is nothing with a name.
       real(dp) :: monomer_sum = 0.0_dp           !! sum_I E'_I
       real(dp) :: pair_sum = 0.0_dp              !! sum of every n-mer correction
       real(dp) :: response_sum = 0.0_dp          !! sum of Tr(dD u), the last term
@@ -664,6 +673,17 @@ contains
          return
       end if
 
+      if (opts%reference_fragment /= 0) then
+         if (opts%level /= 2 .or. opts%expansion /= "fmo") then
+            call error%set(ERROR_VALIDATION, "fmo: a reference fragment selects the "// &
+                           "pairs of FMO2 and nothing else. Above level two a term "// &
+                           "holding the reference needs the pair of its other members, "// &
+                           "and under the embedded MBE expansion a pair term is not an "// &
+                           "interaction energy. Run level 2 with expansion 'fmo'.")
+            return
+         end if
+      end if
+
       if (dispersion_requested(opts)) then
          if (trim(opts%pieda_dispersion) /= "none") then
             call error%set(ERROR_VALIDATION, "fmo: dispersion adds the empirical "// &
@@ -683,6 +703,13 @@ contains
       call build_fragments(atomic_numbers, symbols, coordinates, owner, opts, &
                            frag, n_frag, afo, error, comm)
       if (error%has_error()) return
+
+      if (opts%reference_fragment < 0 .or. opts%reference_fragment > n_frag) then
+         call error%set(ERROR_VALIDATION, "fmo: reference fragment "// &
+                        to_char(opts%reference_fragment)//" is out of range; the "// &
+                        "fragments are numbered 1 to "//to_char(n_frag)//".")
+         return
+      end if
 
       allocate (res%monomer_energy(n_frag), source=0.0_dp)
 
@@ -704,7 +731,13 @@ contains
       if (error%has_error()) return
 
       ! `response_sum` is inside `pair_sum` already; it is reported, not added.
-      res%energy = res%monomer_sum + res%pair_sum
+      ! A reduced run skipped every pair without the reference, so its sum is
+      ! no total and none is given.
+      if (opts%reference_fragment == 0) then
+         res%energy = res%monomer_sum + res%pair_sum
+      else
+         res%energy = 0.0_dp
+      end if
 
       ! Reported, not used.
       call report_charges(frag, n_frag, n_atoms, res%charges, res%fragment_charge, error)
@@ -2658,6 +2691,20 @@ contains
       if (error%has_error()) return
 
       call enumerate_subsets(n_frag, level, terms, term_size, n_terms)
+      ! An interaction energy needs the reference's pairs and the monomers they
+      ! difference against; `run_fmo2` has held it to level two, where that
+      ! list is closed under subsets. Everything below runs on the shorter list.
+      if (opts%reference_fragment > 0) then
+         if (is_leader(comm)) then
+            call logger%info("  fmo: interaction energy of fragment "// &
+                             to_char(opts%reference_fragment)//" (from one, as the pair "// &
+                             "table numbers it): computing "// &
+                             to_char(n_frag - 1)//" of "// &
+                             to_char(count(term_size(1:n_terms) == 2))// &
+                             " pairs, after every monomer")
+         end if
+         call keep_reference_terms(opts%reference_fragment, terms, term_size, n_terms)
+      end if
       allocate (correction(n_terms), source=0.0_dp)
       allocate (response(n_terms), source=0.0_dp)
       allocate (ees(n_terms), source=0.0_dp)
@@ -2744,6 +2791,12 @@ contains
          ! outside the recursion is never cancelled. At level two nothing
          ! contains a pair, so the two placements agree there.
          correction(t) = e_internal + e_resp
+         ! TODO(mqc): for a pair joined by a detached bond, `e_resp` is not
+         ! reproducible run to run: on gly3_water.xyz cut at both C-alpha--C
+         ! bonds (HF/STO-3G, exact field, four threads) pair 2-3's response
+         ! moves by 1.7e-8 Hartree between identical runs while `correction`
+         ! agrees to 1e-11, so the split between E' and Tr(dD u) is not
+         ! determined there, and the reported `response` is not either.
          response(t) = e_resp
          res%response_sum = res%response_sum + e_resp
 
@@ -2817,6 +2870,32 @@ contains
       call log_interaction_table(terms, term_size, n_terms, correction, opts, comm)
       if (opts%pieda) call log_pieda_table(res%pairs, opts, res%edi_in_energy, comm)
    end subroutine calculate_polymers
+
+   subroutine keep_reference_terms(reference, terms, term_size, n_terms)
+      !! Drop every term of two or more fragments that does not hold `reference`
+      !!
+      !! In place, order kept, so the list stays smallest first. Monomers are
+      !! all kept. Closed under subsets only at level two, where a kept pair's
+      !! subsets are two monomers; the caller holds it there.
+      integer, intent(in) :: reference
+      integer, intent(inout) :: terms(:, :), term_size(:)
+      integer, intent(inout) :: n_terms
+
+      integer :: t, kept
+
+      kept = 0
+      do t = 1, n_terms
+         if (term_size(t) >= 2) then
+            if (.not. any(terms(1:term_size(t), t) == reference)) cycle
+         end if
+         kept = kept + 1
+         if (kept /= t) then
+            terms(:, kept) = terms(:, t)
+            term_size(kept) = term_size(t)
+         end if
+      end do
+      n_terms = kept
+   end subroutine keep_reference_terms
 
    subroutine separated_pairs(frag, terms, term_size, n_terms, opts, separated, error)
       !! Which terms are pairs beyond `resdim`, to be taken as electrostatics

@@ -746,7 +746,8 @@ PIEDA: decomposing a pair
 --------------------------
 
 ``keywords.fragmentation.pieda`` (default ``false``), FMO only (refused under
-EE-MBE, EFMO, GMBE and plain MBE, and under any driver but ``Energy``),
+EE-MBE, EFMO, GMBE and plain MBE, and under any driver but ``Energy`` and
+``InteractionEnergy``),
 splits each near, unconnected pair's ``delta_energy`` into three parts (four
 under the MP2 family, see below) -- GAMESS's ``IPIEDA=1``:
 
@@ -849,6 +850,12 @@ them.
 
 The pairs are built on every rank from the reduced terms, so an MPI run reports
 the same pairs as a serial one and no pair crosses a wire.
+
+**For one fragment's pairs only**, run ``driver: "InteractionEnergy"`` with
+``reference_fragment`` at level 2: every monomer is still solved, then only the
+pairs holding the reference, and each of those is decomposed exactly as in the
+full run -- the same rows, to the SCF convergence. See
+:ref:`interaction-energy-fmo2`.
 
 Edi: an empirical dispersion column
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

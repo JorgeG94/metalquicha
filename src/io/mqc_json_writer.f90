@@ -178,6 +178,9 @@ contains
       end if
 
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
+      ! FMO2's interaction energy of one fragment is written on this path, and
+      ! like the MBE one in place of `total_energy`, never beside it.
+      if (data%has_interaction) call write_interaction_section(json, main_obj, data)
       ! Inside the total above, and written again on its own: see
       ! `dispersion_energy` in `json_output_data_t`.
       if (data%has_dispersion) then
@@ -1665,10 +1668,16 @@ contains
       call json%add(parent, fmo_obj)
       call json%add(fmo_obj, "expansion", trim(data%fmo_expansion))
       call json%add(fmo_obj, "embedding", trim(data%fmo_embedding))
-      call json%add(fmo_obj, "monomer_sum", data%fmo_monomer_sum)
-      call json%add(fmo_obj, "pair_sum", data%fmo_pair_sum)
+      ! An interaction-energy run solved only the reference's pairs, so its
+      ! sums are no expansion's: monomer_sum plus pair_sum would read as a
+      ! total. The pairs and their responses are what it has, and the
+      ! interaction block carries their sum.
+      if (.not. data%has_interaction) then
+         call json%add(fmo_obj, "monomer_sum", data%fmo_monomer_sum)
+         call json%add(fmo_obj, "pair_sum", data%fmo_pair_sum)
+      end if
       call json%add(fmo_obj, "response_sum", data%fmo_response_sum)
-      if (allocated(data%fmo_level_sum)) then
+      if (allocated(data%fmo_level_sum) .and. .not. data%has_interaction) then
          call json%add(fmo_obj, "level_sums", data%fmo_level_sum)
       end if
       call write_fmo_pairs(json, fmo_obj, data)

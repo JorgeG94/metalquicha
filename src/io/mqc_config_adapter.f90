@@ -989,12 +989,16 @@ contains
          return
       end if
 
-      if (driver_config%calc_type /= CALC_TYPE_ENERGY) then
+      ! An interaction energy under FMO2 is the reference's own pair terms,
+      ! each the pair PIEDA decomposes; `check_interaction_energy_support`
+      ! holds that driver to level two.
+      if (driver_config%calc_type /= CALC_TYPE_ENERGY .and. &
+          driver_config%calc_type /= CALC_TYPE_INTERACTION_ENERGY) then
          call error%set(ERROR_VALIDATION, &
                         "keywords.fragmentation.pieda decomposes an energy term and "// &
                         "is not available under driver '"// &
                         trim(calc_type_to_string(driver_config%calc_type))// &
-                        "'. Set driver to 'Energy', or drop pieda.")
+                        "'. Set driver to 'Energy' or 'InteractionEnergy', or drop pieda.")
          return
       end if
 
@@ -1084,19 +1088,43 @@ contains
          return
       end if
 
-      ! FMO and EE-MBE embed every fragment in a field made by all the others,
-      ! and EFMO assembles its own expansion inside the backend. Neither builds
-      ! the term list this selects from, so the reduction would not be applied
-      ! -- and under an embedding the monomers are coupled, so skipping one
-      ! changes the field the ones computed feel.
-      if (trim(driver_config%expansion_kind) /= "mbe") then
+      ! FMO2 keeps every monomer -- each is solved in the field of all the
+      ! others, so none can be skipped -- and drops only the pairs without the
+      ! reference, which feed back into nothing. Above level two a triple
+      ! holding the reference needs the pair of its other two members, and
+      ! the field gives no such thing.
+      select case (trim(driver_config%expansion_kind))
+      case ("mbe")
+      case ("fmo")
+         if (driver_config%nlevel /= 2) then
+            call error%set(ERROR_VALIDATION, DRIVER//" under keywords.fragmentation."// &
+                           "method 'fmo' needs level 2 (FMO2), and this run asks for "// &
+                           int_to_text(driver_config%nlevel)//". A triple holding the "// &
+                           "reference needs the pair of its other two fragments, which the "// &
+                           "monomer field does not give, so FMO3 would have to compute "// &
+                           "every pair anyway. Set level to 2.")
+            return
+         end if
+      case ("ee-mbe")
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available for "// &
+                        "keywords.fragmentation.method 'ee-mbe'. Its pair term counts the "// &
+                        "point-charge interaction of the two fragments twice, once in each "// &
+                        "embedded monomer, so it is a correction and not the pair's "// &
+                        "interaction energy. Use method 'fmo' at level 2, or MBE.")
+         return
+      case ("efmo")
+         call error%set(ERROR_VALIDATION, DRIVER//" is not available for "// &
+                        "keywords.fragmentation.method 'efmo'. EFMO assembles its own "// &
+                        "expansion inside the backend, with the far pairs from effective "// &
+                        "fragment potentials, and has no reduced list to run. Use method "// &
+                        "'fmo' at level 2, or MBE.")
+         return
+      case default
          call error%set(ERROR_VALIDATION, DRIVER//" is not available for "// &
                         "keywords.fragmentation.method '"//trim(driver_config%expansion_kind)// &
-                        "'. It selects from the plain many-body expansion's term list, "// &
-                        "which an embedded or effective-fragment expansion does not "// &
-                        "build. Use method MBE.")
+                        "'. Use method MBE, or 'fmo' at level 2.")
          return
-      end if
+      end select
 
       ! Each of these takes its own path before the fragment expansion is
       ! reached, and would ignore the driver rather than refuse it.

@@ -575,6 +575,14 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_fmo_pieda)
   addlongtest(mqc_fmo_pieda_long)
 
+  # FMO2's interaction energy of one fragment: every monomer, then only the
+  # pairs holding it. Each reference's rows -- pair energy, response and PIEDA
+  # terms -- against the full run's, on the water trimer and on the glycine
+  # tripeptide with a water cut at both C-alpha--C(=O) bonds; and the refusals
+  # above level two.
+  addtest(mqc_fmo_interaction)
+  target_link_libraries(test_mqc_fmo_interaction PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Kohn-Sham fragments through the fragment solver: FMO2 and FMO3 water against
   # the supermolecule, an EE-MBE dimer, a range-separated hybrid, and propane
   # cut across one C-C bond -- the DFT counterpart of `mqc_afo_fmo`.

@@ -225,7 +225,9 @@ end type
   terms containing `keywords.fragmentation.reference_fragment` (0-based), from
   a term list reduced to their closure under subsets. Fragments run as
   energies; the output has an `interaction_energy` block and **no**
-  `total_energy`. See `mqc_docs/source/interaction_energy.rst`
+  `total_energy`. Under `method: "fmo"` at level 2 (FMO2, PIEDA allowed) every
+  monomer is still solved and only the reference's pairs follow; FMO3, EE-MBE
+  and EFMO are refused. See `mqc_docs/source/interaction_energy.rst`
 
 ## Methods Available
 
