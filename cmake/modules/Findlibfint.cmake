@@ -7,15 +7,22 @@
 # redden the whole matrix on a metalquicha change that touched nothing, and the
 # signal would be indistinguishable from a real break.
 #
-# v0.2.1 is d02d7dd00bd14d2230e0ece7a42faa9738aa8128 today. It is the first
-# release whose `libcint_fortran` carries the scalar ECP -- `libcint_ecp_sph`
-# and `libcint_ecp_cart` -- so `mqc_libcint_ecp` reaches it the way every other
-# integral here is reached, instead of declaring a `bind(C)` interface to
-# libcint's own names and marshalling `atm`, `bas` and `env` into C-typed copies
-# to call it. libcint has no ECP code at all, so this is the one integral the
-# two backends cannot both answer and the `#ifdef` around it stays: what it
-# marks now is a gap in what the libcint cross-check can cover, not a
-# portability constraint.
+# v0.6.0 is 65e21586e776821d65eed517580b0fdec90dd430 today. It is the first
+# release whose `libcint_fortran` carries the multipoles, the point-charge
+# field, the grid integral and the one- and two-electron second derivatives, so
+# `mqc_czt_cint_compat` re-exports them instead of declaring `bind(C)`
+# interfaces to libcint's names and passing `c_loc` at every call. The libcint
+# fork's `libcint_fortran` has none of them, which is the half of that module a
+# `-DMQC_USE_LIBFINT=OFF` build still compiles.
+#
+# It succeeds v0.2.1, the first release whose `libcint_fortran` carries the
+# scalar ECP -- `libcint_ecp_sph` and `libcint_ecp_cart` -- so `mqc_libcint_ecp`
+# reaches it the way every other integral here is reached, instead of declaring
+# a `bind(C)` interface to libcint's own names and marshalling `atm`, `bas` and
+# `env` into C-typed copies to call it. libcint has no ECP code at all, so this
+# is the one integral the two backends cannot both answer and the `#ifdef`
+# around it stays: what it marks now is a gap in what the libcint cross-check
+# can cover, not a portability constraint.
 #
 # It succeeds v0.1.4, the first release whose C ABI exposes `int1e_irp`, `<i| r
 # nabla |j>` -- the nuclear derivative of the dipole integrals, and so what an

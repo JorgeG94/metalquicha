@@ -207,11 +207,8 @@ option(MQC_ENABLE_TERCO "Link to terco for a device-resident SCF (HF/DFT)" OFF)
 set(MQC_LIBFINT_REPOSITORY
     "https://github.com/JorgeG94/libfint.git"
     CACHE STRING "Where to fetch libfint from")
-# TODO(mqc): a branch, not a release, so this moves under every libfint push. It
-# carries the libcint_fortran wrappers mqc_czt_cint_compat needs; repin to the
-# first release that has them before this merges.
 set(MQC_LIBFINT_TAG
-    "feat/wrap-c-abi-integrals"
+    "v0.6.0"
     CACHE STRING "libfint revision to build against")
 
 set(MQC_CREST_REPOSITORY
