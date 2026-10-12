@@ -226,7 +226,8 @@ Ab initio, on the CPU through libcint:
   reference: a ``model.functional`` in the deck is ignored, and a warning at the
   start of the run says so. For DFT with an MP2 term use a double hybrid --
   ``model.method`` ``dft`` with ``b2plyp``, ``b2gp-plyp`` or ``mpw2plyp``.
-- ``CCSD`` and ``CCSD(T)``
+- ``CCSD`` and ``CCSD(T)``, on a Hartree-Fock reference too: a
+  ``model.functional`` is ignored with the same warning
 - ``RI-`` or ``DF-`` on any correlated method asks for the density-fitted route:
   ``RI-MP2``, ``RI-CCSD``, ``RI-CCSD(T)``
 - ``CASSCF`` (also ``MCSCF``) and ``CASCI`` -- one method with the orbitals free

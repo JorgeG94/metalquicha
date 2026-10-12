@@ -58,7 +58,8 @@ contains
                   new_unittest("every_mp2_spelling_warns", test_mp2_spellings_warn), &
                   new_unittest("mp2_without_a_functional_is_silent", test_mp2_no_functional_silent), &
                   new_unittest("dft_with_a_double_hybrid_is_silent", test_dft_double_hybrid_silent), &
-                  new_unittest("non_mp2_methods_do_not_warn", test_other_methods_silent) &
+                  new_unittest("dft_and_hf_do_not_warn", test_other_methods_silent), &
+                  new_unittest("coupled_cluster_warns_and_names_the_method", test_cc_functional_warns) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -812,7 +813,7 @@ contains
    end subroutine test_unknown_target
 
    subroutine test_mp2_functional_warns(error)
-      !! MP2 with a plain functional: the warning names it and the alternatives
+      !! MP2 with a plain functional: the warning names it, the method and the alternatives
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
       character(len=:), allocatable :: text
@@ -822,6 +823,9 @@ contains
       text = functional_ignored_warning(config)
       call check(error, index(text, "model.functional 'b3lyp' is ignored") > 0, &
                  "the warning must name the functional: "//text)
+      if (allocated(error)) return
+      call check(error, index(text, "MP2 runs on a Hartree-Fock reference") > 0, &
+                 "the warning must name the method: "//text)
       if (allocated(error)) return
       call check(error, index(text, "does not make sense from the theory perspective") > 0, &
                  "the warning must give the reason: "//text)
@@ -874,7 +878,7 @@ contains
    end subroutine test_dft_double_hybrid_silent
 
    subroutine test_other_methods_silent(error)
-      !! The warning is for the MP2 family only; nothing else is changed here
+      !! A method that uses the functional, or that is not correlated, stays silent
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
@@ -888,11 +892,36 @@ contains
       call check(error, len(functional_ignored_warning(config)) == 0, &
                  "hf is outside this warning")
       if (allocated(error)) return
-
-      config%method = method_type_from_string("ccsd")
-      call check(error, len(functional_ignored_warning(config)) == 0, &
-                 "coupled cluster is outside this warning")
    end subroutine test_other_methods_silent
+
+   subroutine test_cc_functional_warns(error)
+      !! Every coupled-cluster spelling drops the functional and says which method it was
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      character(len=12), parameter :: SPELLINGS(6) = [character(len=12) :: &
+                                                      "ccsd", "ri-ccsd", "df-ccsd", "ccsd(t)", "ri-ccsd(t)", "df-ccsd(t)"]
+      character(len=8), parameter :: NAMES(6) = [character(len=8) :: &
+                                                 "CCSD", "CCSD", "CCSD", "CCSD(T)", "CCSD(T)", "CCSD(T)"]
+      character(len=:), allocatable :: text
+      integer :: i
+
+      config%functional = "b3lyp"
+      do i = 1, size(SPELLINGS)
+         config%method = method_type_from_string(trim(SPELLINGS(i)))
+         text = functional_ignored_warning(config)
+         call check(error, index(text, "model.functional 'b3lyp' is ignored: "//trim(NAMES(i))// &
+                                 " runs on a Hartree-Fock reference") > 0, &
+                    trim(SPELLINGS(i))//" must warn and name "//trim(NAMES(i))//": "//text)
+         if (allocated(error)) return
+         call check(error, index(text, "one of: b2plyp, b2gp-plyp, mpw2plyp") > 0, &
+                    trim(SPELLINGS(i))//" must list the double hybrids: "//text)
+         if (allocated(error)) return
+      end do
+
+      config%functional = "   "
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "coupled cluster with a blank functional must not warn")
+   end subroutine test_cc_functional_warns
 
 end module test_mqc_config_adapter
 
