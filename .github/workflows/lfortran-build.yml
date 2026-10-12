@@ -33,7 +33,18 @@ name: lfortran build
 # is `refs/heads/<branch>` on a push and `refs/pull/<n>/merge` on the PR event,
 # so the two land in different groups. The other build jobs here are push-only,
 # so this matches them; the cost is that a PR from a fork does not build.
-on: [push]
+on:
+  push:
+    # Documentation alone builds nothing and tests nothing, so a change that
+    # touches only these does not start this workflow. Anything else does,
+    # including a file type nobody listed here -- the list names what is safe to
+    # skip, not what is needed to build.
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.rst"
+      - "mqc_docs/**"
+      - "**/*.png"
+      - "LICENSE"
 
 concurrency:
   group: lfortran-${{ github.ref }}
