@@ -29,9 +29,8 @@
 # refuses `model.ecp` outright in a `-DMQC_USE_LIBFINT=OFF` build rather than
 # failing at the linker. It also succeeds v0.1.1, the first release whose C ABI
 # carries the second derivatives -- which a `-DMQC_USE_LIBFINT=OFF` build still
-# reaches through `mqc_czt_cint_compat` -- and v0.1.2, the first
-# whose F12 integrals build. Both are ancestors of it, so neither is given up
-# here.
+# reaches through `mqc_czt_cint_compat` -- and v0.1.2, the first whose F12
+# integrals build. Both are ancestors of it, so neither is given up here.
 #
 # libcint pins by SHA rather than by name, which is the stronger form: a tag can
 # be moved and a SHA cannot. This one is a tag because it was a *branch* for the
