@@ -266,6 +266,13 @@ module mqc_many_body_expansion
       logical, allocatable :: pair_doubly_cut_neighbor(:)
          !! True where the pair sits either side of a third fragment cut at
          !! two bonded atoms; see `warn_adjacent_cuts`
+      integer :: reference_fragment = 0
+         !! The fragment whose interaction energy is reported, numbered from
+         !! one; 0 for the ordinary expansion. Every monomer is still solved,
+         !! and only the pairs holding it: the pair arrays then hold those
+         !! alone, `pair_sum` is their sum, and `energy` is not a total.
+      real(dp), allocatable :: monomer_energy(:)
+         !! (n_fragments), each monomer's term, Hartree
 
    contains
       procedure :: run_serial => fmo_run_serial
@@ -376,6 +383,8 @@ contains
       if (allocated(this%pair_edi)) deallocate (this%pair_edi)
       this%edi_in_energy = .false.
       if (allocated(this%pair_doubly_cut_neighbor)) deallocate (this%pair_doubly_cut_neighbor)
+      if (allocated(this%monomer_energy)) deallocate (this%monomer_energy)
+      this%reference_fragment = 0
       this%n_fragments = 0
       this%energy = 0.0_dp
       this%monomer_sum = 0.0_dp
@@ -442,12 +451,18 @@ contains
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
                        pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
-                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
+                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor, &
+                       reference_fragment=this%reference_fragment, &
+                       monomer_energy=this%monomer_energy)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_serial: "//error%get_message())
          return
       end if
-      call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+      if (this%reference_fragment > 0) then
+         call fmo_log_interaction(this)
+      else
+         call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+      end if
       call fmo_report(this, json_data)
    end subroutine fmo_run_serial
 
@@ -487,6 +502,9 @@ contains
    subroutine fmo_report(this, json_data)
       !! Hand the total, its sums and the pairs to whatever writes the output
       !!
+      !! With a reference fragment, the interaction block instead of the total
+      !! and the pairs holding the reference only.
+      !!
       !! `OUTPUT_MODE_UNFRAGMENTED`, as EFMO is written: one energy for one
       !! system with a named breakdown beside it, under `fmo`. Not the MBE
       !! mode, whose levels array and fragment table are built from a term
@@ -496,10 +514,28 @@ contains
       class(fmo_context_t), intent(in) :: this
       type(json_output_data_t), intent(inout), optional :: json_data
 
+      integer :: n_pairs
+
       if (.not. present(json_data)) return
       json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
-      json_data%total_energy = this%energy
-      json_data%has_energy = .true.
+      if (this%reference_fragment > 0) then
+         ! No total: the pairs without the reference were never solved. The
+         ! interaction block takes its place, as on the MBE path.
+         n_pairs = 0
+         if (allocated(this%pair_energy)) n_pairs = size(this%pair_energy)
+         json_data%has_energy = .false.
+         json_data%has_interaction = .true.
+         json_data%reference_fragment = this%reference_fragment
+         json_data%reference_energy = this%monomer_energy(this%reference_fragment)
+         json_data%interaction_energy = this%pair_sum
+         json_data%max_level = 2
+         json_data%interaction_by_level = [0.0_dp, this%pair_sum]
+         json_data%interaction_count_by_level = [0_int64, int(n_pairs, int64)]
+         json_data%fragment_count = int(this%n_fragments + n_pairs, int64)
+      else
+         json_data%total_energy = this%energy
+         json_data%has_energy = .true.
+      end if
       json_data%has_fmo = .true.
       json_data%fmo_expansion = this%expansion
       json_data%fmo_embedding = this%esp
@@ -527,6 +563,47 @@ contains
          end if
       end if
    end subroutine fmo_report
+
+   subroutine fmo_log_interaction(this)
+      !! Print the reference fragment's FMO2 interaction energy
+      !!
+      !! In place of the total, which a reduced run does not have, and in the
+      !! words the MBE path uses, so the log cannot be read as a total energy.
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+
+      class(fmo_context_t), intent(in) :: this
+
+      character(len=256) :: line
+      integer :: n_pairs, n_joined
+
+      n_pairs = 0
+      n_joined = 0
+      if (allocated(this%pair_energy)) n_pairs = size(this%pair_energy)
+      if (allocated(this%pair_connected)) n_joined = count(this%pair_connected)
+
+      write (line, "(a,i0,a,i0,a)") "Interaction energy of reference fragment ", &
+         this%reference_fragment - 1, " (0-based, as in the deck; monomer ", &
+         this%reference_fragment, " in the fragment table):"
+      call logger%info(trim(line))
+      write (line, "(a,f20.10)") "  Reference fragment energy:  ", &
+         this%monomer_energy(this%reference_fragment)
+      call logger%info(trim(line))
+      write (line, "(a,f20.10,a,i0,a)") "  2-body terms:               ", this%pair_sum, &
+         "   (", n_pairs, " terms)"
+      call logger%info(trim(line))
+      write (line, "(a,f20.10)") "  Interaction energy:         ", this%pair_sum
+      call logger%info(trim(line))
+      call logger%info("  (the FMO2 pair interaction energies that hold the reference, each "// &
+                       "pair in the field")
+      call logger%info("   of every other monomer; not a total energy, and no total "// &
+                       "energy is reported)")
+      if (n_joined > 0) then
+         call logger%warning("  "//to_char(n_joined)//" of these pairs are joined to the "// &
+                             "reference by a detached bond: their terms carry the bond "// &
+                             "itself, and the sum is not an interaction energy.")
+      end if
+   end subroutine fmo_log_interaction
 
    subroutine fmo_run_distributed(this, json_data)
       !! Run FMO across ranks
@@ -595,13 +672,19 @@ contains
                        pair_pieda=this%pair_pieda, pair_ees=this%pair_ees, &
                        pair_eex=this%pair_eex, pair_ect_mix=this%pair_ect_mix, &
                        pair_edi=this%pair_edi, edi_in_energy=this%edi_in_energy, &
-                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor)
+                       pair_doubly_cut_neighbor=this%pair_doubly_cut_neighbor, &
+                       reference_fragment=this%reference_fragment, &
+                       monomer_energy=this%monomer_energy)
       if (error%has_error()) then
          call fmo_refuse(this, "fmo_run_distributed: "//error%get_message())
          return
       end if
       if (this%resources%mpi_comms%world_comm%leader()) then
-         call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+         if (this%reference_fragment > 0) then
+            call fmo_log_interaction(this)
+         else
+            call logger%info("FMO total energy: "//to_char(this%energy)//" Hartree")
+         end if
       end if
       ! Every rank has the same total, but only the leader writes a file.
       if (this%resources%mpi_comms%world_comm%leader()) call fmo_report(this, json_data)

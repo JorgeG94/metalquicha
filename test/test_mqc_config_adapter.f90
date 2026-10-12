@@ -6,7 +6,7 @@ module test_mqc_config_adapter
    use mqc_optimizer_types, only: OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
    use mqc_method_types, only: METHOD_TYPE_GFN2
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_OPTIMIZE, CALC_TYPE_GRADIENT, &
-                             CALC_TYPE_HESSIAN
+                             CALC_TYPE_HESSIAN, CALC_TYPE_INTERACTION_ENERGY
    use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
    use mqc_error, only: error_t
    use pic_types, only: dp
@@ -40,6 +40,8 @@ contains
                   new_unittest("excited_states_reach_the_method", test_excited_states), &
                   new_unittest("pieda_is_silent_when_off", test_pieda_off_is_silent), &
                   new_unittest("pieda_allowed_under_fmo_energy", test_pieda_allowed), &
+                  new_unittest("pieda_allowed_under_fmo_interaction_energy", &
+                               test_pieda_allowed_interaction), &
                   new_unittest("pieda_refuses_efmo", test_pieda_refuses_efmo), &
                   new_unittest("pieda_refuses_ee_mbe", test_pieda_refuses_ee_mbe), &
                   new_unittest("pieda_refuses_plain_mbe", test_pieda_refuses_mbe), &
@@ -306,6 +308,42 @@ contains
                  support_error%get_message())
    end subroutine test_pieda_allowed
 
+   subroutine test_pieda_allowed_interaction(error)
+      !! `pieda` under FMO with driver InteractionEnergy is not refused: each
+      !! of the reference's pairs is a pair PIEDA decomposes. The level is
+      !! `check_interaction_energy_support`'s to hold, not this check's.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: dc
+      type(error_t) :: err, support_error
+
+      call frag_driver("fmo", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_INTERACTION_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error,.not. support_error%has_error(), &
+                 "pieda under FMO with driver InteractionEnergy must be allowed: "// &
+                 support_error%get_message())
+      if (allocated(error)) return
+
+      ! The expansion is still checked first: EE-MBE's pair term is not one
+      ! PIEDA can decompose, whichever driver asks.
+      call err%clear()
+      call support_error%clear()
+      call frag_driver("ee-mbe", dc, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      dc%fmo_pieda = .true.
+      dc%calc_type = CALC_TYPE_INTERACTION_ENERGY
+      call check_pieda_support(dc, support_error)
+      call check(error, support_error%has_error(), &
+                 "pieda under EE-MBE must be refused for InteractionEnergy too")
+      if (allocated(error)) return
+      call check(error, index(support_error%get_message(), "EE-MBE") > 0, &
+                 "the refusal should name EE-MBE: "//support_error%get_message())
+   end subroutine test_pieda_allowed_interaction
+
    subroutine test_pieda_refuses_efmo(error)
       !! `pieda` under EFMO is refused by name, as "not yet supported"
       !!
@@ -391,6 +429,9 @@ contains
       dc%calc_type = CALC_TYPE_GRADIENT
       call check_pieda_support(dc, support_error)
       call check(error, support_error%has_error(), "pieda under Gradient must be refused")
+      if (allocated(error)) return
+      call check(error, index(support_error%get_message(), "decomposes an energy term") > 0, &
+                 "the Gradient refusal should say why: "//support_error%get_message())
       if (allocated(error)) return
       call err%clear()
       call support_error%clear()

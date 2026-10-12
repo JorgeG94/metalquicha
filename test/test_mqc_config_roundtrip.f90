@@ -438,14 +438,36 @@ contains
       call refused_with(error, driver, 6, "GMBE", "GMBE")
       if (allocated(error)) return
 
+      ! FMO2 composes: every monomer is still solved in the field of all the
+      ! others, and only the pairs without the reference are skipped.
       call interaction_driver(driver)
       driver%expansion_kind = "fmo"
-      call refused_with(error, driver, 6, "method 'fmo'", "FMO")
+      call err%clear()
+      call check_interaction_energy_support(driver, 6, err)
+      call check(error,.not. err%has_error(), &
+                 "InteractionEnergy under FMO2 must be allowed: "//err%get_message())
+      if (allocated(error)) return
+
+      ! FMO3 does not: a triple holding the reference needs the pair of its
+      ! other two fragments. The refusal says why and names level 2.
+      call interaction_driver(driver)
+      driver%expansion_kind = "fmo"
+      driver%nlevel = 3
+      call refused_with(error, driver, 6, "needs level 2 (FMO2)", "FMO3")
+      if (allocated(error)) return
+      call refused_with(error, driver, 6, "pair of its other two fragments", "FMO3")
       if (allocated(error)) return
 
       call interaction_driver(driver)
       driver%expansion_kind = "efmo"
       call refused_with(error, driver, 6, "method 'efmo'", "EFMO")
+      if (allocated(error)) return
+
+      call interaction_driver(driver)
+      driver%expansion_kind = "ee-mbe"
+      call refused_with(error, driver, 6, "method 'ee-mbe'", "EE-MBE")
+      if (allocated(error)) return
+      call refused_with(error, driver, 6, "not the pair's interaction energy", "EE-MBE")
       if (allocated(error)) return
 
       ! VMFC above level 2 composes as it does at level 2: every ghosted row a

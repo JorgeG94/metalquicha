@@ -660,7 +660,7 @@ contains
                           detached, afo_localization, pair_separated, resdim, &
                           pieda, pieda_hl, pair_pieda, pair_ees, pair_eex, pair_ect_mix, &
                           pair_doubly_cut_neighbor, pieda_dispersion, pair_edi, &
-                          edi_in_energy, dispersion)
+                          edi_in_energy, dispersion, reference_fragment, monomer_energy)
       !! Run FMO2 (or EE-MBE) over a partitioned system
       !!
       !! Options arrive as plain scalars rather than the backend's own options
@@ -768,6 +768,14 @@ contains
       character(len=*), intent(in), optional :: dispersion
          !! See `fmo_options_t%dispersion`: `keywords.dft.dispersion` added per
          !! fragment and n-mer. Absent keeps its default, "none".
+      integer, intent(in), optional :: reference_fragment
+         !! See `fmo_options_t%reference_fragment`: numbered from one, and
+         !! only the pairs holding it are solved. `energy` is then zero and
+         !! `pair_sum` is that fragment's interaction energy. Absent or zero
+         !! solves every pair.
+      real(dp), intent(out), optional, allocatable :: monomer_energy(:)
+         !! (n_fragments), each monomer's term `E'_I` in Hartree, numbered as
+         !! `owner` numbers them; the embedded total under EE-MBE
 
       type(fmo_options_t) :: opts
       type(fmo_result_t) :: res
@@ -803,6 +811,7 @@ contains
       if (present(pieda_hl)) opts%pieda_hl = pieda_hl
       if (present(pieda_dispersion)) opts%pieda_dispersion = pieda_dispersion
       if (present(dispersion)) opts%dispersion = dispersion
+      if (present(reference_fragment)) opts%reference_fragment = reference_fragment
 
       call run_fmo2(atomic_numbers, symbols, coordinates, owner, opts, res, error, comm)
       if (error%has_error()) return
@@ -810,6 +819,7 @@ contains
       if (present(monomer_sum)) monomer_sum = res%monomer_sum
       if (present(pair_sum)) pair_sum = res%pair_sum
       if (present(response_sum)) response_sum = res%response_sum
+      if (present(monomer_energy)) monomer_energy = res%monomer_energy
       if (present(level_sum)) then
          if (allocated(res%level_sum)) then
             level_sum = res%level_sum

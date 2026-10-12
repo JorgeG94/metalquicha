@@ -42,8 +42,9 @@ Two keys do it, and each is refused without the other:
   **0-based**, like every other index a deck writes: ``0`` is the first entry of
   the molecule's ``fragments`` list. The deck above names the fourth, the water.
 
-``fragmentation.method`` stays ``"MBE"``: that key says how the system is
-partitioned, and the driver says what is done with the partition.
+``fragmentation.method`` stays ``"MBE"`` (or ``"fmo"`` at level 2, see
+:ref:`interaction-energy-fmo2`): that key says how the system is partitioned,
+and the driver says what is done with the partition.
 
 The geometry is ``validation/inputs/sample_inputs/gly3_water.xyz``: the glycine
 tripeptide ``gly3.xyz`` -- residues at atoms 0--7, 8--14 and 15--23 -- with a water
@@ -260,6 +261,9 @@ What composes with it
   same water needs 17 of the 27 rows at level 2 and 37 of 47 at level 3. A row
   still ghosts the whole system's complement, not only the monomers the reduced
   list kept, so the basis is the cluster's. See :doc:`counterpoise`.
+- **FMO2**, with or without PIEDA: every monomer, then only the reference's
+  pairs. The number means something different there; see
+  :ref:`interaction-energy-fmo2`.
 - **Checkpoints.** A term's energy is the same whichever driver computed it, so
   a checkpoint written by an ``Energy`` run can seed an ``InteractionEnergy``
   run over the same system, and the other way round.
@@ -284,15 +288,93 @@ the keys involved, rather than approximated or ignored:
 - ``"method": "gmbe"``. GMBE's terms are intersections of overlapping
   primaries, not sets of fragments, so which of them contain the reference is
   not defined.
-- ``"method"`` ``fmo``, ``ee-mbe`` and ``efmo``. Those build their own term
-  lists -- and under an embedding every fragment feels the field of all the
-  others, so skipping one would change the ones computed.
+- ``"method": "fmo"`` above level 2 (FMO3). A triple holding the reference
+  needs the pair of its other two fragments, which the monomer field does not
+  give, so nothing would be saved. FMO2 runs; see
+  :ref:`interaction-energy-fmo2`.
+- ``"method"`` ``ee-mbe`` and ``efmo``. EE-MBE's pair term counts the
+  point-charge interaction of its two fragments twice and is a correction, not
+  an interaction energy; EFMO assembles its own expansion inside the backend
+  and has no reduced list to run.
 - EFP, SAPT and NEO, which never reach the many-body expansion.
 - A multi-molecule deck. A fragment index names a different fragment -- or
   none -- in each molecule.
 - A supplied term list, through the Python or C interface: the reduction is
   where the saving is, and a list closed for the full expansion is not the
   reduced one.
+
+.. _interaction-energy-fmo2:
+
+Under FMO2
+----------
+
+``"method": "fmo"`` at ``"level": 2`` composes with this driver, and so does
+``keywords.fragmentation.pieda``:
+
+.. code-block:: json
+
+   "keywords": {
+     "fragmentation": {
+       "method": "fmo",
+       "level": 2,
+       "pieda": true,
+       "reference_fragment": 1
+     }
+   },
+   "driver": "InteractionEnergy"
+
+**Every monomer is still solved.** FMO converges the monomers together, each in
+the field of all the others, so leaving one out would change the field every
+other one feels -- the monomer loop runs exactly as it does for an ``Energy``
+deck. **Only the pairs are reduced.** Once the monomers have settled, each pair
+is solved once in their fixed field and feeds back into nothing, and a pair term
+:math:`\Delta E_{RJ}` needs only :math:`E_{RJ}`, :math:`E_R` and :math:`E_J`. So
+the run solves all :math:`n` monomers and then the :math:`n - 1` pairs holding
+the reference, against :math:`n(n-1)/2`. Every row it reports -- pair energy,
+response, and with ``pieda`` the ``ees``, ``eex`` and ``ect_mix`` -- is the row
+the full FMO2 run reports for the same pair, to the SCF convergence. The saving
+is bounded by the monomer loop, which is untouched.
+
+**What the number is** differs from the MBE one. :math:`E_R` is the reference's
+FMO monomer energy, its internal energy polarised by the whole system, and the
+interaction energy is the sum of its pair interaction energies (IFIEs). These
+exclude the mutual polarisation of the fragments, which sits in the monomer
+terms, so the sum is **not** a binding energy (see :ref:`fmo-pairs`), and unlike
+the MBE number it is not the full expansion less the expansion without
+:math:`R`: removing :math:`R` would change the field on every other monomer. A
+pair joined to the reference by a detached bond carries the bond itself and is
+not an interaction energy either; the log warns when one is summed, and the
+JSON marks it ``connected``. Pick a reference that is not covalently cut -- a
+ligand, a water.
+
+On the water trimer ``sample_inputs/w3.xyz`` at HF/6-31G, the middle water as
+reference, ``validation/inputs/cpu/mqc/interaction_energy/ie_fmo2_w3_pieda.json``::
+
+   fmo: interaction energy of fragment 2 (from one, as the pair table numbers it): computing 2 of 3 pairs, after every monomer
+   ...
+   Interaction energy of reference fragment 1 (0-based, as in the deck; monomer 2 in the fragment table):
+     Reference fragment energy:        -75.9831284100
+     2-body terms:                      -0.0184110238   (2 terms)
+     Interaction energy:                -0.0184110238
+
+The output has the ``interaction_energy`` block above, with ``terms_computed``
+:math:`2n - 1` and ``terms_in_full_expansion`` :math:`n(n+1)/2`, and **no**
+``total_energy``. The ``fmo`` block keeps ``pairs`` -- the reference's only,
+with their PIEDA terms -- and ``response_sum`` over them, and drops
+``monomer_sum``, ``pair_sum`` and ``level_sums``, whose sum would read as a
+total. The log prints no ``FMO total energy`` line.
+
+One, two and three MPI ranks give bit-identical rows on the deck above, three
+ranks being more than it has pairs.
+
+On the twenty-water cluster ``w20_isomer1.xyz``, HF/6-31G, FMO2 with the
+default ``resdim``, four threads: the ordinary ``Energy`` run solves 126 pair
+SCFs (64 more pairs are separated) in 17.1 s; the first water as reference
+solves 19 in 7.4 s, the same nine monomer passes in both -- medians of three
+runs each, about 2.3 times faster -- and its interaction energy matches the
+sum of that water's pairs in the full run to 3e-13 hartree. The monomer loop
+is the floor: the saving is a constant factor, not the drop from quadratic to
+linear that MBE gets.
 
 Bonding analysis on the reference's terms
 -----------------------------------------
@@ -410,10 +492,18 @@ Where it is checked
   inclusion--exclusion, for every reference; no total energy and no dipole come
   out of it.
 - ``test/test_mqc_config_roundtrip.f90`` and ``test/test_mqc_json_reader.f90``:
-  every refusal above, by its message.
+  every refusal above, by its message; ``test/test_mqc_config_adapter.f90``,
+  PIEDA allowed under this driver and still refused under a gradient.
+- ``test/test_mqc_fmo_interaction.f90``: under FMO2, for every reference, each
+  pair row and its PIEDA terms against the full run's, on the water trimer
+  (HF/6-31G) and on the glycine tripeptide with a water cut at both
+  C-alpha--C(=O) bonds (HF/STO-3G, connected and separated pairs among them):
+  worst difference 3e-12 hartree. The monomer loop runs the same number of
+  passes, and at most :math:`n - 1` pair SCFs follow it.
 - ``validation/inputs/cpu/mqc/interaction_energy/``: the prism at level 2, 3,
-  VMFC(2) and VMFC(3), and the gly3 and water deck, each pinned to the sum of
-  the same terms' corrections from the ordinary run of the same deck; and the
+  VMFC(2) and VMFC(3), the gly3 and water deck, and the FMO2 water trimer with
+  PIEDA, each pinned to the sum of the same terms' corrections from the
+  ordinary run of the same deck; and the
   prism at SSFC(2) and SSFC(3), pinned to the same sum evaluated from PySCF
   energies with the waters outside a term as ghost atoms.
 

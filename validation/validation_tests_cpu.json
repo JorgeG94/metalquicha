@@ -4906,6 +4906,13 @@
             "reference_note": "the motivating case: a small molecule against a capped peptide. Residues are atoms 0-7, 8-14 and 15-23 of gly3.xyz with the peptide bonds C2-N8 and C10-N15 declared in connectivity, so each residue is hydrogen-capped; the water donates a 1.94 A hydrogen bond to the middle residue's carbonyl. Reference is the sum of the six corrections holding the water -- three residue dimers, three residue-residue trimers -- of the ordinary MBE(3) run of the same deck. 13 of 14 terms computed."
         },
         {
+            "name": "InteractionEnergy water trimer 6-31G, FMO2 with PIEDA, middle water (CPU)",
+            "input": "inputs/cpu/mqc/interaction_energy/ie_fmo2_w3_pieda.json",
+            "expected_interaction_energy": -0.018411023781,
+            "type": "fragmented",
+            "reference_note": "FMO2 with PIEDA, the middle water as reference. Reference is the sum of the two pair interaction energies holding water 1 (pairs 1-2 and 2-3, fragments numbered from one) of the ordinary FMO2 Energy run of the same deck with reference_fragment removed; every monomer is still solved in the field of the others, and only those two of the three pairs. 5 of 6 terms computed. One, two and three MPI ranks give bit-identical rows."
+        },
+        {
             "name": "RHF TDA singlet H2O cc-pvdz (CPU)",
             "input": "inputs/cpu/mqc/tddft/cpu_water_cc-pvdz_tda_singlet.json",
             "expected_energy": -76.026435906898,

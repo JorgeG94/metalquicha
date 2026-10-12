@@ -521,6 +521,9 @@ HAND_MAINTAINED = {
     "cpu/mqc/interaction_energy/ie_prism_sto-3g_l2_vmfc.json",
     "cpu/mqc/interaction_energy/ie_prism_sto-3g_l3_vmfc.json",
     "cpu/mqc/interaction_energy/ie_gly3_water_sto-3g_l3.json",
+    # The same driver under FMO2, pinned the same way: against the reference's
+    # pair terms from the ordinary FMO2 run of the same deck.
+    "cpu/mqc/interaction_energy/ie_fmo2_w3_pieda.json",
 }
 
 # SAPT0. The monomers are the deck's own `fragments`, so the geometry is an
@@ -3254,6 +3257,13 @@ PRESERVED_TESTS = [
         "expected_interaction_energy": -0.001740634224,
         "type": "fragmented",
         "reference_note": "the motivating case: a small molecule against a capped peptide. Residues are atoms 0-7, 8-14 and 15-23 of gly3.xyz with the peptide bonds C2-N8 and C10-N15 declared in connectivity, so each residue is hydrogen-capped; the water donates a 1.94 A hydrogen bond to the middle residue's carbonyl. Reference is the sum of the six corrections holding the water -- three residue dimers, three residue-residue trimers -- of the ordinary MBE(3) run of the same deck. 13 of 14 terms computed.",
+    },
+    {
+        "name": "InteractionEnergy water trimer 6-31G, FMO2 with PIEDA, middle water (CPU)",
+        "input": "inputs/cpu/mqc/interaction_energy/ie_fmo2_w3_pieda.json",
+        "expected_interaction_energy": -0.018411023781,
+        "type": "fragmented",
+        "reference_note": "FMO2 with PIEDA, the middle water as reference. Reference is the sum of the two pair interaction energies holding water 1 (pairs 1-2 and 2-3, fragments numbered from one) of the ordinary FMO2 Energy run of the same deck with reference_fragment removed; every monomer is still solved in the field of the others, and only those two of the three pairs. 5 of 6 terms computed. One, two and three MPI ranks give bit-identical rows.",
     },
 ]
 
