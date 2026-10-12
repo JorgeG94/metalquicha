@@ -369,9 +369,12 @@ ranks being more than it has pairs.
 
 On the twenty-water cluster ``w20_isomer1.xyz``, HF/6-31G, FMO2 with the
 default ``resdim``, four threads: the ordinary ``Energy`` run solves 126 pair
-SCFs (64 more pairs are separated) in 15.8 s; the first water as reference
-solves 19 in 6.7 s, the same nine monomer passes in both, and its interaction
-energy matches the sum of that water's pairs in the full run to 3e-13 hartree.
+SCFs (64 more pairs are separated) in 17.1 s; the first water as reference
+solves 19 in 7.4 s, the same nine monomer passes in both -- medians of three
+runs each, about 2.3 times faster -- and its interaction energy matches the
+sum of that water's pairs in the full run to 3e-13 hartree. The monomer loop
+is the floor: the saving is a constant factor, not the drop from quadratic to
+linear that MBE gets.
 
 Bonding analysis on the reference's terms
 -----------------------------------------

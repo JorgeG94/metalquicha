@@ -1670,13 +1670,14 @@ contains
       call json%add(fmo_obj, "embedding", trim(data%fmo_embedding))
       ! An interaction-energy run solved only the reference's pairs, so its
       ! sums are no expansion's: monomer_sum plus pair_sum would read as a
-      ! total. The pairs and their responses are what it has, and the
-      ! interaction block carries their sum.
+      ! total, and response_sum would be read as the full run's. The pairs
+      ! and their responses are what it has, and the interaction block
+      ! carries their sum.
       if (.not. data%has_interaction) then
          call json%add(fmo_obj, "monomer_sum", data%fmo_monomer_sum)
          call json%add(fmo_obj, "pair_sum", data%fmo_pair_sum)
+         call json%add(fmo_obj, "response_sum", data%fmo_response_sum)
       end if
-      call json%add(fmo_obj, "response_sum", data%fmo_response_sum)
       if (allocated(data%fmo_level_sum) .and. .not. data%has_interaction) then
          call json%add(fmo_obj, "level_sums", data%fmo_level_sum)
       end if

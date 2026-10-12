@@ -445,13 +445,21 @@ module mqc_czt_fmo
          !! The FMO2 total. Zero with `fmo_options_t%reference_fragment`, whose
          !! run has no total: `pair_sum` is then the reference's interaction
          !! energy and `monomer_sum` plus it is nothing with a name.
-      real(dp) :: monomer_sum = 0.0_dp           !! sum_I E'_I
-      real(dp) :: pair_sum = 0.0_dp              !! sum of every n-mer correction
-      real(dp) :: response_sum = 0.0_dp          !! sum of Tr(dD u), the last term
+      real(dp) :: monomer_sum = 0.0_dp
+         !! sum_I E'_I, over every monomer whether or not a reference
+         !! fragment was named
+      real(dp) :: pair_sum = 0.0_dp
+         !! Sum of every n-mer correction. With a reference fragment, of the
+         !! reference's pairs only: its interaction energy.
+      real(dp) :: response_sum = 0.0_dp
+         !! Sum of Tr(dD u), the last term, over the n-mers that were solved:
+         !! with a reference fragment, the reference's pairs only
       real(dp), allocatable :: level_sum(:)
          !! Sum of the terms with `m` members, for `m` = 1 to the level run.
          !! Slot one is `monomer_sum`; the rest add up to `pair_sum`, which
-         !! despite its name holds every n-mer above one.
+         !! despite its name holds every n-mer above one. With a reference
+         !! fragment the slots, like `monomer_sum` and `pair_sum`, add up to no
+         !! total.
       type(fmo_pair_t), allocatable :: pairs(:)
          !! Every two-member term, in enumeration order. Summed, they are
          !! `level_sum(2)` and so `pair_sum` only at level two; above it
@@ -2686,6 +2694,15 @@ contains
 
       level = min(opts%level, n_frag)
       if (level < 2) return
+      ! `keep_reference_terms` keeps a list closed under subsets only at level
+      ! two. `run_fmo2` refuses anything else first; held here as well so
+      ! that holds for any caller.
+      if (opts%reference_fragment > 0 .and. level /= 2) then
+         call error%set(ERROR_VALIDATION, "fmo: a reference fragment selects the "// &
+                        "pairs of FMO2 and nothing else, and this run is at level "// &
+                        to_char(level)//".")
+         return
+      end if
 
       call all_charges(frag, n_frag, size(z), opts, q_all, error)
       if (error%has_error()) return

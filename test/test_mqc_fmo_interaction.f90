@@ -209,6 +209,16 @@ contains
                     max(1.0_dp, abs(red%pair_sum)), &
                     label//": level_sum(2) should be the pair sum")
          if (allocated(error)) return
+
+         ! Whenever the full run decomposed one of this reference's pairs, the
+         ! reduced run decomposed one too. Implied by the per-row flags above,
+         ! but stated, so a reference whose rows all went undecomposed cannot
+         ! pass on flags that merely agree.
+         if (any(full%pairs%pieda .and. (full%pairs%i == ref .or. full%pairs%j == ref))) then
+            call check(error, any(red%pairs%pieda), &
+                       label//": the reduced run decomposed none of the reference's pairs")
+            if (allocated(error)) return
+         end if
       end do
 
       write (*, "(a,a,a,es10.3,a,es10.3)") "   ", label, &
