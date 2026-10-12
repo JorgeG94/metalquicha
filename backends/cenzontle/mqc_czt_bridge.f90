@@ -3237,7 +3237,8 @@ contains
    end subroutine frontier_summary
 
    subroutine frontier_row(label, energies, n_occ)
-      !! One `HOMO, LUMO, gap` line, skipped when either orbital is missing
+      !! One `HOMO, LUMO, gap` line at verbose level, skipped when either
+      !! orbital is missing
       character(len=*), intent(in) :: label
       real(dp), intent(in) :: energies(:)
       integer, intent(in) :: n_occ
@@ -3250,7 +3251,7 @@ contains
       lumo = energies(n_occ + 1)*HARTREE_TO_EV
       write (line, "(a,f12.6,a,f12.6,a,f12.6,a)") "  "//label//"HOMO ", homo, &
          " eV   LUMO ", lumo, " eV   gap ", lumo - homo, " eV"
-      call logger%info(trim(line))
+      call logger%verbose(trim(line))
    end subroutine frontier_row
 
    subroutine resolve_active_space(settings, fragment, n_ao, space, error)
