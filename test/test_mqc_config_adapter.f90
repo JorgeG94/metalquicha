@@ -2,9 +2,10 @@ module test_mqc_config_adapter
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_config_types, only: input_fragment_t, mqc_config_t
    use mqc_config_adapter, only: check_fragment_overlap, config_to_driver, driver_config_t, &
-                                 check_pieda_support
+                                 check_pieda_support, functional_ignored_warning
    use mqc_optimizer_types, only: OPT_TARGET_MINIMUM, OPT_TARGET_SADDLE
-   use mqc_method_types, only: METHOD_TYPE_GFN2
+   use mqc_method_types, only: METHOD_TYPE_GFN2, METHOD_TYPE_DFT, METHOD_TYPE_HF, &
+                               method_type_from_string
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_OPTIMIZE, CALC_TYPE_GRADIENT, &
                              CALC_TYPE_HESSIAN, CALC_TYPE_INTERACTION_ENERGY
    use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
@@ -52,7 +53,12 @@ contains
                   new_unittest("pieda_dispersion_is_silent_when_none", &
                                test_pieda_dispersion_none_is_silent), &
                   new_unittest("pieda_dispersion_refuses_a_build_without_the_library", &
-                               test_pieda_dispersion_refuses_missing_library) &
+                               test_pieda_dispersion_refuses_missing_library), &
+                  new_unittest("mp2_warns_that_a_functional_is_ignored", test_mp2_functional_warns), &
+                  new_unittest("every_mp2_spelling_warns", test_mp2_spellings_warn), &
+                  new_unittest("mp2_without_a_functional_is_silent", test_mp2_no_functional_silent), &
+                  new_unittest("dft_with_a_double_hybrid_is_silent", test_dft_double_hybrid_silent), &
+                  new_unittest("non_mp2_methods_do_not_warn", test_other_methods_silent) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -804,6 +810,89 @@ contains
       call check(error, driver_config%optimization%target, OPT_TARGET_MINIMUM, &
                  "a target that failed to parse must not reach the driver")
    end subroutine test_unknown_target
+
+   subroutine test_mp2_functional_warns(error)
+      !! MP2 with a plain functional: the warning names it and the alternatives
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      character(len=:), allocatable :: text
+
+      config%method = method_type_from_string("mp2")
+      config%functional = "b3lyp"
+      text = functional_ignored_warning(config)
+      call check(error, index(text, "model.functional 'b3lyp' is ignored") > 0, &
+                 "the warning must name the functional: "//text)
+      if (allocated(error)) return
+      call check(error, index(text, "does not make sense from the theory perspective") > 0, &
+                 "the warning must give the reason: "//text)
+      if (allocated(error)) return
+      call check(error, index(text, "one of: b2plyp, b2gp-plyp, mpw2plyp") > 0, &
+                 "the warning must list the double hybrids: "//text)
+   end subroutine test_mp2_functional_warns
+
+   subroutine test_mp2_spellings_warn(error)
+      !! Every spelling that parses to the MP2 method type drops the functional
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      character(len=10), parameter :: SPELLINGS(5) = [character(len=10) :: &
+                                                      "mp2", "scs-mp2", "sos-mp2", "ri-mp2", "df-mp2"]
+      integer :: i
+
+      config%functional = "PBE"
+      do i = 1, size(SPELLINGS)
+         config%method = method_type_from_string(trim(SPELLINGS(i)))
+         call check(error, index(functional_ignored_warning(config), "model.functional 'PBE' is ignored") > 0, &
+                    trim(SPELLINGS(i))//" must warn, naming the functional as the deck spelled it")
+         if (allocated(error)) return
+      end do
+   end subroutine test_mp2_spellings_warn
+
+   subroutine test_mp2_no_functional_silent(error)
+      !! No functional named, or a blank one: nothing to say
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+
+      config%method = method_type_from_string("mp2")
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "an unallocated functional must not warn")
+      if (allocated(error)) return
+
+      config%functional = "   "
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "a blank functional must not warn")
+   end subroutine test_mp2_no_functional_silent
+
+   subroutine test_dft_double_hybrid_silent(error)
+      !! A double hybrid under model.method dft is the intended route, not a mistake
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+
+      config%method = METHOD_TYPE_DFT
+      config%functional = "b2plyp"
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "a double hybrid under dft must not warn")
+   end subroutine test_dft_double_hybrid_silent
+
+   subroutine test_other_methods_silent(error)
+      !! The warning is for the MP2 family only; nothing else is changed here
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+
+      config%functional = "b3lyp"
+      config%method = METHOD_TYPE_DFT
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "dft with a plain functional must not warn")
+      if (allocated(error)) return
+
+      config%method = METHOD_TYPE_HF
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "hf is outside this warning")
+      if (allocated(error)) return
+
+      config%method = method_type_from_string("ccsd")
+      call check(error, len(functional_ignored_warning(config)) == 0, &
+                 "coupled cluster is outside this warning")
+   end subroutine test_other_methods_silent
 
 end module test_mqc_config_adapter
 

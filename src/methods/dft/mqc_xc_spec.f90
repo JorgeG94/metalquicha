@@ -29,6 +29,7 @@ module mqc_xc_spec
    public :: xc_spec_t, xc_component_t
    public :: xc_spec_from_name
    public :: MAX_XC_COMPONENTS
+   public :: DOUBLE_HYBRID_NAMES
 
    integer, parameter :: MAX_XC_COMPONENTS = 6
       !! Size of `xc_spec_t%component`. The exact-exchange and perturbative
@@ -36,6 +37,14 @@ module mqc_xc_spec
    ! TODO(mqc): no row in the table below sets `n_components` above 2, and
    ! nothing checks a row against this bound, so it neither documents nor
    ! constrains anything.
+
+   character(len=*), parameter :: DOUBLE_HYBRID_NAMES(3) = &
+                                  [character(len=12) :: "b2plyp", "b2gp-plyp", "mpw2plyp"]
+      !! The canonical spelling of each double hybrid `xc_spec_from_name`
+      !! builds, i.e. every name whose `pt2_fraction` it sets. Their aliases
+      !! (`b2gpplyp`, `mpw2-plyp`) resolve to the same rows. Kept beside that
+      !! table by hand: `test_mqc_xc_spec` fails if a name here is not a
+      !! double hybrid there.
 
    type :: xc_component_t
       !! One libxc functional and how much of it to take
