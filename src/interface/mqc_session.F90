@@ -29,7 +29,7 @@ module mqc_session
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_text
    use mqc_config_adapter, only: driver_config_t, config_to_driver, get_logger_level, &
-                                 check_counterpoise_support
+                                 check_counterpoise_support, functional_ignored_warning
    use mqc_calc_types, only: CALC_TYPE_OPTIMIZE, CALC_TYPE_CONFORMERS
    use mqc_method_factory, only: method_backend_built
    use mqc_method_types, only: method_type_to_string
@@ -205,6 +205,7 @@ contains
       type(error_t), intent(inout) :: error
 
       character(len=:), allocatable :: payload
+      character(len=:), allocatable :: ignored_text
       type(mqc_config_t) :: config
       type(driver_config_t) :: driver
 
@@ -234,6 +235,9 @@ contains
       ! `main` sets the verbosity and a session never runs `main`, so without
       ! this the level in the settings is read, validated, and ignored.
       call apply_log_level(config)
+      ! `main` says this too, for the same reason: only rank 0 gets here.
+      ignored_text = functional_ignored_warning(config)
+      if (len(ignored_text) > 0) call logger%warning(ignored_text)
 
       ! Everything from here to the command below is checked in the driver too,
       ! and the difference is what happens on failure: the driver aborts the

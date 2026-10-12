@@ -222,7 +222,12 @@ Ab initio, on the CPU through libcint:
 - ``HF`` (also ``RHF``, ``UHF``, ``Hartree-Fock``) -- an odd electron count or a
   multiplicity above one selects the unrestricted path whatever the spelling says
 - ``MP2``, and ``SCS-MP2`` / ``SOS-MP2`` for the spin-component-scaled variants
-- ``CCSD`` and ``CCSD(T)``
+  (and their ``RI-`` / ``DF-`` forms). MP2 always runs on a Hartree-Fock
+  reference: a ``model.functional`` in the deck is ignored, and a warning at the
+  start of the run says so. For DFT with an MP2 term use a double hybrid --
+  ``model.method`` ``dft`` with ``b2plyp``, ``b2gp-plyp`` or ``mpw2plyp``.
+- ``CCSD`` and ``CCSD(T)``, on a Hartree-Fock reference too: a
+  ``model.functional`` is ignored with the same warning
 - ``RI-`` or ``DF-`` on any correlated method asks for the density-fitted route:
   ``RI-MP2``, ``RI-CCSD``, ``RI-CCSD(T)``
 - ``CASSCF`` (also ``MCSCF``) and ``CASCI`` -- one method with the orbitals free

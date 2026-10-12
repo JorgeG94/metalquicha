@@ -23,15 +23,19 @@ module mqc_config_adapter
                                   MIN_NEB_IMAGES
    use mqc_method_config, only: method_config_t
    use mqc_method_types, only: METHOD_TYPE_CCSD_T, METHOD_TYPE_GFN1, &
-                               METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
+                               METHOD_TYPE_GFN2, METHOD_TYPE_EFP2, METHOD_TYPE_MP2, &
+                               METHOD_TYPE_CCSD, method_type_to_string
+   use mqc_xc_spec, only: DOUBLE_HYBRID_NAMES
    use mqc_dispersion_apply, only: dispersion_kind_available, dispersion_kind_option
    use pic_logger, only: logger => global_logger
+   use pic_ascii, only: to_upper
    implicit none
    private
 
    public :: driver_config_t  !! Minimal config for driver
    public :: config_to_driver, config_to_system_geometry
    public :: get_logger_level  !! Convert log level string to integer
+   public :: functional_ignored_warning  !! Text of the warning for a functional an MP2 or coupled cluster deck drops
    public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
    public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
    public :: check_pieda_support  !! Refuse a PIEDA request this expansion or driver cannot honour
@@ -551,6 +555,43 @@ contains
       end if
 
    end subroutine config_to_driver
+
+   pure function functional_ignored_warning(mqc_config) result(message)
+      !! The warning for a deck that names `model.functional` under MP2 or coupled cluster
+      !!
+      !! Empty when there is nothing to say: no functional, or a method that
+      !! uses one. Every spelling that parses to `METHOD_TYPE_MP2` (`mp2`,
+      !! `scs-mp2`, `sos-mp2` and their `ri-`/`df-` forms), `METHOD_TYPE_CCSD` or
+      !! `METHOD_TYPE_CCSD_T` (`ccsd`, `ccsd(t)` and their `ri-`/`df-` forms) runs
+      !! on a Hartree-Fock reference and drops the functional; `model.method`
+      !! `dft` is not asked, because a double hybrid there is the intended route.
+      !! The functional is echoed as the deck spelled it, and the method is
+      !! named by its method type, upper-cased (`MP2`, `CCSD`, `CCSD(T)`).
+      type(mqc_config_t), intent(in) :: mqc_config
+      character(len=:), allocatable :: message
+
+      character(len=:), allocatable :: names, method_name
+      integer :: i
+
+      message = ""
+      if (mqc_config%method /= METHOD_TYPE_MP2 .and. mqc_config%method /= METHOD_TYPE_CCSD &
+          .and. mqc_config%method /= METHOD_TYPE_CCSD_T) return
+      if (.not. allocated(mqc_config%functional)) return
+      if (len_trim(mqc_config%functional) == 0) return
+
+      method_name = to_upper(method_type_to_string(mqc_config%method))
+
+      names = trim(DOUBLE_HYBRID_NAMES(1))
+      do i = 2, size(DOUBLE_HYBRID_NAMES)
+         names = names//", "//trim(DOUBLE_HYBRID_NAMES(i))
+      end do
+
+      message = "model.functional '"//trim(adjustl(mqc_config%functional))// &
+                "' is ignored: "//method_name//" runs on a Hartree-Fock reference, and a "// &
+                "correlated calculation on a Kohn-Sham reference does not make sense from the "// &
+                "theory perspective. If you want DFT with an MP2 term, use a double "// &
+                "hybrid: model.method 'dft' with model.functional one of: "//names
+   end function functional_ignored_warning
 
    subroutine set_optimization_vocabulary(mqc_config, driver_config, error)
       !! Turn the two spelled optimization settings into constants

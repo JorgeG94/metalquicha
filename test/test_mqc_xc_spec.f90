@@ -17,7 +17,7 @@ module test_mqc_xc_spec
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name
+   use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, DOUBLE_HYBRID_NAMES
    implicit none
    private
    public :: collect_mqc_xc_spec_tests
@@ -33,7 +33,9 @@ contains
                   new_unittest("mpw2plyp_matches_its_paper", test_mpw2plyp), &
                   new_unittest("an_empty_name_is_refused", test_empty), &
                   new_unittest("scan_family_pairs_its_halves", test_scan_family), &
-                  new_unittest("half_a_functional_is_refused", test_halves_refused) &
+                  new_unittest("half_a_functional_is_refused", test_halves_refused), &
+                  new_unittest("double_hybrid_name_list_agrees_with_the_table", &
+                               test_double_hybrid_names) &
                   ]
    end subroutine collect_mqc_xc_spec_tests
 
@@ -289,6 +291,50 @@ contains
       call xc_spec_from_name("   ", spec, err)
       call check(error, err%has_error(), "an empty functional name must be refused")
    end subroutine test_empty
+
+   subroutine test_double_hybrid_names(error)
+      !! `DOUBLE_HYBRID_NAMES` is what `xc_spec_from_name` calls a double hybrid
+      !!
+      !! The list is what the MP2 warning offers as the alternative, so a name
+      !! on it that is not a double hybrid sends the user somewhere wrong. The
+      !! other direction is checked against every non-double-hybrid row of the
+      !! table plus the two double-hybrid aliases: `select case` labels cannot
+      !! be enumerated, so a double hybrid added to the table and missing from
+      !! the list is caught here only if it is also added to `OTHERS`.
+      type(error_type), allocatable, intent(out) :: error
+      type(xc_spec_t) :: spec
+      type(error_t) :: err
+      character(len=12), parameter :: OTHERS(14) = [character(len=12) :: &
+                                                    "b3lyp", "pbe0", "wb97x", "cam-b3lyp", "tpss", "m06-l", "scan", &
+                                                    "r2scan", "scan0", "blyp", "pbe", "svwn", "lda", "r2scanh"]
+      character(len=12), parameter :: ALIASES(2) = [character(len=12) :: "b2gpplyp", "mpw2-plyp"]
+      integer :: i
+
+      do i = 1, size(DOUBLE_HYBRID_NAMES)
+         call xc_spec_from_name(trim(DOUBLE_HYBRID_NAMES(i)), spec, err)
+         call check(error,.not. err%has_error(), trim(DOUBLE_HYBRID_NAMES(i))//" is listed but not recognised")
+         if (allocated(error)) return
+         call check(error, spec%is_double_hybrid(), &
+                    trim(DOUBLE_HYBRID_NAMES(i))//" is listed but is not a double hybrid")
+         if (allocated(error)) return
+      end do
+
+      do i = 1, size(ALIASES)
+         call xc_spec_from_name(trim(ALIASES(i)), spec, err)
+         call check(error,.not. err%has_error() .and. spec%is_double_hybrid(), &
+                    trim(ALIASES(i))//" should resolve to a double hybrid")
+         if (allocated(error)) return
+      end do
+
+      do i = 1, size(OTHERS)
+         call xc_spec_from_name(trim(OTHERS(i)), spec, err)
+         call check(error,.not. err%has_error(), trim(OTHERS(i))//" should be recognised")
+         if (allocated(error)) return
+         call check(error,.not. spec%is_double_hybrid(), &
+                    trim(OTHERS(i))//" is a double hybrid and is missing from DOUBLE_HYBRID_NAMES")
+         if (allocated(error)) return
+      end do
+   end subroutine test_double_hybrid_names
 
 end module test_mqc_xc_spec
 

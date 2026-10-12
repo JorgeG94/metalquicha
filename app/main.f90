@@ -17,7 +17,8 @@ program main
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
-   use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
+   use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level, &
+                                 functional_ignored_warning
    use mqc_io_helpers, only: set_output_json_filename, ends_with
    use mqc_logo, only: print_logo
    use mqc_acknowledgements, only: print_acknowledgement
@@ -40,6 +41,7 @@ program main
    character(len=:), allocatable :: errmsg  !! Error messages for file I/O
    character(len=256) :: input_file  !! Input file name
    character(len=64) :: memory_text  !! The deck's memory budget, for the log
+   character(len=:), allocatable :: ignored_text  !! A setting the deck names and the method drops
 
    ! Initialize MPI
    ! pic-mpi will call mpi_init_thread when needed
@@ -124,6 +126,13 @@ program main
          write (memory_text, "(A,F0.1,A)") "Memory budget set to ", mqc_config%memory_gb, " GB"
          call logger%info(trim(memory_text))
       end if
+   end if
+
+   ! Said once, here, because the logger is not rank-aware and `config_to_driver`
+   ! runs on every rank (and once per molecule).
+   if (resources%mpi_comms%world_comm%rank() == 0) then
+      ignored_text = functional_ignored_warning(mqc_config)
+      if (len(ignored_text) > 0) call logger%warning(ignored_text)
    end if
 
    ! Name the library that is about to do the work, before it does any of it.
