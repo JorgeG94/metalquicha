@@ -143,6 +143,9 @@ module mqc_cuest_iface
       integer :: hessian_response_batch = 12
          !! The analytic Hessian's coupled-perturbed solve; copied from the
          !! options, whose defaults are the ones that count.
+      logical :: hessian_analytic = .true.
+         !! False makes the backend decline every analytic Hessian, so the
+         !! caller differences gradients instead.
       character(len=32) :: accelerator = "diis"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis',
          !! 'ediis' or 'soscf'. The energy-based pair runs only while the
@@ -269,6 +272,7 @@ contains
       settings%hessian_response_tol = options%hessian_response_tol
       settings%hessian_response_max_iter = options%hessian_response_max_iter
       settings%hessian_response_batch = options%hessian_response_batch
+      settings%hessian_analytic = options%hessian_analytic
       settings%excited = options%excited
    end subroutine apply_scf_settings
 

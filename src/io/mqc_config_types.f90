@@ -494,6 +494,9 @@ module mqc_config_types
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)
       real(dp) :: hessian_temperature = DEFAULT_TEMPERATURE    !! Temperature for thermochemistry (K)
       real(dp) :: hessian_pressure = DEFAULT_PRESSURE          !! Pressure for thermochemistry (atm)
+      logical :: hessian_analytic = .true.
+         !! `keywords.hessian.analytic`. False skips every analytic Hessian and
+         !! differences analytic gradients instead, whatever the method
       real(dp) :: hessian_response_tol = DEFAULT_RESPONSE_TOL
          !! Residual at which the analytic Hessian's coupled-perturbed solve stops
       integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER

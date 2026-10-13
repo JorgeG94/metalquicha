@@ -80,6 +80,7 @@ contains
       options%accelerator = "ediis"
       options%verbose = .true.
       options%device_rank = 2
+      options%hessian_analytic = .false.
       options%pcm%enabled = .true.
       options%pcm%dielectric = 32.7_dp
       options%excited%enabled = .true.
@@ -157,6 +158,9 @@ contains
       call check(error, settings%verbose .eqv. options%verbose, "verbose")
       if (allocated(error)) return
       call check(error, settings%device_rank == options%device_rank, "device_rank")
+      if (allocated(error)) return
+      call check(error, settings%hessian_analytic .eqv. options%hessian_analytic, &
+                 "hessian_analytic")
       if (allocated(error)) return
       call check(error, settings%pcm%enabled .eqv. options%pcm%enabled, "pcm%enabled")
       if (allocated(error)) return

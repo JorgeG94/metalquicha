@@ -428,6 +428,7 @@ contains
       call optional_int(json, "keywords.hessian.response_max_iter", &
                         config%hessian_response_max_iter)
       call optional_int(json, "keywords.hessian.response_batch", config%hessian_response_batch)
+      call optional_logical(json, "keywords.hessian.analytic", config%hessian_analytic)
 
       call read_excited_states(json, config, error)
       if (error%has_error()) return

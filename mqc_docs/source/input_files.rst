@@ -1515,6 +1515,7 @@ Settings for second derivatives, whichever path produces them:
      "response_batch": 12,
      "response_tolerance": 1e-9,
      "response_max_iter": 50,
+     "analytic": true,
      "temperature": 298.15,
      "pressure": 1.0
    }
@@ -1527,6 +1528,12 @@ Settings for second derivatives, whichever path produces them:
   Raising it trades memory for integral passes.
 - ``response_tolerance`` (default: 1e-9) and ``response_max_iter`` (default:
   50): convergence and iteration cap for that solve.
+- ``analytic`` (default: ``true``): ``false`` skips every analytic Hessian and
+  takes central differences of analytic gradients instead (the semi-numerical
+  path). Every method honours it. Useful when the analytic MP2 Hessian's memory,
+  which grows as :math:`n_{mo}^4 \times 3N`, is too large. The ``response_*``
+  keys are ignored when it is ``false``, and a double hybrid then reports no IR
+  intensities.
 - ``temperature`` (default: 298.15 K) and ``pressure`` (default: 1.0 atm): the
   conditions the thermochemistry is reported at. They do not affect the Hessian
   itself.

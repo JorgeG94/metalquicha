@@ -181,6 +181,7 @@ contains
       options%hessian_response_tol = config%hessian_response_tol
       options%hessian_response_max_iter = config%hessian_response_max_iter
       options%hessian_response_batch = config%hessian_response_batch
+      options%hessian_analytic = config%hessian_analytic
       options%stability = config%stability
       options%stability_tol = config%stability_tol
       options%stability_max_iter = config%stability_max_iter

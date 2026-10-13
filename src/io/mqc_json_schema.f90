@@ -582,6 +582,7 @@ contains
       call allow(keys, "response_tolerance")
       call allow(keys, "response_max_iter")
       call allow(keys, "response_batch")
+      call allow(keys, "analytic")
    end function hessian_keys
 
    function excited_states_keys() result(keys)

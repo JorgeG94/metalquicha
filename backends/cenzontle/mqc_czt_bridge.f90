@@ -2421,7 +2421,7 @@ contains
                     .and. .not. xc%any_mgga .and. .not. xc%range_separated &
                     .and. xc%nlc_b == 0.0_dp .and. xc%nlc_c == 0.0_dp &
                     .and. .not. settings%freeze_core
-      if (do_hessian .and. .not. unrestricted &
+      if (do_hessian .and. settings%hessian_analytic .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
@@ -2651,7 +2651,7 @@ contains
             ! all-electron or frozen-core. The core count flows straight into
             ! `mp2_correlation_hessian`, so an ordinary `freeze_core` deck takes
             ! this path rather than central differences.
-            if (do_hessian .and. .not. unrestricted &
+            if (do_hessian .and. settings%hessian_analytic .and. .not. unrestricted &
                 .and. .not. settings%density_fitting &
                 .and. .not. settings%corr_density_fitting &
                 .and. .not. settings%pcm%enabled .and. fragment%n_caps == 0 &
@@ -3103,10 +3103,16 @@ contains
       ! gradient, and a deck that asked for a Hessian and gets 6N gradient
       ! evaluations should be told why before they start.
       if (do_hessian .and. .not. result%has_hessian .and. .not. result%has_error) then
-         call logger%warning("no analytic Hessian for this run: "// &
-                             hessian_decline_reason(settings, unrestricted, kohn_sham, xc, &
-                                                    fragment%n_caps))
-         call logger%warning("  taking it by central differences of the analytic gradient instead")
+         if (.not. settings%hessian_analytic) then
+            ! A request, not a limitation, so it is information and not a warning.
+            call logger%info("  analytic Hessian disabled by keywords.hessian.analytic; "// &
+                             "using the semi-numerical path")
+         else
+            call logger%warning("no analytic Hessian for this run: "// &
+                                hessian_decline_reason(settings, unrestricted, kohn_sham, xc, &
+                                                       fragment%n_caps))
+            call logger%warning("  taking it by central differences of the analytic gradient instead")
+         end if
       end if
 
       if (kohn_sham) call xc%destroy()

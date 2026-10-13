@@ -294,6 +294,7 @@ contains
       driver_config%method_config%hessian_response_max_iter = &
          mqc_config%hessian_response_max_iter
       driver_config%method_config%hessian_response_batch = mqc_config%hessian_response_batch
+      driver_config%method_config%hessian_analytic = mqc_config%hessian_analytic
       driver_config%method_config%stability = mqc_config%scf_stability
       driver_config%method_config%stability_tol = mqc_config%scf_stability_tolerance
       driver_config%method_config%stability_max_iter = mqc_config%scf_stability_maxiter

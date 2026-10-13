@@ -318,16 +318,28 @@ correct and merely slower. A run that took the analytic path logs
 ``computing the analytic Hessian`` at verbose level, which is the only way to
 tell from the outside.
 
-There is no keyword to force either path. A deck that wants the fallback can
-have it by asking for something the analytic path declines -- density fitting,
-say -- but that is a side effect rather than a control, and if a real need for
-one appears it should be a keyword rather than a trick.
+``keywords.hessian.analytic`` (default ``true``) forces the fallback. With
+``false`` the backend skips every analytic Hessian, Hartree-Fock, Kohn-Sham,
+double hybrid and MP2 alike, and takes central differences of analytic
+gradients; the run logs ``analytic Hessian disabled by
+keywords.hessian.analytic`` once, where it would otherwise have computed the
+analytic one. It exists chiefly for the MP2 Hessian, whose memory grows as
+:math:`n_{mo}^4 \times 3N` and can be too large where the 6N gradients are not.
+There is no keyword to force the analytic path the other way: a method the
+table above declines stays declined.
+
+The semi-numerical path does not give a double hybrid IR intensities: it
+differences the reference density's dipole, not the relaxed one, so it leaves
+the dipole derivatives out rather than report the wrong ones. A Hartree-Fock or
+Kohn-Sham run keeps its intensities either way, and an MP2 Hessian has none on
+either path.
 
 What a deck can tune
 ====================
 
 The coupled-perturbed solve behind the analytic Hessian takes three settings,
-all under ``keywords.hessian``:
+all under ``keywords.hessian``, and ``analytic`` switches the analytic Hessian
+off altogether:
 
 .. code-block:: json
 
@@ -335,7 +347,8 @@ all under ``keywords.hessian``:
      "hessian": {
        "response_batch": 12,
        "response_tolerance": 1e-9,
-       "response_max_iter": 50
+       "response_max_iter": 50,
+       "analytic": true
      }
    }
 
