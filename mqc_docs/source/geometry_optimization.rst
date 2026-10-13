@@ -1,9 +1,9 @@
 Geometry Optimization
 =====================
 
-The ``Optimize`` driver minimizes a structure, calling the method in the deck for
-an energy and gradient at each step until the largest gradient component falls
-below the convergence threshold.
+The ``Optimize`` driver (``Optimise`` is accepted too) minimizes a structure,
+calling the method in the deck for an energy and gradient at each step until the
+largest gradient component falls below the convergence threshold.
 
 The optimizer itself is `DL-FIND <https://www.chemshell.org/dl-find>`_, reached
 through `libdlfind <https://github.com/digital-chemistry-laboratory/libdlfind>`_.
