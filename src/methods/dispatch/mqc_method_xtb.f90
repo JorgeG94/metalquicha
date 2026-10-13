@@ -416,10 +416,8 @@ contains
       !! `keywords.hessian.method = "numerical"` differences energies instead.
       ! TODO(mqc): a second copy of `finite_difference_hessian` in
       ! `mqc_semi_numerical_hessian`, which `xtb_method_t` could be passed to as
-      ! a `qc_method_t`. This copy pins the step at `DEFAULT_DISPLACEMENT`, so
-      ! `hessian_displacement` in a deck reaches only the `numerical` route,
-      ! and the translational sum-rule check on the dipole derivatives is
-      ! skipped as well.
+      ! a `qc_method_t`. This copy skips the translational sum-rule check on
+      ! the dipole derivatives.
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
                                         finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
       use pic_logger, only: logger => global_logger
@@ -449,7 +447,7 @@ contains
 
       n_atoms = fragment%n_atoms
       n_displacements = 3*n_atoms
-      displacement = DEFAULT_DISPLACEMENT
+      displacement = this%hessian_displacement
 
       if (this%verbose) then
          call logger%verbose("XTB: Computing Hessian via finite differences")

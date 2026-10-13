@@ -433,17 +433,18 @@ contains
    end subroutine build_gmbe_task_table
 
    subroutine assemble_one_pie_term_hessian(t, pie_atom_sets, sys_geom, task_results, &
-                                            task_offset, term_natoms, term_result, world_comm)
+                                            task_offset, term_natoms, step, term_result, world_comm)
       !! Fold one PIE term's displacement results into its Hessian, then release them
       use mqc_error, only: error_t
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, &
-                                        finite_diff_dipole_derivatives, DEFAULT_DISPLACEMENT
+                                        finite_diff_dipole_derivatives
       integer(int64), intent(in) :: t
       integer, intent(in) :: pie_atom_sets(:, :)
       type(system_geometry_t), intent(in) :: sys_geom
       type(calculation_result_t), intent(inout) :: task_results(:)
       integer(int64), intent(in) :: task_offset(:)
       integer, intent(in) :: term_natoms(:)
+      real(dp), intent(in) :: step  !! Step the displaced geometries were built at (Bohr)
       type(calculation_result_t), intent(inout) :: term_result
       type(comm_t), intent(in) :: world_comm
 
@@ -500,7 +501,7 @@ contains
          end if
       end do
 
-      call finite_diff_hessian_from_gradients(frag, fwd_grad, bwd_grad, DEFAULT_DISPLACEMENT, &
+      call finite_diff_hessian_from_gradients(frag, fwd_grad, bwd_grad, step, &
                                               term_result%hessian)
       term_result%has_hessian = .true.
 
@@ -517,7 +518,7 @@ contains
       end if
 
       if (have_dipoles) then
-         call finite_diff_dipole_derivatives(n_atoms, fwd_dip, bwd_dip, DEFAULT_DISPLACEMENT, &
+         call finite_diff_dipole_derivatives(n_atoms, fwd_dip, bwd_dip, step, &
                                              term_result%dipole_derivatives)
          term_result%has_dipole_derivatives = .true.
       end if
@@ -532,7 +533,7 @@ contains
    end subroutine assemble_one_pie_term_hessian
 
    subroutine fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, task_results, &
-                                       task_offset, term_natoms, term_results, &
+                                       task_offset, term_natoms, step, term_results, &
                                        next_term, scan_pos, world_comm)
       !! Fold every PIE term whose displacement results have all landed
       !!
@@ -545,6 +546,7 @@ contains
       type(calculation_result_t), intent(inout) :: task_results(:)
       integer(int64), intent(in) :: task_offset(:)
       integer, intent(in) :: term_natoms(:)
+      real(dp), intent(in) :: step  !! Step the displaced geometries were built at (Bohr)
       type(calculation_result_t), intent(inout) :: term_results(:)
       integer(int64), intent(inout) :: next_term  !! Oldest term not yet folded
       integer(int64), intent(inout) :: scan_pos   !! Next task of next_term to verify
@@ -562,7 +564,7 @@ contains
             end do
 
             call assemble_one_pie_term_hessian(next_term, pie_atom_sets, sys_geom, task_results, &
-                                               task_offset, term_natoms, term_results(next_term), &
+                                               task_offset, term_natoms, step, term_results(next_term), &
                                                world_comm)
          end if
 
@@ -624,6 +626,7 @@ contains
       integer(int64) :: total_tasks
       integer(int64) :: next_term, scan_pos
       logical :: expand_displacements
+      real(dp) :: hessian_step  !! Read once; the folds divide by the step the workers displaced by
       integer(int64) :: worker_term_map(resources%mpi_comms%node_comm%size())
       type(queue_t) :: group0_queue
       integer(int64), allocatable :: group0_term_ids(:)
@@ -663,6 +666,7 @@ contains
       ! differenced by the one rank that takes it (`calc_hessian`).
       expand_displacements = (calc_type == CALC_TYPE_HESSIAN .and. &
                               method_config%hessian_method /= HESSIAN_METHOD_NUMERICAL)
+      hessian_step = method_config%hessian_displacement
       call build_gmbe_task_table(pie_atom_sets, n_pie_terms, sys_geom, expand_displacements, &
                                  task_atom_sets, task_offset, term_natoms, total_tasks, &
                                  resources%mpi_comms%world_comm)
@@ -681,6 +685,7 @@ contains
          call logger%info("  Schedulable tasks:    "//to_char(total_tasks))
          call logger%info("  Max useful ranks:     "//to_char(total_tasks)//" (was "// &
                           to_char(n_pie_terms)//")")
+         call logger%info("  Finite difference step size: "//to_char(hessian_step)//" Bohr")
       end if
 
       call logger%verbose("GMBE PIE coordinator starting with "//to_char(total_tasks)// &
@@ -796,7 +801,7 @@ contains
          ! task gradients while the rest of the queue is still running.
          if (expand_displacements) then
             call fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, results, &
-                                          task_offset, term_natoms, term_results, next_term, scan_pos, &
+                                          task_offset, term_natoms, hessian_step, term_results, next_term, scan_pos, &
                                           resources%mpi_comms%world_comm)
          end if
 
@@ -840,7 +845,7 @@ contains
                              to_char(n_pie_terms - next_term + 1_int64)//" of "// &
                              to_char(n_pie_terms)//" deferred)...")
             call fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, results, &
-                                          task_offset, term_natoms, term_results, next_term, scan_pos, &
+                                          task_offset, term_natoms, hessian_step, term_results, next_term, scan_pos, &
                                           resources%mpi_comms%world_comm)
          end if
          if (next_term <= n_pie_terms) then

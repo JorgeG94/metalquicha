@@ -328,7 +328,10 @@ The analytic route is a single-rank route. An unfragmented Hessian launched on
 several MPI ranks distributes its displacements across them instead (gradients,
 or energies for ``"numerical"``), and the log says so. A fragmented run on
 several ranks does the same, fanning each fragment or PIE term out into its
-gradient displacements unless ``method`` is ``"numerical"``.
+gradient displacements unless ``method`` is ``"numerical"``. Every one of those
+displacements is taken at ``keywords.hessian.displacement``, the same step the
+single-rank and unfragmented runs use, so a run gives the same Hessian on one
+rank as on many.
 
 ``"semi-numerical"`` forces the fallback. The backend skips every analytic
 Hessian, Hartree-Fock, Kohn-Sham, double hybrid and MP2 alike, and takes

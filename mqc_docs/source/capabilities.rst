@@ -590,7 +590,7 @@ a transition-state search unreliable, since that needs one negative eigenvalue
 whose sign a noisy near-zero mode can flip.
 
 - **Configurable displacement**: step size for the semi-numerical path
-  (default: 0.001 Bohr)
+  (default: 0.005 Bohr), ``keywords.hessian.displacement``, honoured on every rank count
 - **Hydrogen cap redistribution**: Proper Hessian transformation for capped atoms
 - **Units**: Hartree/Bohr²
 - **Applications**: Vibrational frequencies, reaction path analysis
