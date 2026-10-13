@@ -36,6 +36,7 @@ module mqc_driver
                              CALC_TYPE_HESSIAN, CALC_TYPE_MAKEFP, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_config_types, only: bond_t, mqc_config_t
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC
    use mqc_combinatorics, only: counterpoise_scheme_of
    use mqc_scf_types, only: scf_numerics_t
    use mqc_mbe, only: compute_gmbe
@@ -419,6 +420,10 @@ contains
             call logger%large_info(" ")
             call logger%large_info("Running distributed unfragmented Hessian calculation")
             call logger%large_info("  MPI ranks: "//to_char(world_comm%size()))
+            if (config%method_config%hessian_method == HESSIAN_METHOD_ANALYTIC) then
+               call logger%large_info("  taken by finite differences distributed across the ranks; "// &
+                                      'keywords.hessian.method = "analytic" applies to a single-rank run')
+            end if
             call logger%large_info(" ")
          end if
          call distributed_unfragmented_hessian(world_comm, sys_geom, config, json_data)

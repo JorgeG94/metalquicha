@@ -7,6 +7,8 @@ module mqc_method_xtb
                                frontier_orbitals
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_GENERIC, ERROR_VALIDATION
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_NUMERICAL, DEFAULT_DISPLACEMENT
+   use mqc_semi_numerical_hessian, only: finite_difference_hessian_energies
    use pic_logger, only: logger => global_logger
 
    ! tblite imports (reuse from mqc_mbe)
@@ -59,6 +61,13 @@ module mqc_method_xtb
       real(wp) :: dielectric = -1.0_wp          !! Direct dielectric constant (-1 = use solvent lookup)
       integer :: cpcm_nang = 110                !! Number of angular points for CPCM cavity
       real(wp) :: cpcm_rscale = 1.0_wp          !! Radii scaling for CPCM cavity
+      integer :: hessian_method = HESSIAN_METHOD_ANALYTIC
+         !! `keywords.hessian.method`. tblite has no analytic Hessian, so
+         !! `analytic` and `semi-numerical` both difference gradients and only
+         !! `numerical` takes another route.
+      real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT
+         !! `keywords.hessian.displacement` in Bohr; read only by the
+         !! `numerical` route.
       integer :: excited_n_states = 0
          !! Roots `keywords.excited_states` asked for. tblite has no
          !! linear-response solver, so anything above zero is refused by
@@ -404,16 +413,13 @@ contains
       !!   H[i,j] = (grad_j(x_i + h) - grad_j(x_i - h)) / (2h)
       !!
       !! 6N gradient evaluations for N atoms, plus the undisplaced point.
+      !! `keywords.hessian.method = "numerical"` differences energies instead.
       ! TODO(mqc): a second copy of `finite_difference_hessian` in
       ! `mqc_semi_numerical_hessian`, which `xtb_method_t` could be passed to as
-      ! a `qc_method_t`. This copy pins the step at `DEFAULT_DISPLACEMENT` --
-      ! `xtb_method_t` has no `hessian_displacement` field and `configure_xtb`
-      ! copies none -- so `hessian_displacement` in a deck is ignored for xTB,
-      ! and the translational sum-rule check on the dipole derivatives is
-      ! skipped as well.
+      ! a `qc_method_t`. This copy skips the translational sum-rule check on
+      ! the dipole derivatives.
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
-                                        finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives, &
-                                        DEFAULT_DISPLACEMENT
+                                        finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
 
@@ -433,9 +439,15 @@ contains
 
       if (excited_states_refused(this, result)) return
 
+      if (this%hessian_method == HESSIAN_METHOD_NUMERICAL) then
+         call finite_difference_hessian_energies(this, fragment, result, verbose=this%verbose, &
+                                                 displacement_in=this%hessian_displacement)
+         return
+      end if
+
       n_atoms = fragment%n_atoms
       n_displacements = 3*n_atoms
-      displacement = DEFAULT_DISPLACEMENT
+      displacement = this%hessian_displacement
 
       if (this%verbose) then
          call logger%verbose("XTB: Computing Hessian via finite differences")

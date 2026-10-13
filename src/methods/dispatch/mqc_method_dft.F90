@@ -19,7 +19,9 @@ module mqc_method_dft
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_semi_numerical_hessian, only: finite_difference_hessian
+   use mqc_semi_numerical_hessian, only: finite_difference_hessian, finite_difference_hessian_energies, &
+                                         suggest_numerical_hessian
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_NUMERICAL
    use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_CZT, BACKEND_TERCO
    use mqc_cuest_bridge, only: run_cuest_scf
@@ -319,6 +321,15 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
+      ! `keywords.hessian.method = "numerical"` differences energies, which
+      ! carry the dispersion correction as they carry everything else, so
+      ! there is nothing to ask the backend and no gradient to run.
+      if (this%options%hessian_method == HESSIAN_METHOD_NUMERICAL) then
+         call finite_difference_hessian_energies(this, fragment, result, verbose=this%options%verbose, &
+                                                 displacement_in=this%options%hessian_displacement)
+         return
+      end if
+
       ! Dispersion goes straight to finite differences, without asking the
       ! backend whether it has an analytic Hessian. Neither library's C API
       ! offers a second derivative this code could add -- s-dftd3 returns an
@@ -329,7 +340,10 @@ contains
       ! does carry the correction, gives the whole thing.
       if (.not. this%options%use_dispersion) then
          call dft_run(this, fragment, result, want_gradient=.true., want_hessian=.true.)
-         if (result%has_error) return
+         if (result%has_error) then
+            call suggest_numerical_hessian(result)
+            return
+         end if
          if (result%has_hessian) return
       end if
 
@@ -338,6 +352,7 @@ contains
       call result%destroy()
       call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
                                      displacement_in=this%options%hessian_displacement)
+      call suggest_numerical_hessian(result)
    end subroutine dft_calc_hessian
 
 end module mqc_method_dft

@@ -19,6 +19,8 @@ module test_mqc_json_reader
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
+                                       HESSIAN_METHOD_NUMERICAL, &
                                        DEFAULT_FRAG_LEVEL, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_SCF_CONV, &
@@ -62,6 +64,7 @@ contains
                   new_unittest("memory_budget", test_memory_gb), &
                   new_unittest("efp_dispersion_blocks", test_efp_dispersion), &
                   new_unittest("hessian_settings", test_hessian), &
+                  new_unittest("hessian_method_spellings", test_hessian_method), &
                   new_unittest("allow_crap_scf", test_allow_crap_scf), &
                   new_unittest("scf_tolerances_record_being_named", test_scf_tolerances), &
                   new_unittest("efp_keywords", test_efp_keywords), &
@@ -714,7 +717,7 @@ contains
                       '"hessian": {"finite_difference_displacement": 0.005, '// &
                       '"temperature": 300.0, "pressure": 1.5, '// &
                       '"response_tolerance": 1.0e-6, "response_max_iter": 20, '// &
-                      '"response_batch": 7}', "", two_atoms())
+                      '"response_batch": 7, "method": "numerical"}', "", two_atoms())
       call read_deck(config, parse_error)
 
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
@@ -732,7 +735,43 @@ contains
       call check(error, config%hessian_response_max_iter, 20)
       if (allocated(error)) return
       call check(error, config%hessian_response_batch, 7)
+      if (allocated(error)) return
+      call check(error, config%hessian_method, HESSIAN_METHOD_NUMERICAL, "method: numerical was not read")
    end subroutine test_hessian
+
+   subroutine test_hessian_method(error)
+      !! Every spelling of `keywords.hessian.method`, and a refusal of anything else
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      character(len=14), parameter :: SPELLINGS(8) = [character(len=14) :: &
+                                            "analytic", "Analytic", "semi-numerical", "SEMI_NUMERICAL", "seminumerical", &
+                                                      "numerical", "Numerical", " numerical "]
+      integer, parameter :: EXPECTED(8) = [HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_ANALYTIC, &
+                                           HESSIAN_METHOD_SEMI_NUMERICAL, HESSIAN_METHOD_SEMI_NUMERICAL, &
+                                           HESSIAN_METHOD_SEMI_NUMERICAL, HESSIAN_METHOD_NUMERICAL, &
+                                           HESSIAN_METHOD_NUMERICAL, HESSIAN_METHOD_NUMERICAL]
+      integer :: i
+
+      do i = 1, size(SPELLINGS)
+         call write_deck('"method": "XTB-GFN2"', "Hessian", &
+                         '"hessian": {"method": "'//trim(SPELLINGS(i))//'"}', "", two_atoms())
+         call read_deck(config, parse_error)
+         call check(error,.not. parse_error%has_error(), &
+                    trim(SPELLINGS(i))//" should parse: "//parse_error%get_message())
+         if (allocated(error)) return
+         call check(error, config%hessian_method, EXPECTED(i), &
+                    "hessian method "//trim(SPELLINGS(i)))
+         if (allocated(error)) return
+      end do
+
+      call write_deck('"method": "XTB-GFN2"', "Hessian", '"hessian": {"method": "central"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown hessian method was accepted")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "analytic, semi-numerical, numerical") > 0, &
+                 "the refusal should list the accepted values: "//parse_error%get_message())
+   end subroutine test_hessian_method
 
    subroutine test_hessian_defaults(error)
       !! An empty hessian block leaves every default in place
@@ -754,6 +793,8 @@ contains
       call check(error, close_enough(config%hessian_response_tol, DEFAULT_RESPONSE_TOL))
       if (allocated(error)) return
       call check(error, config%hessian_response_max_iter, DEFAULT_RESPONSE_MAX_ITER)
+      if (allocated(error)) return
+      call check(error, config%hessian_method, HESSIAN_METHOD_ANALYTIC, "method should default to analytic")
    end subroutine test_hessian_defaults
 
    subroutine test_aimd(error)

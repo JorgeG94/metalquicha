@@ -14,7 +14,9 @@ module mqc_method_hf
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_semi_numerical_hessian, only: finite_difference_hessian
+   use mqc_semi_numerical_hessian, only: finite_difference_hessian, finite_difference_hessian_energies, &
+                                         suggest_numerical_hessian
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_NUMERICAL
    use mqc_cuest_iface, only: apply_properties_settings, apply_scf_settings, cuest_scf_settings_t, parse_backend_name, &
                               BACKEND_CUEST, BACKEND_CZT, BACKEND_TERCO
    use mqc_cuest_bridge, only: run_cuest_scf
@@ -205,12 +207,24 @@ contains
       !! the answer comes back as `has_hessian`: true means it was computed,
       !! false with no error means it was declined and finite differences take
       !! over. Unlike a gradient, a declined Hessian is not a failure.
+      !!
+      !! `keywords.hessian.method = "numerical"` never asks the backend: the
+      !! Hessian is second differences of energies, and no gradient is run.
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
+      if (this%options%hessian_method == HESSIAN_METHOD_NUMERICAL) then
+         call finite_difference_hessian_energies(this, fragment, result, verbose=this%options%verbose, &
+                                                 displacement_in=this%options%hessian_displacement)
+         return
+      end if
+
       call hf_run(this, fragment, result, want_gradient=.true., want_hessian=.true.)
-      if (result%has_error) return
+      if (result%has_error) then
+         call suggest_numerical_hessian(result)
+         return
+      end if
       if (result%has_hessian) return
 
       ! Declined. The finite-difference path runs its own reference point, so
@@ -218,6 +232,7 @@ contains
       call result%destroy()
       call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
                                      displacement_in=this%options%hessian_displacement)
+      call suggest_numerical_hessian(result)
    end subroutine hf_calc_hessian
 
 end module mqc_method_hf

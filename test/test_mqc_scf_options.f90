@@ -26,6 +26,7 @@ module test_mqc_scf_options
    use mqc_cuest_iface, only: cuest_scf_settings_t, apply_scf_settings, &
                               apply_properties_settings
    use mqc_scf_types, only: guess_step_t, scf_numerics_t
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_NUMERICAL
    use mqc_method_factory, only: scf_numerics_from_config
    implicit none
    private
@@ -80,6 +81,7 @@ contains
       options%accelerator = "ediis"
       options%verbose = .true.
       options%device_rank = 2
+      options%hessian_method = HESSIAN_METHOD_NUMERICAL
       options%pcm%enabled = .true.
       options%pcm%dielectric = 32.7_dp
       options%excited%enabled = .true.
@@ -157,6 +159,8 @@ contains
       call check(error, settings%verbose .eqv. options%verbose, "verbose")
       if (allocated(error)) return
       call check(error, settings%device_rank == options%device_rank, "device_rank")
+      if (allocated(error)) return
+      call check(error, settings%hessian_method == options%hessian_method, "hessian_method")
       if (allocated(error)) return
       call check(error, settings%pcm%enabled .eqv. options%pcm%enabled, "pcm%enabled")
       if (allocated(error)) return

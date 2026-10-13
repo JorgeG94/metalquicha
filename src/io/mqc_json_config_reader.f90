@@ -36,7 +36,9 @@ module mqc_json_config_reader
                              CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY, &
                              CALC_TYPE_INTERACTION_ENERGY, CALC_TYPE_HESSIAN
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
-                                       EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL
+                                       EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL, &
+                                       HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
+                                       HESSIAN_METHOD_NUMERICAL
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
                                method_wants_density_fitting, method_type_to_string, &
                                method_is_casci, METHOD_TYPE_UNKNOWN, &
@@ -428,6 +430,8 @@ contains
       call optional_int(json, "keywords.hessian.response_max_iter", &
                         config%hessian_response_max_iter)
       call optional_int(json, "keywords.hessian.response_batch", config%hessian_response_batch)
+      call read_hessian_method(json, config, error)
+      if (error%has_error()) return
 
       call read_excited_states(json, config, error)
       if (error%has_error()) return
@@ -1150,6 +1154,35 @@ contains
                         "'. Accepted: rys, rotaxis, hgp, hybrid, auto")
       end select
    end subroutine read_scf_eri_path
+
+   subroutine read_hessian_method(json, config, error)
+      !! `keywords.hessian.method`, as a `HESSIAN_METHOD_*` code, or a refusal
+      !!
+      !! Case-insensitive; `semi_numerical` and `seminumerical` are accepted
+      !! for `semi-numerical`. Refused rather than defaulted: a deck that
+      !! asked for `numerical` and quietly got the analytic Hessian would
+      !! report a number from a route it did not pick.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+
+      call optional_string(json, "keywords.hessian.method", text)
+      if (.not. allocated(text)) return
+
+      select case (to_lower(trim(adjustl(text))))
+      case ("analytic")
+         config%hessian_method = HESSIAN_METHOD_ANALYTIC
+      case ("semi-numerical", "semi_numerical", "seminumerical")
+         config%hessian_method = HESSIAN_METHOD_SEMI_NUMERICAL
+      case ("numerical")
+         config%hessian_method = HESSIAN_METHOD_NUMERICAL
+      case default
+         call error%set(ERROR_VALIDATION, "unknown keywords.hessian.method '"//trim(text)// &
+                        "'. Accepted: analytic, semi-numerical, numerical")
+      end select
+   end subroutine read_hessian_method
 
    subroutine read_efp_response(json, config, error)
       !! `keywords.efp.response`, as a code, or a refusal

@@ -2,9 +2,11 @@
 Analytic Hessians
 ==================
 
-A Hessian can be had two ways. The semi-numerical path differences analytic
+A Hessian can be had three ways. The semi-numerical path differences analytic
 gradients: ``6N`` of them for ``N`` atoms, each a converged SCF. The analytic
-path differentiates the energy expression twice and runs one SCF. On glycine
+path differentiates the energy expression twice and runs one SCF. The numerical
+path differences energies alone, ``1 + 18 N**2`` of them, and needs neither (see
+`How a deck reaches it`_). On glycine
 trimer -- 24 atoms, 139 basis functions, PBE/6-31G, grid 3, twenty threads --
 the semi-numerical Hessian takes **1962 seconds** and 144 gradient
 evaluations. That is the number the analytic path exists to beat, and it is
@@ -318,16 +320,69 @@ correct and merely slower. A run that took the analytic path logs
 ``computing the analytic Hessian`` at verbose level, which is the only way to
 tell from the outside.
 
-There is no keyword to force either path. A deck that wants the fallback can
-have it by asking for something the analytic path declines -- density fitting,
-say -- but that is a side effect rather than a control, and if a real need for
-one appears it should be a keyword rather than a trick.
+``keywords.hessian.method`` chooses among three routes. Its default,
+``"analytic"``, is the behaviour described above. There is no way to force the
+analytic route where the table declines a method.
+
+The analytic route is a single-rank route. An unfragmented Hessian launched on
+several MPI ranks distributes its displacements across them instead (gradients,
+or energies for ``"numerical"``), and the log says so. A fragmented run on
+several ranks does the same, fanning each fragment or PIE term out into its
+gradient displacements unless ``method`` is ``"numerical"``. Every one of those
+displacements is taken at ``keywords.hessian.displacement``, the same step the
+single-rank and unfragmented runs use, so a run gives the same Hessian on one
+rank as on many.
+
+``"semi-numerical"`` forces the fallback. The backend skips every analytic
+Hessian, Hartree-Fock, Kohn-Sham, double hybrid and MP2 alike, and takes
+central differences of analytic gradients, :math:`6N + 1` of them for
+:math:`N` atoms; the run logs ``analytic Hessian skipped`` once, where it would
+otherwise have computed the analytic one. It exists chiefly for the MP2
+Hessian, whose memory grows as :math:`n_{mo}^4 \times 3N` and can be too large
+where the :math:`6N` gradients are not. It needs the method's analytic
+gradient, so a method with none (coupled cluster, a continuum solvent on the
+CPU backend, a spin-scaled MP2) is refused by the gradient's own message, which
+then points at ``"numerical"``.
+
+``"numerical"`` takes no gradient and no analytic Hessian at all. The diagonal
+is :math:`(E(+h_i) - 2E(0) + E(-h_i))/h^2` and each off-diagonal element the
+four-point difference
+
+.. math::
+
+   H_{ij} = \frac{E(+h_i,+h_j) - E(+h_i,-h_j) - E(-h_i,+h_j) + E(-h_i,-h_j)}
+                 {4h^2}
+
+with :math:`h` the ``displacement``. Both are accurate to :math:`O(h^2)`, and
+the matrix is symmetric by construction. That is :math:`1 + 2(3N) +
+4 \cdot \tfrac{3N(3N-1)}{2} = 1 + 18N^2` energy evaluations: 163 for water,
+289 for four atoms, against :math:`6N + 1` gradients for the semi-numerical
+route. Because the second difference divides the energies by :math:`h^2`, their
+noise is amplified by :math:`10^4` at the default step, so converge the SCF
+tightly. On water at STO-3G, with ``keywords.scf.tolerance`` at ``1e-12`` and
+the default step, the frequencies from this route agreed with the analytic ones
+to 0.10 cm\ :sup:`-1` and the semi-numerical route's to 0.06 cm\ :sup:`-1`;
+looser convergence costs accuracy here first. The same energies give a
+central-difference gradient for nothing, which is reported beside the Hessian.
+It is the only route for a method whose gradient does not exist, and on several
+MPI ranks the energy evaluations are spread across them like the
+semi-numerical route's gradients. A fragmented run hands each fragment (or PIE
+term) to one rank, which differences it serially, instead of flattening the
+displacements into the queue.
+
+IR intensities need the dipole derivative. The analytic route supplies them for
+Hartree-Fock and Kohn-Sham, and for a double hybrid through its relaxed
+density. The semi-numerical and numerical routes difference the reference
+density's dipole at the single displacements, which is right for Hartree-Fock,
+Kohn-Sham and xTB; for a double hybrid it is not the relaxed density's, so they
+leave the dipole derivatives out rather than report the wrong ones. An MP2 or
+coupled cluster Hessian has none on any route.
 
 What a deck can tune
 ====================
 
 The coupled-perturbed solve behind the analytic Hessian takes three settings,
-all under ``keywords.hessian``:
+all under ``keywords.hessian``, and ``method`` chooses the route:
 
 .. code-block:: json
 
@@ -335,7 +390,8 @@ all under ``keywords.hessian``:
      "hessian": {
        "response_batch": 12,
        "response_tolerance": 1e-9,
-       "response_max_iter": 50
+       "response_max_iter": 50,
+       "method": "analytic"
      }
    }
 

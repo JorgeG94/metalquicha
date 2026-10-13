@@ -8,6 +8,7 @@ module mqc_cuest_iface
    ! from behind an `#ifdef`.
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t, deltascf_options_t
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, &
                                 properties_config_t, excited_config_t
    implicit none
@@ -143,6 +144,9 @@ module mqc_cuest_iface
       integer :: hessian_response_batch = 12
          !! The analytic Hessian's coupled-perturbed solve; copied from the
          !! options, whose defaults are the ones that count.
+      integer :: hessian_method = HESSIAN_METHOD_ANALYTIC
+         !! `HESSIAN_METHOD_*`. Anything but `_ANALYTIC` makes the backend
+         !! decline every analytic Hessian, so the caller differences instead.
       character(len=32) :: accelerator = "diis"
          !! `keywords.scf.accelerator`: 'diis' (the default), 'adiis',
          !! 'ediis' or 'soscf'. The energy-based pair runs only while the
@@ -269,6 +273,7 @@ contains
       settings%hessian_response_tol = options%hessian_response_tol
       settings%hessian_response_max_iter = options%hessian_response_max_iter
       settings%hessian_response_batch = options%hessian_response_batch
+      settings%hessian_method = options%hessian_method
       settings%excited = options%excited
    end subroutine apply_scf_settings
 

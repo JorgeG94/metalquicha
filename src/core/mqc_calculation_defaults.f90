@@ -188,6 +188,16 @@ module mqc_calculation_defaults
    integer, parameter, public :: EFP_RESPONSE_DENSE = 1
    integer, parameter, public :: EFP_RESPONSE_MATRIX_FREE = 2
 
+   integer, parameter, public :: HESSIAN_METHOD_ANALYTIC = 0
+   !! How a Hessian is obtained: `keywords.hessian.method`.
+   !!
+   !! `analytic` takes the analytic Hessian where the method has one and
+   !! otherwise differences analytic gradients. `semi_numerical` skips every
+   !! analytic Hessian and differences gradients. `numerical` differences
+   !! energies alone, so it needs neither an analytic Hessian nor a gradient.
+   integer, parameter, public :: HESSIAN_METHOD_SEMI_NUMERICAL = 1
+   integer, parameter, public :: HESSIAN_METHOD_NUMERICAL = 2
+
    ! =========================================================================
    ! XTB
    ! =========================================================================

@@ -140,6 +140,8 @@ contains
       ! `scf_options_t`, so the block would otherwise never arrive and a deck
       ! asking for roots would get a ground-state energy and no complaint.
       m%excited_n_states = config%excited%n_states
+      m%hessian_method = config%hessian_method
+      m%hessian_displacement = config%hessian_displacement
 
       ! Electronic temperature, Kelvin to Hartree: kt = T * k_B.
       ! TODO(mqc): a second, different Boltzmann constant. `KB_HARTREE` in
@@ -181,6 +183,7 @@ contains
       options%hessian_response_tol = config%hessian_response_tol
       options%hessian_response_max_iter = config%hessian_response_max_iter
       options%hessian_response_batch = config%hessian_response_batch
+      options%hessian_method = config%hessian_method
       options%stability = config%stability
       options%stability_tol = config%stability_tol
       options%stability_max_iter = config%stability_max_iter

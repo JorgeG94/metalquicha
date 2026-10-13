@@ -1515,24 +1515,45 @@ Settings for second derivatives, whichever path produces them:
      "response_batch": 12,
      "response_tolerance": 1e-9,
      "response_max_iter": 50,
+     "method": "analytic",
      "temperature": 298.15,
      "pressure": 1.0
    }
 
-- ``displacement`` (default: 0.005 Bohr): the finite-difference step, used only
-  on the semi-numerical path. ``finite_difference_displacement`` is accepted as
-  a longer spelling of the same key.
+- ``displacement`` (default: 0.005 Bohr): the finite-difference step, used by
+  the ``semi-numerical`` and ``numerical`` methods and by any run that falls
+  back to differences. ``finite_difference_displacement`` is accepted as a
+  longer spelling of the same key.
 - ``response_batch`` (default: 12): perturbation densities carried through one
   pass over the integrals in the coupled-perturbed solve. Analytic path only.
   Raising it trades memory for integral passes.
 - ``response_tolerance`` (default: 1e-9) and ``response_max_iter`` (default:
   50): convergence and iteration cap for that solve.
+- ``method`` (default: ``"analytic"``): how the Hessian is obtained. Case is
+  ignored, and ``semi_numerical`` and ``seminumerical`` are accepted for
+  ``semi-numerical``. Any other value is refused.
+
+  - ``"analytic"``: the analytic Hessian where the method has one, and central
+    differences of analytic gradients where it does not (the run says so).
+    This is what every deck got before the keyword existed.
+  - ``"semi-numerical"``: skips every analytic Hessian and takes central
+    differences of analytic gradients, :math:`6N` of them for :math:`N` atoms.
+    Useful when the analytic MP2 Hessian's memory, which grows as
+    :math:`n_{mo}^4 \times 3N`, is too large. A double hybrid then reports no
+    IR intensities.
+  - ``"numerical"``: second differences of energies alone, with no gradient
+    and no analytic Hessian anywhere. It is the only route to a Hessian for a
+    method whose gradient is not implemented, such as coupled cluster. It costs
+    :math:`1 + 18N^2` energy evaluations, and needs the SCF converged tightly;
+    see :doc:`analytic_hessians`.
+
+  The ``response_*`` keys are ignored unless the method is ``"analytic"``.
 - ``temperature`` (default: 298.15 K) and ``pressure`` (default: 1.0 atm): the
   conditions the thermochemistry is reported at. They do not affect the Hessian
   itself.
 
 The three ``response_*`` keys act on the analytic Hessian and are ignored where
-a deck falls back to central differences; see :doc:`analytic_hessians` for which
+a deck falls back to differences; see :doc:`analytic_hessians` for which
 methods take which path, and for what ``response_batch`` costs in memory.
 
 Note that ``keywords.efp`` carries its own ``response_batch``, driving the EFP
