@@ -414,6 +414,7 @@ contains
       !! Internal implementation of global_coordinator with typed context
       use mqc_json_output_types, only: json_output_data_t
       use mqc_many_body_expansion, only: mbe_context_t
+      use mqc_calculation_defaults, only: HESSIAN_METHOD_NUMERICAL
       type(mbe_context_t), intent(inout) :: ctx
          !! `inout` for the checkpoint alone: recording advances its record
          !! count, so it is state rather than a side effect on a file.
@@ -486,7 +487,11 @@ contains
 
       ! A Hessian fans each fragment out into its 6N+1 independent gradient
       ! evaluations; energy and gradient runs stay one task per fragment.
-      expand_displacements = (calc_type_local == CALC_TYPE_HESSIAN)
+      ! `hessian.method = "numerical"` is the exception: its 1 + 18 N**2 energy
+      ! evaluations are not gradient tasks, so each fragment stays whole and
+      ! is differenced by the one rank that takes it (`calc_hessian`).
+      expand_displacements = (calc_type_local == CALC_TYPE_HESSIAN .and. &
+                              ctx%method_config%hessian_method /= HESSIAN_METHOD_NUMERICAL)
       call build_hessian_task_table(ctx%polymers, ctx%total_fragments, ctx%sys_geom, expand_displacements, &
                                     task_rows, task_offset, frag_natoms, total_tasks, &
                                     ctx%resources%mpi_comms%world_comm)

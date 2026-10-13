@@ -12,8 +12,17 @@ module mqc_finite_differences
    public :: displaced_geometry_t           !! Container for displaced geometry
    public :: finite_diff_hessian_from_gradients  !! Compute Hessian from gradient differences
    public :: finite_diff_dipole_derivatives  !! Compute dipole derivatives from dipole differences
+   public :: energy_hessian_task_count  !! Energy evaluations a Hessian from energies needs
+   public :: energy_hessian_task        !! Which displacement one of those evaluations is
+   public :: energy_hessian_geometry    !! The geometry of one of those evaluations
+   public :: finite_diff_hessian_from_energies  !! Compute Hessian from energy second differences
+   public :: finite_diff_gradient_from_energies  !! Compute gradient from the same energies
    public :: copy_and_displace_geometry   !! Copy and displace geometry
    public :: DEFAULT_DISPLACEMENT  !! Re-export for backward compatibility
+
+   integer, parameter :: TASK_REFERENCE = 1
+      !! Task 1 of a Hessian from energies is the undisplaced geometry; the
+      !! `2*n_coords` single displacements follow, then the pairs.
 
    type :: displaced_geometry_t
       !! Container for a single displaced geometry
@@ -177,6 +186,152 @@ contains
       end do
 
    end subroutine finite_diff_hessian_from_gradients
+
+   pure function energy_hessian_task_count(n_coords) result(n_tasks)
+      !! Energy evaluations a Hessian from energies needs for `n_coords = 3*n_atoms`
+      !!
+      !! `1 + 2*n_coords + 4*n_coords*(n_coords - 1)/2`, which is
+      !! `1 + 2*n_coords**2`: the reference, `E(+h_i)` and `E(-h_i)` for each
+      !! coordinate, and four mixed displacements for each pair `i < j`.
+      integer, intent(in) :: n_coords
+      integer :: n_tasks
+
+      n_tasks = 1 + 2*n_coords*n_coords
+   end function energy_hessian_task_count
+
+   pure subroutine energy_hessian_task(task, n_coords, coord_i, sign_i, coord_j, sign_j)
+      !! The displacement that evaluation number `task` stands for
+      !!
+      !! Tasks run `1` for the reference, `2k` and `2k + 1` for `+h` and `-h` on
+      !! coordinate `k`, then four per pair `(i, j)` with `i < j`, pairs in
+      !! row-major order and signs in the order `(+,+)`, `(+,-)`, `(-,+)`,
+      !! `(-,-)`. A coordinate of 0 means that displacement is absent, and its
+      !! sign is then 0 as well. Coordinates are numbered `3*(atom - 1) + xyz`.
+      integer, intent(in) :: task  !! 1 to `energy_hessian_task_count(n_coords)`
+      integer, intent(in) :: n_coords
+      integer, intent(out) :: coord_i, sign_i  !! First displaced coordinate and its sign
+      integer, intent(out) :: coord_j, sign_j  !! Second displaced coordinate and its sign
+
+      integer :: pair, quadrant, row, row_size
+
+      coord_i = 0
+      sign_i = 0
+      coord_j = 0
+      sign_j = 0
+      if (task == TASK_REFERENCE) return
+
+      if (task <= 1 + 2*n_coords) then
+         coord_i = task/2
+         sign_i = merge(+1, -1, mod(task, 2) == 0)
+         return
+      end if
+
+      pair = (task - 2 - 2*n_coords)/4 + 1
+      quadrant = mod(task - 2 - 2*n_coords, 4)
+      row = 1
+      row_size = n_coords - 1
+      do while (pair > row_size)
+         pair = pair - row_size
+         row = row + 1
+         row_size = n_coords - row
+      end do
+      coord_i = row
+      coord_j = row + pair
+      sign_i = merge(+1, -1, quadrant < 2)
+      sign_j = merge(+1, -1, mod(quadrant, 2) == 0)
+   end subroutine energy_hessian_task
+
+   subroutine energy_hessian_geometry(reference_geom, task, displacement, geometry)
+      !! The geometry at which evaluation number `task` is made
+      type(physical_fragment_t), intent(in) :: reference_geom
+      integer, intent(in) :: task  !! See `energy_hessian_task`
+      real(dp), intent(in) :: displacement  !! Step size in Bohr
+      type(physical_fragment_t), intent(out) :: geometry
+
+      type(physical_fragment_t) :: once
+      integer :: coord_i, sign_i, coord_j, sign_j
+
+      call energy_hessian_task(task, 3*reference_geom%n_atoms, coord_i, sign_i, coord_j, sign_j)
+
+      if (coord_i == 0) then
+         call copy_and_displace_geometry(reference_geom, 1, 1, 0.0_dp, geometry)
+         return
+      end if
+
+      if (coord_j == 0) then
+         call copy_and_displace_geometry(reference_geom, (coord_i - 1)/3 + 1, mod(coord_i - 1, 3) + 1, &
+                                         sign_i*displacement, geometry)
+         return
+      end if
+
+      call copy_and_displace_geometry(reference_geom, (coord_i - 1)/3 + 1, mod(coord_i - 1, 3) + 1, &
+                                      sign_i*displacement, once)
+      call copy_and_displace_geometry(once, (coord_j - 1)/3 + 1, mod(coord_j - 1, 3) + 1, &
+                                      sign_j*displacement, geometry)
+      call once%destroy()
+   end subroutine energy_hessian_geometry
+
+   subroutine finite_diff_hessian_from_energies(n_coords, energies, displacement, hessian)
+      !! Compute Hessian matrix from second differences of energies
+      !!
+      !! Diagonal, `H_ii = (E(+h_i) - 2 E(0) + E(-h_i)) / h^2`. Off the
+      !! diagonal, the four-point formula
+      !! `H_ij = (E(+h_i,+h_j) - E(+h_i,-h_j) - E(-h_i,+h_j) + E(-h_i,-h_j)) / 4h^2`.
+      !! Both are accurate to `O(h^2)`. The result is symmetric by
+      !! construction: each pair is evaluated once and mirrored.
+      integer, intent(in) :: n_coords  !! `3*n_atoms`
+      real(dp), intent(in) :: energies(:)
+         !! Hartree, one per task of `energy_hessian_task`; size `energy_hessian_task_count(n_coords)`
+      real(dp), intent(in) :: displacement  !! Step size in Bohr
+      real(dp), intent(out), allocatable :: hessian(:, :)  !! (n_coords, n_coords)
+
+      integer :: task, coord_i, sign_i, coord_j, sign_j, i
+      real(dp) :: signed_sum
+
+      allocate (hessian(n_coords, n_coords))
+      hessian = 0.0_dp
+
+      do task = 2, energy_hessian_task_count(n_coords)
+         call energy_hessian_task(task, n_coords, coord_i, sign_i, coord_j, sign_j)
+         if (coord_j == 0) then
+            ! Both single displacements of a coordinate add into its diagonal.
+            hessian(coord_i, coord_i) = hessian(coord_i, coord_i) + energies(task)
+         else
+            ! The product of the two signs is the sign of the term.
+            signed_sum = real(sign_i*sign_j, dp)*energies(task)
+            hessian(coord_i, coord_j) = hessian(coord_i, coord_j) + signed_sum
+         end if
+      end do
+
+      do i = 1, n_coords
+         hessian(i, i) = (hessian(i, i) - 2.0_dp*energies(TASK_REFERENCE))/displacement**2
+      end do
+      do coord_i = 1, n_coords - 1
+         do coord_j = coord_i + 1, n_coords
+            hessian(coord_i, coord_j) = hessian(coord_i, coord_j)/(4.0_dp*displacement**2)
+            hessian(coord_j, coord_i) = hessian(coord_i, coord_j)
+         end do
+      end do
+   end subroutine finite_diff_hessian_from_energies
+
+   subroutine finite_diff_gradient_from_energies(n_atoms, energies, displacement, gradient)
+      !! Gradient from the single displacements of the same energies
+      !!
+      !! Central differences, `g_i = (E(+h_i) - E(-h_i)) / 2h`, accurate to
+      !! `O(h^2)`. Costs no evaluation beyond the Hessian's own.
+      integer, intent(in) :: n_atoms
+      real(dp), intent(in) :: energies(:)  !! As for `finite_diff_hessian_from_energies`
+      real(dp), intent(in) :: displacement  !! Step size in Bohr
+      real(dp), intent(out), allocatable :: gradient(:, :)  !! (3, n_atoms), Hartree/Bohr
+
+      integer :: k
+
+      allocate (gradient(3, n_atoms))
+      do k = 1, 3*n_atoms
+         gradient(mod(k - 1, 3) + 1, (k - 1)/3 + 1) = &
+            (energies(2*k) - energies(2*k + 1))/(2.0_dp*displacement)
+      end do
+   end subroutine finite_diff_gradient_from_energies
 
    subroutine displaced_geometry_destroy(this)
       !! Clean up memory for displaced geometry

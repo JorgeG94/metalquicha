@@ -23,7 +23,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_GMBE_PIE
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
-   use mqc_calculation_defaults, only: FRAGMENT_TYPE_ATOMS, DISP_WHOLE_FRAGMENT
+   use mqc_calculation_defaults, only: FRAGMENT_TYPE_ATOMS, DISP_WHOLE_FRAGMENT, HESSIAN_METHOD_NUMERICAL
    use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
    use mqc_work_queue, only: queue_t, queue_init_from_list, queue_pop, queue_is_empty
    use mqc_group_shard_io, only: send_group_assignment_matrix, receive_group_assignment_matrix
@@ -658,7 +658,11 @@ contains
 
       ! A Hessian fans each PIE term out into its 6N+1 independent gradient
       ! evaluations; energy and gradient runs stay one task per term.
-      expand_displacements = (calc_type == CALC_TYPE_HESSIAN)
+      ! `hessian.method = "numerical"` is the exception: its 1 + 18 N**2 energy
+      ! evaluations are not gradient tasks, so each term stays whole and is
+      ! differenced by the one rank that takes it (`calc_hessian`).
+      expand_displacements = (calc_type == CALC_TYPE_HESSIAN .and. &
+                              method_config%hessian_method /= HESSIAN_METHOD_NUMERICAL)
       call build_gmbe_task_table(pie_atom_sets, n_pie_terms, sys_geom, expand_displacements, &
                                  task_atom_sets, task_offset, term_natoms, total_tasks, &
                                  resources%mpi_comms%world_comm)

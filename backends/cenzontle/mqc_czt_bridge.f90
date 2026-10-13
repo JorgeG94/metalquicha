@@ -24,6 +24,7 @@ module mqc_czt_bridge
                                  ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
                                  ERI_CORE_BUDGET_BLIND, SAPT_CORE_BUDGET_SHARE
    use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC
    use mqc_czt_ecp, only: ecp_refuses_auto_frozen_core
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 angular_form_name
@@ -2421,7 +2422,8 @@ contains
                     .and. .not. xc%any_mgga .and. .not. xc%range_separated &
                     .and. xc%nlc_b == 0.0_dp .and. xc%nlc_c == 0.0_dp &
                     .and. .not. settings%freeze_core
-      if (do_hessian .and. settings%hessian_analytic .and. .not. unrestricted &
+      if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+          .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
@@ -2651,7 +2653,8 @@ contains
             ! all-electron or frozen-core. The core count flows straight into
             ! `mp2_correlation_hessian`, so an ordinary `freeze_core` deck takes
             ! this path rather than central differences.
-            if (do_hessian .and. settings%hessian_analytic .and. .not. unrestricted &
+            if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+                .and. .not. unrestricted &
                 .and. .not. settings%density_fitting &
                 .and. .not. settings%corr_density_fitting &
                 .and. .not. settings%pcm%enabled .and. fragment%n_caps == 0 &
@@ -3103,10 +3106,10 @@ contains
       ! gradient, and a deck that asked for a Hessian and gets 6N gradient
       ! evaluations should be told why before they start.
       if (do_hessian .and. .not. result%has_hessian .and. .not. result%has_error) then
-         if (.not. settings%hessian_analytic) then
+         if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
             ! A request, not a limitation, so it is information and not a warning.
-            call logger%info("  analytic Hessian disabled by keywords.hessian.analytic; "// &
-                             "using the semi-numerical path")
+            call logger%info("  analytic Hessian skipped: keywords.hessian.method is not "// &
+                             '"analytic"; using the semi-numerical path')
          else
             call logger%warning("no analytic Hessian for this run: "// &
                                 hessian_decline_reason(settings, unrestricted, kohn_sham, xc, &

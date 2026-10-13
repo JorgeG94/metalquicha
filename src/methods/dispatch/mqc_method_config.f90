@@ -9,7 +9,7 @@ module mqc_method_config
    use mqc_scf_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
-                                       DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, &
+                                       DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, HESSIAN_METHOD_ANALYTIC, &
                                        DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, &
                                        DEFAULT_STABILITY_TOL, &
@@ -463,9 +463,9 @@ module mqc_method_config
       integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
          !! The analytic Hessian's coupled-perturbed solve: where it stops, how
          !! long it may take, and how many perturbations share a pass.
-      logical :: hessian_analytic = .true.
-         !! False skips every analytic Hessian and differences gradients
-         !! instead; `keywords.hessian.analytic`.
+      integer :: hessian_method = HESSIAN_METHOD_ANALYTIC
+         !! How the Hessian is obtained, one of the `HESSIAN_METHOD_*`
+         !! constants; `keywords.hessian.method`.
       logical :: stability = .false.
          !! Diagonalise the electronic Hessian after the SCF converges and
          !! report whether the solution is a minimum. See
@@ -659,9 +659,9 @@ module mqc_method_config
       integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
       integer :: hessian_response_batch = DEFAULT_RESPONSE_BATCH
          !! The analytic Hessian's coupled-perturbed solve
-      logical :: hessian_analytic = .true.
-         !! False skips every analytic Hessian and differences gradients
-         !! instead; `keywords.hessian.analytic`.
+      integer :: hessian_method = HESSIAN_METHOD_ANALYTIC
+         !! How the Hessian is obtained, one of the `HESSIAN_METHOD_*`
+         !! constants; `keywords.hessian.method`.
       logical :: stability = .false.
          !! Diagonalise the electronic Hessian after the SCF converges and
          !! report whether the solution is a minimum. See
@@ -810,7 +810,7 @@ contains
       this%hessian_response_tol = DEFAULT_RESPONSE_TOL
       this%hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
       this%hessian_response_batch = DEFAULT_RESPONSE_BATCH
-      this%hessian_analytic = .true.
+      this%hessian_method = HESSIAN_METHOD_ANALYTIC
       this%stability = .false.
       this%stability_tol = DEFAULT_STABILITY_TOL
       this%stability_max_iter = DEFAULT_STABILITY_MAX_ITER

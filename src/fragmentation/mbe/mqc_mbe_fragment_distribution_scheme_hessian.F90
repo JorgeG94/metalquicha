@@ -9,7 +9,11 @@ contains
       !! Uses a dynamic work queue approach: workers request displacement indices
       !! from rank 0, compute gradients, and send results back. This provides
       !! better load balancing than static work distribution.
+      !!
+      !! `keywords.hessian.method = "numerical"` queues the `1 + 18 N**2` energy
+      !! evaluations of `energy_hessian_task_count` instead, in the same way.
       use mqc_json_output_types, only: json_output_data_t
+      use mqc_calculation_defaults, only: HESSIAN_METHOD_NUMERICAL
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
@@ -24,8 +28,10 @@ contains
       if (my_rank == 0) then
          ! Rank 0 is the coordinator
          call hessian_coordinator(world_comm, sys_geom, config, json_data)
-      else
+      else if (config%method_config%hessian_method == HESSIAN_METHOD_NUMERICAL) then
          ! Other ranks are workers
+         call energy_hessian_worker(world_comm, sys_geom, config)
+      else
          call hessian_worker(world_comm, sys_geom, config)
       end if
 
@@ -37,14 +43,13 @@ contains
    module subroutine hessian_coordinator(world_comm, sys_geom, config, json_data)
       !! Coordinator for distributed Hessian calculation
       !! Distributes displacement work and collects gradient results
-      use mqc_finite_differences, only: finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
-      use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
-                                          compute_vibrational_analysis, print_vibrational_analysis
-      use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
+      use mqc_finite_differences, only: finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives, &
+                                        energy_hessian_task_count
       use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED
       use mqc_verbosity, only: per_item_requested
       use mqc_method_base, only: qc_method_t
       use mqc_method_factory, only: create_method
+      use mqc_calculation_defaults, only: HESSIAN_METHOD_NUMERICAL
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
@@ -71,18 +76,14 @@ contains
       type(request_t) :: req
       integer :: current_log_level
       logical :: is_verbose   !! Print something once per displacement
-      character(len=2048) :: result_line  ! Large buffer for Hessian matrix rows
-      real(dp) :: hess_norm
-      integer :: i, j
-      real(dp), allocatable :: frequencies(:)
-      real(dp), allocatable :: eigenvalues(:)
-      real(dp), allocatable :: projected_hessian(:, :)
       class(qc_method_t), allocatable :: calculator  !! Polymorphic calculator
       type(method_config_t) :: local_config  !! Local copy for verbose override
+      logical :: numerical  !! Energies rather than gradients are being differenced
 
       n_ranks = world_comm%size()
       n_atoms = sys_geom%total_atoms
       n_displacements = 3*n_atoms
+      numerical = config%method_config%hessian_method == HESSIAN_METHOD_NUMERICAL
 
       call logger%configuration(level=current_log_level)
       ! Split for the same reason as the fragment scheduler: the whole-Hessian
@@ -94,7 +95,11 @@ contains
       call logger%info("============================================")
       call logger%info("Distributed unfragmented Hessian calculation")
       call logger%info("  Total atoms: "//to_char(n_atoms))
-      call logger%info("  Gradient calculations needed: "//to_char(2*n_displacements))
+      if (numerical) then
+         call logger%info("  Energy calculations needed: "//to_char(energy_hessian_task_count(n_displacements)))
+      else
+         call logger%info("  Gradient calculations needed: "//to_char(2*n_displacements))
+      end if
       call logger%info("  Finite difference step size: "//to_char(config%hessian%displacement)//" Bohr")
       call logger%info("  MPI ranks: "//to_char(n_ranks))
       call logger%info("  Work distribution: Dynamic queue")
@@ -110,6 +115,12 @@ contains
       full_system%charge = sys_geom%charge
       full_system%multiplicity = sys_geom%multiplicity
       call full_system%compute_nelec()
+
+      if (numerical) then
+         call collect_energy_hessian(world_comm, full_system, config, result)
+         call report_hessian_results(sys_geom, config, is_verbose, result, json_data)
+         return
+      end if
 
       ! Allocate storage for all gradients (initialize to zero for diagnostics)
       allocate (forward_gradients(n_displacements, 3, n_atoms))
@@ -241,6 +252,168 @@ contains
          result%has_dipole_derivatives = .true.
       end if
 
+      call report_hessian_results(sys_geom, config, is_verbose, result, json_data)
+
+      ! Cleanup
+      deallocate (forward_gradients, backward_gradients)
+      deallocate (forward_dipoles, backward_dipoles, dipole_buffer)
+      if (allocated(hessian)) deallocate (hessian)
+   end subroutine hessian_coordinator
+
+   subroutine collect_energy_hessian(world_comm, full_system, config, result)
+      !! Queue the energy evaluations of a Hessian from energies and difference them
+      !!
+      !! The queue is the one `hessian_coordinator` runs for gradients, with the
+      !! task numbers of `energy_hessian_task` in place of displacement
+      !! indices; `energy_hessian_worker` is the other end. `result` comes back
+      !! with the reference energy and dipole, the Hessian, the gradient and
+      !! the dipole derivatives.
+      use mqc_finite_differences, only: energy_hessian_task_count, energy_hessian_task, &
+                                        finite_diff_hessian_from_energies, &
+                                        finite_diff_gradient_from_energies, &
+                                        finite_diff_dipole_derivatives
+
+      type(comm_t), intent(in) :: world_comm
+      type(physical_fragment_t), intent(in) :: full_system
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
+      type(calculation_result_t), intent(out) :: result
+
+      type(timer_type) :: coord_timer
+      type(calculation_result_t) :: point
+      type(MPI_Status) :: status
+      type(request_t) :: req
+      real(dp), allocatable :: energies(:)
+      real(dp), allocatable :: forward_dipoles(:, :), backward_dipoles(:, :)  ! (n_coords, 3)
+      real(dp), allocatable :: numerical_gradient(:, :)
+      logical :: has_pending, have_dipoles
+      integer :: n_atoms, n_coords, n_tasks, n_ranks, n_received
+      integer :: next_task, finished_workers, dummy_msg, worker_rank, task
+      integer :: coord_i, sign_i, coord_j, sign_j
+
+      n_ranks = world_comm%size()
+      n_atoms = full_system%n_atoms
+      n_coords = 3*n_atoms
+      n_tasks = energy_hessian_task_count(n_coords)
+
+      allocate (energies(n_tasks))
+      energies = 0.0_dp
+      allocate (forward_dipoles(n_coords, 3), backward_dipoles(n_coords, 3))
+      forward_dipoles = 0.0_dp
+      backward_dipoles = 0.0_dp
+      have_dipoles = .true.
+      n_received = 0
+      next_task = 1
+      finished_workers = 0
+
+      call coord_timer%start()
+      do while (finished_workers < n_ranks - 1)
+
+         ! Check for incoming energies: the task number, then the whole result
+         call iprobe(world_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, status)
+         if (has_pending) then
+            worker_rank = status%MPI_SOURCE
+            call irecv(world_comm, task, worker_rank, TAG_WORKER_SCALAR_RESULT, req)
+            call wait(req)
+            call result_recv(point, world_comm, worker_rank, TAG_WORKER_SCALAR_RESULT, status)
+
+            energies(task) = point%energy%total()
+            n_received = n_received + 1
+            call energy_hessian_task(task, n_coords, coord_i, sign_i, coord_j, sign_j)
+            if (task == 1) then
+               ! The undisplaced point supplies the energy that goes with the Hessian.
+               result%energy = point%energy
+               result%has_energy = .true.
+               if (point%has_dipole) then
+                  result%dipole = point%dipole
+                  result%has_dipole = .true.
+               end if
+            else if (coord_j == 0) then
+               ! Dipoles of the single displacements give dmu/dR.
+               if (.not. point%has_dipole) then
+                  have_dipoles = .false.
+               else if (sign_i > 0) then
+                  forward_dipoles(coord_i, :) = point%dipole
+               else
+                  backward_dipoles(coord_i, :) = point%dipole
+               end if
+            end if
+            call point%destroy()
+
+            if (mod(n_received, max(1, n_tasks/10)) == 0 .or. n_received == n_tasks) then
+               call logger%info("  Completed "//to_char(n_received)//"/"//to_char(n_tasks)// &
+                                " energy evaluations in "//to_char(coord_timer%get_elapsed_time())//" s")
+            end if
+         end if
+
+         ! Check for work requests from workers
+         call iprobe(world_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, has_pending, status)
+         if (has_pending) then
+            worker_rank = status%MPI_SOURCE
+            call irecv(world_comm, dummy_msg, worker_rank, TAG_WORKER_REQUEST, req)
+            call wait(req)
+
+            if (next_task <= n_tasks) then
+               call isend(world_comm, next_task, worker_rank, TAG_WORKER_FRAGMENT, req)
+               call wait(req)
+               next_task = next_task + 1
+            else
+               ! No more work - tell worker to finish
+               call isend(world_comm, -1, worker_rank, TAG_WORKER_FINISH, req)
+               call wait(req)
+               finished_workers = finished_workers + 1
+            end if
+         end if
+      end do
+      call coord_timer%stop()
+      call logger%info("All energy calculations completed in "//to_char(coord_timer%get_elapsed_time())//" s")
+
+      if (n_received /= n_tasks) then
+         call logger%error("ERROR: Missing energies! Expected "//to_char(n_tasks)//", received "//to_char(n_received))
+         call abort_comm(world_comm, 1)
+      end if
+
+      call logger%info("  Assembling Hessian matrix...")
+      call finite_diff_hessian_from_energies(n_coords, energies, config%hessian%displacement, result%hessian)
+      result%has_hessian = .true.
+      call finite_diff_gradient_from_energies(n_atoms, energies, config%hessian%displacement, numerical_gradient)
+      call move_alloc(numerical_gradient, result%gradient)
+      result%has_gradient = .true.
+
+      if (have_dipoles) then
+         call logger%info("  Computing dipole derivatives for IR intensities...")
+         call finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
+                                             config%hessian%displacement, result%dipole_derivatives)
+         result%has_dipole_derivatives = .true.
+      end if
+      deallocate (energies, forward_dipoles, backward_dipoles)
+   end subroutine collect_energy_hessian
+
+   subroutine report_hessian_results(sys_geom, config, is_verbose, result, json_data)
+      !! Vibrational analysis, thermochemistry and printout for a finished Hessian
+      !!
+      !! Shared by the gradient and the energy route of `hessian_coordinator`.
+      !! Destroys `result` when it is done.
+      use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
+                                          compute_vibrational_analysis, print_vibrational_analysis
+      use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
+      use mqc_json_output_types, only: json_output_data_t
+
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
+      logical, intent(in) :: is_verbose  !! Print the Hessian matrix itself
+      type(calculation_result_t), intent(inout) :: result
+         !! Energy, Hessian and whatever else the run produced
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
+
+      character(len=2048) :: result_line  ! Large buffer for Hessian matrix rows
+      real(dp) :: hess_norm
+      integer :: i, j, n_atoms
+      real(dp), allocatable :: frequencies(:)
+      real(dp), allocatable :: eigenvalues(:)
+      real(dp), allocatable :: projected_hessian(:, :)
+
+      n_atoms = sys_geom%total_atoms
+
       ! Compute vibrational frequencies from the Hessian (with trans/rot projection)
       call logger%info("  Computing vibrational frequencies (projecting trans/rot modes)...")
       call compute_vibrational_frequencies(result%hessian, sys_geom%element_numbers, frequencies, eigenvalues, &
@@ -358,14 +531,11 @@ contains
 
       ! Cleanup
       call result%destroy()
-      deallocate (forward_gradients, backward_gradients)
-      deallocate (forward_dipoles, backward_dipoles, dipole_buffer)
-      if (allocated(hessian)) deallocate (hessian)
       if (allocated(frequencies)) deallocate (frequencies)
       if (allocated(eigenvalues)) deallocate (eigenvalues)
       if (allocated(projected_hessian)) deallocate (projected_hessian)
 
-   end subroutine hessian_coordinator
+   end subroutine report_hessian_results
 
    module subroutine hessian_worker(world_comm, sys_geom, config)
       !! Worker for distributed Hessian calculation
@@ -484,6 +654,77 @@ contains
       deallocate (calculator)
 
    end subroutine hessian_worker
+
+   subroutine energy_hessian_worker(world_comm, sys_geom, config)
+      !! Worker for a Hessian from energies
+      !!
+      !! Requests task numbers, computes the energy at that displacement, and
+      !! sends the task number and the whole result back. The counterpart of
+      !! `hessian_worker` for `collect_energy_hessian`.
+      use mqc_finite_differences, only: energy_hessian_geometry
+      use mqc_method_base, only: qc_method_t
+      use mqc_method_factory, only: create_method
+
+      type(comm_t), intent(in) :: world_comm
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
+
+      type(physical_fragment_t) :: full_system, displaced_geom
+      type(calculation_result_t) :: point
+      integer :: n_atoms, task, dummy_msg
+      type(MPI_Status) :: status
+      type(request_t) :: req
+      class(qc_method_t), allocatable :: calculator  !! Polymorphic calculator
+      type(method_config_t) :: local_config  !! Local copy for verbose override
+
+      n_atoms = sys_geom%total_atoms
+
+      ! Build full system geometry
+      full_system%n_atoms = n_atoms
+      full_system%n_caps = 0
+      allocate (full_system%element_numbers(n_atoms))
+      allocate (full_system%coordinates(3, n_atoms))
+      full_system%element_numbers = sys_geom%element_numbers
+      full_system%coordinates = sys_geom%coordinates
+      full_system%charge = sys_geom%charge
+      full_system%multiplicity = sys_geom%multiplicity
+      call full_system%compute_nelec()
+
+      local_config = config%method_config
+      local_config%verbose = .false.
+      ! allocate(..., source=) rather than plain assignment: see the note in
+      ! mqc_method_factory -- gfortran 13.2.0 segfaults on intrinsic
+      ! assignment from a polymorphic allocatable function result.
+      allocate (calculator, source=create_method(local_config))
+
+      dummy_msg = 0
+      do
+         ! Request work from coordinator
+         call isend(world_comm, dummy_msg, 0, TAG_WORKER_REQUEST, req)
+         call wait(req)
+         call irecv(world_comm, task, 0, MPI_ANY_TAG, req)
+         call wait(req, status)
+
+         if (status%MPI_TAG == TAG_WORKER_FINISH) exit
+
+         call energy_hessian_geometry(full_system, task, config%hessian%displacement, displaced_geom)
+         call calculator%calc_energy(displaced_geom, point)
+         call displaced_geom%destroy()
+
+         if (point%has_error) then
+            call logger%error("Worker energy calculation error for task "// &
+                              to_char(task)//": "//point%error%get_message())
+            call abort_comm(world_comm, 1)
+         end if
+
+         call isend(world_comm, task, 0, TAG_WORKER_SCALAR_RESULT, req)
+         call wait(req)
+         call result_send(point, world_comm, 0, TAG_WORKER_SCALAR_RESULT)
+         call point%destroy()
+      end do
+
+      deallocate (calculator)
+   end subroutine energy_hessian_worker
 
    subroutine populate_vibrational_json_data(json_data, result, frequencies, reduced_masses, &
                                              force_constants, thermo_result, ir_intensities)

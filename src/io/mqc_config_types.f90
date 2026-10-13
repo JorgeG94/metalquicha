@@ -25,7 +25,7 @@ module mqc_config_types
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
                                        DEFAULT_EXCITED_BATCH, &
-                                       EFP_RESPONSE_AUTO, &
+                                       EFP_RESPONSE_AUTO, HESSIAN_METHOD_ANALYTIC, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
                                        DEFAULT_OPT_LBFGS_MEMORY, DEFAULT_OPT_PRINT_LEVEL, &
@@ -494,9 +494,8 @@ module mqc_config_types
       real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)
       real(dp) :: hessian_temperature = DEFAULT_TEMPERATURE    !! Temperature for thermochemistry (K)
       real(dp) :: hessian_pressure = DEFAULT_PRESSURE          !! Pressure for thermochemistry (atm)
-      logical :: hessian_analytic = .true.
-         !! `keywords.hessian.analytic`. False skips every analytic Hessian and
-         !! differences analytic gradients instead, whatever the method
+      integer :: hessian_method = HESSIAN_METHOD_ANALYTIC
+         !! `keywords.hessian.method`, one of the `HESSIAN_METHOD_*` constants
       real(dp) :: hessian_response_tol = DEFAULT_RESPONSE_TOL
          !! Residual at which the analytic Hessian's coupled-perturbed solve stops
       integer :: hessian_response_max_iter = DEFAULT_RESPONSE_MAX_ITER
