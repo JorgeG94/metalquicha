@@ -324,6 +324,12 @@ tell from the outside.
 ``"analytic"``, is the behaviour described above. There is no way to force the
 analytic route where the table declines a method.
 
+The analytic route is a single-rank route. An unfragmented Hessian launched on
+several MPI ranks distributes its displacements across them instead (gradients,
+or energies for ``"numerical"``), and the log says so. A fragmented run on
+several ranks does the same, fanning each fragment or PIE term out into its
+gradient displacements unless ``method`` is ``"numerical"``.
+
 ``"semi-numerical"`` forces the fallback. The backend skips every analytic
 Hessian, Hartree-Fock, Kohn-Sham, double hybrid and MP2 alike, and takes
 central differences of analytic gradients, :math:`6N + 1` of them for
