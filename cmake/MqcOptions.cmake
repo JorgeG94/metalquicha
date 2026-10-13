@@ -79,13 +79,13 @@ option(
 # On by default, and the pair of them is what makes this program able to do ab
 # initio quantum chemistry on a machine without a GPU. They were opt-in, which
 # had two costs worth naming: `cmake -B build` produced a program that could run
-# xTB and nothing else, and libcint-on/libxc-off -- the natural thing to type if
-# you only wanted integrals -- produced a build where every deck naming a
+# xTB and nothing else, and integrals-on/libxc-off -- the natural thing to type
+# if you only wanted integrals -- produced a build where every deck naming a
 # functional is refused. Neither is a good default.
 #
 # The price is that a default configure reaches the network: libxc is a tarball
-# and libcint a clone. For a machine without one, point
-# FETCHCONTENT_SOURCE_DIR_LIBCINT and FETCHCONTENT_SOURCE_DIR_LIBXC at local
+# and libfint a clone. For a machine without one, point
+# FETCHCONTENT_SOURCE_DIR_LIBFINT and FETCHCONTENT_SOURCE_DIR_LIBXC at local
 # copies, or turn these off and build the xTB path alone.
 option(
   MQC_ENABLE_CZT
@@ -100,7 +100,7 @@ if(DEFINED MQC_ENABLE_LIBCINT)
   message(
     WARNING
       "MQC_ENABLE_LIBCINT is now MQC_ENABLE_CZT (the backend is cenzontle, and "
-      "it is not a libcint wrapper -- libfint backs it by default). Using the "
+      "it is not a libcint wrapper). Using the "
       "old value, ${MQC_ENABLE_LIBCINT}, for MQC_ENABLE_CZT.")
   set(MQC_ENABLE_CZT
       "${MQC_ENABLE_LIBCINT}"
@@ -108,14 +108,6 @@ if(DEFINED MQC_ENABLE_LIBCINT)
 endif()
 option(MQC_ENABLE_LIBXC
        "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
-
-# Which of the two CPU integral libraries provides them. They define the same
-# `libcint_fortran` module with the same procedures, so no source under
-# backends/cenzontle/ knows which one it linked -- but they are not the same
-# build: libfint carries L (sp) shells and turns on a different code path for
-# them. See cmake/MqcDependencies.cmake, which is where that happens.
-option(MQC_USE_LIBFINT
-       "Use libfint (the Fortran port) instead of libcint for CPU integrals" ON)
 
 # A coverage build measures this project's own Fortran, not its dependencies --
 # and `backends/cenzontle/` is this project's own Fortran. It used to be dropped
@@ -135,7 +127,7 @@ option(MQC_USE_LIBFINT
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   set(MQC_ENABLE_LIBXC OFF)
   message(STATUS "Coverage-mqc build: libxc disabled (it refuses this build "
-                 "type); libcint measured as part of the project")
+                 "type); cenzontle measured as part of the project")
 endif()
 
 # Off by default: DL-FIND is LGPL-3 and this program is MIT, so linking it is a

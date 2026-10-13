@@ -12,7 +12,7 @@ target_sources(
           mqc_calculation_interface.f90)
 
 # Charges and Mayer bond orders both need a real density, so they need the
-# integrals backend. Without libcint there is nothing to partition and the
+# integrals backend. Without cenzontle there is nothing to partition and the
 # symbols are simply absent -- a Python caller gets an AttributeError on the
 # binding rather than a link error here. The xTB bond orders are unaffected:
 # they are in mqc_capi_bond_orders.F90 above, which needs no density.

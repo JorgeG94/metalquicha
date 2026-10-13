@@ -27,7 +27,7 @@ module mqc_czt_integrals
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_ecp, only: molecular_ecp_type, ecp_shell_type
-   use mqc_czt_ecp, only: ecp_matrix, ECP_AVAILABLE
+   use mqc_czt_ecp, only: ecp_matrix
    use mqc_json_ecp_reader, only: build_molecular_ecp_json
    use mqc_basis_utils, only: find_basis_file
    use mqc_elements, only: element_number_to_symbol
@@ -53,7 +53,6 @@ module mqc_czt_integrals
                               LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
                               LIBCINT_NCTR_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_COEFF, &
                               LIBCINT_PTR_ENV_START, LIBCINT_KAPPA_OF
-#ifdef MQC_WITH_LIBFINT
    use libcint_fortran, only: libcint_2e_rotaxis_sph, libcint_2e_rotaxis_cart, &
                               libcint_rotaxis_supported, &
                               libcint_2e_hgp_sph, libcint_2e_hgp_cart, &
@@ -62,7 +61,6 @@ module mqc_czt_integrals
                               libcint_rotaxis_grad_supported, &
                               libcint_2e_ip1_hgp_sph, libcint_2e_ip1_hgp_cart, &
                               libcint_hgp_grad_supported
-#endif
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
@@ -73,9 +71,8 @@ module mqc_czt_integrals
       !! A wire-format constant, defined at libfint's `src/cint_bas.f90:61`; if
       !! that number moves, this is the other end of the agreement. KAPPA_OF is
       !! the relativistic kappa, which a non-relativistic shell leaves at zero,
-      !! and that is what frees the slot -- which is also why it is written only
-      !! under MQC_WITH_SP_SHELLS. libcint would read a 64 there as a real kappa
-      !! and act on it.
+      !! and that is what frees the slot. Only libfint reads a 64 there as
+      !! this marker; libcint would take it for a real kappa.
 
    integer, parameter, public :: ERI_PATH_RYS = 1
       !! Every four-centre quartet through the Rys path, `libcint_2e_*`.
@@ -109,16 +106,6 @@ module mqc_czt_integrals
       !! Which path `two_electron_block` takes, for the whole run. Set once
       !! by `set_eri_path`, before any quartet is evaluated, and read from
       !! inside the threaded quartet loops after; never written there.
-#ifdef MQC_WITH_LIBFINT
-   logical, parameter, public :: ROTAXIS_AVAILABLE = .true.
-   logical, parameter, public :: HGP_AVAILABLE = .true.
-#else
-   logical, parameter, public :: ROTAXIS_AVAILABLE = .false.
-      !! libcint has no rotated-axis path, so a build against it has one
-      !! path and `set_eri_path` refuses the others.
-   logical, parameter, public :: HGP_AVAILABLE = .false.
-      !! Nor a Head-Gordon-Pople one.
-#endif
 
    integer, parameter, public :: HYBRID_ROTAXIS_MIN_PAIR = 2
       !! Primitives in a bra pair below which the hybrid gradient does not take
@@ -253,8 +240,7 @@ module mqc_czt_integrals
       ! shared exponents -- an L shell, which is what every Pople basis is
       ! written in -- collapsed to one `bas` entry that libfint's `int2e`
       ! evaluates in a single pass. Built by `build_sp_view`, and empty
-      ! (`nbas_sp` zero) whenever the molecule has no L shell or the build is
-      ! against libcint, which cannot read the marker. The AO order of the view
+      ! (`nbas_sp` zero) whenever the molecule has no L shell. The AO order of the view
       ! is the split order, so anything indexed by AO needs no map.
       integer :: nbas_sp = 0
       integer, allocatable :: bas_sp(:, :)
@@ -391,7 +377,6 @@ contains
       type(c_ptr), intent(in), optional :: opt
       integer :: ret
 
-#ifdef MQC_WITH_LIBFINT
       ! The rotated-axis path covers shells up to `ROTAXIS_MAX_L` and
       ! error-stops on anything else rather than falling back, so the choice
       ! is made here, per quartet, from the angular momenta alone. It ignores
@@ -439,7 +424,6 @@ contains
          ! ERI_PATH_RYS, and any quartet the cases above declined: both fall
          ! through to the Rys call below rather than being handled here.
       end select
-#endif
       if (cartesian) then
          if (present(opt)) then
             ret = libcint_2e_cart(buf, shls, atm, natm, bas, nbas, env, opt)
@@ -526,9 +510,6 @@ contains
       !! be used directly. A code whose kinds are not all present in this
       !! molecule is left false and never asked about, since no quartet can
       !! reach it.
-      !!
-      !! On a libcint build every entry stays false, which leaves every quartet
-      !! on Rys -- the only gradient path such a build has.
       integer, intent(in) :: bas(:, :)
       integer, intent(in) :: nbas
       type(eri_grad_dispatch_t), intent(out) :: disp
@@ -543,7 +524,6 @@ contains
          disp%nprim(ish) = bas(LIBCINT_NPRIM_OF, ish)
       end do
 
-#ifdef MQC_WITH_LIBFINT
       ! One shell of each kind the molecule actually has, to ask libfint with.
       ! Which shell does not matter: the predicate reads only its kind.
       witness = -1
@@ -562,10 +542,6 @@ contains
          disp%rotaxis(code) = libcint_rotaxis_grad_supported(shls, bas, nbas)
          disp%hgp(code) = libcint_hgp_grad_supported(shls, bas, nbas)
       end do
-#else
-      ! Silence the unused arguments on a build with one gradient path.
-      if (.false.) disp%rotaxis(0) = nbas > 0 .and. size(bas) > 0
-#endif
    end subroutine build_eri_grad_dispatch
 
    pure function rotaxis_grad_cached(disp, shls) result(covered)
@@ -606,19 +582,13 @@ contains
       !! libfint's own answer, which the cache must reproduce exactly
       !!
       !! For the test that holds the two together; the dispatch never asks,
-      !! since this copies the whole shell table per call. Always false on a
-      !! libcint build.
+      !! since this copies the whole shell table per call.
       integer, intent(in) :: shls(4)
       integer, intent(in) :: bas(:, :)
       integer, intent(in) :: nbas
       logical :: covered
 
-#ifdef MQC_WITH_LIBFINT
       covered = libcint_rotaxis_grad_supported(shls, bas, nbas)
-#else
-      covered = .false.
-      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
-#endif
    end function rotaxis_grad_libfint
 
    function hgp_grad_libfint(shls, bas, nbas) result(covered)
@@ -628,12 +598,7 @@ contains
       integer, intent(in) :: nbas
       logical :: covered
 
-#ifdef MQC_WITH_LIBFINT
       covered = libcint_hgp_grad_supported(shls, bas, nbas)
-#else
-      covered = .false.
-      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
-#endif
    end function hgp_grad_libfint
 
    function two_electron_ip1_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt, disp) &
@@ -647,7 +612,7 @@ contains
       !! permutations itself keeps doing exactly that.
       !!
       !! `disp` is what says which specialised path may take a quartet; absent,
-      !! or built by a libcint build, every quartet goes to Rys. False means
+      !! every quartet goes to Rys. False means
       !! libfint found the quartet zero, as `libcint_2e_ip1_*` reports it.
       logical, intent(in) :: cartesian
       real(dp), intent(inout), contiguous :: buf(:)
@@ -663,7 +628,6 @@ contains
 
       integer :: ret
 
-#ifdef MQC_WITH_LIBFINT
       if (present(disp) .and. eri_path /= ERI_PATH_RYS) then
          select case (eri_path)
          case (ERI_PATH_ROTAXIS)
@@ -696,7 +660,6 @@ contains
             ! the Rys call below.
          end select
       end if
-#endif
       if (cartesian) then
          ret = libcint_2e_ip1_cart(buf, shls, atm, natm, bas, nbas, env, opt)
       else
@@ -705,7 +668,6 @@ contains
       have = ret /= 0
    end function two_electron_ip1_block
 
-#ifdef MQC_WITH_LIBFINT
    function ip1_rotaxis(cartesian, buf, shls, atm, natm, bas, nbas, env) result(have)
       !! The rotated-axis gradient quartet, in whichever angular form is in force
       logical, intent(in) :: cartesian
@@ -749,7 +711,6 @@ contains
       end if
       have = ret /= 0
    end function ip1_hgp
-#endif
 
    pure function quartet_on_hgp(shls, bas) result(covered)
       !! Whether every shell of a quartet is within `HGP_MAX_L`
@@ -768,18 +729,13 @@ contains
       !! path
       !!
       !! For the test that holds `HGP_MAX_L` to it; the dispatch itself never
-      !! asks. Always false on a libcint build.
+      !! asks.
       integer, intent(in) :: shls(4)
       integer, intent(in) :: bas(:, :)
       integer, intent(in) :: nbas
       logical :: covered
 
-#ifdef MQC_WITH_LIBFINT
       covered = libcint_hgp_supported(shls, bas, nbas)
-#else
-      covered = .false.
-      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
-#endif
    end function hgp_libfint_covers
 
    function rotaxis_libfint_covers(shls, bas, nbas) result(covered)
@@ -787,32 +743,23 @@ contains
       !!
       !! For the test that holds `ROTAXIS_MAX_L` to it; the dispatch itself
       !! never asks, since the per-call cost is a copy of the whole shell
-      !! table. Always false on a libcint build.
+      !! table.
       integer, intent(in) :: shls(4)
       integer, intent(in) :: bas(:, :)
       integer, intent(in) :: nbas
       logical :: covered
 
-#ifdef MQC_WITH_LIBFINT
       covered = libcint_rotaxis_supported(shls, bas, nbas)
-#else
-      covered = .false.
-      if (.false.) covered = size(bas) + nbas + sum(shls) > 0
-#endif
    end function rotaxis_libfint_covers
 
    subroutine set_eri_path(name, error)
       !! Choose the four-centre integral path for the run, by name
       !!
-      !! 'rys' is the default and the only path a libcint build has;
-      !! 'rotaxis' takes the rotated-axis path on every quartet within
+      !! 'rys' is the default; 'rotaxis' takes the rotated-axis path on every quartet within
       !! `ROTAXIS_MAX_L` and Rys on the rest; 'hgp' takes the
       !! Head-Gordon-Pople path within `HGP_MAX_L` and Rys on the rest;
       !! 'hybrid' takes rotated-axis where it reaches, Head-Gordon-Pople where
-      !! it does not and Rys above both; 'auto' is 'rotaxis' where the build
-      !! has it and 'rys' otherwise. Case-insensitive. Refuses a libfint-only
-      !! path on a build without it rather than quietly running Rys under that
-      !! name.
+      !! it does not and Rys above both; 'auto' is 'rotaxis'. Case-insensitive.
       character(len=*), intent(in) :: name
       type(error_t), intent(inout) :: error
 
@@ -830,35 +777,13 @@ contains
       case ("rys")
          eri_path = ERI_PATH_RYS
       case ("rotaxis")
-         if (.not. ROTAXIS_AVAILABLE) then
-            call error%set(ERROR_VALIDATION, "keywords.scf.eri_path 'rotaxis' needs a "// &
-                           "build against libfint; this one links libcint, which has "// &
-                           "only the Rys path")
-            return
-         end if
          eri_path = ERI_PATH_ROTAXIS
       case ("hgp")
-         if (.not. HGP_AVAILABLE) then
-            call error%set(ERROR_VALIDATION, "keywords.scf.eri_path 'hgp' needs a "// &
-                           "build against libfint; this one links libcint, which has "// &
-                           "only the Rys path")
-            return
-         end if
          eri_path = ERI_PATH_HGP
       case ("hybrid")
-         if (.not. (ROTAXIS_AVAILABLE .and. HGP_AVAILABLE)) then
-            call error%set(ERROR_VALIDATION, "keywords.scf.eri_path 'hybrid' needs a "// &
-                           "build against libfint; this one links libcint, which has "// &
-                           "only the Rys path")
-            return
-         end if
          eri_path = ERI_PATH_HYBRID
       case ("auto")
-         if (ROTAXIS_AVAILABLE) then
-            eri_path = ERI_PATH_ROTAXIS
-         else
-            eri_path = ERI_PATH_RYS
-         end if
+         eri_path = ERI_PATH_ROTAXIS
       case default
          call error%set(ERROR_VALIDATION, "unknown keywords.scf.eri_path '"//trim(name)// &
                         "'. Accepted: rys, rotaxis, hgp, hybrid, auto")
@@ -973,18 +898,6 @@ contains
       have_ecp = .false.
       if (present(ecp_name)) then
          if (len_trim(ecp_name) > 0) then
-            ! Refused rather than left to the linker: the ECP integrals come
-            ! from libfint, so -DMQC_USE_LIBFINT=OFF cannot evaluate one and
-            ! otherwise fails with two undefined references at link time.
-            if (.not. ECP_AVAILABLE) then
-               call error%set(ERROR_VALIDATION, "model.ecp is set, but this build "// &
-                              "uses libcint for its integrals and libcint has no "// &
-                              "effective core potential code. Configure with "// &
-                              "-DMQC_USE_LIBFINT=ON, which is the default, or drop "// &
-                              "model.ecp.")
-               call basis%destroy()
-               return
-            end if
             call find_basis_file(ecp_name, ecp_path, read_error)
             if (read_error%has_error()) then
                call error%set(ERROR_VALIDATION, "no ECP file for '"//trim(ecp_name)// &
@@ -1423,7 +1336,6 @@ contains
       end do
    end subroutine put_ecp_channel
 
-#ifdef MQC_WITH_SP_SHELLS
    subroutine build_sp_view(this)
       !! Fuse each s/p pair on shared exponents into one L shell, as a view
       !!
@@ -1553,16 +1465,6 @@ contains
       if (any(this%env(ptr_s + 1:ptr_s + nprim) /= this%env(ptr_p + 1:ptr_p + nprim))) return
       is_sp = .true.
    end function fused_sp_pair
-#else
-   subroutine build_sp_view(this)
-      !! Without libfint there is nothing to fuse: libcint would read
-      !! `KAPPA_SP_SHELL` as a real relativistic kappa and act on it. The view
-      !! stays empty and every consumer keeps the split table.
-      type(czt_molecule_t), intent(inout) :: this
-
-      this%nbas_sp = 0
-   end subroutine build_sp_view
-#endif
 
    subroutine eri_shell_table(mol, tab)
       !! The shell set to hand libfint's `int2e` or `int2e_ip1`: fused where

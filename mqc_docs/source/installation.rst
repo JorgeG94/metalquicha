@@ -180,7 +180,7 @@ downloaded, which is how to configure on a cluster node with no network:
 
    cmake -B build -DMQC_ENABLE_DLFIND=ON \
          -DFETCHCONTENT_SOURCE_DIR_LIBDLFIND=/path/to/libdlfind \
-         -DFETCHCONTENT_SOURCE_DIR_LIBCINT=/path/to/libcint
+         -DFETCHCONTENT_SOURCE_DIR_LIBFINT=/path/to/libfint
 
 Building with the Fortran Package Manager (fpm)
 ===============================================

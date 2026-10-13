@@ -3,8 +3,8 @@
 # the xTB path and CMake adds this directory when MQC_ENABLE_CZT is ON.
 #
 # These modules `use libcint_fortran`, which only exists once CMake has resolved
-# libfint (the default) or libcint. fpm has no such dependency declared, so
-# leaving them under src/ fails the fpm build outright:
+# libfint. fpm has no such dependency declared, so leaving them under src/ fails
+# the fpm build outright:
 #
 # <ERROR> *cmd_build* Target error: Unable to find source for module dependency:
 # "libcint_fortran" used by "src/mqc_czt_integrals.f90"

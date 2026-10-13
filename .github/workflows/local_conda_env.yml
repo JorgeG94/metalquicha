@@ -56,12 +56,8 @@ jobs:
             defaults: true
             tblite: true
             legacy_mpi: false
-            libcint: true
+            czt: true
             libxc: true
-            # libfint is the default backend now, so this job builds it. The
-            # value is here only so the validation steps below gate correctly;
-            # the build itself passes no flags at all.
-            libfint: true
             # HDF5 is off by default, and this is where that is asserted: if
             # the default flips, this job stops matching what `cmake -B build`
             # produces and the mismatch shows up here rather than nowhere.
@@ -106,21 +102,12 @@ jobs:
           # Integrals with libxc explicitly off -- a reduced build now that both
           # are on by default, and worth keeping: it is what you get asking only
           # for the integrals, and it is the configuration where the "this build
-          # has no libxc" refusals are the behaviour under test. Takes libfint,
-          # like everything else that does not say otherwise.
+          # has no libxc" refusals are the behaviour under test.
           - name: "integrals only (no libxc)"
             tblite: false
             legacy_mpi: false
-            libcint: true
-            libfint: true
-          # The other integral backend, now that libfint is the default. This is
-          # the only job that builds libcint, and it is not a formality: the two
-          # are not interchangeable at compile time. libfint carries L (sp)
-          # shells and libcint cannot represent one, so a libfint build defines
-          # MQC_WITH_SP_SHELLS and compiles the fused-sp view in
-          # mqc_czt_integrals.F90, while this job compiles the split-shell
-          # path instead. Every other job exercises one of those two bodies of
-          # code and this one exercises the other.
+            czt: true
+          # Integrals, libxc and the dispersion libraries, without tblite.
           #
           # libxc is on so the CPU validation step below runs: twelve of those
           # cases name a functional, and it is the validation, not the build,
@@ -134,11 +121,10 @@ jobs:
           # step below runs and the dispersion cases in the manifest stop being
           # skipped. No new matrix entry and no new job: the existing unit-test
           # and validation steps cover them once the options are on.
-          - name: "with libcint (instead of libfint)"
-            backend: libcint
+          - name: "integrals, libxc and dispersion (no tblite)"
             tblite: false
             legacy_mpi: false
-            libcint: true
+            czt: true
             libxc: true
             dftd: true
           # HDF5, which until this job existed was built by nothing in CI: the
@@ -167,7 +153,7 @@ jobs:
           # anyone developing with the option on, and breaks every job here.
           # Only a job with it ON compiles both halves against the same call.
           #
-          # libcint comes with it so there is something to optimize *with*. A
+          # The integrals come with it so there is something to optimize *with*. A
           # build-only job would prove the bridge links and nothing about
           # whether it steps: the callbacks, the `spec` array and the geometry
           # coming back all sit behind `api_dl_find`, which a compiler never
@@ -192,13 +178,12 @@ jobs:
           - name: "with crest"
             tblite: true
             legacy_mpi: false
-            libcint: true
-            libfint: true
+            czt: true
             crest: true
           - name: "with dlfind"
             tblite: false
             legacy_mpi: false
-            libcint: true
+            czt: true
             dlfind: true
           # The Python interface needs every backend in one library. backends.py
           # covers standalone and fragmented, xTB and Hartree-Fock -- three of
@@ -216,9 +201,8 @@ jobs:
           - name: "python interface"
             tblite: true
             legacy_mpi: false
-            libcint: true
+            czt: true
             libxc: true
-            libfint: true
             dlfind: true
             crest: true
             python: true
@@ -252,8 +236,7 @@ jobs:
                   -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
                   -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
-                  -DMQC_ENABLE_CZT=${{ matrix.libcint && 'ON' || 'OFF' }} \
-                  -DMQC_USE_LIBFINT=${{ matrix.backend == 'libcint' && 'OFF' || 'ON' }} \
+                  -DMQC_ENABLE_CZT=${{ matrix.czt && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_HDF5=${{ matrix.hdf5 && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_DLFIND=${{ matrix.dlfind && 'ON' || 'OFF' }} \
                   -DMQC_ENABLE_CREST=${{ matrix.crest && 'ON' || 'OFF' }} \
@@ -357,7 +340,7 @@ jobs:
       # On `main`, so anything merged is covered, and on demand, so a branch can
       # be checked before it merges. Not on every branch push, which is what
       # made them cost three times over: they need libxc, so they ran in the
-      # default, libcint and Python jobs alike.
+      # default, no-tblite and Python jobs alike.
       - name: Run long unit tests
         if: matrix.defaults && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
         shell: bash -el {0}
@@ -368,7 +351,7 @@ jobs:
       # The CPU Hartree-Fock decks, run through mqc the way a user would, and
       # checked against PySCF rather than against numbers this program printed
       # earlier. Separate from the xTB validation below because that one needs
-      # tblite and this one needs libcint, and neither job has both.
+      # tblite and this one needs the integrals, and neither job has both.
       # Builds the shared library and runs the examples, which assert rather
       # than print. Nothing else here loads libmqc.so through ctypes, so a
       # renamed C entry point or a changed signature is a segfault at call
@@ -436,14 +419,14 @@ jobs:
           cd validation
           python3 run_validation.py --manifest validation_tests.json -v
 
-      # Needs libxc as well as libcint: twelve of these cases name a functional
+      # Needs libxc as well as the integrals: twelve of these cases name a functional
       # and are refused outright without it, which is how this step first went
-      # red -- a libcint-only build, not a broken calculation.
+      # red -- a build with the integrals only, not a broken calculation.
       # Skipped on the Python job: it runs the same 243 cases on the same
       # backend as the default build, and what that job is for is the ctypes
       # boundary, not the physics.
-      - name: Run CPU validation tests (${{ matrix.backend || 'libfint' }})
-        if: matrix.libcint && matrix.libxc && !matrix.python
+      - name: Run CPU validation tests
+        if: matrix.czt && matrix.libxc && !matrix.python
         shell: bash -el {0}
         run: |
           conda activate mqc

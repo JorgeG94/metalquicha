@@ -7,9 +7,8 @@
 # backend does.
 #
 # Included from backends/cenzontle/CMakeLists.txt, which the dependency
-# resolution add_subdirectory()s once it has settled which of libfint and
-# libcint is providing the integrals. `${MQC_INTEGRALS_LIBS}` therefore already
-# names the right one, and nothing here has to know which.
+# resolution add_subdirectory()s once libfint is resolved.
+# `${MQC_INTEGRALS_LIBS}` names it.
 
 # --- integrals, and the SCF over them ---------------------------------------
 mqc_add_validation_program(check_ao LIBRARIES ${MQC_INTEGRALS_LIBS})
@@ -41,15 +40,10 @@ mqc_add_validation_program(check_xc_kernel LIBRARIES ${MQC_INTEGRALS_LIBS})
 mqc_add_validation_program(check_xc_potential_gradient LIBRARIES
                            ${MQC_INTEGRALS_LIBS})
 
-# These two name libcint's targets rather than ${MQC_INTEGRALS_LIBS}. With
-# libfint selected libcint is never fetched, so `cint` and `cint_fortran` are
-# aliases onto `fint` -- see the alias block in cmake/MqcDependencies.cmake --
-# and both spellings reach the same library. Kept as they were written rather
-# than normalised, because the aliases exist precisely so that a target naming
-# libcint directly does not have to be found and changed.
-mqc_add_validation_program(check_df_ref_gradient LIBRARIES cint_fortran cint)
+mqc_add_validation_program(check_df_ref_gradient LIBRARIES
+                           ${MQC_INTEGRALS_LIBS})
 mqc_add_validation_program(check_fitted_reference_gradient LIBRARIES
-                           cint_fortran cint)
+                           ${MQC_INTEGRALS_LIBS})
 
 # --- benchmarks --------------------------------------------------------------
 mqc_add_validation_program(bench_df_k LIBRARIES ${MQC_INTEGRALS_LIBS})

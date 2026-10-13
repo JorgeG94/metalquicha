@@ -13,19 +13,18 @@ module mqc_czt_esp
    !!     an offset into `env` itself, not a coordinate. `PTR_GRIDS` is 12 and,
    !!     like `PTR_COMMON_ORIG` and `PTR_RANGE_OMEGA`, is one of libcint's own
    !!     0-based slot constants that the Fortran interface does not convert, so it
-   !!     carries a `+ 1`. `LIBCINT_PTR_GRIDS` comes from `mqc_czt_cint_compat`.
+   !!     carries a `+ 1`.
    !!   * The grid range is passed in `shls`, which is four long rather than two:
    !!     `[ish, jsh, first_grid, last_grid]`, and libcint takes
    !!     `ngrids = shls(4) - shls(3)`.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
-   use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG
-   use mqc_czt_cint_compat, only: LIBCINT_PTR_GRIDS, &
-                                  libcint_1e_grids_cart, libcint_1e_grids_sph, &
-                                  libcint_1e_drinv_cart, libcint_1e_drinv_sph, &
-                                  libcint_1e_ipiprinv_cart, libcint_1e_ipiprinv_sph, &
-                                  libcint_1e_iprinvip_cart, libcint_1e_iprinvip_sph
+   use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG, LIBCINT_PTR_GRIDS, &
+                              libcint_1e_grids_cart, libcint_1e_grids_sph, &
+                              libcint_1e_drinv_cart, libcint_1e_drinv_sph, &
+                              libcint_1e_ipiprinv_cart, libcint_1e_ipiprinv_sph, &
+                              libcint_1e_iprinvip_cart, libcint_1e_iprinvip_sph
    implicit none
    private
 

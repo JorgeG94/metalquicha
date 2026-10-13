@@ -31,15 +31,6 @@
       }
     },
     {
-      "name": "libcint",
-      "inherits": "base",
-      "displayName": "libcint instead of libfint",
-      "description": "The C integrals library. Compiles different source (no fused sp shells), so CI builds it too.",
-      "cacheVariables": {
-        "MQC_USE_LIBFINT": "OFF"
-      }
-    },
-    {
       "name": "xtb-only",
       "inherits": "base",
       "displayName": "xTB only",
@@ -120,10 +111,6 @@
       "configurePreset": "debug"
     },
     {
-      "name": "libcint",
-      "configurePreset": "libcint"
-    },
-    {
       "name": "xtb-only",
       "configurePreset": "xtb-only"
     },
@@ -161,11 +148,6 @@
       "output": {
         "outputOnFailure": true
       }
-    },
-    {
-      "name": "mqc-libcint",
-      "inherits": "mqc",
-      "configurePreset": "libcint"
     },
     {
       "name": "mqc-shared-mem",

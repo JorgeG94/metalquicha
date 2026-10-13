@@ -19,8 +19,8 @@
 # things they still name: the reference is another program's output rather than
 # anything in this tree, so they cannot run in CI anyway. Building them by
 # default bought nothing and cost a broken build every time one of them drifted
-# out of step with a guard it depended on -- which is how a libcint-off job
-# failed on a file nobody had asked for.
+# out of step with a guard it depended on -- which is how a CI job failed on a
+# file nobody had asked for.
 #
 # EXCLUDE_FROM_ALL rather than deleting them: each is still a target, so
 #

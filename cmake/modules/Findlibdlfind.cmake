@@ -4,7 +4,7 @@
 # a choice the person building makes rather than one made for them.
 #
 # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBDLFIND at a local clone, as
-# with libcint. Compute nodes on most clusters have no network.
+# with libfint. Compute nodes on most clusters have no network.
 include("${CMAKE_CURRENT_LIST_DIR}/MqcFetch.cmake")
 
 mqc_fetch(

@@ -217,7 +217,7 @@ Semi-empirical, through tblite:
 - ``GFN1`` (also ``GFN1-xTB``, ``XTB-GFN1``)
 - ``GFN2`` (also ``GFN2-xTB``, ``XTB-GFN2``)
 
-Ab initio, on the CPU through libcint:
+Ab initio, on the CPU through libfint:
 
 - ``HF`` (also ``RHF``, ``UHF``, ``Hartree-Fock``) -- an odd electron count or a
   multiplicity above one selects the unrestricted path whatever the spelling says
@@ -322,11 +322,8 @@ carrying one presents a **reduced nuclear charge** to the nuclear attraction
 and the nuclear repulsion, and the SCF solves for **fewer electrons**. HI in
 def2-SVP with def2-ECP solves for 26 rather than 54.
 
-The integrals come from libfint rather than libcint, which has no ECP code at
-all. A build configured with ``-DMQC_USE_LIBFINT=OFF`` therefore cannot
-evaluate one, and refuses ``model.ecp`` saying so -- it used to fail at the
-linker with two undefined references and no mention of an ECP. libfint is the
-default, so this only affects a deliberately libcint build.
+The integrals come from libfint, which translated them from PySCF; libcint has
+no ECP code at all.
 
 **Where it is refused.** Every one of these is a refusal rather than a silent
 omission, and for one reason: an ECP that is quietly dropped produces a calculation that converges,
@@ -387,7 +384,7 @@ checked at the integral rather than through an SCF -- ytterbium is 81 basis
 functions with a g shell, and too slow to sit in this suite. See
 ``test/test_mqc_ecp_matrix.f90``.
 
-Kohn-Sham DFT, on the CPU through libcint and libxc:
+Kohn-Sham DFT, on the CPU through libfint and libxc:
 
 - ``DFT`` (also ``KS``, ``Kohn-Sham``) selects the method; **which** functional is
   ``model.functional``, not part of the method name. The two are separate fields
@@ -426,7 +423,7 @@ weights of its own, so its list names the components' papers and not the paper
 that defined the double hybrid.
 
 **Range-separated hybrids are supported** -- CAM-B3LYP and the ωB97 family split
-their exchange into short and long range over an erf-attenuated kernel, and libcint
+their exchange into short and long range over an erf-attenuated kernel, and libfint
 computes those integrals from the same entry points with a range parameter set. So
 the long-range part is a second exchange pass rather than new integral code, and
 the two are combined on the coefficients libxc reports for the functional itself.
@@ -913,9 +910,8 @@ SCF Options
   Rys; ``hgp`` evaluates every quartet up to d by libfint's Obara-Saika path
   with the Head-Gordon-Pople contract-then-transfer split, and the rest by Rys;
   ``hybrid`` takes ``rotaxis`` up to L, ``hgp`` for the quartets that touch d,
-  and Rys above; ``auto`` is ``rotaxis`` on a libfint build and ``rys`` on a
-  libcint one. The paths agree to about 1e-12 scaled and are not
-  bit-identical. A libcint build refuses everything but ``rys``.
+  and Rys above; ``auto`` is ``rotaxis``. The paths agree to about 1e-12 scaled
+  and are not bit-identical.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
 - ``level_shift``: Hartree added to the virtual orbitals before each
