@@ -69,8 +69,8 @@ contains
       case ("makefp", "makeefp")
          ! GAMESS spells the run type MAKEFP; "makeefp" is the common variant.
          calc_type = CALC_TYPE_MAKEFP
-      case ("optimize", "optimization", "opt")
-         ! "optimize" is the QCSchema driver name the decks here use.
+      case ("optimize", "optimization", "opt", "optimise", "optimisation")
+         ! "optimize" is the QCSchema driver name the decks here use; "optimise" is the British spelling.
          calc_type = CALC_TYPE_OPTIMIZE
       case ("conformers", "conformer", "crest")
          calc_type = CALC_TYPE_CONFORMERS

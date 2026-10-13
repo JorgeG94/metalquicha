@@ -518,6 +518,14 @@ contains
                  "opt is a spelling of optimize")
       if (allocated(error)) return
 
+      call check(error, calc_type_from_string("Optimise") == CALC_TYPE_OPTIMIZE, &
+                 "Optimise is the British spelling of Optimize")
+      if (allocated(error)) return
+
+      call check(error, calc_type_from_string("optimisation") == CALC_TYPE_OPTIMIZE, &
+                 "optimisation is a spelling of optimization")
+      if (allocated(error)) return
+
       call check(error, calc_type_to_string(CALC_TYPE_OPTIMIZE) == "optimize", &
                  "CALC_TYPE_OPTIMIZE should name itself")
    end subroutine test_optimize_driver_parses

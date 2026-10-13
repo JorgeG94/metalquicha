@@ -83,6 +83,8 @@ DRIVERS = frozenset(
         "optimize",
         "optimization",
         "opt",
+        "optimise",
+        "optimisation",
         "conformers",
         "conformer",
         "crest",
