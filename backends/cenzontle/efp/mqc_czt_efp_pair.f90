@@ -40,7 +40,7 @@ module mqc_czt_efp_pair
 
    real(dp), parameter :: DAMPING_MIN_OVERLAP = 1.0e-5_dp
       !! Orbital overlap at or below which dispersion is left undamped; the
-      !! bound that justifies it is in `overlap_damping`.
+      !! published threshold (Sattasathuchana et al., JCTC 20, 2445 (2024)).
 
    integer, parameter :: N_QUAD_PAIR = 9
       !! Cartesian index pairs of a quadrupole, `(j, k)` as one index.
@@ -474,10 +474,8 @@ contains
       !! `-2 ln|S|` would still damp, plausibly and wrongly. Each `F_n` drops one
       !! more positive term, so `F8 < F7 < F6 < 1` wherever they are evaluated.
       !!
-      !! At `|S| <= DAMPING_MIN_OVERLAP` all three are one. There `x >= 4.80`
-      !! and `S^2 <= 1e-10`, and `S^2 sum x^k/k!` only falls as `|S|` does, so
-      !! `1 - F8` is below `1.2e-8` -- smaller than the precision dispersion is
-      !! known to -- and the cutoff also keeps `ln|S|` away from zero overlap.
+      !! At `|S| <= DAMPING_MIN_OVERLAP` all three are one, which also keeps
+      !! `ln|S|` away from zero overlap.
       real(dp), intent(in) :: s
       real(dp), intent(out) :: f6, f7, f8
 
@@ -815,13 +813,10 @@ contains
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
-      real(dp), parameter :: LOG_MIN_OVERLAP = 1.0e-10_dp
-         !! Overlap at or below which the `sqrt(-ln|S|)` term is dropped. The
-         !! term tends to zero with `S`, but `ln 0` does not exist and an exact
-         !! zero overlap is common, from symmetry or from orbitals too far apart
-         !! for their overlap to be representable. At `|S| = 1e-10` the term is
-         !! `4 sqrt(2/pi) sqrt(23) S^2 / R < 2e-19/R` Hartree, so nothing below
-         !! the cutoff can reach the sum.
+      real(dp), parameter :: LOG_MIN_OVERLAP = 1.0e-7_dp
+         !! Overlap at or below which the `sqrt(-ln|S|)` term is dropped; the
+         !! published threshold (Sattasathuchana et al., JCTC 20, 2445 (2024),
+         !! doi:10.1021/acs.jctc.3c01309).
       type(czt_molecule_t) :: pair
       real(dp), allocatable :: s_ao(:, :), t_ao(:, :), lmo_a(:, :), lmo_b(:, :)
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :), work(:, :)

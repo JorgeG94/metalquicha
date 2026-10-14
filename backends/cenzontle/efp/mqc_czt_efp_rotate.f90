@@ -12,17 +12,18 @@ module mqc_czt_efp_rotate
    !! quietly wrong, the damping being an overlap between localized orbitals on
    !! different fragments.
    !!
-   !! **The rotation itself is three atoms, not Euler angles.** GAMESS's `ROTMAT`
-   !! builds an orthonormal frame from two edges of the triangle three points
-   !! make, and the rotation is the one carrying the potential's own frame onto
-   !! the deck's. There are no angle conventions to pin and no chirality
-   !! ambiguity: the third axis is a cross product.
+   !! **The rotation itself is three atoms, not Euler angles.** An orthonormal
+   !! frame is built from two edges of the triangle three points make, and the
+   !! rotation is the one carrying the potential's own frame onto the deck's.
+   !! There are no angle conventions to pin and no chirality ambiguity: the
+   !! third axis is a cross product.
    !!
    !! The orbitals are converted to libcint's convention first, where every
    !! component of a shell shares one normalization constant, so the rotation is
-   !! the plain monomial expansion with no normalization ratios in it. GAMESS
-   !! rotates them in its own convention instead, hence the `2/sqrt(3)` factors
-   !! dividing in and out of `FRGROT`.
+   !! the plain monomial expansion with no normalization ratios in it. Rotating
+   !! in the potential file's own convention would need the `2/sqrt(3)`
+   !! normalization factors of the off-diagonal Cartesian `d` components divided
+   !! in and out.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -133,7 +134,7 @@ contains
    end subroutine superpose
 
    pure subroutine orientation_frame(a, b, c, t, ok)
-      !! An orthonormal frame from three points, as `ROTMAT` builds it
+      !! An orthonormal frame from three points
       !!
       !! First axis along `b - a`; second is `c - a` with that component projected
       !! out; third is their cross product, which fixes the handedness so the result
@@ -362,7 +363,7 @@ contains
    pure function rotate_packed_octopole(packed, rot) result(out)
       !! Ten stored components, `xxx yyy zzz xxy xxz xyy yyz xzz yzz xyz`
       !!
-      !! GAMESS's order, read off how `efelec.src` unpacks `EFOCT`; the same order
+      !! The file's order for a symmetric 3x3x3 tensor; the same order
       !! `mqc_czt_efp_interaction` spreads into a full tensor.
       real(dp), intent(in) :: packed(N_OCTUPOLE), rot(3, 3)
       real(dp) :: out(N_OCTUPOLE)

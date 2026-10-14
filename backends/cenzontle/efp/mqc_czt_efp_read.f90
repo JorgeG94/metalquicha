@@ -52,17 +52,15 @@ module mqc_czt_efp_read
    ! nine as a row-major 3x3 gives a tensor whose trace is negative, which is
    ! how the mistake announces itself.
    !
-   ! **`efinp.src` appears to contradict this, and does not.** Its reader
-   ! and its writer (both in `efinp.src`) agree that
-   ! slot 4 is `DYNDD_LMO(1,2)`, the transpose of the map below. Both are true
-   ! because the two arrays are indexed oppositely: GAMESS's is
-   ! `alpha(field, dipole)` and ours is `alpha(dipole, field)`. The maps compose
-   ! to the identity, so the *files* agree. Do not "fix" this to match
-   ! `efinp.src`.
+   ! **Reading slot 4 as element (1,2) appears to contradict this, and does
+   ! not.** That is the transpose of the map below. Both are true because the
+   ! two arrays are indexed oppositely: one is `alpha(field, dipole)` and
+   ! `dyn_pol` is `alpha(dipole, field)`. The maps compose to the identity, so
+   ! the *files* agree. Do not "fix" this to match the (field, dipole) reading.
    !
-   ! What does follow from the transpose is that anything mirroring a GAMESS
-   ! expression over `DYNDD_LMO` must swap the two indices when it reads
-   ! `dyn_pol`. `dipquad` and `quadquad` are stored flat in file order and need
+   ! What does follow from the transpose is that anything mirroring an
+   ! expression written for a `(field, dipole)` tensor must swap the two
+   ! indices when it reads `dyn_pol`. `dipquad` and `quadquad` are stored flat in file order and need
    ! no swap.
    integer, parameter :: N_POL_SLOTS = 9
    integer, parameter :: POL_ROW(N_POL_SLOTS) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
@@ -361,8 +359,8 @@ contains
       !! `CTVEC`'s header carries two counts, occupied and total -- `CTVEC 5 19`
       !! is five occupied among nineteen. **Not the same set as `PROJECTION
       !! WAVEFUNCTION`**, which is valence-occupied only; which of the whole
-      !! canonical set or occupied-plus-valence-virtuals arrived depends on
-      !! GAMESS's `CTVVO` and is what the header count says.
+      !! canonical set or occupied-plus-valence-virtuals arrived depends on how
+      !! the potential was written, and is what the header count says.
       !!
       !! Rows are chunked by column, as in `PROJECTION WAVEFUNCTION`, and the
       !! coefficients are in GAMESS's AO order.

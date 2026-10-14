@@ -95,9 +95,9 @@ module mqc_czt_efp_potential
       !! measured in `validation/check_distributed_polarizability.py` -- the one
       !! convention here that a symmetric test tensor would not have caught.
       !!
-      !! Also the transpose of what the `efinp.src` writer writes, which is not a
-      !! conflict: GAMESS indexes the tensor `(field, dipole)` where this code
-      !! indexes it `(dipole, field)`, so both put the same number in slot 4. See
+      !! Also the transpose of reading slot 4 as element (1,2), which is not a
+      !! conflict: that reading indexes the tensor `(field, dipole)` where this
+      !! code indexes it `(dipole, field)`, so both put the same number in slot 4. See
       !! the note on `POL_ROW` in `mqc_czt_efp_read`, which carries the measurement.
    integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
@@ -761,12 +761,11 @@ contains
          return
       end if
 
-      ! The charge-transfer basis, in the canonical form: `$MAKEFP CTVVO=.FALSE.`
-      ! writes the whole canonical MO matrix under the header `CTVEC NA NUM`,
-      ! where GAMESS's default path writes `NOCC` occupied orbitals plus
-      ! quasi-atomic valence virtuals from `VVOS`. The canonical form needs no
-      ! extra machinery and is what GAMESS recommends when the valence virtuals
-      ! cannot be formed.
+      ! The charge-transfer basis, in the canonical form: the whole canonical MO
+      ! matrix is written under a `CTVEC` header giving the occupied and total
+      ! counts, rather than the occupied orbitals plus quasi-atomic valence
+      ! virtuals. The canonical form needs no extra machinery and is what remains
+      ! when the valence virtuals cannot be formed.
       call to_gamess_ao_order(mol, scf%orbitals, pot%canonical, error)
       if (error%has_error()) then
          call mol%destroy()

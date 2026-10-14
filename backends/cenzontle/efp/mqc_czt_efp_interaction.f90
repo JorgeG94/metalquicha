@@ -49,6 +49,11 @@ module mqc_czt_efp_interaction
       !! symmetric 3x3x3, ordered xxx, yyy, zzz, xxy, xxz, xyy, yyz, xzz, yzz,
       !! xyz, which is the order GAMESS writes them in.
 
+   real(dp), parameter :: CLOSE_EXPONENTS = 1.0e-5_dp
+      !! Absolute gap, Bohr^-1, below which two screening exponents are treated
+      !! as equal; the published threshold (Sattasathuchana et al., JCTC 20, 2445
+      !! (2024)). `penetration` then uses the first point's exponent for both.
+
    type :: efp_system_t
       !! Several placed fragments, flattened into one set of point arrays
       integer :: n_fragments = 0
@@ -650,6 +655,9 @@ contains
       dist = norm2(r)
       alpha_a = system%alpha(a)
       alpha_b = system%alpha(b)
+      ! Equal within `CLOSE_EXPONENTS`: both points, nuclear terms included,
+      ! carry `a`'s exponent, and `smeared_pair` takes its equal-exponent limit.
+      if (abs(alpha_a - alpha_b) < CLOSE_EXPONENTS) alpha_b = alpha_a
 
       e = (system%q_elec(a)*system%q_elec(b)*smeared_pair(alpha_a, alpha_b, dist) &
            - system%q_elec(a)*system%q_nuc(b)*exp(-alpha_a*dist) &
@@ -663,20 +671,10 @@ contains
       real(dp), intent(in) :: dist    !! `R`, Bohr
       real(dp) :: g
 
-      real(dp), parameter :: CLOSE_EXPONENTS = 1.0e-5_dp
-         !! Relative gap below which the exponents are treated as equal. The
-         !! two-exponent form divides a difference of two near-equal terms by
-         !! `y^2 - x^2`, losing about `eps/delta` of its digits at relative gap
-         !! `delta`; `g` is symmetric in `x` and `y`, so the equal-exponent form
-         !! taken at their mean is in error by `O(delta^2)`. The two balance
-         !! near `delta ~ eps^(1/3) ~ 6e-6`. At `1e-5` the first is `~2e-11`
-         !! relative and the second under `2e-10` for `alpha R <= 5`, past
-         !! which the correction is itself below `exp(-5)`.
-      real(dp) :: x2, y2, mean
+      real(dp) :: x2, y2
 
-      if (abs(x - y) <= CLOSE_EXPONENTS*0.5_dp*(x + y)) then
-         mean = 0.5_dp*(x + y)
-         g = -(1.0_dp + 0.5_dp*mean*dist)*exp(-mean*dist)
+      if (abs(x - y) < CLOSE_EXPONENTS) then
+         g = -(1.0_dp + 0.5_dp*x*dist)*exp(-x*dist)
       else
          x2 = x*x
          y2 = y*y
