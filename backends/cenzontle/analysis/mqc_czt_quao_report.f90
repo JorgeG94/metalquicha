@@ -9,10 +9,10 @@ module mqc_czt_quao_report
    !!
    !! **Every label here is empirical.** Nothing defines a sigma orbital; the
    !! classification is a set of thresholds on occupations, bond orders and
-   !! directions, taken from `LOCAL_ORIENBOS_ASSIGN_ORBTYP` in GAMESS's
-   !! `locsvd.src` and its `BOTOL` array. An orbital half a percent the wrong
-   !! side of `TOL_LONE_PAIR_OCC` is not a different orbital, it is a different
-   !! label on the same one.
+   !! directions, whose values were chosen so that the labels reproduce the
+   !! ones GAMESS prints. An orbital half a percent the wrong side of
+   !! `TOL_LONE_PAIR_OCC` is not a different orbital, it is a different label
+   !! on the same one.
    !!
    !! The quantities being labelled -- populations, bond orders, kinetic bond
    !! orders -- are not empirical, and are validated against GAMESS to 1e-6 in
@@ -45,29 +45,27 @@ module mqc_czt_quao_report
    public :: QUAO_TYPE_NVMOD, QUAO_TYPE_NV
    public :: QUAO_MAX_L
 
-   ! GAMESS's `BOTOL`, in its own order. The comments say what each one decides,
-   ! which the names do not: `TOLNV` is not a tolerance on anything, it is the
-   ! occupation below which an orbital counts as empty.
+   ! The labelling thresholds. Their values reproduce GAMESS's printed labels
+   ! and are kept for that comparison; what each one decides is below.
    real(dp), parameter :: TOL_STRONG_BOND = 0.40_dp
-      !! `TOLSBO`. A bond order between two atoms at or above this makes the
-      !! pair a "strong bond", and only strong bonds get orbitals labelled from
-      !! them. Everything else in the table is reported without being classified.
+      !! A bond order between two atoms at or above this makes the pair a
+      !! "strong bond", and only strong bonds get orbitals labelled from them.
+      !! Everything else in the table is reported without being classified.
    real(dp), parameter :: TOL_LONE_PAIR_OCC = 1.80_dp
-      !! `TOLLPOCC`. An orbital this close to doubly occupied is a lone pair,
-      !! whatever else it is doing.
+      !! An orbital this close to doubly occupied is a lone pair, whatever else
+      !! it is doing.
    real(dp), parameter :: TOL_RADICAL_OCC = 0.40_dp
-      !! `TOLRDOCC`. How far from singly occupied an orbital may be and still be
-      !! called a radical.
+      !! How far from singly occupied an orbital may be and still be called a
+      !! radical.
    real(dp), parameter :: TOL_OVERLAP = 0.20_dp
-      !! `TOLOVRLP`. The cosine between an orbital's own axis and the line
-      !! joining the two atoms, above which the orbital points along the bond and
-      !! is therefore sigma rather than pi. This is a geometric test, not a
-      !! symmetry one -- see `assign_orbital_types`.
+      !! The cosine between an orbital's own axis and the line joining the two
+      !! atoms, above which the orbital points along the bond and is therefore
+      !! sigma rather than pi. This is a geometric test, not a symmetry one --
+      !! see `assign_orbital_types`.
    real(dp), parameter :: TOL_EMPTY = 0.40_dp
-      !! `TOLNV`. Occupation below which an orbital is empty for labelling
-      !! purposes.
+      !! Occupation below which an orbital is empty for labelling purposes.
    real(dp), parameter :: TOL_PRINT = 1.0e-3_dp
-      !! `TOLDEN`. Rows below this in magnitude are not printed.
+      !! Rows below this in magnitude are not printed.
 
    ! Column widths for the report, so the header and the rows cannot drift
    ! apart. Every field is written into a substring of exactly this length.
@@ -78,8 +76,7 @@ module mqc_czt_quao_report
    integer, parameter :: WIDTH_TYPE = 8        !! The orbital type, plus a lead space
 
    integer, parameter :: QUAO_MAX_L = 3
-      !! s, p, d, f -- GAMESS's `INUMTYP`. The accurate atomic minimal basis has
-      !! nothing higher, since it holds free-atom occupied shells only.
+      !! s, p, d, f. The accurate atomic minimal basis has nothing higher, since it holds free-atom occupied shells only.
 
    type :: quao_labels_t
       !! What each quasi-atomic orbital is, and what it is bonded to
@@ -154,12 +151,13 @@ contains
       !! diagonalized; the eigenvector of the largest eigenvalue is the
       !! direction the orbital sticks out in. For an s-like orbital it is
       !! noise, which does not matter: the only consumer is the sigma/pi test,
-      !! and s-like orbitals are classified as lone pairs before it runs.
+      !! and an s-like orbital is normally a lone pair, which is labelled from
+      !! its occupation without consulting the axis.
       !!
-      !! GAMESS's axis, from the electronic quadrupole moment, is the same one:
+      !! The axis taken from the electronic quadrupole moment is the same one:
       !! a traceless quadrupole is `3M - tr(M)`, and subtracting a multiple of
-      !! the identity does not move an eigenvector. It takes the *smallest*
-      !! eigenvalue there because the electron charge is negative.
+      !! the identity does not move an eigenvector. There it belongs to the
+      !! *smallest* eigenvalue, because the electron charge is negative.
       !!
       !! One dipole and one quadrupole build, not one per atom: the moment about
       !! `R` follows from the moments about a common origin by
@@ -303,188 +301,220 @@ contains
    end subroutine quao_angular_character
 
    subroutine assign_orbital_types(quao, atomic_numbers, coordinates, labels, error)
-      !! GAMESS's `LOCAL_ORIENBOS_ASSIGN_ORBTYP`, in order
+      !! Label every orbital from its own occupation and its strong bonds
       !!
-      !! The rules run in a fixed sequence and each one only touches orbitals no
-      !! earlier rule claimed, so the order is the algorithm:
-      !!
-      !! 1. Find the strong bonds -- interatomic pairs with a bond order at or
-      !!    above `TOL_STRONG_BOND` -- in descending order of magnitude.
-      !! 2. An orbital in a strong bond that is nearly doubly occupied is a lone
-      !!    pair doing bonding work (LPMOD); one that is nearly empty is the
-      !!    antibonding partner (NVMOD).
-      !! 3. Any remaining nearly-doubly-occupied orbital is an ordinary lone pair.
-      !! 4. The rest of each strong bond is sigma or pi, decided geometrically.
-      !! 5. Anything left near single occupancy is a radical.
-      !! 6. Everything else is sorted by occupation alone.
+      !! A *strong bond* is an interatomic orbital pair whose bond order reaches
+      !! `TOL_STRONG_BOND`. They are ranked once, largest first, and each
+      !! orbital's list of strong partners follows that ranking, so its first
+      !! partner is its strongest. With that list in hand every orbital is
+      !! labelled on its own by `classify_orbital`; no label depends on another
+      !! orbital's label.
       !!
       !! **Sigma versus pi is decided by geometry, not by symmetry.** The test
-      !! is the angle between the orbital's own axis and the line joining the
-      !! two atoms, averaged over the two ends of the bond, so it says something
-      !! even in a molecule with no symmetry at all.
+      !! is the angle between the orbitals' axes and the line joining the two
+      !! atoms of the orbital's strongest bond, averaged over the two ends, so
+      !! it says something even in a molecule with no symmetry at all.
       type(quao_result_t), intent(in) :: quao
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)
       type(quao_labels_t), intent(inout) :: labels
       type(error_t), intent(inout) :: error
 
-      integer, allocatable :: bond_i(:), bond_j(:), order(:)
-      real(dp), allocatable :: strength(:)
-      real(dp) :: axis(3)
-      real(dp) :: distance, along, occupation
-      integer :: n, i, j, k, ib, n_pairs, n_strong
+      integer, allocatable :: ends(:, :), ranking(:), n_bonded(:), bonded(:, :)
+      real(dp), allocatable :: bond_order(:)
+      real(dp) :: alignment
+      integer :: n_orb, orb, other, rank, n_bonds
+      logical :: axis_known
 
       if (error%has_error()) return
-      n = quao%n_quao
-      allocate (labels%orbital_type(n), labels%partner_count(n), labels%partner(n, n))
-      labels%orbital_type = QUAO_TYPE_NONE
+      n_orb = quao%n_quao
+
+      call find_strong_bonds(quao, ends, bond_order)
+      n_bonds = size(bond_order)
+      call sort_by_magnitude(bond_order, ranking)
+
+      allocate (n_bonded(n_orb), bonded(n_orb, n_orb))
+      n_bonded = 0
+      bonded = 0
+      do rank = 1, n_bonds
+         associate (one => ends(1, ranking(rank)), two => ends(2, ranking(rank)))
+            n_bonded(one) = n_bonded(one) + 1
+            bonded(one, n_bonded(one)) = two
+            n_bonded(two) = n_bonded(two) + 1
+            bonded(two, n_bonded(two)) = one
+         end associate
+      end do
+
+      allocate (labels%orbital_type(n_orb), labels%partner_count(n_orb))
+      allocate (labels%partner(n_orb, n_orb))
+      labels%n_strong_bonds = n_bonds
       labels%partner_count = 0
       labels%partner = 0
-
-      ! ---- 1. the strong bonds, strongest first -----------------------------
-      n_pairs = n*(n - 1)/2
-      allocate (bond_i(n_pairs), bond_j(n_pairs), strength(n_pairs))
-      n_strong = 0
-      do i = 1, n
-         do j = i + 1, n
-            if (quao%atom_of(i) == quao%atom_of(j)) cycle
-            if (abs(quao%population_bond_order(i, j)) < TOL_STRONG_BOND) cycle
-            n_strong = n_strong + 1
-            bond_i(n_strong) = i
-            bond_j(n_strong) = j
-            strength(n_strong) = abs(quao%population_bond_order(i, j))
-         end do
-      end do
-      call sort_by_magnitude(strength(1:n_strong), order)
-      labels%n_strong_bonds = n_strong
-
-      ! ---- 2. lone pairs and empty orbitals that are nonetheless bonding ----
-      do k = 1, n_strong
-         ib = order(k)
-         do j = 1, 2
-            i = merge(bond_i(ib), bond_j(ib), j == 1)
-            if (labels%orbital_type(i) /= QUAO_TYPE_NONE) cycle
-            occupation = abs(quao%population_bond_order(i, i))
-            if (occupation >= TOL_LONE_PAIR_OCC) labels%orbital_type(i) = QUAO_TYPE_LPMOD
-            if (occupation < TOL_EMPTY) labels%orbital_type(i) = QUAO_TYPE_NVMOD
-         end do
-      end do
-
-      ! ---- 3. ordinary lone pairs -------------------------------------------
-      do i = 1, n
-         if (labels%orbital_type(i) /= QUAO_TYPE_NONE) cycle
-         if (abs(quao%population_bond_order(i, i)) < TOL_LONE_PAIR_OCC) cycle
-         labels%orbital_type(i) = QUAO_TYPE_LONE_PAIR
-      end do
-
-      ! ---- 4. sigma and pi ---------------------------------------------------
-      do k = 1, n_strong
-         ib = order(k)
-         i = bond_i(ib)
-         j = bond_j(ib)
-         if (labels%orbital_type(i) /= QUAO_TYPE_NONE .and. &
-             labels%orbital_type(j) /= QUAO_TYPE_NONE) cycle
-
-         axis = coordinates(:, quao%atom_of(i)) - coordinates(:, quao%atom_of(j))
-         distance = sqrt(sum(axis**2))
-         if (distance <= 0.0_dp) then
-            call error%set(ERROR_VALIDATION, "atoms "//to_char(quao%atom_of(i))// &
-                           " and "//to_char(quao%atom_of(j))//" are at the same point, "// &
-                           "so the bond has no direction to compare an orbital with.")
-            return
+      do orb = 1, n_orb
+         axis_known = .not. axis_is_ambiguous(atomic_numbers(quao%atom_of(orb)))
+         alignment = 0.0_dp
+         if (n_bonded(orb) > 0 .and. axis_known) then
+            other = bonded(orb, 1)
+            call bond_alignment(quao, coordinates, labels%direction, orb, other, &
+                                alignment, error)
+            if (error%has_error()) return
          end if
-         axis = axis/distance
-         ! Averaged over the two ends, so a bond does not come out sigma from one
-         ! atom's point of view and pi from the other's.
-         along = 0.5_dp*(abs(dot_product(axis, labels%direction(:, i))) &
-                         + abs(dot_product(axis, labels%direction(:, j))))
-
-         call set_bond_type(labels, quao, atomic_numbers, i, along)
-         call set_bond_type(labels, quao, atomic_numbers, j, along)
-      end do
-
-      ! ---- 5. radicals -------------------------------------------------------
-      do i = 1, n
-         if (labels%orbital_type(i) /= QUAO_TYPE_NONE) cycle
-         if (abs(1.0_dp - quao%population_bond_order(i, i)) > TOL_RADICAL_OCC) cycle
-         labels%orbital_type(i) = QUAO_TYPE_RADICAL
-      end do
-
-      ! ---- 6. whatever is left, by occupation alone -------------------------
-      do i = 1, n
-         if (labels%orbital_type(i) /= QUAO_TYPE_NONE) cycle
-         occupation = abs(quao%population_bond_order(i, i))
-         if (occupation >= 1.0_dp) then
-            labels%orbital_type(i) = QUAO_TYPE_RDLP
-         else if (occupation >= TOL_EMPTY) then
-            labels%orbital_type(i) = QUAO_TYPE_RDNV
-         else
-            labels%orbital_type(i) = QUAO_TYPE_NV
+         labels%orbital_type(orb) = classify_orbital(quao%population_bond_order(orb, orb), &
+                                                     n_bonded(orb) > 0, axis_known, &
+                                                     alignment)
+         ! Only an orbital labelled as taking part in a bond lists what it is
+         ! bonded to. A lone pair, radical or empty orbital that nonetheless
+         ! has a large bond order keeps an empty list, and the report shows a
+         ! bonded orbital against one that is not: delocalization.
+         if (records_partners(labels%orbital_type(orb))) then
+            labels%partner_count(orb) = n_bonded(orb)
+            labels%partner(orb, :) = bonded(orb, :)
          end if
       end do
-
-      ! ---- and who each bonding orbital is bonded to ------------------------
-      ! Only the types that describe an interaction get a partner recorded; see
-      ! `add_partner`.
-      do k = 1, n_strong
-         ib = order(k)
-         call add_partner(labels, bond_i(ib), bond_j(ib))
-         call add_partner(labels, bond_j(ib), bond_i(ib))
-      end do
-
-      deallocate (bond_i, bond_j, strength, order)
    end subroutine assign_orbital_types
 
-   subroutine set_bond_type(labels, quao, atomic_numbers, iorb, along)
-      !! Sigma or pi for one end of one bond, if it is still unassigned
-      type(quao_labels_t), intent(inout) :: labels
+   subroutine find_strong_bonds(quao, ends, bond_order)
+      !! Every interatomic orbital pair whose bond order reaches `TOL_STRONG_BOND`
       type(quao_result_t), intent(in) :: quao
-      integer, intent(in) :: atomic_numbers(:)
-      integer, intent(in) :: iorb
-      real(dp), intent(in) :: along     !! |cos| between orbital axis and bond axis
+      integer, allocatable, intent(out) :: ends(:, :)      !! (2, n_bonds), lower index first
+      real(dp), allocatable, intent(out) :: bond_order(:)  !! (n_bonds), magnitudes
 
-      if (labels%orbital_type(iorb) /= QUAO_TYPE_NONE) return
-      if (skip_direction_test(atomic_numbers(quao%atom_of(iorb)))) return
-      if (along >= TOL_OVERLAP) then
-         labels%orbital_type(iorb) = QUAO_TYPE_SIGMA
-      else
-         labels%orbital_type(iorb) = QUAO_TYPE_PI
-      end if
-   end subroutine set_bond_type
+      integer, allocatable :: found(:, :)
+      real(dp), allocatable :: size_of(:)
+      integer :: a, b, n_found
 
-   pure function skip_direction_test(atomic_number) result(skip)
-      !! Whether an atom's orbitals are left unclassified
+      allocate (found(2, max(1, quao%n_quao*(quao%n_quao - 1)/2)))
+      allocate (size_of(size(found, 2)))
+      n_found = 0
+      do a = 1, quao%n_quao
+         do b = a + 1, quao%n_quao
+            if (quao%atom_of(a) == quao%atom_of(b)) cycle
+            if (abs(quao%population_bond_order(a, b)) < TOL_STRONG_BOND) cycle
+            n_found = n_found + 1
+            found(:, n_found) = [a, b]
+            size_of(n_found) = abs(quao%population_bond_order(a, b))
+         end do
+      end do
+      ends = found(:, 1:n_found)
+      bond_order = size_of(1:n_found)
+   end subroutine find_strong_bonds
+
+   subroutine bond_alignment(quao, coordinates, direction, orb, other, alignment, error)
+      !! How nearly two bonded orbitals point along the line between their atoms
       !!
-      !! The d block, in GAMESS's `LOCAL_ORIENBOS_SKIP`. A d orbital's second
-      !! moment does not point along a bond the way a p orbital's does -- a
-      !! d(z^2) lobe and a d(xy) cloverleaf give different axes for orbitals
-      !! doing the same job -- so sigma and pi are not assigned there at all,
-      !! and those orbitals appear in the table with no type.
+      !! The mean of `|cos|` between each orbital's axis and the internuclear
+      !! axis. Taken over both ends, so a bond cannot be sigma from one atom's
+      !! side and pi from the other's.
+      type(quao_result_t), intent(in) :: quao
+      real(dp), intent(in) :: coordinates(:, :)
+      real(dp), intent(in) :: direction(:, :)   !! (3, n_quao), unit vectors
+      integer, intent(in) :: orb, other
+      real(dp), intent(out) :: alignment
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: axis(3)
+      real(dp) :: length
+
+      alignment = 0.0_dp
+      axis = coordinates(:, quao%atom_of(orb)) - coordinates(:, quao%atom_of(other))
+      length = norm2(axis)
+      if (length <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "atoms "//to_char(quao%atom_of(orb))// &
+                        " and "//to_char(quao%atom_of(other))//" are at the same point, "// &
+                        "so the bond has no direction to compare an orbital with.")
+         return
+      end if
+      axis = axis/length
+      alignment = 0.5_dp*(abs(dot_product(axis, direction(:, orb))) + &
+                          abs(dot_product(axis, direction(:, other))))
+   end subroutine bond_alignment
+
+   pure function classify_orbital(population, strongly_bonded, axis_known, alignment) &
+      result(code)
+      !! The `QUAO_TYPE_*` code of one orbital
+      !!
+      !! Occupation is read on the 0-to-2 scale of a spatial orbital.
+      !!
+      !! | in a strong bond | occupation             | label              |
+      !! |------------------|------------------------|--------------------|
+      !! | yes              | `>= TOL_LONE_PAIR_OCC` | LPMOD (bonding lone pair) |
+      !! | yes              | `<  TOL_EMPTY`         | NVMOD (bonding empty)     |
+      !! | yes              | between, axis known    | sigma or pi by `alignment` |
+      !! | no               | `>= TOL_LONE_PAIR_OCC` | lone pair          |
+      !!
+      !! Anything else -- including a bonded orbital on an atom whose axis is
+      !! not trusted -- is labelled by occupation alone: radical within
+      !! `TOL_RADICAL_OCC` of one electron, otherwise RDLP from one electron up,
+      !! RDNV down to `TOL_EMPTY`, and nonvalence below it.
+      real(dp), intent(in) :: population    !! The orbital's diagonal density element
+      logical, intent(in) :: strongly_bonded
+      logical, intent(in) :: axis_known
+      real(dp), intent(in) :: alignment     !! From `bond_alignment`, its strongest bond
+      integer :: code
+
+      real(dp) :: occupation
+
+      occupation = abs(population)
+      if (strongly_bonded) then
+         if (occupation >= TOL_LONE_PAIR_OCC) then
+            code = QUAO_TYPE_LPMOD
+            return
+         end if
+         if (occupation < TOL_EMPTY) then
+            code = QUAO_TYPE_NVMOD
+            return
+         end if
+         if (axis_known) then
+            code = merge(QUAO_TYPE_SIGMA, QUAO_TYPE_PI, alignment >= TOL_OVERLAP)
+            return
+         end if
+      else if (occupation >= TOL_LONE_PAIR_OCC) then
+         code = QUAO_TYPE_LONE_PAIR
+         return
+      end if
+
+      if (abs(population - 1.0_dp) <= TOL_RADICAL_OCC) then
+         code = QUAO_TYPE_RADICAL
+      else if (occupation >= 1.0_dp) then
+         code = QUAO_TYPE_RDLP
+      else if (occupation >= TOL_EMPTY) then
+         code = QUAO_TYPE_RDNV
+      else
+         code = QUAO_TYPE_NV
+      end if
+   end function classify_orbital
+
+   pure function axis_is_ambiguous(atomic_number) result(ambiguous)
+      !! Whether an atom's orbitals get no sigma/pi label from their axis
+      !!
+      !! Atoms with d or f valence shells: transition metals, lanthanides and
+      !! actinides. The second-moment axis of a d orbital is not a reliable
+      !! guide to its bonding role -- a d(z^2) lobe and a d(xy) cloverleaf doing
+      !! the same job point in unrelated directions -- so such an orbital is
+      !! labelled by its occupation instead.
       integer, intent(in) :: atomic_number
-      logical :: skip
+      logical :: ambiguous
 
-      skip = (atomic_number >= 21 .and. atomic_number <= 30) .or. &
-             (atomic_number >= 39 .and. atomic_number <= 48) .or. &
-             (atomic_number >= 57 .and. atomic_number <= 80) .or. &
-             (atomic_number >= 89)
-   end function skip_direction_test
-
-   subroutine add_partner(labels, iorb, jorb)
-      !! Record `jorb` as something `iorb` is bonded to, if `iorb` is a bond
-      type(quao_labels_t), intent(inout) :: labels
-      integer, intent(in) :: iorb, jorb
-
-      select case (labels%orbital_type(iorb))
-      case (QUAO_TYPE_LPMOD, QUAO_TYPE_SIGMA, QUAO_TYPE_PI, QUAO_TYPE_NVMOD)
-         labels%partner_count(iorb) = labels%partner_count(iorb) + 1
-         labels%partner(iorb, labels%partner_count(iorb)) = jorb
+      select case (atomic_number)
+      case (21:30, 39:48, 57:80, 89:)
+         ambiguous = .true.
       case default
-         ! A lone pair, a radical or an empty orbital keeps its list empty even
-         ! when it appears in a strong bond. The report then shows a large bond
-         ! order between an orbital that is bonded and one that is not, which is
-         ! what delocalization looks like from here.
+         ambiguous = .false.
       end select
-   end subroutine add_partner
+   end function axis_is_ambiguous
+
+   pure function records_partners(code) result(records)
+      !! Whether an orbital with this label lists the orbitals it is bonded to
+      integer, intent(in) :: code
+      logical :: records
+
+      select case (code)
+      case (QUAO_TYPE_LPMOD, QUAO_TYPE_SIGMA, QUAO_TYPE_PI, QUAO_TYPE_NVMOD)
+         records = .true.
+      case default
+         records = .false.
+      end select
+   end function records_partners
 
    subroutine sort_by_magnitude(values, order)
       !! Indices of `values`, largest absolute value first

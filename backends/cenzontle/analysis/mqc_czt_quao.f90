@@ -36,27 +36,42 @@ module mqc_czt_quao
    public :: split_localize
    public :: quao_result_t
 
-   real(dp), parameter :: ORIENT_CRIT = 1.0e-6_dp
-      !! GAMESS's `CVGLOC` default, tested against the rotation angle.
-   real(dp), parameter :: ORIENT_FLOOR = 1.0e-8_dp
-      !! Below this the functional does not depend on the angle; skip the pair.
+   real(dp), parameter :: ORIENT_ANGLE_TOL = 1.0e-6_dp
+      !! Rotations smaller than this, in radians, are not applied. A skipped
+      !! rotation moves a bond order by at most this much times its size,
+      !! on the scale of the 1e-6 agreement with reference values the tests ask of
+      !! bond orders, and below the four decimals the bond table prints.
+   real(dp), parameter :: ORIENT_FLAT = 1.0e-8_dp
+      !! Amplitude of a pair's angular dependence below which the pair is left
+      !! alone: every angle then gives the same functional, and the angle
+      !! atan2 would return is a ratio of round-off.
    integer, parameter :: ORIENT_MAX_SWEEPS = 2000
-      !! Sweep limit for the refinement and, unless a caller names another,
-      !! the orientation
+      !! Default sweep limit for the orientation and the split localization
    real(dp), parameter :: ORIENT_GAIN_CRIT = 1.0e-9_dp
       !! Largest single-rotation increase of eq (5.5) below which an orientation
       !! that reaches its sweep limit is accepted rather than refused.
+   real(dp), parameter :: ORIENT_SENSE_SLACK = 1.0e-10_dp
+      !! How far eq (5.5) may fall over the whole orientation, as round-off,
+      !! before the rotations are judged to have been applied backwards
    real(dp), parameter :: KBO_SCALE = 0.1_dp
       !! Paper II eq (2), and empirical: raw kinetic interference energies in
       !! organic molecules run about an order of magnitude above the bond
       !! energies chemistry quotes, so they are scaled to be comparable.
 
-   real(dp), parameter :: JACOBI_CRIT = 1.0e-10_dp
-      !! GAMESS's `CRIT` in `LOCAL_MODELORB_DRIV`. Both the rotation magnitude
-      !! and the angle are tested against it.
-   integer, parameter :: JACOBI_MAX_SWEEPS = 10000
-      !! Neither paper states a criterion or a cap; these are the reference
-      !! implementation's.
+   real(dp), parameter :: REFINE_ANGLE_TOL = 1.0e-10_dp
+      !! Rotations smaller than this, in radians, are not applied, and a sweep
+      !! that applies none ends the refinement. Tight because the refinement
+      !! fixes the orbitals every later step works in: a residual angle moves
+      !! populations and bond orders to first order, while the functional
+      !! itself only moves to second.
+   real(dp), parameter :: REFINE_FLAT = 1.0e-10_dp
+      !! Size of `G_A - G_B`'s traceless part below which every angle gives the
+      !! same functional and the pair is left alone
+   integer, parameter :: REFINE_MAX_SWEEPS = 5000
+      !! The refinement normally settles in a few tens of sweeps. The cap only
+      !! stops a run that cannot settle, and is set high enough that one
+      !! converging linearly at 0.995 per sweep from an angle of 0.1 still
+      !! reaches `REFINE_ANGLE_TOL` inside it.
 
    type :: vvo_result_t
       !! What the valence-virtual extraction leaves behind
@@ -104,7 +119,7 @@ module mqc_czt_quao
          !! Paper I eq (5.5) after orientation
       logical :: orientation_stalled = .false.
          !! The orientation reached its sweep limit with angles still above
-         !! `ORIENT_CRIT` but every rotation gaining under `ORIENT_GAIN_CRIT`,
+         !! `ORIENT_ANGLE_TOL` but every rotation gaining under `ORIENT_GAIN_CRIT`,
          !! and was accepted
       real(dp) :: orientation_gain = 0.0_dp
          !! Largest single-rotation increase of eq (5.5) in the final sweep
@@ -501,22 +516,19 @@ contains
       !!
       !!     P = sum_A sum_{a on A} sum_{alpha on A} <A*alpha | Aa>^2
       !!
-      !! over orthogonal transformations. Only rotations between orbitals on
-      !! *different* atoms change it -- the functional is blind to intra-atomic
-      !! mixing, which is what the orientation step later exploits -- so the
-      !! sweep skips same-atom pairs entirely.
+      !! over orthogonal transformations, by 2x2 rotations between orbitals on
+      !! *different* atoms. A rotation inside one atom leaves P unchanged, so
+      !! those pairs are never visited.
       !!
-      !! Each rotation is closed form. With
+      !! For orbitals `i` on atom A and `j` on atom B, let `G_A` and `G_B` be the
+      !! 2x2 Gram matrices of their projections onto A's and B's free-atom
+      !! orbitals. After rotating to `(c i + s j, -s i + c j)` the pair's share
+      !! of P depends on the unit vector `e = (c, s)` as
       !!
-      !!     D = (Q^A_ii - Q^A_jj + Q^B_jj - Q^B_ii) / 2
-      !!     F =  Q^A_ij - Q^B_ij
+      !!     P_ij(e) = e^T G_A e + (I - e e^T) : G_B = tr G_B + e^T (G_A - G_B) e
       !!
-      !! the optimum is theta = atan2(F, D) / 2, with the sign flipped on the
-      !! second atom's contribution.
-      ! TODO(mqc): converging on sweep `JACOBI_MAX_SWEEPS` exactly is reported
-      ! as a failure to converge, since `sweeps` is set before the loop exits
-      ! and then tested with `>=`. `orient_quasi_atomic_orbitals` and
-      ! `fourth_power_localize` share the off-by-one.
+      !! so the best rotation turns `i` onto the leading eigenvector of
+      !! `M = G_A - G_B`, which is `2 theta = atan2(M_12, (M_11 - M_22)/2)`.
       real(dp), intent(inout) :: coefficients(:, :)   !! (n_rows, n_quao)
       real(dp), intent(in) :: projection(:, :)        !! (n_rows, n_mbs), raw AAMBS
       integer, intent(in) :: atom_of(:)
@@ -528,104 +540,145 @@ contains
       integer, intent(in) :: offset(:), count(:)      !! AAMBS range per atom
       integer, intent(out) :: sweeps
       real(dp), intent(out) :: functional
+      type(error_t), intent(inout) :: error
       real(dp), allocatable, intent(out), optional :: character_of(:)
          !! Per orbital, the norm of its projection onto its own atom's
          !! free-atom space -- the quantity the papers quote per QUAO
-      type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: amb(:, :), ci(:), cj(:)
-      real(dp), allocatable :: ri(:), rj(:)
-      real(dp) :: d, f, radius, theta, a, b, qii, qjj, qij
-      integer :: n, i, j, k, lo, hi, sweep
-      logical :: moved, settled
+      real(dp), allocatable :: overlap(:, :), own_share(:)
+      integer, allocatable :: pairs(:, :)
+      real(dp) :: gram_own(3), gram_other(3), mismatch(3)
+      real(dp) :: half_gap, radius, theta
+      integer :: n_orb, sweep, ipair, first, second
+      logical :: rotated
 
       if (error%has_error()) return
-      n = size(coefficients, 2)
-      allocate (amb(n, size(projection, 2)), ci(size(coefficients, 1)))
-      allocate (cj(size(coefficients, 1)))
-      allocate (ri(size(projection, 2)), rj(size(projection, 2)))
+      n_orb = size(coefficients, 2)
+      call rotatable_pairs(atom_of, subspace_of, .false., pairs)
+      allocate (overlap(n_orb, size(projection, 2)))
 
       sweeps = 0
-      settled = .false.
-      do sweep = 1, JACOBI_MAX_SWEEPS
-         moved = .false.
-         ! `< QUAO | A*alpha >` for the current orbitals, rebuilt each sweep.
-         call pic_gemm(coefficients, projection, amb, transa="T")
-
-         do i = 1, n
-            do j = i + 1, n
-               if (atom_of(i) == atom_of(j)) cycle
-               if (subspace_of(i) /= subspace_of(j)) cycle   ! invisible to the functional
-
-               d = 0.0_dp
-               f = 0.0_dp
-               lo = offset(atom_of(i)) + 1
-               hi = offset(atom_of(i)) + count(atom_of(i))
-               qii = sum(amb(i, lo:hi)**2)
-               qjj = sum(amb(j, lo:hi)**2)
-               qij = sum(amb(i, lo:hi)*amb(j, lo:hi))
-               d = d + 0.5_dp*(qii - qjj)
-               f = f + qij
-
-               lo = offset(atom_of(j)) + 1
-               hi = offset(atom_of(j)) + count(atom_of(j))
-               qii = sum(amb(i, lo:hi)**2)
-               qjj = sum(amb(j, lo:hi)**2)
-               qij = sum(amb(i, lo:hi)*amb(j, lo:hi))
-               d = d + 0.5_dp*(qjj - qii)
-               f = f - qij
-
-               radius = sqrt(d*d + f*f)
-               ! Below this P is independent of the angle, which is reachable
-               ! whenever two orbitals are symmetric partners.
-               if (radius < JACOBI_CRIT) cycle
-               theta = 0.5_dp*atan2(f, d)
-               if (abs(theta) < JACOBI_CRIT) cycle
-
-               a = cos(theta)
-               b = sin(theta)
-               ci = coefficients(:, i)
-               cj = coefficients(:, j)
-               coefficients(:, i) = a*ci + b*cj
-               coefficients(:, j) = -b*ci + a*cj
-               ! Both rows from the *old* values. Updating in place would feed
-               ! the new row i into row j and silently rotate by the wrong angle.
-               ri = amb(i, :)
-               rj = amb(j, :)
-               amb(i, :) = a*ri + b*rj
-               amb(j, :) = -b*ri + a*rj
-               moved = .true.
-            end do
+      rotated = .true.
+      do sweep = 1, REFINE_MAX_SWEEPS
+         ! overlap(a, alpha) = < orbital a | free-atom orbital alpha >, taken
+         ! afresh at the top of each sweep and kept current within it by the
+         ! same rotations the coefficients receive.
+         call pic_gemm(coefficients, projection, overlap, transa="T")
+         rotated = .false.
+         do ipair = 1, size(pairs, 2)
+            first = pairs(1, ipair)
+            second = pairs(2, ipair)
+            ! Packed as (11, 22, 12).
+            gram_own = pair_gram(overlap, first, second, offset(atom_of(first)), &
+                                 count(atom_of(first)))
+            gram_other = pair_gram(overlap, first, second, offset(atom_of(second)), &
+                                   count(atom_of(second)))
+            mismatch = gram_own - gram_other
+            half_gap = 0.5_dp*(mismatch(1) - mismatch(2))
+            radius = hypot(half_gap, mismatch(3))
+            ! A vanishing radius means M is a multiple of the identity and every
+            ! angle gives the same P: two orbitals that are symmetry images of
+            ! each other land here, and atan2 of two round-off values would
+            ! otherwise rotate them at random.
+            if (radius < REFINE_FLAT) cycle
+            theta = 0.5_dp*atan2(mismatch(3), half_gap)
+            if (abs(theta) < REFINE_ANGLE_TOL) cycle
+            call rotate_columns(coefficients, first, second, cos(theta), sin(theta))
+            call rotate_rows(overlap, first, second, cos(theta), sin(theta))
+            rotated = .true.
          end do
-
          sweeps = sweep
-         settled = .not. moved
-         if (settled) exit
+         if (.not. rotated) exit
       end do
 
-      ! `settled`, not the sweep count: the counter reaches the maximum both
-      ! when the loop runs out and when convergence happens on the last
-      ! permitted sweep, so testing it reported a good refinement as a failure.
-      if (.not. settled) then
+      if (rotated) then
          call error%set(ERROR_VALIDATION, "the quasi-atomic refinement did not settle "// &
-                        "in "//to_char(JACOBI_MAX_SWEEPS)//" sweeps.")
+                        "in "//to_char(REFINE_MAX_SWEEPS)//" sweeps.")
          return
       end if
 
-      call pic_gemm(coefficients, projection, amb, transa="T")
-      functional = 0.0_dp
-      if (allocated(character_of)) deallocate (character_of)
-      allocate (character_of(n))
-      do i = 1, n
-         k = atom_of(i)
-         lo = offset(k) + 1
-         hi = offset(k) + count(k)
-         character_of(i) = sqrt(sum(amb(i, lo:hi)**2))
-         functional = functional + sum(amb(i, lo:hi)**2)
+      ! Each orbital's squared projection onto its own atom's free-atom space.
+      call pic_gemm(coefficients, projection, overlap, transa="T")
+      allocate (own_share(n_orb))
+      do first = 1, n_orb
+         associate (lo => offset(atom_of(first)) + 1, &
+                    hi => offset(atom_of(first)) + count(atom_of(first)))
+            own_share(first) = sum(overlap(first, lo:hi)**2)
+         end associate
       end do
-      functional = functional/real(n, dp)
-      deallocate (amb, ci, cj, ri, rj)
+      functional = sum(own_share)/real(n_orb, dp)
+      if (present(character_of)) character_of = sqrt(own_share)
    end subroutine refine_atomic_character
+
+   pure function pair_gram(overlap, first, second, start, length) result(gram)
+      !! Gram matrix of two orbitals' projections onto one atom's free-atom block
+      !!
+      !! Returned packed as `(G_11, G_22, G_12)`. The block is the `length`
+      !! columns of `overlap` after column `start`.
+      real(dp), intent(in) :: overlap(:, :)   !! (n_orb, n_mbs)
+      integer, intent(in) :: first, second, start, length
+      real(dp) :: gram(3)
+
+      associate (u => overlap(first, start + 1:start + length), &
+                 v => overlap(second, start + 1:start + length))
+         gram(1) = dot_product(u, u)
+         gram(2) = dot_product(v, v)
+         gram(3) = dot_product(u, v)
+      end associate
+   end function pair_gram
+
+   subroutine rotatable_pairs(atom_of, subspace_of, same_atom, pairs)
+      !! The orbital pairs a Jacobi sweep visits, in the order it visits them
+      !!
+      !! Every `(a, b)` with `a < b` in the same subspace, and either on the
+      !! same atom (`same_atom`) or on different atoms (not `same_atom`).
+      !! Fixed for the whole sweep sequence, since neither map changes.
+      integer, intent(in) :: atom_of(:), subspace_of(:)
+      logical, intent(in) :: same_atom
+      integer, allocatable, intent(out) :: pairs(:, :)   !! (2, n_pairs)
+
+      integer, allocatable :: buffer(:, :)
+      integer :: n_orb, a, b, n_pairs
+
+      n_orb = size(atom_of)
+      allocate (buffer(2, max(1, n_orb*(n_orb - 1)/2)))
+      n_pairs = 0
+      do a = 1, n_orb
+         do b = a + 1, n_orb
+            if (subspace_of(a) /= subspace_of(b)) cycle
+            if ((atom_of(a) == atom_of(b)) .neqv. same_atom) cycle
+            n_pairs = n_pairs + 1
+            buffer(:, n_pairs) = [a, b]
+         end do
+      end do
+      pairs = buffer(:, 1:n_pairs)
+   end subroutine rotatable_pairs
+
+   pure subroutine rotate_columns(matrix, first, second, c, s)
+      !! Columns `first, second` <- `(c first + s second, -s first + c second)`
+      real(dp), intent(inout) :: matrix(:, :)
+      integer, intent(in) :: first, second
+      real(dp), intent(in) :: c, s
+
+      real(dp) :: old_first(size(matrix, 1))
+
+      old_first = matrix(:, first)
+      matrix(:, first) = c*old_first + s*matrix(:, second)
+      matrix(:, second) = -s*old_first + c*matrix(:, second)
+   end subroutine rotate_columns
+
+   pure subroutine rotate_rows(matrix, first, second, c, s)
+      !! Rows `first, second` <- `(c first + s second, -s first + c second)`
+      real(dp), intent(inout) :: matrix(:, :)
+      integer, intent(in) :: first, second
+      real(dp), intent(in) :: c, s
+
+      real(dp) :: old_first(size(matrix, 2))
+
+      old_first = matrix(first, :)
+      matrix(first, :) = c*old_first + s*matrix(second, :)
+      matrix(second, :) = -s*old_first + c*matrix(second, :)
+   end subroutine rotate_rows
 
    subroutine valence_virtual_orbitals(orbitals, projection, dims, result, error)
       !! Recover the chemically meaningful part of the virtual space
@@ -895,8 +948,16 @@ contains
       !! rather than the same total smeared across every pair. Hybridization is
       !! an output of that rather than an assumption.
       !!
-      !! The rotation angle is closed form and quartered, because the functional
-      !! is quartic where the atomic-character one was quadratic.
+      !! Each 2x2 rotation is closed form. For orbitals `a` and `b` on one atom,
+      !! write each partner `k` on another atom as the complex number
+      !! `z_k = P_ak + i P_bk`. Rotating `(a, b)` by `theta` turns `z_k` into
+      !! `z_k exp(-i theta)`, and since `x^4 + y^4 = (3 |z|^4 + Re z^4) / 4`, the
+      !! pair's share of eq (5.5) is
+      !!
+      !!     sum_k (3 |z_k|^4)/4 + Re( W exp(-4 i theta) )/4,   W = sum_k z_k^4
+      !!
+      !! The first term is fixed, and the second is largest at
+      !! `theta = arg(W)/4`, where it has risen by `(|W| - Re W)/4`.
       ! TODO(mqc): overwrites `quao%sweeps`, which `quasi_atomic_orbitals` set
       ! from the refinement and `quao_result_t` documents as the refinement's
       ! count. After orientation the field silently means something else.
@@ -905,11 +966,15 @@ contains
       integer, intent(in), optional :: max_sweeps
          !! At least one; `ORIENT_MAX_SWEEPS` when absent
 
-      real(dp), allocatable :: p(:, :), rotation(:, :), pi(:), pj(:)
-      real(dp) :: r2, r3, q, theta, c, s, before, after, gain, angle
+      real(dp), allocatable :: p(:, :), rotation(:, :)
+      integer, allocatable :: pairs(:, :)
+      logical, allocatable :: on_other_atom(:)
+      complex(dp) :: quartic
+      real(dp) :: amplitude, theta, initial_sum, final_sum
+      real(dp) :: best_gain, widest_angle
       character(len=16) :: gain_text
-      integer :: n, i, j, k, sweep, sweep_limit
-      logical :: moved, settled
+      integer :: n_orb, ipair, a, b, sweep, sweep_limit
+      logical :: rotated
 
       if (error%has_error()) return
       sweep_limit = ORIENT_MAX_SWEEPS
@@ -919,82 +984,60 @@ contains
                         "and was allowed "//to_char(sweep_limit)//".")
          return
       end if
-      n = quao%n_quao
-      allocate (p(n, n), rotation(n, n), pi(n), pj(n))
+
+      n_orb = quao%n_quao
       p = quao%population_bond_order
+      allocate (rotation(n_orb, n_orb), on_other_atom(n_orb))
       rotation = 0.0_dp
-      do i = 1, n
-         rotation(i, i) = 1.0_dp
+      do a = 1, n_orb
+         rotation(a, a) = 1.0_dp
       end do
+      ! Same atom, same subspace: a rotation between atoms would reassign an
+      ! orbital, and one across subspaces would break a restricted wave
+      ! function's invariance.
+      call rotatable_pairs(quao%atom_of, quao%subspace_of, .true., pairs)
 
-      before = orientation_sum(p, quao%atom_of)
+      initial_sum = orientation_sum(p, quao%atom_of)
       quao%sweeps = 0
-      settled = .false.
+      rotated = .true.
+      best_gain = 0.0_dp
+      widest_angle = 0.0_dp
       do sweep = 1, sweep_limit
-         moved = .false.
-         gain = 0.0_dp
-         angle = 0.0_dp
-         do i = 1, n
-            do j = i + 1, n
-               ! Only *within* an atom, and not across two subspaces: a
-               ! rotation between atoms would change which atom an orbital
-               ! belongs to, and one across subspaces would break the
-               ! invariance of a restricted wave function.
-               if (quao%atom_of(i) /= quao%atom_of(j)) cycle
-               if (quao%subspace_of(i) /= quao%subspace_of(j)) cycle
-
-               r2 = 0.0_dp
-               r3 = 0.0_dp
-               do k = 1, n
-                  if (quao%atom_of(k) == quao%atom_of(i)) cycle
-                  r2 = r2 + p(i, k)**4 - 6.0_dp*p(i, k)**2*p(j, k)**2 + p(j, k)**4
-                  r3 = r3 + (p(i, k)**2 - p(j, k)**2)*p(i, k)*p(j, k)
-               end do
-               r2 = 0.25_dp*r2
-
-               q = sqrt(r2*r2 + r3*r3)
-               if (q < ORIENT_FLOOR) cycle
-               theta = 0.25_dp*atan2(r3/q, r2/q)
-               if (abs(theta) < ORIENT_CRIT) cycle
-               ! What the rotation by `theta` adds to eq (5.5): the pair's
-               ! share of it goes from `r2` to its maximum `q`.
-               gain = max(gain, q - r2)
-               angle = max(angle, abs(theta))
-
-               c = cos(theta)
-               s = sin(theta)
-               pi = c*p(i, :) + s*p(j, :)
-               pj = -s*p(i, :) + c*p(j, :)
-               p(i, :) = pi
-               p(j, :) = pj
-               pi = c*p(:, i) + s*p(:, j)
-               pj = -s*p(:, i) + c*p(:, j)
-               p(:, i) = pi
-               p(:, j) = pj
-               pi = c*rotation(:, i) + s*rotation(:, j)
-               pj = -s*rotation(:, i) + c*rotation(:, j)
-               rotation(:, i) = pi
-               rotation(:, j) = pj
-               moved = .true.
-            end do
+         rotated = .false.
+         best_gain = 0.0_dp
+         widest_angle = 0.0_dp
+         do ipair = 1, size(pairs, 2)
+            a = pairs(1, ipair)
+            b = pairs(2, ipair)
+            on_other_atom = quao%atom_of /= quao%atom_of(a)
+            quartic = sum(cmplx(p(a, :), p(b, :), kind=dp)**4, mask=on_other_atom)
+            amplitude = 0.25_dp*abs(quartic)
+            ! The pair's share does not depend on the angle at all.
+            if (amplitude < ORIENT_FLAT) cycle
+            theta = 0.25_dp*atan2(aimag(quartic), real(quartic, dp))
+            if (abs(theta) < ORIENT_ANGLE_TOL) cycle
+            best_gain = max(best_gain, amplitude - 0.25_dp*real(quartic, dp))
+            widest_angle = max(widest_angle, abs(theta))
+            call rotate_rows(p, a, b, cos(theta), sin(theta))
+            call rotate_columns(p, a, b, cos(theta), sin(theta))
+            call rotate_columns(rotation, a, b, cos(theta), sin(theta))
+            rotated = .true.
          end do
          quao%sweeps = sweep
-         settled = .not. moved
-         if (settled) exit
+         if (.not. rotated) exit
       end do
-      quao%orientation_gain = gain
-      quao%orientation_angle = angle
+      quao%orientation_gain = best_gain
+      quao%orientation_angle = widest_angle
 
-      ! See the refinement loop above: the count cannot tell convergence on the
-      ! final sweep from exhaustion. Two orbitals on one atom whose rotation is
-      ! coupled to a partner's across a bond -- a carbonyl C and O -- can
-      ! approach their optimum geometrically at ~0.9992 per sweep: the angle
-      ! is still 2.7e-6 after 2000 sweeps while each rotation gains 3e-11. The
-      ! functional has converged; only the angle test has not. Such a result
-      ! is accepted and flagged, and one still gaining is refused.
-      if (.not. settled) then
-         if (gain >= ORIENT_GAIN_CRIT) then
-            write (gain_text, "(es8.1)") gain
+      ! Out of sweeps with rotations still above the angle tolerance. Two
+      ! orbitals on one atom coupled through a bond to two on another -- a
+      ! carbonyl C and O -- can creep towards their optimum by well under a
+      ! tenth of a percent per sweep, so the angle stays above tolerance long
+      ! after eq (5.5) has stopped moving. Accepted, and flagged, when the
+      ! largest gain of the last sweep is negligible; refused otherwise.
+      if (rotated) then
+         if (best_gain >= ORIENT_GAIN_CRIT) then
+            write (gain_text, "(es8.1)") best_gain
             call error%set(ERROR_VALIDATION, "the orientation did not settle in "// &
                            to_char(sweep_limit)//" sweeps; the last still "// &
                            "raised the functional by "//trim(adjustl(gain_text))// &
@@ -1004,32 +1047,31 @@ contains
          quao%orientation_stalled = .true.
       end if
 
-      ! The functional is being maximized, so it cannot come out lower than it
-      ! started; it would if the rotation sense disagreed with the angle the
-      ! closed form solves for.
-      after = orientation_sum(p, quao%atom_of)
-      if (after < before - 1.0e-10_dp) then
+      ! Every accepted rotation raises eq (5.5), so a lower final value can
+      ! only mean the rotations were applied in the opposite sense to the one
+      ! the closed form solved for.
+      final_sum = orientation_sum(p, quao%atom_of)
+      if (final_sum < initial_sum - ORIENT_SENSE_SLACK) then
          call error%set(ERROR_VALIDATION, "the orientation reduced the functional it "// &
                         "is supposed to maximize, which means the rotations are being "// &
                         "applied with the wrong sense.")
          return
       end if
-      quao%orientation_sum = after
+      quao%orientation_sum = final_sum
 
       call fix_phases(p, quao%atom_of, rotation)
 
       block
-         real(dp), allocatable :: rotated(:, :)
-         allocate (rotated(size(quao%orbitals, 1), n))
-         call pic_gemm(quao%orbitals, rotation, rotated)
-         call move_alloc(rotated, quao%orbitals)
-         allocate (rotated(size(quao%to_valence_internal, 1), n))
-         call pic_gemm(quao%to_valence_internal, rotation, rotated)
-         call move_alloc(rotated, quao%to_valence_internal)
+         real(dp), allocatable :: rotated_orbitals(:, :)
+         allocate (rotated_orbitals(size(quao%orbitals, 1), n_orb))
+         call pic_gemm(quao%orbitals, rotation, rotated_orbitals)
+         call move_alloc(rotated_orbitals, quao%orbitals)
+         allocate (rotated_orbitals(size(quao%to_valence_internal, 1), n_orb))
+         call pic_gemm(quao%to_valence_internal, rotation, rotated_orbitals)
+         call move_alloc(rotated_orbitals, quao%to_valence_internal)
       end block
       quao%population_bond_order = p
       quao%oriented = .true.
-      deallocate (p, rotation, pi, pj)
    end subroutine orient_quasi_atomic_orbitals
 
    pure function orientation_sum(p, atom_of) result(total)
@@ -1055,30 +1097,22 @@ contains
       !! LAPACK produced them -- so bond-order signs are arbitrary. This makes
       !! them reproducible rather than meaningful: a convention, not physics.
       !! The kinetic bond order does not need it, since both of its factors
-      !! change sign together.
+      !! change sign together. Orbitals are visited in index order and each
+      !! sees the signs earlier ones were given.
       real(dp), intent(inout) :: p(:, :)
       integer, intent(in) :: atom_of(:)
       real(dp), intent(inout) :: rotation(:, :)
 
-      integer :: n, i, j, best
-      real(dp) :: largest
+      integer :: orb, strongest
 
-      n = size(atom_of)
-      do i = 1, n
-         best = 0
-         largest = 0.0_dp
-         do j = 1, n
-            if (atom_of(j) == atom_of(i)) cycle
-            if (abs(p(i, j)) > largest) then
-               largest = abs(p(i, j))
-               best = j
-            end if
-         end do
-         if (best == 0) cycle
-         if (p(i, best) >= 0.0_dp) cycle
-         p(i, :) = -p(i, :)
-         p(:, i) = -p(:, i)
-         rotation(:, i) = -rotation(:, i)
+      do orb = 1, size(atom_of)
+         ! First of equals on a tie; zero when the orbital has no partner atom.
+         strongest = maxloc(abs(p(orb, :)), dim=1, mask=atom_of /= atom_of(orb))
+         if (strongest == 0) cycle
+         if (.not. p(orb, strongest) < 0.0_dp) cycle
+         p(orb, :) = -p(orb, :)
+         p(:, orb) = -p(:, orb)
+         rotation(:, orb) = -rotation(:, orb)
       end do
    end subroutine fix_phases
 
@@ -1209,6 +1243,9 @@ contains
       !! Paper I Appendix A.2. Each 2x2 rotation is closed form; the quarter
       !! angle is what makes it a fourth-power criterion rather than a
       !! second-power one.
+      ! TODO(mqc): converging on sweep `ORIENT_MAX_SWEEPS` exactly is reported
+      ! as a failure to converge, because the test after the loop is on the
+      ! sweep counter rather than on whether the last sweep rotated anything.
       real(dp), intent(in) :: coefficients(:, :)   !! (n_quao, n_orb)
       real(dp), allocatable, intent(out) :: transform(:, :)   !! (n_orb, n_orb)
       type(error_t), intent(inout) :: error
@@ -1244,11 +1281,11 @@ contains
                ps = p1112 - p2221
 
                q = sqrt(pc*pc + ps*ps)
-               if (q < ORIENT_FLOOR) cycle
+               if (q < ORIENT_FLAT) cycle
                ! Restricted to (-pi/4, pi/4), which atan2 already gives once
                ! quartered: the functional has period pi/2 in this angle.
                gamma = 0.25_dp*atan2(ps, pc)
-               if (abs(gamma) < ORIENT_CRIT) cycle
+               if (abs(gamma) < ORIENT_ANGLE_TOL) cycle
 
                c = cos(gamma)
                s = sin(gamma)

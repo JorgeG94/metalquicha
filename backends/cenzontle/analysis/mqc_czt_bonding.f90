@@ -1242,8 +1242,8 @@ contains
                ! *different* wave function from the one the calculation
                ! reported -- the full valence one this analysis is defined on,
                ! rather than whatever active space the deck asked for. GAMESS
-               ! refuses outright in `quao_eda4.src`; this one builds its
-               ! own wave function, so the result is still meaningful.
+               ! refuses outright at this point; this one builds its own wave
+               ! function, so the result is still meaningful.
                call logger%warning("  the converged wave function is not over the "// &
                                    "full valence space ("//declined//"), so the "// &
                                    "no-sharing analysis solves its own and decomposes "// &

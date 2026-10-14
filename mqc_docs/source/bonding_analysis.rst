@@ -386,7 +386,7 @@ carries on with its own::
     solves its own and decomposes that one instead
     decomposing E =   -76.027496661520 rather than the calculation's   -76.037524986844
 
-GAMESS refuses outright at that point (in ``quao_eda4.src``). It can, because
+GAMESS refuses outright at that point. It can, because
 its analysis reads the wave function from the run; this one builds its own, so
 the result is still meaningful and the caller is told rather than stopped.
 
