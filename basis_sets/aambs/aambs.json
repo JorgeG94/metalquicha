@@ -4,7 +4,7 @@
   "schema_version": "0.1"
  },
  "name": "AAMBS",
- "description": "Accurate atomic minimal basis set, non-relativistic, transcribed from GAMESS modf77_aambs.src",
+ "description": "Accurate atomic minimal basis set, non-relativistic, transcribed from GAMESS modf77_aambs.src with the permission of ISUQCG; cite GAMESS, J. Chem. Phys. 152, 154102 (2020)",
  "function_types": [
   "gto"
  ],

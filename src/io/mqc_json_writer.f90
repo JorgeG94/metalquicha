@@ -1580,8 +1580,8 @@ contains
       !!
       !! Three things a consumer cannot see from the key names:
       !!
-      !! * `charge_transfer` is the explicit perturbative term, `ECHTR` of
-      !!   GAMESS's `efchtr.src`, computed from occupied-on-A to virtual-on-B
+      !! * `charge_transfer` is the explicit perturbative term, the one GAMESS
+      !!   reports from `ECHTR`, computed from occupied-on-A to virtual-on-B
       !!   amplitudes. It is **not** a residual left after the other three, so
       !!   it is not PIEDA's `Ect+mix` and does not carry that quantity's
       !!   basis-set superposition error.

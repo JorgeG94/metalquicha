@@ -16,6 +16,16 @@ regeneration. Element and shell bookkeeping comes from `AAMBS_ATOM`
 (`aambs.src`), `ETSHELL` (`vvos.src`), `NVVOS_NUMCOR` (`vvos.src:1166`) and
 `LOCAL_NUMVAL` (`locsvd.src:1148`).
 
+**Used with permission.** This is the one piece of GAMESS data carried in this
+repository, and it is included with the permission of the GAMESS developers
+(ISUQCG). Everywhere else GAMESS was used only as a reference to validate
+against; no GAMESS source is incorporated. Work that uses this basis should cite
+GAMESS:
+
+- G. M. J. Barca *et al.*, *J. Chem. Phys.* **152**, 154102 (2020)
+
+and the papers the data itself rests on, listed below.
+
 Upstream provenance, from the comment block at `modf77_aambs.src:11501`:
 
 - **Exponents, H–Ar**: even-tempered, Schmidt & Ruedenberg, *J. Chem. Phys.* **71**,

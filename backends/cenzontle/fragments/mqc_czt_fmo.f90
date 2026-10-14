@@ -928,8 +928,8 @@ contains
          ! and `+1` at a detached atom -- and its own density over its own
          ! basis, ghost functions included, so a detached atom's two shares
          ! arrive from the two fragments that hold them and nothing has to be
-         ! taken back out; see `cut_embedding`. That is how GAMESS's FMOESP
-         ! builds it (fmoint.src).
+         ! taken back out; see `cut_embedding`. That matches how GAMESS's FMOESP
+         ! builds it (fmoint.src), against which it was checked.
          if (trim(opts%cut_nucleus) /= "auto" .and. trim(opts%cut_nucleus) /= "split" &
              .and. trim(opts%cut_nucleus) /= "whole") then
             call error%set(ERROR_VALIDATION, "fmo: cut_nucleus='"// &
@@ -1882,7 +1882,8 @@ contains
       !! owns and `+1` on a ghost it holds, and through the Coulomb operator of
       !! its density over its full basis, ghost functions included. A distant
       !! one through its atomic charges, ghost included, at its own centres.
-      !! That is GAMESS's construction (`FMOESP` in `fmoint.src`: a connected
+      !! That matches GAMESS, against which it was verified (`FMOESP` in
+      !! `fmoint.src`: a connected
       !! pair is at distance zero and so always exact, and each neighbour is
       !! built by `MAKEMOL` with its own split charges and density).
       !!
@@ -2970,7 +2971,8 @@ contains
       !! SCF saw it -- its density over its full basis, ghosts included, and
       !! its nuclei as it presented them -- which is how the field built them.
       !!
-      !! GAMESS's `esdim` in fmo.src. Its point-charge form of the repulsion
+      !! The counterpart of GAMESS's `esdim` (fmo.src), against which it was
+      !! checked. Its point-charge form of the repulsion
       !! is a separate cutoff, the second element of RESPPC, that is off by
       !! default, and is not offered here.
       type(fragment_t), intent(in) :: frag(:)
