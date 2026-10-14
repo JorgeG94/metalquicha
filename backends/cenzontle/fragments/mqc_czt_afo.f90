@@ -17,7 +17,6 @@ module mqc_czt_afo
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_covalent_radius, element_number_to_symbol
    use mqc_physical_fragment, only: to_bohr
-   use mqc_physical_constants, only: BOHR_TO_ANGSTROM
    use mqc_bond_perception, only: severed_bond_t, perceive_bonds, DEFAULT_BOND_TOLERANCE
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, atom_ao_blocks
    use mqc_czt_rhf, only: rhf_result_t
@@ -51,8 +50,7 @@ module mqc_czt_afo
 
    real(dp), parameter :: DEFAULT_MODEL_RADIUS = 2.5_dp
       !! How far from either end of the cut bond the model reaches, in Angstrom.
-      !! Wide enough to carry the bond's immediate chemical environment; GAMESS
-      !! calls this RAFO and defaults it to a similar distance.
+      !! Wide enough to carry the bond's immediate chemical environment.
 
    real(dp), parameter :: BOND_ORBITAL_REACH = 0.35_dp
       !! How close to the bond midpoint a localized orbital's centroid must sit
@@ -99,11 +97,11 @@ module mqc_czt_afo
          !! fragment is: EFMO's are Cartesian throughout, FMO's follow the basis.
       character(len=8) :: localization = LOCALIZER_ER
          !! How the model's occupied orbitals are localized: "er"
-         !! (Edmiston-Ruedenberg, GAMESS's default for the model) or "boys".
+         !! (Edmiston-Ruedenberg, the default) or "boys".
       logical :: show_scf = .false.
          !! Print the model system's SCF table, at the caller's verbose level
       type(cuest_scf_settings_t), allocatable :: method
-         !! The method the model system's SCF is solved with, as GAMESS does: a
+         !! The method the model system's SCF is solved with: a
          !! non-empty `method%functional` solves it as restricted Kohn-Sham at
          !! that functional, grid and screening. Unallocated is Hartree-Fock,
          !! and gives the model exactly as it was before this field existed.
@@ -112,35 +110,24 @@ module mqc_czt_afo
          !! that copies the deck's method here switches them off first.
    end type afo_options_t
 
-   integer, parameter :: GAMESS_MAX_Z = 86
-      !! Elements GAMESS's `PAIRBOND` tabulates
-   integer, parameter :: GAMESS_MAX_CAP_Z = 17
-      !! Elements GAMESS's cap length table reaches
-
-   real(dp), parameter :: GAMESS_RCOV(GAMESS_MAX_Z) = [ &
-                          0.30_dp, 1.22_dp, &
-                          1.23_dp, 0.89_dp, 0.88_dp, 0.77_dp, 0.70_dp, 0.66_dp, 0.58_dp, 1.60_dp, &
-                          1.66_dp, 1.36_dp, 1.25_dp, 1.17_dp, 1.10_dp, 1.04_dp, 0.99_dp, 1.91_dp, &
-                          2.03_dp, 1.74_dp, 1.44_dp, 1.32_dp, 1.22_dp, 1.19_dp, 1.17_dp, 1.165_dp, &
-                          1.16_dp, 1.15_dp, 1.17_dp, 1.25_dp, 1.25_dp, 1.22_dp, 1.21_dp, 1.17_dp, &
-                          1.14_dp, 1.98_dp, &
-                          2.22_dp, 1.92_dp, 1.62_dp, 1.45_dp, 1.34_dp, 1.29_dp, 1.27_dp, 1.24_dp, &
-                          1.25_dp, 1.28_dp, 1.34_dp, 1.41_dp, 1.50_dp, 1.40_dp, 1.41_dp, 1.37_dp, &
-                          1.33_dp, 2.09_dp, &
-                          2.35_dp, 1.98_dp, 1.69_dp, 1.65_dp, 1.65_dp, 1.64_dp, 1.65_dp, 1.66_dp, &
-                          1.65_dp, 1.61_dp, 1.59_dp, 1.59_dp, 1.58_dp, 1.57_dp, 1.56_dp, 1.56_dp, &
-                          1.56_dp, 1.44_dp, 1.34_dp, 1.30_dp, 1.28_dp, 1.26_dp, 1.26_dp, 1.29_dp, &
-                          1.34_dp, 1.44_dp, 1.55_dp, 1.54_dp, 1.52_dp, 1.53_dp, 1.50_dp, 2.20_dp]
-      !! GAMESS's `PAIRBOND` radii, Angstrom (Emsley, with its own guesses).
-      !! Not `covalent_radius_emsley`, which is a different Emsley table: this
-      !! one decides which atoms a GAMESS model system holds, and matching
-      !! GAMESS's frozen orbitals means matching its model.
-
-   real(dp), parameter :: GAMESS_CAP_LENGTH(GAMESS_MAX_CAP_Z) = [ &
+   real(dp), parameter :: CAP_BOND_LENGTH(*) = [ &
                           0.74_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.19_dp, 1.09_dp, 1.01_dp, 0.96_dp, &
-                          0.92_dp, 0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.48_dp, 1.44_dp, 1.34_dp, 1.27_dp]
-      !! X-H length a cap hydrogen is put at, Angstrom, by the element it hangs
-      !! off; GAMESS's `RH`. Zero means untabulated, and 1.6 is used, as there.
+                          0.92_dp, 0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.48_dp, 1.42_dp, 1.34_dp, 1.27_dp]
+      !! X-H bond length a cap hydrogen is placed at, Angstrom, indexed by the
+      !! atomic number of the atom it hangs off; zero where none is tabulated.
+      !!
+      !! Equilibrium bond lengths of the parent hydrides, rounded to the
+      !! hundredth: H2, BH3, CH4, NH3, H2O, HF, SiH4, PH3, H2S, HCl, from the
+      !! gas-phase structures in the CRC Handbook of Chemistry and Physics
+      !! ("Bond Lengths in Gas-Phase Molecules"; Harmony et al., J. Phys. Chem.
+      !! Ref. Data 8, 619 (1979)).
+
+   real(dp), parameter :: CAP_BOND_LENGTH_DEFAULT = 1.6_dp
+      !! X-H length, Angstrom, for an element `CAP_BOND_LENGTH` does not cover
+   ! The untabulated elements are mostly the heavier ones, whose hydrides sit
+   ! near it -- LiH 1.60, AlH 1.65, GeH4 1.53, AsH3 1.51 -- and a cap a tenth
+   ! of an Angstrom off moves the model's outer edge, not the bond whose
+   ! orbital is taken from it.
 
    type :: afo_hybrid_t
       !! One cut bond's frozen orbital, over its bond-detached atom's functions
@@ -155,10 +142,10 @@ module mqc_czt_afo
       !! One cut bond's frozen orbitals: the model's localized orbitals that
       !! belong to the bond-detached atom, over the real atoms near the bond
       !!
-      !! GAMESS's adjusted frozen orbitals (`fmolib.src` AFO construction and
-      !! `flmovec`). Orbital 1 is the bond's own, frozen occupied in the
-      !! fragment carrying the detached atom as a ghost and frozen empty in the
-      !! fragment that owns it. Orbitals 2 on -- the atom's core and its other
+      !! The adjusted frozen orbitals of Fedorov, Jensen, Deka and Kitaura,
+      !! J. Phys. Chem. A 112, 11808 (2008). Orbital 1 is the bond's own,
+      !! frozen occupied in the fragment carrying the detached atom as a ghost
+      !! and frozen empty in the fragment that owns it. Orbitals 2 on -- the atom's core and its other
       !! bonds -- are frozen empty in the ghost-holding fragment only, which is
       !! what keeps that fragment from using the borrowed functions for
       !! anything but the bond pair. A carbon has five: 1 + 4.
@@ -905,46 +892,16 @@ contains
       is_bond = distance < tol*to_bohr(radii)
    end function bonded_pair
 
-   pure function gamess_bonded(z1, xyz1, z2, xyz2) result(bonded)
-      !! GAMESS's `PAIRBOND` at a scale of one
-      !!
-      !! `|r1 - r2| <= 1.2 r1 + 1.2 r2` in Angstrom, except that hydrogen's
-      !! radius is not scaled and an untabulated element counts 1.6. Two atoms
-      !! at one point are bonded, which is what makes an atom its own
-      !! neighbour below.
-      integer, intent(in) :: z1, z2
-      real(dp), intent(in) :: xyz1(3), xyz2(3)   !! Bohr
-      logical :: bonded
-
-      bonded = norm2(xyz1 - xyz2)*BOHR_TO_ANGSTROM <= pair_radius(z1) + pair_radius(z2)
-   end function gamess_bonded
-
-   pure function pair_radius(z) result(r)
-      integer, intent(in) :: z
-      real(dp) :: r
-
-      r = 1.6_dp
-      if (z == 1) then
-         r = GAMESS_RCOV(1)
-      else if (z > 1 .and. z <= size(GAMESS_RCOV)) then
-         r = 1.2_dp*GAMESS_RCOV(z)
-      end if
-   end function pair_radius
-
    subroutine build_bonded_model(z, coords, cut, model, error)
-      !! The model system GAMESS builds for one cut bond
+      !! The model system for one cut bond, built from bonded neighbours
       !!
-      !! Both ends of the bond and every atom bonded to either (`gamess_bonded`),
-      !! then, for each atom left out that is bonded to one taken: a hydrogen
-      !! comes in where it is, and anything else is replaced by a cap hydrogen
-      !! at `GAMESS_CAP_LENGTH` from the atom it hangs off. That is GAMESS's
-      !! construction at `RAFO(1)=1,1,1` (`fmolib.src`, the AFO model loop).
-      !!
-      !! One addition GAMESS does not make: a *terminal* heavy atom bonded to a
-      !! taken one comes in whole, since a cap hydrogen closes one electron pair
-      !! and a carbonyl oxygen is held by two. It never applies where GAMESS's
-      !! own model would be closed-shell to begin with. Charged groups taken in
-      !! are counted as `build_afo_model` counts them.
+      !! The two ends of the bond and their first neighbours make the core of
+      !! the model. Around it, each atom left out but bonded to a core atom
+      !! either joins whole -- a hydrogen, or a heavy atom with no other
+      !! neighbour, such as a carbonyl oxygen -- or is replaced by a cap
+      !! hydrogen on the line to it, `CAP_BOND_LENGTH` from the core atom.
+      !! "Bonded" is `bonded_pair` at `DEFAULT_BOND_TOLERANCE` throughout.
+      !! Charged groups taken in are counted as `build_afo_model` counts them.
       !!
       !! Ends first: the bond-detached atom is `bda_local = 1` and the attached
       !! one `baa_local = 2`.
@@ -956,10 +913,12 @@ contains
 
       logical, allocatable :: chosen(:)
       integer, allocatable :: order(:)
+      real(dp) :: tol
       integer :: n_atoms, i, j, n_real, n_caps, slot, a, b, n_nb
 
       if (error%has_error()) return
       n_atoms = size(z)
+      tol = DEFAULT_BOND_TOLERANCE
       a = cut%atom_a
       b = cut%atom_b
       if (a < 1 .or. a > n_atoms .or. b < 1 .or. b > n_atoms) then
@@ -972,13 +931,15 @@ contains
       chosen(a) = .true.
       chosen(b) = .true.
       do i = 1, n_atoms
-         if (gamess_bonded(z(a), coords(:, a), z(i), coords(:, i)) .or. &
-             gamess_bonded(z(b), coords(:, b), z(i), coords(:, i))) chosen(i) = .true.
+         if (bonded_pair(z, coords, a, i, tol) .or. bonded_pair(z, coords, b, i, tol)) then
+            chosen(i) = .true.
+         end if
       end do
 
       ! What hangs off the neighbours: hydrogens as they are, and terminal
-      ! heavy atoms whole. Decided against the set above only, so it cannot
-      ! cascade.
+      ! heavy atoms whole -- a cap hydrogen closes one electron pair, and a
+      ! carbonyl oxygen is held by two, so capping it would leave a radical.
+      ! Decided against the set above only, so it cannot cascade.
       do i = 1, n_atoms
          if (chosen(i)) cycle
          if (.not. hangs_off(i)) cycle
@@ -989,7 +950,7 @@ contains
          n_nb = 0
          do j = 1, n_atoms
             if (j == i) cycle
-            if (gamess_bonded(z(i), coords(:, i), z(j), coords(:, j))) n_nb = n_nb + 1
+            if (bonded_pair(z, coords, i, j, tol)) n_nb = n_nb + 1
          end do
          if (n_nb == 1) chosen(i) = .true.
       end do
@@ -1010,7 +971,7 @@ contains
          do j = 1, n_atoms
             if (chosen(j)) cycle
             if (z(order(slot)) == 1) cycle
-            if (gamess_bonded(z(order(slot)), coords(:, order(slot)), z(j), coords(:, j))) then
+            if (bonded_pair(z, coords, order(slot), j, tol)) then
                n_caps = n_caps + 1
             end if
          end do
@@ -1035,7 +996,7 @@ contains
          if (z(order(i)) == 1) cycle
          do j = 1, n_atoms
             if (chosen(j)) cycle
-            if (.not. gamess_bonded(z(order(i)), coords(:, order(i)), z(j), coords(:, j))) cycle
+            if (.not. bonded_pair(z, coords, order(i), j, tol)) cycle
             slot = slot + 1
             model%z(slot) = 1
             model%sym(slot) = element_number_to_symbol(1)
@@ -1045,7 +1006,7 @@ contains
          end do
       end do
 
-      model%charge = model_formal_charge(z, coords, chosen, DEFAULT_BOND_TOLERANCE)
+      model%charge = model_formal_charge(z, coords, chosen, tol)
       model%nelec = sum(model%z) - model%charge
       if (mod(model%nelec, 2) /= 0) then
          call error%set(ERROR_VALIDATION, "afo model: the model system for the bond "// &
@@ -1066,9 +1027,9 @@ contains
          do m = 1, n_atoms
             if (.not. chosen(m)) cycle
             if (.not. (m == a .or. m == b .or. &
-                       gamess_bonded(z(a), coords(:, a), z(m), coords(:, m)) .or. &
-                       gamess_bonded(z(b), coords(:, b), z(m), coords(:, m)))) cycle
-            if (gamess_bonded(z(m), coords(:, m), z(k), coords(:, k))) then
+                       bonded_pair(z, coords, a, m, tol) .or. &
+                       bonded_pair(z, coords, b, m, tol))) cycle
+            if (bonded_pair(z, coords, m, k, tol)) then
                hangs = .true.
                return
             end if
@@ -1082,50 +1043,68 @@ contains
       integer, intent(in) :: z
       real(dp) :: r
 
-      r = 1.6_dp
-      if (z >= 1 .and. z <= size(GAMESS_CAP_LENGTH)) then
-         if (GAMESS_CAP_LENGTH(z) > 0.0_dp) r = GAMESS_CAP_LENGTH(z)
+      r = CAP_BOND_LENGTH_DEFAULT
+      if (z >= 1 .and. z <= size(CAP_BOND_LENGTH)) then
+         if (CAP_BOND_LENGTH(z) > 0.0_dp) r = CAP_BOND_LENGTH(z)
       end if
       r = to_bohr(r)
    end function cap_length
 
-   pure function atom_lmo_count(z) result(n)
-      !! How many occupied orbitals an atom has when fully bonded: C is 1s and
-      !! four sp3, five. GAMESS's `LMOATOM` for the main groups.
+   pure function bonded_atom_orbital_count(z) result(n)
+      !! How many occupied localized orbitals belong to an atom of atomic
+      !! number `z` once it is fully bonded: one per spatial orbital of each
+      !! subshell its ground state occupies, less one for boron. Carbon is 1s,
+      !! 2s and three 2p, five. Zero for `z < 1`.
       integer, intent(in) :: z
       integer :: n
 
-      if (z <= 2) then
-         n = 1
-      else if (z <= 4) then
-         n = 2
-      else if (z <= 10) then
-         n = 5
-         if (z == 5) n = 4
-      else if (z <= 12) then
-         n = 6
-      else if (z <= 18) then
-         n = 9
-      else if (z <= 20) then
-         n = 10
-      else if (z <= 30) then
-         n = 15
-      else
-         n = 18
-      end if
-   end function atom_lmo_count
+      ! Subshells in filling order -- n + l rising, n rising within a tie --
+      ! as their angular momentum: 1s 2s 2p 3s 3p 4s 3d 4p 5s 4d 5p 6s 4f 5d
+      ! 6p 7s 5f 6d 7p.
+      integer, parameter :: FILL_ORDER_L(*) = [0, 0, 1, 0, 1, 0, 2, 1, 0, 2, 1, 0, 3, 2, &
+                                               1, 0, 3, 2, 1]
+      integer :: k, left
+
+      ! The chemistry. Localized, a closed core shell gives one orbital per
+      ! spatial function, all on the atom. A saturated atom then uses every
+      ! orbital of its partly filled valence subshells for a bond or a lone
+      ! pair: the octet of the p block is s plus three p, four whatever the
+      ! split between bonds and lone pairs (CH4, NH3, H2O and HF all four); the
+      ! s block has its one ns orbital; a transition metal has ns and five
+      ! (n-1)d. Counting the spatial orbitals of the occupied subshells adds
+      ! the two. Filling is by the Madelung rule, so an element whose ground
+      ! state occupies a different set of subshells (Pd, La, Ce) is off by
+      ! one; Cr and Cu move an electron but not a subshell, and no main-group
+      ! element is affected.
+      !
+      ! Boron is excepted. Three valence electrons make three electron-pair
+      ! bonds and leave the fourth valence orbital empty -- BH3, B(OH)3, the
+      ! boronic esters -- so its count is 1s plus three. Aluminium is left at
+      ! the full four because where it sits inside an extended system it is
+      ! four-coordinate (the aluminosilicate frameworks, AlCl4-). The s-block
+      ! rule takes one valence orbital for an alkaline earth too, one fewer
+      ! than the bonds of BeH2; no deck here cuts a bond at one.
+      n = 0
+      left = z
+      do k = 1, size(FILL_ORDER_L)
+         if (left <= 0) exit
+         n = n + 2*FILL_ORDER_L(k) + 1
+         left = left - 2*(2*FILL_ORDER_L(k) + 1)
+      end do
+      if (z == 5) n = n - 1
+   end function bonded_atom_orbital_count
 
    subroutine bond_lmo_set(model, opts, set, n_on_bond, error)
       !! The frozen orbitals a cut bond contributes, from its model system
       !!
       !! Solve the model at `opts%method` (Hartree-Fock when unallocated,
-      !! restricted Kohn-Sham at its functional otherwise, as GAMESS does) and
-      !! localize every occupied orbital as `opts%localization` says. The detached atom's own are the
-      !! `atom_lmo_count` with the largest population on it; of those, the one
-      !! with the largest population on the attached atom is the bond's and
-      !! goes first. Each is kept on every real atom of the model bonded to
-      !! either end of the bond. All of it is GAMESS's selection (`fmolib.src`, after `LMOX`, with `CRITLOC` the
-      !! on-atom population and the default `RAFO`).
+      !! restricted Kohn-Sham at its functional otherwise) and localize every
+      !! occupied orbital as `opts%localization` says. The detached atom's
+      !! orbitals are the `bonded_atom_orbital_count` localized orbitals with
+      !! the largest population on it, the Mulliken net `c_A S_AA c_A`; of
+      !! those, the one with the largest population on the attached atom is the
+      !! bond's and goes first. Each is kept on every real atom of the model
+      !! bonded to either end of the bond.
       !!
       !! `n_on_bond` counts localized orbitals whose centroid sits within
       !! `BOND_ORBITAL_REACH` of the midpoint, as `bond_hybrid` does, for the
@@ -1143,7 +1122,7 @@ contains
       logical, allocatable :: taken(:)
       real(dp) :: midpoint(3)
       real(dp) :: reach, best
-      integer :: n_occ, i, k, n_real, n_keep, at, row, first, n, special
+      integer :: n_occ, i, k, n_real, n_keep, at, row, first, n, bond_slot
 
       if (error%has_error()) return
       n_on_bond = 0
@@ -1177,7 +1156,7 @@ contains
       do i = 1, n_occ
          pop_bda(i) = atom_population(localized(:, i), 1)
       end do
-      n = min(atom_lmo_count(model%z(1)), n_occ)
+      n = min(bonded_atom_orbital_count(model%z(1)), n_occ)
       allocate (pick(n), source=0)
       allocate (taken(n_occ), source=.false.)
       do k = 1, n
@@ -1192,20 +1171,21 @@ contains
          taken(pick(k)) = .true.
       end do
       ! Of those, the bond's: the largest population on the attached atom.
-      special = 1
+      bond_slot = 1
       do k = 2, n
          if (atom_population(localized(:, pick(k)), 2) > &
-             atom_population(localized(:, pick(special)), 2)) special = k
+             atom_population(localized(:, pick(bond_slot)), 2)) bond_slot = k
       end do
-      if (special /= 1) pick([1, special]) = pick([special, 1])
+      if (bond_slot /= 1) pick([1, bond_slot]) = pick([bond_slot, 1])
 
       ! Kept on every real atom bonded to either end.
       n_real = model%n_atoms - model%n_caps
       allocate (keep(n_real))
       n_keep = 0
       do at = 1, n_real
-         if (gamess_bonded(model%z(1), model%xyz(:, 1), model%z(at), model%xyz(:, at)) .or. &
-             gamess_bonded(model%z(2), model%xyz(:, 2), model%z(at), model%xyz(:, at))) then
+         if (at <= 2 .or. &
+             bonded_pair(model%z, model%xyz, 1, at, DEFAULT_BOND_TOLERANCE) .or. &
+             bonded_pair(model%z, model%xyz, 2, at, DEFAULT_BOND_TOLERANCE)) then
             n_keep = n_keep + 1
             keep(n_keep) = at
          end if
@@ -1254,9 +1234,9 @@ contains
       !! For each boundary the group is cut across: the bond's orbital,
       !! occupied if the group holds the detached atom as a ghost and empty if
       !! it owns it; and, when it holds the ghost, the detached atom's other
-      !! orbitals as well, empty -- GAMESS's `flmovec`, "1 occupied and 4
-      !! virtual" for a carbon. Each orbital goes onto whichever of its atoms
-      !! the group has, the rest dropped.
+      !! orbitals as well, empty -- for a carbon, one occupied and four empty.
+      !! Each orbital goes onto whichever of its atoms the group has, the rest
+      !! dropped.
       !!
       !! Where a second boundary of the group runs through the same ghost atom
       !! its bond orbital is already frozen, so this one's copy of it is left
@@ -1497,7 +1477,7 @@ contains
          n = 0
          do j = 1, size(z)
             if (j == i) cycle
-            if (gamess_bonded(z(i), coords(:, i), z(j), coords(:, j))) n = n + 1
+            if (bonded_pair(z, coords, i, j, DEFAULT_BOND_TOLERANCE)) n = n + 1
          end do
       end function neighbour_count
 
