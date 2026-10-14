@@ -3,7 +3,9 @@ module mqc_czt_screening
    !! The two screening blocks a potential carries are *fitted*, not computed:
    !! the damped classical multipole potential is matched to the quantum one on a
    !! grid of fused scaled van der Waals spheres, and the damping exponents are
-   !! what comes out. Every constant here was read out of GAMESS.
+   !! what comes out. The constants here -- grid scales, radii, bounds -- are
+   !! tuning defaults chosen to reproduce GAMESS's screening fits, so that the
+   !! fitted exponents are comparable with its potentials.
    !!
    !! **Two blocks, two damping functions.** GAMESS names them:
    !!

@@ -60,6 +60,7 @@ module mqc_czt_cphf
    public :: distributed_dynamic_polarizability
    public :: distributed_dynamic_cross
    public :: casimir_polder_frequencies
+   public :: casimir_polder_weights
    public :: build_hessian, build_hessian_df, build_hessian_mo
    public :: fitted_response_t, build_fitted_response
    public :: dynamic_response_iterative
@@ -537,20 +538,89 @@ contains
       !! `w0 = 0.3`, the Casimir-Polder quadrature GAMESS uses. Runs from
       !! 0.002792 to 32.239080.
       real(dp) :: nu(N_CASIMIR_POLDER)
-      real(dp), parameter :: W0 = 0.3_dp
-      !! 12-point Gauss-Legendre abscissae on (-1,1), positive half mirrored.
-      real(dp), parameter :: T(N_CASIMIR_POLDER) = [ &
-                             -0.9815606342467192_dp, -0.9041172563704749_dp, &
-                             -0.7699026741943047_dp, -0.5873179542866175_dp, &
-                             -0.3678314989981802_dp, -0.1252334085114689_dp, &
-                             0.1252334085114689_dp, 0.3678314989981802_dp, &
-                             0.5873179542866175_dp, 0.7699026741943047_dp, &
-                             0.9041172563704749_dp, 0.9815606342467192_dp]
-      integer :: i
-      do i = 1, N_CASIMIR_POLDER
-         nu(i) = W0*(1.0_dp + T(i))/(1.0_dp - T(i))
-      end do
+
+      real(dp) :: weight(N_CASIMIR_POLDER)
+
+      call casimir_polder_quadrature(nu, weight)
    end function casimir_polder_frequencies
+
+   function casimir_polder_weights() result(weight)
+      !! The weights matching `casimir_polder_frequencies`, a.u.
+      !!
+      !! `int_0^inf g(nu) dnu ~ sum_k weight(k) g(nu_k)`.
+      real(dp) :: weight(N_CASIMIR_POLDER)
+
+      real(dp) :: nu(N_CASIMIR_POLDER)
+
+      call casimir_polder_quadrature(nu, weight)
+   end function casimir_polder_weights
+
+   pure subroutine casimir_polder_quadrature(nu, weight)
+      !! Nodes and weights of the Casimir-Polder frequency quadrature
+      !!
+      !! Gauss-Legendre in `t` on (-1,1), carried to (0,inf) by
+      !! `nu = w0 (1 + t)/(1 - t)`, `w0 = 0.3`, whose Jacobian
+      !! `dnu/dt = 2 w0/(1 - t)^2` multiplies each weight. Ascending in `nu`.
+      real(dp), intent(out) :: nu(N_CASIMIR_POLDER)
+      real(dp), intent(out) :: weight(N_CASIMIR_POLDER)
+
+      real(dp), parameter :: W0 = 0.3_dp
+      real(dp) :: t(N_CASIMIR_POLDER), w(N_CASIMIR_POLDER)
+
+      call gauss_legendre(t, w)
+      nu = W0*(1.0_dp + t)/(1.0_dp - t)
+      weight = w*2.0_dp*W0/(1.0_dp - t)**2
+   end subroutine casimir_polder_quadrature
+
+   pure subroutine gauss_legendre(t, w)
+      !! Gauss-Legendre nodes, ascending, and weights on (-1,1), `size(t)` points
+      !!
+      !! Each node is a root of `P_n`, found by Newton's method from the
+      !! asymptotic estimate `cos(pi (k - 1/4)/(n + 1/2))`, which lies inside
+      !! the root's basin for every `n`; the weight is `2/((1 - t^2) P_n'(t)^2)`.
+      real(dp), intent(out) :: t(:)
+      real(dp), intent(out) :: w(size(t))
+
+      integer, parameter :: MAX_NEWTON = 100
+      real(dp) :: x, p, dp_dx, step
+      integer :: n, k, iter
+
+      n = size(t)
+      do k = 1, n
+         x = cos(acos(-1.0_dp)*(real(k, dp) - 0.25_dp)/(real(n, dp) + 0.5_dp))
+         do iter = 1, MAX_NEWTON
+            call legendre_with_slope(n, x, p, dp_dx)
+            step = p/dp_dx
+            x = x - step
+            ! Newton converges quadratically, so a step at the level of the
+            ! spacing of doubles near x means the root is already held to it.
+            if (abs(step) <= 2.0_dp*spacing(1.0_dp)) exit
+         end do
+         call legendre_with_slope(n, x, p, dp_dx)
+         ! The estimate runs from +1 downward; store ascending.
+         t(n + 1 - k) = x
+         w(n + 1 - k) = 2.0_dp/((1.0_dp - x*x)*dp_dx*dp_dx)
+      end do
+   end subroutine gauss_legendre
+
+   pure subroutine legendre_with_slope(n, x, p, dp_dx)
+      !! `P_n(x)` by the three-term recurrence, and its derivative, `|x| < 1`
+      integer, intent(in) :: n
+      real(dp), intent(in) :: x
+      real(dp), intent(out) :: p, dp_dx
+
+      real(dp) :: p_prev, p_next
+      integer :: j
+
+      p_prev = 1.0_dp
+      p = x
+      do j = 1, n - 1
+         p_next = (real(2*j + 1, dp)*x*p - real(j, dp)*p_prev)/real(j + 1, dp)
+         p_prev = p
+         p = p_next
+      end do
+      dp_dx = real(n, dp)*(x*p - p_prev)/(x*x - 1.0_dp)
+   end subroutine legendre_with_slope
 
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
