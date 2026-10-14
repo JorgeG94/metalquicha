@@ -244,11 +244,10 @@ reach any of this.
 How a bond is detached
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The construction is GAMESS's adjusted frozen orbitals, as Fedorov, Jensen, Deka
-and Kitaura describe it (*J. Phys. Chem. A* **112**, 11808 (2008)) and as
-``fmolib.src`` implements it, and it reproduces GAMESS's fragment energies to
-1e-8 Hartree on a single cut with Boys and 3e-8 with ER, as far as GAMESS's own
-model-system convergence allows; see `Against GAMESS`_.
+The construction is the adjusted frozen orbitals of Fedorov, Jensen, Deka and
+Kitaura (*J. Phys. Chem. A* **112**, 11808 (2008)), and it reproduces GAMESS's
+fragment energies to 1e-8 Hartree on a single cut with Boys and 3e-8 with ER, as
+far as GAMESS's own model-system convergence allows; see `Against GAMESS`_.
 
 **Which end is detached.** Of the two atoms of a cut bond one is the *detached*
 end (GAMESS's BDA) and one the *attached* end. ``keywords.fragmentation.
@@ -259,14 +258,13 @@ the other has fewer, which on a protein backbone cut at C-alpha--C(=O) is the
 C-alpha -- and otherwise at its lower-numbered atom.
 
 **The model system.** Both atoms of the bond and every atom bonded to either,
-by GAMESS's own bond test (Emsley radii times 1.2, hydrogen's unscaled); then,
-for each atom bonded to one of those and not taken, a hydrogen comes in where it
-is and anything else is replaced by a cap hydrogen at GAMESS's X-H length for the
-atom it hangs off (1.09 A from carbon, 1.01 from nitrogen, 0.96 from oxygen). One
-addition GAMESS does not make: a *terminal* heavy atom bonded to a taken one --
-a carbonyl oxygen -- comes in whole, since a cap closes one electron pair and a
-double bond is two. It never applies where GAMESS's model is closed-shell
-already. Charged groups taken in are counted into the model's charge.
+by the same test bond perception uses (a distance within 1.2 times the sum of
+the Cordero covalent radii); then, for each atom bonded to one of those and not
+taken, a hydrogen comes in where it is, a *terminal* heavy atom -- a carbonyl
+oxygen -- comes in whole, since a cap closes one electron pair and a double bond
+is two, and anything else is replaced by a cap hydrogen at the X-H length of the
+parent hydride of the atom it hangs off (1.09 A from carbon, 1.01 from nitrogen,
+0.96 from oxygen). Charged groups taken in are counted into the model's charge.
 
 **The orbitals.** The model is solved at the deck's method, as GAMESS does:
 Hartree-Fock under Hartree-Fock, restricted Kohn-Sham at the deck's functional,
@@ -305,8 +303,8 @@ net charge                    ``0``                      ``0``
 ============================  =========================  =========================
 
 **The atom's other orbitals are projected out of the ghost** -- for a carbon
-its 1s and its three other sp3, GAMESS's "1 occupied and 4 virtual frozen
-LMOs". Without it the borrowed functions are free to hold anything, and the
+its 1s and its three other sp3, so five frozen orbitals, one occupied and four
+empty. Without it the borrowed functions are free to hold anything, and the
 fragment's electrons spread into the directions of the detached atom's other
 bonds.
 

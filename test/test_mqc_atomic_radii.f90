@@ -24,9 +24,9 @@ contains
 
       testsuite = [ &
                   new_unittest("radii_cordero_matches_the_published_values", test_cordero), &
-                  new_unittest("radii_emsley_matches_the_gamess_values", test_emsley), &
+                  new_unittest("radii_emsley_matches_the_published_values", test_emsley), &
                   new_unittest("radii_bondi_matches_the_published_values", test_bondi), &
-                  new_unittest("radii_geodesic_matches_the_gamess_values", test_geodesic), &
+                  new_unittest("radii_geodesic_matches_the_published_values", test_geodesic), &
                   new_unittest("radii_the_tables_stay_distinct", test_distinct), &
                   new_unittest("radii_refuse_out_of_range_elements", test_out_of_range), &
                   new_unittest("radii_are_positive_across_each_table", test_positive) &
@@ -48,7 +48,7 @@ contains
    end subroutine test_cordero
 
    subroutine test_emsley(error)
-      !! Emsley's table as GAMESS uses it -- deliberately not Cordero's
+      !! Emsley, The Elements (1991) -- deliberately not Cordero's
       type(error_type), allocatable, intent(out) :: error
 
       call check(error, covalent_radius_emsley(1), 0.32_dp, thr=TOL)

@@ -7,13 +7,13 @@ module mqc_atomic_radii
    !! things and disagree with each other by tenths of an Angstrom, so swapping
    !! one for another silently changes results.
    !!
-   !! | Accessor                  | Source                     | Fitted for            |
-   !! |---------------------------|----------------------------|-----------------------|
-   !! | `covalent_radius_cordero` | Cordero (2008), Z <= 96    | bond perception       |
-   !! | `covalent_radius_emsley`  | Emsley, as GAMESS, Z <= 36 | DMA bond midpoints    |
-   !! | `vdw_radius_bondi`        | Bondi/Mantina, Z <= 18     | PCM cavity            |
-   !! | `vdw_radius_geodesic`     | GAMESS geodesic, Z <= 17   | ESP screening grid    |
-   !! | `vdw_radius_fmo`          | GAMESS `$FMO VDWRAD`       | FMO/EFMO pair cutoffs |
+   !! | Accessor                  | Source                       | Fitted for            |
+   !! |---------------------------|------------------------------|-----------------------|
+   !! | `covalent_radius_cordero` | Cordero (2008), Z <= 96      | bond perception       |
+   !! | `covalent_radius_emsley`  | Emsley (1991), Z <= 36       | DMA bond midpoints    |
+   !! | `vdw_radius_bondi`        | Bondi/Mantina, Z <= 18       | PCM cavity            |
+   !! | `vdw_radius_geodesic`     | Gavezzotti/Spackman, Z <= 17 | ESP screening grid    |
+   !! | `vdw_radius_fmo`          | Singh-Kollman, `VDWRAD`      | FMO/EFMO pair cutoffs |
    !!
    !! The Bragg-Slater radii that size the DFT partition cells are *not* here:
    !! they live in the generated `mqc_dft_radial_data`, reached through
@@ -27,10 +27,10 @@ module mqc_atomic_radii
    private
 
    public :: covalent_radius_cordero   !! Cordero covalent radius, Angstrom
-   public :: covalent_radius_emsley    !! Emsley/GAMESS covalent radius, Angstrom
+   public :: covalent_radius_emsley    !! Emsley covalent radius, Angstrom
    public :: vdw_radius_bondi          !! Bondi/Mantina van der Waals radius, Angstrom
-   public :: vdw_radius_geodesic       !! GAMESS geodesic van der Waals radius, Angstrom
-   public :: vdw_radius_fmo            !! GAMESS FMO van der Waals radius, Angstrom
+   public :: vdw_radius_geodesic       !! Geodesic-grid van der Waals radius, Angstrom
+   public :: vdw_radius_fmo            !! FMO pair-cutoff van der Waals radius, Angstrom
    public :: MAX_Z_CORDERO, MAX_Z_EMSLEY, MAX_Z_BONDI, MAX_Z_GEODESIC, MAX_Z_FMO
    public :: GEODESIC_RADIUS_DEFAULT, FMO_RADIUS_DEFAULT
 
@@ -46,11 +46,15 @@ module mqc_atomic_radii
    integer, parameter :: MAX_Z_GEODESIC = 17
 
    integer, parameter :: MAX_Z_FMO = 35
-      !! Past bromine GAMESS's FMO table is `FMO_RADIUS_DEFAULT` throughout, so
-      !! there is nothing to tabulate.
+      !! Past bromine every element takes `FMO_RADIUS_DEFAULT`, so there is
+      !! nothing to tabulate.
 
    real(dp), parameter :: GEODESIC_RADIUS_DEFAULT = 1.8_dp
-   !! What an element absent from the geodesic table takes, as GAMESS does.
+   !! What an element absent from the geodesic table takes, Angstrom.
+   ! A typical van der Waals radius for a second-row atom, the middle of the
+   ! table's heavier entries (P 1.96, S 1.89, Cl 1.80). The grid only places
+   ! the points an electrostatic potential is sampled at, so an approximate
+   ! sphere moves sample points and never an energy.
 
    real(dp), parameter :: CORDERO_RADII(MAX_Z_CORDERO) = [ &
       !! Covalent radii in Angstrom, from Cordero et al., Dalton Trans. 2008, 2832
@@ -69,7 +73,8 @@ module mqc_atomic_radii
                           2.15_dp, 2.06_dp, 2.00_dp, 1.96_dp, 1.90_dp, 1.87_dp, 1.80_dp, 1.69_dp]  ! Z = 89-96
 
    real(dp), parameter :: EMSLEY_RADII(MAX_Z_EMSLEY) = [ &
-      !! Covalent radii in Angstrom, Emsley's table as GAMESS uses it, indexed by Z.
+      !! Covalent radii in Angstrom, from J. Emsley, The Elements, 2nd ed.
+      !! (Oxford University Press, 1991), indexed by Z.
       !!
       !! A bond is `|Ri - Rj| <= rad_i + rad_j`, evaluated in Angstrom, which decides
       !! where the bond midpoints go and therefore how many expansion points there
@@ -106,16 +111,26 @@ module mqc_atomic_radii
 
    real(dp), parameter :: GEODESIC_RADII(MAX_Z_GEODESIC) = [ &
       !! Geodesic van der Waals radii, Angstrom, indexed by Z. Zero means absent,
-      !! and an absent element takes `GEODESIC_RADIUS_DEFAULT`, as GAMESS does.
+      !! and an absent element takes `GEODESIC_RADIUS_DEFAULT`.
+      !!
+      !! For the geodesic point-selection scheme of M. A. Spackman, J. Chem.
+      !! Phys. 85, 6587 (1986), with radii after A. Gavezzotti, J. Am. Chem.
+      !! Soc. 105, 5220 (1983).
                           1.20_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.85_dp, 1.50_dp, 1.50_dp, &
                           1.40_dp, 1.35_dp, 0.0_dp, 0.0_dp, 0.0_dp, 2.07_dp, 2.05_dp, &
                           1.96_dp, 1.89_dp, 1.80_dp]
+   ! The zeros are He, Li, Be, Ne, Na and Mg: noble gases and light metals the
+   ! source gives no radius for, which a molecule fitted to electrostatic
+   ! charges rarely holds. Zero rather than a number so the accessor can tell
+   ! an absent element from a tabulated one.
 
    real(dp), parameter :: FMO_RADIUS_DEFAULT = 2.5_dp
-      !! What GAMESS's `vdwr0` carries for every element it does not name.
+      !! What every element past the table's last named entry takes, Angstrom
 
    real(dp), parameter :: FMO_RADII(MAX_Z_FMO) = [ &
-      !! GAMESS's `$FMO VDWRAD` defaults (`vdwr0` in `fmoio.f90`), Angstrom.
+      !! Default van der Waals radii for FMO pair cutoffs, Angstrom, as GAMESS's
+      !! `$FMO VDWRAD` input defaults them. H, C, N, O, F, P, S and Cl are the
+      !! radii of U. C. Singh and P. A. Kollman, J. Comput. Chem. 5, 129 (1984).
       !!
       !! **Not Bondi**, and the difference is not cosmetic: Bondi puts hydrogen
       !! at 1.10 and oxygen at 1.52, this table at 1.20 and 1.40, so the same
@@ -147,7 +162,7 @@ contains
    end function covalent_radius_cordero
 
    pure function covalent_radius_emsley(atomic_number) result(radius)
-      !! Emsley/GAMESS covalent radius in Angstrom, or 0 where none is tabulated
+      !! Emsley covalent radius in Angstrom, or 0 where none is tabulated
       !!
       !! Zero means the caller must refuse the element rather than place a bond
       !! midpoint from a radius that was never measured.
@@ -176,13 +191,13 @@ contains
    end function vdw_radius_bondi
 
    pure function vdw_radius_geodesic(atomic_number) result(radius)
-      !! GAMESS geodesic van der Waals radius in Angstrom
+      !! Geodesic-grid van der Waals radius in Angstrom
       !!
-      !! Unlike the others this one substitutes `GEODESIC_RADIUS_DEFAULT`, as
-      !! GAMESS does: the screening grid is a fitting aid, so a slightly wrong
-      !! sphere moves sample points and not an energy. Elements inside the
-      !! table's range but absent from it (the noble gases and Li..Be) are zero
-      !! there, and take the default too.
+      !! Unlike the others this one substitutes `GEODESIC_RADIUS_DEFAULT`: the
+      !! screening grid is a fitting aid, so a slightly wrong sphere moves
+      !! sample points and not an energy. Elements inside the table's range but
+      !! absent from it (He, Li, Be, Ne, Na, Mg) are zero there, and take the
+      !! default too.
       integer, intent(in) :: atomic_number
       real(dp) :: radius
 
@@ -193,13 +208,12 @@ contains
    end function vdw_radius_geodesic
 
    pure function vdw_radius_fmo(atomic_number) result(radius)
-      !! GAMESS FMO van der Waals radius in Angstrom, for the fragment-pair cutoff
+      !! FMO van der Waals radius in Angstrom, for the fragment-pair cutoff
       !!
-      !! Substitutes `FMO_RADIUS_DEFAULT` for an element outside the table, as
-      !! GAMESS does. A separation in units of contact is a screening decision,
-      !! not an energy, so a coarse radius costs a pair its class and never a
-      !! number; refusing the element instead would refuse every heavy-atom
-      !! system GAMESS runs.
+      !! Substitutes `FMO_RADIUS_DEFAULT` for an element outside the table. A
+      !! separation in units of contact is a screening decision, not an
+      !! energy, so a coarse radius costs a pair its class and never a number;
+      !! refusing the element instead would refuse every heavy-atom system.
       integer, intent(in) :: atomic_number
       real(dp) :: radius
 
