@@ -337,8 +337,8 @@ contains
                  "orthonormal set and cannot exceed one")
       if (allocated(error)) return
 
-      ! It settles. GAMESS allows ten thousand sweeps; anything near that many
-      ! would mean the functional is not being reduced.
+      ! It settles. The cap is five thousand sweeps; anything near that many
+      ! would mean the functional is not being improved.
       call check(error, quao%sweeps > 0 .and. quao%sweeps < 100, &
                  "the refinement should converge in a handful of sweeps")
       if (allocated(error)) return
