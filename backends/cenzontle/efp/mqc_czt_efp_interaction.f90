@@ -21,6 +21,7 @@ module mqc_czt_efp_interaction
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_efp_read, only: efp_fragment_t
+   use mqc_czt_cphf, only: casimir_polder_weights, N_CASIMIR_POLDER
    implicit none
    private
 
@@ -30,7 +31,6 @@ module mqc_czt_efp_interaction
    public :: dispersion_energy_e6
    public :: polarization_energy
    public :: induction_damping_factor
-   public :: CP_WEIGHT
 
    integer, parameter :: N_DIPOLE = 3
    integer, parameter :: N_QUADRUPOLE = 6
@@ -47,19 +47,12 @@ module mqc_czt_efp_interaction
    integer, parameter :: OCT_K(N_OCTUPOLE) = [1, 2, 3, 2, 3, 2, 3, 3, 3, 3]
       !! Indices of each stored octupole component. Ten numbers for a fully
       !! symmetric 3x3x3, ordered xxx, yyy, zzz, xxy, xxz, xyy, yyz, xzz, yzz,
-      !! xyz, which is GAMESS's order in `efelec.src`.
+      !! xyz, which is the order GAMESS writes them in.
 
-   integer, parameter :: N_FREQUENCIES = 12
-   real(dp), parameter :: CP_WEIGHT(N_FREQUENCIES) = [ &
-                          0.72086099022968040154e-02_dp, 0.17697067815034886394e-01_dp, &
-                          0.30660908596251749739e-01_dp, 0.48381293256249884995e-01_dp, &
-                          0.74878830420650517080e-01_dp, 0.11806515901361630228e+00_dp, &
-                          0.19535413832209084204e+00_dp, 0.35055692324483221824e+00_dp, &
-                          0.71577113554429568336e+00_dp, 1.81409759976323969729e+00_dp, &
-                          6.97923445114870823247e+00_dp, 83.2480938829658453917e+00_dp]
-      !! The twelve Casimir-Polder quadrature weights, as GAMESS carries them in
-      !! `efdrvr.src`: 12-point Gauss-Legendre weights times the Jacobian of
-      !! `nu = w0 (1 + t)/(1 - t)` at `w0 = 0.3`.
+   real(dp), parameter :: CLOSE_EXPONENTS = 1.0e-5_dp
+      !! Absolute gap, Bohr^-1, below which two screening exponents are treated
+      !! as equal; the published threshold (Sattasathuchana et al., JCTC 20, 2445
+      !! (2024)). `penetration` then uses the first point's exponent for both.
 
    type :: efp_system_t
       !! Several placed fragments, flattened into one set of point arrays
@@ -290,9 +283,7 @@ contains
       ! --- rank two ------------------------------------------------------------
       !
       ! Written as closed-form contractions of the derivative tensors rather
-      ! than as loops over their components. GAMESS's own source groups the
-      ! prefactors differently, carrying a ninth on a differently normalized
-      ! quadrupole expression; the physics is the same.
+      ! than as loops over their components.
       qa_r = matmul(system%quad(:, :, a), r)
       qb_r = matmul(system%quad(:, :, b), r)
       r_qa_r = dot_product(r, qa_r)
@@ -326,9 +317,10 @@ contains
 
       ! --- rank three: charge-octupole, and nothing else ------------------------
       !
-      ! GAMESS's electrostatic total is ECC + ECD + EDD + ECQ + ECO + EDQ + EQQ,
-      ! with no dipole-octupole, quadrupole-octupole or octupole-octupole term.
-      ! That truncation is `FFELEC` in `efelec.src`, and it is matched here.
+      ! GAMESS's electrostatic total is charge-charge, charge-dipole,
+      ! dipole-dipole, charge-quadrupole, charge-octupole, dipole-quadrupole and
+      ! quadrupole-quadrupole, with no dipole-octupole, quadrupole-octupole or
+      ! octupole-octupole term. That truncation is matched here.
       !
       ! The raw file values serve with a single factor and no traceless
       ! projection: `T3` is itself traceless in any index pair. GAMESS projects
@@ -364,7 +356,7 @@ contains
       !! polarizability has an antisymmetric part -- so `alpha F` is a genuine
       !! matrix-vector product and the order matters.
       !!
-      !! **`damping` is GAMESS's `NEW_POL` screening**, the one physics gap
+      !! **`damping` is GAMESS's polarization screening**, the one physics gap
       !! Phase 3 measured against it. Every field contribution between two
       !! fragments -- the static one from the permanent multipoles *and* the
       !! one from the other induced dipoles -- is multiplied by the
@@ -373,10 +365,9 @@ contains
       !!     1 - exp(-a R^2) (1 + a R^2)
       !!
       !! with `a = sqrt(a_I a_J)` per fragment pair, which for one number over
-      !! the whole system is just `a`. GAMESS applies it in `FRGFLD`
-      !! (`PENSAB`, static field) and in `DIPIT` (`P1`, induced-dipole field)
-      !! of `efintb.src`, at `POLAB = 0.6` for a cluster and `0.1` where a
-      !! fragment was cut across a bond (`efmo.src`). Absent or at or below
+      !! the whole system is just `a`. GAMESS applies it to both fields, at
+      !! `a = 0.6` for a cluster and `0.1` where a fragment was cut across a
+      !! bond. Absent or at or below
       !! zero the field is undamped, which is what every reference pinned
       !! before this argument existed was computed with.
       type(efp_system_t), intent(in) :: system
@@ -395,7 +386,7 @@ contains
       integer, allocatable :: owner(:)
       real(dp) :: r(3)
       real(dp) :: dist, inv3, inv5, change
-      real(dp) :: pensab
+      real(dp) :: field_damping
       integer :: n_pol, f, i, k, at, iter, limit, j
       real(dp) :: use_tol
       real(dp) :: damp
@@ -442,7 +433,7 @@ contains
       fstat = 0.0_dp
       ! Each polarizable point writes only its own column, so no reduction is
       ! needed here.
-      !$omp parallel do default(none) private(i, k, r, dist, inv3, inv5, pensab) &
+      !$omp parallel do default(none) private(i, k, r, dist, inv3, inv5, field_damping) &
       !$omp shared(n_pol, system, centres, owner, fstat, damp) schedule(static) &
       !$omp if(n_pol >= 32)
       do i = 1, n_pol
@@ -453,15 +444,14 @@ contains
             inv3 = 1.0_dp/(dist*dist*dist)
             inv5 = inv3/(dist*dist)
             ! One factor over the whole contribution of this point, charge,
-            ! dipole and quadrupole alike, which is how GAMESS's `PENSAB`
-            ! multiplies each of the three branches of `FRGFLD`.
-            pensab = induction_damping_factor(damp, dist)
+            ! dipole and quadrupole alike.
+            field_damping = induction_damping_factor(damp, dist)
             ! Charge, then dipole, then quadrupole -- the quadrupole carrying
             ! the same half the charge-quadrupole energy does.
-            fstat(:, i) = fstat(:, i) + pensab*(system%charge(k)*r*inv3 &
-                                                + 3.0_dp*r*dot_product(system%dipole(:, k), r)*inv5 &
-                                                - system%dipole(:, k)*inv3 &
-                                                - 0.5_dp*quadrupole_field(system%quad(:, :, k), r))
+            fstat(:, i) = fstat(:, i) + field_damping*(system%charge(k)*r*inv3 &
+                                                       + 3.0_dp*r*dot_product(system%dipole(:, k), r)*inv5 &
+                                                       - system%dipole(:, k)*inv3 &
+                                                       - 0.5_dp*quadrupole_field(system%quad(:, :, k), r))
          end do
       end do
       !$omp end parallel do
@@ -472,7 +462,7 @@ contains
          ! A Jacobi sweep: every new dipole is built from the previous
          ! iteration's set, so the points are independent within a sweep.
          change = 0.0_dp
-         !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field, pensab) &
+         !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field, field_damping) &
          !$omp shared(n_pol, owner, centres, mu, mu_new, fstat, pol, damp) &
          !$omp schedule(static) reduction(max:change) if(n_pol >= 32)
          do i = 1, n_pol
@@ -483,12 +473,10 @@ contains
                dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
                inv3 = 1.0_dp/(dist*dist*dist)
                inv5 = inv3/(dist*dist)
-               ! The same factor again: GAMESS's `DIPIT` builds it as `P1` and
-               ! adds it to the one that multiplies the whole dipole field
-               ! tensor, with its second screening term `P2` left at zero.
-               pensab = induction_damping_factor(damp, dist)
-               field = field + pensab*(3.0_dp*r*dot_product(mu(:, j), r)*inv5 &
-                                       - mu(:, j)*inv3)
+               ! The same factor again, over the whole dipole field tensor.
+               field_damping = induction_damping_factor(damp, dist)
+               field = field + field_damping*(3.0_dp*r*dot_product(mu(:, j), r)*inv5 &
+                                              - mu(:, j)*inv3)
             end do
             mu_new(:, i) = matmul(pol(:, :, i), field)
             ! Convergence measured inside the same loop, as a max reduction,
@@ -516,25 +504,32 @@ contains
    end function polarization_energy
 
    pure function induction_damping_factor(a, dist) result(factor)
-      !! The Tang-Toennies-like factor GAMESS damps an induction field with
+      !! Short-range damping of an induction field between two fragments
       !!
       !!     f(R) = 1 - exp(-a R^2) (1 + a R^2)
       !!
-      !! Note the **squared** separation in the exponent, which is what
-      !! `efintb.src` writes (`AR2 = AA*R2`, `R2 = X*X + Y*Y + Z*Z`); it is
-      !! Tang-Toennies-*like* and not the two-term Tang-Toennies incomplete
-      !! gamma in `R`. `a` at or below zero is off, and so is `a` above 2,
-      !! which is GAMESS's own guard: a damping that steep is not a damping.
-      real(dp), intent(in) :: a
+      !! Gaussian in `R` -- the argument is `a R^2`, not `a R` -- so it is the
+      !! first two terms of a Tang-Toennies-like sum in `a R^2` rather than the
+      !! Tang-Toennies incomplete gamma in `R`. It runs from zero at contact to
+      !! one at long range, with `1 - f` of order `exp(-a R^2)`.
+      !!
+      !! One at `a <= 0` (damping off), and also at `a > 2`: such an `a` puts
+      !! the damping inside `1/sqrt(a) < 0.71` Bohr, well within one atom and
+      !! short of any separation between polarizable points on two fragments,
+      !! so it is read as an input that does not describe damping rather than
+      !! as a damping. This matches the window GAMESS accepts, so the two
+      !! agree on such input, and `test_mqc_czt_efmo_pieces` holds it.
+      real(dp), intent(in) :: a       !! Exponent, Bohr^-2
       real(dp), intent(in) :: dist    !! `R`, Bohr
       real(dp) :: factor
 
-      real(dp) :: ar2
+      real(dp), parameter :: LARGEST_EXPONENT = 2.0_dp
+      real(dp) :: x
 
       factor = 1.0_dp
-      if (a <= 0.0_dp .or. a > 2.0_dp) return
-      ar2 = a*dist*dist
-      factor = 1.0_dp - exp(-ar2)*(1.0_dp + ar2)
+      if (a <= 0.0_dp .or. a > LARGEST_EXPONENT) return
+      x = a*dist**2
+      factor = 1.0_dp - (1.0_dp + x)*exp(-x)
    end function induction_damping_factor
 
    pure function quadrupole_field(quad, r) result(f)
@@ -561,8 +556,9 @@ contains
       !!
       !! summed over localized orbitals on different fragments, with `a` the
       !! isotropic dynamic polarizability -- a third of the tensor trace -- at
-      !! each of the twelve Casimir-Polder frequencies. The form, the factor of
-      !! `3/pi` and the weights are GAMESS's, from `efdrvr.src`.
+      !! each of the twelve Casimir-Polder frequencies, `w_k` the quadrature
+      !! weights over them. The `3/pi` is the Casimir-Polder integral
+      !! `C6 = (3/pi) int_0^inf a_i(i nu) a_j(i nu) dnu` for isotropic orbitals.
       !!
       !! **Undamped, where GAMESS reports a damped number.** Its damping is
       !! built from overlaps between the two fragments' localized orbitals,
@@ -575,21 +571,22 @@ contains
       !! multipole expansion.
       ! TODO(mqc): the quadrature index runs to the smaller of the two
       ! fragments' `n_freq`, which `mqc_czt_efp_read` takes from the file without
-      ! checking it against `N_FREQUENCIES`. A potential written with more than
-      ! twelve frequency blocks reads past the end of `CP_WEIGHT`.
+      ! checking it against `N_CASIMIR_POLDER`. A potential written with more than
+      ! twelve frequency blocks reads past the end of `weight`.
       type(efp_system_t), intent(in) :: system
       type(efp_fragment_t), intent(in) :: fragments(:)
       real(dp) :: energy
 
-      real(dp) :: sep(3)
+      real(dp) :: sep(3), weight(N_CASIMIR_POLDER)
       real(dp) :: c6, r6, dist
       integer :: fa, fb, ia, ib, k
 
       energy = 0.0_dp
+      weight = casimir_polder_weights()
       ! Threaded over the first fragment with a reduction, `guided` because the
       ! pair set is triangular.
       !$omp parallel do default(none) private(fa, fb, ia, ib, k, c6, sep, dist, r6) &
-      !$omp shared(fragments, system) schedule(guided) reduction(+:energy) &
+      !$omp shared(fragments, system, weight) schedule(guided) reduction(+:energy) &
       !$omp if(size(fragments) >= 8)
       do fa = 1, size(fragments) - 1
          if (.not. fragments(fa)%has_dynamic) cycle
@@ -599,7 +596,7 @@ contains
                do ib = 1, fragments(fb)%n_lmo
                   c6 = 0.0_dp
                   do k = 1, min(fragments(fa)%n_freq, fragments(fb)%n_freq)
-                     c6 = c6 + CP_WEIGHT(k) &
+                     c6 = c6 + weight(k) &
                           *isotropic(fragments(fa)%dyn_pol(:, :, ia, k)) &
                           *isotropic(fragments(fb)%dyn_pol(:, :, ib, k))
                   end do
@@ -625,56 +622,65 @@ contains
    end function isotropic
 
    pure function penetration(system, a, b, r) result(e)
-      !! Charge-charge penetration between two points
+      !! Charge-penetration correction to the charge-charge energy of two points
       !!
-      !! A multipole expansion overstates the repulsion where the two charge
-      !! densities actually overlap, since real electron clouds penetrate each
-      !! other and screen the nuclei they surround. The correction is
-      !! exponential in `alpha R`, so it matters at hydrogen-bond distances and
-      !! vanishes by a few Angstrom.
+      !! Slipchenko and Gordon, J. Comput. Chem. 28, 276 (2007). A point
+      !! multipole overstates the repulsion where two charge clouds overlap.
+      !! Each point's electronic monopole `q` is smeared into the density whose
+      !! potential is `(1 - exp(-alpha r))/r`, that is
+      !! `rho(r) = q alpha^2 exp(-alpha r)/(4 pi r)`; its nuclear part `Z` stays
+      !! a point. The correction is the smeared energy less the point one,
       !!
-      !! Only the charge-charge term, from `EPENCHCH` in GAMESS's `efelec.src`.
-      !! GAMESS's further corrections for the dipole, quadrupole and octupole
-      !! sit behind its `HOCHPEN` flag, which a default run does not set.
+      !!     E R = q_a q_b g(alpha_a, alpha_b)
+      !!           - q_a Z_b exp(-alpha_a R) - Z_a q_b exp(-alpha_b R)
+      !!
+      !! where `g` comes from the product of the two densities' Fourier
+      !! transforms, `alpha^2/(k^2 + alpha^2)`, split by partial fractions:
+      !!
+      !!     g(x, y) = -( y^2 exp(-x R) - x^2 exp(-y R) ) / (y^2 - x^2)
+      !!     g(x, x) = -(1 + x R/2) exp(-x R)
+      !!
+      !! Only the charge-charge term; corrections to higher multipoles are a
+      !! separate option that a default GAMESS run does not use.
       !!
       !! The screening *coefficient* is not read: every potential this program
-      !! writes carries a coefficient of one at every point, where GAMESS treats
-      !! a zero coefficient as unscreened by setting the exponent to 1e20.
+      !! writes carries a coefficient of one at every point.
       type(efp_system_t), intent(in) :: system
       integer, intent(in) :: a, b
       real(dp), intent(in) :: r(3)
       real(dp) :: e
 
-      real(dp), parameter :: SAME = 1.0e-5_dp
-      real(dp) :: dist, aa, ab, ap, bp, aa2, ab2
-      real(dp) :: p0_e, p0_n1, p0_n2
+      real(dp) :: dist, alpha_a, alpha_b
 
-      dist = sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
-      aa = system%alpha(a)
-      ab = system%alpha(b)
-      ap = aa*dist
-      bp = ab*dist
-      aa2 = aa*aa
-      ab2 = ab*ab
+      dist = norm2(r)
+      alpha_a = system%alpha(a)
+      alpha_b = system%alpha(b)
+      ! Equal within `CLOSE_EXPONENTS`: both points, nuclear terms included,
+      ! carry `a`'s exponent, and `smeared_pair` takes its equal-exponent limit.
+      if (abs(alpha_a - alpha_b) < CLOSE_EXPONENTS) alpha_b = alpha_a
 
-      if (abs(aa - ab) < SAME) then
-         ! The two-exponent form is singular when the exponents coincide; this is
-         ! its limit, not a separate approximation.
-         p0_e = -exp(-ap)*(1.0_dp + 0.5_dp*ap)
-         p0_n1 = -exp(-ap)
-         p0_n2 = -exp(-ap)
-      else
-         p0_e = -exp(-ap)*(ab2/(ab2 - aa2)) - exp(-bp)*(aa2/(aa2 - ab2))
-         p0_n1 = -exp(-bp)
-         p0_n2 = -exp(-ap)
-      end if
-
-      ! `a`'s electrons screened against `b`'s nucleus carry `a`'s own exponent,
-      ! and the other way round carries `b`'s.
-      e = (system%q_elec(a)*system%q_elec(b)*p0_e &
-           + system%q_elec(a)*system%q_nuc(b)*p0_n2 &
-           + system%q_elec(b)*system%q_nuc(a)*p0_n1)/dist
+      e = (system%q_elec(a)*system%q_elec(b)*smeared_pair(alpha_a, alpha_b, dist) &
+           - system%q_elec(a)*system%q_nuc(b)*exp(-alpha_a*dist) &
+           - system%q_nuc(a)*system%q_elec(b)*exp(-alpha_b*dist))/dist
    end function penetration
+
+   pure function smeared_pair(x, y, dist) result(g)
+      !! `g(x, y)` of `penetration`: `R` times the change in the energy of two
+      !! unit smeared charges from that of two point charges
+      real(dp), intent(in) :: x, y    !! The two exponents, Bohr^-1
+      real(dp), intent(in) :: dist    !! `R`, Bohr
+      real(dp) :: g
+
+      real(dp) :: x2, y2
+
+      if (abs(x - y) < CLOSE_EXPONENTS) then
+         g = -(1.0_dp + 0.5_dp*x*dist)*exp(-x*dist)
+      else
+         x2 = x*x
+         y2 = y*y
+         g = -(y2*exp(-x*dist) - x2*exp(-y*dist))/(y2 - x2)
+      end if
+   end function smeared_pair
 
    pure subroutine spread_octupole(oct, i, j, k, value)
       !! One stored component written into every permutation of its indices

@@ -148,8 +148,8 @@ contains
                                                              translations(:, a), translations(:, b), error)
                if (error%has_error()) return
                ! E7 and E8 need the higher tensor blocks, which a potential may omit
-               ! -- and GAMESS treats their absence as switching the term off rather
-               ! than as an error (in `efinp.src`), so this does too.
+               ! -- and their absence switches the term off rather than being an
+               ! error, so this does too.
                if (fragments(a)%has_dipquad .and. fragments(b)%has_dipquad) then
                   energy%dispersion_e7 = energy%dispersion_e7 &
                                          + dispersion_e7_damped(fragments(a), fragments(b), &

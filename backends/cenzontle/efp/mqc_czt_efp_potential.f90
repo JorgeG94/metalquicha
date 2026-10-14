@@ -76,6 +76,9 @@ module mqc_czt_efp_potential
       !! Named because the warning below compares against the same number.
 
    integer, parameter :: N_CART_PAIR = 9
+   real(dp), parameter :: IDENTITY_3(3, 3) = reshape([1.0_dp, 0.0_dp, 0.0_dp, &
+                                                      0.0_dp, 1.0_dp, 0.0_dp, &
+                                                      0.0_dp, 0.0_dp, 1.0_dp], [3, 3])
       !! Flattened extents of the Cartesian tensors the polarizability blocks
       !! carry: a pair of directions, a triple, and a quadruple. Nine is also the
       !! number of slots GAMESS writes a polarizability in.
@@ -92,9 +95,9 @@ module mqc_czt_efp_potential
       !! measured in `validation/check_distributed_polarizability.py` -- the one
       !! convention here that a symmetric test tensor would not have caught.
       !!
-      !! Also the transpose of what the `efinp.src` writer writes, which is not a
-      !! conflict: GAMESS indexes the tensor `(field, dipole)` where this code
-      !! indexes it `(dipole, field)`, so both put the same number in slot 4. See
+      !! Also the transpose of reading slot 4 as element (1,2), which is not a
+      !! conflict: that reading indexes the tensor `(field, dipole)` where this
+      !! code indexes it `(dipole, field)`, so both put the same number in slot 4. See
       !! the note on `POL_ROW` in `mqc_czt_efp_read`, which carries the measurement.
    integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
@@ -169,9 +172,9 @@ module mqc_czt_efp_potential
       real(dp), allocatable :: static_pol(:, :, :)    !! (3, 3, n_lmo)
       real(dp), allocatable :: dynamic_pol(:, :, :, :)  !! (3, 3, n_lmo, n_freq)
       real(dp), allocatable :: dipquad_pre(:, :, :, :, :)
-         !! The dipole-quadrupole tensor *before* the translation, which is what
-         !! `QQSHIFT` takes as an input -- so it has to be kept, not just the
-         !! shifted form the file carries.
+         !! The dipole-quadrupole tensor *before* the translation, which the
+         !! quadrupole-quadrupole translation takes as an input -- so it has to
+         !! be kept, not just the shifted form the file carries.
       real(dp), allocatable :: quadquad(:, :, :, :, :, :)
          !! `(3, 3, 3, 3, n_lmo, n_freq)`, after the write-time translation.
       real(dp), allocatable :: dipquad(:, :, :, :, :)
@@ -758,12 +761,11 @@ contains
          return
       end if
 
-      ! The charge-transfer basis, in the canonical form: `$MAKEFP CTVVO=.FALSE.`
-      ! writes the whole canonical MO matrix under the header `CTVEC NA NUM`,
-      ! where GAMESS's default path writes `NOCC` occupied orbitals plus
-      ! quasi-atomic valence virtuals from `VVOS`. The canonical form needs no
-      ! extra machinery and is what GAMESS recommends when the valence virtuals
-      ! cannot be formed.
+      ! The charge-transfer basis, in the canonical form: the whole canonical MO
+      ! matrix is written under a `CTVEC` header giving the occupied and total
+      ! counts, rather than the occupied orbitals plus quasi-atomic valence
+      ! virtuals. The canonical form needs no extra machinery and is what remains
+      ! when the valence virtuals cannot be formed.
       call to_gamess_ao_order(mol, scf%orbitals, pot%canonical, error)
       if (error%has_error()) then
          call mol%destroy()
@@ -836,9 +838,9 @@ contains
       !!     form. Per orbital that is not the same as the reverse assignment,
       !!     because the projector onto the localized set does not commute with the
       !!     response operator; summed over orbitals they agree.
-      !!   * **The write-time translation to each centroid**, `DQSHIFT`, whose
-      !!     `delta_bc` term takes the dipole-dipole tensor **transposed**:
-      !!     `alpha(a,d)`, not `alpha(d,a)` as the rest of the formula reads.
+      !!   * **The write-time translation to each centroid** takes the
+      !!     dipole-dipole tensor **transposed** in its `R_c` and `delta_bc`
+      !!     terms: `alpha(a,d)`, not `alpha(d,a)` as the `R_b` term reads.
       !!   * **The dipole-dipole tensor in the shift is the dynamic one at the same
       !!     frequency**, not the static one.
       type(czt_molecule_t), intent(in) :: mol
@@ -876,8 +878,8 @@ contains
       integer :: drive_of(N_CART_PAIR)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
       real(dp) :: com(3), r(3), alpha(3, 3)
-      real(dp) :: mass_total, isotropic
-      integer :: i, a, b, c, d, k, f, n_freq, n_both
+      real(dp) :: mass_total
+      integer :: i, a, d, k, f, n_freq, n_both
 
       com = 0.0_dp
       mass_total = 0.0_dp
@@ -1002,6 +1004,24 @@ contains
          return
       end if
 
+      ! --- moving both quadrupole blocks from the centre of mass to a centroid --
+      ! Every block above was measured about the centre of mass. Writing a
+      ! position as r = r' + R, with R the centroid's displacement from the
+      ! centre of mass, the traceless quadrupole operator (1/2)(3 r_b r_c -
+      ! r^2 delta_bc) becomes
+      !
+      !     Theta_bc = Theta'_bc + (3/2)(R_b mu'_c + R_c mu'_b) - delta_bc R.mu' + const
+      !
+      ! and the dipole operator only gains a constant. A constant has no
+      ! response, so about the centroid
+      !
+      !     Theta'_bc = Theta_bc + sum_d M(bc, d) mu_d
+      !     M(bc, d)  = -(3/2)(R_b delta_cd + R_c delta_bd) + delta_bc R_d
+      !
+      ! and each shifted block is that substitution made in a bilinear
+      ! response function -- in the measured slot for the dipole-quadrupole
+      ! block, in both slots for the quadrupole-quadrupole one. `alpha(d, e)`
+      ! below is <<mu_d; mu_e>>, measured index first, at the same frequency.
       allocate (raw(size(buck, 3), 3, pot%n_lmo, n_freq))
       raw = all_blocks(4:n_both, 1:3, :, 1:n_freq)
       allocate (pot%dipquad(3, 3, 3, pot%n_lmo, n_freq))
@@ -1011,34 +1031,27 @@ contains
             r = pot%centroids(:, k) - com
             alpha = pot%dynamic_pol(:, :, k, f)
             do a = 1, 3
-               ! The delta_bc term's transpose: alpha(a,d), not alpha(d,a).
-               isotropic = 0.0_dp
-               do d = 1, 3
-                  isotropic = isotropic + r(d)*alpha(a, d)
-               end do
-               do b = 1, 3
-                  do c = 1, 3
-                     ! raw is (quadrupole slot, dipole, orbital, frequency); the
-                     ! nine quadrupole slots run with the second index fastest.
-                     pot%dipquad_pre(a, b, c, k, f) = raw((b - 1)*3 + c, a, k, f)
-                     pot%dipquad(a, b, c, k, f) = raw((b - 1)*3 + c, a, k, f) &
-                                                  - 1.5_dp*(r(b)*alpha(c, a) &
-                                                            + r(c)*alpha(a, b))
-                     if (b == c) then
-                        pot%dipquad(a, b, c, k, f) = pot%dipquad(a, b, c, k, f) &
-                                                     + isotropic
-                     end if
-                  end do
-               end do
+               ! raw's quadrupole slot is (b - 1)*3 + c, so a row-major fill
+               ! puts it at (b, c).
+               pot%dipquad_pre(a, :, :, k, f) = reshape(raw(:, a, k, f), [3, 3], &
+                                                        order=[2, 1])
+               ! The R_b term is the substitution above. The R_c and trace
+               ! terms read alpha transposed -- row `a` rather than column `a`.
+               ! For a symmetric alpha the two coincide; a distributed alpha is
+               ! not symmetric, and this mixed form is the convention the
+               ! written potentials carry -- see the docstring above.
+               pot%dipquad(a, :, :, k, f) = pot%dipquad_pre(a, :, :, k, f) &
+                                            - 1.5_dp*(outer(r, alpha(:, a)) &
+                                                      + outer(alpha(a, :), r)) &
+                                            + dot_product(r, alpha(a, :))*IDENTITY_3
             end do
          end do
       end do
 
-      ! --- the quadrupole-quadrupole block ------------------------------------
-      ! Same operator on both sides, and the factor is 1/3 rather than 1:
-      ! `LQQPOL` carries a factor of a third that the dipole-quadrupole one does
-      ! not. Confirmed against GAMESS's own molecular `QUAD-QUAD POLARIZABILITY`,
-      ! which `$MAKEFP MOLPOL=.TRUE.` writes with no translation applied.
+      ! The quadrupole-quadrupole block carries a factor of a third the
+      ! dipole-quadrupole one does not; with it, the orbital sum reproduces
+      ! the molecular quadrupole-quadrupole polarizability GAMESS prints
+      ! untranslated.
       allocate (qq(size(buck, 3), size(buck, 3), pot%n_lmo, n_freq))
       qq = all_blocks(4:n_both, 4:n_both, :, 1:n_freq)
       deallocate (all_blocks)
@@ -1046,66 +1059,78 @@ contains
       allocate (pot%quadquad(3, 3, 3, 3, pot%n_lmo, n_freq))
       do f = 1, n_freq
          do k = 1, pot%n_lmo
-            r = pot%centroids(:, k) - com
-            alpha = pot%dynamic_pol(:, :, k, f)
-            call qq_shift(qq(:, :, k, f)/3.0_dp, pot%dipquad_pre(:, :, :, k, f), &
-                          alpha, r, pot%quadquad(:, :, :, :, k, f))
+            call qq_shift(qq(:, :, k, f), pot%dipquad_pre(:, :, :, k, f), &
+                          pot%dynamic_pol(:, :, k, f), pot%centroids(:, k) - com, &
+                          pot%quadquad(:, :, :, :, k, f))
          end do
       end do
+      pot%quadquad = pot%quadquad/3.0_dp
 
       deallocate (dip, quad, buck, raw, qq, centroids)
    end subroutine dipole_quadrupole_block
 
-   subroutine qq_shift(qq, dq, alpha, r, shifted)
-      !! `QQSHIFT`, the quadrupole-quadrupole translation
+   pure subroutine qq_shift(qq, dq, alpha, r, shifted)
+      !! The quadrupole-quadrupole polarizability moved to a new expansion point
       !!
-      !! Transcribed term for term. It mixes in both the dipole-dipole and the
-      !! *pre-shift* dipole-quadrupole tensors, which is why the two blocks are
-      !! built together.
-      real(dp), intent(in) :: qq(N_CART_PAIR, N_CART_PAIR)       !! pre-shift, already scaled by 1/3
-      real(dp), intent(in) :: dq(3, 3, 3)    !! pre-shift dipole-quadrupole
-      real(dp), intent(in) :: alpha(3, 3)
-      real(dp), intent(in) :: r(3)
+      !! With the quadrupole operator shifted as `Theta' = Theta + M mu` (see
+      !! `dipole_quadrupole_block`), and the nine `(a, b)` pairs as one index,
+      !!
+      !!     C' = C + D M^T + M D^T + M alpha M^T
+      !!
+      !! where `C = <<Theta; Theta>>` and `D = <<Theta; mu>>`.
+      real(dp), intent(in) :: qq(N_CART_PAIR, N_CART_PAIR)
+         !! `C` about the old point, pair index `(a - 1)*3 + b`
+      real(dp), intent(in) :: dq(3, 3, 3)
+         !! `D` about the old point, as `(dipole, quadrupole pair)`
+      real(dp), intent(in) :: alpha(3, 3)     !! Dipole-dipole, measured index first
+      real(dp), intent(in) :: r(3)            !! New point minus old, Bohr
       real(dp), intent(out) :: shifted(3, 3, 3, 3)
+         !! `C'`, as `(a, b, c, e)`
 
-      real(dp) :: a1, a2, rralph, adelt1, adelt2, rrad1, rrad2, rrdalph
-      integer :: a, b, c, e, i, j
+      real(dp) :: m(N_CART_PAIR, 3), d(N_CART_PAIR, 3), c_new(N_CART_PAIR, N_CART_PAIR)
+      integer :: a, b, pair_ab
 
+      m = quadrupole_shift_map(r)
       do a = 1, 3
          do b = 1, 3
-            do c = 1, 3
-               do e = 1, 3
-                  a1 = r(a)*dq(b, c, e) + r(b)*dq(a, c, e)
-                  a2 = r(c)*dq(e, a, b) + r(e)*dq(c, a, b)
-                  rralph = r(a)*r(c)*alpha(b, e) + r(a)*r(e)*alpha(b, c) &
-                           + r(b)*r(c)*alpha(a, e) + r(b)*r(e)*alpha(a, c)
-                  adelt1 = 0.0_dp
-                  adelt2 = 0.0_dp
-                  rrad1 = 0.0_dp
-                  rrad2 = 0.0_dp
-                  rrdalph = 0.0_dp
-                  do i = 1, 3
-                     if (a == b) adelt1 = adelt1 + r(i)*dq(i, c, e)
-                     if (c == e) adelt2 = adelt2 + r(i)*dq(i, a, b)
-                     if (a == b) rrad1 = rrad1 + r(c)*r(i)*alpha(i, e) &
-                                         + r(e)*r(i)*alpha(i, c)
-                     if (c == e) rrad2 = rrad2 + r(a)*r(i)*alpha(b, i) &
-                                         + r(b)*r(i)*alpha(a, i)
-                     if (a == b .and. c == e) then
-                        do j = 1, 3
-                           rrdalph = rrdalph + r(i)*r(j)*alpha(i, j)
-                        end do
-                     end if
-                  end do
-                  shifted(a, b, c, e) = qq((a - 1)*3 + b, (c - 1)*3 + e) &
-                                        - 0.5_dp*(a1 + a2 + rrad1 + rrad2) &
-                                        + (adelt1 + adelt2 + rrdalph)/3.0_dp &
-                                        + 0.75_dp*rralph
-               end do
-            end do
+            pair_ab = (a - 1)*3 + b
+            d(pair_ab, :) = dq(:, a, b)
          end do
       end do
+
+      c_new = qq + matmul(d, transpose(m)) + matmul(m, transpose(d)) &
+              + matmul(m, matmul(alpha, transpose(m)))
+
+      ! Unpack with the pair index row-major, so (a, b) and (c, e) come back
+      ! in that order.
+      shifted = reshape(c_new, [3, 3, 3, 3], order=[2, 1, 4, 3])
    end subroutine qq_shift
+
+   pure function quadrupole_shift_map(r) result(m)
+      !! `M(bc, d)`: the traceless quadrupole about a point displaced by `r` is
+      !! `Theta + M mu`, up to a constant
+      !!
+      !! The pair index is `(b - 1)*3 + c`.
+      real(dp), intent(in) :: r(3)
+      real(dp) :: m(N_CART_PAIR, 3)
+
+      integer :: b, c
+
+      do b = 1, 3
+         do c = 1, 3
+            m((b - 1)*3 + c, :) = -1.5_dp*(r(b)*IDENTITY_3(c, :) + r(c)*IDENTITY_3(b, :))
+            if (b == c) m((b - 1)*3 + c, :) = m((b - 1)*3 + c, :) + r
+         end do
+      end do
+   end function quadrupole_shift_map
+
+   pure function outer(x, y) result(xy)
+      !! `x_i y_j`
+      real(dp), intent(in) :: x(3), y(3)
+      real(dp) :: xy(3, 3)
+
+      xy = spread(x, 2, 3)*spread(y, 1, 3)
+   end function outer
 
    pure function frozen_core(atomic_numbers) result(n)
       !! The standard frozen core, which is the set MAKEFP excludes
@@ -1521,7 +1546,7 @@ contains
       if (allocated(pot%dipquad)) then
          ! The dipole-quadrupole block, 27 values a point. The slot order is
          ! `(a-1)*9 + (c-1)*3 + b` -- the *first* quadrupole index runs fastest, which
-         ! is transposed from how the `DQSHIFT` source reads, and was pinned by
+         ! is transposed from the order the translation forms it in, and was pinned by
          ! requiring the pre-shift tensor's symmetry in `bc` to come back.
          write (unit, "(A)") " DIPOLE-QUADRUPOLE DYNAMIC POLARIZABLE POINTS"
          do f = 1, size(pot%frequencies)
@@ -1549,8 +1574,9 @@ contains
       if (allocated(pot%quadquad)) then
          ! The quadrupole-quadrupole block, 81 values a point, written with the last
          ! index fastest, the last of the four varying first. No
-         ! transposition here, unlike the dipole-quadrupole slots: every `QQSHIFT`
-         ! term is symmetric within each index pair, so the written values are too.
+         ! transposition here, unlike the dipole-quadrupole slots: every term of
+         ! the translation is symmetric within each index pair, so the written
+         ! values are too.
          write (unit, "(A)") " LMOQQPOL DYNAMIC POLARIZABLE POINTS"
          do f = 1, size(pot%frequencies)
             do k = 1, pot%n_lmo

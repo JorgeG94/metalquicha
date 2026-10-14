@@ -143,8 +143,8 @@ contains
                   do b = 1, 3
                      do c = 1, 3
                         ! The *first* quadrupole index runs fastest, which is
-                        ! the writer's slot order and transposed from how the
-                        ! `DQSHIFT` source reads.
+                        ! the writer's slot order and transposed from the
+                        ! order the translation forms it in.
                         frag%dipquad((a - 1)*9 + (c - 1)*3 + b, k, f) = &
                            pot%dipquad(a, b, c, k, f)
                      end do
@@ -165,8 +165,9 @@ contains
                   do b = 1, 3
                      do c = 1, 3
                         do e = 1, 3
-                           ! Last index fastest, no transposition: every
-                           ! `QQSHIFT` term is symmetric within each index pair.
+                           ! Last index fastest, no transposition: every term
+                           ! of the translation is symmetric within each index
+                           ! pair.
                            slot = slot + 1
                            frag%quadquad(slot, k, f) = pot%quadquad(a, b, c, e, k, f)
                         end do

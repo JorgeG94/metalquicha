@@ -18,7 +18,7 @@ module mqc_czt_efp_pair
    use mqc_elements, only: element_number_to_symbol
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_efp_read, only: efp_fragment_t, N_QUADRUPOLE
-   use mqc_czt_efp_interaction, only: CP_WEIGHT
+   use mqc_czt_cphf, only: casimir_polder_weights, N_CASIMIR_POLDER
    use mqc_czt_esp, only: esp_matrices, drinv_matrices, ddrinv_matrices
    use mqc_czt_efp_potential, only: from_gamess_ao_order, frozen_core
    implicit none
@@ -38,10 +38,12 @@ module mqc_czt_efp_pair
    ! unpacking one needs the same number.
    public :: N_DQ_SLOTS, N_QQ_SLOTS
 
-   real(dp), parameter :: S_FLOOR = 1.0e-5_dp
-      !! Overlap below which a pair's damping series is not evaluated at all, as in
-      !! `Damping_for_Dispersion` (`efdrvr.src`; Slipchenko and Gordon, Mol. Phys.
-      !! 107, 999 (2009)).
+   real(dp), parameter :: DAMPING_MIN_OVERLAP = 1.0e-5_dp
+      !! Orbital overlap at or below which dispersion is left undamped; the
+      !! published threshold (Sattasathuchana et al., JCTC 20, 2445 (2024)).
+
+   integer, parameter :: N_QUAD_PAIR = 9
+      !! Cartesian index pairs of a quadrupole, `(j, k)` as one index.
 
    integer, parameter :: N_DQ_SLOTS = 27
       !! Slots in a `DIPOLE-QUADRUPOLE` record: a 3x3x3 tensor, last index fastest.
@@ -110,25 +112,36 @@ contains
    end subroutine fragment_basis
 
    function charge_transfer(frag_a, frag_b, offset_a, offset_b, error) result(energy)
-      !! Charge transfer, from `ECHTR` in `efchtr.src`
+      !! Charge transfer between two fragments
       !!
-      !!     for i occupied on A, n virtual on B:
-      !!       SAB2 = sum_M S_AB(M,n)^2                  M over A's occupied + virtual
-      !!       W    = V_AB(i,n) - sum_M S_AB(M,n) V_AA(i,M)
-      !!       STIN = sum_J ( T_BB(n,J) - sum_M S_AB(M,n) T_AB(M,J) ) S_AB(i,J)
-      !!       CT  += W (W + STIN) / ( (1 - SAB2) (F_A(i) - T_BB(n,n)) )
-      !!     E = 2 CT(A->B) + 2 CT(B->A)
+      !! Li, Gordon and Jensen, J. Chem. Phys. 124, 214108 (2006): second-order
+      !! perturbation theory for an electron moving from an occupied orbital of
+      !! one fragment into a virtual of the other, with the other fragment's
+      !! multipoles as the perturbing potential `V`. For a donor `A`, an
+      !! acceptor `B`, `i` occupied on `A`, `n` virtual on `B`, `j` occupied on
+      !! `B` and `m` running over all of `A`'s orbitals, the virtual is first
+      !! made orthogonal to `A`,
       !!
-      !! The orbitals are `CTVEC`'s -- occupied *and* virtual, since this moves
-      !! density into the latter -- and `F_A(i)` is `CTFOK`. The denominator pairs
-      !! an orbital energy with a *kinetic-energy diagonal* standing in for the
-      !! virtual's; that is GAMESS's expression, not an approximation introduced
-      !! here.
+      !!     |n~> = |n> - sum_m S_mn |m>,      <n~|n~> = 1 - sum_m S_mn^2
+      !!
+      !! and then
+      !!
+      !!     E(A->B) = sum_in  V_in~ ( V_in~ + sum_j S_ij T_n~j )
+      !!                       / ( <n~|n~> (e_i - T_nn) )
+      !!
+      !!     E_CT = 2 E(A->B) + 2 E(B->A)
+      !!
+      !! with `S` the overlap, `T` the kinetic energy, `e_i` the donor's orbital
+      !! energy and the two closed shells supplying the factors of two. The
+      !! acceptor's energy enters through its kinetic diagonal `T_nn`.
+      !!
+      !! The orbitals are the file's `CTVEC` -- occupied *and* virtual, since this
+      !! moves density into the latter -- and `e_i` is its `CTFOK`.
       !!
       !! `V` is the other fragment's multipole potential over these orbitals:
-      !! charges, dipoles and quadrupoles, and no octupole. The rank ending at the
-      !! quadrupole is GAMESS's answer being unchanged by an octupole section,
-      !! not an omission.
+      !! charges, dipoles and quadrupoles, and no octupole. Ending the rank at
+      !! the quadrupole matches GAMESS, whose answer an octupole section does
+      !! not change.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
@@ -172,49 +185,49 @@ contains
    end function charge_transfer
 
    function one_direction(frag_a, frag_b, ct_a, ct_b, s_ao, t_ao, v_b) result(ct)
-      !! Density moving from `a`'s occupied orbitals into `b`'s virtuals
+      !! `E(A->B)` of `charge_transfer`: `a`'s occupied orbitals into `b`'s virtuals
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: ct_a(:, :), ct_b(:, :)
       real(dp), intent(in) :: s_ao(:, :), t_ao(:, :), v_b(:, :)
       real(dp) :: ct
 
-      real(dp), allocatable :: sab(:, :), tab(:, :), tbb(:, :), vab(:, :), vaa(:, :)
-      real(dp) :: sab2, w, stin, denom, inner
-      integer :: n_a, n_b, occ_a, occ_b, i, n, m, j
+      real(dp), allocatable :: s_ab(:, :), t_ab(:, :), t_bb(:, :), v_ab(:, :), v_aa(:, :)
+      real(dp), allocatable :: s_to_vir(:, :), coupling(:, :), kinetic(:, :)
+      real(dp), allocatable :: t_vir_occ(:, :), norm_vir(:), t_vir_diag(:)
+      integer :: n_occ_a, n_occ_b, n_mo_b, i, n
 
-      n_a = frag_a%n_mo_ct
-      n_b = frag_b%n_mo_ct
-      occ_a = frag_a%n_occ_ct
-      occ_b = frag_b%n_occ_ct
+      n_occ_a = frag_a%n_occ_ct
+      n_occ_b = frag_b%n_occ_ct
+      n_mo_b = frag_b%n_mo_ct
+
+      s_ab = project(ct_a, s_ao, ct_b)
+      t_ab = project(ct_a, t_ao, ct_b)
+      t_bb = project(ct_b, t_ao, ct_b)
+      v_ab = project(ct_a, v_b, ct_b)
+      v_aa = project(ct_a, v_b, ct_a)
+
+      ! Overlaps of every orbital of a with b's virtuals: (n_mo_a, n_vir_b).
+      s_to_vir = s_ab(:, n_occ_b + 1:n_mo_b)
+
+      ! <i|V|n~>, (n_occ_a, n_vir_b).
+      coupling = v_ab(1:n_occ_a, n_occ_b + 1:n_mo_b) &
+                 - matmul(v_aa(1:n_occ_a, :), s_to_vir)
+
+      ! <n~|T|j>, (n_vir_b, n_occ_b), then its overlap-weighted sum over j.
+      t_vir_occ = t_bb(n_occ_b + 1:n_mo_b, 1:n_occ_b) &
+                  - matmul(transpose(s_to_vir), t_ab(:, 1:n_occ_b))
+      kinetic = matmul(s_ab(1:n_occ_a, 1:n_occ_b), transpose(t_vir_occ))
+
+      norm_vir = 1.0_dp - sum(s_to_vir**2, dim=1)
+      t_vir_diag = [(t_bb(n, n), n=n_occ_b + 1, n_mo_b)]
+
       ct = 0.0_dp
-
-      sab = project(ct_a, s_ao, ct_b)
-      tab = project(ct_a, t_ao, ct_b)
-      tbb = project(ct_b, t_ao, ct_b)
-      vab = project(ct_a, v_b, ct_b)
-      vaa = project(ct_a, v_b, ct_a)
-
-      do i = 1, occ_a
-         do n = occ_b + 1, n_b
-            sab2 = 0.0_dp
-            w = vab(i, n)
-            do m = 1, n_a
-               sab2 = sab2 + sab(m, n)*sab(m, n)
-               w = w - sab(m, n)*vaa(i, m)
-            end do
-            stin = 0.0_dp
-            do j = 1, occ_b
-               inner = tbb(n, j)
-               do m = 1, n_a
-                  inner = inner - sab(m, n)*tab(m, j)
-               end do
-               stin = stin + inner*sab(i, j)
-            end do
-            denom = (1.0_dp - sab2)*(frag_a%eps_occ(i) - tbb(n, n))
-            ct = ct + w*(w + stin)/denom
+      do n = 1, n_mo_b - n_occ_b
+         do i = 1, n_occ_a
+            ct = ct + coupling(i, n)*(coupling(i, n) + kinetic(i, n)) &
+                 /(norm_vir(n)*(frag_a%eps_occ(i) - t_vir_diag(n)))
          end do
       end do
-      deallocate (sab, tab, tbb, vab, vaa)
    end function one_direction
 
    function project(left, matrix, right) result(out)
@@ -234,9 +247,8 @@ contains
    subroutine multipole_potential(pair, frag, offset, v, error)
       !! The potential of one fragment's multipoles over the pair's basis
       !!
-      !! `VEFP`, built by `EFCEF`, `EFDEF` and `EFQEF` in `efchtr.src`: charges,
-      !! dipoles and quadrupoles, and **no octupole** -- one rank fewer than the
-      !! electrostatic energy uses.
+      !! Charges, dipoles and quadrupoles, and **no octupole** -- one rank fewer
+      !! than the electrostatic energy uses.
       !!
       !! Every rank carries a minus, because this is the potential energy of an
       !! *electron* in the multipole's field. The ranks are successive
@@ -247,9 +259,7 @@ contains
       !!     quadrupole  - (1/3)  Q_ab  grad_a grad_b <mu| 1/r_C |nu>
       !!
       !! all gradients with respect to `C`, and the quadrupole one summed over all
-      !! nine `ab` -- the three diagonal terms plus twice the three off-diagonal ones
-      !! of the quadrupole contraction in `efchtr.src`, written out (Li, Gordon and
-      !! Jensen, J. Chem. Phys. 124, 214108 (2006)).
+      !! nine `ab` (Li, Gordon and Jensen, J. Chem. Phys. 124, 214108 (2006)).
       !!
       !! The dipole and quadrupole moments here are **electronic only**; the
       !! nucleus sits entirely in the monopole, which is how the potential stores
@@ -293,16 +303,12 @@ contains
       end do
       deallocate (grad)
 
-      ! The quadrupole rank, as in the quadrupole contraction of `efchtr.src`. Its
-      ! three diagonal terms and twice its three off-diagonal ones are the sum over
-      ! all nine `ab` of a symmetric `Q`.
+      ! The quadrupole rank, summed over all nine `ab` of a symmetric `Q`.
       !
-      ! **The `1/3` is not in `efchtr.src`, and belongs here anyway.** It is the
-      ! coefficient a *traceless* quadrupole carries against `grad grad (1/R)`: the
-      ! expansion is `(1/2) M_ab grad_a grad_b` over the second moments, and
-      ! substituting `Q = (3M - tr M)/2` turns the half into a third, because
-      ! `delta_ab grad_a grad_b (1/R)` vanishes. GAMESS folds it into its Rys
-      ! assembly instead of writing it at the contraction.
+      ! The `1/3` is the coefficient a *traceless* quadrupole carries against
+      ! `grad grad (1/R)`: the expansion is `(1/2) M_ab grad_a grad_b` over the
+      ! second moments, and substituting `Q = (3M - tr M)/2` turns the half into
+      ! a third, because `delta_ab grad_a grad_b (1/R)` vanishes.
       call ddrinv_matrices(pair, grids, second, error)
       if (error%has_error()) return
       do k = 1, frag%n_points
@@ -317,11 +323,10 @@ contains
    end subroutine multipole_potential
 
    pure function traceless_quadrupole(stored) result(quad)
-      !! The stored second moments as the electric quadrupole `EFQEF` contracts
+      !! The stored second moments as a traceless electric quadrupole
       !!
-      !! `EFQEF` in `efchtr.src` does this conversion on its own copy before
-      !! using it -- so a potential's `QUADRUPOLES` section holds **second moments,
-      !! not traceless quadrupoles**, as a nonzero stored trace shows.
+      !! A potential's `QUADRUPOLES` section holds **second moments, not
+      !! traceless quadrupoles**, as a nonzero stored trace shows.
       !!
       !!     Q_aa = (3 M_aa - tr M) / 2        Q_ab = (3/2) M_ab,  a /= b
       !!
@@ -411,30 +416,23 @@ contains
    end subroutine lmo_overlap
 
    function dispersion_e6_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
-      !! `E6` with GAMESS's overlap-based damping, which is what it reports
+      !! `E6` with overlap-based damping, which is what GAMESS reports
       !!
-      !! GAMESS's default `IDISDMP = 1` damps each orbital pair by a Tang-Toennies
-      !! series in that pair's own overlap (`efdrvr.src` around line 2734):
-      !!
-      !!     RB = -2 ln|S_ij|
-      !!     F6 = 1 - S_ij^2 ( 1 + sqrt(RB) + RB/2 + RB^(3/2)/6
-      !!                         + RB^2/24 + RB^(5/2)/120 + RB^3/720 )
-      !!
-      !! and `F6 = 1` where `|S_ij| <= 1e-5`, the series being meaningless once the
-      !! orbitals do not overlap. **The series is in `sqrt(RB)`, not in `RB`**, so
-      !! six of its seven terms would be wrong if read as an ordinary exponential
-      !! expansion.
+      !! Each orbital pair is damped by `F6` of `overlap_damping`, a function of
+      !! that pair's own overlap (Slipchenko and Gordon, Mol. Phys. 107, 999
+      !! (2009)).
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
-      real(dp) :: sep(3)
+      real(dp) :: sep(3), weight(N_CASIMIR_POLDER)
       real(dp) :: c6, dist, f6, f7, f8
       integer :: i, j, k
 
       energy = 0.0_dp
+      weight = casimir_polder_weights()
       if (.not. (frag_a%has_dynamic .and. frag_b%has_dynamic)) then
          call error%set(ERROR_VALIDATION, "efp: damped E6 needs the dynamic "// &
                         "polarizabilities of both fragments")
@@ -447,7 +445,7 @@ contains
          do j = 1, frag_b%n_lmo
             c6 = 0.0_dp
             do k = 1, min(frag_a%n_freq, frag_b%n_freq)
-               c6 = c6 + CP_WEIGHT(k)*isotropic_alpha(frag_a%dyn_pol(:, :, i, k)) &
+               c6 = c6 + weight(k)*isotropic_alpha(frag_a%dyn_pol(:, :, i, k)) &
                     *isotropic_alpha(frag_b%dyn_pol(:, :, j, k))
             end do
             c6 = c6*3.0_dp/PI
@@ -461,74 +459,81 @@ contains
       deallocate (s_lmo, t_lmo)
    end function dispersion_e6_damped
 
-   pure subroutine overlap_damping(sab, f6, f7, f8)
-      !! `Damping_for_Dispersion`'s overlap branch, in `efdrvr.src` (Slipchenko and
-      !! Gordon, Mol. Phys. 107, 999 (2009))
+   pure subroutine overlap_damping(s, f6, f7, f8)
+      !! Dispersion damping from an orbital pair's overlap
       !!
-      !! One routine produces all three damping factors, and they are one series
-      !! truncated at three different orders:
+      !! Slipchenko and Gordon, Mol. Phys. 107, 999 (2009). Treating the two
+      !! orbitals' overlap as that of two spherical exponentials puts the
+      !! Tang-Toennies damping variable at `x = sqrt(-2 ln|S|)`, so that
+      !! `exp(-x^2) = S^2`, and
       !!
-      !!     F_n = 1 - S^2 sum_{k=0..K} x^k / k!,   x = sqrt(-2 ln|S|)
+      !!     F_n = 1 - S^2 sum_{k=0..n} x^k / k!,       n = 6, 7, 8
       !!
-      !! with `K = 6, 7, 8`. **The variable is `sqrt(RB)`, not `RB`**, so six of
-      !! F6's seven terms carry half-integer powers -- read as an ordinary
-      !! exponential expansion the series still damps, plausibly and wrongly.
+      !! **The series is in `x`, the square root**, so most of its terms carry
+      !! half-integer powers of `-2 ln|S|`; an ordinary exponential series in
+      !! `-2 ln|S|` would still damp, plausibly and wrongly. Each `F_n` drops one
+      !! more positive term, so `F8 < F7 < F6 < 1` wherever they are evaluated.
       !!
-      !! `F8` is assembled as the source assembles it, by subtracting the two extra
-      !! terms from `F6` rather than by re-summing; algebraically it is the `K = 8`
-      !! sum. Each factor subtracts one more positive term than the last, so
-      !! `F8 < F7 < F6 < 1` wherever the series is used at all.
-      !!
-      !! Below `|S| = 1e-5` all three are 1.
-      real(dp), intent(in) :: sab
+      !! At `|S| <= DAMPING_MIN_OVERLAP` all three are one, which also keeps
+      !! `ln|S|` away from zero overlap.
+      real(dp), intent(in) :: s
       real(dp), intent(out) :: f6, f7, f8
 
-      real(dp) :: rb, s2
+      integer, parameter :: HIGHEST_ORDER = 8
+      real(dp) :: x, term
+      real(dp) :: partial(0:HIGHEST_ORDER)
+         !! `partial(n) = sum_{k=0..n} x^k/k!`
+      integer :: k
 
       f6 = 1.0_dp
       f7 = 1.0_dp
       f8 = 1.0_dp
-      if (abs(sab) <= S_FLOOR) return
+      if (abs(s) <= DAMPING_MIN_OVERLAP) return
 
-      rb = -2.0_dp*log(abs(sab))
-      s2 = sab*sab
-      f6 = 1.0_dp - s2*(1.0_dp + sqrt(rb) + rb/2.0_dp &
-                        + rb**1.5_dp/6.0_dp + rb*rb/24.0_dp &
-                        + rb**2.5_dp/120.0_dp + rb**3/720.0_dp)
-      f7 = f6 - s2*rb**3.5_dp/5040.0_dp
-      f8 = f7 - s2*rb**4/40320.0_dp
+      x = sqrt(-2.0_dp*log(abs(s)))
+      term = 1.0_dp
+      partial(0) = 1.0_dp
+      do k = 1, HIGHEST_ORDER
+         term = term*x/real(k, dp)
+         partial(k) = partial(k - 1) + term
+      end do
+      f6 = 1.0_dp - s*s*partial(6)
+      f7 = 1.0_dp - s*s*partial(7)
+      f8 = 1.0_dp - s*s*partial(8)
    end subroutine overlap_damping
 
    function dispersion_e8_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! `E8`, the isotropic one -- which is the one GAMESS prints
       !!
-      !! `Disp8_LMOpol` (`efdrvr.src`) computes two unrelated things, and the
-      !! anisotropic one is never printed. What reaches `E8 DISPERSION ENERGY` is
-      !! the isotropic form in the same routine, computed whenever the
+      !! GAMESS also forms an anisotropic `E8` but never prints it. What reaches
+      !! `E8 DISPERSION ENERGY` is the isotropic form, computed whenever the
       !! potential carries an `LMOQQPOL` section at all:
       !!
-      !!     C8 = sum_f (15/pi) FACT(f) ( a_iso^A A_QQ^B + a_iso^B A_QQ^A )
+      !!     C8 = (15/pi) sum_k w_k ( a_iso^A(k) A_QQ^B(k) + a_iso^B(k) A_QQ^A(k) )
       !!     E8 = - F8 C8 / R^8
+      !!
+      !! with `w_k` the Casimir-Polder quadrature weights.
       !!
       !! It therefore needs the trace of the dipole-dipole polarizability and the
       !! spherical average of the quadrupole-quadrupole one, and nothing else. Both
       !! averages are isotropic contractions and survive the rotation into the
       !! current frame unchanged, which is why nothing is rotated here.
       !!
-      !! **Not `E6/3`.** That approximation is a separate branch of `efdrvr.src` and
-      !! does not run for a pair of file-based fragments; reconciling against it would fit a
-      !! factor to the wrong quantity.
+      !! **Not `E6/3`.** That approximation is a separate option in GAMESS and
+      !! does not run for a pair of file-based fragments; reconciling against it
+      !! would fit a factor to the wrong quantity.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
-      real(dp) :: sep(3)
+      real(dp) :: sep(3), weight(N_CASIMIR_POLDER)
       real(dp) :: c8, dist, f6, f7, f8
       integer :: i, j, k
 
       energy = 0.0_dp
+      weight = casimir_polder_weights()
       if (.not. (frag_a%has_dynamic .and. frag_b%has_dynamic)) then
          call error%set(ERROR_VALIDATION, "efp: damped E8 needs the dynamic "// &
                         "polarizabilities of both fragments")
@@ -551,7 +556,7 @@ contains
          do j = 1, frag_b%n_lmo
             c8 = 0.0_dp
             do k = 1, min(frag_a%n_freq, frag_b%n_freq)
-               c8 = c8 + CP_WEIGHT(k) &
+               c8 = c8 + weight(k) &
                     *(isotropic_alpha(frag_a%dyn_pol(:, :, i, k)) &
                       *isotropic_quadquad(frag_b%quadquad(:, j, k)) &
                       + isotropic_alpha(frag_b%dyn_pol(:, :, j, k)) &
@@ -569,49 +574,46 @@ contains
    end function dispersion_e8_damped
 
    function dispersion_e7_damped(frag_a, frag_b, offset_a, offset_b, error) result(energy)
-      !! `E7`, the dipole-dipole/dipole-quadrupole cross term
+      !! `E7`, the dipole-dipole/dipole-quadrupole cross term of the dispersion
       !!
-      !! `Disp7_LMOpol` in `efdrvr.src` (Xu, Zahariev and Gordon, J. Chem. Theory
-      !! Comput. 10, 1576 (2014)), accumulating as follows:
+      !! Xu, Zahariev and Gordon, J. Chem. Theory Comput. 10, 1576 (2014). The
+      !! seventh-order term pairs a dipole-dipole polarizability on one orbital
+      !! with a dipole-quadrupole one on the other, through one dipole-dipole and
+      !! one dipole-quadrupole interaction tensor. Per orbital pair, over the
+      !! Casimir-Polder frequencies `nu_k` with weights `w_k`,
       !!
-      !!     DUM1 = DD_A(a,c) DQ_B(b,d,e)
-      !!     DUM2 = DD_B(b,e) DQ_A(a,c,d)
-      !!     E7 = F7 sum_f sum_abcde (-1/3pi) T2(a,b) T3(c,d,e) FACT(f) (DUM1 - DUM2)
+      !!     E7 = -F7/(3 pi) sum_k w_k sum_abcde T2_ab T3_cde
+      !!            [ alpha^A_ca(k) A^B_b,de(k) - alpha^B_eb(k) A^A_a,cd(k) ]
       !!
-      !! `a` and `b` are the two `T2` slots and `c,d,e` the three `T3` slots; `a`
-      !! belongs to A and `b` to B. Each dipole-quadrupole tensor puts its dipole
-      !! index on a `T2` slot and its quadrupole pair on `T3` slots. There is only
-      !! one E7 -- no isotropic variant exists.
+      !! with `T2 = grad grad (1/R)` and `T3 = -grad grad grad (1/R)` at the
+      !! separation `R`, `alpha` as stored (`(dipole, field)`), `A_x,yz` a
+      !! dipole-quadrupole tensor with its dipole index first and `F7` from
+      !! `overlap_damping`. There is only one E7 -- no isotropic variant.
       !!
       !! **Three conventions here are sign- or transpose-critical**, and E7 is the
       !! first term that can see any of them; E6 and E8 reach the polarizabilities
       !! only through isotropic averages and the separation only through `R`.
       !!
-      !! *The displacement runs A minus B* (as in the dispersion driver of
-      !! `efdrvr.src`), A being this
-      !! routine's first fragment. E7 is odd in `C`: `T2` is even and `T3` is odd,
-      !! so the whole term changes sign with it.
-      !!
-      !! *`T3` carries a deliberate extra negative* (in `T_tensor_3`). The
-      !! textbook `-grad grad grad 1/R` gives E7 the wrong sign; `t_tensors` builds
-      !! the form GAMESS's routine actually hands over.
-      !!
-      !! *The dipole-dipole tensor arrives transposed.* GAMESS indexes it
-      !! `(field, dipole)` and `mqc_czt_efp_read` indexes it `(dipole, field)`, so
-      !! GAMESS's `DYNDD_LMO_ROT(a,c)` is our `dyn_pol(c,a)`. The swap below is
-      !! load-bearing: the tensor's antisymmetric part is 12% of it here.
-      !!
-      !! The dipole-quadrupole tensor needs no such care -- `mqc_czt_efp_read` keeps it
-      !! flat in file order, so GAMESS's own slot formula recovers GAMESS's tensor.
+      !! * *The separation runs A minus B*, A being this routine's first
+      !!   fragment. E7 is odd in it: `T2` is even and `T3` is odd.
+      !! * *`T3` is the negative of the third derivative.* With the A-minus-B
+      !!   separation that is the pairing that gives E7 GAMESS's sign; the
+      !!   textbook `+grad grad grad` gives the opposite one.
+      !! * *Each fragment's `T2` slot takes the second (field) index of its
+      !!   `alpha`, and a `T3` slot the first.* The tensor is not symmetric -- its
+      !!   antisymmetric part is 12% of it here -- so the swap is load-bearing.
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :)
-      real(dp) :: sep(3), t2(3, 3), t3(3, 3, 3)
-      real(dp) :: pair, weighted, f6, f7, f8
-      integer :: i, j, k, ia, ib, ic, id, ie
+      real(dp) :: sep(3), t2(3, 3), t3(3, 3, 3), weight(N_CASIMIR_POLDER)
+      real(dp) :: t3_first(3, N_QUAD_PAIR), t3_last(N_QUAD_PAIR, 3)
+      real(dp) :: via_b(3, 3), via_a(3, 3)
+      real(dp) :: dq_a(3, N_QUAD_PAIR), dq_b(3, N_QUAD_PAIR)
+      real(dp) :: summed, f6, f7, f8
+      integer :: i, j, k
 
       energy = 0.0_dp
       if (.not. (frag_a%has_dynamic .and. frag_b%has_dynamic)) then
@@ -631,96 +633,108 @@ contains
       end if
       call lmo_overlap(frag_a, frag_b, offset_a, offset_b, s_lmo, t_lmo, error)
       if (error%has_error()) return
+      weight = casimir_polder_weights()
 
       do i = 1, frag_a%n_lmo
          do j = 1, frag_b%n_lmo
-            ! A minus B, A being this routine's first fragment -- the role GAMESS
-            ! gives the lower fragment index.
             sep = frag_a%centroids(:, i) + offset_a - frag_b%centroids(:, j) - offset_b
             call t_tensors(sep, t2, t3)
+            ! T3 with one index apart and the other two as a column-major pair,
+            ! in each of the two places that index is needed.
+            t3_first = reshape(t3, [3, N_QUAD_PAIR])
+            t3_last = reshape(t3, [N_QUAD_PAIR, 3])
 
-            pair = 0.0_dp
+            summed = 0.0_dp
             do k = 1, min(frag_a%n_freq, frag_b%n_freq)
-               weighted = 0.0_dp
-               do ia = 1, 3
-                  do ib = 1, 3
-                     do ic = 1, 3
-                        do id = 1, 3
-                           do ie = 1, 3
-                              weighted = weighted + t2(ia, ib)*t3(ic, id, ie) &
-                                         *(frag_a%dyn_pol(ic, ia, i, k) &
-                                           *frag_b%dipquad(dq_slot(ib, id, ie), j, k) &
-                                           - frag_b%dyn_pol(ie, ib, j, k) &
-                                           *frag_a%dipquad(dq_slot(ia, ic, id), i, k))
-                           end do
-                        end do
-                     end do
-                  end do
-               end do
-               pair = pair + CP_WEIGHT(k)*weighted
+               ! B's tensor through both interaction tensors, left open on the
+               ! two indices A's alpha takes: via_b(a, c) =
+               ! sum_bde T2_ab T3_cde A^B_b,de.
+               dq_a = dq_pairs(frag_a%dipquad(:, i, k))
+               dq_b = dq_pairs(frag_b%dipquad(:, j, k))
+               via_b = matmul(t2, transpose(matmul(t3_first, transpose(dq_b))))
+               ! A's likewise, open on B's two: via_a(b, e) =
+               ! sum_acd T2_ab T3_cde A^A_a,cd.
+               via_a = matmul(transpose(t2), matmul(dq_a, t3_last))
+               summed = summed + weight(k) &
+                        *(sum(frag_a%dyn_pol(:, :, i, k)*transpose(via_b)) &
+                          - sum(frag_b%dyn_pol(:, :, j, k)*transpose(via_a)))
             end do
-            pair = -pair/(3.0_dp*PI)
 
             call overlap_damping(s_lmo(i, j), f6, f7, f8)
-            energy = energy + f7*pair
+            energy = energy - f7*summed/(3.0_dp*PI)
          end do
       end do
       deallocate (s_lmo, t_lmo)
    end function dispersion_e7_damped
 
-   pure subroutine t_tensors(c, t2, t3)
-      !! The rank-2 and rank-3 interaction tensors, as `T_tensor_3` and its rank-2
-      !! counterpart in `efdrvr.src` build them
+   pure function dq_pairs(record) result(tensor)
+      !! A `DIPOLE-QUADRUPOLE` record as a `(dipole, quadrupole pair)` matrix
       !!
-      !!     T2(i,j)   = ( 3 C_i C_j - R^2 d_ij ) / R^5
-      !!     T3(i,j,k) = ( 15 C_i C_j C_k
-      !!                   - 3 R^2 ( C_i d_jk + C_j d_ik + C_k d_ij ) ) / R^7
-      !!
-      !! `T3`'s sign is GAMESS's, not the textbook's: `T_tensor_3` builds the
-      !! negative of the form above and flips it in place.
-      !! What is written here is the net tensor its caller receives, and E7 is
-      !! linear in `T3`.
-      real(dp), intent(in) :: c(3)
-      real(dp), intent(out) :: t2(3, 3), t3(3, 3, 3)
+      !! Column `j + 3 (k - 1)` holds quadrupole indices `(j, k)`, the same
+      !! column-major pairing `reshape` gives a rank-3 `T3`.
+      real(dp), intent(in) :: record(N_DQ_SLOTS)
+      real(dp) :: tensor(3, N_QUAD_PAIR)
 
-      real(dp) :: r2, r5, r7
-      integer :: i, j, k
-
-      r2 = c(1)*c(1) + c(2)*c(2) + c(3)*c(3)
-      r5 = r2*r2*sqrt(r2)
-      r7 = r5*r2
-
-      do j = 1, 3
-         do i = 1, 3
-            t2(i, j) = (3.0_dp*c(i)*c(j) - r2*delta(i, j))/r5
-         end do
-      end do
+      integer :: dip, j, k
 
       do k = 1, 3
          do j = 1, 3
-            do i = 1, 3
-               t3(i, j, k) = (15.0_dp*c(i)*c(j)*c(k) &
-                              - 3.0_dp*r2*(c(i)*delta(j, k) + c(j)*delta(i, k) &
-                                           + c(k)*delta(i, j)))/r7
+            do dip = 1, 3
+               tensor(dip, j + 3*(k - 1)) = record(dq_slot(dip, j, k))
             end do
          end do
       end do
+   end function dq_pairs
+
+   pure subroutine t_tensors(sep, t2, t3)
+      !! The rank-2 and rank-3 interaction tensors at separation `sep`
+      !!
+      !!     T2_ij  =   d_i d_j (1/R)  = ( 3 R_i R_j - R^2 delta_ij ) / R^5
+      !!     T3_ijk = - d_i d_j d_k (1/R)
+      !!            = ( 15 R_i R_j R_k
+      !!                - 3 R^2 ( R_i delta_jk + R_j delta_ik + R_k delta_ij ) ) / R^7
+      !!
+      !! `T2` is Stone's (*The Theory of Intermolecular Forces*) and `T3` the
+      !! negative of his; `dispersion_e7_damped` says why that sign is wanted.
+      real(dp), intent(in) :: sep(3)
+      real(dp), intent(out) :: t2(3, 3), t3(3, 3, 3)
+
+      real(dp) :: eye(3, 3), rr(3, 3)
+      real(dp) :: r2, r5, r7
+      integer :: k
+
+      eye = 0.0_dp
+      do k = 1, 3
+         eye(k, k) = 1.0_dp
+      end do
+      r2 = dot_product(sep, sep)
+      r5 = r2*r2*sqrt(r2)
+      r7 = r5*r2
+      rr = outer(sep, sep)
+
+      t2 = (3.0_dp*rr - r2*eye)/r5
+      do k = 1, 3
+         ! R_i delta_jk and R_j delta_ik are `sep` against the k-th unit
+         ! vector, both ways round; R_k delta_ij is the identity.
+         t3(:, :, k) = (15.0_dp*sep(k)*rr &
+                        - 3.0_dp*r2*(outer(sep, eye(:, k)) + outer(eye(:, k), sep) &
+                                     + sep(k)*eye))/r7
+      end do
    end subroutine t_tensors
 
-   pure function delta(i, j) result(d)
-      !! Kronecker delta, so the tensors above read like the source they came from
-      integer, intent(in) :: i, j
-      real(dp) :: d
+   pure function outer(x, y) result(xy)
+      !! `x_i y_j`
+      real(dp), intent(in) :: x(3), y(3)
+      real(dp) :: xy(3, 3)
 
-      d = 0.0_dp
-      if (i == j) d = 1.0_dp
-   end function delta
+      xy = spread(x, 2, 3)*spread(y, 1, 3)
+   end function outer
 
    pure function dq_slot(i, j, k) result(slot)
       !! Where `DQ(i,j,k)` sits in a `DIPOLE-QUADRUPOLE` record
       !!
       !! `i` is the dipole index and `(j,k)` the quadrupole pair. Row-major with the
-      !! last index fastest, in GAMESS's writer and reader (`efinp.src`) alike.
+      !! last index fastest, as the file format lays it out.
       integer, intent(in) :: i, j, k
       integer :: slot
 
@@ -728,10 +742,9 @@ contains
    end function dq_slot
 
    pure function isotropic_quadquad(values) result(a)
-      !! `DYNQQ_LMO_AVE`, the spherical average of a quadrupole-quadrupole tensor
+      !! The spherical average of a quadrupole-quadrupole tensor
       !!
-      !! The average is formed in `efdrvr.src`, which contracts the full rank-four
-      !! tensor against the isotropic projector
+      !! The full rank-four tensor contracted against the isotropic projector
       !!
       !!     A_QQ = (1/5) sum_ijkl QQ(i,j,k,l)
       !!            [ (d_ik d_jl + d_il d_jk)/2 - d_ij d_kl / 3 ]
@@ -779,44 +792,38 @@ contains
    function exchange_repulsion(frag_a, frag_b, offset_a, offset_b, error) result(energy)
       !! Pauli exchange repulsion between two fragments
       !!
-      !! From `EXREP` in GAMESS's `efpaul.src` -- the energy routine, not `ODM` in
-      !! the same file, which is its gradient and carries factors that only mean
-      !! something in a derivative. Three terms over pairs of localized orbitals on
-      !! different fragments, with `S` and `T` in the localized-orbital basis:
+      !! Jensen and Gordon, Mol. Phys. 89, 1313 (1996) and J. Chem. Phys. 108,
+      !! 4772 (1998): the exchange energy of two closed-shell fragments expanded
+      !! to second order in the intermolecular overlap of their localized
+      !! orbitals, `i` on A and `j` on B, with the two-electron integrals
+      !! replaced by the overlap and the orbitals' centroids:
       !!
-      !!     XR1 = -2 sqrt(2/pi) sum_ij sqrt(-ln|S_ij|) S_ij^2 / R_ij
-      !!     XR2 = -sum_ij S_ij ( sum_k F^A_ik S_kj + sum_l F^B_jl S_il - 2 T_ij )
-      !!     XR3 = +sum_ij S_ij^2 ( V_i + V_j - 1/R_ij )
-      !!     E   = 2 (XR1 + XR2 + XR3)
+      !!     E = -4 sqrt(2/pi) sum_ij sqrt(-ln|S_ij|) S_ij^2 / R_ij
+      !!         -2 sum_ij S_ij ( sum_k F^A_ik S_kj + sum_l F^B_jl S_il - 2 T_ij )
+      !!         +2 sum_ij S_ij^2 ( V^B_i + V^A_j - 1/R_ij )
       !!
-      !! `V_i` is the electrostatic potential at orbital `i`'s centroid from the *other*
-      !! fragment: minus its nuclear charges over their distances, plus two over the
-      !! distance to each of its orbital centroids. The factor of two outside, and the
-      !! two inside `V`, are `ICOEFF` and `JCOEFF` at `MLSWTCH = 1`, which is the
-      !! closed-shell case.
-      !!
-      !! The first term is skipped where `|S_ij| <= 1e-7`: its logarithm diverges as
-      !! the overlap vanishes, and the `S^2` in front does not save it in floating
-      !! point. GAMESS's separate screening of a whole fragment pair below `1e-6` is
-      !! not copied here.
+      !! `S` and `T` are the overlap and kinetic energy between the two sets,
+      !! `F` each fragment's Fock matrix over its own orbitals, `R_ij` the
+      !! distance between centroids, and `V^B_i` the electrostatic potential
+      !! of B at `i`'s centroid -- B's valence nuclear charges and its doubly
+      !! occupied orbitals, each orbital taken as two electrons at its centroid
+      !! (`fragment_potential`).
       type(efp_fragment_t), intent(in) :: frag_a, frag_b
       real(dp), intent(in) :: offset_a(3), offset_b(3)
       type(error_t), intent(inout) :: error
       real(dp) :: energy
 
-      real(dp), parameter :: RT2PI = 0.7978845608028654_dp   !! sqrt(2/pi)
-      real(dp), parameter :: S_FLOOR_LOCAL = 1.0e-7_dp
-         !! Named apart from the module's `S_FLOOR` deliberately: that one is the
-         !! 1e-5 damping cutoff of `Damping_for_Dispersion`, this is a different and
-         !! tighter threshold, and one name for both would make the module constant
-         !! silently mean something else inside this procedure.
+      real(dp), parameter :: LOG_MIN_OVERLAP = 1.0e-7_dp
+         !! Overlap at or below which the `sqrt(-ln|S|)` term is dropped; the
+         !! published threshold (Sattasathuchana et al., JCTC 20, 2445 (2024),
+         !! doi:10.1021/acs.jctc.3c01309).
       type(czt_molecule_t) :: pair
       real(dp), allocatable :: s_ao(:, :), t_ao(:, :), lmo_a(:, :), lmo_b(:, :)
       real(dp), allocatable :: s_lmo(:, :), t_lmo(:, :), work(:, :)
-      real(dp), allocatable :: cen_a(:, :), cen_b(:, :), v_a(:), v_b(:)
-      integer :: n_ao_a, na, nb, i, j, n_lmo_a, n_lmo_b
-      real(dp) :: xr1, xr2, xr3, sij, sij2, tij, rij, fij, fji
-      integer :: k, l
+      real(dp), allocatable :: cen_a(:, :), cen_b(:, :), v_at_a(:), v_at_b(:)
+      real(dp), allocatable :: dist(:, :), fock_term(:, :)
+      real(dp) :: overlap_log, kinetic_fock, potential_term
+      integer :: n_ao_a, i, j, n_lmo_a, n_lmo_b
 
       energy = 0.0_dp
       if (.not. (frag_a%has_fock .and. frag_b%has_fock)) then
@@ -846,89 +853,86 @@ contains
       call pic_gemm(t_ao, lmo_b, work)
       call pic_gemm(lmo_a, work, t_lmo, transa="T")
 
-      na = frag_a%n_atoms
-      nb = frag_b%n_atoms
-      allocate (cen_a(3, n_lmo_a), cen_b(3, n_lmo_b))
+      cen_a = frag_a%pol_points(:, 1:n_lmo_a) + spread(offset_a, 2, n_lmo_a)
+      cen_b = frag_b%pol_points(:, 1:n_lmo_b) + spread(offset_b, 2, n_lmo_b)
+
+      ! Each centroid's potential from the other fragment, once.
+      allocate (v_at_a(n_lmo_a), v_at_b(n_lmo_b), dist(n_lmo_a, n_lmo_b))
       do i = 1, n_lmo_a
-         cen_a(:, i) = frag_a%pol_points(:, i) + offset_a
+         v_at_a(i) = fragment_potential(cen_a(:, i), frag_b, offset_b, cen_b)
       end do
       do j = 1, n_lmo_b
-         cen_b(:, j) = frag_b%pol_points(:, j) + offset_b
+         v_at_b(j) = fragment_potential(cen_b(:, j), frag_a, offset_a, cen_a)
       end do
-
-      ! The potential at each centroid from the other fragment, built once.
-      allocate (v_a(n_lmo_a), v_b(n_lmo_b))
-      do i = 1, n_lmo_a
-         v_a(i) = other_potential(cen_a(:, i), frag_b, offset_b, cen_b)
-      end do
-      do j = 1, n_lmo_b
-         v_b(j) = other_potential(cen_b(:, j), frag_a, offset_a, cen_a)
-      end do
-
-      xr1 = 0.0_dp
-      xr2 = 0.0_dp
-      xr3 = 0.0_dp
       do j = 1, n_lmo_b
          do i = 1, n_lmo_a
-            sij = s_lmo(i, j)
-            sij2 = sij*sij
-            tij = t_lmo(i, j)
-            rij = sqrt(sum((cen_a(:, i) - cen_b(:, j))**2))
-
-            if (abs(sij) > S_FLOOR_LOCAL) then
-               xr1 = xr1 - 2.0_dp*RT2PI*sqrt(-log(abs(sij)))*sij2/rij
-            end if
-
-            fij = 0.0_dp
-            do k = 1, n_lmo_a
-               fij = fij + frag_a%fock_lmo(i, k)*s_lmo(k, j)
-            end do
-            fji = 0.0_dp
-            do l = 1, n_lmo_b
-               fji = fji + frag_b%fock_lmo(j, l)*s_lmo(i, l)
-            end do
-            xr2 = xr2 - sij*(fij + fji - 2.0_dp*tij)
-
-            xr3 = xr3 + sij2*(v_a(i) + v_b(j) - 1.0_dp/rij)
+            dist(i, j) = norm2(cen_a(:, i) - cen_b(:, j))
          end do
       end do
-      energy = 2.0_dp*(xr1 + xr2 + xr3)
+
+      ! (F^A S + S F^B^T - 2T)_ij, the bracket of the second term.
+      fock_term = matmul(frag_a%fock_lmo(1:n_lmo_a, 1:n_lmo_a), s_lmo) &
+                  + matmul(s_lmo, transpose(frag_b%fock_lmo(1:n_lmo_b, 1:n_lmo_b))) &
+                  - 2.0_dp*t_lmo
+      kinetic_fock = -2.0_dp*sum(s_lmo*fock_term)
+
+      potential_term = 0.0_dp
+      overlap_log = 0.0_dp
+      do j = 1, n_lmo_b
+         do i = 1, n_lmo_a
+            potential_term = potential_term &
+                             + s_lmo(i, j)**2*(v_at_a(i) + v_at_b(j) - 1.0_dp/dist(i, j))
+            if (abs(s_lmo(i, j)) > LOG_MIN_OVERLAP) then
+               overlap_log = overlap_log &
+                             + sqrt(-log(abs(s_lmo(i, j))))*s_lmo(i, j)**2/dist(i, j)
+            end if
+         end do
+      end do
+
+      energy = -4.0_dp*sqrt(2.0_dp/PI)*overlap_log + kinetic_fock + 2.0_dp*potential_term
 
       call pair%destroy()
-      deallocate (s_ao, t_ao, lmo_a, lmo_b, s_lmo, t_lmo, work, cen_a, cen_b, v_a, v_b)
+      deallocate (s_ao, t_ao, lmo_a, lmo_b, s_lmo, t_lmo, work, cen_a, cen_b, &
+                  v_at_a, v_at_b, dist, fock_term)
    end function exchange_repulsion
 
-   function other_potential(point, frag, offset, centroids) result(v)
-      !! The potential at `point` from `frag`: its nuclei, then its orbital centroids
+   function fragment_potential(point, frag, offset, centroids) result(v)
+      !! The electrostatic potential at `point` of a fragment's valence nuclei
+      !! and doubly occupied orbitals, each orbital as two electrons at its
+      !! centroid
       real(dp), intent(in) :: point(3)
       type(efp_fragment_t), intent(in) :: frag
       real(dp), intent(in) :: offset(3)
-      real(dp), intent(in) :: centroids(:, :)
+      real(dp), intent(in) :: centroids(:, :)   !! (3, n), already placed
       real(dp) :: v
 
-      integer :: k
-      real(dp) :: valence
+      real(dp) :: valence(frag%n_atoms)
+      integer :: at, k
+
+      ! Valence charge, not the full nuclear one: the localized orbitals a
+      ! potential carries are valence only, so the core electrons count as
+      ! screening their own nucleus. The same number the PROJECTION BASIS SET
+      ! atom header carries. Taken from the fragment where it knows it,
+      ! because across a cut bond the core does not follow from the charge:
+      ! the centre standing in for a detached atom presents +1 and holds no
+      ! core, whatever element it is.
+      if (allocated(frag%valence)) then
+         valence = frag%valence(1:frag%n_atoms)
+      else
+         do at = 1, frag%n_atoms
+            valence(at) = frag%charge(at) &
+                          - 2.0_dp*real(frozen_core([nint(frag%charge(at))]), dp)
+         end do
+      end if
 
       v = 0.0_dp
-      do k = 1, frag%n_atoms
-         ! Valence charge, not the full nuclear one: the localized orbitals a
-         ! potential carries are valence only, so the core electrons count as
-         ! screening their own nucleus. The same number the PROJECTION BASIS SET
-         ! atom header carries. Taken from the fragment where it knows it,
-         ! because across a cut bond the core does not follow from the charge:
-         ! the centre standing in for a detached atom presents +1 and holds no
-         ! core, whatever element it is.
-         if (allocated(frag%valence)) then
-            valence = frag%valence(k)
-         else
-            valence = frag%charge(k) - 2.0_dp*real(frozen_core([nint(frag%charge(k))]), dp)
-         end if
-         v = v - valence/sqrt(sum((point - frag%points(:, k) - offset)**2))
+      do at = 1, frag%n_atoms
+         v = v - valence(at)/norm2(point - frag%points(:, at) - offset)
       end do
       do k = 1, size(centroids, 2)
-         v = v + 2.0_dp/sqrt(sum((point - centroids(:, k))**2))
+         v = v + 2.0_dp/norm2(point - centroids(:, k))
       end do
-   end function other_potential
+   end function fragment_potential
 
    subroutine padded_lmo(frag, pair, offset_ao, n_own, padded, error)
       !! One fragment's orbitals in the pair's full AO space, zero elsewhere
