@@ -90,7 +90,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   # Both manifests, every time. A case naming a backend this build does not have
   # is skipped by the runner rather than failed -- that is what the `requires`
   # markers are for -- so the xTB manifest costs nothing without tblite and the
-  # CPU one costs nothing without libcint. Running only the manifest someone
+  # CPU one costs nothing without cenzontle. Running only the manifest someone
   # remembered to enable is how half the program stopped being measured in the
   # first place.
   #

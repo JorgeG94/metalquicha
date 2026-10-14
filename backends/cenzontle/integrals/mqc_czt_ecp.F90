@@ -5,11 +5,8 @@ module mqc_czt_ecp
    !! fitted to reproduce a relativistic calculation. Below about the fourth
    !! row the second matters more than the first.
    !!
-   !! **The integrals are not libcint's.** libcint has no ECP code at all;
-   !! these come from libfint, which translated them from PySCF's
-   !! `pyscf/lib/gto/nr_ecp.c`. So this is the one integral family where the
-   !! CPU backend cannot fall back to libcint, and a build against a libfint
-   !! without `ECPscalar_sph` fails to link rather than misbehaving.
+   !! **The integrals are libfint's own.** libcint has no ECP code at all; libfint
+   !! translated these from PySCF's `pyscf/lib/gto/nr_ecp.c`.
    !!
    !! **How the potential reaches the library.** Not as an argument. libcint's
    !! entry points take `atm`, `bas`, `nbas` and `env` and nothing else, so
@@ -30,32 +27,17 @@ module mqc_czt_ecp
    !! fragment respectively.
    use pic_types, only: dp
    ! Through `libcint_fortran`, the same shim the rest of this backend uses,
-   ! rather than a hand-written `bind(C)` interface to libcint's C names. The
-   ! marshalling -- the env extent, the `bas` extent past `nbas`, the dims --
-   ! lives once in the shim instead of once per caller, which is what that
-   ! module exists for. The guard stays because libcint has no ECP code at
-   ! all, so this is the one integral the two backends cannot both answer.
-#ifdef MQC_WITH_LIBFINT
+   ! rather than a hand-written `bind(C)` interface. The marshalling -- the env
+   ! extent, the `bas` extent past `nbas`, the dims -- lives once in the shim
+   ! instead of once per caller.
    use libcint_fortran, only: libcint_ecp_sph, libcint_ecp_cart
-#endif
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
    public :: ecp_matrix
-   public :: ECP_AVAILABLE
    public :: ecp_refuses_derivatives
    public :: ecp_refuses_auto_frozen_core
-
-   ! Whether this build can evaluate an ECP at all. libcint has no ECP code, so
-   ! a build configured with `-DMQC_USE_LIBFINT=OFF` has no `ECPscalar_sph` to
-   ! link against. Read by `build_czt_molecule`, which refuses a deck naming
-   ! a potential rather than letting one reach an evaluator that is not there.
-#ifdef MQC_WITH_LIBFINT
-   logical, parameter :: ECP_AVAILABLE = .true.
-#else
-   logical, parameter :: ECP_AVAILABLE = .false.
-#endif
 
 contains
 
@@ -169,19 +151,11 @@ contains
             shls = [ish - 1, jsh - 1]
             buf(1:di*dj) = 0.0_dp
 
-#ifdef MQC_WITH_LIBFINT
             if (cartesian) then
                ret = libcint_ecp_cart(buf, shls, atm, natm, bas, nbas, env)
             else
                ret = libcint_ecp_sph(buf, shls, atm, natm, bas, nbas, env)
             end if
-#else
-            ! Unreachable: `necpbas` is zero in a build without libfint,
-            ! because build_czt_molecule refuses the deck that would set
-            ! it. Present so the loop compiles rather than being #ifdef'd
-            ! away, which would leave `ret` undefined.
-            ret = 0
-#endif
             ! Zero means the overlap screen rejected the pair and the library
             ! zeroed the block; skipping the copy is an optimisation.
             if (ret == 0) cycle

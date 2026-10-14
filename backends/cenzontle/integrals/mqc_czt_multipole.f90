@@ -7,9 +7,8 @@ module mqc_czt_multipole
    !! same shell-pair machinery as the overlap with one extra factor -- so this
    !! module is bindings and bookkeeping, not new integral code.
    !!
-   !! The entry points are `libcint_1e_r_*`, `_rr_*`, `_rrr_*` and `_irp_*`,
-   !! imported from `mqc_czt_cint_compat`: libfint's own procedures in the default
-   !! build, and declarations against libcint's CINT2 entry points in a libcint one.
+   !! The entry points are libfint's `libcint_1e_r_*`, `_rr_*`, `_rrr_*` and
+   !! `_irp_*`.
    !!
    !! **The origin is passed through `env`, and that is the trap.** libcint reads
    !! it from `env(PTR_COMMON_ORIG)`, and the slot constants are libcint's own
@@ -21,11 +20,11 @@ module mqc_czt_multipole
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
-   use libcint_fortran, only: LIBCINT_PTR_COMMON_ORIG, LIBCINT_ATOM_OF
-   use mqc_czt_cint_compat, only: libcint_1e_r_cart, libcint_1e_r_sph, &
-                                  libcint_1e_rr_cart, libcint_1e_rr_sph, &
-                                  libcint_1e_rrr_cart, libcint_1e_rrr_sph, &
-                                  libcint_1e_irp_cart, libcint_1e_irp_sph
+   use libcint_fortran, only: LIBCINT_PTR_COMMON_ORIG, LIBCINT_ATOM_OF, &
+                              libcint_1e_r_cart, libcint_1e_r_sph, &
+                              libcint_1e_rr_cart, libcint_1e_rr_sph, &
+                              libcint_1e_rrr_cart, libcint_1e_rrr_sph, &
+                              libcint_1e_irp_cart, libcint_1e_irp_sph
    implicit none
    private
 

@@ -74,7 +74,7 @@ geometry and each iteration solves them directly.
 Two backends, two implementations
 ---------------------------------
 
-**CPU (libcint) backend.** Implements the smooth switching/Gaussian (SWIG)
+**CPU (cenzontle) backend.** Implements the smooth switching/Gaussian (SWIG)
 discretization of Lange and Herbert [J. Chem. Phys. 133, 244111 (2010)],
 following PySCF's ``pyscf.solvent.pcm`` term for term: Lebedev points per
 atomic sphere, the quintic switching function with buried points discarded,

@@ -123,10 +123,9 @@ Ab Initio (CPU): cenzontle
 --------------------------
 
 Gaussian-basis methods on the CPU, in ``backends/cenzontle/``. Integrals come
-from `libfint <https://github.com/JorgeG94/libfint>`_ by default, an all-Fortran
-port of `libcint <https://github.com/sunqm/libcint>`_. ``-DMQC_USE_LIBFINT=OFF``
-takes libcint itself. Both libraries give the same integrals, but only libfint
-has effective core potentials. Everything below is validated against PySCF on
+from `libfint <https://github.com/JorgeG94/libfint>`_, an all-Fortran port of
+`libcint <https://github.com/sunqm/libcint>`_ that also carries effective core
+potentials. Everything below is validated against PySCF on
 the same geometries and the same basis data. Where it is named, the reference
 is GAMESS. The work is threaded with OpenMP throughout.
 
@@ -142,8 +141,7 @@ is GAMESS. The work is threaded with OpenMP throughout.
   through the lowest eigenvalue of the real singlet orbital Hessian. See
   :doc:`scf_convergence`.
 - **Effective core potentials**: ``model.ecp``, given in a file separate from
-  the basis. ECPs are energies only and need libfint (see the gradient table
-  below).
+  the basis. ECPs are energies only (see the gradient table below).
 - **MP2**: conventional and density-fitted (RI-MP2), with SCS and SOS scaling.
   The same- and opposite-spin components are kept separately. The reference
   must be restricted. ``freeze_core`` is on by default. Unrestricted MP2 is
@@ -357,9 +355,7 @@ What has a gradient on the CPU backend, at a glance:
      - no
      - ``model.ecp``, a separate file from the basis. Energies only: every
        nuclear derivative is refused, as are MCSCF, xTB and the GPU backend,
-       and an automatically counted frozen core. Needs libfint, which is the
-       default -- libcint has no ECP code, and a libcint build refuses
-       ``model.ecp`` rather than ignoring it
+       and an automatically counted frozen core
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second
@@ -895,7 +891,7 @@ System Requirements
 
 - MPI library (OpenMPI, MPICH, Intel MPI)
 - BLAS/LAPACK
-- libfint (default) or libcint, and libxc, for the CPU ab initio backend
+- libfint and libxc, for the CPU ab initio backend
 - tblite (for XTB methods, on by default)
 - Optional: simple-dftd3 and dftd4 (dispersion), DL-FIND (optimization),
   CREST (conformers), HDF5 (checkpoints), cuEST and terco (GPU)
@@ -921,8 +917,7 @@ does not apply.
    available and is a real one: a set fitted to a relativistic reference
    carries much of the effect for the valence, which is why ECPs are used on
    heavy elements as much for that as for the cost. It is not a relativistic
-   Hamiltonian and does not become one. ECPs are energies only and need a
-   libfint build
+   Hamiltonian and does not become one. ECPs are energies only
 2. **Open-shell correlation**: MP2 and the double-hybrid derivatives need a
    restricted reference. Coupled cluster does not, but density-fitted coupled
    cluster does. Unrestricted density fitting is refused for the SCF itself,

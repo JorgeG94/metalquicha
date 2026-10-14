@@ -7,7 +7,7 @@
 # and the order the answers have to be worked out in.
 #
 # Order is load-bearing in two places, both noted where they happen: BLA_VENDOR
-# has to be settled before CREST is resolved, and libxc before libcint, because
+# has to be settled before CREST is resolved, and libxc before libfint, because
 # a validation program in the backend directory links both.
 include_guard(GLOBAL)
 
@@ -241,7 +241,7 @@ if(MQC_ENABLE_TBLITE)
         "MQC_ENABLE_TBLITE=ON needs gfortran, ifort or ifx; this is "
         "${CMAKE_Fortran_COMPILER_ID}. tblite does not build with it. Configure "
         "with -DMQC_ENABLE_TBLITE=OFF to build everything else -- the CPU ab "
-        "initio path (libcint/libxc) and the GPU path both work here.")
+        "initio path (libfint/libxc) and the GPU path both work here.")
   endif()
 endif()
 
@@ -438,7 +438,7 @@ endif()
 # `xcf03` are ordinary targets and their include directories, link order and
 # build order all come along on their own.
 #
-# Resolved before libcint, and that order is load-bearing: check_dft is
+# Resolved before libfint, and that order is load-bearing: check_dft is
 # registered from backends/cenzontle/validation.cmake and links both.
 if(MQC_ENABLE_LIBXC)
   find_package(libxc REQUIRED)
@@ -447,7 +447,7 @@ if(MQC_ENABLE_LIBXC)
   # static link resolves left to right.
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:xcf03>
                                             $<BUILD_INTERFACE:xc>)
-  # PUBLIC, and for the same reason the libcint include below is: nvfortran
+  # PUBLIC, and for the same reason the libfint include below is: nvfortran
   # needs every transitively used module file on the include path, not only the
   # ones a source names itself. `app/main.f90` uses no libxc module -- it uses
   # `mqc_driver`, which reaches `xc_f03_lib_m` several modules down -- and
@@ -465,9 +465,8 @@ if(MQC_ENABLE_LIBXC)
   message(STATUS "libxc enabled: exchange-correlation functionals available")
 endif()
 
-# The CPU integrals backend: libfint by default, libcint behind
-# -DMQC_USE_LIBFINT=OFF. The pins, and why each is pinned the way it is, are in
-# cmake/modules/Findlibfint.cmake and cmake/modules/Findlibcint.cmake.
+# The CPU integrals backend, libfint. The pins, and why each is pinned the way
+# it is, are in cmake/modules/Findlibfint.cmake.
 #
 # The point of having it at all is not speed. Everything ab initio started out
 # going through cuEST, which needs an A100 -- so the HF and DFT paths were
@@ -476,104 +475,30 @@ endif()
 # laptop, and gives cuEST a second implementation to disagree with, which is the
 # check it never had.
 #
-# libcint rather than libint, measured rather than assumed: clean clone to
-# libcint.so in 9 seconds against 46 MB of pre-generated source and a long
-# build. For a backend whose job is to be correct and always available, build
-# time is the property that matters; if throughput ever does, libint can sit
-# behind the same interface later.
-#
-# Nothing under backends/cenzontle/ changes with the choice: libfint defines the
-# same `libcint_fortran` module with the same 25 procedures, so this program
-# cannot tell which one it linked. That is the whole point of a port that is
-# bit-identical -- the swap is a build option, not a migration.
-#
-# One thing the swap is *not* is purely a link: libfint carries L (sp) shells
-# and libcint cannot represent one, so selecting it also defines
-# MQC_WITH_SP_SHELLS and the fused-sp view in mqc_czt_integrals.F90 is compiled
-# in. A libcint build takes the split-shell path instead. The two configurations
-# therefore run different source, which is why both are built in CI rather than
-# only the default.
-if(MQC_ENABLE_CZT AND MQC_USE_LIBFINT)
+# libfint is an all-Fortran port of libcint: no C compiler, and the module it
+# exports is still called `libcint_fortran`, with the `libcint_*` and
+# `LIBCINT_*` names libcint spells them. Nothing under backends/cenzontle/ names
+# the library it links beyond that.
+if(MQC_ENABLE_CZT)
   find_package(libfint REQUIRED)
   message(STATUS "libfint: ${MQC_LIBFINT_REPOSITORY}@${MQC_LIBFINT_TAG}")
+  # "This build has CPU integrals", which is what the preprocessed sources test.
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
-  # libfint carries L (sp) shells; libcint cannot represent one at all.
-  #
-  # This is the first place the two backends are not interchangeable, so it is
-  # the first thing here that has to be compiled differently rather than merely
-  # linked differently. `build_sp_view` marks a fused sp shell with KAPPA_OF,
-  # which libcint would read as a relativistic kappa and act on -- so the fused
-  # view can only be built when libfint is what will read it.
-  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_SP_SHELLS)
-  # Which of the two actually linked. MQC_WITH_LIBCINT above is set by both
-  # branches -- it means "this build has CPU integrals" -- so it cannot answer
-  # that question, and the startup acknowledgement has to name what ran rather
-  # than what the interface is called.
-  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBFINT)
-  # One target, not two: libfint has no C library beside it.
+  # One target: libfint has no C library beside it.
   set(MQC_INTEGRALS_LIBS fint)
-  # Answer to libcint's target names as well as our own.
-  #
-  # Most targets link ${MQC_INTEGRALS_LIBS} and so follow whichever backend is
-  # selected. A few name `cint_fortran cint` directly, and every rebase onto
-  # main brings more of them, because a contributor adding a test has no reason
-  # to know this branch exists. Routing them one at a time is what three of the
-  # four commits on this branch have been, and it will be due again after the
-  # next merge.
-  #
-  # Aliases end that. With libfint selected libcint is never fetched, so the
-  # names are free, and pointing both at `fint` makes a target that asks for
-  # libcint by name get libfint without knowing. Nothing on main has to be aware
-  # of this branch, and a rebase stops carrying link fixes.
-  if(NOT TARGET cint)
-    add_library(cint ALIAS fint)
-  endif()
-  if(NOT TARGET cint_fortran)
-    add_library(cint_fortran ALIAS fint)
-  endif()
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:fint>)
-  # PUBLIC, for the reason the libxc include above is and the libcint one below
-  # is: nvfortran opens every transitively used module file, so anything linking
-  # this library has to be able to find `cint_workspace.mod` even though no
-  # source outside backends/cenzontle/ names it. The `fint` link is PRIVATE, so
-  # the target's own interface include does not carry through -- which is why
-  # this has to be stated rather than inherited.
+  # PUBLIC, for the reason the libxc include above is: nvfortran opens every
+  # transitively used module file, so anything linking this library has to be
+  # able to find `cint_workspace.mod` even though no source outside
+  # backends/cenzontle/ names it. The `fint` link is PRIVATE, so the target's
+  # own interface include does not carry through -- which is why this has to be
+  # stated rather than inherited.
   target_include_directories(
     ${main_lib} PUBLIC $<BUILD_INTERFACE:${libfint_BINARY_DIR}/include>)
   add_subdirectory(backends/cenzontle)
   message(
     STATUS
       "libfint enabled: CPU Gaussian integrals, all-Fortran, no C and no BLAS")
-
-elseif(MQC_ENABLE_CZT)
-  find_package(libcint REQUIRED)
-  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
-
-  # BUILD_INTERFACE, not just PRIVATE: a static library records even its private
-  # dependencies in its interface as $<LINK_ONLY:...>, so CMake wants them in
-  # this project's export set -- which a fetched third-party library is never
-  # going to join. Scoping them to the build keeps the integrals backend
-  # internal, which it is.
-  set(MQC_INTEGRALS_LIBS cint_fortran cint)
-  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:cint_fortran>
-                                            $<BUILD_INTERFACE:cint>)
-
-  # The module directory has to propagate even though the library does not.
-  #
-  # nvfortran needs the `.mod` of every module that a used module itself uses,
-  # transitively. So `use mqc_resources` in app/main.f90 makes it reach for
-  # `libcint_fortran.mod`, which is two levels down and behind a PRIVATE link.
-  # gfortran answers that from its own `.mod` and never asks, which is why this
-  # was not needed until the first NVHPC build.
-  #
-  # BUILD_INTERFACE for the same reason the link above is: a fetched third-party
-  # library is never going to join this project's export set.
-  target_include_directories(
-    ${main_lib} PUBLIC $<BUILD_INTERFACE:${libcint_BINARY_DIR}/include>)
-
-  add_subdirectory(backends/cenzontle)
-  message(
-    STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
 endif()
 
 # HDF5, for checkpoints that carry derivatives. Only the C library is needed:
@@ -623,7 +548,7 @@ endif()
 # there is no include-directory line below -- backends/dlfind declares the
 # interface itself.
 #
-# A commit, not a branch, for the same reason libcint is pinned: what this
+# A commit, not a branch, for the same reason libfint is pinned: what this
 # program builds against should not change because somebody pushed to main.
 if(MQC_ENABLE_DLFIND)
   find_package(libdlfind REQUIRED)
@@ -743,12 +668,12 @@ endfunction()
 # thirteen solves take 4 s at once. Left in for the builds that link libsci
 # anyway, so that they finish rather than crash.
 #
-# Outside the backend branches above: it belongs to the response solver, which
-# is the same code under libfint and libcint, and it once sat in the libcint
-# branch alone -- so the default build, libfint, factorized every frequency on
-# one core with the other thirty-nine idle. After the Cray block above, because
-# that block is what settles which libsci the calls bind to, whatever
-# `BLAS_LIBRARIES` was set to on the command line.
+# Outside the libfint block above: it belongs to the response solver, which is
+# not libfint's, and it once sat inside a backend-specific branch -- so a build
+# that took the other branch factorized every frequency on one core with the
+# other thirty-nine idle. After the Cray block above, because that block is what
+# settles which libsci the calls bind to, whatever `BLAS_LIBRARIES` was set to
+# on the command line.
 #
 # Read off the vendor rather than probed at runtime, because there is no
 # portable way to ask a BLAS how many threads it intends to use.

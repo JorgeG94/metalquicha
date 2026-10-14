@@ -64,9 +64,7 @@ endif()
 # The ECP layout and the ECP matrix, against PySCF. Not a ctest case yet: the
 # reference comes from PySCF rather than from a number this program printed
 # earlier, so it belongs with the other validation programs that need a second
-# code to compare against. libfint rather than libcint -- the ECP integrals are
-# libfint's and libcint has none, so this cannot link in a -DMQC_USE_LIBFINT=OFF
-# build.
-if(MQC_ENABLE_CZT AND MQC_USE_LIBFINT)
+# code to compare against.
+if(MQC_ENABLE_CZT)
   mqc_add_validation_program(check_ecp)
 endif()

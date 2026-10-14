@@ -362,7 +362,7 @@ neighbour, and that borrowing is real. The correction is refused because it is
 
 A ghost centre means basis functions with no nuclear charge, and that separation
 only exists if the two are separable in the first place. In an ab initio method
-they are: libcint is handed a shell list and a charge list, and one can be
+they are: the integral library is handed a shell list and a charge list, and one can be
 zeroed without touching the other. In GFN the basis is welded to the atom. The
 shell exponents, the diagonal Hamiltonian elements, the electronegativity
 equilibration that sets the charges, the repulsion, the dispersion coefficients

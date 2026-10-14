@@ -124,32 +124,30 @@ addtestpp(mqc_basis_cartesian)
 target_compile_definitions(test_mqc_basis_cartesian PRIVATE MQC_HAVE_BASIS_SETS)
 
 # That the angular form reaches the integrals, counted in basis functions. Needs
-# libcint, since czt_molecule_t is the thing it inspects.
+# cenzontle, since czt_molecule_t is the thing it inspects.
 if(MQC_ENABLE_CZT)
   # The overlap between two different bases on the same atoms, which is the one
   # new integral the quasi-atomic construction needs. Gated because
   # czt_molecule_t is what it builds.
   addtest(mqc_mixed_overlap)
-  target_link_libraries(test_mqc_mixed_overlap PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_mixed_overlap PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The valence-virtual space: that the projection separates cleanly, and that
   # the count does not move with the orbital basis.
   addtest(mqc_quao_vvo)
-  target_link_libraries(test_mqc_quao_vvo PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_quao_vvo PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The quasi-atomic orbitals themselves, and the density in their basis.
   addtest(mqc_quao)
-  target_link_libraries(test_mqc_quao PRIVATE cint_fortran cint)
-  # Second derivatives, the response solve and the assembled Hessian. Runs on
-  # either backend now that the entry points are reached through
-  # mqc_czt_cint_compat.
+  target_link_libraries(test_mqc_quao PRIVATE ${MQC_INTEGRALS_LIBS})
+  # Second derivatives, the response solve and the assembled Hessian.
   addtest(mqc_hess_ints)
-  target_link_libraries(test_mqc_hess_ints PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_hess_ints PRIVATE ${MQC_INTEGRALS_LIBS})
   # The exchange-correlation Hessian, against differences of its own gradient.
   # The test skips itself when the build has no libxc, so it is registered
   # beside its neighbours rather than behind another condition.
   addlongtest(mqc_xc_hessian)
-  target_link_libraries(test_mqc_xc_hessian PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_xc_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
   # The kernel cache against the per-block evaluation it replaces: exactly, at
   # one thread, on a GGA, a meta-GGA and a hybrid. Skips itself without libxc.
   addtest(mqc_xc_kernel_cache)
@@ -157,10 +155,10 @@ if(MQC_ENABLE_CZT)
   # The second exchange derivative a range-separated functional needs, against a
   # difference of its own energy. Skips itself without libxc.
   addlongtest(mqc_rsh_gradient)
-  target_link_libraries(test_mqc_rsh_gradient PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_rsh_gradient PRIVATE ${MQC_INTEGRALS_LIBS})
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
-  target_link_libraries(test_mqc_fukui PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_fukui PRIVATE ${MQC_INTEGRALS_LIBS})
   # Every field on the shared SCF options type reaches the backend's settings.
   # The refactor removed three hand-copied blocks; this is what keeps them gone.
   addtest(mqc_scf_options)
@@ -172,30 +170,33 @@ if(MQC_ENABLE_CZT)
 
   # Unrestricted MP2, whose closed-shell limit is the restricted one.
   addtest(mqc_ump2)
-  target_link_libraries(test_mqc_ump2 PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_ump2 PRIVATE ${MQC_INTEGRALS_LIBS})
   # The MP2 correlation Hessian by difference of our own correlation gradient,
   # against pycc's analytic column on the basis we read.
   addtest(mqc_mp2_hessian_fd)
-  target_link_libraries(test_mqc_mp2_hessian_fd PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_mp2_hessian_fd PRIVATE ${MQC_INTEGRALS_LIBS})
   # The fixed-density second-derivative skeleton: its SCF reference block
   # against rhf_hessian, and the pair symmetry its deposit map has to earn.
   addtest(mqc_mp2_hessian_skeleton)
-  target_link_libraries(test_mqc_mp2_hessian_skeleton PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_mp2_hessian_skeleton
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
   # The first-order skeletons and orbital-response carriers: translational sum
   # rules, the derivative ERI's earned symmetries, and the Lagrangian against
   # the gradient's energy-weighted density.
   addtest(mqc_mp2_hessian_response)
-  target_link_libraries(test_mqc_mp2_hessian_response PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_mp2_hessian_response
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
   # The assembled correlation Hessian: its reference block against rhf_hessian,
   # the symmetries it has to earn, and the frozen-core refusal.
   addtest(mqc_mp2_hessian_assembly)
-  target_link_libraries(test_mqc_mp2_hessian_assembly PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_mp2_hessian_assembly
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
   # Regrouping the kinetic energy onto atoms and atom pairs.
   addtest(mqc_ieda)
-  target_link_libraries(test_mqc_ieda PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_ieda PRIVATE ${MQC_INTEGRALS_LIBS})
   # CASCI on real molecules: the seam between the CI machinery and a basis set.
   addtest(mqc_casci)
-  target_link_libraries(test_mqc_casci PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_casci PRIVATE ${MQC_INTEGRALS_LIBS})
 
   addtest(mqc_mcscf)
   addtest(mqc_mcscf_iterative)
@@ -203,65 +204,68 @@ if(MQC_ENABLE_CZT)
 
   # State-averaged CASSCF: energy, singlet selection, n_states = 1 unchanged.
   addtest(mqc_sa_casscf)
-  target_link_libraries(test_mqc_sa_casscf PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_casscf PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Matrix-free SA-CASSCF Hessian-vector product (phase 3).
   addtest(mqc_sa_hessian)
-  target_link_libraries(test_mqc_sa_hessian PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Same HVP, but on a CI space with more than one non-redundant direction per
   # state (LiH/6-31G CAS(4,4) SA-3), which the CAS(2,2) case above cannot
   # exercise.
   addtest(mqc_sa_hessian_multistate)
-  target_link_libraries(test_mqc_sa_hessian_multistate PRIVATE cint_fortran
-                                                               cint)
+  target_link_libraries(test_mqc_sa_hessian_multistate
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The same system's explicit dense Hessian and its eigenvalues -- correct, but
   # 136 unit-vector applies, slow enough next to the routine suite to be long
   # rather than routine.
   addlongtest(mqc_sa_hessian_redundancy_long)
-  target_link_libraries(test_mqc_sa_hessian_redundancy_long PRIVATE cint_fortran
-                                                                    cint)
+  target_link_libraries(test_mqc_sa_hessian_redundancy_long
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # `incremental_fock` changes no number the SCF reports, so it is tested by the
   # count of full Fock builds rather than by timing -- see the module's own note
   # for the measurements that ruled timing out.
   addtest(mqc_incremental_fock)
   addtest(mqc_mcscf_gradient)
-  target_link_libraries(test_mqc_mcscf PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_mcscf PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Single-root SA-CASSCF gradient via the Z-vector (phase 4).
   addtest(mqc_sa_gradient)
-  target_link_libraries(test_mqc_sa_gradient PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_gradient PRIVATE ${MQC_INTEGRALS_LIBS})
   addlongtest(mqc_sa_gradient_pyscf_long)
-  target_link_libraries(test_mqc_sa_gradient_pyscf_long PRIVATE cint_fortran
-                                                                cint)
+  target_link_libraries(test_mqc_sa_gradient_pyscf_long
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Phase 5: every requested root's gradient built together.
   addtest(mqc_sa_gradient_fused)
-  target_link_libraries(test_mqc_sa_gradient_fused PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_gradient_fused
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Phase 5: the benchmark/profiling harness for the fused multi-root gradient,
   # on PSB3 SA-N-CAS(6,6)/6-31G*.
   addlongtest(mqc_sa_gradient_psb3_bench)
-  target_link_libraries(test_mqc_sa_gradient_psb3_bench PRIVATE cint_fortran
-                                                                cint)
+  target_link_libraries(test_mqc_sa_gradient_psb3_bench
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Phase 6: the driver path (`mqc_czt_bridge`'s `run_czt_mcscf`) a Gradient
   # driver deck actually reaches -- top-level gradient, per-root storage, and
   # the gradient_roots/unequal-weight refusals.
   addtest(mqc_sa_gradient_driver)
-  target_link_libraries(test_mqc_sa_gradient_driver PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_gradient_driver
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Nonadiabatic couplings between two SA-CASSCF states.
   addtest(mqc_sa_nac)
-  target_link_libraries(test_mqc_sa_nac PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_nac PRIVATE ${MQC_INTEGRALS_LIBS})
   addlongtest(mqc_sa_nac_pyscf_long)
-  target_link_libraries(test_mqc_sa_nac_pyscf_long PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_sa_nac_pyscf_long
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Choosing an active space from atomic orbital labels.
   addtest(mqc_avas)
-  target_link_libraries(test_mqc_avas PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_avas PRIVATE ${MQC_INTEGRALS_LIBS})
 
   addtest(mqc_czt_cartesian)
   target_link_libraries(test_mqc_czt_cartesian PRIVATE ${MQC_INTEGRALS_LIBS})
@@ -434,7 +438,7 @@ if(MQC_ENABLE_CZT)
   # energy alone would not -- see the module header for why that is the failure
   # mode worth designing against.
   addtest(mqc_czt_rcc)
-  target_link_libraries(test_mqc_czt_rcc PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_czt_rcc PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
@@ -580,8 +584,8 @@ if(MQC_ENABLE_CZT)
   # pairs holding it. Each reference's rows -- pair energy, response and PIEDA
   # terms -- against the full run's, on the water trimer and on the glycine
   # tripeptide with a water cut at both C-alpha--C(=O) bonds; and the refusals
-  # above level two.
-  addtest(mqc_fmo_interaction)
+  # above level two. LONG: 2479 s on a coverage build.
+  addlongtest(mqc_fmo_interaction)
   target_link_libraries(test_mqc_fmo_interaction PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Kohn-Sham fragments through the fragment solver: FMO2 and FMO3 water against
@@ -626,16 +630,12 @@ if(MQC_ENABLE_CZT)
   # carry it. Inside this guard for the same reason as mqc_vv10: mqc_czt_ecp
   # lives in backends/cenzontle/. The reader that parses the potential is
   # registered unconditionally above -- it reads JSON and needs no backend --
-  # and these do not.
-  #
-  # Deliberately NOT inside MQC_USE_LIBFINT, unlike the matrix test below. Both
-  # predicates are plain Fortran over a per-atom core-electron count and reach
-  # no integral, so they mean the same thing in either configuration -- and a
-  # build that cannot evaluate an ECP is exactly where the refusals most want
-  # testing. The identity the double-hybrid Hessian's rewrite rests on: every
-  # kernel contraction in the MP2 Hessian is the reference operator applied to a
-  # symmetric generalized density. Inside this guard because it drives
-  # `mp2_mo_eri_physicist` and an exchange-correlation context.
+  # and these do not. Both predicates are plain Fortran over a per-atom
+  # core-electron count and reach no integral. The identity the double-hybrid
+  # Hessian's rewrite rests on: every kernel contraction in the MP2 Hessian is
+  # the reference operator applied to a symmetric generalized density. Inside
+  # this guard because it drives `mp2_mo_eri_physicist` and an
+  # exchange-correlation context.
   addtest(mqc_mp2_hessian_ks_operator)
 
   # The double hybrid's perturbative Hessian differenced against its own
@@ -671,19 +671,8 @@ if(MQC_ENABLE_CZT)
   # because ytterbium's SCF runs for half a minute against the tenth of a second
   # that suite averages, and the one-electron integral settles the question on
   # its own.
-  #
-  # Inside MQC_USE_LIBFINT as well, unlike the refusal test beside it. The ECP
-  # integrals are libfint's and libcint has none, and the failure mode is quiet
-  # rather than loud: `ecp_matrix` still compiles and links in a
-  # -DMQC_USE_LIBFINT=OFF build, with the C calls preprocessed out, and returns
-  # a zero matrix. So this would build there and then fail at runtime against a
-  # PySCF reference, which reads as a broken integral rather than as a
-  # configuration that was never asked to have one. `check_ecp` above carries
-  # the same pair of guards for the same reason.
-  if(MQC_USE_LIBFINT)
-    addtest(mqc_ecp_matrix)
-    target_link_libraries(test_mqc_ecp_matrix PRIVATE cint_fortran cint)
-  endif()
+  addtest(mqc_ecp_matrix)
+  target_link_libraries(test_mqc_ecp_matrix PRIVATE ${MQC_INTEGRALS_LIBS})
 endif()
 
 # Only meaningful with the cuEST backend compiled in.

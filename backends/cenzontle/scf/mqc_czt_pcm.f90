@@ -36,9 +36,8 @@ module mqc_czt_pcm
    use mqc_method_config, only: pcm_config_t
    use mqc_calculation_defaults, only: DEFAULT_PCM_ZETA
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
-   use libcint_fortran, only: LIBCINT_PTR_RANGE_OMEGA
-   use mqc_czt_cint_compat, only: LIBCINT_PTR_GRIDS, libcint_1e_grids_cart, &
-                                  libcint_1e_grids_sph
+   use libcint_fortran, only: LIBCINT_PTR_RANGE_OMEGA, LIBCINT_PTR_GRIDS, &
+                              libcint_1e_grids_cart, libcint_1e_grids_sph
    use pic_io, only: to_char
    implicit none
    private

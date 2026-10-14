@@ -1227,12 +1227,10 @@ ECP_CASES = [
 ECP_SET = "def2-ecp"
 
 #: Every entry below is emitted with `"requires": "ecp"`, which the runner reads
-#: off `mqc --version`. The integrals are libfint's and libcint has none, so a
-#: `-DMQC_USE_LIBFINT=OFF` build cannot produce these numbers -- and it does not
-#: fail loudly either: `ecp_matrix` still links there, with the C calls compiled
-#: out, and returns a zero potential. Skipping is the honest outcome for a build
-#: that cannot do the work; running them would report nineteen failures against
-#: a configuration that was never expected to pass.
+#: off `mqc --version`. The integrals are libfint's, so a build without the CPU
+#: backend cannot produce these numbers. Skipping is the honest outcome for a
+#: build that cannot do the work; running them would report nineteen failures
+#: against a configuration that was never expected to pass.
 
 #: Kohn-Sham over an ECP reference, as (molecule, basis, functional, grid level).
 #: One semilocal functional and one hybrid: what is checked is that the ECP

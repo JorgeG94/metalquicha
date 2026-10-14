@@ -19,8 +19,8 @@ module test_mqc_czt_direct
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, set_eri_path, &
-                                eri_path_name, ROTAXIS_AVAILABLE, quartet_on_rotaxis, &
-                                rotaxis_libfint_covers, HGP_AVAILABLE, quartet_on_hgp, &
+                                eri_path_name, quartet_on_rotaxis, &
+                                rotaxis_libfint_covers, quartet_on_hgp, &
                                 hgp_libfint_covers, eri_grad_dispatch_t, &
                                 build_eri_grad_dispatch, rotaxis_grad_cached, &
                                 hgp_grad_cached, rotaxis_grad_libfint, hgp_grad_libfint
@@ -357,11 +357,6 @@ contains
       integer :: ish, jsh, n_on, n_off
       logical :: ours, theirs
 
-      if (.not. ROTAXIS_AVAILABLE) then
-         call check(error, .true.)
-         return
-      end if
-
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.4_dp, 1.1_dp, 0.0_dp, -1.4_dp, 1.1_dp], [3, 3])
       call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvtz", mol, err)
       if (err%has_error()) then
@@ -404,8 +399,7 @@ contains
       !! Water/6-31G is s, p and L shells, so every quartet takes the
       !! rotated-axis path when it is selected. A different algorithm, so not
       !! bit-identical: libfint holds the integrals to 1e-12 scaled, and the
-      !! Fock matrix is a contraction over them. Skipped on a libcint build,
-      !! which has the one path.
+      !! Fock matrix is a contraction over them.
       !!
       !! `ROTAXIS_MAX_L` is checked against libfint's own answer for a d
       !! quartet and an f one, so the two ends of that agreement cannot drift
@@ -418,13 +412,6 @@ contains
       type(direct_stats_t) :: stats
       real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: sym(:, :), anti(:, :), rys(:, :), rotaxis(:, :)
-
-      if (.not. ROTAXIS_AVAILABLE) then
-         call set_eri_path("rotaxis", err)
-         call check(error, err%has_error(), &
-                    "a build without the path must refuse to be asked for it")
-         return
-      end if
 
       call setup(mol, eri, bounds, zero_h, sym, anti, err)
       if (err%has_error()) then
@@ -473,11 +460,6 @@ contains
       real(dp) :: c(3, 3)
       integer :: ish, jsh, n_on, n_off
       logical :: ours, theirs
-
-      if (.not. HGP_AVAILABLE) then
-         call check(error, .true.)
-         return
-      end if
 
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.4_dp, 1.1_dp, 0.0_dp, -1.4_dp, 1.1_dp], [3, 3])
       call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvtz", mol, err)
@@ -566,11 +548,6 @@ contains
       integer :: ish, jsh, shls(4), n_rot, n_hgp, n_off
       logical :: theirs
 
-      if (.not. (ROTAXIS_AVAILABLE .and. HGP_AVAILABLE)) then
-         call check(error, .true.)
-         return
-      end if
-
       ! cc-pVTZ for the f shells the gradient sets do not cover, and a geometry
       ! with no symmetry so nothing is zero by accident.
       c = reshape([0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.4_dp, 1.1_dp, 0.0_dp, -1.4_dp, 1.1_dp], [3, 3])
@@ -640,13 +617,6 @@ contains
       type(direct_stats_t) :: stats
       real(dp), allocatable :: eri(:, :, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: sym(:, :), anti(:, :), rys(:, :), hgp(:, :), hybrid(:, :)
-
-      if (.not. HGP_AVAILABLE) then
-         call set_eri_path("hgp", err)
-         call check(error, err%has_error(), &
-                    "a build without the path must refuse to be asked for it")
-         return
-      end if
 
       call setup(mol, eri, bounds, zero_h, sym, anti, err, basis="6-31g_st_")
       if (err%has_error()) then

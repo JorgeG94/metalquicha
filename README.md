@@ -31,8 +31,7 @@ calculations. Three chemistry engines are available:
 
 - [tblite](https://github.com/tblite/tblite) for semi-empirical xTB (GFN1, GFN2), on the CPU
 - [libfint](https://github.com/JorgeG94/libfint) for Gaussian-basis ab initio on
-  the CPU — an all-Fortran port of libcint, and what a default build uses;
-  `-DMQC_USE_LIBFINT=OFF` takes libcint itself instead — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
+  the CPU — an all-Fortran port of libcint — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
   MP2 and CCSD(T), each conventional or density-fitted. This one exists to be
   checked against as much as to be run: it gives the GPU path a second, independent implementation to
   disagree with, and every method in it is validated against PySCF.
@@ -90,7 +89,7 @@ You will need an internet connection to download the dependencies. The main depe
 — Hartree-Fock, DFT, MP2 and coupled cluster in a Gaussian basis, no GPU needed.
 All three dependencies are fetched automatically, so **a default configure needs
 network access.** On a machine without it, either point
-`FETCHCONTENT_SOURCE_DIR_LIBCINT` and `FETCHCONTENT_SOURCE_DIR_LIBXC` at local
+`FETCHCONTENT_SOURCE_DIR_LIBFINT` and `FETCHCONTENT_SOURCE_DIR_LIBXC` at local
 copies, or turn them off and build the xTB path alone.
 
 | Option | Default | What it controls |
@@ -101,7 +100,6 @@ copies, or turn them off and build the xTB path alone.
 | `-DMQC_ENABLE_HDF5=` | `OFF` | Binary checkpoints, to restart a gradient or Hessian |
 | `-DMQC_ENABLE_CUEST=` | `OFF` | GPU Hartree-Fock/DFT; also needs `-DCUEST_ROOT=` |
 | `-DMQC_ENABLE_MPI=` | `ON` | `OFF` builds against pic-mpi's single-rank backend, so no MPI install is needed |
-| `-DMQC_USE_LIBFINT=` | `ON` | The all-Fortran port of libcint. `OFF` takes libcint itself, which needs C |
 | `-DMQC_ENABLE_DLFIND=` | `OFF` | DL-FIND for geometry optimisation (LGPL-3, hence off) |
 
 ### The smallest useful build
@@ -117,7 +115,7 @@ cluster, with energies, gradients and Hessians — a complete shared-memory
 quantum chemistry program that fragments as well, just without spreading the
 fragments over ranks. Threads still work; it is one process.
 
-Turning `LIBXC` off while leaving `LIBCINT` on is a supported build, but note
+Turning `LIBXC` off while leaving `CZT` on is a supported build, but note
 what it means: every deck naming a functional is refused, because there is
 nothing to evaluate it with. That is the reason both default to on.
 
@@ -232,8 +230,8 @@ For Hartree-Fock or DFT rather than xTB:
 ```
 
 `functional` applies to `dft` only. Which backend runs depends on the build:
-cuEST when it is compiled in, otherwise libcint on the CPU. cuEST always
-density-fits J and K, so `aux_basis` is required there. libcint has both paths
+cuEST when it is compiled in, otherwise libfint on the CPU. cuEST always
+density-fits J and K, so `aux_basis` is required there. The CPU backend has both paths
 and uses exact integrals unless asked:
 
 ```json
@@ -325,8 +323,7 @@ read from libxc's own reference table.
 
 ### Electronic structure
 
-- **libcint** (the integrals, `-DMQC_USE_LIBFINT=OFF`) and **libfint** (the
-  default, an all-Fortran port of libcint): Q. Sun, *J. Comput. Chem.* **36**, 1664
+- **libfint** (the integrals, an all-Fortran port of libcint): Q. Sun, *J. Comput. Chem.* **36**, 1664
   (2015), [doi:10.1002/jcc.23981](https://doi.org/10.1002/jcc.23981). Sources:
   [libcint](https://github.com/JorgeG94/libcint),
   [libfint](https://github.com/JorgeG94/libfint).

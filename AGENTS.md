@@ -240,15 +240,15 @@ Ab initio on the CPU is **cenzontle** (`backends/cenzontle/`, modules `mqc_czt_*
 built by `-DMQC_ENABLE_CZT=ON`) -- named for the bird of four hundred voices,
 because one backend speaks HF, DFT, MP2, CC, MCSCF, EFP and SAPT.
 
-It is **not** a wrapper around either integral library, which is why it stopped
-being called `libcint`. The integrals come from **libfint** by default -- an
-all-Fortran port of libcint, so no C compiler -- and `-DMQC_USE_LIBFINT=OFF`
-takes libcint itself. Both export the same `libcint_fortran` module and the same
-`libcint_*`/`LIBCINT_*` symbols, so libfint drops in without an ABI change and no
-source under `backends/cenzontle/` knows which one it linked. Those spellings are
-therefore the real library's and are left alone; only our own names are `czt`.
-The two are not interchangeable at compile time and only one CI job builds
-libcint:
+It is **not** a wrapper around an integral library, which is why it stopped
+being called `libcint`. The integrals come from **libfint**, an all-Fortran port
+of libcint, so there is no C compiler and no second integral backend. libfint
+exports the `libcint_fortran` module and the `libcint_*`/`LIBCINT_*` symbols
+under libcint's own spelling, and sources under `backends/cenzontle/` `use` it
+directly. Those spellings are libfint's export names and are left alone; only our
+own names are `czt`. libfint's own test suite checks it against libcint value for
+value, so this repository does not build against libcint. ECP integrals exist
+only in libfint:
 
 - `HF` - restricted and unrestricted; direct, in-core, or density-fitted
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
@@ -620,7 +620,7 @@ python3 run_validation.py --mpi --np 4                          # fragmented on 
 **A build without tblite skips most of the default manifest, and skips are not
 failures.** `-t h3o` on such a build runs zero tests and prints a green summary.
 Check the "Total tests" line, not the colour. `validation_tests_cpu.json` is the
-one that exercises a libfint/libcint-only build.
+one that exercises a build with the CPU integrals and no tblite.
 
 The runner deletes every `output_*.json` in `validation/` before it starts.
 Those are working outputs rather than references, but do not leave anything you

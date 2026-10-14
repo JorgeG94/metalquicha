@@ -42,7 +42,6 @@ module mqc_czt_bridge
                          xc_functional_references
    use mqc_czt_ov_hessian, only: stability_result_t
    use mqc_czt_native_stability, only: native_scf_stability
-   use mqc_czt_ecp, only: ECP_AVAILABLE
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_czt_gradient, only: czt_scf_gradient
    use mqc_czt_multipole, only: multipole_matrices
@@ -104,11 +103,10 @@ contains
    pure function ecp_backend_available() result(available)
       !! Whether this build can evaluate an effective core potential
       !!
-      !! The ECP integrals are libfint's; libcint has none, so a
-      !! `-DMQC_USE_LIBFINT=OFF` build links and runs but returns a zero
-      !! potential.
+      !! Always true here: the ECP integrals are libfint's, and this module is
+      !! only built with it. The stub answers false.
       logical :: available
-      available = ECP_AVAILABLE
+      available = .true.
    end function ecp_backend_available
 
    function sapt_core_bytes(nao, want_sapt2) result(bytes)

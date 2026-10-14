@@ -77,9 +77,9 @@ Rules that go with it:
 
 **Declare every option in `cmake/MqcOptions.cmake`, never at the point of use.**
 
-This is not tidiness. `option(MQC_USE_LIBFINT ...)` was declared 126 lines
-*after* `add_subdirectory(test)`, and `test/CMakeLists.txt` gates the ECP matrix
-test on it — so that test evaluated a variable that did not exist yet and **has
+This is not tidiness. An option was once declared 126 lines *after*
+`add_subdirectory(test)`, and `test/CMakeLists.txt` gated the ECP matrix test on
+it — so that test evaluated a variable that did not exist yet and **has
 never been built or run on `main`**. Nothing failed; the test was simply absent
 from a suite that reported success. An option declared where it is used is
 declared too late for anything that ran earlier.
@@ -119,7 +119,7 @@ move a block, check you have not broken one:
   wrong.
 - **tblite** before CREST, so CREST's `if(NOT TARGET "tblite::tblite")` finds
   ours instead of building a second one.
-- **libxc** before **libcint**, because `check_dft` is registered from the
+- **libxc** before **libfint**, because `check_dft` is registered from the
   backend directory and links both.
 
 Dependency test flags are set before the *first* fetch, because they are what
@@ -143,7 +143,7 @@ each subproject's own `option()` sees.
 ## 7. Presets
 
 `CMakePresets.json` carries the configurations that are otherwise a remembered
-string of `-D` flags: `default`, `debug`, `libcint`, `xtb-only`, `serial`,
+string of `-D` flags: `default`, `debug`, `xtb-only`, `serial`,
 `coverage`, `perlmutter`, `perlmutter-cpu`. Add one when a configuration has
 bitten someone twice.
 
@@ -162,10 +162,9 @@ and cannot be configured away.
 and a large fraction of the suite fails under it. Most of that is not this
 project's code.
 
-The default integral backend is libfint (`MQC_USE_LIBFINT` is `ON`), and
-libfint's two-electron optimizer reads past the end of its own coefficient
-array, so `-fcheck=bounds` aborts inside the dependency before this code is
-reached:
+The integral backend is libfint, and its two-electron optimizer reads past the
+end of its own coefficient array, so `-fcheck=bounds` aborts inside the
+dependency before this code is reached:
 
 ```
 Index '62' of dimension 1 of array 'coeff' above upper bound of 61
@@ -183,10 +182,6 @@ exact count to move with compiler and thread count.
 own change is buried in a baseline you have to establish first, on an unmodified
 tree, and compare against. Narrowing `-fcheck=` to `bounds` over this project's
 objects alone, or patching libfint, would fix that; neither has been done.
-
-An earlier version of the preset's description quoted 24 failures "with libcint
-selected". That number was real but for `-DMQC_USE_LIBFINT=OFF`, which is not
-the default, so nobody running the preset ever saw it.
 
 ### The Perlmutter preset
 

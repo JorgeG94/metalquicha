@@ -57,12 +57,12 @@ which backends have gradients, not about the optimizer:
    * - tblite (``gfn1``, ``gfn2``)
      - yes
      - Supported and tested, fragmented and not
-   * - libcint (CPU ``hf``, ``dft``, ``mp2``, ``ri-mp2``)
+   * - cenzontle (CPU ``hf``, ``dft``, ``mp2``, ``ri-mp2``)
      - yes
      - Supported, for whatever combination has a gradient -- see
        :doc:`capabilities`, which lists both what is covered and what is
        refused
-   * - libcint (CPU ``ccsd``, ``ccsd(t)``)
+   * - cenzontle (CPU ``ccsd``, ``ccsd(t)``)
      - **no**
      - Refused: a coupled cluster gradient needs the Lambda amplitudes
    * - anything with ``model.ecp``
@@ -776,7 +776,7 @@ printing it under a "did not converge" line invites it to be read as the
 minimum's.
 
 The cost is one Hessian on top of the optimization -- analytic for restricted
-Hartree-Fock in a libfint build, and central differences of gradients otherwise,
+Hartree-Fock, and central differences of gradients otherwise,
 which is ``6N`` gradients. That is why it is off by default.
 
 .. _optimizer-build:

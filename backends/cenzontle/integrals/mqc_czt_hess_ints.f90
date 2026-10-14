@@ -2,12 +2,8 @@
 module mqc_czt_hess_ints
    !! What an analytic Hessian needs from the integral library, and nothing else.
    !!
-   !! **These come from `mqc_czt_cint_compat`**, which has libfint's second
-   !! derivatives under their `libcint_fortran` names and, in a libcint build,
-   !! declares the same names against libcint's CINT2 entry points. One source
-   !! therefore serves both libraries, and an analytic Hessian is available in
-   !! either. The first-derivative `libcint_2e_ip1_*` are in `libcint_fortran`
-   !! itself.
+   !! The second derivatives and the first-derivative `libcint_2e_ip1_*` are all
+   !! libfint's `libcint_fortran` procedures.
    !!
    !! **Both orderings of every derivative are needed, and they are different
    !! integrals.** `ipipovlp` puts both derivatives on the bra centre;
@@ -25,19 +21,18 @@ module mqc_czt_hess_ints
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
-                              LIBCINT_PTR_RANGE_OMEGA, libcint_2e_ip1_sph, libcint_2e_ip1_cart
-   use mqc_czt_cint_compat, only: &
-      libcint_1e_ipipovlp_sph, libcint_1e_ipipovlp_cart, &
-      libcint_1e_ipovlpip_sph, libcint_1e_ipovlpip_cart, &
-      libcint_1e_ipipkin_sph, libcint_1e_ipipkin_cart, &
-      libcint_1e_ipkinip_sph, libcint_1e_ipkinip_cart, &
-      libcint_1e_ipipnuc_sph, libcint_1e_ipipnuc_cart, &
-      libcint_1e_ipnucip_sph, libcint_1e_ipnucip_cart, &
-      libcint_1e_ipiprinv_sph, libcint_1e_ipiprinv_cart, &
-      libcint_1e_iprinvip_sph, libcint_1e_iprinvip_cart, &
-      libcint_2e_ipip1_sph, libcint_2e_ipip1_cart, &
-      libcint_2e_ipvip1_sph, libcint_2e_ipvip1_cart, &
-      libcint_2e_ip1ip2_sph, libcint_2e_ip1ip2_cart
+                              LIBCINT_PTR_RANGE_OMEGA, libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
+                              libcint_1e_ipipovlp_sph, libcint_1e_ipipovlp_cart, &
+                              libcint_1e_ipovlpip_sph, libcint_1e_ipovlpip_cart, &
+                              libcint_1e_ipipkin_sph, libcint_1e_ipipkin_cart, &
+                              libcint_1e_ipkinip_sph, libcint_1e_ipkinip_cart, &
+                              libcint_1e_ipipnuc_sph, libcint_1e_ipipnuc_cart, &
+                              libcint_1e_ipnucip_sph, libcint_1e_ipnucip_cart, &
+                              libcint_1e_ipiprinv_sph, libcint_1e_ipiprinv_cart, &
+                              libcint_1e_iprinvip_sph, libcint_1e_iprinvip_cart, &
+                              libcint_2e_ipip1_sph, libcint_2e_ipip1_cart, &
+                              libcint_2e_ipvip1_sph, libcint_2e_ipvip1_cart, &
+                              libcint_2e_ip1ip2_sph, libcint_2e_ip1ip2_cart
    implicit none
    private
 

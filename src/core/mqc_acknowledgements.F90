@@ -34,16 +34,12 @@ contains
       case (ACK_CUEST)
          call banner("Integrals and SCF provided through NVIDIA's cuEST")
       case (ACK_LIBCINT)
-#ifdef MQC_WITH_LIBFINT
          ! libfint is a port rather than a new derivation, so the credit is
          ! still Qiming Sun's; naming only the port would take it away from him,
          ! and naming only libcint would credit a library this build did not
          ! link. Both, in the order they matter.
          call banner("Integrals provided through libfint, a Fortran port of "// &
                      "Qiming Sun's LibCint")
-#else
-         call banner("Integrals provided through Qiming Sun's LibCint")
-#endif
       case (ACK_TBLITE)
          call banner("Semi-empirical methods provided through the Grimme group's tblite")
       case default
