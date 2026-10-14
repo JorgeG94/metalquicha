@@ -60,10 +60,10 @@ module mqc_czt_bonding
 
    integer, parameter :: BONDING_NONE = 0
    integer, parameter :: BONDING_GMS_QUAO = 1
-      !! The Ruedenberg quasi-atomic analysis as GAMESS implements it. Named for
-      !! the reference implementation rather than the papers, because the labels
-      !! and the thresholds are GAMESS's and only the underlying quantities are
-      !! the papers'.
+      !! The Ruedenberg quasi-atomic analysis, with labels and thresholds chosen
+      !! to reproduce GAMESS's, against which it was validated. Named for that
+      !! reference rather than the papers, because only the underlying
+      !! quantities are defined in the papers.
 
    real(dp), parameter :: SUM_RULE_TOL = 1.0e-6_dp
       !! The population analysis must account for every electron. Loose next to

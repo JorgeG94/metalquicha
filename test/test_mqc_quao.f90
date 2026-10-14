@@ -1196,9 +1196,9 @@ contains
       !! points at, and it does so for an sp2 carbon where three of the four
       !! bonds are sigma and one is pi.
       !!
-      !! Worth stating what this does *not* test: the thresholds. They are
-      !! GAMESS's, so agreeing with GAMESS says the rules were transcribed, not
-      !! that they are right. Nothing in the papers defines them.
+      !! Worth stating what this does *not* test: the thresholds. They are set
+      !! to match GAMESS's, so agreeing with GAMESS says the rules reproduce its
+      !! labels, not that they are right. Nothing in the papers defines them.
       type(error_type), allocatable, intent(out) :: error
       type(czt_molecule_t) :: mol, aambs
       type(quao_result_t) :: quao

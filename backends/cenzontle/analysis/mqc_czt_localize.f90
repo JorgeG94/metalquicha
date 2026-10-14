@@ -60,7 +60,8 @@ module mqc_czt_localize
    !! ER starts from the orbitals it is given, as GAMESS's does from the
    !! canonical ones (`LOCSET` and `LOCLIZ` in `local.src`: canonical order,
    !! identity transformation). It has several maxima, so the start and the
-   !! sweep schedule decide which is reached; both follow GAMESS here, and a
+   !! sweep schedule decide which is reached; both match GAMESS here, so the
+   !! two can be validated against each other, and a
    !! Boys start is offered for a caller that wants one. A pair whose functional
    !! is flat in its angle, `A = B = 0`, is left alone.
    use pic_types, only: dp, int64
@@ -314,10 +315,11 @@ contains
       localized = start
       n_pair = n_occ*(n_occ + 1)/2
 
-      ! GAMESS's schedule (`LOCROT`, local.src): a ladder of thresholds from
+      ! The same schedule as GAMESS (`LOCROT`, local.src), checked against it so
+      ! the two reach the same maximum: a ladder of thresholds from
       ! 0.1 down by tens, sweeping at each until no rotation is as large as the
       ! threshold, and skipping the smaller ones meanwhile. Pair order and
-      ! rotation sense are its too -- (j,i) with j > i, j' = c j + s i -- so
+      ! rotation sense match too -- (j,i) with j > i, j' = c j + s i -- so
       ! that from the same canonical orbitals both follow the same path to the
       ! same one of ER's several maxima.
       sweep = 0
