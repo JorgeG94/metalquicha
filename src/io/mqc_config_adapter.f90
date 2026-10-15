@@ -448,6 +448,7 @@ contains
          mqc_config%bonding_restrict_localization
       driver_config%method_config%properties%bonding_max_sweeps = &
          mqc_config%bonding_max_sweeps
+      driver_config%method_config%properties%bonding_cube = mqc_config%bonding_cube
       if (allocated(mqc_config%bonding_no_sharing_ci)) then
          driver_config%method_config%properties%bonding_no_sharing_ci = &
             mqc_config%bonding_no_sharing_ci

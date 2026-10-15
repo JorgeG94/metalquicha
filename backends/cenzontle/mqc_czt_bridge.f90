@@ -58,6 +58,8 @@ module mqc_czt_bridge
                           run_czt_ump2, run_czt_uri_mp2
    use mqc_czt_cc, only: cc_result_t, run_czt_ccsd
    use mqc_czt_rcc, only: rcc_result_t, run_czt_rccsd
+   use mqc_cube_config, only: cube_config_t
+   use mqc_io_helpers, only: get_basename
    use mqc_czt_bonding, only: valence_wavefunction_t, &
                               run_quao_analysis, bonding_analysis_kind, &
                               BONDING_GMS_QUAO
@@ -99,6 +101,15 @@ module mqc_czt_bridge
       !! nothing downstream to absorb a loose solve.
 
 contains
+
+   function cube_file_stem(cube) result(stem)
+      !! What a cube file name starts with: the deck's output stem, so the files
+      !! sit beside `output_<deck>.json`, then the deck's own `prefix`
+      type(cube_config_t), intent(in) :: cube
+      character(len=:), allocatable :: stem
+
+      stem = "output_"//trim(get_basename())//"_"//trim(cube%prefix)
+   end function cube_file_stem
 
    pure function ecp_backend_available() result(available)
       !! Whether this build can evaluate an effective core potential
@@ -2233,6 +2244,8 @@ contains
                                 restrict_localization=settings%bonding_restrict_localization, &
                                 max_sweeps=settings%bonding_max_sweeps, &
                                 rows=result%quao_rows, &
+                                cube=settings%bonding_cube, &
+                                cube_stem=cube_file_stem(settings%bonding_cube), &
                                 atom_energy=ieda_atom, free_atom_energy=ieda_free, &
                                 pair_energy=ieda_pair, pair_classical=ieda_classical, &
                                 formation_energy=ieda_formation)
@@ -3915,6 +3928,8 @@ contains
                                       restrict_localization=settings%bonding_restrict_localization, &
                                       max_sweeps=settings%bonding_max_sweeps, &
                                       rows=result%quao_rows, &
+                                      cube=settings%bonding_cube, &
+                                      cube_stem=cube_file_stem(settings%bonding_cube), &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &
@@ -3937,6 +3952,8 @@ contains
                                       restrict_localization=settings%bonding_restrict_localization, &
                                       max_sweeps=settings%bonding_max_sweeps, &
                                       rows=result%quao_rows, &
+                                      cube=settings%bonding_cube, &
+                                      cube_stem=cube_file_stem(settings%bonding_cube), &
                                       valence_wavefunction=converged, &
                                       atom_energy=ieda_atom, &
                                       free_atom_energy=ieda_free, &

@@ -34,7 +34,8 @@ module mqc_json_config_reader
    use pic_ascii, only: to_lower
    use mqc_calc_types, only: calc_type_from_string, calc_type_to_string, &
                              CALC_TYPE_UNKNOWN, CALC_TYPE_ENERGY, &
-                             CALC_TYPE_INTERACTION_ENERGY, CALC_TYPE_HESSIAN
+                             CALC_TYPE_INTERACTION_ENERGY, CALC_TYPE_HESSIAN, &
+                             CALC_TYPE_GRADIENT
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL, &
                                        HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
@@ -49,6 +50,7 @@ module mqc_json_config_reader
    use mqc_terco_bridge, only: terco_backend_available
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
+   use mqc_cube_config, only: CUBE_NONE, CUBE_OCCUPIED, CUBE_ALL, CUBE_LISTED
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
    use mqc_dispersion_names, only: dispersion_kind_is_known, DISPERSION_KINDS
@@ -59,7 +61,8 @@ module mqc_json_config_reader
    ! drop the default initialisation of every `json_file` local in the module
    ! -- the parser's procedure-pointer component comes up null and the first
    ! `load` jumps to address zero. gfortran is unaffected.
-   use json_module, only: json_file, json_integer, json_string
+   use json_module, only: json_file, json_integer, json_string, json_object, &
+                          json_array, json_logical
    implicit none
    private
 
@@ -244,6 +247,8 @@ contains
                         "must be at least 1, not "//to_char(config%bonding_max_sweeps)//".")
          return
       end if
+      call read_bonding_cube(json, config, error)
+      if (error%has_error()) return
 
       ! ---- driver ----------------------------------------------------------
       call require_string(json, "driver", text, error)
@@ -525,6 +530,8 @@ contains
          call check_excited_states_run(config, error)
          if (error%has_error()) return
          call check_interaction_energy_run(config, error)
+         if (error%has_error()) return
+         call check_bonding_cube_run(config, error)
          return
       end if
       if (.not. found .or. n_mol <= 0) then
@@ -566,6 +573,8 @@ contains
       call check_state_averaged_run(config, error)
       if (error%has_error()) return
       call check_interaction_energy_run(config, error)
+      if (error%has_error()) return
+      call check_bonding_cube_run(config, error)
    end subroutine populate_config
 
    subroutine read_reference_fragment(json, config, error)
@@ -693,6 +702,179 @@ contains
          return
       end if
    end subroutine check_excited_states_run
+
+   subroutine read_bonding_cube(json, config, error)
+      !! `properties.bonding_analysis.cube`, which orbitals to write as cube
+      !! files and on what grid
+      !!
+      !! The object being present is the request: `{}` asks for the occupied
+      !! orbitals on the default grid. `orbitals` is `"occupied"`, `"all"`, or
+      !! a list of orbital numbers as the printed report gives them (1-based,
+      !! core orbitals counted).
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: ROOT = "properties.bonding_analysis.cube"
+      character(len=:), allocatable :: text
+      integer, allocatable :: indices(:)
+      integer :: kind, n, i, ichar
+      logical :: found
+
+      call json%info(ROOT, found=found, var_type=kind)
+      if (.not. found) return
+      if (kind /= json_object) then
+         call error%set(ERROR_VALIDATION, ROOT//" must be an object, for example "// &
+                        '{"orbitals": "occupied", "spacing": 0.2}')
+         return
+      end if
+      config%bonding_cube%selection = CUBE_OCCUPIED
+
+      call json%info(ROOT//".orbitals", found=found, var_type=kind, n_children=n)
+      if (found) then
+         select case (kind)
+         case (json_string)
+            call json%get(ROOT//".orbitals", text, found)
+            select case (trim(adjustl(text)))
+            case ("occupied")
+               config%bonding_cube%selection = CUBE_OCCUPIED
+            case ("all")
+               config%bonding_cube%selection = CUBE_ALL
+            case default
+               call error%set(ERROR_VALIDATION, ROOT//".orbitals is '"//trim(text)// &
+                              "'. Accepted: 'occupied', 'all', or a list of orbital "// &
+                              "numbers as the report prints them.")
+               return
+            end select
+         case (json_array)
+            if (n < 1) then
+               call error%set(ERROR_VALIDATION, ROOT//".orbitals is an empty list")
+               return
+            end if
+            do i = 1, n
+               call json%info(ROOT//".orbitals("//int_to_key(i)//")", found=found, &
+                              var_type=kind)
+               if (kind /= json_integer) then
+                  call error%set(ERROR_VALIDATION, ROOT//".orbitals entry "// &
+                                 int_to_key(i)//" is not an integer; a list holds "// &
+                                 "orbital numbers as the report prints them")
+                  return
+               end if
+            end do
+            call json%get(ROOT//".orbitals", indices, found)
+            if (.not. found .or. .not. allocated(indices)) then
+               call error%set(ERROR_VALIDATION, ROOT//".orbitals could not be read as "// &
+                              "a list of integers")
+               return
+            end if
+            if (any(indices < 1)) then
+               call error%set(ERROR_VALIDATION, ROOT//".orbitals: orbital numbers are "// &
+                              "those of the printed report, which count from 1")
+               return
+            end if
+            config%bonding_cube%selection = CUBE_LISTED
+            config%bonding_cube%indices = indices
+         case default
+            call error%set(ERROR_VALIDATION, ROOT//".orbitals must be 'occupied', "// &
+                           "'all', or a list of orbital numbers")
+            return
+         end select
+      end if
+
+      call json%info(ROOT//".single_file", found=found, var_type=kind)
+      if (found .and. kind /= json_logical) then
+         call error%set(ERROR_VALIDATION, ROOT//".single_file must be true or false")
+         return
+      end if
+      call optional_logical(json, ROOT//".single_file", config%bonding_cube%single_file)
+      call optional_real(json, ROOT//".spacing", config%bonding_cube%spacing)
+      if (.not. (config%bonding_cube%spacing > 0.0_dp)) then
+         call error%set(ERROR_VALIDATION, ROOT//".spacing is the distance between "// &
+                        "grid points in Bohr and must be positive, not "// &
+                        to_char(config%bonding_cube%spacing))
+         return
+      end if
+      call optional_real(json, ROOT//".margin", config%bonding_cube%margin)
+      if (.not. (config%bonding_cube%margin >= 0.0_dp)) then
+         call error%set(ERROR_VALIDATION, ROOT//".margin is the grid beyond the "// &
+                        "outermost nucleus in Bohr and cannot be negative, not "// &
+                        to_char(config%bonding_cube%margin))
+         return
+      end if
+
+      ! `text` still holds the selection, and `optional_string` leaves it alone
+      ! when the key is absent.
+      if (allocated(text)) deallocate (text)
+      call optional_string(json, ROOT//".prefix", text)
+      if (allocated(text)) then
+         if (len_trim(text) == 0 .or. len_trim(text) > len(config%bonding_cube%prefix)) then
+            call error%set(ERROR_VALIDATION, ROOT//".prefix must be between 1 and "// &
+                           int_to_key(len(config%bonding_cube%prefix))//" characters")
+            return
+         end if
+         do ichar = 1, len_trim(text)
+            select case (text(ichar:ichar))
+            case ("a":"z", "A":"Z", "0":"9", "_", "-")
+            case default
+               call error%set(ERROR_VALIDATION, ROOT//".prefix '"//trim(text)// &
+                              "' is put into file names, so it may hold only letters, "// &
+                              "digits, '_' and '-'")
+               return
+            end select
+         end do
+         config%bonding_cube%prefix = trim(text)
+      end if
+   end subroutine read_bonding_cube
+
+   subroutine check_bonding_cube_run(config, error)
+      !! Refuse cube output where it would be wrong or meaningless
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(inout) :: error
+
+      if (config%bonding_cube%selection == CUBE_NONE) return
+
+      ! A grid of an orbital only means something with the orbitals to hand.
+      if (.not. allocated(config%bonding_analysis)) then
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.cube needs a "// &
+                        "bonding analysis to take the orbitals from; set "// &
+                        "properties.bonding_analysis.type to 'gms_quao'")
+         return
+      end if
+      select case (trim(adjustl(config%bonding_analysis)))
+      case ("gms_quao", "quao")
+      case default
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.cube needs "// &
+                        "properties.bonding_analysis.type 'gms_quao', which is where "// &
+                        "the quasi-atomic orbitals come from, not '"// &
+                        trim(adjustl(config%bonding_analysis))//"'")
+         return
+      end select
+
+      ! A fragment's quasi-atomic orbitals are those of the fragment, in the
+      ! fragment's own basis, with the neighbours replaced by caps or a field.
+      ! None of that is a picture of the whole molecule, and the expansion has
+      ! no way to combine orbitals, so writing them would be writing something
+      ! nobody asked for.
+      if (is_fragmented(config)) then
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.cube cannot be "// &
+                        "combined with a fragmented calculation. Every fragment would "// &
+                        "write the orbitals of the fragment, in the fragment's own "// &
+                        "basis and under its own numbering, and the many-body "// &
+                        "expansion has no orbital to sum them into. Run the whole "// &
+                        "system unfragmented, or drop the cube key.")
+         return
+      end if
+
+      ! The analysis runs at every geometry of these, and each would overwrite
+      ! the last one's files.
+      if (config%calc_type /= CALC_TYPE_ENERGY .and. config%calc_type /= CALC_TYPE_GRADIENT) then
+         call error%set(ERROR_VALIDATION, "properties.bonding_analysis.cube is written "// &
+                        "for a single geometry, so it needs driver 'Energy' or "// &
+                        "'Gradient'. Any other driver would repeat the analysis at "// &
+                        "every geometry it visits and overwrite the files each time.")
+         return
+      end if
+   end subroutine check_bonding_cube_run
 
    subroutine check_state_averaged_run(config, error)
       !! Refuse `keywords.mcscf.n_states > 1` where it has no implementation:

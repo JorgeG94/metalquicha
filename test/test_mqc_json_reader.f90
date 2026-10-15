@@ -13,6 +13,7 @@ module test_mqc_json_reader
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_types, only: mqc_config_t
+   use mqc_cube_config, only: CUBE_NONE, CUBE_OCCUPIED, CUBE_ALL, CUBE_LISTED
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
                                METHOD_TYPE_DFT, METHOD_TYPE_MP2, METHOD_TYPE_CCSD_T, &
                                METHOD_TYPE_MCSCF
@@ -117,6 +118,7 @@ contains
                   new_unittest("uniform_system_broadcast", test_uniform_system), &
                   new_unittest("uniform_system_is_checked", test_uniform_rejected), &
                   new_unittest("bonding_analysis_property", test_bonding_analysis), &
+                  new_unittest("bonding_analysis_cube", test_bonding_cube), &
                   new_unittest("charges_property", test_charges_property), &
                   new_unittest("bond_orders_property", test_bond_orders_property), &
                   new_unittest("avas_orbital_labels", test_avas_keywords), &
@@ -3017,6 +3019,155 @@ contains
       call check(error, parse_error%has_error(), &
                  "a settings-only analysis block should be refused")
    end subroutine test_bonding_analysis
+
+   subroutine test_bonding_cube(error)
+      !! `properties.bonding_analysis.cube`: absent writes nothing, the object
+      !! is the request, and what cannot be honoured is refused at read time
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      character(len=*), parameter :: HEAD = '"properties": {"bonding_analysis": '// &
+                                     '{"type": "gms_quao", "cube": '
+      character(len=*), parameter :: MODEL = '"method": "hf", "basis": "sto-3g"'
+
+      ! Absent: no cubes, and the grid defaults are still the documented ones.
+      call write_deck(MODEL, "Energy", "", "", two_atoms(), &
+                      '"properties": {"bonding_analysis": {"type": "gms_quao"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_cube%selection == CUBE_NONE, &
+                 "a deck without a cube key must not ask for cube files")
+      if (allocated(error)) return
+
+      ! An empty object is the request, with every default.
+      call write_deck(MODEL, "Energy", "", "", two_atoms(), HEAD//"{}}}")
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_cube%selection == CUBE_OCCUPIED, &
+                 "an empty cube object should select the occupied orbitals")
+      if (allocated(error)) return
+      call check(error, abs(config%bonding_cube%spacing - 0.2_dp) < 1.0e-12_dp .and. &
+                 abs(config%bonding_cube%margin - 4.0_dp) < 1.0e-12_dp .and. &
+                 trim(config%bonding_cube%prefix) == "quao", &
+                 "the grid and the prefix should keep their defaults")
+      if (allocated(error)) return
+      call check(error,.not. config%bonding_cube%single_file, &
+                 "one file per orbital should be the default")
+      if (allocated(error)) return
+
+      ! Everything given.
+      call write_deck(MODEL, "Gradient", "", "", two_atoms(), &
+                      HEAD//'{"orbitals": "all", "spacing": 0.35, "margin": 2.5, '// &
+                      '"prefix": "w2-quao_1", "single_file": true}}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_cube%selection == CUBE_ALL .and. &
+                 abs(config%bonding_cube%spacing - 0.35_dp) < 1.0e-12_dp .and. &
+                 abs(config%bonding_cube%margin - 2.5_dp) < 1.0e-12_dp .and. &
+                 trim(config%bonding_cube%prefix) == "w2-quao_1" .and. &
+                 config%bonding_cube%single_file, &
+                 "the cube settings should have been read")
+      if (allocated(error)) return
+
+      ! Naming the selection must not leak into the prefix.
+      call write_deck(MODEL, "Energy", "", "", two_atoms(), HEAD//'{"orbitals": "all"}}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%bonding_cube%prefix) == "quao", &
+                 "an unnamed prefix should stay quao, not '"// &
+                 trim(config%bonding_cube%prefix)//"'")
+      if (allocated(error)) return
+
+      ! A list of 0-based orbitals.
+      call write_deck(MODEL, "Energy", "", "", two_atoms(), &
+                      HEAD//'{"orbitals": [2, 5, 7]}}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%bonding_cube%selection == CUBE_LISTED, &
+                 "a list should select the orbitals it names")
+      if (allocated(error)) return
+      call check(error, allocated(config%bonding_cube%indices), "the list was dropped")
+      if (allocated(error)) return
+      call check(error, all(config%bonding_cube%indices == [2, 5, 7]), &
+                 "the list should be kept as written, in order")
+      if (allocated(error)) return
+
+      ! What makes no grid, no file name, or no orbital is refused.
+      call refused(HEAD//'{"spacing": 0}}}', "a zero spacing", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"spacing": -0.2}}}', "a negative spacing", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"margin": -1.0}}}', "a negative margin", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"orbitals": "valence"}}}', "an unknown selection", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"orbitals": [2, -2]}}}', "a negative orbital number", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"orbitals": [0]}}}', "orbital number zero", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"orbitals": []}}}', "an empty list", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"orbitals": [0.5]}}}', "a fractional orbital number", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"prefix": "a/b"}}}', "a prefix with a slash", error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"single_file": "yes"}}}', "a single_file that is not a boolean", &
+                   error)
+      if (allocated(error)) return
+      call refused(HEAD//'{"grid": 0.2}}}', "a key nothing reads", error)
+      if (allocated(error)) return
+      call refused(HEAD//"true}}", "a cube that is not an object", error)
+      if (allocated(error)) return
+
+      ! No analysis to take the orbitals from.
+      call write_deck(MODEL, "Energy", "", "", two_atoms(), &
+                      '"properties": {"bonding_analysis": {"type": "none", "cube": {}}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "cube output with no bonding analysis should be refused")
+      if (allocated(error)) return
+
+      ! A driver that visits many geometries would overwrite its own files.
+      call write_deck(MODEL, "Optimize", "", "", two_atoms(), HEAD//"{}}}")
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "cube output under an optimization should be refused")
+      if (allocated(error)) return
+
+      ! Fragmented: no orbital of the whole system exists to write.
+      call write_deck(MODEL, "Energy", '"fragmentation": {"method": "MBE", "level": 2}', "", &
+                      '"symbols": ["H", "H", "H", "H"], '// &
+                      '"geometry": [0,0,0, 0.7,0,0, 4,0,0, 4.7,0,0], '// &
+                      '"molecular_charge": 0, "molecular_multiplicity": 1, '// &
+                      '"fragments": [[0, 1], [2, 3]]', HEAD//"{}}}")
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "cube output under fragmentation should be refused")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "fragment") > 0, &
+                 "refused, but not for being fragmented: "//parse_error%get_message())
+
+   contains
+
+      subroutine refused(properties, what, failure)
+         character(len=*), intent(in) :: properties, what
+         type(error_type), allocatable, intent(out) :: failure
+
+         type(mqc_config_t) :: refused_config
+         type(error_t) :: refused_error
+
+         call write_deck(MODEL, "Energy", "", "", two_atoms(), properties)
+         call read_deck(refused_config, refused_error)
+         call check(failure, refused_error%has_error(), what//" should be refused")
+      end subroutine refused
+
+   end subroutine test_bonding_cube
 
    subroutine test_hess_end(error)
       !! `keywords.optimization.hess_end`, read and defaulted off

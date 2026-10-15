@@ -8,6 +8,7 @@ module mqc_method_config
    use mqc_program_limits, only: MAX_ORBITAL_LABEL_LEN
    use mqc_scf_types, only: guess_step_t, scf_numerics_t, deltascf_options_t
    use mqc_method_types, only: METHOD_TYPE_UNKNOWN
+   use mqc_cube_config, only: cube_config_t
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_VDW_SCALE, DEFAULT_DYNAMIC_TOL, &
                                        DEFAULT_DYNAMIC_MAXITER, EFP_RESPONSE_AUTO, HESSIAN_METHOD_ANALYTIC, &
                                        DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL, &
@@ -366,6 +367,8 @@ module mqc_method_config
       character(len=32) :: bonding_no_sharing_ci = "transform"
       real(dp) :: bonding_threshold = 1.0_dp
       integer :: bonding_max_sweeps = 2000
+      type(cube_config_t) :: bonding_cube
+         !! Quasi-atomic orbitals to write as cube files; nothing by default.
    end type properties_config_t
 
    !============================================================================

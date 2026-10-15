@@ -140,6 +140,9 @@ if(MQC_ENABLE_CZT)
   # The quasi-atomic orbitals themselves, and the density in their basis.
   addtest(mqc_quao)
   target_link_libraries(test_mqc_quao PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The grid, the cube writer, and the quasi-atomic orbitals written through it.
+  addtest(mqc_czt_cube)
+  target_link_libraries(test_mqc_czt_cube PRIVATE ${MQC_INTEGRALS_LIBS})
   # Second derivatives, the response solve and the assembled Hessian.
   addtest(mqc_hess_ints)
   target_link_libraries(test_mqc_hess_ints PRIVATE ${MQC_INTEGRALS_LIBS})

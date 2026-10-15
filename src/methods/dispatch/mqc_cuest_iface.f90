@@ -9,6 +9,7 @@ module mqc_cuest_iface
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t, deltascf_options_t
    use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC
+   use mqc_cube_config, only: cube_config_t
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, &
                                 properties_config_t, excited_config_t
    implicit none
@@ -102,6 +103,8 @@ module mqc_cuest_iface
          !! kcal/mol; pairs weaker than this are counted rather than printed.
       integer :: bonding_max_sweeps = 2000
          !! Sweep limit for the quasi-atomic orientation
+      type(cube_config_t) :: bonding_cube
+         !! Quasi-atomic orbitals to write as cube files; nothing by default.
 
       type(pcm_config_t) :: pcm
          !! The polarizable continuum, when one was asked for. Read by the CPU
@@ -215,6 +218,7 @@ contains
       settings%bonding_no_sharing_ci = properties%bonding_no_sharing_ci
       settings%bonding_restrict_localization = properties%bonding_restrict_localization
       settings%bonding_max_sweeps = properties%bonding_max_sweeps
+      settings%bonding_cube = properties%bonding_cube
       if (allocated(properties%fukui_population)) then
          settings%fukui_population = properties%fukui_population
       end if

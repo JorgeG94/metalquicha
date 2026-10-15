@@ -11,6 +11,7 @@ module mqc_config_types
    use mqc_calc_types, only: CALC_TYPE_ENERGY
    use mqc_geometry, only: geometry_type
    use mqc_physical_fragment, only: bond_t
+   use mqc_cube_config, only: cube_config_t
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_PRESSURE, DEFAULT_RESPONSE_TOL, &
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_AIMD_DT, &
@@ -166,6 +167,10 @@ module mqc_config_types
          !! From `properties.bonding_analysis.orientation_max_sweeps`. Jacobi
          !! sweeps the orientation may take before it is judged on how much the
          !! last one still gained. At least one.
+      type(cube_config_t) :: bonding_cube
+         !! From `properties.bonding_analysis.cube`. Which quasi-atomic orbitals
+         !! to write as Gaussian cube files, and on what grid. Nothing selected
+         !! means no files, which is the default.
 
       ! Model information
       integer(int32) :: method = METHOD_TYPE_GFN2
