@@ -615,7 +615,7 @@ as everywhere else in a deck, from 0, which is not how the report labels them
 Files go in the working directory beside ``output_<deck>.json``, named::
 
    output_<deck>_<prefix>_<orbital>_<element><atom>_<type>.cube
-   output_w2_quao_008_O3_sigma.cube
+   output_w2_quao_011_O3_sigma.cube
 
 where ``type`` is the report's name for the orbital with ``-`` and ``/``
 turned into ``_`` (``sigma``, ``pi``, ``p_lone``, ``empty_bnd``, ...). The
@@ -646,8 +646,8 @@ To view them:
   per orbital. Set the levels with ``volume #1 level -0.05 level 0.05``.
 - **PyMOL**: ``load file.cube, orb`` then ``isosurface pos, orb, 0.05`` and
   ``isosurface neg, orb, -0.05``.
-- **Jmol**: ``isosurface cutoff 0.05 "file.cube"``, and again with ``-0.05``
-  for the negative lobe.
+- **Jmol**: ``isosurface sign cutoff 0.05 "file.cube"`` draws both lobes,
+  each phase in its own colour.
 - **Avogadro**: open the file and add the cube as a surface from the surfaces
   extension.
 
