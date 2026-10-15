@@ -110,6 +110,7 @@ contains
                   new_unittest("system_gpu_conflicts_with_backend", test_gpu_conflict), &
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
+                  new_unittest("terco_refuses_pcm", test_terco_refuses_pcm), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("dft_dispersion", test_dft_dispersion), &
                   new_unittest("fragment_potentials", test_fragment_potentials), &
@@ -1639,6 +1640,37 @@ contains
       call check(error,.not. config%pcm_enabled, &
                  "without the block the calculation must stay in the gas phase")
    end subroutine test_pcm_keywords
+
+   subroutine test_terco_refuses_pcm(error)
+      !! A continuum asked of terco is refused while the deck is still a deck
+      !!
+      !! The terco driver reads no `keywords.pcm`, so letting the deck through
+      !! would report a gas-phase energy under a solvated deck's name. The
+      !! refusal comes before the check for a terco build, so it is the same
+      !! sentence on every binary, and the same deck on the CPU must still read.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "dft", "functional": "pbe0", "basis": "sto-3g"', &
+                      "Energy", '"pcm": {"dielectric": 78.39}', "", two_atoms(), &
+                      root='"backend": "terco"')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "terco with keywords.pcm must be refused")
+      if (allocated(error)) return
+      call check(error, index(parse_error%get_message(), "keywords.pcm") > 0, &
+                 "the refusal must name keywords.pcm, not the build: "// &
+                 parse_error%get_message())
+      if (allocated(error)) return
+
+      call write_deck('"method": "dft", "functional": "pbe0", "basis": "sto-3g"', &
+                      "Energy", '"pcm": {"dielectric": 78.39}', "", two_atoms(), &
+                      root='"backend": "cpu"')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%pcm_enabled, "the CPU backend must keep the continuum")
+   end subroutine test_terco_refuses_pcm
 
    subroutine test_dft_keywords(error)
       !! keywords.dft, and that explicit counts take the level out of charge
