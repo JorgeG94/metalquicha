@@ -391,10 +391,6 @@ contains
          call json%get("backend", backend_text, backend_named)
          if (backend_named .and. allocated(backend_text)) config%backend = backend_text
       end block
-      ! Both spellings are now in hand, so the GPU request can be settled and
-      ! checked against what this build and this method can actually do.
-      call resolve_gpu_request(config, backend_named, error)
-      if (error%has_error()) return
       ! The continuum is switched on by the presence of the block rather than by
       ! a flag inside it: a deck that names a dielectric wants solvent, and a
       ! separate "enabled" would let the two disagree.
@@ -416,6 +412,11 @@ contains
       call optional_real(json, "keywords.pcm.zeta", config%pcm_zeta)
       call optional_real(json, "keywords.pcm.tolerance", config%pcm_tolerance)
       call optional_int(json, "keywords.pcm.max_iter", config%pcm_max_iter)
+      ! Both spellings are now in hand, so the GPU request can be settled and
+      ! checked against what this build and this method can actually do. After
+      ! `keywords.pcm`, which decides whether a backend can take the deck at all.
+      call resolve_gpu_request(config, backend_named, error)
+      if (error%has_error()) return
       call optional_int(json, "keywords.dft.radial_points", config%dft_radial_points)
       call optional_int(json, "keywords.dft.angular_points", config%dft_angular_points)
 
@@ -2396,6 +2397,8 @@ contains
       !!   * asking for cuEST for a method it has no implementation of is refused.
       !!     Substituting the CPU silently would report a provenance and a set of
       !!     timings that were not true.
+      !!   * asking terco for a continuum is refused, since it would be ignored.
+      !!     Needs `keywords.pcm` read first.
       type(mqc_config_t), intent(inout) :: config
       logical, intent(in) :: backend_named  !! Whether the deck had a root `backend` key
       type(error_t), intent(out) :: error
@@ -2431,6 +2434,17 @@ contains
       if (error%has_error()) return
 
       if (backend_kind == BACKEND_TERCO) then
+         ! Before the build check, so the deck is told what it asked for that
+         ! terco cannot do whichever binary reads it.
+         ! TODO(mqc): terco has C-PCM and IEF-PCM on its feat/pcm branch; once
+         ! that merges, wire trc_set_pcm into the terco driver and drop this.
+         if (config%pcm_enabled) then
+            call error%set(ERROR_VALIDATION, "backend 'terco' does not read "// &
+                           "keywords.pcm yet: the run would come back as a gas-phase "// &
+                           "energy. Use the CPU backend for continuum solvation, or "// &
+                           "drop keywords.pcm.")
+            return
+         end if
          if (.not. terco_backend_available()) then
             call error%set(ERROR_VALIDATION, "backend 'terco' was asked for, but this "// &
                            "build has no terco backend. Rebuild with CMake and "// &
