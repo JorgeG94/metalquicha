@@ -6,6 +6,7 @@ target_sources(
           mqc_czt_localize.f90
           mqc_czt_quao.f90
           mqc_czt_quao_report.f90
+          mqc_czt_cube.f90
           mqc_czt_bonding.f90
           mqc_czt_ieda.f90
           mqc_czt_fukui.f90)

@@ -23,6 +23,8 @@ with no reference to a Lewis structure anyone drew.
   this, in kcal/mol, are counted rather than printed (default: 1.0).
 - ``orientation_max_sweeps``: Jacobi sweeps the orientation of the orbitals may
   take (default: 2000, at least 1). See `When the orientation is slow`_.
+- ``cube``: write the quasi-atomic orbitals as Gaussian cube files. Absent
+  means none. See `Viewing the orbitals`_.
 
 ``properties`` sits beside ``keywords``, not inside it, and the distinction is
 worth keeping. ``keywords`` say how to compute the wave function and change the
@@ -566,6 +568,98 @@ message names the key to raise. A molecule whose orientation settles is
 unaffected by either branch, and gives exactly the numbers it gave before the
 limit was configurable. The same tripeptide settles in full with
 ``"orientation_max_sweeps": 4000``.
+
+Viewing the orbitals
+--------------------
+
+The tables say which orbital is which; ``cube`` writes them out so they can be
+looked at. The object being present is the request, and every key in it is
+optional:
+
+.. code-block:: json
+
+   "properties": {
+     "bonding_analysis": {
+       "type": "gms_quao",
+       "cube": {
+         "orbitals": "occupied",
+         "spacing": 0.2,
+         "margin": 4.0,
+         "prefix": "quao",
+         "single_file": false
+       }
+     }
+   }
+
+- ``orbitals``: ``"occupied"`` (default) writes every orbital the analysis
+  does not call empty, that is with an occupation of at least 0.4; ``"all"``
+  writes every one, empty ones included; a list such as ``[2, 3, 7]`` writes
+  just those.
+- ``spacing``: Bohr between grid points (default: 0.2). Must be positive.
+- ``margin``: Bohr of grid beyond the outermost nucleus on every side
+  (default: 4.0). Not negative.
+- ``prefix``: the tag in every file name (default: ``"quao"``). Letters,
+  digits, ``_`` and ``-``.
+- ``single_file``: one multi-orbital file instead of one file per orbital
+  (default: false). See below.
+
+**Orbital numbers are the report's.** The bonds and delocalization tables
+print an ``orbitals`` column, and the JSON rows carry the same numbers: 1-based,
+counting the core orbitals the analysis leaves out. Water has one oxygen core
+orbital, so its first quasi-atomic orbital is number 2. The list in
+``orbitals``, the file names and the first comment line of every file use that
+numbering, so a cube can be matched to a table row directly. Atoms are numbered
+as everywhere else in a deck, from 0, which is not how the report labels them
+(``O 1``); the file names carry the 0-based number.
+
+Files go in the working directory beside ``output_<deck>.json``, named::
+
+   output_<deck>_<prefix>_<orbital>_<element><atom>_<type>.cube
+   output_w2_quao_011_O3_sigma.cube
+
+where ``type`` is the report's name for the orbital with ``-`` and ``/``
+turned into ``_`` (``sigma``, ``pi``, ``p_lone``, ``empty_bnd``, ...). The
+second comment line of each file gives the occupation and the integral of
+:math:`\phi^2` over the grid. That integral should be close to 1; a value
+well off it means the margin is too small or the spacing too coarse for that
+orbital. For a 0.2 Bohr grid and a 4 Bohr margin it comes out within half a
+per cent on valence orbitals. Everything in the files is in Bohr. The sign of
+each orbital is arbitrary; each is chosen so its largest coefficient is
+positive, which makes a rerun give the same file.
+
+With ``"single_file": true`` every selected orbital goes into one file,
+``output_<deck>_<prefix>_orbitals.cube``, in the standard multi-orbital cube
+layout: the atom count is written negative, a record after the atoms lists the
+number of orbitals and their numbers, and the values for all orbitals at one
+grid point are written together. Every orbital must then be held in memory at
+once, so a request over 2 GiB is refused; write one file per orbital for a
+big grid.
+
+To view them:
+
+- **VMD**: ``mol new file.cube``, then *Graphics > Representations* with draw
+  style *Isosurface* and an isovalue of about 0.05; add a second
+  representation at -0.05 for the other phase. A multi-orbital file loads as
+  one volume per orbital, and each representation picks its volume with the
+  volume selector.
+- **ChimeraX**: ``open file.cube``. A multi-orbital file opens as one volume
+  per orbital. Set the levels with ``volume #1 level -0.05 level 0.05``.
+- **PyMOL**: ``load file.cube, orb`` then ``isosurface pos, orb, 0.05`` and
+  ``isosurface neg, orb, -0.05``.
+- **Jmol**: ``isosurface sign cutoff 0.05 "file.cube"`` draws both lobes,
+  each phase in its own colour.
+- **Avogadro**: open the file and add the cube as a surface from the surfaces
+  extension.
+
+PyMOL, Jmol and Avogadro read the one-orbital layout most reliably, so use the
+default of one file per orbital with them. The isovalue is in units of
+:math:`\phi` (atomic units to the power 3/2), so 0.05 to 0.1 shows the shape
+of a valence orbital.
+
+Cube output is for a single geometry of the whole system, so it is refused
+with a fragmented calculation (every fragment would write the orbitals of the
+fragment, and the many-body expansion has no way to combine them) and with any
+driver but ``Energy`` or ``Gradient``.
 
 For correlated wave functions
 -----------------------------

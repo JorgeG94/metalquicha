@@ -347,8 +347,22 @@ contains
       call allow(keys, "no_sharing_ci")
       call allow(keys, "restrict_localization")
       call allow(keys, "orientation_max_sweeps")
+      call allow(keys, "cube")
       call require(keys, "type")
    end function bonding_analysis_keys
+
+   function cube_keys() result(keys)
+      !! Gaussian cube output of the quasi-atomic orbitals
+      !!
+      !! `properties.bonding_analysis.cube`. Every key is optional: an empty
+      !! object asks for the occupied orbitals on the default grid.
+      type(key_set_t) :: keys
+      call allow(keys, "orbitals")
+      call allow(keys, "single_file")
+      call allow(keys, "spacing")
+      call allow(keys, "margin")
+      call allow(keys, "prefix")
+   end function cube_keys
 
    function avas_keys() result(keys)
       !! Choosing the active space by atomic orbital character
@@ -1181,6 +1195,13 @@ contains
                         "GAMESS implements it; 'quao' is accepted for it too).")
          return
       end select
+
+      call core%get(analysis, "cube", entry, found)
+      if (found .and. associated(entry)) then
+         call check_object(core, entry, "properties.bonding_analysis.cube", &
+                           cube_keys(), error)
+         if (error%has_error()) return
+      end if
 
       call core%get(analysis, "no_sharing_ci", entry, found)
       if (.not. found .or. .not. associated(entry)) return

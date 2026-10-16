@@ -12,7 +12,7 @@ module mqc_czt_bonding
    !! **This is a Hartree-Fock analysis unless a correlated density is passed.**
    !! `quasi_atomic_orbitals` accepts one, through `occupations`; without it
    !! what is analysed is the reference determinant.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_blas_interfaces, only: pic_gemm
    use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
@@ -45,7 +45,12 @@ module mqc_czt_bonding
                            project_no_sharing, &
                            active_cumulant, quao_projection, transform_cumulant
    use mqc_czt_quao_report, only: quao_labels_t, label_quasi_atomic_orbitals, &
-                                  print_quao_report, build_quao_rows
+                                  print_quao_report, build_quao_rows, quao_type_name
+   use mqc_cube_config, only: cube_config_t, CUBE_NONE, CUBE_OCCUPIED, CUBE_ALL, &
+                              CUBE_LISTED
+   use mqc_czt_cube, only: cube_grid_t, build_cube_grid, orbitals_on_grid, &
+                           write_cube, write_cube_orbitals, cube_square_norm, &
+                           orbitals_per_pass, MAX_ORBITALS_PER_FILE_BYTES
    use mqc_quao_rows, only: quao_rows_t
    implicit none
    private
@@ -78,6 +83,11 @@ module mqc_czt_bonding
       !! A decomposition has to add back up to the thing it decomposed. Tighter
       !! than the sum rule above: these compare a handful of terms rather than a
       !! sum over the molecule.
+
+   real(dp), parameter :: CUBE_OCCUPIED_MIN = 0.4_dp
+      !! Occupation at which `cube.orbitals = "occupied"` starts to include an
+      !! orbital. The same line the report draws between a partly occupied
+      !! orbital and an empty one.
 
    real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-14_dp
       !! Occupations below this contribute nothing and are skipped, which also
@@ -179,7 +189,7 @@ contains
                                 no_sharing_ci, valence_wavefunction, &
                                 restrict_localization, atom_energy, &
                                 free_atom_energy, pair_energy, pair_classical, &
-                                formation_energy, max_sweeps, rows)
+                                formation_energy, max_sweeps, rows, cube, cube_stem)
       !! The quasi-atomic bonding analysis, start to finish
       ! TODO(mqc): the dummy arguments are interrupted by local declarations --
       ! `aambs` through `labels` sit between `occupations` and `active_orbitals`
@@ -207,6 +217,7 @@ contains
 
       type(czt_molecule_t) :: aambs
       type(aambs_dimensions_t) :: dims
+      type(error_t) :: cube_error
       type(vvo_result_t) :: vvo
       type(quao_result_t) :: quao
       type(quao_labels_t) :: labels
@@ -269,6 +280,14 @@ contains
          !! The bonds and delocalization tables and the atom-pair sums, in
          !! this calculation's atom numbering. Empty when the analysis failed
          !! before the orbitals were labelled.
+      type(cube_config_t), intent(in), optional :: cube
+         !! Which quasi-atomic orbitals to write as Gaussian cube files, and on
+         !! what grid. Absent, or with nothing selected, writes none. A failure
+         !! writing them is reported and does not stop the analysis.
+      character(len=*), intent(in), optional :: cube_stem
+         !! What every cube file name starts with, directory included. Required
+         !! with `cube`; `cube%prefix` is not used here, so the caller decides
+         !! where the files go.
 
       real(dp), allocatable :: s_mbs(:, :), mixed(:, :), projection(:, :)
       real(dp), allocatable :: valence_internal(:, :), kinetic(:, :)
@@ -436,6 +455,24 @@ contains
       call label_quasi_atomic_orbitals(quao, mol, aambs, mixed, s_mbs, &
                                        atomic_numbers, coordinates, labels, error)
       if (error%has_error()) return
+      if (present(cube)) then
+         if (cube%selection /= CUBE_NONE) then
+            ! Nothing after this depends on the files, so a failure here is
+            ! reported and the analysis goes on to print its tables.
+            if (.not. present(cube_stem)) then
+               call cube_error%set(ERROR_VALIDATION, "cube output was requested "// &
+                                   "without a file name stem to write it under")
+            else
+               call write_quao_cubes(mol, quao, labels, atomic_numbers, &
+                                     element_symbols, coordinates, cube, cube_stem, &
+                                     dims%n_core, cube_error)
+            end if
+            if (cube_error%has_error()) then
+               call logger%warning("  cube files could not be written: "// &
+                                   cube_error%get_message())
+            end if
+         end if
+      end if
       if (present(rows)) then
          if (present(threshold)) then
             call build_quao_rows(quao, labels, interference, kbo, dims%n_core, natm, &
@@ -814,6 +851,181 @@ contains
       deallocate (s_mbs, mixed, projection, valence_internal, kinetic, kbo)
       deallocate (interference, core_off, core_n, val_off, val_n)
    end subroutine run_quao_analysis
+
+   subroutine write_quao_cubes(mol, quao, labels, atomic_numbers, element_symbols, &
+                               coordinates, cube, stem, n_core, error)
+      !! Write the selected quasi-atomic orbitals as Gaussian cube files
+      !!
+      !! One file per orbital, `<stem>_<number>_<element><atom>_<type>.cube`.
+      !! The number is the one the printed report and the JSON rows give the
+      !! orbital -- 1-based, core orbitals counted -- and the atom is 0-based as
+      !! an atom is everywhere else in a deck. The orbital type is the report's
+      !! name for it. The sign
+      !! of an orbital is arbitrary; each is flipped so its largest coefficient
+      !! is positive, which makes the files repeatable.
+      !!
+      !! The second comment line of every file carries the integral of the
+      !! squared orbital over the box, which is one up to the grid's resolution
+      !! and what shows a margin too small or a spacing too coarse.
+      type(czt_molecule_t), intent(in) :: mol
+      type(quao_result_t), intent(in) :: quao
+      type(quao_labels_t), intent(in) :: labels
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)   !! (3, natm), Bohr
+      type(cube_config_t), intent(in) :: cube
+      character(len=*), intent(in) :: stem
+      integer, intent(in) :: n_core
+         !! Core orbitals the analysis left out, which the report's numbering
+         !! counts: quasi-atomic orbital `i` is orbital `n_core + i` there
+      type(error_t), intent(inout) :: error
+
+      type(cube_grid_t) :: grid
+      real(dp), allocatable :: coefficients(:, :), values(:, :)
+      logical, allocatable :: chosen(:)
+      integer, allocatable :: picked(:)
+      character(len=:), allocatable :: path, symbol, kind_name, index_text
+      character(len=160) :: first_line, second_line, line
+      real(dp) :: norm
+      integer :: i, j, k, n_picked, per_pass, last, atom, biggest
+
+      if (error%has_error()) return
+      allocate (chosen(quao%n_quao))
+      chosen = .false.
+      select case (cube%selection)
+      case (CUBE_OCCUPIED)
+         do i = 1, quao%n_quao
+            chosen(i) = quao%population_bond_order(i, i) >= CUBE_OCCUPIED_MIN
+         end do
+      case (CUBE_ALL)
+         chosen = .true.
+      case (CUBE_LISTED)
+         if (.not. allocated(cube%indices)) then
+            call error%set(ERROR_VALIDATION, "cube orbitals were to be listed but no "// &
+                           "list was given")
+            return
+         end if
+         do k = 1, size(cube%indices)
+            if (cube%indices(k) <= n_core .or. cube%indices(k) > n_core + quao%n_quao) then
+               call error%set(ERROR_VALIDATION, "cube orbital "//to_char(cube%indices(k))// &
+                              " is not a quasi-atomic orbital: the report numbers "// &
+                              "them "//to_char(n_core + 1)//" to "// &
+                              to_char(n_core + quao%n_quao)//", after the "// &
+                              to_char(n_core)//" core orbitals")
+               return
+            end if
+            chosen(cube%indices(k) - n_core) = .true.
+         end do
+      case default
+         call error%set(ERROR_VALIDATION, "unknown cube orbital selection "// &
+                        to_char(cube%selection))
+         return
+      end select
+      n_picked = count(chosen)
+      if (n_picked == 0) then
+         call logger%info("  cube files: no orbital met the selection, none written")
+         return
+      end if
+      picked = pack([(i, i=1, quao%n_quao)], chosen)
+
+      call build_cube_grid(coordinates, cube%margin, cube%spacing, grid, error)
+      if (error%has_error()) return
+
+      call logger%info("")
+      write (line, "(a,i0,a,3(i0,1x),a,f6.3,a)") "  cube files: ", n_picked, &
+         " orbitals on a ", grid%n, "grid, spacing ", grid%spacing, " bohr"
+      call logger%info(trim(line))
+
+      if (cube%single_file) then
+         ! One file holds every orbital at once, so they all sit in memory.
+         if (8_int64*int(grid%n_points, int64)*int(n_picked, int64) > &
+             MAX_ORBITALS_PER_FILE_BYTES) then
+            call error%set(ERROR_VALIDATION, "a single cube file for "// &
+                           to_char(n_picked)//" orbitals on "//to_char(grid%n_points)// &
+                           " points would hold more than "// &
+                           to_char(int(MAX_ORBITALS_PER_FILE_BYTES/1048576_int64))// &
+                           " MiB in memory. Coarsen the grid, select fewer orbitals, or "// &
+                           "write one file per orbital.")
+            return
+         end if
+         per_pass = n_picked
+      else
+         per_pass = orbitals_per_pass(grid)
+      end if
+      allocate (coefficients(size(quao%orbitals, 1), min(per_pass, n_picked)))
+      do j = 1, n_picked, per_pass
+         last = min(j + per_pass - 1, n_picked)
+         do k = j, last
+            coefficients(:, k - j + 1) = quao%orbitals(:, picked(k))
+            ! Phase fixed by the largest component, so a rerun gives the same file.
+            biggest = maxloc(abs(coefficients(:, k - j + 1)), dim=1)
+            if (coefficients(biggest, k - j + 1) < 0.0_dp) then
+               coefficients(:, k - j + 1) = -coefficients(:, k - j + 1)
+            end if
+         end do
+         call orbitals_on_grid(mol, grid, coefficients(:, 1:last - j + 1), values, error)
+         if (error%has_error()) return
+         do k = j, last
+            i = picked(k)
+            atom = quao%atom_of(i)
+            symbol = trim(adjustl(element_symbols(atom)))
+            kind_name = file_safe(trim(quao_type_name(labels%orbital_type(i), &
+                                                      labels%dominant_l(i))))
+            index_text = to_char(n_core + i)
+            index_text = repeat("0", max(0, 3 - len(index_text)))//index_text
+            path = trim(stem)//"_"//index_text//"_"//symbol//to_char(atom - 1)//"_"// &
+                   kind_name//".cube"
+            norm = cube_square_norm(grid, values(:, k - j + 1))
+            write (first_line, "(a,i0,a,a,i0,a)") "QUAO orbital ", n_core + i, &
+               " on atom ", symbol//" ", atom - 1, ": "// &
+               trim(quao_type_name(labels%orbital_type(i), labels%dominant_l(i)))
+            write (second_line, "(a,f8.5,a,f8.5,a)") "occupation ", &
+               quao%population_bond_order(i, i), ", integral of phi^2 on this grid ", &
+               norm, ", orbital number as in the report, atom number 0-based"
+            if (.not. cube%single_file) then
+               call write_cube(path, grid, atomic_numbers, coordinates, &
+                               values(:, k - j + 1), trim(first_line), trim(second_line), &
+                               error)
+               if (error%has_error()) return
+            end if
+            write (line, "(4x,a,i4,2x,a4,f9.4,a,f8.5)") "orbital", n_core + i, &
+               trim(symbol)//to_char(atom - 1), quao%population_bond_order(i, i), &
+               "  phi^2 integral", norm
+            if (cube%single_file) then
+               call logger%info(trim(line))
+            else
+               call logger%info(trim(line)//"  "//path)
+            end if
+         end do
+         if (cube%single_file) then
+            path = trim(stem)//"_orbitals.cube"
+            write (first_line, "(a,i0,a)") "QUAO orbitals, ", n_picked, " in this file"
+            call write_cube_orbitals(path, grid, atomic_numbers, coordinates, values, &
+                                     n_core + picked, trim(first_line), &
+                                     "orbital numbers as in the report, atom numbers 0-based", &
+                                     error)
+            if (error%has_error()) return
+            call logger%info("    all in "//path)
+         end if
+      end do
+   end subroutine write_quao_cubes
+
+   pure function file_safe(text) result(clean)
+      !! `text` with everything a file name should not hold turned into `_`
+      character(len=*), intent(in) :: text
+      character(len=len(text)) :: clean
+
+      integer :: i
+
+      clean = text
+      do i = 1, len(text)
+         select case (text(i:i))
+         case ("a":"z", "A":"Z", "0":"9", "_")
+         case default
+            clean(i:i) = "_"
+         end select
+      end do
+   end function file_safe
 
    subroutine project_density(mol, natural, occupations, valence_internal, &
                               density, error)
