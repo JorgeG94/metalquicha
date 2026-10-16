@@ -267,7 +267,8 @@ if(MQC_ENABLE_CZT)
   # The contraction of an effective density against the derivative integrals:
   # restricted and unrestricted SCF providers against czt_scf_gradient.
   addtest(mqc_density_contraction)
-  target_link_libraries(test_mqc_density_contraction PRIVATE cint_fortran cint)
+  target_link_libraries(test_mqc_density_contraction
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Nonadiabatic couplings between two SA-CASSCF states.
   addtest(mqc_sa_nac)
