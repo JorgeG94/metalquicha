@@ -32,8 +32,9 @@ module mqc_czt_minao
 
    character(len=*), parameter :: MINAO_BASIS = "minao/minao"
       !! Resolved through `find_basis_file`, so `<dir>/minao/minao.json` on the
-      !! basis search path. A subdirectory because `basis_sets/*.json` is
-      !! derived from `MQC_BASIS_SETS` and anything else there is deleted.
+      !! basis search path. A subdirectory because the JSON files directly under
+      !! `basis_sets/` are derived from `MQC_BASIS_SETS` and anything else there
+      !! is deleted.
 
    integer, parameter :: MINAO_Z_MAX = 36
 
