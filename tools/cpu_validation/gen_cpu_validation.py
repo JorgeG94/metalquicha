@@ -476,7 +476,8 @@ HAND_MAINTAINED = {
     # Handing the wrong one across is refused rather than misread, which turns
     # into a skipped analysis and a run that still exits zero -- so a deck that
     # completes with a Fukui table is the assertion. It also omits
-    # `population`, which pins the CHELPG default.
+    # `population`, which pins the Hirshfeld default -- the deck already needs
+    # libxc for its functional, and Hirshfeld's free atoms need it too.
     "cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
     # The same analysis inside a continuum. Hand-maintained for the reason the
     # PCM decks below are: this script has no PCM support, so a regeneration

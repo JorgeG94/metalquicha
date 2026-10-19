@@ -202,7 +202,7 @@ contains
       ! in the config -- and so in the report and the JSON.
       call json%info("properties.fukui", found=found_fukui)
       if (found_fukui) then
-         config%fukui_population = "chelpg"
+         config%fukui_population = "hirshfeld"
          call optional_string(json, "properties.fukui.population", &
                               config%fukui_population)
          config%fukui_guess = "neutral"

@@ -635,7 +635,7 @@ four.
   has a kink at every integer: adding an electron and removing one are different
   questions. Computed over Hartree-Fock or any Kohn-Sham functional, with the
   two ions unrestricted, and condensed onto atoms by a population scheme
-  (``population``: ``chelpg``, the default, ``mulliken`` or ``hirshfeld``).
+  (``population``: ``hirshfeld``, the default, ``chelpg`` or ``mulliken``).
   ``properties.fukui``.
 - **Atomic charges**, Mulliken, CHELPG or Hirshfeld, partitioning the density the
   calculation already converged -- Hartree-Fock or any Kohn-Sham functional,

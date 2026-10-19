@@ -130,6 +130,8 @@ contains
                   new_unittest("scf_stability_controls", test_stability_keywords), &
                   new_unittest("scf_second_order_controls", test_second_order_keywords), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
+                  new_unittest("fukui_population_defaults_to_hirshfeld", &
+                               test_fukui_population_default), &
                   new_unittest("fukui_scf_inherits_keywords_scf", test_fukui_scf_inherit), &
                   new_unittest("fukui_scf_overrides_per_key", test_fukui_scf_override), &
                   new_unittest("fukui_scf_inherit_false_drops_the_seed", test_fukui_scf_no_inherit), &
@@ -3652,6 +3654,26 @@ contains
       if (allocated(error)) return
       call check(error, config%fukui_scf%inherit_scf, "inherit_scf defaults true")
    end subroutine test_fukui_scf_inherit
+
+   subroutine test_fukui_population_default(error)
+      !! An empty `properties.fukui` condenses by Hirshfeld
+      !!
+      !! The one scheme whose weights are the same for all three states, so the
+      !! default is the one whose indices are a share of the density difference
+      !! itself rather than a difference of two separate fits.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"fukui": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%fukui_population), "the analysis was not requested")
+      if (allocated(error)) return
+      call check(error, config%fukui_population, "hirshfeld", "the default population")
+   end subroutine test_fukui_population_default
 
    subroutine test_fukui_scf_override(error)
       !! A named key wins; its neighbours still inherit

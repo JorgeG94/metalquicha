@@ -81,7 +81,7 @@ module mqc_czt_fukui
          !! left over. **Two different things produce this and they cannot be
          !! told apart from here**: a basis with no diffuse functions, and a
          !! molecule with no bound anion.
-      character(len=16) :: scheme = "chelpg"
+      character(len=16) :: scheme = "hirshfeld"
       character(len=:), allocatable :: functional
          !! The functional the three states were computed with, empty for
          !! Hartree-Fock. IP, EA and hardness are differences of total energies
@@ -128,7 +128,7 @@ contains
       real(dp), intent(in), optional :: level_shift
          !! Applied to both ions, which are the open-shell SCFs a shift is
          !! asked for to stabilise.
-      character(len=*), intent(in) :: scheme          !! "chelpg", "mulliken" or "hirshfeld"
+      character(len=*), intent(in) :: scheme          !! "hirshfeld", "chelpg" or "mulliken"
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       type(fukui_result_t), intent(out) :: res
@@ -679,11 +679,13 @@ contains
          call logger%warning("  and do not build a further descriptor on it -- f0 and "// &
                              "dual inherit the")
          call logger%warning("  artefact from whichever index carried it.")
-         if (trim(res%scheme) == "mulliken") then
+         if (trim(res%scheme) /= "hirshfeld") then
             call logger%warning("")
-            call logger%warning("  Mulliken is especially prone to this, being basis-set "// &
-                                "dependent; chelpg")
-            call logger%warning("  is the default for that reason and is worth rerunning "// &
+            call logger%warning("  "//trim(res%scheme)//" divides each state on its own, "// &
+                                "so the difference of")
+            call logger%warning("  two divisions is prone to this. hirshfeld divides all "// &
+                                "three by one partition,")
+            call logger%warning("  is the default for that reason, and is worth rerunning "// &
                                 "with before")
             call logger%warning("  concluding anything from this table.")
          else

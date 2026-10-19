@@ -281,9 +281,10 @@ takes a density matrix and none knows what produced it, so Hartree-Fock and
 Kohn-Sham, restricted and unrestricted, all work and all cost nothing beyond the
 SCF that was going to run anyway.
 
-Note the default differs from ``properties.fukui``, which takes CHELPG. A
+Note the default differs from ``properties.fukui``, which takes Hirshfeld. A
 condensed Fukui index is a difference of two charges, where Mulliken's
-basis-set sensitivity does not cancel; asked for on its own a charge is usually
+basis-set sensitivity does not cancel and two separate CHELPG fits need not
+agree on what they share; asked for on its own a charge is usually
 wanted as the cheap population number, and Mulliken is one trace against an
 overlap that already exists.
 
@@ -435,7 +436,7 @@ once rather than per fragment. The free atoms need **libxc** and cover
 charges are skipped with a warning naming the reason, and the calculation
 itself still completes -- as it does for any charge scheme that cannot run.
 
-**For Fukui indices** this is the scheme to use. The weights depend on the
+**For Fukui indices** this is the scheme to use, and the default. The weights depend on the
 geometry and nothing else, so the neutral and both ions are divided by one
 partition and a condensed index is the share of the density difference itself
 -- where CHELPG fits each state's charges separately, and their difference can

@@ -36,6 +36,7 @@ module mqc_czt_hirshfeld
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_ao, only: eval_ao_block, eval_rho, shell_extents, block_significant_aos, &
                          AO_POINT_BLOCK
+   use mqc_czt_xc, only: xc_available
    use mqc_czt_spherical_atom, only: spherical_atom_settings_t, spherical_atom_t, &
                                      solve_spherical_atom
    implicit none
@@ -108,6 +109,12 @@ contains
 
       if (error%has_error()) return
       want_spin = present(spin_density) .and. present(spin_populations)
+      if (.not. xc_available()) then
+         call error%set(ERROR_VALIDATION, "Hirshfeld charges need libxc, which their free "// &
+                        "atoms are solved with: configure with -DMQC_ENABLE_LIBXC=ON, or "// &
+                        "choose another scheme ('chelpg' or 'mulliken')")
+         return
+      end if
 
       allocate (real_atom(mol%natm))
       do iatom = 1, mol%natm

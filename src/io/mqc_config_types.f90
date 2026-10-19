@@ -109,7 +109,7 @@ module mqc_config_types
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
       character(len=:), allocatable :: fukui_population
          !! From `properties.fukui.population`. Allocated means the deck asked
-         !! for Fukui indices; "chelpg" (the default), "mulliken" or "hirshfeld"
+         !! for Fukui indices; "hirshfeld" (the default), "chelpg" or "mulliken"
          !! chooses how the density difference is condensed onto atoms. The object may omit
          !! it -- `properties: {"fukui": {}}` is a valid request.
       character(len=:), allocatable :: fukui_guess
