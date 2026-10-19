@@ -13,7 +13,8 @@ module test_mqc_czt_spherical_atom
    !!   * Hartree-Fock energies and density fingerprints, restricted and
    !!     polarized, H, C, O, Ne and Fe;
    !!   * Kohn-Sham energies for PBE, B3LYP and the range-separated wB97X,
-   !!     restricted and polarized, to the agreement two quadratures allow;
+   !!     restricted and polarized, on a grid fine enough that the quadrature
+   !!     no longer limits the agreement;
    !!   * the density is spherical: equal across the components of each column
    !!     pair, nothing between different l, and the configuration's electrons
    !!     in each spin;
@@ -39,12 +40,16 @@ module test_mqc_czt_spherical_atom
       !! density was only good to 1e-6 while it converged on the energy alone.
    real(dp), parameter :: DENSITY_TOL = 1.0e-9_dp
       !! Measured at 2e-10 or better, on |D| and the first diagonal element.
-   real(dp), parameter :: KS_TOL = 1.0e-6_dp
-      !! Two different quadratures, PySCF's on a 200x1202 grid. Measured at
-      !! 2e-9 for PBE and B3LYP and 2.5e-7 for wB97X, whose long-range exchange
-      !! is the loosest of the three.
-   real(dp), parameter :: KS_DENSITY_TOL = 1.0e-5_dp
-      !! Measured at 4e-8 for PBE and 4e-6 for wB97X.
+   integer, parameter :: KS_GRID_LEVEL = 7
+      !! Fine enough that what is left against PySCF's 200x1202 grid is no
+      !! longer the quadrature. wB97X is the slowest to get there -- its gap
+      !! falls 3.7e-6, 2.5e-7, 1.1e-9, 1.7e-11 at levels 2, 3, 5, 7 -- for
+      !! the reason `test_mqc_rsh_gradient` records: its semilocal part is
+      !! stiff, and PySCF's own wB97X energy still moves with the grid. PBE
+      !! and B3LYP are at 1e-13 from level 5.
+   real(dp), parameter :: KS_TOL = 1.0e-9_dp
+      !! Measured at 2e-11 or better at `KS_GRID_LEVEL`; the densities then
+      !! agree as closely as Hartree-Fock's, so `DENSITY_TOL` serves both.
 
    type :: reference_t
       character(len=2) :: symbol = ""
@@ -174,6 +179,7 @@ contains
       settings%energy_tol = 1.0e-12_dp
       settings%commutator_tol = 1.0e-10_dp
       if (len_trim(ref%functional) > 0) settings%functional = trim(ref%functional)
+      if (len_trim(ref%functional) > 0) settings%grid_level = KS_GRID_LEVEL
       call solve_spherical_atom(mol, settings, atom, err)
       call check(error,.not. err%has_error(), label//" must solve: "//err%get_full_trace())
       if (allocated(error)) return
@@ -234,7 +240,7 @@ contains
       if (.not. xc_available()) return  ! no libxc in this build: nothing to check
       refs = ks_references()
       do i = 1, size(refs)
-         call check_reference(error, refs(i), KS_TOL, KS_DENSITY_TOL)
+         call check_reference(error, refs(i), KS_TOL, DENSITY_TOL)
          if (allocated(error)) return
       end do
    end subroutine test_ks
