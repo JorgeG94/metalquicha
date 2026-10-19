@@ -97,8 +97,9 @@ Error: unterminated comment
 
 Closed on the same line it is worse, because it is silent: the text between
 `/*` and `*/` is deleted. The Unix Makefiles generator does not run that step,
-so a Makefile build, which is what CI does, never sees either. Reword instead:
-"the JSON files under `basis_sets/`" for `basis_sets/*.json`.
+so a Makefile build never sees either. CI's one Ninja job builds without the
+cenzontle backend, so it never compiled the file this was first found in.
+Reword instead: "the JSON files under `basis_sets/`" for `basis_sets/*.json`.
 
 A `/*` inside a string literal is safe (the preprocessor tokenises the literal
 as a string) and is not flagged, nor is one on a `#` preprocessor line, where
