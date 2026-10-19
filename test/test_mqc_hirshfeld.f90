@@ -25,7 +25,8 @@ module test_mqc_hirshfeld
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
    use mqc_czt_xc, only: xc_available
    use mqc_czt_fukui, only: fukui_result_t, fukui_indices
-   use mqc_czt_hirshfeld, only: hirshfeld_populations, free_atom_density
+   use mqc_czt_hirshfeld, only: hirshfeld_populations, free_atom_density, &
+                                clear_free_atom_cache
    implicit none
    private
    public :: collect_mqc_hirshfeld_tests
@@ -68,7 +69,9 @@ contains
                   new_unittest("water_matches_reference", test_water), &
                   new_unittest("cation_spins_match_reference", test_cation), &
                   new_unittest("fukui_matches_reference", test_fukui), &
-                  new_unittest("heavy_element_is_refused", test_refused) &
+                  new_unittest("heavy_element_is_refused", test_refused), &
+                  new_unittest("effective_core_is_refused", test_ecp_refused), &
+                  new_unittest("cleared_cache_resolves_identically", test_cache_clear) &
                   ]
    end subroutine collect_mqc_hirshfeld_tests
 
@@ -204,6 +207,48 @@ contains
       call free_atom_density(54, [1.0_dp], rho, err)
       call check(error, err%has_error(), "xenon must be refused")
    end subroutine test_refused
+
+   subroutine test_ecp_refused(error)
+      !! An effective core removes electrons an all-electron free atom counts
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: q(:), d(:, :)
+      real(dp) :: c(3, 2)
+
+      if (.not. xc_available()) return
+      c = 0.0_dp
+      c(3, 2) = 3.0_dp
+      call build_czt_molecule([1, 53], ["H ", "I "], c, "def2-svp", mol, err, &
+                              ecp_name="def2-ecp")
+      call check(error,.not. err%has_error(), "HI must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      allocate (d(mol%nao, mol%nao))
+      d = 0.0_dp
+      call hirshfeld_populations(mol, d, q, err)
+      call check(error, err%has_error(), "an effective core must be refused")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "effective core") > 0, &
+                 "refused for the core, not for iodine being past krypton")
+      call mol%destroy()
+   end subroutine test_ecp_refused
+
+   subroutine test_cache_clear(error)
+      !! Clearing the cache forces a re-solve that reproduces the same table
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp), allocatable :: before(:), after(:)
+      real(dp), parameter :: RADII(4) = [0.01_dp, 0.5_dp, 2.0_dp, 6.0_dp]
+
+      if (.not. xc_available()) return
+      call free_atom_density(1, RADII, before, err)
+      call clear_free_atom_cache()
+      call free_atom_density(1, RADII, after, err)
+      call check(error,.not. err%has_error(), "re-solve: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(after - before)) < 1.0e-14_dp*maxval(before), &
+                 "a cleared cache must re-solve to the same free atom")
+   end subroutine test_cache_clear
 
 end module test_mqc_hirshfeld
 

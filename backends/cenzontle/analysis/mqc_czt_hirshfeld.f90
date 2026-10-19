@@ -27,7 +27,8 @@ module mqc_czt_hirshfeld
    !! slope taken from the analytic density gradient.
    !!
    !! Needs libxc, for the functional. Covers H-Kr, the elements the free-atom
-   !! configurations cover; nothing here takes an effective core potential.
+   !! configurations cover. Refuses an effective core potential, whose
+   !! missing core electrons an all-electron free atom would still count.
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
@@ -114,6 +115,13 @@ contains
                         "atoms are solved with: configure with -DMQC_ENABLE_LIBXC=ON, or "// &
                         "choose another scheme ('chelpg' or 'mulliken')")
          return
+      end if
+      if (allocated(mol%core_electrons)) then
+         if (any(mol%core_electrons > 0)) then
+            call error%set(ERROR_VALIDATION, "Hirshfeld charges: not available with an "// &
+                           "effective core potential")
+            return
+         end if
       end if
 
       allocate (real_atom(mol%natm))
@@ -359,7 +367,13 @@ contains
       origin = 0.0_dp
       call build_czt_molecule([atomic_number], [element_number_to_symbol(atomic_number)], &
                               origin, FREE_ATOM_BASIS, atom_mol, error)
-      if (error%has_error()) return
+      if (error%has_error()) then
+         ! The likeliest cause is a build whose MQC_BASIS_SETS left the free
+         ! atoms' basis out, which nothing else would point at.
+         call error%add_context("Hirshfeld's free atoms are solved in "//FREE_ATOM_BASIS// &
+                                ", which has to be among the build's MQC_BASIS_SETS")
+         return
+      end if
 
       settings%functional = FREE_ATOM_FUNCTIONAL
       settings%grid_level = FREE_ATOM_GRID_LEVEL
