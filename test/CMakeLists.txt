@@ -379,6 +379,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_minao)
   target_link_libraries(test_mqc_czt_minao PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Spherically averaged free atoms with fractional occupations, against PySCF's
+  # atom_hf and atom_ks, with the reference numbers from
+  # tools/spherical_atom/spherical_atom_reference.py.
+  addtest(mqc_czt_spherical_atom)
+  target_link_libraries(test_mqc_czt_spherical_atom
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Unrestricted Kohn-Sham, on the closed-shell limit: with equal spin densities
   # it must reproduce the restricted energy exactly, for every rung. That is
   # what catches libxc's interleaved arrays being read with the wrong stride and
