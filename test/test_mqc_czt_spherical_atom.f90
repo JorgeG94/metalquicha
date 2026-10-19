@@ -288,6 +288,11 @@ contains
          end do
       end do
       call check(error, worst < 1.0e-14_dp, "the density must be spherical by construction")
+      if (allocated(error)) return
+
+      call atom%destroy()
+      call check(error,.not. allocated(atom%d_alpha) .and. .not. allocated(atom%d_beta) &
+                 .and. .not. atom%converged, "destroy must release the densities")
       call mol%destroy()
    end subroutine test_spherical
 
@@ -341,6 +346,17 @@ contains
       if (allocated(error)) return
 
       call check(error, atom%energy, scf%energy, "polarized H is UHF H", thr=1.0e-9_dp)
+      if (allocated(error)) return
+
+      ! Any casing of "hf" is Hartree-Fock, not a functional name to look up.
+      block
+         type(spherical_atom_t) :: spelled
+         settings%functional = "Hf"
+         call solve_spherical_atom(mol, settings, spelled, err)
+         call check(error,.not. err%has_error(), "'Hf' must solve: "//err%get_full_trace())
+         if (allocated(error)) return
+         call check(error, spelled%energy, atom%energy, "'Hf' is Hartree-Fock", thr=1.0e-12_dp)
+      end block
       call mol%destroy()
    end subroutine test_hydrogen_uhf
 

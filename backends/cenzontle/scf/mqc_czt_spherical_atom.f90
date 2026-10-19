@@ -30,6 +30,7 @@ module mqc_czt_spherical_atom
    !! element outside H-Kr, a Cartesian shell of `l >= 2`, and a basis with too
    !! few functions of some `l` to hold its configuration.
    use pic_types, only: dp
+   use pic_ascii, only: to_lower
    use pic_lapack_interfaces, only: pic_syev
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -66,11 +67,13 @@ module mqc_czt_spherical_atom
       logical :: polarized = .true.
          !! Hund's-rule spin polarisation within each l. False is restricted.
       integer :: max_iter = 200
+         !! Most SCF iterations before giving up, with `converged` false.
       real(dp) :: energy_tol = 1.0e-10_dp
          !! Change in the energy between iterations, hartree.
       real(dp) :: commutator_tol = 1.0e-7_dp
          !! Largest element of `F D S - S D F`, either spin.
       integer :: diis_vectors = 8
+         !! DIIS subspace size, over both spins' Fock matrices together.
    end type spherical_atom_settings_t
 
    type :: spherical_atom_t
@@ -82,6 +85,8 @@ module mqc_czt_spherical_atom
       real(dp), allocatable :: d_beta(:, :)   !! (n_ao, n_ao); equal to alpha when restricted
       integer :: iterations = 0
       logical :: converged = .false.
+   contains
+      procedure :: destroy => spherical_atom_destroy
    end type spherical_atom_t
 
    type :: l_block_t
@@ -302,8 +307,8 @@ contains
 
       wants = .false.
       if (.not. allocated(settings%functional)) return
-      select case (trim(adjustl(settings%functional)))
-      case ("", "hf", "HF", "scf", "SCF")
+      select case (to_lower(trim(adjustl(settings%functional))))
+      case ("", "hf", "scf")
          wants = .false.
       case default
          wants = .true.
@@ -466,6 +471,18 @@ contains
       end do
       mean = mean/real(n_comp, dp)
    end function component_mean
+
+   subroutine spherical_atom_destroy(this)
+      !! Release the densities and reset to the unsolved state
+      class(spherical_atom_t), intent(inout) :: this
+
+      if (allocated(this%d_alpha)) deallocate (this%d_alpha)
+      if (allocated(this%d_beta)) deallocate (this%d_beta)
+      this%atomic_number = 0
+      this%energy = 0.0_dp
+      this%iterations = 0
+      this%converged = .false.
+   end subroutine spherical_atom_destroy
 
    subroutine commutator_residual(fock, density, s, residual)
       ! F D S - S D F, zero exactly when D is built from F's own eigenvectors.
