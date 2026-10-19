@@ -454,10 +454,16 @@ contains
                                        "on the GPU backend; it builds no electrostatic "// &
                                        "potential integrals. Use 'mulliken' here, or run "// &
                                        "CHELPG on the CPU backend.")
+            case ("hirshfeld")
+               ! Its free atoms are solved by the CPU backend's spherical-atom
+               ! SCF, which this backend does not carry.
+               call analysis_error%set(ERROR_GENERIC, "Hirshfeld charges are not "// &
+                                       "implemented on the GPU backend. Use 'mulliken' "// &
+                                       "here, or run Hirshfeld on the CPU backend.")
             case default
                call analysis_error%set(ERROR_GENERIC, "unknown charge scheme '"// &
                                        trim(settings%charges_scheme)// &
-                                       "'; expected 'mulliken' or 'chelpg'.")
+                                       "'; expected 'mulliken', 'chelpg' or 'hirshfeld'.")
             end select
 
             if (analysis_error%has_error()) then

@@ -437,11 +437,15 @@ class System:
         name -- xTB is cheap enough to point at anything, an RHF is not. On a
         large system pick the basis deliberately.
 
-        `scheme` is "chelpg" or "mulliken". Prefer CHELPG unless the question
-        is specifically about basis-function populations: on water, going from
-        6-31G to aug-cc-pVDZ moves the Mulliken charge on oxygen from -0.79 to
-        -0.30, while CHELPG moves from -0.94 to -0.74. The molecule did not
-        change; one of the two numbers is mostly reporting the basis.
+        `scheme` is "chelpg", "mulliken" or "hirshfeld". Prefer CHELPG unless
+        the question is specifically about basis-function populations: on
+        water, going from 6-31G to aug-cc-pVDZ moves the Mulliken charge on
+        oxygen from -0.79 to -0.30, while CHELPG moves from -0.94 to -0.74. The
+        molecule did not change; one of the two numbers is mostly reporting the
+        basis. Hirshfeld divides the density by fixed free-atom shares and
+        moves least of the three, -0.35 to -0.32 on the same oxygen, though its
+        charges are smaller in magnitude; it needs a build with libxc, which
+        its free atoms are solved with.
 
         Closed shell only -- an odd electron count raises rather than being
         quietly paired up.

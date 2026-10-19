@@ -451,6 +451,19 @@ HAND_MAINTAINED = {
     "cpu/mqc/bond_orders/cpu_o2_cc-pvdz_mayer.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+    # Condensed by Hirshfeld, whose weights come from free atoms and so divide
+    # all three states by one partition. Needs libxc, which the free atoms are
+    # solved with. The indices are pinned against PySCF in
+    # test/test_mqc_hirshfeld.f90, by tools/hirshfeld/hirshfeld_reference.py.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_hirshfeld.json",
+    # Hirshfeld charges on their own, closed and open shell. Same situation:
+    # the manifest checks the SCF energy, which asking for charges must leave
+    # alone, and the charges are pinned in test/test_mqc_hirshfeld.f90. Triplet
+    # O2 is the open-shell path, where spin populations come from the same
+    # weights: by symmetry each oxygen is neutral and carries one unpaired
+    # electron, and the run prints 2e-10 and 0.999999999.
+    "cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
+    "cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
     # The ions given their own SCF group, and the neutral's energy pinned to the
     # same number as the chelpg case above. `properties.fukui.scf` configures
     # the two ion SCFs only, so a level shift and an EDIIS opening set there

@@ -1763,7 +1763,14 @@ The driver stays ``"energy"``.
   density difference is condensed onto atoms:
 
   - ``chelpg`` -- charges fitted to the molecule's own electrostatic potential.
-    The default choice, and the better behaved one.
+    The default choice, and better behaved than Mulliken.
+  - ``hirshfeld`` -- the density divided among the atoms by free-atom shares
+    (see :doc:`charges_and_bond_orders`). The shares depend on the geometry
+    alone, so the neutral and both ions are divided by one partition and an
+    index is the share of the density difference itself; Hirshfeld-condensed
+    indices are rarely negative for that reason. On the water of the 6-31G
+    deck it gives ``f+`` of 0.29 on oxygen where CHELPG gives -0.16. Needs a
+    build with libxc, H-Kr.
   - ``mulliken`` -- **can be poor, and is offered because it is what much of
     the literature used.** It divides the overlap between two atoms straight
     down the middle regardless of what the atoms are, so it is sensitive to the

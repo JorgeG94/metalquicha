@@ -9,4 +9,5 @@ target_sources(
           mqc_czt_cube.f90
           mqc_czt_bonding.f90
           mqc_czt_ieda.f90
-          mqc_czt_fukui.f90)
+          mqc_czt_fukui.f90
+          mqc_czt_hirshfeld.f90)

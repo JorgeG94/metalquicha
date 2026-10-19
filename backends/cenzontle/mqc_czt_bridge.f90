@@ -233,19 +233,20 @@ contains
 
    subroutine run_czt_charges(atomic_numbers, element_symbols, coordinates, &
                               basis_name, scheme, total_charge, charges, error)
-      !! Atomic charges from an RHF density, by Mulliken or CHELPG
+      !! Atomic charges from an RHF density, by Mulliken, CHELPG or Hirshfeld
       !!
       !! Closed shell only; an odd electron count is refused rather than paired
       !! up.
       use pic_types, only: dp
       use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
       use mqc_czt_charges, only: mulliken_charges, chelpg_charges
+      use mqc_czt_hirshfeld, only: hirshfeld_populations
       use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)     !! (3, n), Bohr
       character(len=*), intent(in) :: basis_name
-      character(len=*), intent(in) :: scheme        !! "mulliken" or "chelpg"
+      character(len=*), intent(in) :: scheme        !! "mulliken", "chelpg" or "hirshfeld"
       integer, intent(in) :: total_charge
       real(dp), allocatable, intent(out) :: charges(:)
       type(error_t), intent(inout) :: error
@@ -287,13 +288,16 @@ contains
          return
       end if
 
-      if (scheme == "mulliken") then
+      select case (scheme)
+      case ("mulliken")
          call mol%overlap(overlap)
          call mulliken_charges(mol, scf%density, overlap, charges, error)
-      else
+      case ("hirshfeld")
+         call hirshfeld_populations(mol, scf%density, charges, error)
+      case default
          call chelpg_charges(mol, scf%density, charges, error, &
                              total_charge=real(total_charge, dp))
-      end if
+      end select
    end subroutine run_czt_charges
 
    subroutine run_czt_mayer_bond_orders(atomic_numbers, element_symbols, coordinates, &
@@ -1139,6 +1143,7 @@ contains
       !! Closed-shell HF for one fragment, on the CPU
       use mqc_czt_charges, only: mulliken_charges, chelpg_charges, &
                                  mulliken_spin_populations
+      use mqc_czt_hirshfeld, only: hirshfeld_populations
       use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
                                      mayer_valences, print_mayer_report
       type(cuest_scf_settings_t), intent(in) :: settings
@@ -2164,10 +2169,20 @@ contains
                ! what the constraint is about.
                call chelpg_charges(mol, total_density, q, analysis_error, &
                                    total_charge=real(fragment%charge, dp))
+            case ("hirshfeld")
+               ! Spin populations come with the same weights for nothing, as
+               ! Mulliken's do with the same overlap.
+               if (open_shell) then
+                  call hirshfeld_populations(mol, total_density, q, analysis_error, &
+                                             spin_density=spin_density, &
+                                             spin_populations=q_spin)
+               else
+                  call hirshfeld_populations(mol, total_density, q, analysis_error)
+               end if
             case default
                call analysis_error%set(ERROR_VALIDATION, "unknown charge scheme '"// &
                                        trim(settings%charges_scheme)// &
-                                       "'; expected 'mulliken' or 'chelpg'.")
+                                       "'; expected 'mulliken', 'chelpg' or 'hirshfeld'.")
             end select
 
             if (analysis_error%has_error()) then

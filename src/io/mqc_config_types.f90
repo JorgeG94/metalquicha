@@ -109,8 +109,8 @@ module mqc_config_types
          !! analysis; "gms_quao" means the quasi-atomic bonding picture.
       character(len=:), allocatable :: fukui_population
          !! From `properties.fukui.population`. Allocated means the deck asked
-         !! for Fukui indices; "chelpg" (the default) or "mulliken" chooses how
-         !! the density difference is condensed onto atoms. The object may omit
+         !! for Fukui indices; "chelpg" (the default), "mulliken" or "hirshfeld"
+         !! chooses how the density difference is condensed onto atoms. The object may omit
          !! it -- `properties: {"fukui": {}}` is a valid request.
       character(len=:), allocatable :: fukui_guess
          !! `properties.fukui.guess`: "neutral" (the default) or "independent".
@@ -129,8 +129,8 @@ module mqc_config_types
          !! names.
       character(len=:), allocatable :: charges_scheme
          !! From `properties.charges.scheme`. Allocated means the deck asked for
-         !! atomic partial charges; "mulliken" (the default) or "chelpg" chooses
-         !! how the converged density is partitioned.
+         !! atomic partial charges; "mulliken" (the default), "chelpg" or
+         !! "hirshfeld" chooses how the converged density is partitioned.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

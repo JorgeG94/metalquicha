@@ -162,6 +162,11 @@ if(MQC_ENABLE_CZT)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE ${MQC_INTEGRALS_LIBS})
+  # Hirshfeld charges, spin populations and Fukui indices against the PySCF
+  # reference of tools/hirshfeld/hirshfeld_reference.py. Skips itself without
+  # libxc, which its free atoms are solved with.
+  addtest(mqc_hirshfeld)
+  target_link_libraries(test_mqc_hirshfeld PRIVATE ${MQC_INTEGRALS_LIBS})
   # Every field on the shared SCF options type reaches the backend's settings.
   # The refactor removed three hand-copied blocks; this is what keeps them gone.
   addtest(mqc_scf_options)

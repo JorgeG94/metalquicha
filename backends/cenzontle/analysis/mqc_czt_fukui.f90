@@ -31,6 +31,7 @@ module mqc_czt_fukui
    use mqc_czt_atomic_guess, only: build_atomic_guess
    use mqc_scf_common, only: build_density_spin
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
+   use mqc_czt_hirshfeld, only: hirshfeld_populations
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -127,7 +128,7 @@ contains
       real(dp), intent(in), optional :: level_shift
          !! Applied to both ions, which are the open-shell SCFs a shift is
          !! asked for to stabilise.
-      character(len=*), intent(in) :: scheme          !! "chelpg" or "mulliken"
+      character(len=*), intent(in) :: scheme          !! "chelpg", "mulliken" or "hirshfeld"
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       type(fukui_result_t), intent(out) :: res
@@ -551,9 +552,14 @@ contains
          call chelpg_charges(mol, density, charges, error, total_charge=total_charge)
       case ("mulliken")
          call mulliken_charges(mol, density, overlap, charges, error)
+      case ("hirshfeld")
+         ! The weights are the free atoms', fixed by the geometry, so the three
+         ! states are divided by one partition and an index is the stockholder
+         ! share of the density difference itself.
+         call hirshfeld_populations(mol, density, charges, error)
       case default
          call error%set(ERROR_VALIDATION, "unknown population scheme '"//trim(scheme)// &
-                        "' for Fukui indices; expected 'chelpg' or 'mulliken'.")
+                        "' for Fukui indices; expected 'chelpg', 'mulliken' or 'hirshfeld'.")
       end select
    end subroutine condense
 
