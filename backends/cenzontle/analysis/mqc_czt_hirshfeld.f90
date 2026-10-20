@@ -22,6 +22,10 @@ module mqc_czt_hirshfeld
    !! where PBE's is 0.013 above. The free atoms follow the approach of the
    !! PySCF extension github.com/frobnitzem/hirshfeld.
    !!
+   !! The populations are renormalised to the density's exact electron count,
+   !! Tr(D S): the grid misses a little of a diffuse density, and the charges
+   !! then still sum to the molecular charge.
+   !!
    !! Each free atom is solved once per process and kept as a table of its
    !! radial density, interpolated by cubic Hermite in (ln r, ln rho) with the
    !! slope taken from the analytic density gradient.
@@ -30,6 +34,8 @@ module mqc_czt_hirshfeld
    !! configurations cover. Refuses an effective core potential, whose
    !! missing core electrons an all-electron free atom would still count.
    use pic_types, only: dp
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_elements, only: element_number_to_symbol
    use mqc_string_utils, only: int_to_text
@@ -38,6 +44,7 @@ module mqc_czt_hirshfeld
    use mqc_czt_ao, only: eval_ao_block, eval_rho, shell_extents, block_significant_aos, &
                          AO_POINT_BLOCK
    use mqc_czt_xc, only: xc_available
+   use mqc_population_analysis, only: renormalise_populations, GRID_DEFICIT_WARNING
    use mqc_czt_spherical_atom, only: spherical_atom_settings_t, spherical_atom_t, &
                                      solve_spherical_atom
    implicit none
@@ -103,8 +110,9 @@ contains
       integer, intent(in), optional :: grid_level        !! Default `HIRSHFELD_GRID_LEVEL`
 
       type(dft_grid_t) :: grid
-      real(dp), allocatable :: electrons(:), spins(:), extents(:)
+      real(dp), allocatable :: electrons(:), spins(:), extents(:), overlap(:, :)
       logical, allocatable :: real_atom(:)
+      real(dp) :: deficit
       integer :: iatom, level
       logical :: want_spin
 
@@ -151,11 +159,40 @@ contains
       call grid%destroy()
       if (error%has_error()) return
 
+      ! Sum to the density's own electron count, Tr(D S), not to what the grid
+      ! integrates: an anion's diffuse tail is short by 6e-6 electrons at the
+      ! default level in aug-cc-pVDZ water, and a Fukui index -- a difference
+      ! of two states' charges -- inherits that and fails its sum rule.
+      call mol%overlap(overlap)
+      if (want_spin) then
+         call renormalise_populations(electrons, sum(density*overlap), deficit, &
+                                      spins, sum(spin_density*overlap))
+      else
+         call renormalise_populations(electrons, sum(density*overlap), deficit)
+      end if
+      call report_deficit("hirshfeld", deficit)
+
       allocate (charges(mol%natm))
       charges = 0.0_dp
       where (real_atom) charges = mol%charges - electrons
       if (want_spin) spin_populations = spins
    end subroutine hirshfeld_populations
+
+   subroutine report_deficit(scheme, deficit)
+      ! Say what the grid missed: always at verbose level, and as a warning
+      ! once it is large enough that the grid, not the partition, is suspect.
+      character(len=*), intent(in) :: scheme
+      real(dp), intent(in) :: deficit
+
+      call logger%verbose("  "//scheme//": the grid missed "//to_char(deficit)// &
+                          " electrons, shared out by population")
+      if (abs(deficit) > GRID_DEFICIT_WARNING) then
+         call logger%warning("  "//scheme//": the integration grid missed "// &
+                             to_char(deficit)//" electrons; the charges are "// &
+                             "renormalised, but a grid this coarse for the density "// &
+                             "is worth a finer one")
+      end if
+   end subroutine report_deficit
 
    subroutine integrate_shares(mol, grid, extents, real_atom, density, electrons, error, &
                                spin_density, spins)

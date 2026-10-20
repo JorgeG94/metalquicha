@@ -4702,7 +4702,7 @@
             "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is the Hirshfeld partition end to end: free atoms solved with wB97X in def2-TZVP, the molecular density divided by their shares, and the charges written to the JSON with their sum (-1.2e-8 here, nothing renormalised). The charges themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is the Hirshfeld partition end to end: free atoms solved with wB97X in def2-TZVP, the molecular density divided by their shares, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off (before renormalisation the grid left it at -1.2e-8). The charges themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
             "requires": "libxc"
         },
         {

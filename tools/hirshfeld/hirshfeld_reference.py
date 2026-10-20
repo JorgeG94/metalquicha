@@ -16,8 +16,9 @@ something:
 * the molecular integral runs on PySCF's own grid, at a size well beyond mqc's
   default.
 
-Nothing is renormalised: the charges sum to the molecular charge to the
-accuracy of the grid, and that sum is printed.
+Nothing is renormalised here, where mqc renormalises to Tr(D S): on PySCF's
+150x974 grid the charges already sum to the molecular charge to about 2e-10,
+far inside the comparison, and that sum is printed.
 
     python3 tools/hirshfeld/hirshfeld_reference.py
 """

@@ -321,8 +321,15 @@ was dropped.
 ``sum`` is the total charge the partition accounts for and should equal the
 molecular charge; a value that does not is the fastest way to see that a fit
 went wrong, which is why it is written rather than left to be added up.
-Hirshfeld's is a quadrature and is not renormalised, so it equals the molecular
-charge to the accuracy of the grid -- about 1e-8 -- rather than exactly.
+Hirshfeld's is a quadrature, and a grid resolves least of a diffuse density:
+water's anion in aug-cc-pVDZ is short by 5.8e-6 electrons at the default grid,
+and level 9 is the first to resolve it. The populations are therefore
+renormalised to the density's exact count, Tr(D S), sharing what the grid
+missed out by population, so ``sum`` is the molecular charge to round-off. Without
+that, a condensed Fukui index -- a difference of two states' charges --
+inherits the anion's deficit and fails its sum rule. A verbose log reports the
+deficit, and a warning appears once it passes 1e-4 electrons, where the grid
+rather than the partition is suspect.
 
 The same water in the same basis gives -0.957 on the oxygen from CHELPG and
 -0.800 from Mulliken. That spread is not an error in either -- they answer

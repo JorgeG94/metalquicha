@@ -14,8 +14,9 @@ module test_mqc_hirshfeld
    !!   * the Hirshfeld-condensed Fukui indices of water, which are positive
    !!     where Mulliken's need not be, because one partition divides all
    !!     three states;
-   !!   * the charges sum to the molecular charge to the accuracy of the grid,
-   !!     with nothing renormalised;
+   !!   * the charges sum to the molecular charge to round-off, renormalised
+   !!     to Tr(D S), including an anion in aug-cc-pVDZ whose diffuse tail the
+   !!     grid misses 5.8e-6 electrons of, and the Fukui indices built on it;
    !!   * an element without a free atom is refused.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
@@ -54,10 +55,10 @@ module test_mqc_hirshfeld
       !! Two quadratures, mqc's at its default level against PySCF's 150x974.
       !! Measured at 4e-8 or better, and flat at 1.5e-8 for water from grid
       !! level 4 to 9: what is left is not the molecular quadrature.
-   real(dp), parameter :: SUM_TOL = 1.0e-7_dp
-      !! How far the charges may sum from the molecular charge, with nothing
-      !! renormalised. Measured at 1.4e-8 at the default level and 1.7e-7 at
-      !! level 3.
+   real(dp), parameter :: SUM_TOL = 1.0e-10_dp
+      !! How far the charges may sum from the molecular charge. They are
+      !! renormalised to Tr(D S), so this is round-off; before, the grid's own
+      !! error showed here, 1.4e-8 at the default level and 1.7e-7 at level 3.
 
 contains
 
@@ -71,6 +72,8 @@ contains
                   new_unittest("fukui_matches_reference", test_fukui), &
                   new_unittest("heavy_element_is_refused", test_refused), &
                   new_unittest("effective_core_is_refused", test_ecp_refused), &
+                  new_unittest("diffuse_anion_sums_exactly", test_diffuse_anion), &
+                  new_unittest("diffuse_fukui_meets_its_sum_rule", test_diffuse_fukui), &
                   new_unittest("cleared_cache_resolves_identically", test_cache_clear) &
                   ]
    end subroutine collect_mqc_hirshfeld_tests
@@ -207,6 +210,69 @@ contains
       call free_atom_density(54, [1.0_dp], rho, err)
       call check(error, err%has_error(), "xenon must be refused")
    end subroutine test_refused
+
+   subroutine diffuse_water(charge, multiplicity, mol, scf, err)
+      !! The water of these tests in aug-cc-pVDZ, whose diffuse functions are
+      !! where an extra electron goes and where the grid resolves least
+      integer, intent(in) :: charge, multiplicity
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(error_t), intent(inout) :: err
+
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "aug-cc-pvdz", mol, err)
+      if (err%has_error()) return
+      if (multiplicity == 1) then
+         call run_czt_rhf(mol, 10 - charge, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err)
+      else
+         call run_czt_uhf(mol, 10 - charge, multiplicity, 200, 1.0e-11_dp, 1.0e-9_dp, &
+                          .false., scf, err)
+      end if
+   end subroutine diffuse_water
+
+   subroutine test_diffuse_anion(error)
+      !! The grid misses 5.8e-6 of this anion's electrons; the charges must not
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: q(:), s(:)
+
+      if (.not. xc_available()) return
+      call diffuse_water(-1, 2, mol, scf, err)
+      call hirshfeld_populations(mol, scf%density + scf%density_beta, q, err, &
+                                 spin_density=scf%density - scf%density_beta, &
+                                 spin_populations=s)
+      call check(error,.not. err%has_error(), "anion: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, sum(q), -1.0_dp, "the anion's charges sum to -1", thr=SUM_TOL)
+      if (allocated(error)) return
+      call check(error, sum(s), 1.0_dp, "and its spins to one unpaired electron", thr=SUM_TOL)
+      call mol%destroy()
+   end subroutine test_diffuse_anion
+
+   subroutine test_diffuse_fukui(error)
+      !! The failure this renormalisation exists for
+      !!
+      !! f+ differences the neutral against the anion, so the anion's grid
+      !! deficit landed in it whole: 0.99999415 against a sum rule of 1e-6,
+      !! and the analysis refused to run.
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(fukui_result_t) :: res
+
+      if (.not. xc_available()) return
+      call diffuse_water(0, 1, mol, scf, err)
+      call fukui_indices(mol, 10, 1, scf%density, scf%energy, "hirshfeld", 200, &
+                         1.0e-11_dp, 1.0e-9_dp, res, err)
+      call check(error,.not. err%has_error(), "fukui: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, sum(res%f_plus), 1.0_dp, "f+ sums to one", thr=SUM_TOL)
+      if (allocated(error)) return
+      call check(error, sum(res%f_minus), 1.0_dp, "f- sums to one", thr=SUM_TOL)
+      call mol%destroy()
+   end subroutine test_diffuse_fukui
 
    subroutine test_ecp_refused(error)
       !! An effective core removes electrons an all-electron free atom counts
