@@ -240,8 +240,10 @@ Two GPU backends, both optional and both narrower than the CPU path:
   charges are all refused.
 - **terco** (``"backend": "terco"``, ``-DMQC_ENABLE_TERCO``). It runs a
   whole Hartree-Fock or Kohn-Sham SCF, restricted or unrestricted, on the
-  device. It computes energies only, takes Cartesian shells through d, and has
-  no ECPs. See :doc:`installation`.
+  device, exact or density-fitted, with RI-MP2 and double hybrids on top.
+  Analytic gradients run on one rank, except through RI-MP2 or a double hybrid.
+  It takes Cartesian shells up to the linked build's angular momentum ceiling,
+  and has no ECPs and no continuum solvation yet. See :doc:`installation`.
 
 Implicit Solvation
 ------------------
@@ -961,7 +963,9 @@ does not apply.
    are refused there, as is MP2 across an AFO cut. EFMO takes Hartree-Fock and
    MP2 only. PIEDA is FMO only. See :doc:`fmo` and :doc:`efmo`
 10. **GPU backends**: cuEST covers Hartree-Fock and Kohn-Sham energies and
-    gradients, and terco energies only. Correlated methods, excited states and
+    gradients. terco covers Hartree-Fock and Kohn-Sham energies and gradients,
+    density fitting, RI-MP2 and double-hybrid energies, and Fukui indices, but
+    not continuum solvation yet. Exact MP2, coupled cluster, excited states and
     ECPs are CPU only. See `Ab Initio (GPU)`_ above
 11. **EFP**: an EFP run covers systems made entirely of effective fragments. A
     mixed quantum/EFP system is refused, and there is no EFP gradient

@@ -2618,13 +2618,16 @@ contains
       if (backend_kind == BACKEND_TERCO) then
          ! Before the build check, so the deck is told what it asked for that
          ! terco cannot do whichever binary reads it.
-         ! TODO(mqc): terco has C-PCM and IEF-PCM on its feat/pcm branch; once
-         ! that merges, wire trc_set_pcm into the terco driver and drop this.
+         ! TODO(mqc): the terco driver forwards keywords.pcm, but terco builds
+         ! its cavity from modified-Bondi radii (hydrogen 1.10 Angstrom) where
+         ! the CPU backend uses Bondi's (1.20), which moves a water's solvated
+         ! energy by 1.2 mEh. Drop this once terco takes the host's radii.
          if (config%pcm_enabled) then
-            call error%set(ERROR_VALIDATION, "backend 'terco' does not read "// &
-                           "keywords.pcm yet: the run would come back as a gas-phase "// &
-                           "energy. Use the CPU backend for continuum solvation, or "// &
-                           "drop keywords.pcm.")
+            call error%set(ERROR_VALIDATION, "backend 'terco' does not take "// &
+                           "keywords.pcm yet: terco sizes its cavity with different "// &
+                           "hydrogen radii from the CPU backend, so the same deck would "// &
+                           "report a different solvation energy on each. Use the CPU "// &
+                           "backend for continuum solvation, or drop keywords.pcm.")
             return
          end if
          if (.not. terco_backend_available()) then

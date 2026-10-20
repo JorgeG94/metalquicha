@@ -8,9 +8,12 @@ module test_mqc_terco_backend
    !! Two things survive that. The backend *name* is parsed by code that is
    !! always compiled, so the deck-facing spelling is checkable anywhere. And
    !! the refusals are stated as invariants over the result -- "asking terco for
-   !! a gradient never yields an energy" holds in a stub build because the stub
-   !! refuses the whole calculation, and in a real build because the driver
-   !! refuses the gradient. The reason differs; the guarantee does not.
+   !! a correlated gradient never yields an energy" holds in a stub build
+   !! because the stub refuses the whole calculation, and in a real build
+   !! because the driver refuses that gradient. The reason differs; the
+   !! guarantee does not.
+   !!
+   !! The comparisons against the CPU path run only where terco is linked.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
@@ -34,11 +37,14 @@ contains
                   new_unittest("deck_spelling", test_deck_spelling), &
                   new_unittest("terco_is_its_own_backend", test_distinct_kind), &
                   new_unittest("unknown_name_refused", test_unknown_name), &
-                  new_unittest("gradient_never_yields_energy", test_gradient_refused), &
+                  new_unittest("correlated_gradient_never_yields_energy", &
+                               test_correlated_gradient_refused), &
                   new_unittest("correlated_never_yields_energy", test_correlated_refused), &
                   new_unittest("missing_build_is_reported", test_missing_build), &
                   new_unittest("agrees_with_the_cpu_path", test_matches_cpu), &
-                  new_unittest("agrees_on_general_contraction", test_general_contraction) &
+                  new_unittest("agrees_on_general_contraction", test_general_contraction), &
+                  new_unittest("gradient_agrees_with_the_cpu_path", test_gradient_matches_cpu), &
+                  new_unittest("fitted_energy_agrees_with_the_cpu_path", test_fitted_matches_cpu) &
                   ]
    end subroutine collect_mqc_terco_backend_tests
 
@@ -86,29 +92,34 @@ contains
       call check(error, err%has_error(), "a misspelled backend name was accepted")
    end subroutine test_unknown_name
 
-   subroutine test_gradient_refused(error)
-      !! terco has energy kernels only, and must never answer a gradient request
+   subroutine test_correlated_gradient_refused(error)
+      !! terco has no RI-MP2 gradient, and must never answer that request
       !!
       !! The failure this guards against is not an exception -- it is a geometry
-      !! optimisation that receives a result carrying an energy, no gradient and
-      !! no error, and steps on whatever `result%gradient` happened to hold.
+      !! optimisation that receives the SCF gradient alone under an MP2 energy,
+      !! converged, plausible and missing the correlation's pull on every atom.
       type(error_type), allocatable, intent(out) :: error
       type(cuest_scf_settings_t) :: settings
       type(physical_fragment_t) :: fragment
       type(calculation_result_t) :: result
 
       call water(fragment)
-      settings%basis_set = "sto-3g"
+      settings%basis_set = "6-31g"
+      settings%run_mp2 = .true.
+      settings%corr_density_fitting = .true.
+      settings%aux_basis_set = "cc-pvdz-rifit"
+      settings%aux_basis_named = .true.
 
       call run_terco_scf(settings, fragment, result, want_gradient=.true.)
 
-      call check(error, result%has_error, "asking terco for a gradient did not set an error")
+      call check(error, result%has_error, "asking terco for an RI-MP2 gradient did not "// &
+                 "set an error")
       if (allocated(error)) return
       call check(error,.not. result%has_energy, "a refused gradient still reported an energy")
       if (allocated(error)) return
       call check(error,.not. allocated(result%gradient), &
                  "a refused gradient request still allocated a gradient")
-   end subroutine test_gradient_refused
+   end subroutine test_correlated_gradient_refused
 
    subroutine test_correlated_refused(error)
       !! MP2 and coupled cluster have no terco implementation
@@ -236,6 +247,76 @@ contains
                  "terco and the CPU path disagree on water/cc-pVDZ -- a dropped "// &
                  "contraction column would show up exactly here")
    end subroutine test_general_contraction
+
+   subroutine test_gradient_matches_cpu(error)
+      !! terco's analytic Hartree-Fock gradient against the CPU path's
+      !!
+      !! **Only runs where terco is linked.** The two converge the same
+      !! equations, so their gradients agree to the convergence asked for;
+      !! measured 1e-10 on ammonia/6-31G*.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+      type(calculation_result_t) :: terco_result, cpu_result
+
+      if (.not. terco_backend_available()) return
+
+      call water(fragment)
+      settings%basis_set = "6-31g"
+      settings%energy_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-8_dp
+
+      call run_terco_scf(settings, fragment, terco_result, want_gradient=.true.)
+      call check(error, terco_result%has_gradient, "terco returned no gradient for water/6-31G")
+      if (allocated(error)) return
+
+      call run_czt_hf(settings, fragment, cpu_result, want_gradient=.true.)
+      call check(error, cpu_result%has_gradient, "the CPU path returned no gradient for water/6-31G")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(terco_result%gradient - cpu_result%gradient)) < 1.0e-7_dp, &
+                 "terco and the CPU path disagree on the water/6-31G Hartree-Fock gradient")
+   end subroutine test_gradient_matches_cpu
+
+   subroutine test_fitted_matches_cpu(error)
+      !! Density-fitted Hartree-Fock on both, over the same auxiliary basis
+      !!
+      !! **Only runs where terco is linked.** terco reads the fitting basis from
+      !! its Basis Set Exchange file and mqc from the same file, so a fit that
+      !! reached the device with a different basis shows up here.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+      type(calculation_result_t) :: terco_result, cpu_result
+      character(len=96) :: line
+
+      if (.not. terco_backend_available()) return
+
+      ! Cartesian, because terco reads a fitting basis that way and
+      ! def2-universal-jkfit carries d functions and above.
+      call water(fragment)
+      settings%basis_set = "6-31g"
+      settings%cartesian = .true.
+      settings%density_fitting = .true.
+      settings%aux_basis_set = "def2-universal-jkfit"
+      settings%aux_basis_named = .true.
+      settings%energy_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-8_dp
+
+      call run_terco_scf(settings, fragment, terco_result)
+      call check(error, terco_result%has_energy, "terco returned no fitted energy")
+      if (allocated(error)) return
+
+      call run_czt_hf(settings, fragment, cpu_result)
+      call check(error, cpu_result%has_energy, "the CPU path returned no fitted energy")
+      if (allocated(error)) return
+
+      write (line, "(2(a,f20.12))") " terco ", terco_result%energy%scf, " cpu ", &
+         cpu_result%energy%scf
+      call check(error, abs(terco_result%energy%scf - cpu_result%energy%scf) < 1.0e-8_dp, &
+                 "terco and the CPU path disagree on fitted water/6-31G Hartree-Fock:"// &
+                 trim(line))
+   end subroutine test_fitted_matches_cpu
 
    subroutine water(fragment)
       !! One water, near equilibrium, in Bohr

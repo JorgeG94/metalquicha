@@ -145,15 +145,37 @@ outright with ``-DTERCO_LIBRARY=<path>`` overrides all of them. terco's own
 copied here, so an ABI that drifts is a compile error in this build instead of a
 wrong number at run time.
 
+What terco runs:
+
+- Hartree-Fock and Kohn-Sham, restricted and unrestricted, with any functional
+  terco carries -- global and range-separated hybrids and VV10 among them. A
+  name it does not know is refused with terco's own list.
+  ``keywords.dft.nlc_grid_level`` reaches it.
+- Density-fitted J and K (``keywords.scf.density_fitting``) for a closed shell,
+  over ``model.aux_basis``.
+- RI-MP2 and the double hybrids, over ``model.aux_basis``. The double hybrid's
+  total is checked against mqc's own weighting of the same two components.
+- Analytic gradients for all of the above except RI-MP2 and the double hybrids,
+  on one rank.
+- The ``sad``, ``sap``, ``core`` and ``gwh`` guesses, which terco builds itself,
+  and ``minao`` and ``sac``, which mqc builds and hands over.
+- Charges (Mulliken, CHELPG), Mayer bond orders and Fukui indices. They are
+  computed by the CPU backend's own code from the density terco returns. All
+  three Fukui SCFs run on the device, on one context.
+
 What the backend covers is narrower than the CPU path, and each limit is
 **refused** rather than worked around, because every one of them would otherwise
-return a plausible number over the wrong basis:
+return a plausible number to a different question:
 
-- **Energies only.** A gradient request is refused; terco has no derivative
-  kernels, and a result carrying an energy but no gradient is what a geometry
-  optimisation would step on. MP2 and coupled cluster are refused for the same
-  reason.
-- **Angular momentum through d.** terco's four-centre kernels stop there.
+- **No continuum solvation yet.** terco sizes its cavity with modified-Bondi
+  radii and the CPU backend with Bondi's, so the two would report different
+  solvation energies for one deck. ``keywords.pcm`` is refused until terco takes
+  the host's radii.
+- **No exact MP2, coupled cluster, excited states, stability analysis, second-
+  order SCF, level shift or accelerator other than DIIS.**
+- **No gradient through RI-MP2 or a double hybrid.**
+- **Angular momentum up to the linked build's ceiling.** That ceiling is asked
+  for at run time; the default terco build stops at d.
 - **Cartesian shells.** terco reads every shell Cartesian, so a basis with d
   functions needs ``"cartesian": true`` in the deck. Note that this makes it a
   genuinely different basis -- six d functions rather than five -- so those

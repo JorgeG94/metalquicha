@@ -40,6 +40,7 @@ module mqc_czt_fukui
 
    public :: fukui_result_t
    public :: fukui_indices
+   public :: fukui_from_states
    public :: print_fukui_report
 
    real(dp), parameter :: TOL_SUM_RULE = 1.0e-6_dp
@@ -213,7 +214,6 @@ contains
       type(error_t) :: guess_error
       logical :: seeded, keep_unconverged
       logical :: loud
-      integer :: natm
       type(xc_context_t), target :: xc_ions
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham, double_hybrid
@@ -287,7 +287,6 @@ contains
          res%functional = trim(functional)
       end if
 
-      natm = mol%natm
       res%scheme = scheme
       ! The neutral's perturbative term, on a closed shell and so restricted.
       ! Computed before the ions so a failure here is reported before two
@@ -457,6 +456,60 @@ contains
       res%iterations_cation = cation%iterations
       deallocate (total, overlap)
 
+      call finish_indices(res, error)
+   end subroutine fukui_indices
+
+   subroutine fukui_from_states(mol, scheme, charge, neutral_density, anion_density, &
+                                cation_density, energy_neutral, energy_anion, &
+                                energy_cation, res, error)
+      !! Condense three states some other engine converged
+      !!
+      !! For a backend that runs the neutral and both ions itself and hands
+      !! back densities in `mol`'s AO basis. Each density is the total, both
+      !! spins; each energy is the state's total, any perturbative term
+      !! included. `charge` is the neutral's, the ions carrying one less and
+      !! one more. `res%functional` and the ion iteration counts are left for
+      !! the caller, who knows them.
+      type(czt_molecule_t), intent(in) :: mol
+      character(len=*), intent(in) :: scheme
+      integer, intent(in) :: charge
+      real(dp), intent(in) :: neutral_density(:, :)
+      real(dp), intent(in) :: anion_density(:, :)
+      real(dp), intent(in) :: cation_density(:, :)
+      real(dp), intent(in) :: energy_neutral, energy_anion, energy_cation
+      type(fukui_result_t), intent(out) :: res
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: overlap(:, :)
+
+      if (error%has_error()) return
+
+      res%scheme = scheme
+      res%energy_neutral = energy_neutral
+      res%energy_anion = energy_anion
+      res%energy_cation = energy_cation
+
+      call mol%overlap(overlap)
+      call condense(mol, neutral_density, overlap, scheme, real(charge, dp), &
+                    res%q_neutral, error)
+      call condense(mol, anion_density, overlap, scheme, real(charge - 1, dp), &
+                    res%q_anion, error)
+      call condense(mol, cation_density, overlap, scheme, real(charge + 1, dp), &
+                    res%q_cation, error)
+      if (error%has_error()) return
+
+      call finish_indices(res, error)
+   end subroutine fukui_from_states
+
+   subroutine finish_indices(res, error)
+      !! The indices and the conceptual-DFT descriptors, from three charge sets
+      !! and three energies already in `res`
+      type(fukui_result_t), intent(inout) :: res
+      type(error_t), intent(inout) :: error
+
+      integer :: natm
+
+      natm = size(res%q_neutral)
       allocate (res%f_plus(natm), res%f_minus(natm), res%f_zero(natm), res%dual(natm))
       res%f_plus = res%q_neutral - res%q_anion
       res%f_minus = res%q_cation - res%q_neutral
@@ -478,7 +531,7 @@ contains
       res%anion_bound = res%electron_affinity > 0.0_dp
 
       call check_sum_rule(res, error)
-   end subroutine fukui_indices
+   end subroutine finish_indices
 
    subroutine state_pt2(mol, aux, coeff, eps, n_occ, frozen, e_corr, error)
       !! The UNSCALED MP2 correlation for the closed-shell neutral
