@@ -7,9 +7,10 @@ module mqc_terco_driver
    !! with.
    !!
    !! One terco context is opened per fragment and can run more than one SCF.
-   !! Each state re-sets the charge and multiplicity and keeps the basis, the
-   !! settings and the cavity, so several electron counts at one geometry are
-   !! several states of one session rather than several sessions.
+   !! A later state changes only the charge and multiplicity and keeps the
+   !! bases, the fit, the settings and the cavity, so several electron counts
+   !! at one geometry are several states of one session rather than several
+   !! sessions.
    !!
    !! Densities come back in the AO order and normalisation of the
    !! `czt_molecule_t` built here, so the population analyses run on them with
@@ -20,7 +21,7 @@ module mqc_terco_driver
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cuest_iface, only: cuest_scf_settings_t
-   use mqc_basis_utils, only: find_basis_file
+   use mqc_pcm_radii, only: cavity_radius
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, frontier_orbitals
    use mqc_elements, only: element_number_to_symbol
@@ -45,8 +46,11 @@ module mqc_terco_driver
                                trc_converged, trc_density, trc_mo_energies, trc_rimp2_energy, &
                                trc_mo_coefficients, &
                                trc_pcm_energy, trc_max_angular_momentum, trc_cart_order, &
-                               trc_set_df, trc_set_jkfit_json, trc_run_gradient, trc_gradient, &
-                               trc_message, &
+                               trc_set_df, trc_set_jkfit_libcint, trc_run_gradient, trc_gradient, &
+                               trc_set_charge, trc_set_unrestricted, trc_set_level_shift, &
+                               trc_set_pcm_radii, trc_abi_version, trc_functional_info, &
+                               trc_functional_list, trc_nmo, trc_mo_occupations, trc_message, &
+                               TRC_ABI_MAJOR, TRC_ABI_MINOR, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
                                TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD, TRC_GUESS_GIVEN, &
                                TRC_GUESS_SAP
@@ -57,11 +61,15 @@ module mqc_terco_driver
 
    integer, parameter :: MSG_LEN = 512   !! terco's message buffer
 
-   real(dp), parameter :: DH_ENERGY_AGREEMENT = 1.0e-9_dp
-      !! How far terco's double-hybrid total may sit from
-      !! `scf + pt2_fraction*(E_os + E_ss)` formed from mqc's own table, in
-      !! hartree. Both apply a weight to the same two numbers, so anything above
-      !! rounding is a coefficient the two tables disagree about.
+   real(dp), parameter :: DH_WEIGHT_AGREEMENT = 1.0e-12_dp
+      !! How far terco's double-hybrid PT2 weights may sit from mqc's own
+      !! table. Both are typed-in constants, so anything above rounding is a
+      !! functional the two tables define differently.
+
+   integer(c_int), parameter :: FUNCTIONAL_RUNNABLE = 1
+      !! `trc_functional_info` flag: terco can run this functional today
+   integer(c_int), parameter :: FUNCTIONAL_DOUBLE_HYBRID = 32
+      !! `trc_functional_info` flag: an RI-MP2 term is part of the functional
 
    type :: terco_session_t
       !! One terco context and the CPU-side molecule it was built from
@@ -70,8 +78,13 @@ module mqc_terco_driver
          !! The orbital basis, in the AO order of every density terco returns.
       character(len=8), allocatable :: symbols(:)
       integer :: nao = 0
-      real(dp) :: pt2_fraction = 0.0_dp
-         !! Non-zero for a double hybrid, whose energy needs RI-MP2 on top.
+      real(dp) :: c_os = 0.0_dp
+         !! A double hybrid's weight on opposite-spin RI-MP2, zero otherwise.
+      real(dp) :: c_ss = 0.0_dp
+         !! A double hybrid's weight on same-spin RI-MP2, zero otherwise.
+      logical :: double_hybrid = .false.
+      logical :: unrestricted = .false.
+         !! Every state runs unrestricted, the closed shells included.
       logical :: needs_rimp2 = .false.
          !! RI-MP2 runs after every SCF: method `ri-mp2`, or a double hybrid.
    contains
@@ -87,8 +100,8 @@ module mqc_terco_driver
          !! Unscaled opposite-spin RI-MP2, zero unless the session needs it.
       real(dp) :: e_ss = 0.0_dp
          !! Unscaled same-spin RI-MP2, zero unless the session needs it.
-      real(dp) :: pt2_fraction = 0.0_dp
-         !! The double hybrid's weight on `e_os + e_ss`, zero otherwise.
+      real(dp) :: c_os = 0.0_dp   !! The double hybrid's weight on `e_os`, zero otherwise
+      real(dp) :: c_ss = 0.0_dp   !! The double hybrid's weight on `e_ss`, zero otherwise
       real(dp) :: e_diel = 0.0_dp      !! The continuum's dielectric energy
       real(dp) :: q_surface = 0.0_dp   !! Total surface charge of the continuum
       integer :: iterations = 0
@@ -99,6 +112,7 @@ module mqc_terco_driver
          !! then beta.
       real(dp), allocatable :: mo_energies(:, :)   !! (nao, nspin), hartree
       real(dp), allocatable :: orbitals(:, :, :)   !! (nao, nao, nspin), columns are orbitals
+      real(dp), allocatable :: occupations(:, :)   !! (nmo, nspin)
    contains
       procedure :: total => state_total
    end type terco_state_t
@@ -146,9 +160,9 @@ contains
          result%energy%mp2%ss_scale = settings%scs_ss
          result%energy%mp2%os_scale = settings%scs_os
          call result%energy%mp2%check_stability()
-      else if (session%pt2_fraction /= 0.0_dp) then
+      else if (session%double_hybrid) then
          ! Scaled and kept beside the SCF, as the CPU backend stores it.
-         result%energy%dh_pt2 = session%pt2_fraction*(state%e_os + state%e_ss)
+         result%energy%dh_pt2 = state%c_os*state%e_os + state%c_ss*state%e_ss
       end if
       result%has_energy = .true.
 
@@ -172,7 +186,7 @@ contains
          end if
       end if
 
-      call report_frontier(state, session, fragment, result)
+      call report_frontier(state, result)
       call analyse_density(settings, fragment, session, state, result)
       if (allocated(settings%fukui_population)) then
          call run_fukui(settings, fragment, session, state, result)
@@ -192,28 +206,34 @@ contains
       type(error_t), intent(inout) :: error
 
       character(len=:), allocatable :: functional_name
-      integer(c_int) :: rc, nao_c, nbas_c, eri_lmax, df_lmax, df_lmax_aux
+      integer(c_int) :: rc, nao_c, nbas_c, eri_lmax, df_lmax, df_lmax_aux, major, minor
       integer(c_int), allocatable :: bas_c(:, :)
       integer :: iatom, l_max
-      type(xc_spec_t) :: spec
-      type(error_t) :: spec_error
+
+      ! A library whose ABI is not the one the declarations were compiled from
+      ! would read every argument this module passes by the wrong layout.
+      rc = trc_abi_version(major, minor)
+      if (major /= TRC_ABI_MAJOR .or. minor < TRC_ABI_MINOR) then
+         call error%set(ERROR_VALIDATION, "the linked libterco has ABI "// &
+                        int_text(int(major))//"."//int_text(int(minor))//", and this "// &
+                        "build was compiled against "//int_text(int(TRC_ABI_MAJOR))//"."// &
+                        int_text(int(TRC_ABI_MINOR))//". Rebuild one against the other.")
+         return
+      end if
 
       call refuse_unsupported(settings, error)
       if (error%has_error()) return
 
       functional_name = trim(adjustl(settings%functional))
+      if (len(functional_name) > 0) then
+         call describe_functional(functional_name, session, error)
+         if (error%has_error()) return
+      end if
 
       ! A double hybrid's perturbative term is RI-MP2 on top of the SCF, so it
-      ! needs the auxiliary basis a plain RI-MP2 does. mqc's table says which
-      ! names are double hybrids; terco applies its own weights, and the two
-      ! are compared after the run.
-      session%pt2_fraction = 0.0_dp
-      if (len(functional_name) > 0) then
-         call xc_spec_from_name(functional_name, spec, spec_error)
-         if (.not. spec_error%has_error()) session%pt2_fraction = spec%pt2_fraction
-      end if
-      session%needs_rimp2 = settings%run_mp2 .or. session%pt2_fraction /= 0.0_dp
-      if (session%pt2_fraction /= 0.0_dp .and. .not. settings%aux_basis_named) then
+      ! needs the auxiliary basis a plain RI-MP2 does.
+      session%needs_rimp2 = settings%run_mp2 .or. session%double_hybrid
+      if (session%double_hybrid .and. .not. settings%aux_basis_named) then
          call error%set(ERROR_VALIDATION, "'"//functional_name//"' is a double hybrid, "// &
                         "and terco evaluates its perturbative term by RI-MP2 only. Name "// &
                         "a correlation-fitting basis in model.aux_basis, or ask for "// &
@@ -241,10 +261,7 @@ contains
          return
       end if
 
-      ! Angular momentum against the linked build's own ceiling, and the one
-      ! case where Cartesian and spherical are the same basis. terco reads a
-      ! libcint basis Cartesian; through p the two forms span the same space
-      ! with the same count, so a spherical deck is safe there and only there.
+      ! Angular momentum against the linked build's own ceiling.
       rc = trc_max_angular_momentum(eri_lmax, df_lmax, df_lmax_aux)
       l_max = max_ao_l(session%mol)
       if (l_max > int(eri_lmax)) then
@@ -255,17 +272,11 @@ contains
                         "choose a smaller basis.")
          return
       end if
-      if (l_max >= 2 .and. .not. session%mol%cartesian) then
-         call error%set(ERROR_VALIDATION, "a spherical d shell was asked for, and terco "// &
-                        "reads a libcint basis Cartesian, so it would answer with six d "// &
-                        "functions where the deck asked for five. Set 'model.cartesian', "// &
-                        "or ask for backend 'libcint'.")
-         return
-      end if
-      ! Every AO-indexed array crosses in libcint's within-shell Cartesian
-      ! order. A terco compiled for GAMESS order would hand back densities
-      ! whose d blocks are silently permuted.
-      if (l_max >= 2 .and. trc_cart_order() /= 0) then
+      ! A Cartesian AO-indexed array crosses in libcint's within-shell order.
+      ! A terco compiled for GAMESS order would hand back densities whose d
+      ! blocks are silently permuted. Spherical shells are libcint's order
+      ! whatever that setting.
+      if (session%mol%cartesian .and. l_max >= 2 .and. trc_cart_order() /= 0) then
          call error%set(ERROR_VALIDATION, "the linked terco was compiled with a "// &
                         "non-libcint Cartesian order (TRC_CART_ORDER), so its d-shell "// &
                         "densities would not line up with this basis. Rebuild terco "// &
@@ -286,7 +297,7 @@ contains
       rc = trc_set_basis_libcint(session%handle, int(session%mol%atm, c_int), &
                                  int(session%mol%natm, c_int), bas_c, nbas_c, &
                                  real(session%mol%env, c_double), &
-                                 int(size(session%mol%env), c_int), 1_c_int)
+                                 int(size(session%mol%env), c_int), cartesian_flag(session%mol))
       if (rc /= TRC_OK) then
          call set_terco_error(session, rc, "the basis was refused", error)
          return
@@ -324,6 +335,13 @@ contains
                                                  int(merge(1, 0, settings%incremental_fock), c_int))
       if (rc == TRC_OK) rc = trc_set_verbose(session%handle, &
                                              int(merge(1, 0, settings%verbose), c_int))
+      session%unrestricted = settings%unrestricted
+      if (rc == TRC_OK) rc = trc_set_unrestricted(session%handle, &
+                                                  int(merge(1, 0, settings%unrestricted), c_int))
+      ! terco applies a level shift only until DIIS takes over. It moves the
+      ! path, not the converged state.
+      if (rc == TRC_OK) rc = trc_set_level_shift(session%handle, &
+                                                 real(settings%level_shift, c_double))
       if (rc /= TRC_OK) then
          call set_terco_error(session, rc, "a setting was refused", error)
          return
@@ -333,14 +351,8 @@ contains
       ! session runs, so a difference of two states is a difference of two
       ! solvated energies.
       if (settings%pcm%enabled) then
-         rc = trc_set_pcm(session%handle, c_string(trim(settings%pcm%method)), &
-                          real(settings%pcm%dielectric, c_double), &
-                          int(settings%pcm%angular_points, c_int), &
-                          real(settings%pcm%radii_scale, c_double))
-         if (rc /= TRC_OK) then
-            call set_terco_error(session, rc, "the continuum was refused", error)
-            return
-         end if
+         call set_continuum(settings, fragment, session, error)
+         if (error%has_error()) return
       end if
 
       if (settings%density_fitting) then
@@ -354,65 +366,124 @@ contains
    subroutine set_fitting_basis(settings, fragment, session, error)
       !! Density-fitted J and K, over the deck's auxiliary basis
       !!
-      !! The same `model.aux_basis` the CPU backend fits with, read by terco
-      !! from the Basis Set Exchange file mqc would read.
+      !! The same `model.aux_basis` the CPU backend fits with, built the same
+      !! way, in the orbital basis's Cartesian or spherical form.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(terco_session_t), intent(inout) :: session
       type(error_t), intent(inout) :: error
 
-      character(len=:), allocatable :: path
-      integer(c_int) :: rc
+      type(czt_molecule_t) :: aux
+      integer(c_int), allocatable :: aux_bas_c(:, :)
+      integer(c_int) :: naux_bas_c, rc
 
       ! terco fits J and K for a closed shell only; an open shell would run
       ! exact or not at all, and neither is what the deck asked for.
-      if (fragment%multiplicity /= 1) then
-         call error%set(ERROR_VALIDATION, "keywords.scf.density_fitting on an open "// &
-                        "shell: terco fits J and K for a closed shell only. Drop the "// &
-                        "fitting, or ask for backend 'libcint'.")
+      if (fragment%multiplicity /= 1 .or. settings%unrestricted) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.density_fitting on an "// &
+                        "unrestricted reference: terco fits J and K for a restricted "// &
+                        "closed shell only. Drop the fitting, or ask for backend 'libcint'.")
          return
       end if
-      call refuse_spherical_aux(settings, fragment, session, error)
+      call build_czt_molecule(fragment%element_numbers, session%symbols, &
+                              fragment%coordinates, trim(settings%aux_basis_set), aux, error, &
+                              force_cartesian=settings%cartesian)
       if (error%has_error()) return
-      call find_basis_file(trim(settings%aux_basis_set), path, error)
-      if (error%has_error()) return
+      call segment_general_contractions(aux%bas, aux%nbas, aux_bas_c, naux_bas_c)
+      rc = trc_set_jkfit_libcint(session%handle, int(aux%atm, c_int), int(aux%natm, c_int), &
+                                 aux_bas_c, naux_bas_c, real(aux%env, c_double), &
+                                 int(size(aux%env), c_int), cartesian_flag(aux))
+      call aux%destroy()
       ! A fitted build is a full build every iteration, so terco refuses it
       ! beside incremental building rather than ignoring one of the two.
-      rc = trc_set_jkfit_json(session%handle, c_string(path))
       if (rc == TRC_OK) rc = trc_set_df(session%handle, 1_c_int)
       if (rc == TRC_OK) rc = trc_set_incremental(session%handle, 0_c_int)
       if (rc /= TRC_OK) call set_terco_error(session, rc, "the fitting basis '"// &
                                              trim(settings%aux_basis_set)//"' was refused", error)
    end subroutine set_fitting_basis
 
-   subroutine refuse_spherical_aux(settings, fragment, session, error)
-      !! An auxiliary basis terco would read as a different one
+   subroutine set_continuum(settings, fragment, session, error)
+      !! The continuum, over the CPU backend's own cavity radii
       !!
-      !! terco reads every basis it is handed as Cartesian, the fitting basis
-      !! included. Through p the two forms coincide; from d up a spherical
-      !! deck's auxiliary basis would be fitted over more functions on the
-      !! device than on the CPU, which moves a fitted energy by ~5e-6 and says
-      !! nothing.
+      !! terco's own table is modified Bondi, with hydrogen at 1.10 Angstrom;
+      !! mqc's is Bondi's, hydrogen at 1.20. Handing over the final radii makes
+      !! the two backends build one cavity rather than two.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
-      type(terco_session_t), intent(in) :: session
+      type(terco_session_t), intent(inout) :: session
       type(error_t), intent(inout) :: error
 
-      type(czt_molecule_t) :: aux
+      real(c_double), allocatable, target :: radii(:)
+      real(dp) :: radius
+      integer(c_int) :: rc
+      integer :: iatom
 
-      call build_czt_molecule(fragment%element_numbers, session%symbols, &
-                              fragment%coordinates, trim(settings%aux_basis_set), aux, error, &
-                              force_cartesian=settings%cartesian)
-      if (error%has_error()) return
-      if (.not. aux%cartesian .and. max_ao_l(aux) >= 2) then
-         call error%set(ERROR_VALIDATION, "the auxiliary basis '"// &
-                        trim(settings%aux_basis_set)//"' has spherical d or higher "// &
-                        "functions, and terco reads it Cartesian -- a different fitting "// &
-                        "basis from the one the deck names. Set 'model.cartesian', or "// &
-                        "ask for backend 'libcint'.")
+      allocate (radii(fragment%n_atoms))
+      do iatom = 1, fragment%n_atoms
+         call cavity_radius(fragment%element_numbers(iatom), settings%pcm%radii_scale, &
+                            radius, error)
+         if (error%has_error()) return
+         radii(iatom) = real(radius, c_double)
+      end do
+      rc = trc_set_pcm(session%handle, c_string(trim(settings%pcm%method)), &
+                       real(settings%pcm%dielectric, c_double), &
+                       int(settings%pcm%angular_points, c_int), &
+                       real(settings%pcm%radii_scale, c_double))
+      if (rc == TRC_OK) rc = trc_set_pcm_radii(session%handle, int(fragment%n_atoms, c_int), &
+                                               c_loc(radii))
+      if (rc /= TRC_OK) call set_terco_error(session, rc, "the continuum was refused", error)
+   end subroutine set_continuum
+
+   subroutine describe_functional(name, session, error)
+      !! What terco knows about a functional, before anything is built
+      !!
+      !! A double hybrid's PT2 weights come from terco's table and are checked
+      !! against mqc's, which the CPU backend would apply to the same deck.
+      character(len=*), intent(in) :: name
+      type(terco_session_t), intent(inout) :: session
+      type(error_t), intent(inout) :: error
+
+      integer(c_int) :: rc, flags, needed
+      real(c_double) :: exx, c_os, c_ss
+      character(kind=c_char), allocatable :: list_c(:)
+      character(len=:), allocatable :: list
+      type(xc_spec_t) :: spec
+      type(error_t) :: spec_error
+      integer :: i
+
+      rc = trc_functional_info(c_string(name), flags, exx, c_os, c_ss)
+      if (rc /= TRC_OK .or. iand(flags, FUNCTIONAL_RUNNABLE) == 0) then
+         list = ""
+         allocate (list_c(1))
+         rc = trc_functional_list(list_c, 0_c_int, needed)
+         deallocate (list_c)
+         allocate (list_c(max(needed, 1_c_int)))
+         if (trc_functional_list(list_c, needed, needed) == TRC_OK) then
+            do i = 1, size(list_c)
+               if (list_c(i) == c_null_char) exit
+               list = list//list_c(i)
+            end do
+         end if
+         call error%set(ERROR_VALIDATION, "terco cannot run the functional '"//name// &
+                        "'. It runs: "//list//". Ask for backend 'libcint', which goes "// &
+                        "through libxc.")
+         return
       end if
-      call aux%destroy()
-   end subroutine refuse_spherical_aux
+
+      session%double_hybrid = iand(flags, FUNCTIONAL_DOUBLE_HYBRID) /= 0
+      if (.not. session%double_hybrid) return
+      session%c_os = real(c_os, dp)
+      session%c_ss = real(c_ss, dp)
+      call xc_spec_from_name(name, spec, spec_error)
+      if (spec_error%has_error()) return
+      if (abs(session%c_os - spec%pt2_fraction) > DH_WEIGHT_AGREEMENT .or. &
+          abs(session%c_ss - spec%pt2_fraction) > DH_WEIGHT_AGREEMENT) then
+         call error%set(ERROR_VALIDATION, "terco and mqc weight the perturbative term "// &
+                        "of '"//name//"' differently, so the two backends would report "// &
+                        "different energies for it. That is a bug in one functional "// &
+                        "table, not in the deck.")
+      end if
+   end subroutine describe_functional
 
    subroutine refuse_gradient(settings, session, error)
       !! What terco's analytic gradient does not cover
@@ -488,15 +559,6 @@ contains
          call error%set(ERROR_VALIDATION, "the second-order SCF has no terco "// &
                         "implementation; terco converges by DIIS. Ask for backend "// &
                         "'libcint', or drop it.")
-      else if (settings%level_shift /= 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "keywords.scf.level_shift has no terco "// &
-                        "counterpart yet. Drop it, or ask for backend 'libcint'.")
-      else if (settings%unrestricted) then
-         ! terco is unrestricted exactly when the multiplicity is above one, so
-         ! this bites only a closed shell, which it would run restricted.
-         call error%set(ERROR_VALIDATION, "keywords.scf.unrestricted asked for an "// &
-                        "unrestricted closed shell, and terco runs a singlet restricted. "// &
-                        "Drop it, or ask for backend 'libcint'.")
       else if (.not. settings%use_diis .or. trim(settings%accelerator) /= "diis") then
          call error%set(ERROR_VALIDATION, "terco converges by DIIS and nothing else, so "// &
                         "keywords.scf.accelerator '"//trim(settings%accelerator)// &
@@ -540,8 +602,6 @@ contains
          call logger%warning("bad basis set, calculations will be poor: '"//aux_name// &
                              "' is not a correlation-fitting (RIFIT) set")
       end if
-      call refuse_spherical_aux(settings, fragment, session, error)
-      if (error%has_error()) return
       call build_czt_molecule(fragment%element_numbers, session%symbols, &
                               fragment%coordinates, aux_name, aux, error, &
                               force_cartesian=settings%cartesian)
@@ -549,7 +609,7 @@ contains
       call segment_general_contractions(aux%bas, aux%nbas, aux_bas_c, naux_bas_c)
       rc = trc_set_aux_libcint(session%handle, int(aux%atm, c_int), int(aux%natm, c_int), &
                                aux_bas_c, naux_bas_c, real(aux%env, c_double), &
-                               int(size(aux%env), c_int), 1_c_int)
+                               int(size(aux%env), c_int), cartesian_flag(aux))
       call aux%destroy()
       if (rc /= TRC_OK) then
          call set_terco_error(session, rc, "the auxiliary basis was refused", error)
@@ -603,7 +663,8 @@ contains
                            " cannot be built at charge "//int_text(charge)//".")
             return
          end if
-         call give_density(session, d_alpha, d_beta, n_alpha /= n_beta, error)
+         call give_density(session, d_alpha, d_beta, n_alpha /= n_beta .or. session%unrestricted, &
+                           error)
          return
       case default
          call error%set(ERROR_VALIDATION, "guess '"//trim(guess_name)//"' has no "// &
@@ -640,10 +701,11 @@ contains
    end subroutine give_density
 
    subroutine set_state_molecule(session, charge, multiplicity, error)
-      !! Point the context at one electron count, keeping its basis
+      !! The atoms, once, before any basis is set
       !!
       !! Nuclear charges are the molecule's own, so a ghost atom reaches terco
-      !! as a centre with basis functions and no nucleus.
+      !! as a centre with basis functions and no nucleus. A later electron
+      !! count goes through `set_state_charge`, which keeps what this resets.
       type(terco_session_t), intent(inout) :: session
       integer, intent(in) :: charge, multiplicity
       type(error_t), intent(inout) :: error
@@ -657,11 +719,28 @@ contains
       if (rc /= TRC_OK) call set_terco_error(session, rc, "the molecule was refused", error)
    end subroutine set_state_molecule
 
+   subroutine set_state_charge(session, charge, multiplicity, error)
+      !! Point an open session at another electron count
+      !!
+      !! Keeps the molecule, the bases, the fit and the cavity radii. terco
+      !! drops a guess density given for the old count, so the next state's
+      !! guess is set after this, never before.
+      type(terco_session_t), intent(inout) :: session
+      integer, intent(in) :: charge, multiplicity
+      type(error_t), intent(inout) :: error
+
+      integer(c_int) :: rc
+
+      rc = trc_set_charge(session%handle, int(charge, c_int), int(multiplicity, c_int))
+      if (rc /= TRC_OK) call set_terco_error(session, rc, "the charge was refused", error)
+   end subroutine set_state_charge
+
    subroutine run_state(settings, session, charge, multiplicity, keep_unconverged, state, error)
       !! One electron count on an open session: SCF, then RI-MP2 if it is owed
       !!
-      !! The guess is whatever the session was last given. A state that did
-      !! not converge is an error unless `keep_unconverged`.
+      !! The session must already be at `charge` and `multiplicity`, and the
+      !! guess is whatever it was last given. A state that did not converge is
+      !! an error unless `keep_unconverged`.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(terco_session_t), intent(inout) :: session
       integer, intent(in) :: charge, multiplicity
@@ -669,7 +748,7 @@ contains
       type(terco_state_t), intent(out) :: state
       type(error_t), intent(inout) :: error
 
-      integer(c_int) :: rc, niter_c, flag_c, npoints_c
+      integer(c_int) :: rc, niter_c, flag_c, npoints_c, nmo_c
       real(c_double) :: energy_c, e_os_c, e_ss_c, total_c, e_diel_c, q_c
       integer :: n_alpha, n_beta
       logical :: occupations_ok
@@ -681,10 +760,7 @@ contains
                         " cannot be built at charge "//int_text(charge)//".")
          return
       end if
-      state%nspin = merge(2, 1, n_alpha /= n_beta)
-
-      call set_state_molecule(session, charge, multiplicity, error)
-      if (error%has_error()) return
+      state%nspin = merge(2, 1, n_alpha /= n_beta .or. settings%unrestricted)
 
       rc = trc_run_scf(session%handle)
       if (rc /= TRC_OK .and. rc /= TRC_ERR_NOCONV) then
@@ -721,6 +797,11 @@ contains
       rc = trc_density(session%handle, state%density)
       if (rc == TRC_OK) rc = trc_mo_energies(session%handle, state%mo_energies)
       if (rc == TRC_OK) rc = trc_mo_coefficients(session%handle, state%orbitals)
+      if (rc == TRC_OK) rc = trc_nmo(session%handle, nmo_c)
+      if (rc == TRC_OK) then
+         allocate (state%occupations(int(nmo_c), state%nspin))
+         rc = trc_mo_occupations(session%handle, state%occupations)
+      end if
       if (rc /= TRC_OK) then
          call set_terco_error(session, rc, "the converged density could not be read", error)
          return
@@ -736,51 +817,36 @@ contains
       end if
       state%e_os = real(e_os_c, dp)
       state%e_ss = real(e_ss_c, dp)
-      state%pt2_fraction = session%pt2_fraction
+      state%c_os = session%c_os
+      state%c_ss = session%c_ss
 
-      ! A double hybrid's total is weighted on terco's side from its own table,
-      ! and has to be the number mqc forms from the same parts.
-      if (session%pt2_fraction /= 0.0_dp) then
+      ! terco weights a double hybrid's total itself; it has to be the number
+      ! formed here from the parts it reported.
+      if (session%double_hybrid) then
          if (trc_energy(session%handle, total_c) /= TRC_OK) then
             call error%set(ERROR_VALIDATION, "terco ran RI-MP2 and would not report "// &
                            "the double hybrid's total")
             return
          end if
-         if (abs(real(total_c, dp) - (state%energy_scf + &
-                                      session%pt2_fraction*(state%e_os + state%e_ss))) &
-             > DH_ENERGY_AGREEMENT) then
-            call error%set(ERROR_VALIDATION, "terco and mqc weight this double "// &
-                           "hybrid's perturbative term differently. That is a bug in "// &
-                           "one functional table, not in the deck.")
+         if (abs(real(total_c, dp) - state%total()) > 1.0e-10_dp*max(1.0_dp, abs(state%total()))) then
+            call error%set(ERROR_VALIDATION, "terco's double-hybrid total is not its "// &
+                           "SCF energy plus its own weighted RI-MP2 components. That is "// &
+                           "a bug in the adapter, not in the deck.")
             return
          end if
       end if
    end subroutine run_state
 
-   subroutine report_frontier(state, session, fragment, result)
-      !! HOMO and LUMO from the orbital energies terco returned
+   subroutine report_frontier(state, result)
+      !! HOMO and LUMO from the orbital energies and occupations terco returned
       type(terco_state_t), intent(in) :: state
-      type(terco_session_t), intent(in) :: session
-      type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
 
-      real(dp), allocatable :: occupations(:)
-      integer :: n_alpha, n_beta, n_orb
-      logical :: ok
+      integer :: nmo
 
-      if (.not. allocated(state%mo_energies)) return
-      call spin_occupations(nint(sum(session%mol%charges)) - fragment%charge, &
-                            fragment%multiplicity, n_alpha, n_beta, ok)
-      if (.not. ok) return
-      n_orb = size(state%mo_energies, 1)
-      allocate (occupations(n_orb))
-      occupations = 0.0_dp
-      if (state%nspin == 2) then
-         occupations(1:min(n_alpha, n_orb)) = 1.0_dp
-      else
-         occupations(1:min(n_alpha, n_orb)) = 2.0_dp
-      end if
-      call frontier_orbitals(state%mo_energies(:, 1), occupations, &
+      if (.not. allocated(state%occupations)) return
+      nmo = size(state%occupations, 1)
+      call frontier_orbitals(state%mo_energies(1:nmo, 1), state%occupations(:, 1), &
                              result%homo, result%lumo, result%has_orbitals)
    end subroutine report_frontier
 
@@ -899,6 +965,9 @@ contains
 
       if (settings%verbose) call logger%info("  Fukui: anion SCF, N+1 electrons")
       if (.not. fukui_error%has_error()) then
+         call set_state_charge(session, fragment%charge - 1, 2, fukui_error)
+      end if
+      if (.not. fukui_error%has_error()) then
          call seed_ion(settings, session, neutral, mode, fragment%charge - 1, nelec/2 + 1, &
                        nelec/2, fukui_error)
       end if
@@ -909,6 +978,9 @@ contains
       end if
 
       if (settings%verbose) call logger%info("  Fukui: cation SCF, N-1 electrons")
+      if (.not. fukui_error%has_error()) then
+         call set_state_charge(session, fragment%charge + 1, 2, fukui_error)
+      end if
       if (.not. fukui_error%has_error()) then
          call seed_ion(settings, session, neutral, mode, fragment%charge + 1, nelec/2, &
                        nelec/2 - 1, fukui_error)
@@ -965,11 +1037,6 @@ contains
 
       ! The same refusals the neutral gets, for the ions' own copy of the
       ! numerics: each would otherwise be dropped on the way to the device.
-      if (settings%fukui_scf%level_shift /= 0.0_dp) then
-         call error%set(ERROR_VALIDATION, "properties.fukui.scf.level_shift has no "// &
-                        "terco counterpart yet. Drop it, or run on backend 'libcint'.")
-         return
-      end if
       if (.not. settings%fukui_scf%use_diis .or. &
           trim(settings%fukui_scf%accelerator) /= "diis" .or. &
           settings%fukui_scf%second_order) then
@@ -990,6 +1057,8 @@ contains
       rc = trc_set_convergence(session%handle, real(settings%fukui_scf%energy_tol, c_double), &
                                real(gate, c_double), int(settings%fukui_scf%max_iter, c_int), &
                                int(settings%fukui_scf%diis_size, c_int))
+      if (rc == TRC_OK) rc = trc_set_level_shift(session%handle, &
+                                                 real(settings%fukui_scf%level_shift, c_double))
       if (rc == TRC_OK .and. .not. settings%density_fitting) then
          rc = trc_set_incremental(session%handle, &
                                   int(merge(1, 0, settings%fukui_scf%incremental_fock), c_int))
@@ -1032,7 +1101,7 @@ contains
       class(terco_state_t), intent(in) :: this
       real(dp) :: energy
 
-      energy = this%energy_scf + this%pt2_fraction*(this%e_os + this%e_ss)
+      energy = this%energy_scf + this%c_os*this%e_os + this%c_ss*this%e_ss
    end function state_total
 
    subroutine session_close(this)
@@ -1107,6 +1176,14 @@ contains
          gate = sqrt(settings%energy_tol)
       end if
    end function commutator_gate
+
+   pure function cartesian_flag(mol) result(flag)
+      !! terco's `cartesian` argument for a basis built here
+      type(czt_molecule_t), intent(in) :: mol
+      integer(c_int) :: flag
+
+      flag = int(merge(1, 0, mol%cartesian), c_int)
+   end function cartesian_flag
 
    pure subroutine segment_general_contractions(bas, nbas, bas_out, nbas_out)
       !! One `bas` row per contracted function, which is all terco can read

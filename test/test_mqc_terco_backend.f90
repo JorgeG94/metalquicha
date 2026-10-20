@@ -43,6 +43,7 @@ contains
                   new_unittest("missing_build_is_reported", test_missing_build), &
                   new_unittest("agrees_with_the_cpu_path", test_matches_cpu), &
                   new_unittest("agrees_on_general_contraction", test_general_contraction), &
+                  new_unittest("agrees_on_spherical_shells", test_spherical_matches_cpu), &
                   new_unittest("gradient_agrees_with_the_cpu_path", test_gradient_matches_cpu), &
                   new_unittest("fitted_energy_agrees_with_the_cpu_path", test_fitted_matches_cpu) &
                   ]
@@ -248,6 +249,35 @@ contains
                  "contraction column would show up exactly here")
    end subroutine test_general_contraction
 
+   subroutine test_spherical_matches_cpu(error)
+      !! cc-pVDZ with five d functions, handed to terco spherical
+      !!
+      !! **Only runs where terco is linked.** A spherical shell read as
+      !! Cartesian is a larger basis and a lower energy, converged and silent.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+      type(calculation_result_t) :: terco_result, cpu_result
+
+      if (.not. terco_backend_available()) return
+
+      call water(fragment)
+      settings%basis_set = "cc-pvdz"
+      settings%energy_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-8_dp
+
+      call run_terco_scf(settings, fragment, terco_result)
+      call check(error, terco_result%has_energy, "terco returned no spherical cc-pVDZ energy")
+      if (allocated(error)) return
+
+      call run_czt_hf(settings, fragment, cpu_result)
+      call check(error, cpu_result%has_energy, "the CPU path returned no spherical energy")
+      if (allocated(error)) return
+
+      call check(error, abs(terco_result%energy%scf - cpu_result%energy%scf) < 1.0e-8_dp, &
+                 "terco and the CPU path disagree on spherical water/cc-pVDZ")
+   end subroutine test_spherical_matches_cpu
+
    subroutine test_gradient_matches_cpu(error)
       !! terco's analytic Hartree-Fock gradient against the CPU path's
       !!
@@ -292,11 +322,10 @@ contains
 
       if (.not. terco_backend_available()) return
 
-      ! Cartesian, because terco reads a fitting basis that way and
-      ! def2-universal-jkfit carries d functions and above.
+      ! Spherical: def2-universal-jkfit carries d functions and above, so a
+      ! fitting basis that reached the device Cartesian would show up here.
       call water(fragment)
       settings%basis_set = "6-31g"
-      settings%cartesian = .true.
       settings%density_fitting = .true.
       settings%aux_basis_set = "def2-universal-jkfit"
       settings%aux_basis_named = .true.
