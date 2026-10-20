@@ -180,6 +180,18 @@ return a plausible number to a different question:
 - **An ABI check.** A libterco whose ABI is not the one mqc was compiled
   against is refused before any other call.
 
+A fragmented run puts one fragment on each worker rank, and each worker binds
+itself to GPU ``node_rank mod n_gpus`` before its first fragment. Rank 0
+coordinates and computes nothing, so four GPUs are kept busy by five ranks:
+
+.. code-block:: bash
+
+   mpirun -np 5 ./mqc deck.json
+
+A launcher that already gives each rank one GPU (``srun --gpus-per-task=1``,
+which ``tools/run.sh`` uses inside a SLURM job) leaves a single device visible,
+and every rank takes it.
+
 A generally contracted basis, cc-pVDZ among them, is *not* refused: terco reads
 one contracted function per shell, so the driver splits each contraction column
 into its own shell before handing the basis over. That is exact -- the columns

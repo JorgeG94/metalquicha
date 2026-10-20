@@ -50,6 +50,7 @@ module mqc_terco_driver
                                trc_set_charge, trc_set_unrestricted, trc_set_level_shift, &
                                trc_set_pcm_radii, trc_abi_version, trc_functional_info, &
                                trc_functional_list, trc_nmo, trc_mo_occupations, trc_message, &
+                               trc_select_device, &
                                TRC_ABI_MAJOR, TRC_ABI_MINOR, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
                                TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD, TRC_GUESS_GIVEN, &
@@ -70,6 +71,11 @@ module mqc_terco_driver
       !! `trc_functional_info` flag: terco can run this functional today
    integer(c_int), parameter :: FUNCTIONAL_DOUBLE_HYBRID = 32
       !! `trc_functional_info` flag: an RI-MP2 term is part of the functional
+
+   logical, save :: device_selected = .false.
+      !! Whether this process has chosen its GPU. terco binds a device for the
+      !! whole process and only before its first context, so it is chosen
+      !! once, by the first fragment this rank runs.
 
    type :: terco_session_t
       !! One terco context and the CPU-side molecule it was built from
@@ -220,6 +226,8 @@ contains
                         int_text(int(TRC_ABI_MINOR))//". Rebuild one against the other.")
          return
       end if
+
+      call select_device(settings%device_rank)
 
       call refuse_unsupported(settings, error)
       if (error%has_error()) return
@@ -532,6 +540,25 @@ contains
       result%gradient = real(gradient, dp)
       result%has_gradient = .true.
    end subroutine run_gradient
+
+   subroutine select_device(node_rank)
+      !! Spread this node's ranks over its GPUs, once per process
+      !!
+      !! One fragment per rank runs on a single-rank context, which terco
+      !! would otherwise put on device 0 for every rank. `node_rank` is the
+      !! node-local rank, so the device is `mod(node_rank, devices)`. A launcher
+      !! that already gives each rank one GPU (srun --gpus-per-task) leaves one
+      !! device visible, and every rank takes it.
+      integer, intent(in) :: node_rank
+
+      integer(c_int) :: rc, device
+
+      if (device_selected) return
+      rc = trc_select_device(int(node_rank, c_int), device)
+      device_selected = .true.
+      call logger%debug("backend 'terco': node rank "//int_text(node_rank)// &
+                        " runs on device "//int_text(int(device)))
+   end subroutine select_device
 
    subroutine refuse_unsupported(settings, error)
       !! What the deck asked for that terco has no counterpart for
