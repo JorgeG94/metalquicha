@@ -165,9 +165,10 @@ What terco runs:
   and ``minao`` and ``sac``, which mqc builds and hands over.
 - ``keywords.scf.level_shift``, which terco applies only until DIIS takes over.
   It changes the path to the converged state, not the state.
-- Charges (Mulliken, CHELPG), Mayer bond orders and Fukui indices. They are
-  computed by the CPU backend's own code from the density terco returns. All
-  three Fukui SCFs run on the device, on one context.
+- Charges (Mulliken, CHELPG, Hirshfeld, MBIS), Mayer bond orders, Fukui
+  indices and the quasi-atomic bonding analysis (``gms_quao``). They are
+  computed by the CPU backend's own code from the density and orbitals terco
+  returns. All three Fukui SCFs run on the device, on one context.
 
 What the backend covers is narrower than the CPU path, and each limit is
 **refused** rather than worked around, because every one of them would otherwise
