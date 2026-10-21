@@ -202,6 +202,8 @@ contains
       integer, intent(in) :: n_electrons
       type(error_t), intent(inout) :: error
       logical, intent(in), optional :: verbose
+         !! Print the tables. Absent prints them. Off computes the same rows and
+         !! the same decomposition, and says nothing.
       real(dp), intent(in), optional :: threshold
          !! kcal/mol. Pairs whose kinetic bond order is weaker are counted and
          !! not printed.
@@ -545,11 +547,8 @@ contains
          ! the core is not in this basis.
       end if
 
-      ! Outside the `loud` block that used to hold it. It is read below as
-      ! `loud .and. want_energy`, and Fortran does not promise to stop at a
-      ! false first operand -- so a caller passing `verbose = .false.` read it
-      ! undefined. No caller passes `verbose` today, which is the only reason
-      ! this has never been seen.
+      ! Whether to decompose is the caller's request, and printing is separate:
+      ! a quiet caller still gets the decomposition, it only goes unprinted.
       want_energy = .false.
       if (present(energy_decomposition)) want_energy = energy_decomposition
       if (present(no_sharing)) then
@@ -557,10 +556,6 @@ contains
          ! it is part of; refusing on a technicality would be unhelpful.
          if (no_sharing) want_energy = .true.
       end if
-      ! TODO(mqc): `want_energy` is assigned only inside the `if (loud)` block
-      ! above and read in `if (loud .and. want_energy)` below, so a caller
-      ! passing `verbose = .false.` reads it undefined and silently gets no
-      ! energy decomposition however `energy_decomposition` was set.
 
       ci_route = NO_SHARING_CI_TRANSFORM
       if (present(no_sharing_ci)) then
@@ -573,7 +568,7 @@ contains
          return
       end if
 
-      if (loud .and. want_energy) then
+      if (want_energy) then
          ! The decomposition needs the core, which the bonding analysis above
          ! does not: it carries most of the kinetic energy and most of the
          ! nuclear attraction, and without it the totals below would sum to a
@@ -596,7 +591,7 @@ contains
          call kinetic_decomposition(full_quao, full_interference, natm, kin_intra, &
                                     kin_inter, error)
          if (error%has_error()) return
-         call print_kinetic_decomposition(kin_intra, kin_inter, element_symbols)
+         if (loud) call print_kinetic_decomposition(kin_intra, kin_inter, element_symbols)
 
          ! The other half of the one-electron energy. Split by which nucleus is
          ! attracting, so a term carries three atomic labels rather than two and
@@ -610,7 +605,7 @@ contains
                                     v_atom_quao, natm, nuc_intra, nuc_inter, error, &
                                     coulomb=nuc_coulomb)
          if (error%has_error()) return
-         call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
+         if (loud) call print_nuclear_decomposition(nuc_intra, nuc_inter, element_symbols)
 
          ! A valence electron does not see the bare nucleus but one screened by
          ! the core, so its attraction to its own nucleus is divided in the
@@ -627,12 +622,12 @@ contains
                            "charge fractions do not add to one.")
             return
          end if
-         call logger%info("     own nucleus, by charge      to core     to valence")
+         if (loud) call logger%info("     own nucleus, by charge      to core     to valence")
          do iatom = 1, natm
             write (label, "(a,i0)") trim(adjustl(element_symbols(iatom)))//" ", iatom
             write (line, "(4x,a8,18x,2f14.3)") label, &
                nuc_core(iatom)*1000.0_dp, nuc_val(iatom)*1000.0_dp
-            call logger%info(trim(line))
+            if (loud) call logger%info(trim(line))
          end do
 
          ! The two-electron energy, where a term carries four atomic labels
@@ -660,7 +655,7 @@ contains
             if (span_deficit > SPAN_TOL) then
                write (line, "(a,es10.2)") &
                   "    active orbitals outside the quasi-atomic span ", span_deficit
-               call logger%info(trim(line))
+               if (loud) call logger%info(trim(line))
             end if
             call active_cumulant(active_dm1, active_dm2, cumulant)
             call transform_cumulant(u_active, cumulant, cumulant_quao, error)
@@ -675,7 +670,7 @@ contains
                                             two_electron, error, coulomb=two_coulomb)
          end if
          if (error%has_error()) return
-         call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
+         if (loud) call print_two_electron_decomposition(two_intra, two_inter, element_symbols)
 
          ! **The check the whole thing exists to pass**, further down: the energy
          ! the decomposition arrives at against the energy of the same wave
@@ -693,7 +688,7 @@ contains
          allocate (tot_intra(natm), tot_inter(natm, natm))
          tot_intra = kin_intra + nuc_intra + two_intra
          tot_inter = kin_inter + nuc_inter + two_inter + rep_inter
-         call print_total_decomposition(tot_intra, tot_inter, element_symbols)
+         if (loud) call print_total_decomposition(tot_intra, tot_inter, element_symbols)
 
          ! Everything an electrostatic model could account for: each atom's
          ! density in the other's nuclear field, the repulsion of their two
@@ -703,7 +698,7 @@ contains
          ! means.
          allocate (classical(natm, natm))
          classical = nuc_coulomb + two_coulomb + rep_inter
-         call print_interatomic_split(tot_inter, classical, element_symbols)
+         if (loud) call print_interatomic_split(tot_inter, classical, element_symbols)
 
          ! The atoms as they would be on their own. Subtracting them turns a
          ! table of large numbers into the energy of formation: what it costs to
@@ -714,8 +709,8 @@ contains
          allocate (adaptation(natm))
          adaptation = tot_intra - free_energy
          formation = sum(adaptation) + 0.5_dp*sum(tot_inter)
-         call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
-                              element_symbols, formation)
+         if (loud) call print_formation(adaptation, free_energy, tot_intra, tot_inter, &
+                                        element_symbols, formation)
 
          ! Handed out here rather than at the end of the routine, so a caller
          ! that asked for the decomposition gets it even if the no-sharing CI it
@@ -778,16 +773,16 @@ contains
                         mol%nuclear_repulsion()
          end if
 
-         call logger%info("")
+         if (loud) call logger%info("")
          write (line, "(4x,a30,f16.6,a)") "one-electron", one_electron, " hartree"
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
          write (line, "(4x,a30,f16.6,a)") "two-electron", two_electron, " hartree"
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
          write (line, "(4x,a30,f16.6,a)") "nuclear repulsion", &
             mol%nuclear_repulsion(), " hartree"
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
          write (line, "(4x,a30,f16.6,a)") "total", total_energy, " hartree"
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
          if (present(reference_energy)) then
             write (line, "(4x,a30,f16.6,a)") "reported by the calculation", reference, &
                " hartree"
@@ -795,7 +790,7 @@ contains
             write (line, "(4x,a30,f16.6,a)") "from the orbitals directly", reference, &
                " hartree"
          end if
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
          if (abs(kinetic_total(tot_intra, tot_inter) - total_energy) > BALANCE_TOL) then
             call error%set(ERROR_VALIDATION, "the atom and atom-pair table does not "// &
                            "sum to the total energy, so the four contributions were "// &
@@ -805,7 +800,7 @@ contains
          if (abs(total_energy - reference) > BALANCE_TOL) then
             write (line, "(4x,a30,f16.6,a)") "outside the quasi-atomic span", &
                reference - total_energy, " hartree"
-            call logger%info(trim(line))
+            if (loud) call logger%info(trim(line))
          end if
 
          ! Two diagnostics saying whether to believe the tables above. The
@@ -814,34 +809,34 @@ contains
          ! separation the valence-virtual selection cut through; **anything
          ! narrow means the valence space was not cleanly separable and the
          ! whole analysis is on sand.**
-         call logger%info("")
+         if (loud) call logger%info("")
          write (line, "(a,f8.4,a,i0,a)") "    atomic character   ", &
             quao%atomic_character, "   (", quao%sweeps, " refinement sweeps)"
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
          write (line, "(a,f8.4,a,f8.4)") "    valence gap        ", &
             vvo%smallest_retained, "   against rejected ", vvo%largest_rejected
-         call logger%info(trim(line))
+         if (loud) call logger%info(trim(line))
 
          ! Per orbital as well as averaged, because the average cannot tell every
          ! orbital being mediocre from a few being poor.
          if (allocated(quao%character_of)) then
-            call logger%info("")
-            call logger%info("    atomic character per orbital, worst first")
+            if (loud) call logger%info("")
+            if (loud) call logger%info("    atomic character per orbital, worst first")
             call sort_ascending(quao%character_of, order)
             do i = 1, min(size(order), 12)
                write (line, "(a,i4,a,a,i0,a,f9.4)") "      orbital ", order(i), &
                   "  on ", trim(adjustl(element_symbols(quao%atom_of(order(i))))), &
                   quao%atom_of(order(i)), "   ", quao%character_of(order(i))
-               call logger%info(trim(line))
+               if (loud) call logger%info(trim(line))
             end do
             if (size(order) > 12) then
                write (line, "(a,i0,a)") "      (", size(order) - 12, " better ones not shown)"
-               call logger%info(trim(line))
+               if (loud) call logger%info(trim(line))
             end if
             deallocate (order)
          end if
-         call logger%info("")
-         deallocate (populations)
+         if (loud) call logger%info("")
+         if (allocated(populations)) deallocate (populations)
       end if
 
       call clk%finish()
