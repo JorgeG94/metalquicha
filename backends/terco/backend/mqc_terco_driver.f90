@@ -29,13 +29,12 @@ module mqc_terco_driver
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_ao, only: max_ao_l
-   use mqc_czt_bridge, only: core_orbital_count, run_czt_bonding_analysis
+   use mqc_czt_bridge, only: core_orbital_count, run_czt_bonding_analysis, run_czt_atomic_charges
    use mqc_czt_bonding, only: bonding_analysis_kind, BONDING_GMS_QUAO
    use libcint_fortran, only: LIBCINT_NCTR_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_COEFF
    use mqc_czt_atomic_guess, only: parse_guess_name, build_atomic_guess
    use mqc_czt_rhf, only: SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
                           SCF_GUESS_SAP, SCF_GUESS_MINAO
-   use mqc_czt_charges, only: mulliken_charges, mulliken_spin_populations, chelpg_charges
    use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
                                   mayer_valences, print_mayer_report
    use mqc_czt_fukui, only: fukui_result_t, fukui_from_states, print_fukui_report
@@ -892,8 +891,8 @@ contains
    subroutine analyse_density(settings, fragment, session, state, result)
       !! Charges and bond orders of the density terco converged
       !!
-      !! A failure here is a warning, as it is on every backend: the energy
-      !! stands.
+      !! Through the CPU backend's own routines, in the same AO basis. A failure
+      !! here is a warning, as it is on every backend: the energy stands.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(terco_session_t), intent(in) :: session
@@ -901,7 +900,7 @@ contains
       type(calculation_result_t), intent(inout) :: result
 
       real(dp), allocatable :: total(:, :), spin(:, :), s_ao(:, :)
-      real(dp), allocatable :: q(:), q_spin(:), orders(:, :), valences(:)
+      real(dp), allocatable :: orders(:, :), valences(:)
       type(error_t) :: analysis_error
       logical :: open_shell
 
@@ -915,32 +914,13 @@ contains
       else
          total = state%density(:, :, 1)
       end if
-      call session%mol%overlap(s_ao)
 
       if (allocated(settings%charges_scheme)) then
-         call analysis_error%clear()
-         select case (trim(settings%charges_scheme))
-         case ("mulliken")
-            call mulliken_charges(session%mol, total, s_ao, q, analysis_error)
-            if (open_shell .and. .not. analysis_error%has_error()) then
-               call mulliken_spin_populations(session%mol, spin, s_ao, q_spin, analysis_error)
-            end if
-         case ("chelpg")
-            call chelpg_charges(session%mol, total, q, analysis_error, &
-                                total_charge=real(fragment%charge, dp))
-         case default
-            call analysis_error%set(ERROR_VALIDATION, "charge scheme '"// &
-                                    trim(settings%charges_scheme)//"' is not driven "// &
-                                    "through terco; 'mulliken' and 'chelpg' are.")
-         end select
-         if (analysis_error%has_error()) then
-            call logger%warning("  atomic charges could not be computed: "// &
-                                analysis_error%get_message())
+         if (open_shell) then
+            call run_czt_atomic_charges(settings, session%mol, fragment%charge, total, result, &
+                                        spin_density=spin)
          else
-            call move_alloc(q, result%atomic_charges)
-            if (allocated(q_spin)) call move_alloc(q_spin, result%spin_populations)
-            result%charge_scheme = trim(settings%charges_scheme)
-            result%has_charges = .true.
+            call run_czt_atomic_charges(settings, session%mol, fragment%charge, total, result)
          end if
       end if
 
@@ -948,6 +928,7 @@ contains
          call analysis_error%clear()
          select case (trim(settings%bond_order_scheme))
          case ("mayer")
+            call session%mol%overlap(s_ao)
             if (open_shell) then
                call mayer_bond_orders_open_shell(session%mol, state%density(:, :, 1), &
                                                  state%density(:, :, 2), s_ao, orders, &

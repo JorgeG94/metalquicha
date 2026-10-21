@@ -84,6 +84,7 @@ module mqc_czt_bridge
    public :: run_czt_charges
    public :: run_czt_mayer_bond_orders
    public :: run_czt_bonding_analysis   !! the terco backend analyses its own orbitals with it
+   public :: run_czt_atomic_charges     !! and partitions its own density with it
    public :: run_czt_efp
    public :: run_czt_sapt0
    public :: run_czt_sapt2
@@ -1145,10 +1146,6 @@ contains
    end subroutine run_czt_efmo
    subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       !! Closed-shell HF for one fragment, on the CPU
-      use mqc_czt_charges, only: mulliken_charges, chelpg_charges, &
-                                 mulliken_spin_populations
-      use mqc_czt_hirshfeld, only: hirshfeld_populations
-      use mqc_czt_mbis, only: mbis_populations
       use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
                                      mayer_valences, print_mayer_report
       type(cuest_scf_settings_t), intent(in) :: settings
@@ -2138,73 +2135,14 @@ contains
       ! no second SCF: a deck asking for charges is asking for the charges *of
       ! the calculation it ran*, not of a Hartree-Fock stand-in for it.
       if (allocated(settings%charges_scheme)) then
-         block
-            real(dp), allocatable :: q(:), q_spin(:)
-            real(dp), allocatable :: total_density(:, :), spin_density(:, :), s_ao(:, :)
-            logical :: open_shell
-
-            call analysis_error%clear()
-            open_shell = allocated(scf%density_beta)
-            if (open_shell) then
-               total_density = scf%density + scf%density_beta
-               spin_density = scf%density - scf%density_beta
-            else
-               ! Already the total: the closed-shell build is D = 2 sum_i c_i c_i^T.
-               total_density = scf%density
-            end if
-
-            select case (trim(settings%charges_scheme))
-            case ("mulliken")
-               call mol%overlap(s_ao)
-               call mulliken_charges(mol, total_density, s_ao, q, analysis_error)
-               ! Free while the overlap is in hand, and the number anyone
-               ! running an open shell actually wants: where the unpaired
-               ! density sits.
-               if (open_shell .and. .not. analysis_error%has_error()) then
-                  call mulliken_spin_populations(mol, spin_density, s_ao, q_spin, &
-                                                 analysis_error)
-               end if
-            case ("chelpg")
-               ! The fit is solved under a total-charge constraint, so the
-               ! fragment's charge has to be handed over. Caps carry none, but
-               ! they are part of the molecule the SCF saw and so are part of
-               ! what the constraint is about.
-               call chelpg_charges(mol, total_density, q, analysis_error, &
-                                   total_charge=real(fragment%charge, dp))
-            case ("hirshfeld")
-               ! Spin populations come with the same weights for nothing, as
-               ! Mulliken's do with the same overlap.
-               if (open_shell) then
-                  call hirshfeld_populations(mol, total_density, q, analysis_error, &
-                                             spin_density=spin_density, &
-                                             spin_populations=q_spin)
-               else
-                  call hirshfeld_populations(mol, total_density, q, analysis_error)
-               end if
-            case ("mbis")
-               if (open_shell) then
-                  call mbis_populations(mol, total_density, q, analysis_error, &
-                                        spin_density=spin_density, spin_populations=q_spin)
-               else
-                  call mbis_populations(mol, total_density, q, analysis_error)
-               end if
-            case default
-               call analysis_error%set(ERROR_VALIDATION, "unknown charge scheme '"// &
-                                       trim(settings%charges_scheme)// &
-                                       "'; expected 'mulliken', 'chelpg', 'hirshfeld' "// &
-                                       "or 'mbis'.")
-            end select
-
-            if (analysis_error%has_error()) then
-               call logger%warning("  atomic charges could not be computed: "// &
-                                   analysis_error%get_message())
-            else
-               call move_alloc(q, result%atomic_charges)
-               if (allocated(q_spin)) call move_alloc(q_spin, result%spin_populations)
-               result%charge_scheme = trim(settings%charges_scheme)
-               result%has_charges = .true.
-            end if
-         end block
+         if (allocated(scf%density_beta)) then
+            call run_czt_atomic_charges(settings, mol, fragment%charge, &
+                                        scf%density + scf%density_beta, result, &
+                                        spin_density=scf%density - scf%density_beta)
+         else
+            ! Already the total: the closed-shell build is D = 2 sum_i c_i c_i^T.
+            call run_czt_atomic_charges(settings, mol, fragment%charge, scf%density, result)
+         end if
       end if
 
       ! ---- bond orders ------------------------------------------------------
@@ -4133,6 +4071,80 @@ contains
          call logger%info(trim(line))
       end do
    end subroutine sa_state_gradients_into
+
+   subroutine run_czt_atomic_charges(settings, mol, charge, total_density, result, spin_density)
+      !! `properties.charges` for one converged density
+      !!
+      !! Whatever reference converged it, partitioned: nothing here knows whether
+      !! the density came from Hartree-Fock or a functional, from this backend
+      !! or another one, as long as it is over `mol`'s AO basis. `spin_density`
+      !! present is an open shell, and adds the spin populations the scheme
+      !! gives for nothing. A failure is a warning: the energy stands.
+      use mqc_czt_charges, only: mulliken_charges, chelpg_charges, mulliken_spin_populations
+      use mqc_czt_hirshfeld, only: hirshfeld_populations
+      use mqc_czt_mbis, only: mbis_populations
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(czt_molecule_t), intent(in) :: mol
+      integer, intent(in) :: charge                  !! The fragment's total charge
+      real(dp), intent(in) :: total_density(:, :)    !! Both spins, (n_ao, n_ao)
+      type(calculation_result_t), intent(inout) :: result
+      real(dp), intent(in), optional :: spin_density(:, :)   !! Alpha minus beta
+
+      real(dp), allocatable :: q(:), q_spin(:), s_ao(:, :)
+      type(error_t) :: analysis_error
+      logical :: open_shell
+
+      open_shell = present(spin_density)
+      select case (trim(settings%charges_scheme))
+      case ("mulliken")
+         call mol%overlap(s_ao)
+         call mulliken_charges(mol, total_density, s_ao, q, analysis_error)
+         ! Free while the overlap is in hand, and the number anyone running an
+         ! open shell actually wants: where the unpaired density sits.
+         if (open_shell .and. .not. analysis_error%has_error()) then
+            call mulliken_spin_populations(mol, spin_density, s_ao, q_spin, analysis_error)
+         end if
+      case ("chelpg")
+         ! The fit is solved under a total-charge constraint, so the fragment's
+         ! charge has to be handed over. Caps carry none, but they are part of
+         ! the molecule the SCF saw and so are part of what the constraint is
+         ! about.
+         call chelpg_charges(mol, total_density, q, analysis_error, &
+                             total_charge=real(charge, dp))
+      case ("hirshfeld")
+         ! Spin populations come with the same weights for nothing, as
+         ! Mulliken's do with the same overlap.
+         if (open_shell) then
+            call hirshfeld_populations(mol, total_density, q, analysis_error, &
+                                       spin_density=spin_density, &
+                                       spin_populations=q_spin)
+         else
+            call hirshfeld_populations(mol, total_density, q, analysis_error)
+         end if
+      case ("mbis")
+         if (open_shell) then
+            call mbis_populations(mol, total_density, q, analysis_error, &
+                                  spin_density=spin_density, spin_populations=q_spin)
+         else
+            call mbis_populations(mol, total_density, q, analysis_error)
+         end if
+      case default
+         call analysis_error%set(ERROR_VALIDATION, "unknown charge scheme '"// &
+                                 trim(settings%charges_scheme)// &
+                                 "'; expected 'mulliken', 'chelpg', 'hirshfeld' "// &
+                                 "or 'mbis'.")
+      end select
+
+      if (analysis_error%has_error()) then
+         call logger%warning("  atomic charges could not be computed: "// &
+                             analysis_error%get_message())
+         return
+      end if
+      call move_alloc(q, result%atomic_charges)
+      if (allocated(q_spin)) call move_alloc(q_spin, result%spin_populations)
+      result%charge_scheme = trim(settings%charges_scheme)
+      result%has_charges = .true.
+   end subroutine run_czt_atomic_charges
 
    subroutine run_czt_bonding_analysis(settings, mol, fragment, symbols, orbitals, nelec, &
                                        result)
