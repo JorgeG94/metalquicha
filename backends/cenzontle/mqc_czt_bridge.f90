@@ -4167,13 +4167,15 @@ contains
       real(dp), allocatable :: ieda_pair(:, :), ieda_classical(:, :)
       real(dp) :: ieda_formation
 
-      ! Printed whatever the verbosity. Asking for a property *is* the request
-      ! for its output -- a deck that names an analysis and gets a silent run
-      ! has been given nothing, and the natural reading is that the analysis
-      ! found nothing to say.
+      ! The tables print whenever this calculation speaks: always for the run's
+      ! only calculation, and in a fragmented run only at the per-fragment
+      ! level, after that fragment's header. Every worker printing its own
+      ! fragments at the default level interleaves unlabelled tables; rank 0
+      ! prints the consolidated one from the rows, which travel either way.
       call run_quao_analysis(mol, fragment%element_numbers, symbols, &
                              fragment%coordinates, orbitals, nelec, &
-                             analysis_error, threshold=settings%bonding_threshold, &
+                             analysis_error, verbose=settings%verbose, &
+                             threshold=settings%bonding_threshold, &
                              energy_decomposition=settings%bonding_energy, &
                              no_sharing=settings%bonding_no_sharing, &
                              no_sharing_ci=settings%bonding_no_sharing_ci, &
