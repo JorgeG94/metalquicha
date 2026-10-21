@@ -225,10 +225,11 @@ contains
          end if
          call run_cuest_scf(settings, fragment, result, want_gradient)
       case (BACKEND_TERCO)
-         ! Every refusal terco needs -- gradients, correlated methods,
-         ! spherical d, angular momentum above d, an ECP -- is made inside
-         ! the driver, against the basis it actually built. Repeating them
-         ! here would be a second copy to keep in step.
+         ! Every refusal terco needs -- what its gradient does not cover,
+         ! correlated methods, spherical d, the linked build's angular
+         ! momentum ceiling, an ECP -- is made inside the driver, against the
+         ! basis it actually built. Repeating them here would be a second
+         ! copy to keep in step.
          call run_terco_scf(settings, fragment, result, want_gradient)
       case (BACKEND_CZT)
          call run_czt_hf(settings, fragment, result, want_gradient, want_hessian)

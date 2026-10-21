@@ -2616,17 +2616,6 @@ contains
       if (error%has_error()) return
 
       if (backend_kind == BACKEND_TERCO) then
-         ! Before the build check, so the deck is told what it asked for that
-         ! terco cannot do whichever binary reads it.
-         ! TODO(mqc): terco has C-PCM and IEF-PCM on its feat/pcm branch; once
-         ! that merges, wire trc_set_pcm into the terco driver and drop this.
-         if (config%pcm_enabled) then
-            call error%set(ERROR_VALIDATION, "backend 'terco' does not read "// &
-                           "keywords.pcm yet: the run would come back as a gas-phase "// &
-                           "energy. Use the CPU backend for continuum solvation, or "// &
-                           "drop keywords.pcm.")
-            return
-         end if
          if (.not. terco_backend_available()) then
             call error%set(ERROR_VALIDATION, "backend 'terco' was asked for, but this "// &
                            "build has no terco backend. Rebuild with CMake and "// &
