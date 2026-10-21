@@ -557,6 +557,14 @@ contains
          ! states are divided by one partition and an index is the stockholder
          ! share of the density difference itself.
          call hirshfeld_populations(mol, density, charges, error)
+      case ("mbis")
+         ! Refused rather than condensed state by state: MBIS fits its weights to
+         ! the density it divides, so each state would be divided by its own
+         ! partition and an index would mix a change of density with a change
+         ! of partition.
+         call error%set(ERROR_VALIDATION, "MBIS is not offered for Fukui indices: its "// &
+                        "weights are refitted to each state's density, so the three "// &
+                        "states would not share a partition. Use 'hirshfeld'.")
       case default
          call error%set(ERROR_VALIDATION, "unknown population scheme '"//trim(scheme)// &
                         "' for Fukui indices; expected 'chelpg', 'mulliken' or 'hirshfeld'.")

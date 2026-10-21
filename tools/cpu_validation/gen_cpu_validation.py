@@ -464,6 +464,12 @@ HAND_MAINTAINED = {
     # electron, and the run prints 2e-10 and 0.999999999.
     "cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
     "cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
+    # The same two through MBIS, whose pro-atoms are fitted to the molecule
+    # rather than solved as free atoms. Pinned against denspart in
+    # test/test_mqc_mbis.f90, by tools/mbis/mbis_reference.py. Needs nothing
+    # beyond the integrals.
+    "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+    "cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
     # The ions given their own SCF group, and the neutral's energy pinned to the
     # same number as the chelpg case above. `properties.fukui.scf` configures
     # the two ion SCFs only, so a level shift and an EDIIS opening set there

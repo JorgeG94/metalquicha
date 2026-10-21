@@ -1782,6 +1782,10 @@ The driver stays ``"energy"``.
     0.27/0.28/0.23/0.23 over the four atoms, ranking nothing, where CHELPG puts
     0.59 on the carbonyl carbon.
 
+  ``mbis`` is refused here, although ``properties.charges`` takes it: its
+  weights are refitted to each state's density, so the three states would not
+  share a partition.
+
   ``guess`` chooses what each ion starts from, and defaults to ``neutral``:
 
   - ``neutral`` -- seed each ion from the converged neutral's orbitals, filled

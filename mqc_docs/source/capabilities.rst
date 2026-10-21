@@ -637,12 +637,12 @@ four.
   two ions unrestricted, and condensed onto atoms by a population scheme
   (``population``: ``hirshfeld``, the default, ``chelpg`` or ``mulliken``).
   ``properties.fukui``.
-- **Atomic charges**, Mulliken, CHELPG or Hirshfeld, partitioning the density the
+- **Atomic charges**, Mulliken, CHELPG, Hirshfeld or MBIS, partitioning the density the
   calculation already converged -- Hartree-Fock or any Kohn-Sham functional,
   restricted or unrestricted, at no cost beyond the SCF that was going to run
   anyway. The object is the request and ``scheme`` only says how, so
   ``"charges": {}`` is a valid ask. An unrestricted reference also gets Mulliken
-  or Hirshfeld spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
+  Hirshfeld or MBIS spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
   because that scheme fits the electrostatic potential and the total density
   alone determines it. ``properties.charges``.
 - **Mayer bond orders**, over the converged density and the AO overlap:

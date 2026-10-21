@@ -129,8 +129,9 @@ module mqc_config_types
          !! names.
       character(len=:), allocatable :: charges_scheme
          !! From `properties.charges.scheme`. Allocated means the deck asked for
-         !! atomic partial charges; "mulliken" (the default), "chelpg" or
-         !! "hirshfeld" chooses how the converged density is partitioned.
+         !! atomic partial charges; "mulliken" (the default), "chelpg",
+         !! "hirshfeld" or "mbis" chooses how the converged density is
+         !! partitioned.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

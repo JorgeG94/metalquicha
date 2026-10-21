@@ -354,7 +354,7 @@ module mqc_method_config
          !! directly and never tests a sentinel.
       character(len=:), allocatable :: charges_scheme
          !! Allocated when `properties.charges` asked for partial charges;
-         !! "mulliken", "chelpg" or "hirshfeld". Unallocated means no charges, which is why
+         !! "mulliken", "chelpg", "hirshfeld" or "mbis". Unallocated means no charges, which is why
          !! this is allocatable rather than a "none" sentinel like
          !! `bonding_analysis` -- there is no scheme that means "do not".
       character(len=:), allocatable :: bond_order_scheme

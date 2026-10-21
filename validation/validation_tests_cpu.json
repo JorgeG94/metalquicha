@@ -4714,6 +4714,20 @@
             "requires": "libxc"
         },
         {
+            "name": "RHF with MBIS charges H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is MBIS end to end: the density evaluated on the grid once, exponential pro-atom shells fitted to it by the fixed-point iteration, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off. The charges themselves are pinned against denspart in test/test_mqc_mbis.f90."
+        },
+        {
+            "name": "UHF with MBIS charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented",
+            "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the converged MBIS weights, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 0 to six places and spin populations of 0.999999999."
+        },
+        {
             "name": "KS PBE with Fukui indices (hirshfeld default) H2O 6-31g grid 4 (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
             "expected_energy": -76.298635406403,
