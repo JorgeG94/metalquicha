@@ -2,6 +2,9 @@
 
     mpirun -np 64 python screening_quality.py cluster.xyz --level 2
 
+Charged clusters work: an ion is its own monomer carrying the charge, every
+water a neutral one. Say where the charge sits with --atom-charge IDX=Q.
+
 Three calculations, in this order:
 
   1. the low-level pass over every term (GFN2) -- the screen itself;
@@ -55,9 +58,28 @@ HARTREE_TO_KCAL = 627.5094740631
 def parse_args(argv):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("xyz", help="cluster geometry; monomers are perceived from it")
+    p.add_argument(
+        "--charge",
+        type=int,
+        default=None,
+        help="charge of the system (default: the sum of the per-atom charges, else 0)",
+    )
+    p.add_argument(
+        "--atom-charge",
+        action="append",
+        default=[],
+        metavar="IDX=Q",
+        help="formal charge Q on atom IDX, 0-based like the Python API; repeatable. "
+        "Each monomer takes the sum over its atoms. "
+        "A nonzero --charge requires them",
+    )
     p.add_argument("--level", type=int, default=2, help="MBE truncation (default 2)")
     p.add_argument("--low-method", default="gfn2", help="screening method (default gfn2)")
-    p.add_argument("--high-method", default="hf", help="reference method (default hf)")
+    p.add_argument(
+        "--high-method",
+        default="hf",
+        help="reference method (default hf); a functional name such as b3lyp also works",
+    )
     p.add_argument("--high-basis", default="6-31G", help="reference basis (default 6-31G)")
     p.add_argument("--high-functional", default=None, help="reference functional, if any")
     p.add_argument(
@@ -99,10 +121,78 @@ def parse_args(argv):
     return p.parse_args(argv)
 
 
+# The method names libmqc's parser accepts; anything else is taken as a DFT functional.
+METHOD_NAMES = {
+    "gfn1", "gfn1-xtb", "gfn2", "gfn2-xtb",
+    "hf", "rhf", "uhf", "hartree-fock",
+    "dft", "ks", "kohn-sham",
+    "mcscf", "casscf", "casci",
+    "efp2", "efp",
+    "sapt0", "sapt", "sapt2",
+    "mp2", "ri-mp2", "df-mp2", "scs-mp2", "sos-mp2",
+    "mp2-f12", "ri-mp2-f12", "df-mp2-f12",
+    "ccsd", "ri-ccsd", "df-ccsd",
+    "ccsd(t)", "ri-ccsd(t)", "df-ccsd(t)",
+    "ccsd-f12", "ri-ccsd-f12",
+    "ccsd(t)-f12", "ri-ccsd(t)-f12",
+}  # fmt: skip
+
+
+def split_method(name, functional=None):
+    """Return (method, functional); a bare functional name becomes method dft."""
+    if name.lower() in METHOD_NAMES:
+        return name, functional
+    if functional and functional.lower() != name.lower():
+        raise SystemExit(
+            f"{name!r} is a functional (method dft) but the functional is also given as "
+            f"{functional!r}; pass one of them"
+        )
+    return "dft", name
+
+
+def parse_atom_charges(items):
+    out = {}
+    for item in items:
+        try:
+            index, charge = item.split("=")
+            out[int(index)] = int(charge)
+        except ValueError:
+            raise SystemExit(f"--atom-charge expects IDX=Q (integers), got {item!r}")
+    return out
+
+
+def resolve_charges(args):
+    """(system charge, {atom: formal charge} or None).
+
+    --charge, if given, is the system charge, and otherwise it is the sum of
+    the --atom-charge values. A nonzero system charge with no --atom-charge to
+    place it exits, since guessing where it sits would be silent.
+    """
+    per_atom = parse_atom_charges(args.atom_charge)
+    per_atom = {a: q for a, q in per_atom.items() if q}
+    total = args.charge if args.charge is not None else sum(per_atom.values())
+    if total and not per_atom:
+        raise SystemExit(
+            f"the system charge is {total} but no atom charges were given. "
+            "Say where the charge sits with --atom-charge IDX=Q."
+        )
+    return total, (per_atom or None)
+
+
 def main(args):
-    system = mqc.System.from_xyz(args.xyz)
-    system.auto_monomers()
+    total, per_atom = resolve_charges(args)
+    system = mqc.System.from_xyz(args.xyz, charge=total)
+    # Perceived in Python rather than with auto_monomers, so an ion is its own
+    # monomer carrying its charge and every water stays neutral.
+    try:
+        system.perceive_monomers(atom_charges=per_atom)
+    except ValueError as err:
+        raise SystemExit(str(err))
     print(f"{system}  on {mqc.n_ranks()} rank(s)")
+    for index, atoms in enumerate(system.monomers, start=1):
+        q = sum((per_atom or {}).get(a, 0) for a in atoms)
+        if q:
+            print(f"charged monomer {index}: atoms {atoms}, charge {q:+d}")
 
     # Same guard as energy_screened_mbe.py, same reason: auto_monomers is for
     # clusters of intact molecules, and a partition that cuts bonds would make
@@ -114,10 +204,14 @@ def main(args):
             "bonds explicitly -- auto_monomers is for molecular clusters."
         )
 
-    low_kwargs = dict(method=args.low_method)
-    high_kwargs = dict(method=args.high_method, basis=args.high_basis)
-    if args.high_functional:
-        high_kwargs["functional"] = args.high_functional
+    low_method, low_functional = split_method(args.low_method)
+    low_kwargs = dict(method=low_method)
+    if low_functional:
+        low_kwargs["functional"] = low_functional
+    high_method, high_functional = split_method(args.high_method, args.high_functional)
+    high_kwargs = dict(method=high_method, basis=args.high_basis)
+    if high_functional:
+        high_kwargs["functional"] = high_functional
     if args.high_df:
         high_kwargs["density_fitting"] = True
     if args.high_aux_basis:
@@ -133,6 +227,7 @@ def main(args):
             system,
             level=args.level,
             checkpoint=f"chk_{label}.h5" if args.checkpoint else None,
+            backend="cpu",
             **kwargs,
         )
 
@@ -240,7 +335,7 @@ def close(system, level, kept):
     the calculation would actually run: a kept trimer drags its dimers back in
     whether or not they passed the screen.
     """
-    scratch = mqc.MBE(system, level=level)
+    scratch = mqc.MBE(system, level=level, backend="cpu")
     scratch.keep(lambda t: len(t) == 1 or t in kept)
     return set(scratch.terms())
 
@@ -281,7 +376,7 @@ def verify(system, args, low_result, low_rows, high_rows, high_result, high_kwar
         return
 
     print(f"\n[verify] running the screen at tau={tau:g} as a real calculation")
-    run = mqc.MBE(system, level=args.level, **high_kwargs)
+    run = mqc.MBE(system, level=args.level, backend="cpu", **high_kwargs)
     run.keep(lambda t: len(t) == 1 or t in kept)
     corrected = set(run.terms())
     print(f"[verify] {len(corrected)} terms (closed under subsets)")
