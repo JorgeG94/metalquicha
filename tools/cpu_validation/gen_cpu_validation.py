@@ -451,6 +451,25 @@ HAND_MAINTAINED = {
     "cpu/mqc/bond_orders/cpu_o2_cc-pvdz_mayer.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+    # Condensed by Hirshfeld, whose weights come from free atoms and so divide
+    # all three states by one partition. Needs libxc, which the free atoms are
+    # solved with. The indices are pinned against PySCF in
+    # test/test_mqc_hirshfeld.f90, by tools/hirshfeld/hirshfeld_reference.py.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_hirshfeld.json",
+    # Hirshfeld charges on their own, closed and open shell. Same situation:
+    # the manifest checks the SCF energy, which asking for charges must leave
+    # alone, and the charges are pinned in test/test_mqc_hirshfeld.f90. Triplet
+    # O2 is the open-shell path, where spin populations come from the same
+    # weights: by symmetry each oxygen is neutral and carries one unpaired
+    # electron, and the run prints 2e-10 and 0.999999999.
+    "cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
+    "cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
+    # The same two through MBIS, whose pro-atoms are fitted to the molecule
+    # rather than solved as free atoms. Pinned against denspart in
+    # test/test_mqc_mbis.f90, by tools/mbis/mbis_reference.py. Needs nothing
+    # beyond the integrals.
+    "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+    "cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
     # The ions given their own SCF group, and the neutral's energy pinned to the
     # same number as the chelpg case above. `properties.fukui.scf` configures
     # the two ion SCFs only, so a level shift and an EDIIS opening set there
@@ -463,7 +482,8 @@ HAND_MAINTAINED = {
     # Handing the wrong one across is refused rather than misread, which turns
     # into a skipped analysis and a run that still exits zero -- so a deck that
     # completes with a Fukui table is the assertion. It also omits
-    # `population`, which pins the CHELPG default.
+    # `population`, which pins the Hirshfeld default -- the deck already needs
+    # libxc for its functional, and Hirshfeld's free atoms need it too.
     "cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
     # The same analysis inside a continuum. Hand-maintained for the reason the
     # PCM decks below are: this script has no PCM support, so a regeneration

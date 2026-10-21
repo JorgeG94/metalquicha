@@ -4690,12 +4690,50 @@
             "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
         },
         {
-            "name": "KS PBE with Fukui indices (chelpg default) H2O 6-31g grid 4 (CPU)",
+            "name": "RHF with Fukui indices (hirshfeld) H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_hirshfeld.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one, the same number as the chelpg and mulliken cases. What this case covers is that the run completes with the indices condensed by Hirshfeld weights: free atoms solved once, one partition for all three states, and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "requires": "libxc"
+        },
+        {
+            "name": "RHF with Hirshfeld charges H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is the Hirshfeld partition end to end: free atoms solved with wB97X in def2-TZVP, the molecular density divided by their shares, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off (before renormalisation the grid left it at -1.2e-8). The charges themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "requires": "libxc"
+        },
+        {
+            "name": "UHF with Hirshfeld charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented",
+            "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the same Hirshfeld weights as the charges, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 2e-10 and spin populations of 0.999999999.",
+            "requires": "libxc"
+        },
+        {
+            "name": "RHF with MBIS charges H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is MBIS end to end: the density evaluated on the grid once, exponential pro-atom shells fitted to it by the fixed-point iteration, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off. The charges themselves are pinned against denspart in test/test_mqc_mbis.f90."
+        },
+        {
+            "name": "UHF with MBIS charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented",
+            "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the converged MBIS weights, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 0 to six places and spin populations of 0.999999999."
+        },
+        {
+            "name": "KS PBE with Fukui indices (hirshfeld default) H2O 6-31g grid 4 (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
             "expected_energy": -76.298635406403,
             "tolerance": 1e-07,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the CHELPG default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the Hirshfeld default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
             "requires": "libxc"
         },
         {

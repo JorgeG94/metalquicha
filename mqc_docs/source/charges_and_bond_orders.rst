@@ -232,8 +232,8 @@ caution the xTB section already gives for a different reason.
 Atomic charges
 --------------
 
-Mulliken and CHELPG partial charges. Through the Python interface, from an RHF
-density; through a deck, from whatever reference the deck converged.
+Mulliken, CHELPG, Hirshfeld and MBIS partial charges. Through the Python interface,
+from an RHF density; through a deck, from whatever reference the deck converged.
 
 From the Python interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -276,21 +276,22 @@ From a deck
    }
 
 The **object** is the request and ``scheme`` only says how, so
-``"charges": {}`` is a valid ask and takes Mulliken. Both partition routines
-take a density matrix and neither knows what produced it, so Hartree-Fock and
+``"charges": {}`` is a valid ask and takes Mulliken. Every partition routine
+takes a density matrix and none knows what produced it, so Hartree-Fock and
 Kohn-Sham, restricted and unrestricted, all work and all cost nothing beyond the
 SCF that was going to run anyway.
 
-Note the default differs from ``properties.fukui``, which takes CHELPG. A
+Note the default differs from ``properties.fukui``, which takes Hirshfeld. A
 condensed Fukui index is a difference of two charges, where Mulliken's
-basis-set sensitivity does not cancel; asked for on its own a charge is usually
+basis-set sensitivity does not cancel and two separate CHELPG fits need not
+agree on what they share; asked for on its own a charge is usually
 wanted as the cheap population number, and Mulliken is one trace against an
 overlap that already exists.
 
 Where the numbers come out
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Not on the terminal.** Neither scheme prints a table of charges however
+**Not on the terminal.** No scheme prints a table of charges however
 verbose the logger is; they are written to the JSON output beside the deck, as
 ``output_<deck>.json``, under ``atomic_charges``. CHELPG prints a single line
 saying how many grid points it fitted, which is a progress note and not the
@@ -320,6 +321,15 @@ was dropped.
 ``sum`` is the total charge the partition accounts for and should equal the
 molecular charge; a value that does not is the fastest way to see that a fit
 went wrong, which is why it is written rather than left to be added up.
+Hirshfeld's and MBIS's are quadratures, and a grid resolves least of a diffuse
+density: water's anion in aug-cc-pVDZ is short by 5.8e-6 electrons at the
+default grid, and level 9 is the first to resolve it. The populations are
+therefore renormalised to the density's exact count, Tr(D S), sharing what the
+grid missed out by population, so ``sum`` is the molecular charge to round-off.
+Without that, a condensed Fukui index -- a difference of two states' charges --
+inherits the anion's deficit and fails its sum rule. A verbose log reports the
+deficit, and a warning appears once it passes 1e-4 electrons, where the grid
+rather than the partition is suspect.
 
 The same water in the same basis gives -0.957 on the oxygen from CHELPG and
 -0.800 from Mulliken. That spread is not an error in either -- they answer
@@ -328,7 +338,8 @@ dividing the overlap -- and it is the reason a scheme is named in the output
 rather than assumed by whoever reads it.
 
 For an unrestricted reference the charges come from ``P_alpha + P_beta``, and
-Mulliken additionally reports **spin populations** from ``P_alpha - P_beta``:
+Mulliken, Hirshfeld and MBIS additionally report **spin populations** from
+``P_alpha - P_beta``:
 
 .. code-block:: json
 
@@ -369,20 +380,40 @@ constrained to sum to the molecular charge. That is a physically meaningful
 question -- the potential is an observable of the density -- and the answer moves
 far less when the basis changes.
 
-The same water, two bases:
+**Hirshfeld** shares every point of space between the atoms in proportion to
+the density each would put there on its own -- a fixed set of free atoms --
+and integrates the molecule's density with those weights (Hirshfeld, Theor.
+Chim. Acta 44, 129 (1977)). The weights belong to the geometry, not to the
+basis, so the answer barely moves when the basis changes.
 
-===========  ===============  ===============
-Basis        Mulliken, O      CHELPG, O
-===========  ===============  ===============
-6-31G        -0.79            -0.94
-aug-cc-pVDZ  -0.30            -0.74
-===========  ===============  ===============
+**MBIS** -- Minimal Basis Iterative Stockholder (Verstraelen et al., J. Chem.
+Theory Comput. 12, 3894 (2016)) -- divides the same way, but its pro-atoms are
+fitted to the molecule instead of solved as free atoms: each is a few
+exponential shells, one per row of the periodic table, whose populations and
+widths are iterated until each shell holds exactly what the partition gives it.
+Nothing about a free atom has to be chosen, and an atom that has gained or
+lost charge in the molecule is measured against a pro-atom that has done the
+same -- which is why MBIS charges are about the size of CHELPG's where
+Hirshfeld's are about a third of it.
+
+The same water (``sample_inputs/w1.xyz``), two bases:
+
+===========  ===========  ===========  ============  ===========
+Basis        Mulliken, O  CHELPG, O    Hirshfeld, O  MBIS, O
+===========  ===========  ===========  ============  ===========
+6-31G        -0.80        -0.96        -0.35         -0.91
+aug-cc-pVDZ  -0.31        -0.75        -0.32         -0.92
+===========  ===========  ===========  ============  ===========
 
 The molecule did not change. Mulliken moves by half an electron because a diffuse
 function centred on hydrogen reaches well over the oxygen while still counting as
 hydrogen's; CHELPG moves less than half as far, being fitted to a field rather
-than to a basis. For anything downstream that treats a charge as a physical
-quantity -- embedding especially -- CHELPG is the defensible input.
+than to a basis; Hirshfeld moves by 0.03 and MBIS by 0.01. For anything downstream that treats a
+charge as a field source -- embedding especially -- CHELPG is the defensible
+input, because reproducing the potential is what it is fitted to do, though
+MBIS's are comparable in size and far steadier across bases. Hirshfeld charges
+are smaller in magnitude, which is the known price of dividing by neutral free
+atoms, and are the ones to condense Fukui indices with (see below).
 
 One caveat worth knowing: a nearly nonpolar molecule fits badly in *relative*
 terms however good the code is. Methane has no dipole and no quadrupole, so its
@@ -390,6 +421,98 @@ potential outside the van der Waals surface is ten times smaller than water's an
 is mostly charge penetration, which no arrangement of point charges can
 reproduce. The charges themselves are still right (C -0.45, H +0.11); it is the
 fit residual as a fraction of a tiny potential that looks poor.
+
+Hirshfeld's free atoms
+~~~~~~~~~~~~~~~~~~~~~~
+
+A Hirshfeld charge is only as well defined as the free atoms it divides by, so
+those are one fixed recipe whatever the calculation ran:
+
+* **spherical by construction** -- each angular momentum's electrons spread
+  evenly over its components, the ground-state configurations of Lehtola,
+  Phys. Rev. A 101, 012516 (2020), rather than a symmetry-broken atom averaged
+  afterwards;
+* **spin-polarised**, Hund's rule within each shell. The spin-restricted form
+  leaves a lone electron feeling half its own repulsion -- hydrogen comes out at
+  -0.354 hartree rather than -0.499 -- with a density too diffuse to match;
+* **wB97X in def2-TZVP**, on a fine grid. A fractional-occupation Hartree-Fock
+  atom sits 0.21 hartree above the real oxygen atom, its fractional electrons
+  only partly freed of their self-repulsion; with a functional the gap is about
+  a hundredth of that. The basis is fixed so that a charge depends on the
+  molecular density alone.
+
+The approach follows the PySCF extension
+`github.com/frobnitzem/hirshfeld <https://github.com/frobnitzem/hirshfeld>`_,
+which uses the restricted form in the molecule's own functional and basis.
+
+Each element is solved once per process and kept as a radial table: 0.3 s for
+hydrogen and up to 12 s for a first-row transition metal on one core, so an
+organic molecule pays about ten seconds once, and a fragmented run pays it
+once rather than per fragment. The free atoms need **libxc** and cover
+**H-Kr**. Asked for in a build without libxc, or on a heavier element, the
+charges are skipped with a warning naming the reason, and the calculation
+itself still completes -- as it does for any charge scheme that cannot run.
+
+**For Fukui indices** this is the scheme to use, and the default. The weights depend on the
+geometry and nothing else, so the neutral and both ions are divided by one
+partition and a condensed index is the share of the density difference itself
+-- where CHELPG fits each state's charges separately, and their difference can
+come out negative. On the water of the 6-31G Fukui deck CHELPG puts ``f+`` at
+-0.16 on oxygen; Hirshfeld puts it at 0.29, and every index positive.
+
+MBIS
+~~~~
+
+The fit starts from each atom's shells filled in aufbau order -- 2, 8, 8, 18,
+... electrons -- with exponents from a Slater-style screened charge,
+:math:`2(Z-\sigma)/n`, and iterates
+
+.. math::
+
+   N_{Ai} = \int \rho\, w_{Ai}, \qquad
+   a_{Ai} = \frac{3 N_{Ai}}{\int \rho\, w_{Ai}\, |\mathbf{r} - \mathbf{R}_A|}
+
+with :math:`w_{Ai}` the shell's share of each point, until no population moves
+by more than 1e-10 electrons and no exponent by more than 1e-10 of itself.
+The iteration is extrapolated by DIIS, which matters: the plain fixed point
+converges linearly, and a 46-atom peptide takes 154 iterations without it and
+37 with. The density is evaluated on the grid once, so each iteration costs
+exponentials and no basis functions -- about 0.8 s per iteration for that
+peptide on one core, 1.5 million grid points and 68 shells, independent of the
+basis, which enters only when the density is put on the grid.
+It needs no libxc and no free atoms, and refuses an effective core potential,
+whose missing core electrons the shell count does not know about.
+
+A lone atom is not fitted at all: with nothing to share with, every weight is
+one, and its charge is its nuclear charge less the integrated density. That is
+the case of a bare cation monomer in an ion--water cluster, where the fit is at
+its worst -- Li+ has two shells for one 1s pair, and the split between them is
+undetermined. Once a fit has converged, a shell holding under 1e-4 electrons is
+retired and two shells of one atom at the same exponent are merged, as denspart
+does, and the smaller model is fitted again.
+
+**The start decides which answer a nearly empty shell gets.** The fixed point
+can have more than one stationary point when an atom has given almost all of
+its valence away. From an even split with exponents 2Z down to 2, lithium in
+LiF collapsed its valence shell onto its core and came out at +1.000; from the
+aufbau start it reaches +0.940, denspart's answer. In Li+(H2O) the lithium
+charge is flat to about 5e-3 across stationary points -- +1.004 here, +0.9998
+from denspart, +0.9991 from this code started at denspart's table -- and no
+code resolves that, since the method itself leaves it undetermined. Read MBIS
+charges on almost-bare alkali cations to two decimals, not four.
+
+It is checked against `denspart <https://github.com/theochem/denspart>`_, the
+MBIS code of the method's author, which reaches the same pro-model by
+minimising the extended Kullback--Leibler divergence from its own starting
+table: charges, shell populations and spin populations agree to 2e-8 on water,
+its cation, H2S and HCN, and to denspart's own convergence (about 3e-7) on
+LiF and NaCl.
+
+**Not for Fukui indices.** The weights are fitted to the density they divide,
+so a neutral and its ions would each be divided by their own partition and an
+index would mix a change of density with a change of partition.
+``properties.fukui`` refuses ``"mbis"`` and points at ``"hirshfeld"``, whose
+weights are the same for every state.
 
 Requirements
 ------------
@@ -406,6 +529,9 @@ differently, so the two cannot drift apart. **CHELPG is CPU only.** It fits the
 electrostatic potential at points away from the atoms, and the GPU backend
 builds no integral for that; asking for it there is refused by name rather than
 quietly answered with Mulliken, because the two schemes disagree by design.
+**Hirshfeld and MBIS are CPU only** too: Hirshfeld's free atoms are solved by
+the CPU backend's spherical-atom SCF, MBIS integrates on the CPU backend's grid,
+and the GPU backend refuses both by name.
 
 .. note::
 

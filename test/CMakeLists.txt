@@ -162,6 +162,15 @@ if(MQC_ENABLE_CZT)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE ${MQC_INTEGRALS_LIBS})
+  # Hirshfeld charges, spin populations and Fukui indices against the PySCF
+  # reference of tools/hirshfeld/hirshfeld_reference.py. Skips itself without
+  # libxc, which its free atoms are solved with.
+  addtest(mqc_hirshfeld)
+  target_link_libraries(test_mqc_hirshfeld PRIVATE ${MQC_INTEGRALS_LIBS})
+  # MBIS charges and spin populations against denspart, through
+  # tools/mbis/mbis_reference.py.
+  addtest(mqc_mbis)
+  target_link_libraries(test_mqc_mbis PRIVATE ${MQC_INTEGRALS_LIBS})
   # Every field on the shared SCF options type reaches the backend's settings.
   # The refactor removed three hand-copied blocks; this is what keeps them gone.
   addtest(mqc_scf_options)
@@ -378,6 +387,13 @@ if(MQC_ENABLE_CZT)
   # with the reference numbers from tools/minao/minao_reference.py.
   addtest(mqc_czt_minao)
   target_link_libraries(test_mqc_czt_minao PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Spherically averaged free atoms with fractional occupations, against PySCF's
+  # atom_hf and atom_ks, with the reference numbers from
+  # tools/spherical_atom/spherical_atom_reference.py.
+  addtest(mqc_czt_spherical_atom)
+  target_link_libraries(test_mqc_czt_spherical_atom
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Unrestricted Kohn-Sham, on the closed-shell limit: with equal spin densities
   # it must reproduce the restricted energy exactly, for every rung. That is

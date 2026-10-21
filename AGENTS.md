@@ -582,7 +582,7 @@ with `../../../`. The CPU suite is **generated** - edit
 `tools/cpu_validation/gen_cpu_validation.py` and rerun it; a deck added by hand
 under `cpu/mqc/` is deleted by the next regeneration.
 
-Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t counterpoise
+Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges counterpoise
 df-dft df-hf dft dh ecp efmo efp fmo fukui gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming

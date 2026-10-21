@@ -261,11 +261,12 @@ contains
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis
       !!
-      !! `population` defaults to CHELPG, which fits the electrostatic
-      !! potential and is what a condensed Fukui index is normally reported
-      !! from; Mulliken is basis-set dependent to the point of changing which
-      !! site ranks first. The scheme is echoed in the report and the JSON
-      !! either way.
+      !! `population` defaults to Hirshfeld, whose weights depend on the
+      !! geometry alone and so divide the neutral and both ions by one
+      !! partition; CHELPG fits each state separately and its differences can
+      !! come out negative, and Mulliken is basis-set dependent to the point of
+      !! changing which site ranks first. The scheme is echoed in the report
+      !! and the JSON either way.
       type(key_set_t) :: keys
       call allow(keys, "population")
       ! Which starting density each ion gets: "neutral" or "independent". A

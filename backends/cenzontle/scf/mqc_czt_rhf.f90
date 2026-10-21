@@ -76,6 +76,7 @@ module mqc_czt_rhf
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
    public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
    public :: density_energy            !! The closed-shell energy functional of a given density
+   public :: assemble_fock_uhf         !! Both spin Fock matrices and their energy, no SCF
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
 
    type :: incremental_state_t

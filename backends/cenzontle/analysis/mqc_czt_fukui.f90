@@ -31,6 +31,7 @@ module mqc_czt_fukui
    use mqc_czt_atomic_guess, only: build_atomic_guess
    use mqc_scf_common, only: build_density_spin
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
+   use mqc_czt_hirshfeld, only: hirshfeld_populations
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -80,7 +81,7 @@ module mqc_czt_fukui
          !! left over. **Two different things produce this and they cannot be
          !! told apart from here**: a basis with no diffuse functions, and a
          !! molecule with no bound anion.
-      character(len=16) :: scheme = "chelpg"
+      character(len=16) :: scheme = "hirshfeld"
       character(len=:), allocatable :: functional
          !! The functional the three states were computed with, empty for
          !! Hartree-Fock. IP, EA and hardness are differences of total energies
@@ -127,7 +128,7 @@ contains
       real(dp), intent(in), optional :: level_shift
          !! Applied to both ions, which are the open-shell SCFs a shift is
          !! asked for to stabilise.
-      character(len=*), intent(in) :: scheme          !! "chelpg" or "mulliken"
+      character(len=*), intent(in) :: scheme          !! "hirshfeld", "chelpg" or "mulliken"
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       type(fukui_result_t), intent(out) :: res
@@ -551,9 +552,22 @@ contains
          call chelpg_charges(mol, density, charges, error, total_charge=total_charge)
       case ("mulliken")
          call mulliken_charges(mol, density, overlap, charges, error)
+      case ("hirshfeld")
+         ! The weights are the free atoms', fixed by the geometry, so the three
+         ! states are divided by one partition and an index is the stockholder
+         ! share of the density difference itself.
+         call hirshfeld_populations(mol, density, charges, error)
+      case ("mbis")
+         ! Refused rather than condensed state by state: MBIS fits its weights to
+         ! the density it divides, so each state would be divided by its own
+         ! partition and an index would mix a change of density with a change
+         ! of partition.
+         call error%set(ERROR_VALIDATION, "MBIS is not offered for Fukui indices: its "// &
+                        "weights are refitted to each state's density, so the three "// &
+                        "states would not share a partition. Use 'hirshfeld'.")
       case default
          call error%set(ERROR_VALIDATION, "unknown population scheme '"//trim(scheme)// &
-                        "' for Fukui indices; expected 'chelpg' or 'mulliken'.")
+                        "' for Fukui indices; expected 'chelpg', 'mulliken' or 'hirshfeld'.")
       end select
    end subroutine condense
 
@@ -673,11 +687,13 @@ contains
          call logger%warning("  and do not build a further descriptor on it -- f0 and "// &
                              "dual inherit the")
          call logger%warning("  artefact from whichever index carried it.")
-         if (trim(res%scheme) == "mulliken") then
+         if (trim(res%scheme) /= "hirshfeld") then
             call logger%warning("")
-            call logger%warning("  Mulliken is especially prone to this, being basis-set "// &
-                                "dependent; chelpg")
-            call logger%warning("  is the default for that reason and is worth rerunning "// &
+            call logger%warning("  "//trim(res%scheme)//" divides each state on its own, "// &
+                                "so the difference of")
+            call logger%warning("  two divisions is prone to this. hirshfeld divides all "// &
+                                "three by one partition,")
+            call logger%warning("  is the default for that reason, and is worth rerunning "// &
                                 "with before")
             call logger%warning("  concluding anything from this table.")
          else
