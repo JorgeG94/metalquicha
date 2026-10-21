@@ -57,6 +57,12 @@ contains
       call logger%info("=========================================")
       call logger%info(" Fragment "//to_char(fragment_idx))
       call logger%info(" Number of atoms: "//to_char(phys_frag%n_atoms))
+      ! The charge the SCF is given, summed from the monomers. A fragment that
+      ! will not converge is often two distant ions, and that reads here
+      ! rather than only from the geometry.
+      call logger%info(" Charge: "//to_char(phys_frag%charge)//"   multiplicity: "// &
+                       to_char(phys_frag%multiplicity)//"   electrons: "// &
+                       to_char(phys_frag%nelec))
       call logger%info(" Coordinates in Angstroms:")
       call logger%info("-----------------------------------------")
       do i = 1, phys_frag%n_atoms

@@ -23,12 +23,14 @@ module mqc_terco_driver
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_pcm_radii, only: cavity_radius
    use mqc_physical_fragment, only: physical_fragment_t
-   use mqc_result_types, only: calculation_result_t, frontier_orbitals
+   use mqc_result_types, only: calculation_result_t, frontier_orbitals, SCF_CONVERGED, &
+                               SCF_NOT_CONVERGED
    use mqc_elements, only: element_number_to_symbol
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_ao, only: max_ao_l
-   use mqc_czt_bridge, only: core_orbital_count
+   use mqc_czt_bridge, only: core_orbital_count, run_czt_bonding_analysis
+   use mqc_czt_bonding, only: bonding_analysis_kind, BONDING_GMS_QUAO
    use libcint_fortran, only: LIBCINT_NCTR_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_COEFF
    use mqc_czt_atomic_guess, only: parse_guess_name, build_atomic_guess
    use mqc_czt_rhf, only: SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD, &
@@ -159,6 +161,9 @@ contains
       end if
 
       result%scf_iterations = state%iterations
+      ! Reported either way, so a fragmented run lists the fragments an
+      ! allow_crap_scf run kept unconverged.
+      result%scf_status = merge(SCF_CONVERGED, SCF_NOT_CONVERGED, state%converged)
       result%energy%scf = state%energy_scf
       if (settings%run_mp2) then
          result%energy%mp2%ss = state%e_ss
@@ -194,6 +199,13 @@ contains
 
       call report_frontier(state, result)
       call analyse_density(settings, fragment, session, state, result)
+      ! The device converged the orbitals; the analysis of them runs on the CPU,
+      ! by the code the CPU backend uses, in the same AO basis.
+      if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
+         call run_czt_bonding_analysis(settings, session%mol, fragment, session%symbols, &
+                                       state%orbitals(:, 1:size(state%occupations, 1), 1), &
+                                       nint(sum(session%mol%charges)) - fragment%charge, result)
+      end if
       if (allocated(settings%fukui_population)) then
          call run_fukui(settings, fragment, session, state, result)
       end if

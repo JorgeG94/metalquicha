@@ -83,6 +83,7 @@ module mqc_czt_bridge
    public :: run_czt_neo
    public :: run_czt_charges
    public :: run_czt_mayer_bond_orders
+   public :: run_czt_bonding_analysis   !! the terco backend analyses its own orbitals with it
    public :: run_czt_efp
    public :: run_czt_sapt0
    public :: run_czt_sapt2
@@ -1183,9 +1184,6 @@ contains
       real(dp), allocatable :: guess_a(:, :), guess_b(:, :), guess_total(:, :)
       type(error_t) :: guess_error
       type(error_t) :: analysis_error
-      real(dp), allocatable :: ieda_atom(:), ieda_free(:)
-      real(dp), allocatable :: ieda_pair(:, :), ieda_classical(:, :)
-      real(dp) :: ieda_formation
       type(xc_context_t), target :: xc
       type(xc_context_t), pointer :: xc_arg
       type(xc_reference_t), allocatable :: xc_refs(:)
@@ -2257,34 +2255,8 @@ contains
       end if
 
       if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
-         call analysis_error%clear()
-         ! Printed whatever the verbosity. Asking for a property *is* the
-         ! request for its output -- a deck that names an analysis and gets a
-         ! silent run has been given nothing, and the natural reading is that
-         ! the analysis found nothing to say.
-         call run_quao_analysis(mol, fragment%element_numbers, symbols, &
-                                fragment%coordinates, scf%orbitals, nelec, &
-                                analysis_error, threshold=settings%bonding_threshold, &
-                                energy_decomposition=settings%bonding_energy, &
-                                no_sharing=settings%bonding_no_sharing, &
-                                no_sharing_ci=settings%bonding_no_sharing_ci, &
-                                restrict_localization=settings%bonding_restrict_localization, &
-                                max_sweeps=settings%bonding_max_sweeps, &
-                                rows=result%quao_rows, &
-                                cube=settings%bonding_cube, &
-                                cube_stem=cube_file_stem(settings%bonding_cube), &
-                                atom_energy=ieda_atom, free_atom_energy=ieda_free, &
-                                pair_energy=ieda_pair, pair_classical=ieda_classical, &
-                                formation_energy=ieda_formation)
-         if (analysis_error%has_error()) then
-            call logger%warning("  the bonding analysis could not run: "// &
-                                analysis_error%get_message())
-         end if
-         ! Built once the orbitals are labelled, so present even when the
-         ! energy decomposition after that failed.
-         result%has_quao_rows = allocated(result%quao_rows%atom_bond_index)
-         call store_decomposition(result, ieda_atom, ieda_free, ieda_pair, &
-                                  ieda_classical, ieda_formation)
+         call run_czt_bonding_analysis(settings, mol, fragment, symbols, scf%orbitals, &
+                                       nelec, result)
       end if
 
       ! ---- dE/dR, analytically ----------------------------------------------
@@ -4161,6 +4133,56 @@ contains
          call logger%info(trim(line))
       end do
    end subroutine sa_state_gradients_into
+
+   subroutine run_czt_bonding_analysis(settings, mol, fragment, symbols, orbitals, nelec, &
+                                       result)
+      !! The quasi-atomic bonding analysis of one converged determinant
+      !!
+      !! `orbitals` are `mol`'s, `(n_ao, n_mo)`, from whichever engine converged
+      !! them; the analysis itself runs here, on the CPU. The rows and the energy
+      !! decomposition land on `result`. A failure is a warning: the energy
+      !! stands.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(czt_molecule_t), intent(in) :: mol
+      type(physical_fragment_t), intent(in) :: fragment
+      character(len=*), intent(in) :: symbols(:)
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: nelec
+      type(calculation_result_t), intent(inout) :: result
+
+      type(error_t) :: analysis_error
+      real(dp), allocatable :: ieda_atom(:), ieda_free(:)
+      real(dp), allocatable :: ieda_pair(:, :), ieda_classical(:, :)
+      real(dp) :: ieda_formation
+
+      ! Printed whatever the verbosity. Asking for a property *is* the request
+      ! for its output -- a deck that names an analysis and gets a silent run
+      ! has been given nothing, and the natural reading is that the analysis
+      ! found nothing to say.
+      call run_quao_analysis(mol, fragment%element_numbers, symbols, &
+                             fragment%coordinates, orbitals, nelec, &
+                             analysis_error, threshold=settings%bonding_threshold, &
+                             energy_decomposition=settings%bonding_energy, &
+                             no_sharing=settings%bonding_no_sharing, &
+                             no_sharing_ci=settings%bonding_no_sharing_ci, &
+                             restrict_localization=settings%bonding_restrict_localization, &
+                             max_sweeps=settings%bonding_max_sweeps, &
+                             rows=result%quao_rows, &
+                             cube=settings%bonding_cube, &
+                             cube_stem=cube_file_stem(settings%bonding_cube), &
+                             atom_energy=ieda_atom, free_atom_energy=ieda_free, &
+                             pair_energy=ieda_pair, pair_classical=ieda_classical, &
+                             formation_energy=ieda_formation)
+      if (analysis_error%has_error()) then
+         call logger%warning("  the bonding analysis could not run: "// &
+                             analysis_error%get_message())
+      end if
+      ! Built once the orbitals are labelled, so present even when the energy
+      ! decomposition after that failed.
+      result%has_quao_rows = allocated(result%quao_rows%atom_bond_index)
+      call store_decomposition(result, ieda_atom, ieda_free, ieda_pair, &
+                               ieda_classical, ieda_formation)
+   end subroutine run_czt_bonding_analysis
 
    subroutine store_decomposition(result, atom_energy, free_atom_energy, &
                                   pair_energy, pair_classical, formation_energy)
