@@ -66,6 +66,27 @@ ELEMENTS = (
 
 _NUMBER = {sym.upper(): i + 1 for i, sym in enumerate(ELEMENTS)}
 
+#: Cordero covalent radii in Angstrom, Z = 1-96, copied from mqc_atomic_radii.f90
+#: so perceive_monomers draws bonds where the Fortran perception does.
+_COVALENT_RADII = [
+    0.31, 0.28, 1.28, 0.96, 0.84, 0.76, 0.71, 0.66,
+    0.57, 0.58, 1.66, 1.41, 1.21, 1.11, 1.07, 1.05,
+    1.02, 1.06, 2.03, 1.76, 1.70, 1.60, 1.53, 1.39,
+    1.39, 1.32, 1.26, 1.24, 1.32, 1.22, 1.22, 1.20,
+    1.19, 1.20, 1.20, 1.16, 2.20, 1.95, 1.90, 1.75,
+    1.64, 1.54, 1.47, 1.46, 1.42, 1.39, 1.45, 1.44,
+    1.42, 1.39, 1.39, 1.38, 1.39, 1.40, 2.44, 2.15,
+    2.07, 2.04, 2.03, 2.01, 1.99, 1.98, 1.98, 1.96,
+    1.94, 1.92, 1.92, 1.89, 1.90, 1.87, 1.87, 1.75,
+    1.70, 1.62, 1.51, 1.44, 1.41, 1.36, 1.36, 1.32,
+    1.45, 1.46, 1.48, 1.40, 1.50, 1.50, 2.60, 2.21,
+    2.15, 2.06, 2.00, 1.96, 1.90, 1.87, 1.80, 1.69,
+]
+
+#: Alkali and alkaline-earth metals, except Be, which does form covalent bonds.
+#: Their contacts with a solvent shell are ionic, not monomer boundaries.
+_IONIC_METALS = frozenset((3, 11, 19, 37, 55, 87, 12, 20, 38, 56, 88))
+
 
 #: Driver names the Fortran side accepts, lowercased. Mirrored from
 #: `calc_type_from_string` in `src/mqc_calc_types.f90`, including the aliases:
@@ -159,6 +180,9 @@ class System:
         if not self._handle:
             raise MQCError("could not allocate a system")
         self._monomers = None
+        self._numbers = None
+        self._coords = None
+        self._charge = 0
         if symbols is not None or numbers is not None:
             self.set_geometry(symbols, coords, numbers, charge, multiplicity)
 
@@ -194,6 +218,9 @@ class System:
             ),
             _ffi.system_last_error,
         )
+        self._numbers = [int(z) for z in numbers]
+        self._coords = [flat[3 * i : 3 * i + 3] for i in range(len(numbers))]
+        self._charge = int(charge)
         return self
 
     # -- partition ----------------------------------------------------------
@@ -232,6 +259,101 @@ class System:
         )
         self._monomers = monomers
         return self
+
+    @property
+    def numbers(self):
+        """Atomic numbers, as given to `set_geometry`."""
+        return list(self._numbers or [])
+
+    @property
+    def charge(self):
+        """Total charge of the system."""
+        return self._charge
+
+    @property
+    def monomers(self):
+        """The partition set from Python, as lists of 0-based atom indices.
+
+        `auto_monomers` runs inside libmqc and its result is not handed back,
+        so after it this raises; `perceive_monomers` gives a partition that
+        can be read.
+        """
+        if self._monomers is None:
+            raise MQCError(
+                "no monomers were set from Python; call perceive_monomers or set_monomers"
+            )
+        return [list(m) for m in self._monomers]
+
+    def perceive_monomers(self, tolerance=1.2, atom_charges=None):
+        """Partition into covalently connected molecules, then charge them.
+
+        The same criterion as `auto_monomers` -- d(i,j) < tolerance * (r_i + r_j)
+        with Cordero radii -- done here so the partition is readable and the
+        rule for ions is explicit: alkali and alkaline-earth metals (not Be)
+        bond to nothing, so Na+ in a water cluster is its own monomer. An
+        element with no tabulated radius bonds to nothing either.
+
+        `atom_charges` is {atom: formal charge}, 0-based; see
+        `assign_monomer_charges`. Monomers come out ordered by lowest atom.
+        """
+        if self._numbers is None:
+            raise MQCError("no geometry set")
+        n = len(self._numbers)
+        radii = [
+            0.0 if z in _IONIC_METALS or not 1 <= z <= len(_COVALENT_RADII)
+            else _COVALENT_RADII[z - 1]
+            for z in self._numbers
+        ]
+        parent = list(range(n))
+
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        for i in range(n):
+            if not radii[i]:
+                continue
+            for j in range(i + 1, n):
+                if not radii[j]:
+                    continue
+                limit = tolerance * (radii[i] + radii[j])
+                d2 = sum((a - b) ** 2 for a, b in zip(self._coords[i], self._coords[j]))
+                if d2 < limit * limit:
+                    parent[find(j)] = find(i)
+        groups = {}
+        for i in range(n):
+            groups.setdefault(find(i), []).append(i)
+        self._monomers = sorted(groups.values(), key=lambda m: m[0])
+        return self.assign_monomer_charges(atom_charges)
+
+    def assign_monomer_charges(self, atom_charges=None):
+        """Give each monomer the sum of `atom_charges` over its atoms.
+
+        Checks that the atom indices exist, that the monomer charges add up to
+        the system charge, and that every monomer has an even electron count,
+        since each is declared a singlet. Raises ValueError otherwise.
+        """
+        monomers = self.monomers
+        atom_charges = dict(atom_charges or {})
+        n = len(self._numbers)
+        bad = [a for a in atom_charges if not 0 <= a < n]
+        if bad:
+            raise ValueError(f"atom charge on {bad}: atoms are 0..{n - 1}")
+        charges = [sum(atom_charges.get(a, 0) for a in m) for m in monomers]
+        if sum(charges) != self._charge:
+            raise ValueError(
+                f"the atom charges sum to {sum(charges)} but the system charge is "
+                f"{self._charge}"
+            )
+        for index, (m, q) in enumerate(zip(monomers, charges)):
+            if (sum(self._numbers[a] for a in m) - q) % 2:
+                raise ValueError(
+                    f"monomer {index + 1} (atoms {m}) has charge {q} and an odd "
+                    "number of electrons, so it cannot be a singlet"
+                )
+        return self.set_monomers(monomers, charges=charges, multiplicities=[1] * len(monomers))
 
     def set_bonds(self, bonds, orders=None):
         """Declare the connectivity, as (i, j) pairs of 0-based atoms.
