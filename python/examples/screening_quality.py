@@ -83,6 +83,16 @@ def parse_args(argv):
     p.add_argument("--high-basis", default="6-31G", help="reference basis (default 6-31G)")
     p.add_argument("--high-functional", default=None, help="reference functional, if any")
     p.add_argument(
+        "--high-backend",
+        default="cpu",
+        help="backend for the reference: cpu (default), terco, or cuest",
+    )
+    p.add_argument(
+        "--verbosity",
+        default="info",
+        help="mqc log level; debug also logs which GPU each worker rank bound to",
+    )
+    p.add_argument(
         "--high-df",
         action="store_true",
         help="density-fit the reference (never inferred from --high-aux-basis)",
@@ -209,7 +219,12 @@ def main(args):
     if low_functional:
         low_kwargs["functional"] = low_functional
     high_method, high_functional = split_method(args.high_method, args.high_functional)
-    high_kwargs = dict(method=high_method, basis=args.high_basis)
+    high_kwargs = dict(
+        method=high_method,
+        basis=args.high_basis,
+        backend=args.high_backend,
+        verbosity=args.verbosity,
+    )
     if high_functional:
         high_kwargs["functional"] = high_functional
     if args.high_df:
@@ -227,8 +242,7 @@ def main(args):
             system,
             level=args.level,
             checkpoint=f"chk_{label}.h5" if args.checkpoint else None,
-            backend="cpu",
-            **kwargs,
+            **{"backend": "cpu", **kwargs},
         )
 
     n_terms = len(build("probe", **low_kwargs).terms())
@@ -376,7 +390,7 @@ def verify(system, args, low_result, low_rows, high_rows, high_result, high_kwar
         return
 
     print(f"\n[verify] running the screen at tau={tau:g} as a real calculation")
-    run = mqc.MBE(system, level=args.level, backend="cpu", **high_kwargs)
+    run = mqc.MBE(system, level=args.level, **high_kwargs)
     run.keep(lambda t: len(t) == 1 or t in kept)
     corrected = set(run.terms())
     print(f"[verify] {len(corrected)} terms (closed under subsets)")

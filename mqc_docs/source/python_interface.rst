@@ -850,8 +850,8 @@ there going quietly stale:
    atoms and pairs must add back up to the energy the run reported.
 
 ``energy_screened_mbe.py``
-   The two-pass calculation above: GFN2 over every term, DFT over the ones
-   whose contribution cleared a threshold, assembled as
+   The two-pass calculation above: GFN2 over every term, DFT on terco over the
+   ones whose contribution cleared a threshold, assembled as
    ``E_low(everything) + sum of (E_high - E_low)`` over the kept terms.
 
 ``screening_quality.py``, ``screening_quality_bonded.py``
