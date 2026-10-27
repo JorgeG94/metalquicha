@@ -2566,7 +2566,7 @@ contains
    subroutine resolve_gpu_request(config, backend_named, error)
       !! Settle `system.gpu` against `backend`, then refuse a request nothing can honour
       !!
-      !! Three things happen here, all of them before a calculation is set up
+      !! Four things happen here, all of them before a calculation is set up
       !! rather than once per fragment inside one:
       !!
       !!   * `system.gpu` resolves into `backend`, so everything downstream reads
@@ -2579,8 +2579,7 @@ contains
       !!   * asking for cuEST for a method it has no implementation of is refused.
       !!     Substituting the CPU silently would report a provenance and a set of
       !!     timings that were not true.
-      !!   * asking terco for a continuum is refused, since it would be ignored.
-      !!     Needs `keywords.pcm` read first.
+      !!   * asking for terco on a build without it is refused.
       type(mqc_config_t), intent(inout) :: config
       logical, intent(in) :: backend_named  !! Whether the deck had a root `backend` key
       type(error_t), intent(out) :: error
