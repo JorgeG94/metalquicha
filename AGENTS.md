@@ -489,7 +489,9 @@ for the build system. Key points:
 - Internal units: Bohr (length), Hartree (energy)
 - Use `to_bohr()` / `to_angstrom()` for conversions
 - Error handling via `error_t` type with `has_error()` / `get_message()`
-- **Linter**: Uses `fortitude check` - all `use` statements must have `only` clause
+- **Linter**: Uses `fortitude check` - all `use` statements must have `only` clause.
+  CI pins fortitude **0.9.2** (`pip install fortitude-lint==0.9.2`); install that
+  to match. 0.10 adds rules `fpm.toml` predates and reports ~1500 findings CI does not.
 - **CI/CD**: GitHub Actions workflows in `.github/workflows/` (build, test, coverage via Codecov)
 - **Environment**: Conda environment defined in `environment.yml`
 
