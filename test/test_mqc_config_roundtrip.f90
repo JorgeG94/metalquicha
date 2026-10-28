@@ -46,8 +46,8 @@ contains
                                test_counterpoise_refusals), &
                   new_unittest("counterpoise_derivatives_are_refused_up_front", &
                                test_counterpoise_derivatives_refused), &
-                  new_unittest("counterpoise_is_refused_on_the_gpu_backends", &
-                               test_counterpoise_gpu_refused), &
+                  new_unittest("counterpoise_is_refused_on_cuest", &
+                               test_counterpoise_cuest_refused), &
                   new_unittest("interaction_energy_is_refused_where_it_is_not_defined", &
                                test_interaction_energy_support), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
@@ -357,18 +357,18 @@ contains
                  "a gradient without counterpoise must still be allowed: "//err%get_message())
    end subroutine test_counterpoise_derivatives_refused
 
-   subroutine test_counterpoise_gpu_refused(error)
-      !! Counterpoise on terco or cuEST is refused before any fragment runs
+   subroutine test_counterpoise_cuest_refused(error)
+      !! Counterpoise on cuEST is refused before any fragment runs; terco runs it
       !!
-      !! Neither GPU backend can place a ghost centre, so each would solve the
-      !! monomer in the dimer's basis with a nucleus on every ghost -- the whole
-      !! complex for terco, a highly charged one for cuEST -- and converge. A
-      !! valid-looking number that is not a counterpoise correction.
+      !! cuEST cannot place a ghost centre, so it would solve the monomer in the
+      !! dimer's basis with a nucleus on every ghost -- a highly charged complex
+      !! -- and converge. A valid-looking number that is not a counterpoise
+      !! correction. terco takes elements apart from charges and is allowed.
       type(error_type), allocatable, intent(out) :: error
       type(driver_config_t) :: driver
       type(error_t) :: err
-      character(len=7), parameter :: GPU_NAMES(4) = ["terco  ", "cuest  ", "gpu    ", "TERCO  "]
-      character(len=7), parameter :: CPU_NAMES(2) = ["libcint", "cpu    "]
+      character(len=7), parameter :: REFUSED_NAMES(3) = ["cuest  ", "gpu    ", "CUEST  "]
+      character(len=7), parameter :: ALLOWED_NAMES(4) = ["libcint", "cpu    ", "terco  ", "TERCO  "]
       integer :: i
 
       driver%counterpoise = "vmfc"
@@ -376,25 +376,25 @@ contains
       driver%allow_overlapping_fragments = .false.
       driver%method_config%method_type = METHOD_TYPE_HF
 
-      do i = 1, size(GPU_NAMES)
-         driver%method_config%backend = GPU_NAMES(i)
+      do i = 1, size(REFUSED_NAMES)
+         driver%method_config%backend = REFUSED_NAMES(i)
          call err%clear()
          call check_counterpoise_support(driver, err)
          call check(error, err%has_error(), &
-                    "counterpoise on backend '"//trim(GPU_NAMES(i))//"' must be refused")
+                    "counterpoise on backend '"//trim(REFUSED_NAMES(i))//"' must be refused")
          if (allocated(error)) return
-         call check(error, index(err%get_message(), "GPU backends") > 0, &
+         call check(error, index(err%get_message(), "cuEST backend") > 0, &
                     "the refusal should name the backend, not something else: "// &
                     err%get_message())
          if (allocated(error)) return
       end do
 
-      do i = 1, size(CPU_NAMES)
-         driver%method_config%backend = CPU_NAMES(i)
+      do i = 1, size(ALLOWED_NAMES)
+         driver%method_config%backend = ALLOWED_NAMES(i)
          call err%clear()
          call check_counterpoise_support(driver, err)
          call check(error,.not. err%has_error(), &
-                    "counterpoise on backend '"//trim(CPU_NAMES(i))//"' must be allowed: "// &
+                    "counterpoise on backend '"//trim(ALLOWED_NAMES(i))//"' must be allowed: "// &
                     err%get_message())
          if (allocated(error)) return
       end do
@@ -409,13 +409,13 @@ contains
 
       ! A semi-empirical method is refused for its own reason first.
       driver%method_config%method_type = METHOD_TYPE_GFN2
-      driver%method_config%backend = "terco"
+      driver%method_config%backend = "cuest"
       call err%clear()
       call check_counterpoise_support(driver, err)
       call check(error, index(err%get_message(), "basis set to ghost") > 0, &
                  "a semi-empirical method should be told about the method first: "// &
                  err%get_message())
-   end subroutine test_counterpoise_gpu_refused
+   end subroutine test_counterpoise_cuest_refused
 
    subroutine must_refuse(error, err, label, scheme, expansion, overlapping, method_type)
       !! This combination must come back as an error rather than as a number

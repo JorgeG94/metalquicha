@@ -40,7 +40,11 @@ contains
                   new_unittest("correlated_gradient_never_yields_energy", &
                                test_correlated_gradient_refused), &
                   new_unittest("correlated_never_yields_energy", test_correlated_refused), &
-                  new_unittest("ghosted_fragment_never_yields_energy", test_ghosts_refused), &
+                  new_unittest("ghosted_rhf_agrees_with_the_cpu_path", test_ghosted_rhf_matches_cpu), &
+                  new_unittest("ghosted_b3lyp_agrees_with_the_cpu_path", &
+                               test_ghosted_b3lyp_matches_cpu), &
+                  new_unittest("ghosted_continuum_never_yields_energy", &
+                               test_ghosted_pcm_refused), &
                   new_unittest("missing_build_is_reported", test_missing_build), &
                   new_unittest("agrees_with_the_cpu_path", test_matches_cpu), &
                   new_unittest("agrees_on_general_contraction", test_general_contraction), &
@@ -141,47 +145,139 @@ contains
       call check(error,.not. result%has_energy, "a refused MP2 still reported an energy")
    end subroutine test_correlated_refused
 
-   subroutine test_ghosts_refused(error)
-      !! A counterpoise term's ghost centres must never reach terco as nuclei
+   subroutine test_ghosted_rhf_matches_cpu(error)
+      !! A monomer in the dimer's basis, Hartree-Fock, against the CPU ghosts
       !!
-      !! The failure is a converged energy: the molecule terco is handed keeps
-      !! the full charge on every ghost, so the monomer in the dimer's basis is
-      !! solved as the whole dimer. A water and a ghosted water, as VMFC builds
-      !! one.
+      !! **Only runs where terco is linked.** The CPU backend's ghost path is
+      !! the reference: it zeroes a ghost's charge and keeps its basis. The
+      !! failure this guards against is the one terco had before it took
+      !! elements apart from charges, a ghost reaching it as a full nucleus, so
+      !! the monomer in the dimer's basis came back as the whole dimer.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+
+      if (.not. terco_backend_available()) return
+
+      settings%basis_set = "cc-pvdz"
+      settings%energy_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-8_dp
+      call check_ghosted_against_cpu(error, settings, "RHF")
+   end subroutine test_ghosted_rhf_matches_cpu
+
+   subroutine test_ghosted_b3lyp_matches_cpu(error)
+      !! The same, Kohn-Sham, so the ghosts' grid points are checked too
+      !!
+      !! **Only runs where terco is linked.** A ghost keeps its grid points and
+      !! its Becke size, which terco reads from the element; a ghost dropped
+      !! from the grid would integrate the ghost basis functions' density
+      !! wrongly and show up here and not in the Hartree-Fock case.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+
+      if (.not. terco_backend_available()) return
+
+      settings%basis_set = "cc-pvdz"
+      settings%functional = "b3lyp"
+      settings%grid_level = 3
+      settings%energy_tol = 1.0e-10_dp
+      settings%density_tol = 1.0e-8_dp
+      call check_ghosted_against_cpu(error, settings, "B3LYP")
+   end subroutine test_ghosted_b3lyp_matches_cpu
+
+   subroutine test_ghosted_pcm_refused(error)
+      !! A ghosted fragment under a continuum is refused, not answered
+      !!
+      !! The CPU backend gives a ghost centre a cavity sphere and terco gives
+      !! it none, so the two would return different counterpoise corrections
+      !! for the same deck. True in a stub build too, which refuses everything.
       type(error_type), allocatable, intent(out) :: error
       type(cuest_scf_settings_t) :: settings
       type(physical_fragment_t) :: monomer, fragment
       type(calculation_result_t) :: result
 
       call water(monomer)
-      fragment%n_atoms = 6
-      fragment%charge = 0
-      fragment%multiplicity = 1
-      fragment%nelec = 10
-      fragment%n_caps = 0
-      fragment%element_numbers = [monomer%element_numbers, monomer%element_numbers]
-      allocate (fragment%coordinates(3, 6))
-      fragment%coordinates(:, 1:3) = monomer%coordinates
-      fragment%coordinates(:, 4:6) = monomer%coordinates
-      fragment%coordinates(3, 4:6) = fragment%coordinates(3, 4:6) + 5.5_dp
-      fragment%is_ghost = [.false., .false., .false., .true., .true., .true.]
+      call ghosted_water_dimer(monomer, fragment)
       settings%basis_set = "sto-3g"
+      settings%pcm%enabled = .true.
 
       call run_terco_scf(settings, fragment, result)
 
-      call check(error, result%has_error, "a fragment with ghost atoms reached terco "// &
-                 "without an error")
+      call check(error, result%has_error, "a ghosted fragment under a continuum "// &
+                 "reached terco without an error")
       if (allocated(error)) return
-      call check(error,.not. result%has_energy, "a refused ghosted fragment still "// &
-                 "reported an energy")
+      call check(error,.not. result%has_energy, "a refused ghosted continuum run "// &
+                 "still reported an energy")
       if (allocated(error)) return
-      ! Only a linked terco reaches the driver's own refusal; a stub refuses
-      ! every calculation.
       if (.not. terco_backend_available()) return
-      call check(error, index(result%error%get_message(), "ghost") > 0, &
-                 "the refusal does not say the ghost atoms are the reason: "// &
+      call check(error, index(result%error%get_message(), "cavity") > 0, &
+                 "the refusal does not say the cavity is the reason: "// &
                  result%error%get_message())
-   end subroutine test_ghosts_refused
+   end subroutine test_ghosted_pcm_refused
+
+   subroutine check_ghosted_against_cpu(error, settings, label)
+      !! Water in a water dimer's basis on terco and on the CPU, to 1e-8 Eh
+      !!
+      !! Also checks the ghosted energy sits near the bare monomer's, below it
+      !! by a basis-set superposition error of millihartree. A ghost taken as a
+      !! nucleus would put it some seventy hartree away.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t), intent(in) :: settings
+      character(len=*), intent(in) :: label
+
+      type(physical_fragment_t) :: monomer, fragment
+      type(calculation_result_t) :: terco_result, cpu_result, bare_result
+      real(dp) :: bsse
+
+      call water(monomer)
+      call ghosted_water_dimer(monomer, fragment)
+
+      call run_terco_scf(settings, fragment, terco_result)
+      call check(error, terco_result%has_energy, "terco returned no energy for a ghosted "// &
+                 "water, "//label//": "//terco_result%error%get_message())
+      if (allocated(error)) return
+      call run_czt_hf(settings, fragment, cpu_result)
+      call check(error, cpu_result%has_energy, "the CPU path returned no energy for a "// &
+                 "ghosted water, "//label)
+      if (allocated(error)) return
+      ! 1e-8 is the convergence both were asked for, as in `test_matches_cpu`.
+      call check(error, abs(terco_result%energy%scf - cpu_result%energy%scf) < 1.0e-8_dp, &
+                 "terco and the CPU path disagree on a ghosted water, "//label)
+      if (allocated(error)) return
+
+      call run_czt_hf(settings, monomer, bare_result)
+      call check(error, bare_result%has_energy, "the CPU path returned no energy for "// &
+                 "the bare water, "//label)
+      if (allocated(error)) return
+      bsse = bare_result%energy%scf - terco_result%energy%scf
+      call check(error, bsse > 0.0_dp .and. bsse < 1.0e-2_dp, &
+                 "the ghosts on terco should lower the monomer by a small basis-set "// &
+                 "superposition error, "//label)
+   end subroutine check_ghosted_against_cpu
+
+   subroutine ghosted_water_dimer(monomer, fragment)
+      !! `monomer` with a second, ghosted copy of itself 5.5 bohr along z
+      !!
+      !! What VMFC builds for a monomer in a dimer's basis: the real atoms
+      !! first, the partner's atoms marked ghost, the electron count the real
+      !! atoms' alone.
+      type(physical_fragment_t), intent(in) :: monomer
+      type(physical_fragment_t), intent(out) :: fragment
+
+      fragment%n_atoms = 2*monomer%n_atoms
+      fragment%charge = monomer%charge
+      fragment%multiplicity = monomer%multiplicity
+      fragment%nelec = monomer%nelec
+      fragment%n_caps = 0
+      fragment%element_numbers = [monomer%element_numbers, monomer%element_numbers]
+      allocate (fragment%coordinates(3, fragment%n_atoms))
+      fragment%coordinates(:, 1:monomer%n_atoms) = monomer%coordinates
+      fragment%coordinates(:, monomer%n_atoms + 1:) = monomer%coordinates
+      fragment%coordinates(3, monomer%n_atoms + 1:) = &
+         fragment%coordinates(3, monomer%n_atoms + 1:) + 5.5_dp
+      allocate (fragment%is_ghost(fragment%n_atoms))
+      fragment%is_ghost = .false.
+      fragment%is_ghost(monomer%n_atoms + 1:) = .true.
+   end subroutine ghosted_water_dimer
 
    subroutine test_missing_build(error)
       !! On a build without terco, a terco deck is told so rather than ignored

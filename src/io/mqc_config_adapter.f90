@@ -881,9 +881,9 @@ contains
       !!     though its ghost centres were nuclei, against an electron count
       !!     derived without them. That is a different molecule with the wrong
       !!     charge, not an approximation.
-      !!   * the **GPU backends**, terco and cuEST, do the same: neither can yet
-      !!     place a centre with basis functions and no nucleus. That covers
-      !!     `auto` on a build that resolves it to cuEST.
+      !!   * the **cuEST backend** does the same: it cannot place a centre
+      !!     with basis functions and no nucleus. That covers `auto` on a build
+      !!     that resolves it to cuEST. terco can, and is allowed.
       !!
       !! An unrecognised spelling is refused too: once it reaches the term list
       !! it cannot be told from `none`.
@@ -978,24 +978,24 @@ contains
       end select
       if (error%has_error()) return
 
-      if (counterpoise_reaches_gpu(driver_config%method_config)) then
+      if (counterpoise_reaches_cuest(driver_config%method_config)) then
          call error%set(ERROR_VALIDATION, &
-                        "counterpoise is not available on the GPU backends. Neither "// &
-                        "terco nor cuEST can yet place a ghost centre -- basis "// &
-                        "functions and no nucleus -- so each monomer in the dimer's "// &
-                        "basis would be computed with a nucleus on every ghost. Ask "// &
-                        "for backend 'libcint', or drop counterpoise.")
+                        "counterpoise is not available on the cuEST backend. It cannot "// &
+                        "yet place a ghost centre -- basis functions and no nucleus -- "// &
+                        "so each monomer in the dimer's basis would be computed with a "// &
+                        "nucleus on every ghost. Ask for backend 'libcint' or 'terco', "// &
+                        "or drop counterpoise.")
       end if
 
    end subroutine check_counterpoise_support
 
-   function counterpoise_reaches_gpu(method_config) result(on_gpu)
-      !! Whether this method's fragments would be solved by terco or cuEST
+   function counterpoise_reaches_cuest(method_config) result(on_gpu)
+      !! Whether this method's fragments would be solved by cuEST
       !!
-      !! A named `terco`, `cuest` or `gpu`, or `auto` on a build where `auto`
-      !! sends Hartree-Fock and Kohn-Sham to cuEST.
+      !! A named `cuest` or `gpu`, or `auto` on a build where `auto` sends
+      !! Hartree-Fock and Kohn-Sham to cuEST.
       use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
-                                 BACKEND_AUTO, BACKEND_CUEST, BACKEND_TERCO
+                                 BACKEND_AUTO, BACKEND_CUEST
       use mqc_cuest_bridge, only: cuest_backend_available
       type(method_config_t), intent(in) :: method_config
       logical :: on_gpu
@@ -1010,7 +1010,7 @@ contains
          return
       end if
       select case (backend_kind)
-      case (BACKEND_TERCO, BACKEND_CUEST)
+      case (BACKEND_CUEST)
          on_gpu = .true.
       case (BACKEND_AUTO)
          on_gpu = cuest_backend_available() .and. &
@@ -1018,7 +1018,7 @@ contains
       case default
          on_gpu = .false.
       end select
-   end function counterpoise_reaches_gpu
+   end function counterpoise_reaches_cuest
 
    subroutine check_pieda_support(driver_config, error)
       !! Refuse a PIEDA request the chosen expansion or driver cannot honour
