@@ -869,7 +869,7 @@ contains
       !! Refuse a counterpoise request the chosen expansion cannot honour
       !!
       !! Counterpoise is carried by ghosted rows in the MBE term list and by
-      !! the `is_ghost` mask on the fragments those rows build. Three things
+      !! the `is_ghost` mask on the fragments those rows build. Several things
       !! read neither, and each fails differently:
       !!
       !!   * **GMBE** and **FMO/EE-MBE** build their own term lists and never
@@ -881,6 +881,9 @@ contains
       !!     though its ghost centres were nuclei, against an electron count
       !!     derived without them. That is a different molecule with the wrong
       !!     charge, not an approximation.
+      !!   * the **GPU backends**, terco and cuEST, do the same: neither can yet
+      !!     place a centre with basis functions and no nucleus. That covers
+      !!     `auto` on a build that resolves it to cuEST.
       !!
       !! An unrecognised spelling is refused too: once it reaches the term list
       !! it cannot be told from `none`.
@@ -973,8 +976,49 @@ contains
       case default
          ! An ab initio method: the cenzontle path reads `is_ghost` and honours it.
       end select
+      if (error%has_error()) return
+
+      if (counterpoise_reaches_gpu(driver_config%method_config)) then
+         call error%set(ERROR_VALIDATION, &
+                        "counterpoise is not available on the GPU backends. Neither "// &
+                        "terco nor cuEST can yet place a ghost centre -- basis "// &
+                        "functions and no nucleus -- so each monomer in the dimer's "// &
+                        "basis would be computed with a nucleus on every ghost. Ask "// &
+                        "for backend 'libcint', or drop counterpoise.")
+      end if
 
    end subroutine check_counterpoise_support
+
+   function counterpoise_reaches_gpu(method_config) result(on_gpu)
+      !! Whether this method's fragments would be solved by terco or cuEST
+      !!
+      !! A named `terco`, `cuest` or `gpu`, or `auto` on a build where `auto`
+      !! sends Hartree-Fock and Kohn-Sham to cuEST.
+      use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
+                                 BACKEND_AUTO, BACKEND_CUEST, BACKEND_TERCO
+      use mqc_cuest_bridge, only: cuest_backend_available
+      type(method_config_t), intent(in) :: method_config
+      logical :: on_gpu
+
+      type(error_t) :: parse_error
+      integer :: backend_kind
+
+      call parse_backend_name(method_config%backend, backend_kind, parse_error)
+      ! An unknown name is the reader's to refuse, not this check's.
+      if (parse_error%has_error()) then
+         on_gpu = .false.
+         return
+      end if
+      select case (backend_kind)
+      case (BACKEND_TERCO, BACKEND_CUEST)
+         on_gpu = .true.
+      case (BACKEND_AUTO)
+         on_gpu = cuest_backend_available() .and. &
+                  method_runs_on_cuest(method_config%method_type)
+      case default
+         on_gpu = .false.
+      end select
+   end function counterpoise_reaches_gpu
 
    subroutine check_pieda_support(driver_config, error)
       !! Refuse a PIEDA request the chosen expansion or driver cannot honour

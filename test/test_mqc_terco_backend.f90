@@ -40,6 +40,7 @@ contains
                   new_unittest("correlated_gradient_never_yields_energy", &
                                test_correlated_gradient_refused), &
                   new_unittest("correlated_never_yields_energy", test_correlated_refused), &
+                  new_unittest("ghosted_fragment_never_yields_energy", test_ghosts_refused), &
                   new_unittest("missing_build_is_reported", test_missing_build), &
                   new_unittest("agrees_with_the_cpu_path", test_matches_cpu), &
                   new_unittest("agrees_on_general_contraction", test_general_contraction), &
@@ -139,6 +140,48 @@ contains
       if (allocated(error)) return
       call check(error,.not. result%has_energy, "a refused MP2 still reported an energy")
    end subroutine test_correlated_refused
+
+   subroutine test_ghosts_refused(error)
+      !! A counterpoise term's ghost centres must never reach terco as nuclei
+      !!
+      !! The failure is a converged energy: the molecule terco is handed keeps
+      !! the full charge on every ghost, so the monomer in the dimer's basis is
+      !! solved as the whole dimer. A water and a ghosted water, as VMFC builds
+      !! one.
+      type(error_type), allocatable, intent(out) :: error
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: monomer, fragment
+      type(calculation_result_t) :: result
+
+      call water(monomer)
+      fragment%n_atoms = 6
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      fragment%nelec = 10
+      fragment%n_caps = 0
+      fragment%element_numbers = [monomer%element_numbers, monomer%element_numbers]
+      allocate (fragment%coordinates(3, 6))
+      fragment%coordinates(:, 1:3) = monomer%coordinates
+      fragment%coordinates(:, 4:6) = monomer%coordinates
+      fragment%coordinates(3, 4:6) = fragment%coordinates(3, 4:6) + 5.5_dp
+      fragment%is_ghost = [.false., .false., .false., .true., .true., .true.]
+      settings%basis_set = "sto-3g"
+
+      call run_terco_scf(settings, fragment, result)
+
+      call check(error, result%has_error, "a fragment with ghost atoms reached terco "// &
+                 "without an error")
+      if (allocated(error)) return
+      call check(error,.not. result%has_energy, "a refused ghosted fragment still "// &
+                 "reported an energy")
+      if (allocated(error)) return
+      ! Only a linked terco reaches the driver's own refusal; a stub refuses
+      ! every calculation.
+      if (.not. terco_backend_available()) return
+      call check(error, index(result%error%get_message(), "ghost") > 0, &
+                 "the refusal does not say the ghost atoms are the reason: "// &
+                 result%error%get_message())
+   end subroutine test_ghosts_refused
 
    subroutine test_missing_build(error)
       !! On a build without terco, a terco deck is told so rather than ignored

@@ -1315,7 +1315,7 @@ contains
       ! difference meaningful.
       call build_czt_molecule(fragment%element_numbers, symbols, &
                               fragment%coordinates, trim(settings%basis_set), &
-                              mol, error, ghost=ghost_of(fragment), &
+                              mol, error, ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian, &
                               ecp_name=trim(settings%ecp_set))
       if (error%has_error()) then
@@ -1653,7 +1653,7 @@ contains
          ! molecule from the one being fitted.
          call build_czt_molecule(fragment%element_numbers, symbols, &
                                  fragment%coordinates, trim(settings%aux_basis_set), &
-                                 aux, error, ghost=ghost_of(fragment), &
+                                 aux, error, ghost=fragment%ghost_mask(), &
                                  force_cartesian=settings%cartesian)
          if (error%has_error()) then
             call result%error%set(ERROR_VALIDATION, "auxiliary basis '"// &
@@ -3531,7 +3531,7 @@ contains
 
       call build_czt_molecule(fragment%element_numbers, symbols, &
                               fragment%coordinates, trim(settings%basis_set), &
-                              mol, error, ghost=ghost_of(fragment), &
+                              mol, error, ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian)
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -4262,23 +4262,8 @@ contains
 
       call build_czt_molecule(fragment%element_numbers, symbols, &
                               fragment%coordinates, name, aux, error, &
-                              ghost=ghost_of(fragment), &
+                              ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian)
    end subroutine correlation_aux_basis
-
-   pure function ghost_of(fragment) result(ghost)
-      !! A fragment's ghost mask, or all-false when it has none
-      !!
-      !! `is_ghost` is unallocated on every fragment an ordinary expansion
-      !! builds, so this saves three call sites the same conditional.
-      type(physical_fragment_t), intent(in) :: fragment
-      logical :: ghost(fragment%n_atoms)
-
-      if (allocated(fragment%is_ghost)) then
-         ghost = fragment%is_ghost
-      else
-         ghost = .false.
-      end if
-   end function ghost_of
 
 end module mqc_czt_bridge

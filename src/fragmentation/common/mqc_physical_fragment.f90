@@ -80,6 +80,8 @@ module mqc_physical_fragment
       procedure :: compute_nelec => fragment_compute_nelec  !! Calculate electron count
       procedure :: real_element_numbers => fragment_real_element_numbers
          !! Atomic numbers of the real atoms only, ghost centres left out
+      procedure :: ghost_mask => fragment_ghost_mask
+         !! Which atoms are ghosts, all false when the fragment has none
       procedure :: set_basis => fragment_set_basis      !! Assign basis set
    end type physical_fragment_t
 
@@ -1031,6 +1033,21 @@ contains
          z = this%element_numbers
       end if
    end function fragment_real_element_numbers
+
+   pure function fragment_ghost_mask(this) result(ghost)
+      !! Which of the fragment's atoms are ghost centres, one per atom
+      !!
+      !! All false when `is_ghost` is unallocated, which is every fragment a
+      !! plain expansion builds.
+      class(physical_fragment_t), intent(in) :: this
+      logical :: ghost(this%n_atoms)
+
+      if (allocated(this%is_ghost)) then
+         ghost = this%is_ghost
+      else
+         ghost = .false.
+      end if
+   end function fragment_ghost_mask
 
    subroutine fragment_compute_nelec(this)
       !! Compute number of electrons from atomic numbers and charge
