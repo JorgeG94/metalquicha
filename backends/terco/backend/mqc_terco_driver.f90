@@ -39,7 +39,8 @@ module mqc_terco_driver
                                   mayer_valences, print_mayer_report
    use mqc_czt_fukui, only: fukui_result_t, fukui_from_states, print_fukui_report
    use mqc_scf_common, only: build_density_spin
-   use trc_c_interfaces, only: trc_create, trc_destroy, trc_set_molecule, trc_set_basis_libcint, &
+   use trc_c_interfaces, only: trc_create, trc_destroy, trc_set_molecule, trc_set_elements, &
+                               trc_set_basis_libcint, &
                                trc_set_aux_libcint, trc_set_method, trc_set_convergence, &
                                trc_set_screening, trc_set_incremental, trc_set_guess, &
                                trc_set_verbose, trc_set_rimp2, trc_set_nlc_grid, trc_set_pcm, &
@@ -238,24 +239,23 @@ contains
          return
       end if
 
-      ! A counterpoise term's ghost centres keep their element in
-      ! `element_numbers`, and the molecule built here hands terco a full
-      ! nuclear charge for each, so the monomer in the dimer's basis would be
-      ! solved as the whole dimer. Refused until terco can be told an element
-      ! apart from a charge.
-      if (any(fragment%ghost_mask())) then
-         call error%set(ERROR_VALIDATION, "this fragment has ghost atoms -- a "// &
-                        "counterpoise term -- and terco cannot yet take a centre "// &
-                        "with basis functions and no nucleus, so it would solve the "// &
-                        "whole complex instead. Ask for backend 'libcint', or drop "// &
-                        "keywords.fragmentation.counterpoise.")
-         return
-      end if
-
       call select_device(settings%device_rank)
 
       call refuse_unsupported(settings, error)
       if (error%has_error()) return
+
+      ! The CPU backend gives a ghost centre a full cavity sphere, as PySCF
+      ! does, and terco gives it none. Which is right is not settled, so a
+      ! ghosted fragment under a continuum is refused rather than answered
+      ! differently by the two backends.
+      if (settings%pcm%enabled .and. any(fragment%ghost_mask())) then
+         call error%set(ERROR_VALIDATION, "this fragment has ghost atoms -- a "// &
+                        "counterpoise term -- under keywords.pcm, and the cavity "// &
+                        "around a ghost centre differs between backends: the CPU "// &
+                        "backend gives it a sphere and terco does not. Ask for "// &
+                        "backend 'libcint', or drop the continuum or counterpoise.")
+         return
+      end if
 
       functional_name = trim(adjustl(settings%functional))
       if (len(functional_name) > 0) then
@@ -281,6 +281,7 @@ contains
       end do
       call build_czt_molecule(fragment%element_numbers, session%symbols, &
                               fragment%coordinates, settings%basis_set, session%mol, error, &
+                              ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian, &
                               ecp_name=settings%ecp_set)
       if (error%has_error()) return
@@ -420,6 +421,7 @@ contains
       end if
       call build_czt_molecule(fragment%element_numbers, session%symbols, &
                               fragment%coordinates, trim(settings%aux_basis_set), aux, error, &
+                              ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian)
       if (error%has_error()) return
       call segment_general_contractions(aux%bas, aux%nbas, aux_bas_c, naux_bas_c)
@@ -656,6 +658,7 @@ contains
       end if
       call build_czt_molecule(fragment%element_numbers, session%symbols, &
                               fragment%coordinates, aux_name, aux, error, &
+                              ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian)
       if (error%has_error()) return
       call segment_general_contractions(aux%bas, aux%nbas, aux_bas_c, naux_bas_c)
@@ -755,9 +758,12 @@ contains
    subroutine set_state_molecule(session, charge, multiplicity, error)
       !! The atoms, once, before any basis is set
       !!
-      !! Nuclear charges are the molecule's own. A fragment with ghost atoms
-      !! never gets here; `open_session` refuses it. A later electron count
-      !! goes through `set_state_charge`, which keeps what this resets.
+      !! Charges and elements go separately. The charges are the molecule's
+      !! own, zero on a ghost, and are what terco's nuclear terms and electron
+      !! count read. The elements are every atom's, a ghost's included, and
+      !! are what its basis lookup, grids and guess shapes read. So a ghost
+      !! reaches terco as a centre with basis functions and no nucleus. A later
+      !! electron count goes through `set_state_charge`, which keeps both.
       type(terco_session_t), intent(inout) :: session
       integer, intent(in) :: charge, multiplicity
       type(error_t), intent(inout) :: error
@@ -768,7 +774,15 @@ contains
                             real(session%mol%charges, c_double), &
                             real(reshape(session%mol%coords, [3*session%mol%natm]), c_double), &
                             int(charge, c_int), int(multiplicity, c_int))
-      if (rc /= TRC_OK) call set_terco_error(session, rc, "the molecule was refused", error)
+      if (rc /= TRC_OK) then
+         call set_terco_error(session, rc, "the molecule was refused", error)
+         return
+      end if
+      ! After `trc_set_molecule`, which resets the elements to the charges,
+      ! and before any basis, which terco looks up by element.
+      rc = trc_set_elements(session%handle, int(session%mol%natm, c_int), &
+                            int(session%mol%atomic_numbers, c_int))
+      if (rc /= TRC_OK) call set_terco_error(session, rc, "the elements were refused", error)
    end subroutine set_state_molecule
 
    subroutine set_state_charge(session, charge, multiplicity, error)
