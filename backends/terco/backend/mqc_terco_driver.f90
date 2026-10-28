@@ -238,6 +238,20 @@ contains
          return
       end if
 
+      ! A counterpoise term's ghost centres keep their element in
+      ! `element_numbers`, and the molecule built here hands terco a full
+      ! nuclear charge for each, so the monomer in the dimer's basis would be
+      ! solved as the whole dimer. Refused until terco can be told an element
+      ! apart from a charge.
+      if (any(fragment%ghost_mask())) then
+         call error%set(ERROR_VALIDATION, "this fragment has ghost atoms -- a "// &
+                        "counterpoise term -- and terco cannot yet take a centre "// &
+                        "with basis functions and no nucleus, so it would solve the "// &
+                        "whole complex instead. Ask for backend 'libcint', or drop "// &
+                        "keywords.fragmentation.counterpoise.")
+         return
+      end if
+
       call select_device(settings%device_rank)
 
       call refuse_unsupported(settings, error)
@@ -741,9 +755,9 @@ contains
    subroutine set_state_molecule(session, charge, multiplicity, error)
       !! The atoms, once, before any basis is set
       !!
-      !! Nuclear charges are the molecule's own, so a ghost atom reaches terco
-      !! as a centre with basis functions and no nucleus. A later electron
-      !! count goes through `set_state_charge`, which keeps what this resets.
+      !! Nuclear charges are the molecule's own. A fragment with ghost atoms
+      !! never gets here; `open_session` refuses it. A later electron count
+      !! goes through `set_state_charge`, which keeps what this resets.
       type(terco_session_t), intent(inout) :: session
       integer, intent(in) :: charge, multiplicity
       type(error_t), intent(inout) :: error

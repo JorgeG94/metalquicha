@@ -66,6 +66,21 @@ contains
       need_gradient = .false.
       if (present(want_gradient)) need_gradient = want_gradient
 
+      ! A counterpoise term's ghost centres keep their element, and the system
+      ! built below takes a nucleus of that charge for every atom while the
+      ! electron count leaves the ghosts out: a different, highly charged
+      ! molecule rather than a basis-set correction. Refused until this backend
+      ! can place a centre with basis functions and no nucleus.
+      if (any(fragment%ghost_mask())) then
+         call error%set(ERROR_VALIDATION, "this fragment has ghost atoms -- a "// &
+                        "counterpoise term -- and the GPU backend cannot yet take a "// &
+                        "centre with basis functions and no nucleus, so it would put "// &
+                        "a nucleus on every ghost. Ask for backend 'libcint', or drop "// &
+                        "keywords.fragmentation.counterpoise.")
+         call record_failure(result, error)
+         return
+      end if
+
       ! cuEST exposes ECP entry points and this backend calls none of them, so
       ! an ECP deck would run all-electron, converge, and report a number
       ! hundreds of Hartree out. Refused by name until those are wired.

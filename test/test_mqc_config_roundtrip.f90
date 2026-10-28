@@ -27,6 +27,7 @@ module test_mqc_config_roundtrip
    use mqc_method_dft, only: dft_method_t
    use mqc_method_mcscf, only: mcscf_method_t
    use mqc_error, only: error_t
+   use mqc_cuest_bridge, only: cuest_backend_available
    use pic_types, only: dp
    implicit none
    private
@@ -45,6 +46,8 @@ contains
                                test_counterpoise_refusals), &
                   new_unittest("counterpoise_derivatives_are_refused_up_front", &
                                test_counterpoise_derivatives_refused), &
+                  new_unittest("counterpoise_is_refused_on_the_gpu_backends", &
+                               test_counterpoise_gpu_refused), &
                   new_unittest("interaction_energy_is_refused_where_it_is_not_defined", &
                                test_interaction_energy_support), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
@@ -92,6 +95,9 @@ contains
       write (unit, "(A)") "{"
       write (unit, "(A)") '  "schema": {"name": "roundtrip", "version": "1.0"},'
       write (unit, "(A)") '  "model": {"method": "hf", "basis": "cc-pvdz"},'
+      ! The CPU backend by name: on a cuEST build `auto` is the GPU, which
+      ! refuses counterpoise.
+      write (unit, "(A)") '  "backend": "libcint",'
       write (unit, "(A)") '  "driver": "Energy",'
       write (unit, "(A)") '  "keywords": {"fragmentation": {'
       write (unit, "(A)") '    "method": "MBE", "level": 2,'
@@ -204,11 +210,13 @@ contains
       type(driver_config_t) :: driver
       type(error_t) :: err
 
-      ! The supported combination, so a guard that refuses everything fails here
+      ! The supported combination, so a guard that refuses everything fails here.
+      ! The CPU backend by name: on a cuEST build `auto` is the GPU, refused.
       driver%counterpoise = "vmfc"
       driver%expansion_kind = "mbe"
       driver%allow_overlapping_fragments = .false.
       driver%method_config%method_type = METHOD_TYPE_HF
+      driver%method_config%backend = "libcint"
       call check_counterpoise_support(driver, err)
       call check(error,.not. err%has_error(), &
                  "vmfc under plain MBE with an ab initio method must be allowed: "// &
@@ -306,6 +314,7 @@ contains
       driver%expansion_kind = "mbe"
       driver%allow_overlapping_fragments = .false.
       driver%method_config%method_type = METHOD_TYPE_HF
+      driver%method_config%backend = "libcint"
 
       do s = 1, size(SCHEMES)
          driver%counterpoise = SCHEMES(s)
@@ -347,6 +356,66 @@ contains
       call check(error,.not. err%has_error(), &
                  "a gradient without counterpoise must still be allowed: "//err%get_message())
    end subroutine test_counterpoise_derivatives_refused
+
+   subroutine test_counterpoise_gpu_refused(error)
+      !! Counterpoise on terco or cuEST is refused before any fragment runs
+      !!
+      !! Neither GPU backend can place a ghost centre, so each would solve the
+      !! monomer in the dimer's basis with a nucleus on every ghost -- the whole
+      !! complex for terco, a highly charged one for cuEST -- and converge. A
+      !! valid-looking number that is not a counterpoise correction.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: driver
+      type(error_t) :: err
+      character(len=7), parameter :: GPU_NAMES(4) = ["terco  ", "cuest  ", "gpu    ", "TERCO  "]
+      character(len=7), parameter :: CPU_NAMES(2) = ["libcint", "cpu    "]
+      integer :: i
+
+      driver%counterpoise = "vmfc"
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .false.
+      driver%method_config%method_type = METHOD_TYPE_HF
+
+      do i = 1, size(GPU_NAMES)
+         driver%method_config%backend = GPU_NAMES(i)
+         call err%clear()
+         call check_counterpoise_support(driver, err)
+         call check(error, err%has_error(), &
+                    "counterpoise on backend '"//trim(GPU_NAMES(i))//"' must be refused")
+         if (allocated(error)) return
+         call check(error, index(err%get_message(), "GPU backends") > 0, &
+                    "the refusal should name the backend, not something else: "// &
+                    err%get_message())
+         if (allocated(error)) return
+      end do
+
+      do i = 1, size(CPU_NAMES)
+         driver%method_config%backend = CPU_NAMES(i)
+         call err%clear()
+         call check_counterpoise_support(driver, err)
+         call check(error,.not. err%has_error(), &
+                    "counterpoise on backend '"//trim(CPU_NAMES(i))//"' must be allowed: "// &
+                    err%get_message())
+         if (allocated(error)) return
+      end do
+
+      ! `auto` is the GPU exactly when this build resolves it to cuEST.
+      driver%method_config%backend = "auto"
+      call err%clear()
+      call check_counterpoise_support(driver, err)
+      call check(error, err%has_error() .eqv. cuest_backend_available(), &
+                 "counterpoise on 'auto' must be refused exactly when 'auto' is cuEST")
+      if (allocated(error)) return
+
+      ! A semi-empirical method is refused for its own reason first.
+      driver%method_config%method_type = METHOD_TYPE_GFN2
+      driver%method_config%backend = "terco"
+      call err%clear()
+      call check_counterpoise_support(driver, err)
+      call check(error, index(err%get_message(), "basis set to ghost") > 0, &
+                 "a semi-empirical method should be told about the method first: "// &
+                 err%get_message())
+   end subroutine test_counterpoise_gpu_refused
 
    subroutine must_refuse(error, err, label, scheme, expansion, overlapping, method_type)
       !! This combination must come back as an error rather than as a number
