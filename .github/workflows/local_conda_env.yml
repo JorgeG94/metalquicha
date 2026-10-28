@@ -29,6 +29,16 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
+# Open MPI's UCX transport probes every network device it finds. The hosted
+# runners now carry an Azure MANA NIC that UCX cannot open over `ud_verbs`
+# ("uct_iface_open(ud_verbs/mana_0:1) failed: Address not valid"), so every
+# multi-rank test died in MPI_Comm_dup before running a line of its own --
+# mqc_czt_fmo_mpi on every branch from 2026-10-28. One host needs nothing past
+# shared memory, so UCX is held to that and loopback TCP, for point-to-point,
+# one-sided and collectives alike.
+env:
+  UCX_TLS: self,sm,tcp
+
 jobs:
   cmake-build:
     name: CMake build (${{ matrix.name }})
