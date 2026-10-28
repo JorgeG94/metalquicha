@@ -29,15 +29,19 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
-# Open MPI's UCX transport probes every network device it finds. The hosted
-# runners now carry an Azure MANA NIC that UCX cannot open over `ud_verbs`
-# ("uct_iface_open(ud_verbs/mana_0:1) failed: Address not valid"), so every
-# multi-rank test died in MPI_Comm_dup before running a line of its own --
-# mqc_czt_fmo_mpi on every branch from 2026-10-28. One host needs nothing past
-# shared memory, so UCX is held to that and loopback TCP, for point-to-point,
-# one-sided and collectives alike.
+# Open MPI is kept off UCX. The hosted runners now carry an Azure MANA NIC
+# that the conda environment's UCX probes and cannot use: over `ud_verbs` it
+# fails to open the device, and held to shared memory with UCX_TLS its sends
+# between two ranks still fail (MPI_Isend returns -1). Either way every multi-rank
+# test died in MPI_Comm_dup before running a line of its own -- mqc_czt_fmo_mpi
+# on every branch from 2026-10-28. One host needs nothing past shared memory,
+# so point-to-point goes through ob1 over self, sm and tcp, and neither the
+# one-sided (osc) nor the collective (ucc) layer loads UCX either.
 env:
-  UCX_TLS: self,sm,tcp
+  OMPI_MCA_pml: ob1
+  OMPI_MCA_btl: self,sm,tcp
+  OMPI_MCA_osc: ^ucx
+  OMPI_MCA_coll_ucc_enable: "0"
 
 jobs:
   cmake-build:
