@@ -351,15 +351,21 @@ The first three would have returned a valid *uncorrected* energy, which is the
 number the deck asked this program not to produce, and nothing about it would
 have said so. That is why they are errors and not warnings.
 
-The GPU backends are refused for a different reason. They see the ghosted rows,
-and what they got wrong was the ghosts. terco and cuEST were both handed a
-nucleus on every ghost centre: terco solved each monomer in its dimer's basis as
-the whole dimer, and cuEST as a highly charged one, because its electron count
-left the ghosts out. Both converged and reported a number. Counterpoise with
-``"backend": "terco"``, ``"cuest"`` or ``"gpu"`` is therefore refused, and so is
-``"auto"`` on a build that resolves it to cuEST for Hartree-Fock and Kohn-Sham.
-Ask for ``"backend": "libcint"``, which zeroes a ghost's charge and keeps its
-basis.
+The cuEST backend is refused for a different reason. It sees the ghosted rows,
+and what it gets wrong is the ghosts: it places a nucleus on every ghost centre
+while its electron count leaves them out, so each monomer in its dimer's basis
+becomes a highly charged molecule that still converges. Counterpoise with
+``"backend": "cuest"`` or ``"gpu"`` is therefore refused, and so is ``"auto"`` on
+a build that resolves it to cuEST for Hartree-Fock and Kohn-Sham. Ask for
+``"backend": "libcint"`` or ``"terco"``.
+
+terco runs counterpoise: it is told each atom's charge and element separately
+(terco ABI 1.7 and later), so a ghost keeps its basis functions, grid points and
+auxiliary functions and loses its nucleus. One combination is refused there: a
+ghosted fragment under ``keywords.pcm``. The CPU backend gives a ghost centre a
+full cavity sphere, as PySCF does, and terco gives it none, so the two would
+return different corrections for the same deck. Use ``"libcint"`` for
+counterpoise in a continuum.
 
 
 Why not xTB
