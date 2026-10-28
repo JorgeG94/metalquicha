@@ -351,6 +351,16 @@ The first three would have returned a valid *uncorrected* energy, which is the
 number the deck asked this program not to produce, and nothing about it would
 have said so. That is why they are errors and not warnings.
 
+The GPU backends are refused for a different reason. They see the ghosted rows,
+and what they got wrong was the ghosts. terco and cuEST were both handed a
+nucleus on every ghost centre: terco solved each monomer in its dimer's basis as
+the whole dimer, and cuEST as a highly charged one, because its electron count
+left the ghosts out. Both converged and reported a number. Counterpoise with
+``"backend": "terco"``, ``"cuest"`` or ``"gpu"`` is therefore refused, and so is
+``"auto"`` on a build that resolves it to cuEST for Hartree-Fock and Kohn-Sham.
+Ask for ``"backend": "libcint"``, which zeroes a ghost's charge and keeps its
+basis.
+
 
 Why not xTB
 ^^^^^^^^^^^

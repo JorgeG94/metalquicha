@@ -1001,15 +1001,15 @@ contains
       logical :: on_gpu
 
       type(error_t) :: parse_error
-      integer :: kind
+      integer :: backend_kind
 
-      call parse_backend_name(method_config%backend, kind, parse_error)
+      call parse_backend_name(method_config%backend, backend_kind, parse_error)
       ! An unknown name is the reader's to refuse, not this check's.
       if (parse_error%has_error()) then
          on_gpu = .false.
          return
       end if
-      select case (kind)
+      select case (backend_kind)
       case (BACKEND_TERCO, BACKEND_CUEST)
          on_gpu = .true.
       case (BACKEND_AUTO)
