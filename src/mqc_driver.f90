@@ -24,7 +24,7 @@ module mqc_driver
    use mqc_fraglist, only: fraglist_t
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
                              gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, &
-                             sort_fragments_by_size, generate_mbe_term_list
+                             sort_fragments_by_size, generate_mbe_term_list, add_counterpoise_rows
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     check_system_geometry, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
@@ -560,12 +560,7 @@ contains
          ! Ahead of the branch, because each of the three expansions below
          ! ignores counterpoise in its own way and none of them says so.
          call validation_error%clear()
-         ! A supplied list is refused here too: it never passes through
-         ! `generate_mbe_term_list`, which is where the ghosted rows are built,
-         ! so counterpoise would be dropped without a word.
-         call check_counterpoise_support(config, validation_error, &
-                                         terms_supplied=present(supplied_terms) .and. &
-                                         present(n_supplied_terms))
+         call check_counterpoise_support(config, validation_error)
          if (validation_error%has_error()) then
             call logger%error(validation_error%get_message())
             call abort_comm(resources%mpi_comms%world_comm, 1)
@@ -611,6 +606,14 @@ contains
             if (validation_error%has_error()) then
                call logger%error("invalid fragment list: "//validation_error%get_message())
                call abort_comm(resources%mpi_comms%world_comm, 1)
+            end if
+
+            ! A screened list is closed under subsets -- just checked -- which is
+            ! what the ghosted rows need: each kept n-mer brings its own, and a
+            ! term the screen dropped brings none.
+            if (len_trim(config%counterpoise) > 0 .and. trim(config%counterpoise) /= "none") then
+               call add_counterpoise_rows(polymers, total_fragments, max_level, &
+                                          sys_geom%n_monomers, config%counterpoise)
             end if
 
             call logger%info("Using a supplied fragment list:")

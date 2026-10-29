@@ -861,6 +861,10 @@ there going quietly stale:
    arithmetic over the two breakdowns, so the sweep costs nothing once the
    reference exists. The second script is the covalent twin, where the
    partition cuts bonds and the term list means something different.
+   ``screening_quality.py --counterpoise vmfc`` (or ``ssfc``) corrects the
+   high level for basis-set superposition, the screened ``--verify`` run
+   included. ``Result.breakdown()`` leaves out the ghosted rows that exist
+   only to be subtracted, and ``Term.ghosts`` names a row's ghost monomers.
 
 ``charges.py``
    Mulliken against CHELPG, and where they disagree.

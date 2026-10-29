@@ -261,41 +261,6 @@ contains
                        METHOD_TYPE_HF)
       if (allocated(error)) return
 
-      ! A caller's own term list never gets the ghosted rows, so counterpoise
-      ! there would return an uncorrected energy without saying so.
-      call err%clear()
-      driver%counterpoise = "vmfc"
-      driver%expansion_kind = "mbe"
-      driver%allow_overlapping_fragments = .false.
-      driver%method_config%method_type = METHOD_TYPE_HF
-      call check_counterpoise_support(driver, err, terms_supplied=.true.)
-      call check(error, err%has_error(), &
-                 "counterpoise with a supplied fragment list must be refused, not ignored")
-      if (allocated(error)) return
-      call check(error, index(err%get_message(), "supplied fragment list") > 0, &
-                 "the refusal should say why: "//err%get_message())
-      if (allocated(error)) return
-
-      ! Neither half of the combination is a problem on its own.
-      call err%clear()
-      call check_counterpoise_support(driver, err, terms_supplied=.false.)
-      call check(error,.not. err%has_error(), &
-                 "vmfc over a generated list must still be allowed: "//err%get_message())
-      if (allocated(error)) return
-      driver%counterpoise = "none"
-      call check_counterpoise_support(driver, err, terms_supplied=.true.)
-      call check(error,.not. err%has_error(), &
-                 "a supplied fragment list without counterpoise must still be allowed: "// &
-                 err%get_message())
-      if (allocated(error)) return
-
-      driver%counterpoise = "ssfc"
-      call check_counterpoise_support(driver, err, terms_supplied=.true.)
-      call check(error, err%has_error(), &
-                 "ssfc with a supplied fragment list must be refused, not ignored")
-      if (allocated(error)) return
-      call check(error, index(err%get_message(), "supplied fragment list") > 0, &
-                 "the refusal should say why: "//err%get_message())
    end subroutine test_counterpoise_refusals
 
    subroutine test_counterpoise_derivatives_refused(error)
@@ -337,14 +302,6 @@ contains
                        "the refusal should name the derivative, not something else: "// &
                        err%get_message())
             if (allocated(error)) return
-
-            ! An optimization hands its steps a frozen list as a supplied one.
-            call err%clear()
-            call check_counterpoise_support(driver, err, terms_supplied=.true.)
-            call check(error, index(err%get_message(), "energies only") > 0, &
-                       "a derivative over a supplied list is a derivative refusal first: "// &
-                       err%get_message())
-            if (allocated(error)) return
          end do
       end do
 
@@ -352,7 +309,7 @@ contains
       driver%counterpoise = "none"
       driver%calc_type = CALC_TYPE_GRADIENT
       call err%clear()
-      call check_counterpoise_support(driver, err, terms_supplied=.true.)
+      call check_counterpoise_support(driver, err)
       call check(error,.not. err%has_error(), &
                  "a gradient without counterpoise must still be allowed: "//err%get_message())
    end subroutine test_counterpoise_derivatives_refused

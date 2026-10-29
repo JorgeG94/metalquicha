@@ -335,21 +335,25 @@ What it does not combine with
 -----------------------------
 
 Counterpoise is carried by the ghosted rows of the MBE term list that the driver
-generates. Four things do not read that list, and a deck combining them with
+generates. Three things do not read that list, and a deck combining them with
 ``"vmfc"`` or ``"ssfc"`` is refused before any work starts:
 
 * **GMBE** (``"method": "gmbe"``) builds its terms by
   inclusion--exclusion over overlapping primaries instead.
 * **FMO**, **EE-MBE** and **EFMO** (``"method"``) build their own term lists.
-* **A supplied term list** -- the Python and C interface, which hands the
-  program a list of its own -- is used as given, and the ghosted rows are built
-  only when the driver generates the list. Counterpoise there used to be
-  dropped silently, returning an uncorrected energy; it is refused.
 * **GFN1**, **GFN2** and **EFP** have no ghost centre to construct -- see below.
 
-The first three would have returned a valid *uncorrected* energy, which is the
+The first two would have returned a valid *uncorrected* energy, which is the
 number the deck asked this program not to produce, and nothing about it would
 have said so. That is why they are errors and not warnings.
+
+A **supplied term list** -- the Python and C interfaces' ``keep`` and
+``set_terms`` -- is not one of them. It names real monomers only, and once the
+driver has checked that it is closed under subsets, it builds the scheme's
+ghosted rows for exactly the terms it names: under VMFC each kept n-mer's
+subsets in its basis, under SSFC each kept term in the whole system's. A term
+the list dropped brings no rows with it. That is what lets an energy-screened
+expansion be counterpoise-corrected on the terms it keeps.
 
 The cuEST backend is refused for a different reason. It sees the ghosted rows,
 and what it gets wrong is the ghosts: it places a nucleus on every ghost centre

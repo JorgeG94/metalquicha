@@ -1231,10 +1231,8 @@ contains
       ! `nlevel` columns hold every row of a list without counterpoise. A
       ! counterpoise row can be wider -- a full-cluster-basis row ghosts the
       ! whole system -- and would be cut here, then rejected by
-      ! `validate_terms`. None arrives: the frozen list is passed on as a
-      ! supplied list, which `check_counterpoise_support` refuses with
-      ! counterpoise, and an optimization needs derivatives, which are refused
-      ! too.
+      ! `validate_terms`. None arrives: an optimization needs derivatives,
+      ! which `check_counterpoise_support` refuses under counterpoise.
       allocate (ctx_terms(n_generated, config%nlevel))
       ctx_terms = polymers(1:n_generated, 1:config%nlevel)
       ctx_n_terms = n_generated

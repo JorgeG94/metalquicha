@@ -865,7 +865,7 @@ contains
       end do
    end subroutine set_optimization_constraints
 
-   subroutine check_counterpoise_support(driver_config, error, terms_supplied)
+   subroutine check_counterpoise_support(driver_config, error)
       !! Refuse a counterpoise request the chosen expansion cannot honour
       !!
       !! Counterpoise is carried by ghosted rows in the MBE term list and by
@@ -892,14 +892,11 @@ contains
       !! too, ahead of the checks on the expansion, so that no fragment has run
       !! when it fires. Every refusal here applies to `vmfc` and `ssfc` alike.
       !!
-      !! A **supplied term list** is refused as well. It is used as the caller
-      !! wrote it, and the ghosted rows are built only by the driver's own list
-      !! generation, so counterpoise there would be ignored and an uncorrected
-      !! energy returned.
+      !! A **supplied term list** is not refused: the driver builds the
+      !! scheme's ghosted rows for the terms it names, once it has checked the
+      !! list is closed under subsets.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
-      logical, intent(in), optional :: terms_supplied
-         !! Whether the caller brought its own term list. Absent means not.
 
       character(len=:), allocatable :: scheme
 
@@ -913,9 +910,8 @@ contains
          return
       end if
 
-      ! Before the supplied-list check below: an optimization hands every step
-      ! a frozen list as a supplied one, and it should be told that it asked
-      ! for derivatives, which is the reason, rather than about the list.
+      ! First, so that it is the reason given: an optimization hands every
+      ! step a frozen list as a supplied one, and it asked for derivatives.
       ! `compute_mbe` refuses the same late, as a backstop; this fires before
       ! any fragment has run. `freeze_term_list` cuts a full-basis row to the
       ! level, and `validate_terms` and `check_subset_closure` would reject it,
@@ -950,19 +946,6 @@ contains
                         "expansion builds its own term list and would ignore the "// &
                         "request. Use the plain expansion, or drop counterpoise.")
          return
-      end if
-
-      if (present(terms_supplied)) then
-         if (terms_supplied) then
-            call error%set(ERROR_VALIDATION, &
-                           "counterpoise is not available with a supplied fragment "// &
-                           "list. A supplied list is used as given and the ghosted "// &
-                           "rows are built only when the driver generates the list, "// &
-                           "so the request would be ignored and an uncorrected energy "// &
-                           "returned. Let the driver generate the terms, or drop "// &
-                           "counterpoise.")
-            return
-         end if
       end if
 
       select case (driver_config%method_config%method_type)

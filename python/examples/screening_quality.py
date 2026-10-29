@@ -44,6 +44,12 @@ corrections over the dropped terms alone -- which is why a screen that discards
 terms worth millihartrees can still be accurate to a fraction of a kcal/mol, and
 why sorting the dropped terms by |correction| names the interactions the screen
 should have kept. TAU need not be one of --thresholds.
+
+--counterpoise vmfc|ssfc corrects the high level for basis-set superposition.
+The screen stays uncorrected -- GFN2 has no ghost atom to build -- so E(tau) is
+the corrected reference on the kept terms and the plain screen on the rest, and
+E(0) is the corrected reference exactly. --verify runs the screened list with the
+correction too: the driver builds the ghosted rows for the kept terms only.
 """
 
 import argparse
@@ -91,6 +97,15 @@ def parse_args(argv):
         "--verbosity",
         default="info",
         help="mqc log level; debug also logs which GPU each worker rank bound to",
+    )
+    p.add_argument(
+        "--counterpoise",
+        choices=("none", "vmfc", "ssfc"),
+        default="none",
+        help="counterpoise-correct the high level: vmfc or ssfc (default none). "
+        "The GFN2 screen is never corrected -- a ghost atom cannot be built "
+        "there -- so the screened total corrects only the terms it refines. "
+        "VMFC adds 2^n - 2 ghosted calculations per kept n-mer",
     )
     p.add_argument(
         "--high-df",
@@ -236,6 +251,11 @@ def main(args):
         high_kwargs["aux_basis"] = args.high_aux_basis
         if not args.high_df:
             print("  note: --high-aux-basis without --high-df does not fit anything")
+    if args.counterpoise != "none":
+        # The high level only. Its breakdown then holds each term's corrected
+        # delta, and leaves out the ghosted subsets that exist only to be
+        # subtracted, so it lines up term for term with the uncorrected screen.
+        high_kwargs["keywords"] = {"fragmentation": {"counterpoise": args.counterpoise}}
 
     def build(label, **kwargs):
         return mqc.MBE(
@@ -535,8 +555,11 @@ def term_dump(system, args, low_rows, high_rows, low_result, high_result):
 
 
 def describe(kwargs):
-    parts = [str(v) for k, v in kwargs.items() if not isinstance(v, bool)]
+    parts = [str(v) for k, v in kwargs.items() if not isinstance(v, (bool, dict))]
     parts += [k for k, v in kwargs.items() if v is True]
+    scheme = kwargs.get("keywords", {}).get("fragmentation", {}).get("counterpoise")
+    if scheme:
+        parts.append(f"{scheme}-corrected")
     return " ".join(parts)
 
 
