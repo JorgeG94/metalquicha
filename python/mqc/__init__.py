@@ -1174,7 +1174,7 @@ class MBE:
         # go through `keywords` -- and did, before this existed -- but solvation
         # changes the Hamiltonian, and things that do that are named arguments
         # here alongside `functional` and `basis`.
-        # "cuest"/"gpu", "libcint"/"cpu", or None for the build's default. A
+        # "cuest"/"gpu", "libcint"/"cpu", "terco", or None for the build's default. A
         # request that cannot be honoured is refused rather than substituted.
         self.backend = backend
         self.pcm = dict(pcm) if pcm else None
