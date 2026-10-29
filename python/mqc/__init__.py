@@ -981,18 +981,34 @@ class Result:
         """
         return f"output_{self.label}_fragments.csv" if self.wrote else None
 
-    def breakdown(self):
+    @property
+    def counterpoise(self):
+        """The counterpoise scheme the run used, ``"vmfc"`` or ``"ssfc"``, or None."""
+        document = self._output_document()
+        scheme = document.get("counterpoise") if document else None
+        return scheme if scheme and scheme != "none" else None
+
+    def breakdown(self, include_auxiliary=False):
         """The per-term rows: monomers, energy, n-body delta, distance.
 
         Distinct from `MBE.terms`, which is only the monomer indices -- these
         rows carry what the calculation found, and are what a threshold is
         applied to.
+
+        Under counterpoise the file also holds *auxiliary* rows: a subset
+        solved in a larger basis, which its parent subtracts and the total
+        never sums. Under VMFC that is every row with ghosts; under SSFC every
+        ghosted row with one real monomer. They are left out unless
+        `include_auxiliary` is set, so the rows that remain are the terms of
+        the expansion, one per set of real monomers, each with its corrected
+        delta. A row's ghosted monomers are in `Term.ghosts`.
         """
         path = self.breakdown_csv
         if not path or not os.path.exists(path):
             raise MQCError(
                 f"no breakdown file for '{self.label}'; run with write_to_file=True"
             )
+        scheme = self.counterpoise
         rows = []
         with open(path) as handle:
             header = next(handle).strip().split(",")
@@ -1010,9 +1026,13 @@ class Result:
                 if not line.strip():
                     continue
                 cells = line.split(",")
+                ghosts = tuple(-int(cells[i]) for i in mcols if int(cells[i]) < 0)
+                real = tuple(int(cells[i]) for i in mcols if int(cells[i]) > 0)
+                if not include_auxiliary and _is_auxiliary(real, ghosts, scheme):
+                    continue
                 rows.append(
                     Term(
-                        tuple(int(cells[i]) for i in mcols if int(cells[i]) > 0),
+                        real,
                         float(cells[ie]),
                         float(cells[idelta]),
                         float(cells[idist]) if idist is not None else None,
@@ -1020,6 +1040,7 @@ class Result:
                         _number(cells, ihomo),
                         _number(cells, ilumo),
                         _connected(cells[iconn]) if iconn is not None else None,
+                        ghosts,
                     )
                 )
         return rows
@@ -1042,11 +1063,14 @@ class Term:
     """One term of the expansion, as read back from a breakdown."""
 
     __slots__ = ("monomers", "energy", "delta", "distance", "converged", "homo",
-                 "lumo", "connected")
+                 "lumo", "connected", "ghosts")
 
     def __init__(self, monomers, energy, delta, distance, converged=None,
-                 homo=None, lumo=None, connected=None):
-        self.monomers = monomers  # 1-based, as the expansion counts them
+                 homo=None, lumo=None, connected=None, ghosts=()):
+        self.monomers = monomers  # 1-based, as the expansion counts them; real monomers only
+        self.ghosts = tuple(ghosts)
+            #: Monomers present as ghost centres -- basis functions, no
+            #: nucleus -- under counterpoise; empty otherwise. 1-based.
         self.energy = energy
         self.delta = delta  #: n-body contribution -- what a threshold is on
         self.distance = distance
@@ -1083,7 +1107,22 @@ class Term:
         return len(self.monomers)
 
     def __repr__(self):
-        return f"<Term {self.monomers} delta={self.delta:+.3e}>"
+        ghosts = f" ghosts={self.ghosts}" if self.ghosts else ""
+        return f"<Term {self.monomers}{ghosts} delta={self.delta:+.3e}>"
+
+
+def _is_auxiliary(real, ghosts, scheme):
+    """Whether a counterpoise row is subtracted by its parent and never summed.
+
+    The Python twin of `is_auxiliary_row`: under VMFC every ghosted row; under
+    SSFC a ghosted row with one real monomer, the one-body term being each
+    monomer in its own basis.
+    """
+    if not ghosts:
+        return False
+    if scheme == "ssfc":
+        return len(real) == 1
+    return True
 
 
 # ---------------------------------------------------------------------------

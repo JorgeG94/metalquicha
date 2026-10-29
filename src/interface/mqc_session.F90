@@ -277,9 +277,9 @@ contains
          return
       end if
 
-      ! A counterpoise setting the expansion cannot honour, a caller's own term
-      ! list among them, which is used as given and never gets its ghosted rows.
-      call check_counterpoise_support(driver, error, terms_supplied=n_terms > 0)
+      ! A counterpoise setting the expansion cannot honour. A caller's own term
+      ! list is not one: the driver builds its ghosted rows.
+      call check_counterpoise_support(driver, error)
       if (error%has_error()) return
 
       call validate_system(sys_geom,.not. config%unchecked_input, error, &
