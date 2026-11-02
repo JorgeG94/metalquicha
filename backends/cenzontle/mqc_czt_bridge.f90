@@ -2345,7 +2345,7 @@ contains
       ! prevents, where the hybrid's number came back against the double
       ! hybrid's energy, right in shape and wrong by a third.
       !
-      ! **The double hybrid is now on the list**, under the four conditions
+      ! **The double hybrid is now on the list**, under the five conditions
       ! below, and its perturbative term is added inside the block rather
       ! than left out of it. The conditions are the ones the second-derivative
       ! ladder cannot yet meet, and each falls through to the semi-numerical
@@ -2366,10 +2366,17 @@ contains
       !     core<->active resolution has been validated over a Hartree-Fock
       !     reference only, never against a Kohn-Sham operator carrying its
       !     kernel in the response
+      !   * a named auxiliary basis -- the perturbative term is then fitted
+      !     (`czt_ri_mp2_gradient` is what the gradient above calls, and the
+      !     reported PT2 energy is the fitted one), while the correlation block
+      !     here is `mp2_correlation_hessian`, which differentiates the exact
+      !     term. That is the derivative of a different energy, off by the
+      !     fitting error and with nothing in the output to say so
       dh_analytic = kohn_sham .and. xc%pt2_fraction /= 0.0_dp &
                     .and. .not. xc%any_mgga .and. .not. xc%range_separated &
                     .and. xc%nlc_b == 0.0_dp .and. xc%nlc_c == 0.0_dp &
-                    .and. .not. settings%freeze_core
+                    .and. .not. settings%freeze_core &
+                    .and. .not. settings%aux_basis_named
       if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
           .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
@@ -3109,6 +3116,8 @@ contains
          reason = "VV10 in a double hybrid"
       else if (double_hybrid .and. settings%freeze_core) then
          reason = "frozen core in a double hybrid"
+      else if (double_hybrid .and. settings%aux_basis_named) then
+         reason = "density-fitted correlation in a double hybrid"
       else
          reason = "not on the analytic list"
       end if
