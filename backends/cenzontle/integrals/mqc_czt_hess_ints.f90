@@ -15,12 +15,19 @@ module mqc_czt_hess_ints
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim, atom_ao_blocks, &
-                                eri_shell_table_t, eri_shell_table, eri_schwarz_collapse
+                                build_df_shell_table, max_block, eri_shell_table_t, eri_shell_table, eri_schwarz_collapse
    use mqc_czt_direct, only: schwarz_bounds, direct_stats_t, pair_degeneracy, pair_work_order, &
                              omp_threads
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
-   use libcint_fortran, only: LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
+   use cint_workspace, only: cint_ws
+   use cint_gen_int3c2e, only: int3c2e_ipip1_sph, int3c2e_ipip1_cart, &
+                               int3c2e_ipvip1_sph, int3c2e_ipvip1_cart, &
+                               int3c2e_ip1ip2_sph, int3c2e_ip1ip2_cart, &
+                               int3c2e_ipip2_sph, int3c2e_ipip2_cart, &
+                               int2c2e_ipip1_sph, int2c2e_ipip1_cart, &
+                               int2c2e_ip1ip2_sph, int2c2e_ip1ip2_cart
+   use libcint_fortran, only: LIBCINT_ATOM_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
                               LIBCINT_PTR_RANGE_OMEGA, libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
                               libcint_1e_ipipovlp_sph, libcint_1e_ipipovlp_cart, &
                               libcint_1e_ipovlpip_sph, libcint_1e_ipovlpip_cart, &
@@ -46,6 +53,7 @@ module mqc_czt_hess_ints
    public :: hess_2e_block
    public :: hess_2e_contract
    public :: hess_2e_skeleton_contract
+   public :: hess_3c2c_contract
    public :: eri_ip1_block
    public :: h1_contract
 
@@ -1145,6 +1153,305 @@ contains
 
       deallocate (atm_flat, bas_flat, sh_dim, sh_off, bounds, dsh, gsh, sa)
    end subroutine hess_2e_skeleton_contract
+
+   subroutine hess_3c2c_contract(orb, aux, hess, error, gamma3, gamma2)
+      !! The second derivatives of the fitting integrals, contracted as they are
+      !! computed
+      !!
+      !!     hess(a,b,A,B) += sum_{mu nu P} gamma3(mu,nu,P) d2(mu nu|P)/dR_{A,a} dR_{B,b}
+      !!                    + sum_{P Q}      gamma2(P,Q)    d2(P|Q)/dR_{A,a} dR_{B,b}
+      !!
+      !! Both terms are optional and independent. The densities arrive scaled --
+      !! the RI-MP2 Hessian passes `4 Gamma^P_{mu nu}` and `-2 gamma_PQ` -- so
+      !! nothing here knows what they are for. `gamma3` need not be symmetric in
+      !! `mu` and `nu`: a correlation density is `C_occ (.) C_vir^T`, and only
+      !! its symmetric part can matter to a symmetric integral.
+      !!
+      !! **One shell triple at a time, and no larger.** Four kernels are called
+      !! per `(ish, jsh, ksh)` and each fills a buffer of nine components; the
+      !! contraction is done there and the buffers are overwritten by the next
+      !! triple. Nothing of size `nao^2 * naux` is allocated, which is the
+      !! reason this is not `three_centre_deriv` followed by a dot product.
+      !!
+      !! **Which array is which.** Every ordered pair of centres of `(mu nu|P)`
+      !! is one libfint array, and the loop over *all* ordered `(ish, jsh)` is
+      !! what supplies the ones with `nu` differentiated:
+      !!
+      !!     ipip1   both derivatives on shell i       density  g(ij) + g(ji)
+      !!     ipvip1  one on i, one on j                density  g(ij)
+      !!     ip1ip2  one on i, one on the aux shell    density  g(ij) + g(ji)
+      !!     ipip2   both on the aux shell             density  g(ij)
+      !!
+      !! The `g(ji)` terms are the blocks a `(jsh, ish)` triple would supply
+      !! with `nu` in the first slot. A cross block `T(x,y)` between centres on
+      !! atoms `A` and `B` lands at `(x,y,A,B)` **and** at `(y,x,B,A)`: the two
+      !! orders of one pair of derivatives, which are equal. The component
+      !! index is `[first-named derivative, second-named derivative]`, `x*3+y`,
+      !! as in `hess_1e_block`. A derivative with respect to an electron
+      !! coordinate is minus the nuclear one, so a pair of them is plus.
+      !!
+      !! The two-centre term is the same bookkeeping with `ipip1` and `ip1ip2`
+      !! over auxiliary shell pairs.
+      !!
+      !! Not screened: `three_centre_deriv` does not screen either, and an
+      !! estimate here would have to be valid for an arbitrary density.
+      !! `libfint`'s `libcint_fortran` does not export these five kernels, so
+      !! they are taken from the library's own `cint_gen_int3c2e`, with a
+      !! workspace of our own per thread.
+      type(czt_molecule_t), intent(in) :: orb, aux
+      real(dp), intent(inout) :: hess(:, :, :, :)   !! (3, 3, natm, natm), accumulated
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: gamma3(:, :, :)   !! (nao, nao, naux)
+      real(dp), intent(in), optional :: gamma2(:, :)      !! (naux, naux)
+
+      type(cint_ws) :: ws
+      real(dp), allocatable :: b_ii(:), b_ij(:), b_ik(:), b_kk(:)
+      real(dp), allocatable :: gu(:), gs(:), hloc(:, :, :, :)
+      real(dp), allocatable, target :: env_df(:), env_aux(:)
+      integer, allocatable :: bas_df(:, :), atm_flat(:), bas_flat(:), aux_atm(:), aux_bas(:)
+      integer, allocatable :: orb_atom(:), aux_atom(:)
+      integer :: dims(0:3), shls(0:3)
+      integer :: ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, comp, mx, n3, idx
+      integer :: dummy, nbas_orb, nbas_aux, natm, a, b, a1, a2, a3
+      logical :: have
+      real(dp) :: t_ii, t_ij, t_ik, t_kk
+
+      if (error%has_error()) return
+      natm = orb%natm
+      nbas_orb = orb%nbas
+      nbas_aux = aux%nbas
+
+      if (size(hess, 1) /= 3 .or. size(hess, 2) /= 3 .or. size(hess, 3) /= natm &
+          .or. size(hess, 4) /= natm .or. aux%natm /= natm) then
+         call error%set(ERROR_VALIDATION, "the three-index second-derivative "// &
+                        "contraction was handed a Hessian that is not (3, 3, natm, natm).")
+         return
+      end if
+      if (orb%cartesian .neqv. aux%cartesian) then
+         call error%set(ERROR_VALIDATION, "the orbital and auxiliary bases must be in "// &
+                        "the same angular form: libcint builds all three centres of a "// &
+                        "fitting integral in one.")
+         return
+      end if
+      if (present(gamma3)) then
+         if (size(gamma3, 1) /= orb%nao .or. size(gamma3, 2) /= orb%nao &
+             .or. size(gamma3, 3) /= aux%nao) then
+            call error%set(ERROR_VALIDATION, "gamma3 is not (nao, nao, naux).")
+            return
+         end if
+      end if
+      if (present(gamma2)) then
+         if (size(gamma2, 1) /= aux%nao .or. size(gamma2, 2) /= aux%nao) then
+            call error%set(ERROR_VALIDATION, "gamma2 is not (naux, naux).")
+            return
+         end if
+      end if
+
+      allocate (orb_atom(nbas_orb), aux_atom(nbas_aux))
+      do ish = 1, nbas_orb
+         orb_atom(ish) = orb%bas(LIBCINT_ATOM_OF, ish) + 1
+      end do
+      do ish = 1, nbas_aux
+         aux_atom(ish) = aux%bas(LIBCINT_ATOM_OF, ish) + 1
+      end do
+      mx = max(max_block(orb), max_block(aux))
+
+      if (present(gamma3)) then
+         call build_df_shell_table(orb, aux, bas_df, env_df, dummy)
+         atm_flat = reshape(orb%atm, [size(orb%atm)])
+         bas_flat = reshape(bas_df, [size(bas_df)])
+
+         !$omp parallel default(none) &
+         !$omp    shared(orb, aux, gamma3, hess, atm_flat, bas_flat, env_df, dummy, mx, &
+         !$omp           nbas_orb, nbas_aux, natm, orb_atom, aux_atom) &
+         !$omp    private(ws, b_ii, b_ij, b_ik, b_kk, gu, gs, hloc, dims, shls, ish, jsh, ksh, &
+         !$omp            di, dj, dk, io, jo, ko, i, j, k, comp, n3, idx, a, b, a1, a2, a3, &
+         !$omp            have, t_ii, t_ij, t_ik, t_kk)
+         allocate (b_ii(mx**3*N_COMPONENTS), b_ij(mx**3*N_COMPONENTS), &
+                   b_ik(mx**3*N_COMPONENTS), b_kk(mx**3*N_COMPONENTS))
+         allocate (gu(mx**3), gs(mx**3), hloc(3, 3, natm, natm))
+         hloc = 0.0_dp
+         !$omp do collapse(2) schedule(dynamic)
+         do ish = 1, nbas_orb
+            do jsh = 1, nbas_orb
+               di = orb%shell_offset(ish + 1) - orb%shell_offset(ish)
+               dj = orb%shell_offset(jsh + 1) - orb%shell_offset(jsh)
+               io = orb%shell_offset(ish)
+               jo = orb%shell_offset(jsh)
+               a1 = orb_atom(ish)
+               a2 = orb_atom(jsh)
+               do ksh = 1, nbas_aux
+                  dk = aux%shell_offset(ksh + 1) - aux%shell_offset(ksh)
+                  ko = aux%shell_offset(ksh)
+                  a3 = aux_atom(ksh)
+                  n3 = di*dj*dk
+                  do k = 1, dk
+                     do j = 1, dj
+                        do i = 1, di
+                           idx = i + di*(j - 1 + dj*(k - 1))
+                           gu(idx) = gamma3(io + i, jo + j, ko + k)
+                           gs(idx) = gu(idx) + gamma3(jo + j, io + i, ko + k)
+                        end do
+                     end do
+                  end do
+                  shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, 0]
+                  dims = [di, dj, dk, 1]
+
+                  if (orb%cartesian) then
+                     have = int3c2e_ipip1_cart(b_ii, dims, shls, atm_flat, natm, bas_flat, &
+                                               dummy, env_df, ws)
+                  else
+                     have = int3c2e_ipip1_sph(b_ii, dims, shls, atm_flat, natm, bas_flat, &
+                                              dummy, env_df, ws)
+                  end if
+                  if (have) then
+                     do comp = 1, N_COMPONENTS
+                        a = (comp - 1)/3 + 1
+                        b = comp - 3*(a - 1)
+                        t_ii = dot_product(gs(1:n3), b_ii(n3*(comp - 1) + 1:n3*comp))
+                        hloc(a, b, a1, a1) = hloc(a, b, a1, a1) + t_ii
+                     end do
+                  end if
+
+                  if (orb%cartesian) then
+                     have = int3c2e_ipvip1_cart(b_ij, dims, shls, atm_flat, natm, bas_flat, &
+                                                dummy, env_df, ws)
+                  else
+                     have = int3c2e_ipvip1_sph(b_ij, dims, shls, atm_flat, natm, bas_flat, &
+                                               dummy, env_df, ws)
+                  end if
+                  if (have) then
+                     do comp = 1, N_COMPONENTS
+                        a = (comp - 1)/3 + 1
+                        b = comp - 3*(a - 1)
+                        t_ij = dot_product(gu(1:n3), b_ij(n3*(comp - 1) + 1:n3*comp))
+                        hloc(a, b, a1, a2) = hloc(a, b, a1, a2) + t_ij
+                        hloc(b, a, a2, a1) = hloc(b, a, a2, a1) + t_ij
+                     end do
+                  end if
+
+                  if (orb%cartesian) then
+                     have = int3c2e_ip1ip2_cart(b_ik, dims, shls, atm_flat, natm, bas_flat, &
+                                                dummy, env_df, ws)
+                  else
+                     have = int3c2e_ip1ip2_sph(b_ik, dims, shls, atm_flat, natm, bas_flat, &
+                                               dummy, env_df, ws)
+                  end if
+                  if (have) then
+                     do comp = 1, N_COMPONENTS
+                        a = (comp - 1)/3 + 1
+                        b = comp - 3*(a - 1)
+                        t_ik = dot_product(gs(1:n3), b_ik(n3*(comp - 1) + 1:n3*comp))
+                        hloc(a, b, a1, a3) = hloc(a, b, a1, a3) + t_ik
+                        hloc(b, a, a3, a1) = hloc(b, a, a3, a1) + t_ik
+                     end do
+                  end if
+
+                  if (orb%cartesian) then
+                     have = int3c2e_ipip2_cart(b_kk, dims, shls, atm_flat, natm, bas_flat, &
+                                               dummy, env_df, ws)
+                  else
+                     have = int3c2e_ipip2_sph(b_kk, dims, shls, atm_flat, natm, bas_flat, &
+                                              dummy, env_df, ws)
+                  end if
+                  if (have) then
+                     do comp = 1, N_COMPONENTS
+                        a = (comp - 1)/3 + 1
+                        b = comp - 3*(a - 1)
+                        t_kk = dot_product(gu(1:n3), b_kk(n3*(comp - 1) + 1:n3*comp))
+                        hloc(a, b, a3, a3) = hloc(a, b, a3, a3) + t_kk
+                     end do
+                  end if
+               end do
+            end do
+         end do
+         !$omp end do
+         !$omp critical
+         hess = hess + hloc
+         !$omp end critical
+         deallocate (b_ii, b_ij, b_ik, b_kk, gu, gs, hloc)
+         !$omp end parallel
+         deallocate (bas_df, env_df, atm_flat, bas_flat)
+      end if
+
+      if (present(gamma2)) then
+         aux_atm = reshape(aux%atm, [size(aux%atm)])
+         aux_bas = reshape(aux%bas, [size(aux%bas)])
+         allocate (env_aux(0:size(aux%env) - 1), source=aux%env)
+
+         !$omp parallel default(none) &
+         !$omp    shared(aux, gamma2, hess, aux_atm, aux_bas, env_aux, mx, nbas_aux, natm, &
+         !$omp           aux_atom) &
+         !$omp    private(ws, b_ii, b_ij, gu, gs, hloc, dims, shls, ish, jsh, di, dj, io, jo, &
+         !$omp            i, j, comp, n3, idx, a, b, a1, a2, have, t_ii, t_ij)
+         allocate (b_ii(mx**2*N_COMPONENTS), b_ij(mx**2*N_COMPONENTS))
+         allocate (gu(mx**2), gs(mx**2), hloc(3, 3, natm, natm))
+         hloc = 0.0_dp
+         !$omp do collapse(2) schedule(dynamic)
+         do ish = 1, nbas_aux
+            do jsh = 1, nbas_aux
+               di = aux%shell_offset(ish + 1) - aux%shell_offset(ish)
+               dj = aux%shell_offset(jsh + 1) - aux%shell_offset(jsh)
+               io = aux%shell_offset(ish)
+               jo = aux%shell_offset(jsh)
+               a1 = aux_atom(ish)
+               a2 = aux_atom(jsh)
+               n3 = di*dj
+               do j = 1, dj
+                  do i = 1, di
+                     idx = i + di*(j - 1)
+                     gu(idx) = gamma2(io + i, jo + j)
+                     gs(idx) = gu(idx) + gamma2(jo + j, io + i)
+                  end do
+               end do
+               shls = [ish - 1, jsh - 1, 0, 0]
+               dims = [di, dj, 1, 1]
+
+               if (aux%cartesian) then
+                  have = int2c2e_ipip1_cart(b_ii, dims, shls, aux_atm, natm, aux_bas, &
+                                            nbas_aux, env_aux, ws)
+               else
+                  have = int2c2e_ipip1_sph(b_ii, dims, shls, aux_atm, natm, aux_bas, &
+                                           nbas_aux, env_aux, ws)
+               end if
+               if (have) then
+                  do comp = 1, N_COMPONENTS
+                     a = (comp - 1)/3 + 1
+                     b = comp - 3*(a - 1)
+                     t_ii = dot_product(gs(1:n3), b_ii(n3*(comp - 1) + 1:n3*comp))
+                     hloc(a, b, a1, a1) = hloc(a, b, a1, a1) + t_ii
+                  end do
+               end if
+
+               if (aux%cartesian) then
+                  have = int2c2e_ip1ip2_cart(b_ij, dims, shls, aux_atm, natm, aux_bas, &
+                                             nbas_aux, env_aux, ws)
+               else
+                  have = int2c2e_ip1ip2_sph(b_ij, dims, shls, aux_atm, natm, aux_bas, &
+                                            nbas_aux, env_aux, ws)
+               end if
+               if (have) then
+                  do comp = 1, N_COMPONENTS
+                     a = (comp - 1)/3 + 1
+                     b = comp - 3*(a - 1)
+                     t_ij = dot_product(gu(1:n3), b_ij(n3*(comp - 1) + 1:n3*comp))
+                     hloc(a, b, a1, a2) = hloc(a, b, a1, a2) + t_ij
+                     hloc(b, a, a2, a1) = hloc(b, a, a2, a1) + t_ij
+                  end do
+               end if
+            end do
+         end do
+         !$omp end do
+         !$omp critical
+         hess = hess + hloc
+         !$omp end critical
+         deallocate (b_ii, b_ij, gu, gs, hloc)
+         !$omp end parallel
+         deallocate (aux_atm, aux_bas, env_aux)
+      end if
+
+      deallocate (orb_atom, aux_atom)
+   end subroutine hess_3c2c_contract
 
    subroutine h1_contract(mol, density, h1, error, screen_tol, k_scale, &
                           j_scale, omega, stats, memory_budget, bounds)
