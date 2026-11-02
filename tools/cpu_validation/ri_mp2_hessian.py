@@ -1514,6 +1514,10 @@ CASES = [
      "cc-pvtz-rifit", 1),
     ("HCN / sto-3g / cc-pvdz-rifit, frozen core 2 (degenerate pi)", HCN,
      "sto-3g", "cc-pvdz-rifit", 2),
+    # d shells on the orbital side, up to g on the fitting side, all spherical:
+    # cc-pvdz.json and cc-pvdz-rifit.json both say gto_spherical for l >= 2.
+    ("H2O / cc-pvdz / cc-pvdz-rifit, all electron (d shells)", WATER, "cc-pvdz",
+     "cc-pvdz-rifit", 0),
 ]
 
 
