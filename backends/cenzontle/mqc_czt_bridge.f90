@@ -2367,11 +2367,12 @@ contains
       !     reference only, never against a Kohn-Sham operator carrying its
       !     kernel in the response
       !   * a named auxiliary basis -- the perturbative term is then fitted
-      !     (`czt_ri_mp2_gradient` is what the gradient above calls, and the
-      !     reported PT2 energy is the fitted one), while the correlation block
-      !     here is `mp2_correlation_hessian`, which differentiates the exact
-      !     term. That is the derivative of a different energy, off by the
-      !     fitting error and with nothing in the output to say so
+      !     (`czt_ri_mp2_gradient` is what the double hybrid's gradient
+      !     branch calls, and the reported PT2 energy is the fitted one),
+      !     while the correlation block here is `mp2_correlation_hessian`,
+      !     which differentiates the exact term. That is the derivative of
+      !     a different energy, off by the fitting error and with nothing
+      !     in the output to say so
       dh_analytic = kohn_sham .and. xc%pt2_fraction /= 0.0_dp &
                     .and. .not. xc%any_mgga .and. .not. xc%range_separated &
                     .and. xc%nlc_b == 0.0_dp .and. xc%nlc_c == 0.0_dp &
