@@ -2800,8 +2800,9 @@ HESSIAN_DH_RI_CASES = [
 ]
 
 #: Held against the prototype's block plus PySCF's RHF Hessian, both analytic.
-#: Measured worst element: see `ri_hessian_entries`.
-HESSIAN_RI_MP2_TOLERANCE = 1.0e-6
+#: Measured worst element 7.7e-9 (6-31G) and 3.7e-8 (frozen-core cc-pVDZ) at the
+#: deck's default response tolerance of 1e-9, which is what sets them.
+HESSIAN_RI_MP2_TOLERANCE = 5.0e-7
 
 #: Held against second differences of a fitted double hybrid on a grid pinned
 #: at the reference geometry. Set by that reference and not by the fitted block:
