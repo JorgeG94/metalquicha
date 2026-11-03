@@ -1473,6 +1473,7 @@ def ri_mp2_correlation_hessian(atoms, basis, auxbasis, nf=0, h=1e-3):
     lean_skeletons(r, d1)
     p_ref = pass1(r, h, parts=("ref",))
     second, cross = fitted_pass1_analytic(r, d1)
+    r.pass1_ref, r.pass1_fit = p_ref, second + cross
     hess = lean_correlation_hessian(r, d1, p_ref + second + cross)
     return hess, r
 
@@ -1624,12 +1625,61 @@ def cost_report(r):
           "per atom.)")
 
 
+WATER_LOW = [["O", 0.05, 0.02, -0.03], ["H", 0.0, -1.4308, 1.1078],
+             ["H", 0.04, 1.4308, 1.1078]]
+DUMP_CASES = [
+    ("water_631g_all_electron", WATER_LOW, "6-31g", "cc-pvdz-rifit", 0),
+    ("water_631g_frozen_core_1", WATER_LOW, "6-31g", "cc-pvtz-rifit", 1),
+    ("water_ccpvdz_d_shells", WATER_LOW, "cc-pvdz", "cc-pvdz-rifit", 0),
+]
+
+
+def dump_reference(path):
+    """Numbers for the Fortran tests: the correlation block and its parts.
+
+    ``pass1_reference`` and ``pass1_fitted`` are gauge-free; ``orbital`` and
+    ``response`` are bilinear in one orbital set, so they are too, for
+    non-degenerate orbitals. All are (3N, 3N), row-major, row X and column Y.
+    Coordinates are Bohr.
+    """
+    import json
+    out = {"_comment": [
+        "Reference RI-MP2 correlation Hessian (exact RHF reference, fitted",
+        "correlation, optional frozen core) from tools/cpu_validation/",
+        "ri_mp2_hessian.py. hessian = pass1_reference + pass1_fitted + orbital",
+        "+ response; X = 3*atom + component is the row, Y the column.",
+        "Regenerate: python3 tools/cpu_validation/ri_mp2_hessian.py --dump <path>"],
+        "cases": []}
+    for name, atoms, basis, aux, nf in DUMP_CASES:
+        hess, r = ri_mp2_correlation_hessian(atoms, basis, aux, nf)
+        n3 = 3 * len(atoms)
+        out["cases"].append({
+            "name": name,
+            "symbols": [a[0] for a in atoms],
+            "geometry_bohr": [a[1:] for a in atoms],
+            "basis": basis, "aux_basis": aux, "n_frozen": nf, "n3": n3,
+            "hessian": hess.tolist(),
+            "pass1_reference": r.pass1_ref.tolist(),
+            "pass1_fitted": r.pass1_fit.tolist(),
+            "orbital": r.lean_parts["orb"].tolist(),
+            "response": r.lean_parts["resp"].tolist(),
+        })
+    with open(path, "w") as fh:
+        json.dump(out, fh, indent=1)
+
+
 def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--cases", default="",
                     help="comma-separated indices into the case list (default all)")
+    ap.add_argument("--dump", default="",
+                    help="write the reference numbers the Fortran tests read, "
+                    "and nothing else")
     args = ap.parse_args(argv)
+    if args.dump:
+        dump_reference(args.dump)
+        return 0
     chosen = [int(i) for i in args.cases.split(",") if i != ""] or range(len(CASES))
     results = []
     last = None

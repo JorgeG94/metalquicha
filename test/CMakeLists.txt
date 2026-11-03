@@ -151,6 +151,11 @@ if(MQC_ENABLE_CZT)
   # derivatives the RI-MP2 gradient runs on.
   addtest(mqc_hess_ints_df)
   target_link_libraries(test_mqc_hess_ints_df PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The RI-MP2 correlation Hessian: against differences of the RI-MP2 gradient
+  # and against the numpy prototype's numbers, frozen core and d shells
+  # included.
+  addtest(mqc_ri_mp2_hessian)
+  target_link_libraries(test_mqc_ri_mp2_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
   # The exchange-correlation Hessian, against differences of its own gradient.
   # The test skips itself when the build has no libxc, so it is registered
   # beside its neighbours rather than behind another condition.
