@@ -660,7 +660,7 @@ contains
    end subroutine eri_ip1_block
 
    subroutine hess_2e_contract(mol, density, hess, error, screen_tol, k_scale, &
-                               j_scale, omega, stats, bounds)
+                               j_scale, omega, stats, bounds, density2)
       !! The two-electron second derivatives, contracted as they are computed
       !!
       !! Same numbers `hess_2e_block` produces and never the same array. Each
@@ -709,6 +709,12 @@ contains
          !! to the derivative kernels. A computed quartet is six kernel calls.
       real(dp), intent(in), optional :: bounds(:, :)
          !! From `schwarz_bounds`, when the caller already has them.
+      real(dp), intent(in), optional :: density2(:, :)
+         !! A second density. Present, the quartets are weighted by the
+         !! polarised form of the same quadratic one, the cross terms of
+         !! `E(D + D2) - E(D) - E(D2)`, so the result is the second derivative of
+         !! `D . (J - k K/2)[D2]` and `density` is the left factor. Symmetric in
+         !! the two. Absent, every statement below is what it always was.
       real(dp), allocatable :: buf_ii(:), buf_jj(:), buf_kk(:)
       real(dp), allocatable :: buf_ij(:), buf_ik(:), buf_jk(:)
       real(dp), allocatable :: hloc(:, :, :, :)
@@ -808,6 +814,13 @@ contains
          do jsh = 1, mol%nbas
             dsh(ish, jsh) = maxval(abs(density(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
                                                sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh))))
+            ! The bound multiplies two density elements, so the larger of the
+            ! two densities' elements bounds a product of one from each.
+            if (present(density2)) then
+               dsh(ish, jsh) = max(dsh(ish, jsh), &
+                                   maxval(abs(density2(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
+                                                       sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh)))))
+            end if
          end do
          sa(ish) = sqrt(maxval(mol%env(mol%bas(LIBCINT_PTR_EXP, ish) + 1: &
                                        mol%bas(LIBCINT_PTR_EXP, ish) &
@@ -818,7 +831,7 @@ contains
       ! `9*natm^2` doubles, so a private copy costs nothing where an atomic
       ! update per quartet would cost everything.
       !$omp parallel default(none) &
-      !$omp shared(kx, jx, env_use, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
+      !$omp shared(kx, jx, env_use, mol, density, density2, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
       !$omp        mx, natm, npair, pair_i, pair_j, order, qb, dsh, sa, tol) &
       !$omp private(buf_ii, buf_jj, buf_kk, buf_ij, buf_ik, buf_jk, hloc, t, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
@@ -896,10 +909,20 @@ contains
                      at(2) = owner(jo + j)
                      do i = 1, di
                         at(1) = owner(io + i)
-                        gam = jx*0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
-                              - kx*0.125_dp &
-                              *(density(io + i, lo + l)*density(ko + k, jo + j) &
-                                + density(io + i, ko + k)*density(jo + j, lo + l))
+                        if (present(density2)) then
+                           gam = jx*0.5_dp*(density(io + i, jo + j)*density2(ko + k, lo + l) &
+                                            + density2(io + i, jo + j)*density(ko + k, lo + l)) &
+                                 - kx*0.125_dp &
+                                 *(density(io + i, lo + l)*density2(ko + k, jo + j) &
+                                   + density2(io + i, lo + l)*density(ko + k, jo + j) &
+                                   + density(io + i, ko + k)*density2(jo + j, lo + l) &
+                                   + density2(io + i, ko + k)*density(jo + j, lo + l))
+                        else
+                           gam = jx*0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
+                                 - kx*0.125_dp &
+                                 *(density(io + i, lo + l)*density(ko + k, jo + j) &
+                                   + density(io + i, ko + k)*density(jo + j, lo + l))
+                        end if
                         if (gam == 0.0_dp) cycle
                         w = deg*gam
 
