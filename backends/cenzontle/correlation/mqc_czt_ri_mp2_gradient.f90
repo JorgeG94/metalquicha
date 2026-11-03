@@ -55,7 +55,7 @@ contains
    subroutine czt_ri_mp2_gradient(mol, aux, coeff, orbital_energies, n_occ, &
                                   gradient, error, n_frozen, force_direct, &
                                   fitted_reference, xc, scf_density, pt2_scale, &
-                                  fit_response)
+                                  fit_response, fixed_grid)
       !! dE(RI-MP2)/dR for a closed-shell reference, in Hartree/Bohr
       type(czt_molecule_t), intent(in) :: mol
       type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
@@ -112,6 +112,13 @@ contains
          !! moves the result by the fitting error, below what the RI-MP2 energy
          !! itself carries. `.false.` is for the tests that hold this gradient
          !! to a machine-precision exact reference.
+
+      logical, intent(in), optional :: fixed_grid
+         !! Leave the quadrature grid where it is, so the only motion this
+         !! differentiates is the density's. Defaults to `.false.`, the physical
+         !! gradient a deck wants; `.true.` is the gradient a double hybrid's
+         !! Hessian, which holds the grid fixed, can be differenced against, as in
+         !! `czt_mp2_gradient`.
 
       real(dp), allocatable :: bmat(:, :), bia_raw(:, :, :), metric(:, :), jm12(:, :)
       real(dp), allocatable :: ovov(:, :), xm(:, :)
@@ -526,7 +533,8 @@ contains
       ! the relaxed correlation density. No counterpart in the Hartree-Fock
       ! assembly, whose reference operator is entirely two-electron.
       if (dh) then
-         call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error)
+         call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error, &
+                                    fixed_grid=fixed_grid)
          if (error%has_error()) return
       end if
 

@@ -47,6 +47,10 @@ module mqc_czt_ri_mp2_hessian
    use mqc_czt_cphf, only: cphf_solve
    use mqc_czt_response_product, only: response_mean_field
    use mqc_czt_gradient, only: two_centre_deriv
+   use mqc_czt_xc, only: xc_context_t
+   use mqc_czt_xc_hessian, only: xc_potential_deriv, xc_potential_hessian
+   use mqc_czt_mp2_hessian, only: ks_pair_kernel, ks_kernel_deriv_stack, ks_dl_pair_kernel
+   use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
    use mqc_czt_hess_ints, only: hess_1e_block, hess_rinv_block, hess_2e_contract, &
                                 hess_3c2c_contract, h1_contract, &
                                 HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
@@ -87,6 +91,12 @@ module mqc_czt_ri_mp2_hessian
       type(czt_molecule_t), pointer :: aux => null()
       integer :: nao = 0, n = 0, no = 0, nf = 0, na = 0, nv = 0, np = 0
       integer :: natm = 0, n3 = 0, batch = 1
+      logical :: dh = .false.
+         !! A double hybrid's perturbative term over a Kohn-Sham reference
+      real(dp) :: kf = 1.0_dp
+         !! Exact-exchange fraction of the reference's operator
+      type(xc_context_t), pointer :: xc => null()
+      real(dp), allocatable :: scf_density(:, :)
       real(dp), allocatable :: c(:, :), eps(:)
       real(dp), allocatable :: bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: jinv(:, :)
@@ -109,7 +119,8 @@ contains
 
    subroutine ri_mp2_correlation_hessian(mol, aux, coeff, orbital_energies, n_occ, &
                                          hess_corr, error, n_frozen, tol, batch, &
-                                         atom_batch, parts)
+                                         atom_batch, parts, xc, scf_density, pt2_scale, &
+                                         dipole_derivatives)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -133,8 +144,28 @@ contains
          !! Absent, sized from `memory_budget`; present, taken as given, which is
          !! how a test runs several batches on a molecule that fits in one.
       type(ri_hessian_parts_t), intent(out), optional :: parts
+      type(xc_context_t), intent(inout), optional, target :: xc
+         !! The functional of a Kohn-Sham reference. Present, this is a *double
+         !! hybrid's* perturbative term: the correlation block alone, over that
+         !! reference, with exact exchange at the functional's fraction and the
+         !! exchange-correlation kernel in every response, scaled once by
+         !! `pt2_scale`. The reference's own Hessian is `ks_hessian`'s. LDA and GGA
+         !! only; no frozen core.
+      real(dp), intent(in), optional :: scf_density(:, :)
+         !! The converged reference density, where the kernel is evaluated.
+         !! Required with `xc`.
+      real(dp), intent(in), optional :: pt2_scale
+         !! The functional's PT2 coefficient, applied once to the finished block.
+         !! The Z-vector solves are linear, so scaling inputs as well would count
+         !! it twice.
+      real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
+         !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3N)`,
+         !! scaled by `pt2_scale`. Requires `xc`: over Hartree-Fock an MP2 dipole
+         !! derivative is a different quantity.
 
       type(ri_state_t) :: st
+      real(dp) :: cscale
+      real(dp), allocatable :: ddip(:, :)
       real(dp), allocatable :: h1(:, :, :, :), s1(:, :, :, :), mo1(:, :, :, :)
       real(dp), allocatable :: fx(:, :, :), sx(:, :, :)
       real(dp), allocatable :: pass1_ref(:, :, :, :), pass1_fit(:, :, :, :)
@@ -150,7 +181,17 @@ contains
       use_batch = 12
       if (present(batch)) use_batch = max(1, batch)
 
-      call setup_state(st, mol, aux, coeff, orbital_energies, n_occ, n_frozen, use_batch, error)
+      cscale = 1.0_dp
+      if (present(pt2_scale)) cscale = pt2_scale
+      if (present(dipole_derivatives) .and. .not. present(xc)) then
+         call error%set(ERROR_VALIDATION, "the RI-MP2 Hessian's dipole derivative was "// &
+                        "asked for without a functional: over Hartree-Fock an MP2 dipole "// &
+                        "derivative is a different quantity, and this returns the double "// &
+                        "hybrid's or nothing.")
+         return
+      end if
+      call setup_state(st, mol, aux, coeff, orbital_energies, n_occ, n_frozen, use_batch, &
+                       error, xc=xc, scf_density=scf_density)
       if (error%has_error()) return
       call build_fitted_objects(st, error)
       if (error%has_error()) return
@@ -165,12 +206,22 @@ contains
 
       call skeleton_matrices(st, h1, s1, fx, sx, error)
       if (error%has_error()) return
-      call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=200, &
-                           tol=use_tol, batch=use_batch, bounds=st%bounds)
+      if (st%dh) then
+         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
+                              reference=scf_density, k_scale=st%kf, max_iter=200, &
+                              tol=use_tol, batch=use_batch, bounds=st%bounds)
+      else
+         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=200, &
+                              tol=use_tol, batch=use_batch, bounds=st%bounds)
+      end if
       if (error%has_error()) return
       deallocate (h1, s1)
 
-      call perturbed_ladder(st, fx, sx, mo1, nab, use_tol, pair, orb, resp, error)
+      if (present(dipole_derivatives)) then
+         call perturbed_ladder(st, fx, sx, mo1, nab, use_tol, pair, orb, resp, error, ddip)
+      else
+         call perturbed_ladder(st, fx, sx, mo1, nab, use_tol, pair, orb, resp, error)
+      end if
       if (error%has_error()) return
 
       ! ---- pass 1 -----------------------------------------------------------
@@ -184,6 +235,7 @@ contains
 
       allocate (hess_corr(3, 3, st%natm, st%natm))
       allocate (p1_ref(st%n3, st%n3), p1_fit(st%n3, st%n3))
+      ! Once, here and nowhere else: the gradient's own rule, one order up.
       do y = 1, st%n3
          by = (y - 1)/3 + 1
          cy = y - 3*(by - 1)
@@ -192,17 +244,25 @@ contains
             cx = x - 3*(ax - 1)
             p1_ref(x, y) = pass1_ref(cx, cy, ax, by)
             p1_fit(x, y) = pass1_fit(cx, cy, ax, by)
-            hess_corr(cx, cy, ax, by) = pass1_ref(cx, cy, ax, by) &
-                                        + pass1_fit(cx, cy, ax, by) &
-                                        + orb(x, y) + pair(x, y) + resp(x, y)
+            hess_corr(cx, cy, ax, by) = cscale*(pass1_ref(cx, cy, ax, by) &
+                                                + pass1_fit(cx, cy, ax, by) &
+                                                + orb(x, y) + pair(x, y) + resp(x, y))
          end do
       end do
+      if (present(dipole_derivatives)) then
+         ddip = cscale*ddip
+         call move_alloc(ddip, dipole_derivatives)
+      end if
       if (present(parts)) then
          call move_alloc(p1_ref, parts%pass1_reference)
          call move_alloc(p1_fit, parts%pass1_fitted)
          call move_alloc(orb, parts%orbital)
          resp = resp + pair
          call move_alloc(resp, parts%response)
+         parts%pass1_reference = cscale*parts%pass1_reference
+         parts%pass1_fitted = cscale*parts%pass1_fitted
+         parts%orbital = cscale*parts%orbital
+         parts%response = cscale*parts%response
       end if
    end subroutine ri_mp2_correlation_hessian
 
@@ -210,13 +270,16 @@ contains
    ! setup
    ! ==========================================================================
 
-   subroutine setup_state(st, mol, aux, coeff, eps, n_occ, n_frozen, batch, error)
+   subroutine setup_state(st, mol, aux, coeff, eps, n_occ, n_frozen, batch, error, xc, &
+                          scf_density)
       type(ri_state_t), intent(out) :: st
       type(czt_molecule_t), intent(in), target :: mol, aux
       real(dp), intent(in) :: coeff(:, :), eps(:)
       integer, intent(in) :: n_occ, batch
       integer, intent(in), optional :: n_frozen
       type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: scf_density(:, :)
 
       st%mol => mol
       st%aux => aux
@@ -250,6 +313,32 @@ contains
          call error%set(ERROR_VALIDATION, "the RI-MP2 Hessian's orbital and auxiliary "// &
                         "bases must be in the same angular form.")
          return
+      end if
+      if (present(xc)) then
+         if (.not. present(scf_density)) then
+            call error%set(ERROR_VALIDATION, "the double-hybrid RI-MP2 Hessian needs the "// &
+                           "converged reference density alongside the functional: the "// &
+                           "kernel is evaluated at it.")
+            return
+         end if
+         if (xc%any_mgga .or. xc%range_separated .or. xc%nlc_b /= 0.0_dp &
+             .or. xc%nlc_c /= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "the double-hybrid RI-MP2 Hessian covers LDA "// &
+                           "and GGA functionals: the kernel's third derivative, the "// &
+                           "screened exchange and the non-local term of the others are "// &
+                           "not in the response.")
+            return
+         end if
+         if (st%nf > 0) then
+            call error%set(ERROR_VALIDATION, "the double-hybrid RI-MP2 Hessian has not "// &
+                           "been validated with a frozen core: the core-active rotation "// &
+                           "is not checked against a Kohn-Sham operator.")
+            return
+         end if
+         st%dh = .true.
+         st%xc => xc
+         st%kf = xc%exx_fraction
+         st%scf_density = scf_density
       end if
       st%c = coeff
       st%eps = eps
@@ -412,20 +501,31 @@ contains
    ! the reference operator and the fitted Lagrangian terms
    ! ==========================================================================
 
-   subroutine t1_batch(st, dmo, t1, error)
-      !! `T1(D) = C^T (2J[D] - K[D]) C` for a stack of symmetric MO matrices
+   subroutine t1_batch(st, dmo, t1, error, kernel)
+      !! `T1(D) = C^T (2J[D] - k K[D]) C + vk(D)/2` for a stack of symmetric MO
+      !! matrices
       !!
-      !! `response_mean_field` returns `J - K/2` of an AO density, hence the
-      !! factor of two. The stack goes through in chunks of `st%batch`.
+      !! `response_mean_field` returns `J - kK/2` of an AO density, hence the
+      !! factor of two; `k` is the reference's exchange fraction. For a
+      !! Kohn-Sham reference `vk` is `ks_pair_kernel`, the kernel's share of the
+      !! fold `sum_rs D_rs (L_rpsq + L_rqsp)`, of which `T1` carries half because
+      !! the fold is `T1 + T1^T`. The stack goes through in chunks of `st%batch`.
       type(ri_state_t), intent(in) :: st
       real(dp), intent(in) :: dmo(:, :, :)
       real(dp), intent(out) :: t1(:, :, :)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: kernel
+         !! Leave the kernel's share out. Default is to carry it, for a
+         !! Kohn-Sham reference; the total derivative asks for the exchange part
+         !! alone because it differentiates the kernel itself.
 
-      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :)
+      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), vk(:, :)
       integer :: first, last, wide, q, nset
+      logical :: with_kernel
 
       if (error%has_error()) return
+      with_kernel = st%dh
+      if (present(kernel)) with_kernel = kernel .and. st%dh
       nset = size(dmo, 3)
       allocate (half(st%nao, st%n))
       first = 1
@@ -438,7 +538,7 @@ contains
             call pic_gemm(half, st%c, dens(:, :, q), transb="T")
          end do
          call response_mean_field(st%mol, dens, st%zero_h, g, error, direct=.true., &
-                                  bounds=st%bounds, k_scale=1.0_dp)
+                                  bounds=st%bounds, k_scale=st%kf)
          if (error%has_error()) return
          do q = 1, wide
             call pic_gemm(g(:, :, q), st%c, half)
@@ -447,23 +547,36 @@ contains
          deallocate (dens, g)
          first = last + 1
       end do
+      if (with_kernel) then
+         allocate (vk(st%n, st%n))
+         do q = 1, nset
+            call ks_pair_kernel(st%xc, st%mol, st%c, st%scf_density, dmo(:, :, q), vk, error)
+            if (error%has_error()) return
+            t1(:, :, q) = t1(:, :, q) + 0.5_dp*vk
+         end do
+      end if
    end subroutine t1_batch
 
-   subroutine t1x_stack(st, dmo, stack, error)
+   subroutine t1x_stack(st, dmo, stack, error, kd)
       !! `T1x(D)[X]` for every nuclear coordinate: the first derivative at fixed
       !! orbitals, `(n, n, 3N)`
+      !!
+      !! For a Kohn-Sham reference the kernel's skeleton derivative is in it, at
+      !! half weight, and `kd` returns the whole of that derivative
+      !! (`ks_kernel_deriv_stack`) for the total derivative to reuse.
       type(ri_state_t), intent(in) :: st
       real(dp), intent(in) :: dmo(:, :)
       real(dp), intent(out) :: stack(:, :, :)
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: kd(:, :, :)
 
-      real(dp), allocatable :: dao(:, :), half(:, :), h1(:, :, :, :)
+      real(dp), allocatable :: dao(:, :), half(:, :), h1(:, :, :, :), kds(:, :, :)
       integer :: a, k, x
 
       allocate (dao(st%nao, st%nao), half(st%nao, st%n))
       call pic_gemm(st%c, dmo, half)
       call pic_gemm(half, st%c, dao, transb="T")
-      call h1_contract(st%mol, dao, h1, error, bounds=st%bounds)
+      call h1_contract(st%mol, dao, h1, error, k_scale=st%kf, bounds=st%bounds)
       if (error%has_error()) return
       do a = 1, st%natm
          do k = 1, 3
@@ -472,6 +585,12 @@ contains
             call pic_gemm(st%c, half, stack(:, :, x), transa="T", alpha=2.0_dp)
          end do
       end do
+      if (st%dh) then
+         call ks_kernel_deriv_stack(st%xc, st%mol, st%c, st%scf_density, dmo, kds, error)
+         if (error%has_error()) return
+         stack = stack + 0.5_dp*kds
+         if (present(kd)) call move_alloc(kds, kd)
+      end if
    end subroutine t1x_stack
 
    subroutine gp_term(st, a, g, out)
@@ -557,6 +676,24 @@ contains
    ! the unperturbed ladder
    ! ==========================================================================
 
+   subroutine solve_response(st, rhs, response, tol, error)
+      !! `(n_vir, n_occ, k)` coupled-perturbed solves against the reference's own
+      !! orbital Hessian: Hartree-Fock, or Kohn-Sham with the kernel
+      type(ri_state_t), intent(in) :: st
+      real(dp), intent(in) :: rhs(:, :, :)
+      real(dp), allocatable, intent(out) :: response(:, :, :)
+      real(dp), intent(in) :: tol
+      type(error_t), intent(inout) :: error
+
+      if (st%dh) then
+         call cphf_solve(st%mol, st%c, st%eps, st%no, response=response, error=error, &
+                         mo_rhs=rhs, tol=tol, max_iter=200, xc=st%xc, density=st%scf_density)
+      else
+         call cphf_solve(st%mol, st%c, st%eps, st%no, response=response, error=error, &
+                         mo_rhs=rhs, tol=tol, max_iter=200)
+      end if
+   end subroutine solve_response
+
    subroutine solve_unperturbed(st, tol, error)
       !! Amplitudes to relaxed density and Lagrangian, from the three-index
       !! objects and the reference operator only
@@ -626,8 +763,7 @@ contains
             rhs(a, i, 1) = -x(i, a)
          end do
       end do
-      call cphf_solve(st%mol, st%c, st%eps, no, response=zsol, error=error, mo_rhs=rhs, &
-                      tol=tol, max_iter=200)
+      call solve_response(st, rhs, zsol, tol, error)
       if (error%has_error()) return
       allocate (st%z(no, nv))
       st%z = transpose(zsol(:, :, 1))
@@ -745,8 +881,14 @@ contains
 
       allocate (dhf(st%nao, st%nao), half(st%nao, st%no))
       call pic_gemm(st%c(:, 1:st%no), st%c(:, 1:st%no), dhf, transb="T", alpha=2.0_dp)
-      call h1_contract(st%mol, dhf, h1, error, bounds=st%bounds)
+      call h1_contract(st%mol, dhf, h1, error, k_scale=st%kf, bounds=st%bounds)
       if (error%has_error()) return
+      ! The Kohn-Sham mean field also keeps part of itself on the quadrature grid;
+      ! `h1_contract` differentiates integrals only.
+      if (st%dh) then
+         call xc_potential_deriv(st%xc, st%mol, st%scf_density, h1, error)
+         if (error%has_error()) return
+      end if
       allocate (s1(st%nao, st%nao, 3, st%natm))
       do a = 1, st%natm
          call hcore_deriv_atom(st%mol, a, hc, error)
@@ -1017,7 +1159,7 @@ contains
    ! the perturbed ladder
    ! ==========================================================================
 
-   subroutine perturbed_ladder(st, fx, sx, mo1, nab, tol, pair, orb, resp, error)
+   subroutine perturbed_ladder(st, fx, sx, mo1, nab, tol, pair, orb, resp, error, ddip)
       !! Orbital response and density response, in stages that batch every
       !! Fock-type build over all `3N` perturbations
       !!
@@ -1034,8 +1176,12 @@ contains
       real(dp), intent(in) :: tol
       real(dp), allocatable, intent(out) :: pair(:, :), orb(:, :), resp(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: ddip(:, :)
+         !! The perturbative term's dipole derivative, unscaled; a double hybrid's
 
       real(dp), allocatable :: u_all(:, :, :), df_all(:, :, :), t1f(:, :, :), work(:, :, :)
+      real(dp), allocatable :: ddmat(:, :, :), kd_d0(:, :, :), kd_z(:, :, :), kd_drel(:, :, :)
+      real(dp), allocatable :: mo1_half(:, :)
       real(dp), allocatable :: dt1_d0(:, :, :), dt1_z(:, :, :), dt1_drel(:, :, :), dt1_p(:, :, :)
       real(dp), allocatable :: t1x_d0(:, :, :), t1x_z(:, :, :), t1x_drel(:, :, :), t1x_p(:, :, :)
       real(dp), allocatable :: ddg_all(:, :, :), lagc_pert(:, :, :), lagc_carr(:, :, :)
@@ -1074,6 +1220,16 @@ contains
       end do
       call t1_batch(st, work, t1f, error)
       if (error%has_error()) return
+      if (st%dh) then
+         ! The reference density's matrix response, `2 C (mx + mx^T) C^T`, which is
+         ! `2 C work C^T`: what the kernel's coefficients move with.
+         allocate (ddmat(st%nao, st%nao, n3), mo1_half(st%nao, n))
+         do y = 1, n3
+            call pic_gemm(st%c, work(:, :, y), mo1_half)
+            call pic_gemm(mo1_half, st%c, ddmat(:, :, y), transb="T", alpha=2.0_dp)
+         end do
+         deallocate (mo1_half)
+      end if
       do y = 1, n3
          ax = (y - 1)/3 + 1
          k = y - 3*(ax - 1)
@@ -1100,17 +1256,30 @@ contains
       deallocate (t1f, work)
 
       allocate (t1x_d0(n, n, n3), t1x_z(n, n, n3), t1x_drel(n, n, n3))
-      call t1x_stack(st, st%d0, t1x_d0, error)
+      call t1x_stack(st, st%d0, t1x_d0, error, kd=kd_d0)
       if (error%has_error()) return
-      call t1x_stack(st, st%zsym, t1x_z, error)
+      call t1x_stack(st, st%zsym, t1x_z, error, kd=kd_z)
       if (error%has_error()) return
-      call t1x_stack(st, st%drel, t1x_drel, error)
+      call t1x_stack(st, st%drel, t1x_drel, error, kd=kd_drel)
       if (error%has_error()) return
       allocate (dt1_d0(n, n, n3), dt1_z(n, n, n3), dt1_drel(n, n, n3))
-      call total_derivative_t1(st, u_all, st%d0, st%t1_d0, t1x_d0, dt1_d0, error)
-      call total_derivative_t1(st, u_all, st%zsym, st%t1_z, t1x_z, dt1_z, error)
-      call total_derivative_t1(st, u_all, st%drel, st%t1_drel, t1x_drel, dt1_drel, error)
-      if (error%has_error()) return
+      if (st%dh) then
+         call total_derivative_t1(st, u_all, st%d0, st%t1_d0, t1x_d0, dt1_d0, error, &
+                                  kd=kd_d0, ddmat=ddmat)
+         if (error%has_error()) return
+         call total_derivative_t1(st, u_all, st%zsym, st%t1_z, t1x_z, dt1_z, error, &
+                                  kd=kd_z, ddmat=ddmat)
+         if (error%has_error()) return
+         call total_derivative_t1(st, u_all, st%drel, st%t1_drel, t1x_drel, dt1_drel, error, &
+                                  kd=kd_drel, ddmat=ddmat)
+         if (error%has_error()) return
+         deallocate (kd_d0, kd_z, kd_drel, ddmat)
+      else
+         call total_derivative_t1(st, u_all, st%d0, st%t1_d0, t1x_d0, dt1_d0, error)
+         call total_derivative_t1(st, u_all, st%zsym, st%t1_z, t1x_z, dt1_z, error)
+         call total_derivative_t1(st, u_all, st%drel, st%t1_drel, t1x_drel, dt1_drel, error)
+         if (error%has_error()) return
+      end if
       if (frozen) then
          allocate (t1x_p(n, n, n3), dt1_p(n, n, n3))
          call t1x_stack(st, st%psym, t1x_p, error)
@@ -1240,8 +1409,7 @@ contains
       do y = 1, n3
          rhs(:, :, y) = transpose(rhs1(:, :, y))
       end do
-      call cphf_solve(st%mol, st%c, st%eps, no, response=zx, error=error, mo_rhs=rhs, &
-                      tol=tol, max_iter=200)
+      call solve_response(st, rhs, zx, tol, error)
       if (error%has_error()) return
       deallocate (rhs, rhs1)
       allocate (zm_all(n, n, n3), t1zm(n, n, n3))
@@ -1343,33 +1511,106 @@ contains
          end do
       end do
       resp = resp - pair
+      if (present(ddip)) then
+         call dipole_derivatives_of_density(st, u_all, ddrel_all, ddip, error)
+         if (error%has_error()) return
+      end if
       deallocate (ddrel_all, di_all, u_all, df_all)
    end subroutine perturbed_ladder
 
-   subroutine total_derivative_t1(st, u_all, d, t1d, t1x, dt1, error)
+   subroutine dipole_derivatives_of_density(st, u_all, ddrel, ddip, error)
+      !! `d mu_a / dR_(X,b) = - Tr(dD_AO/dR r_a) - Tr(D_AO d r_a/dR)` for the
+      !! relaxed correlation density, `(3, 3N)`, unscaled
+      !!
+      !! The correlation term reaches the dipole through the relaxed density
+      !! alone; there is no nuclear term, which belongs to the reference. The AO
+      !! density's derivative moves the orbitals too:
+      !! `dD_AO = C (dD_MO + U D + D U^T) C^T`.
+      type(ri_state_t), intent(in) :: st
+      real(dp), intent(in) :: u_all(:, :, :), ddrel(:, :, :)
+      real(dp), allocatable, intent(out) :: ddip(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dip(:, :, :), dipd(:, :, :, :, :), drel_ao(:, :), dd_mo(:, :)
+      real(dp), allocatable :: dd_ao(:, :), half(:, :)
+      real(dp) :: origin(3)
+      integer :: ia, a, b, y
+
+      if (error%has_error()) return
+      origin = 0.0_dp
+      do ia = 1, st%natm
+         origin = origin + st%mol%coords(:, ia)
+      end do
+      origin = origin/real(st%natm, dp)
+      call multipole_matrices(st%mol, origin, 1, dip, error)
+      if (error%has_error()) return
+      call dipole_integral_derivatives(st%mol, origin, dipd, error)
+      if (error%has_error()) return
+      allocate (drel_ao(st%nao, st%nao), dd_ao(st%nao, st%nao), half(st%nao, st%n))
+      allocate (dd_mo(st%n, st%n), ddip(3, st%n3))
+      call pic_gemm(st%c, st%drel, half)
+      call pic_gemm(half, st%c, drel_ao, transb="T")
+      do ia = 1, st%natm
+         do b = 1, 3
+            y = 3*(ia - 1) + b
+            dd_mo = ddrel(:, :, y)
+            call pic_gemm(u_all(:, :, y), st%drel, dd_mo, beta=1.0_dp)
+            call pic_gemm(st%drel, u_all(:, :, y), dd_mo, transb="T", beta=1.0_dp)
+            call pic_gemm(st%c, dd_mo, half)
+            call pic_gemm(half, st%c, dd_ao, transb="T")
+            do a = 1, 3
+               ddip(a, y) = -(sum(dd_ao*dip(:, :, a)) + sum(drel_ao*dipd(:, :, a, b, ia)))
+            end do
+         end do
+      end do
+   end subroutine dipole_derivatives_of_density
+
+   subroutine total_derivative_t1(st, u_all, d, t1d, t1x, dt1, error, kd, ddmat)
       !! `d_Y T1(D)` at a fixed MO matrix `D`, for every `Y`
       !!
       !!     T1x(D)[Y] + T1(U D + D U^T) + U^T T1(D) + T1(D) U
+      !!
+      !! over a Kohn-Sham reference the exchange part of that is built from the
+      !! exchange-only pieces, and the kernel's share is half of
+      !! `ks_dl_pair_kernel`, which carries the same four rotations and
+      !! skeleton derivative plus the term for the kernel's coefficients moving
+      !! with the reference density (`ddmat`, `(nao, nao, 3N)`).
       type(ri_state_t), intent(in) :: st
       real(dp), intent(in) :: u_all(:, :, :), d(:, :), t1d(:, :), t1x(:, :, :)
       real(dp), intent(out) :: dt1(:, :, :)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: kd(:, :, :), ddmat(:, :, :)
 
-      real(dp), allocatable :: m(:, :, :), tm(:, :, :), w(:, :)
+      real(dp), allocatable :: m(:, :, :), tm(:, :, :), w(:, :), vk(:, :), t1hf(:, :)
+      real(dp), allocatable :: wk(:, :)
       integer :: y, n
 
       n = st%n
-      allocate (m(n, n, st%n3), tm(n, n, st%n3), w(n, n))
+      allocate (m(n, n, st%n3), tm(n, n, st%n3), w(n, n), t1hf(n, n))
       do y = 1, st%n3
          call pic_gemm(u_all(:, :, y), d, m(:, :, y))
          call pic_gemm(d, u_all(:, :, y), m(:, :, y), transb="T", beta=1.0_dp)
       end do
-      call t1_batch(st, m, tm, error)
+      call t1_batch(st, m, tm, error, kernel=.false.)
       if (error%has_error()) return
+      t1hf = t1d
+      if (st%dh) then
+         allocate (vk(n, n), wk(n, n))
+         call ks_pair_kernel(st%xc, st%mol, st%c, st%scf_density, d, vk, error)
+         if (error%has_error()) return
+         t1hf = t1d - 0.5_dp*vk
+      end if
       do y = 1, st%n3
-         call pic_gemm(u_all(:, :, y), t1d, w, transa="T")
+         call pic_gemm(u_all(:, :, y), t1hf, w, transa="T")
          dt1(:, :, y) = t1x(:, :, y) + tm(:, :, y) + w
-         call pic_gemm(t1d, u_all(:, :, y), dt1(:, :, y), beta=1.0_dp)
+         call pic_gemm(t1hf, u_all(:, :, y), dt1(:, :, y), beta=1.0_dp)
+         if (st%dh) then
+            dt1(:, :, y) = dt1(:, :, y) - 0.5_dp*kd(:, :, y)
+            call ks_dl_pair_kernel(st%xc, st%mol, st%c, st%scf_density, d, vk, kd(:, :, y), &
+                                   u_all(:, :, y), ddmat(:, :, y), wk, error)
+            if (error%has_error()) return
+            dt1(:, :, y) = dt1(:, :, y) + 0.5_dp*wk
+         end if
       end do
    end subroutine total_derivative_t1
 
@@ -1655,7 +1896,14 @@ contains
       end do
       deallocate (cross_c)
 
-      call hess_2e_contract(st%mol, drel_ao, hess, error, density2=dhf, bounds=st%bounds)
+      call hess_2e_contract(st%mol, drel_ao, hess, error, k_scale=st%kf, density2=dhf, &
+                            bounds=st%bounds)
+      if (error%has_error()) return
+      ! The reference operator's second derivative contains the exchange-
+      ! correlation potential's, contracted against the relaxed correlation
+      ! density: the one pass-1 term with no Hartree-Fock counterpart. Grid held
+      ! fixed, as everywhere on this ladder.
+      if (st%dh) call xc_potential_hessian(st%xc, st%mol, st%scf_density, drel_ao, hess, error)
    end subroutine pass1_reference_share
 
    subroutine pass1_fitted_share(st, hess, error)

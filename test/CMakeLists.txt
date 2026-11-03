@@ -156,6 +156,9 @@ if(MQC_ENABLE_CZT)
   # included.
   addtest(mqc_ri_mp2_hessian)
   target_link_libraries(test_mqc_ri_mp2_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The same for a double hybrid's perturbative term; skips itself without libxc.
+  addtest(mqc_ri_mp2_hessian_dh)
+  target_link_libraries(test_mqc_ri_mp2_hessian_dh PRIVATE ${MQC_INTEGRALS_LIBS})
   # The exchange-correlation Hessian, against differences of its own gradient.
   # The test skips itself when the build has no libxc, so it is registered
   # beside its neighbours rather than behind another condition.
