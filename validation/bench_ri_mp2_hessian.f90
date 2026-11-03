@@ -12,6 +12,7 @@ program bench_ri_mp2_hessian
    !! conventional Hessian runs the same case either way and the all-electron
    !! one is the stricter.
    use pic_types, only: dp, int64
+   use pic_logger, only: logger => global_logger, performance_level
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -35,6 +36,8 @@ program bench_ri_mp2_hessian
    real(dp) :: rss0, rss1
    integer :: nmol, i, nelec
 
+   ! The stage timers of the fitted Hessian are logged at this level.
+   call logger%configure(level=performance_level)
    call get_command_argument(1, which)
    call get_command_argument(2, method)
    select case (trim(which))

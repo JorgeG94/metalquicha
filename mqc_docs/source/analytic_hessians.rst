@@ -56,9 +56,16 @@ What is covered
    * - Double hybrid, frozen core
      - **no**
      - the default -- ``freeze_core`` is on unless the deck turns it off
-   * - Spin-scaled or fitted MP2
+   * - RI-MP2, all-electron or frozen core
+     - yes
+     - ``ri-mp2`` over an exact reference (``model.aux_basis`` named,
+       ``keywords.scf.density_fitting`` off)
+   * - Double hybrid, named auxiliary basis
+     - yes
+     - a double hybrid above with ``model.aux_basis`` set; all-electron
+   * - Spin-scaled MP2
      - **no**
-     - ``scs-mp2``, ``sos-mp2``, ``ri-mp2``
+     - ``scs-mp2``, ``sos-mp2``
    * - Coupled cluster
      - **no**
      - ``ccsd``, ``ccsd(t)``
@@ -86,6 +93,18 @@ Hartree-Fock reference only, never against a Kohn-Sham operator carrying its
 kernel in the response. A frozen-core double-hybrid deck therefore falls back
 rather than reusing them on trust. Its *gradient* refuses outright for the same
 reason, which means such a deck does not reach the Hessian at all.
+
+An ``ri-mp2`` deck logs ``computing the analytic RI-MP2 Hessian`` instead. Its
+correlation block (``mqc_czt_ri_mp2_hessian``) differentiates the fitted energy
+the deck reports: the reference keeps exact integrals and only the correlation
+functional contracts the fitted tensor, with no four-index array anywhere. A
+double hybrid whose deck names an auxiliary basis takes the same block, with
+the functional's kernel in every response. It needs an auxiliary metric that
+drops no mode; one that does is declined at run time, with a warning, and the
+Hessian is taken semi-numerically. The analytic gradient of these decks solves
+its Z-vector with a fitted operator, which sits about 1e-7 from the
+exact-reference derivative, so the Hessian and a difference of that gradient
+agree to that and not further.
 
 A double hybrid that took the analytic path logs ``computing the analytic
 Hessian`` followed by ``computing the perturbative term's Hessian``. Seeing
@@ -280,8 +299,9 @@ and its interaction with the response terms has not been worked out.
 a different energy, and its derivatives are not the unscaled ones rescaled --
 the amplitudes enter the relaxed density and the response equations unscaled.
 
-**RI-MP2.** The fitted correlation Hessian does not exist yet, and the fitted
-reference is excluded for the same reason as everywhere else in this table.
+**RI-MP2 over a fitted reference.** ``keywords.scf.density_fitting`` is
+excluded for the same reason as everywhere else in this table; the correlation
+block assumes an exact reference operator.
 
 **Double hybrids that are not GGA-based, all-electron and unscreened.** Read
 this entry against the table above rather than instead of it: a meta-GGA, a
