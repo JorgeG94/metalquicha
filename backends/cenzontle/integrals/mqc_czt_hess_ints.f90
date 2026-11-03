@@ -91,9 +91,9 @@ module mqc_czt_hess_ints
       !! molecule in 6-31G* on 64 threads.
 
    type(cint_ws), save :: ws_hess3c
-      !! Scratch for the fitting-integral kernels, one per thread. `cint_ws`
-      !! allocates its buffers on first use, so a threadprivate copy needs no
-      !! initialisation; libfint keeps its own workspace the same way.
+      !! Scratch for the fitting-integral kernels, one per thread
+   ! `cint_ws` allocates its buffers on first use, so a threadprivate copy needs
+   ! no initialisation; libfint keeps its own workspace the same way.
    !$omp threadprivate(ws_hess3c)
 
    integer, parameter :: N_COMPONENTS = 9

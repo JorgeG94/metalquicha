@@ -66,6 +66,7 @@ module mqc_czt_ri_mp2_hessian
    public :: ri_hessian_parts_t
    public :: contract_first_3c
    public :: inverse_metric
+   public :: ri_hessian_metric_dropped
 
    integer, parameter :: DEFAULT_ATOM_BATCH_CAP = 1000000
 
@@ -420,6 +421,21 @@ contains
       allocate (jinv(size(metric, 1), size(metric, 1)))
       call pic_gemm(half, half, jinv)
    end subroutine inverse_metric
+
+   subroutine ri_hessian_metric_dropped(aux, n_dropped, error)
+      !! Modes the inverse metric of `aux` drops; `ri_mp2_correlation_hessian`
+      !! declines a basis for which this is nonzero
+      type(czt_molecule_t), intent(in) :: aux
+      integer, intent(out) :: n_dropped
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: metric(:, :), jinv(:, :)
+
+      n_dropped = 0
+      if (error%has_error()) return
+      call two_centre(aux, metric)
+      call inverse_metric(metric, jinv, n_dropped, error)
+   end subroutine ri_hessian_metric_dropped
 
    subroutine build_fitted_objects(st, error)
       !! `(pq|P)`, `c^P_pq`, the amplitudes, `Gamma`, `gamma`
@@ -1207,7 +1223,7 @@ contains
       !!        the fitted Lagrangian terms and the pair sum
       !!     C  `d_Y I'` at the unrelaxed density, the Z-vector right-hand side,
       !!        the core<->active rotation
-      !!     D  one batched Z-vector solve, then the solved blocks
+      !!     D  the `3N` Z-vector solves, then the solved blocks
       !!     E  the skeleton Lagrangian's carriers and the orbital response
       type(ri_state_t), intent(inout) :: st
       real(dp), intent(in) :: fx(:, :, :), sx(:, :, :), mo1(:, :, :, :)
@@ -1448,7 +1464,10 @@ contains
       if (frozen) deallocate (dt1_p, t1x_p)
 
       call stage_done(lclock, "ladder C, Lagrangian at the unrelaxed density")
-      ! ---- D: one batched Z-vector solve --------------------------------------
+      ! ---- D: the 3N Z-vector solves -------------------------------------------
+      ! TODO(mqc): `cphf_solve` runs one conjugate-gradient solve per right-hand
+      ! side, so this stage is about 60 per cent of the run; sharing each Fock
+      ! build across the perturbations, as `solve_mo1_batch` does, removes most of it.
       allocate (rhs(nv, no, n3))
       do y = 1, n3
          rhs(:, :, y) = transpose(rhs1(:, :, y))
