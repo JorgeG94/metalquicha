@@ -129,7 +129,7 @@ contains
       threads = omp_get_max_threads()
       call omp_set_num_threads(1)
       call make_context("6-31g", ctx, err)
-      call check(error, .not. err%has_error(), "the functional context must build")
+      call check(error,.not. err%has_error(), "the functional context must build")
       if (allocated(error)) return
 
       acc = 0.0_dp
@@ -137,7 +137,7 @@ contains
          coords = WATER
          coords(PERT_CART, PERT_ATOM) = coords(PERT_CART, PERT_ATOM) + real(OFFSET(point), dp)*STEP
          call fitted_pt2_gradient(ctx, "6-31g", "cc-pvdz-rifit", coords, gradient, err)
-         call check(error, .not. err%has_error(), "a displaced gradient failed: "// &
+         call check(error,.not. err%has_error(), "a displaced gradient failed: "// &
                     err%get_full_trace())
          if (allocated(error)) then
             call omp_set_num_threads(threads)
@@ -153,7 +153,7 @@ contains
                                          err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
                                          pt2_scale=ctx%pt2_fraction)
       call omp_set_num_threads(threads)
-      call check(error, .not. err%has_error(), "the Hessian must run: "//err%get_full_trace())
+      call check(error,.not. err%has_error(), "the Hessian must run: "//err%get_full_trace())
       if (allocated(error)) return
       do ia = 1, 3
          do a = 1, 3
@@ -182,7 +182,7 @@ contains
       if (.not. xc_available()) return
       call make_context(basis, ctx, err)
       if (.not. err%has_error()) call setup_case(basis, aux_basis, WATER, mol, aux, ctx, scf, err)
-      call check(error, .not. err%has_error(), "the Kohn-Sham reference must converge: "// &
+      call check(error,.not. err%has_error(), "the Kohn-Sham reference must converge: "// &
                  err%get_full_trace())
       if (allocated(error)) return
 
@@ -193,7 +193,7 @@ contains
          call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, scf%density, 5, 0, &
                                       conv, discard, err, xc=ctx, pt2_scale=ctx%pt2_fraction, &
                                       dipole_derivatives=dip_conv)
-      call check(error, .not. err%has_error(), "both blocks must run: "//err%get_full_trace())
+      call check(error,.not. err%has_error(), "both blocks must run: "//err%get_full_trace())
       if (allocated(error)) return
 
       rel = maxval(abs(ri - conv))/maxval(abs(conv))
@@ -236,7 +236,7 @@ contains
       call make_context("6-31g", ctx, err)
       if (.not. err%has_error()) &
          call setup_case("6-31g", "cc-pvdz-rifit", WATER, mol, aux, ctx, scf, err)
-      call check(error, .not. err%has_error(), "the reference must converge")
+      call check(error,.not. err%has_error(), "the reference must converge")
       if (allocated(error)) return
       call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, whole, &
                                       err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
@@ -244,7 +244,7 @@ contains
       call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, split, &
                                       err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
                                       pt2_scale=ctx%pt2_fraction, batch=2, atom_batch=1)
-      call check(error, .not. err%has_error(), "both runs must succeed: "//err%get_full_trace())
+      call check(error,.not. err%has_error(), "both runs must succeed: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, maxval(abs(whole - split)) < 1.0e-10_dp, "the batch sizes change the block")
       call mol%destroy()
