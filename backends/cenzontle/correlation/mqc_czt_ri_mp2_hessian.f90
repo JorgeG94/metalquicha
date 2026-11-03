@@ -37,6 +37,7 @@ module mqc_czt_ri_mp2_hessian
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_logger, only: logger => global_logger
+   use pic_timer, only: timer_type
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_memory, only: memory_budget
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, three_centre, &
@@ -95,6 +96,8 @@ module mqc_czt_ri_mp2_hessian
          !! A double hybrid's perturbative term over a Kohn-Sham reference
       real(dp) :: kf = 1.0_dp
          !! Exact-exchange fraction of the reference's operator
+      integer :: max_iter = 200
+         !! Iteration cap of every coupled-perturbed solve
       type(xc_context_t), pointer :: xc => null()
       real(dp), allocatable :: scf_density(:, :)
       real(dp), allocatable :: c(:, :), eps(:)
@@ -120,7 +123,7 @@ contains
    subroutine ri_mp2_correlation_hessian(mol, aux, coeff, orbital_energies, n_occ, &
                                          hess_corr, error, n_frozen, tol, batch, &
                                          atom_batch, parts, xc, scf_density, pt2_scale, &
-                                         dipole_derivatives)
+                                         dipole_derivatives, max_iter)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -158,12 +161,15 @@ contains
          !! The functional's PT2 coefficient, applied once to the finished block.
          !! The Z-vector solves are linear, so scaling inputs as well would count
          !! it twice.
+      integer, intent(in), optional :: max_iter
+         !! Iteration cap of every coupled-perturbed solve; `200`
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3N)`,
          !! scaled by `pt2_scale`. Requires `xc`: over Hartree-Fock an MP2 dipole
          !! derivative is a different quantity.
 
       type(ri_state_t) :: st
+      type(timer_type) :: clock
       real(dp) :: cscale
       real(dp), allocatable :: ddip(:, :)
       real(dp), allocatable :: h1(:, :, :, :), s1(:, :, :, :), mo1(:, :, :, :)
@@ -190,13 +196,17 @@ contains
                         "hybrid's or nothing.")
          return
       end if
+      call clock%start()
       call setup_state(st, mol, aux, coeff, orbital_energies, n_occ, n_frozen, use_batch, &
                        error, xc=xc, scf_density=scf_density)
       if (error%has_error()) return
       call build_fitted_objects(st, error)
       if (error%has_error()) return
+      call stage_done(clock, "three-index integrals and fit")
+      if (present(max_iter)) st%max_iter = max(1, max_iter)
       call solve_unperturbed(st, use_tol, error)
       if (error%has_error()) return
+      call stage_done(clock, "amplitudes, relaxed density, Z-vector")
 
       if (present(atom_batch)) then
          nab = max(1, min(atom_batch, st%natm))
@@ -206,15 +216,17 @@ contains
 
       call skeleton_matrices(st, h1, s1, fx, sx, error)
       if (error%has_error()) return
+      call stage_done(clock, "skeleton matrices")
       if (st%dh) then
          call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
-                              reference=scf_density, k_scale=st%kf, max_iter=200, &
+                              reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
                               tol=use_tol, batch=use_batch, bounds=st%bounds)
       else
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=200, &
+         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
                               tol=use_tol, batch=use_batch, bounds=st%bounds)
       end if
       if (error%has_error()) return
+      call stage_done(clock, "coupled-perturbed solve")
       deallocate (h1, s1)
 
       if (present(dipole_derivatives)) then
@@ -223,6 +235,7 @@ contains
          call perturbed_ladder(st, fx, sx, mo1, nab, use_tol, pair, orb, resp, error)
       end if
       if (error%has_error()) return
+      call stage_done(clock, "perturbed ladder and pair sum")
 
       ! ---- pass 1 -----------------------------------------------------------
       allocate (pass1_ref(3, 3, st%natm, st%natm), pass1_fit(3, 3, st%natm, st%natm))
@@ -230,8 +243,10 @@ contains
       pass1_fit = 0.0_dp
       call pass1_reference_share(st, pass1_ref, error)
       if (error%has_error()) return
+      call stage_done(clock, "pass 1, reference share")
       call pass1_fitted_share(st, pass1_fit, error)
       if (error%has_error()) return
+      call stage_done(clock, "pass 1, fitted share")
 
       allocate (hess_corr(3, 3, st%natm, st%natm))
       allocate (p1_ref(st%n3, st%n3), p1_fit(st%n3, st%n3))
@@ -265,6 +280,19 @@ contains
          parts%response = cscale*parts%response
       end if
    end subroutine ri_mp2_correlation_hessian
+
+   subroutine stage_done(clock, name)
+      !! Log the time since the last stage at the logger's performance level and
+      !! restart the clock
+      type(timer_type), intent(inout) :: clock
+      character(len=*), intent(in) :: name
+
+      character(len=128) :: line
+
+      write (line, "(a,a,a,f10.2,a)") "  RI-MP2 Hessian: ", name, " ", clock%get_elapsed_time(), " s"
+      call logger%performance(trim(line))
+      call clock%start()
+   end subroutine stage_done
 
    ! ==========================================================================
    ! setup
@@ -687,10 +715,10 @@ contains
 
       if (st%dh) then
          call cphf_solve(st%mol, st%c, st%eps, st%no, response=response, error=error, &
-                         mo_rhs=rhs, tol=tol, max_iter=200, xc=st%xc, density=st%scf_density)
+                         mo_rhs=rhs, tol=tol, max_iter=st%max_iter, xc=st%xc, density=st%scf_density)
       else
          call cphf_solve(st%mol, st%c, st%eps, st%no, response=response, error=error, &
-                         mo_rhs=rhs, tol=tol, max_iter=200)
+                         mo_rhs=rhs, tol=tol, max_iter=st%max_iter)
       end if
    end subroutine solve_response
 
@@ -1197,6 +1225,7 @@ contains
       integer :: n, no, nf, na, nv, np, n3, natm
       integer :: y, ax, k, i, a, c, j, p, q, ia0, ia1, nb, ny, iy, at, comp, y0
       logical :: frozen
+      type(timer_type) :: lclock
 
       n = st%n
       no = st%no
@@ -1208,6 +1237,7 @@ contains
       natm = st%natm
       frozen = nf > 0
 
+      call lclock%start()
       ! ---- A: rotations and Fock responses ----------------------------------
       allocate (u_all(n, n, n3), df_all(n, n, n3), t1f(n, n, n3), work(n, n, n3))
       work = 0.0_dp
@@ -1288,6 +1318,7 @@ contains
          if (error%has_error()) return
       end if
 
+      call stage_done(lclock, "ladder A, Fock responses of the rotations")
       ! ---- B: per batch of atoms ---------------------------------------------
       call two_centre_deriv(st%aux, ip2c)
       allocate (offsets(natm), counts(natm), own_aux(np))
@@ -1342,6 +1373,7 @@ contains
       end do
       deallocate (ip2c, offsets, counts, own_aux)
 
+      call stage_done(lclock, "ladder B, three-index sweep per atom batch")
       ! ---- C: the Lagrangian at the unrelaxed density -------------------------
       allocate (t1dd(n, n, n3), rhs1(no, nv, n3), di_all(n, n, n3), ddrel_all(n, n, n3))
       call t1_batch(st, ddg_all, t1dd, error)
@@ -1404,6 +1436,7 @@ contains
       deallocate (t1dd, dip, tm, tmp, lagc_pert, ddg_all, dt1_d0, dt1_z, dt1_drel)
       if (frozen) deallocate (dt1_p, t1x_p)
 
+      call stage_done(lclock, "ladder C, Lagrangian at the unrelaxed density")
       ! ---- D: one batched Z-vector solve --------------------------------------
       allocate (rhs(nv, no, n3))
       do y = 1, n3
@@ -1440,6 +1473,7 @@ contains
       end do
       deallocate (zm_all, t1zm)
 
+      call stage_done(lclock, "ladder D, batched Z-vector solve")
       ! ---- E: the skeleton Lagrangian's carriers and the orbital response ------
       allocate (ip_all(n, n, n3))
       do y = 1, n3
@@ -1502,6 +1536,7 @@ contains
       deallocate (ip_all, xt, it)
       if (frozen) deallocate (pf_all, t1pf, pof)
 
+      call stage_done(lclock, "ladder E, skeleton carriers and orbital response")
       ! ---- the density response, contracted with the first-order skeletons ----
       allocate (resp(n3, n3))
       do y = 1, n3
