@@ -31,17 +31,17 @@ module mqc_czt_ri_mp2_hessian
    !! The fitted energy differentiated is the one `czt_ri_mp2_gradient` reports
    !! with `fit_response = .false.`: an exact reference, a fitted correlation.
    !! The inverse metric is the pseudo-inverse that gradient uses (eigenvalues
-   !! below `METRIC_THRESHOLD` dropped); the derivative `-J^-1 dJ J^-1` is exact
+   !! below `FIT_METRIC_THRESHOLD` dropped); the derivative `-J^-1 dJ J^-1` is exact
    !! only when none is, so a metric that drops a mode is refused.
    use, intrinsic :: iso_fortran_env, only: int64
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
-   use pic_lapack_interfaces, only: pic_syevd
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_memory, only: memory_budget
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, three_centre, &
-                                two_centre, build_df_shell_table, max_block, shell_dim
+                                two_centre, build_df_shell_table, max_block, shell_dim, &
+                                metric_inverse_sqrt
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_ecp, only: ecp_refuses_derivatives
    use mqc_czt_cphf, only: cphf_solve
@@ -61,11 +61,6 @@ module mqc_czt_ri_mp2_hessian
    public :: ri_hessian_parts_t
    public :: contract_first_3c
    public :: inverse_metric
-   public :: METRIC_THRESHOLD
-
-   real(dp), parameter :: METRIC_THRESHOLD = 1.0e-10_dp
-      !! Eigenvalues of the auxiliary metric at or below this are dropped by
-      !! `metric_inverse_sqrt`, which `czt_ri_mp2_gradient` fits with.
 
    integer, parameter :: DEFAULT_ATOM_BATCH_CAP = 1000000
 
@@ -282,36 +277,21 @@ contains
    end function default_atom_batch
 
    subroutine inverse_metric(metric, jinv, n_dropped, error)
-      !! `J^-1` by eigendecomposition, and how many modes the threshold dropped
+      !! `J^-1` as the square of `metric_inverse_sqrt`, and the modes it dropped
       !!
-      !! The same pseudo-inverse `metric_inverse_sqrt` squares: eigenvalues at or
-      !! below `METRIC_THRESHOLD` are zeroed in `V s^-1 V^T`. `n_dropped` is the
-      !! count, which that routine does not report.
+      !! The fit `czt_ri_mp2_gradient` differentiates, so the two cannot disagree
+      !! about which modes survive.
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable, intent(out) :: jinv(:, :)
       integer, intent(out) :: n_dropped
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: vectors(:, :), values(:), scaled(:, :)
-      integer :: naux, i, info
+      real(dp), allocatable :: half(:, :)
 
-      naux = size(metric, 1)
-      allocate (vectors(naux, naux), values(naux), scaled(naux, naux), jinv(naux, naux))
-      vectors = metric
-      call pic_syevd(vectors, values, jobz="V", uplo="U", info=info)
-      if (info /= 0) then
-         call error%set(ERROR_VALIDATION, "density fitting: the metric would not diagonalise")
-         return
-      end if
-      n_dropped = count(values <= METRIC_THRESHOLD)
-      do i = 1, naux
-         if (values(i) > METRIC_THRESHOLD) then
-            scaled(:, i) = vectors(:, i)/values(i)
-         else
-            scaled(:, i) = 0.0_dp
-         end if
-      end do
-      call pic_gemm(scaled, vectors, jinv, transb="T")
+      call metric_inverse_sqrt(metric, half, error, n_dropped=n_dropped)
+      if (error%has_error()) return
+      allocate (jinv(size(metric, 1), size(metric, 1)))
+      call pic_gemm(half, half, jinv)
    end subroutine inverse_metric
 
    subroutine build_fitted_objects(st, error)

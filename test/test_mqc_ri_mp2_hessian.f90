@@ -23,11 +23,11 @@ module test_mqc_ri_mp2_hessian
    use json_module, only: json_file
    use pic_types, only: dp
    use mqc_error, only: error_t
-   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, FIT_METRIC_THRESHOLD
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_parts_t, &
-                                     inverse_metric, METRIC_THRESHOLD
+                                     inverse_metric
    use mqc_czt_hessian, only: rhf_hessian
    implicit none
    private
@@ -443,7 +443,7 @@ contains
       call inverse_metric(metric, inv, dropped, err)
       call check(error, dropped, 1, "an exact null direction is one dropped mode")
       if (allocated(error)) return
-      call check(error, METRIC_THRESHOLD > 0.0_dp, "the threshold is a positive number")
+      call check(error, FIT_METRIC_THRESHOLD > 0.0_dp, "the threshold is a positive number")
    end subroutine dropped_modes
 
 end module test_mqc_ri_mp2_hessian
