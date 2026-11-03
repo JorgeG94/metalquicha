@@ -3,7 +3,7 @@ program bench_ri_mp2_hessian
    !! One method on one case per process, so that the peak resident set a run
    !! reports is that method's and not the larger of the two's:
    !!
-   !!     bench_ri_mp2_hessian <case> <ri|conventional>
+   !!     bench_ri_mp2_hessian <case> <ri|conventional|rhf|partial>
    !!
    !! The SCF is converged first and its time and resident set are printed, so the
    !! Hessian's own figures are the differences. The Hessian is the correlation
@@ -15,6 +15,7 @@ program bench_ri_mp2_hessian
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_hessian, only: rhf_hessian, partial_hessian
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian
    use omp_lib, only: omp_get_max_threads
@@ -54,7 +55,7 @@ program bench_ri_mp2_hessian
       basis = "cc-pvtz"
       aux_basis = "cc-pvtz-rifit"
    case default
-      write (*, "(a)") "usage: bench_ri_mp2_hessian h2o-dz|h2o2-dz|h2o3-dz|h2o-tz ri|conventional"
+      write (*, "(a)") "usage: bench_ri_mp2_hessian h2o-dz|h2o2-dz|h2o3-dz|h2o-tz ri|conventional|rhf|partial"
       stop 1
    end select
 
@@ -89,11 +90,20 @@ program bench_ri_mp2_hessian
    case ("ri")
       call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, nelec/2, &
                                       hess, error)
+   case ("rhf")
+      ! The reference Hessian alone: what the two-electron second-derivative
+      ! sweep costs, for comparing builds of that kernel.
+      call rhf_hessian(mol, numbers, scf%density, scf%orbitals, scf%orbital_energies, &
+                       nelec/2, hess, error)
+   case ("partial")
+      ! The fixed-density second derivatives only, no response: the sweep over
+      ! shell quartets that `hess_2e_contract` is, for timing that kernel alone.
+      call partial_hessian(mol, scf%density, scf%density, hess, error)
    case ("conventional")
       call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, scf%density, &
                                    nelec/2, 0, hess, hess_ref, error)
    case default
-      write (*, "(a)") "the method is ri or conventional"
+      write (*, "(a)") "the method is ri, conventional, rhf or partial"
       stop 1
    end select
    call system_clock(t2)

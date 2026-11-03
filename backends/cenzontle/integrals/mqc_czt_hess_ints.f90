@@ -715,6 +715,8 @@ contains
          !! `E(D + D2) - E(D) - E(D2)`, so the result is the second derivative of
          !! `D . (J - k K/2)[D2]` and `density` is the left factor. Symmetric in
          !! the two. Absent, every statement below is what it always was.
+      real(dp), allocatable :: d2loc(:, :)
+      logical :: two_dens
       real(dp), allocatable :: buf_ii(:), buf_jj(:), buf_kk(:)
       real(dp), allocatable :: buf_ij(:), buf_ik(:), buf_jk(:)
       real(dp), allocatable :: hloc(:, :, :, :)
@@ -809,6 +811,15 @@ contains
          if (error%has_error()) return
       end if
 
+      ! The second density is copied once and consulted only under `two_dens`:
+      ! an absent optional is never named inside the parallel region, and the
+      ! choice of weight is made on a local logical rather than per element.
+      two_dens = present(density2)
+      if (two_dens) then
+         d2loc = density2
+      else
+         allocate (d2loc(0, 0))
+      end if
       allocate (dsh(mol%nbas, mol%nbas), sa(mol%nbas))
       do ish = 1, mol%nbas
          do jsh = 1, mol%nbas
@@ -816,10 +827,10 @@ contains
                                                sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh))))
             ! The bound multiplies two density elements, so the larger of the
             ! two densities' elements bounds a product of one from each.
-            if (present(density2)) then
+            if (two_dens) then
                dsh(ish, jsh) = max(dsh(ish, jsh), &
-                                   maxval(abs(density2(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
-                                                       sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh)))))
+                                   maxval(abs(d2loc(sh_off(ish) + 1:sh_off(ish) + sh_dim(ish), &
+                                                    sh_off(jsh) + 1:sh_off(jsh) + sh_dim(jsh)))))
             end if
          end do
          sa(ish) = sqrt(maxval(mol%env(mol%bas(LIBCINT_PTR_EXP, ish) + 1: &
@@ -831,7 +842,7 @@ contains
       ! `9*natm^2` doubles, so a private copy costs nothing where an atomic
       ! update per quartet would cost everything.
       !$omp parallel default(none) &
-      !$omp shared(kx, jx, env_use, mol, density, density2, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
+      !$omp shared(kx, jx, two_dens, d2loc, env_use, mol, density, hess, owner, sh_dim, sh_off, atm_flat, bas_flat, &
       !$omp        mx, natm, npair, pair_i, pair_j, order, qb, dsh, sa, tol) &
       !$omp private(buf_ii, buf_jj, buf_kk, buf_ij, buf_ik, buf_jk, hloc, t, &
       !$omp         ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
@@ -909,14 +920,14 @@ contains
                      at(2) = owner(jo + j)
                      do i = 1, di
                         at(1) = owner(io + i)
-                        if (present(density2)) then
-                           gam = jx*0.5_dp*(density(io + i, jo + j)*density2(ko + k, lo + l) &
-                                            + density2(io + i, jo + j)*density(ko + k, lo + l)) &
+                        if (two_dens) then
+                           gam = jx*0.5_dp*(density(io + i, jo + j)*d2loc(ko + k, lo + l) &
+                                            + d2loc(io + i, jo + j)*density(ko + k, lo + l)) &
                                  - kx*0.125_dp &
-                                 *(density(io + i, lo + l)*density2(ko + k, jo + j) &
-                                   + density2(io + i, lo + l)*density(ko + k, jo + j) &
-                                   + density(io + i, ko + k)*density2(jo + j, lo + l) &
-                                   + density2(io + i, ko + k)*density(jo + j, lo + l))
+                                 *(density(io + i, lo + l)*d2loc(ko + k, jo + j) &
+                                   + d2loc(io + i, lo + l)*density(ko + k, jo + j) &
+                                   + density(io + i, ko + k)*d2loc(jo + j, lo + l) &
+                                   + d2loc(io + i, ko + k)*density(jo + j, lo + l))
                         else
                            gam = jx*0.5_dp*density(io + i, jo + j)*density(ko + k, lo + l) &
                                  - kx*0.125_dp &
