@@ -98,6 +98,8 @@ module mqc_czt_ri_mp2_hessian
          !! Exact-exchange fraction of the reference's operator
       integer :: max_iter = 200
          !! Iteration cap of every coupled-perturbed solve
+      integer :: n_dropped = 0
+         !! Metric modes the pseudo-inverse dropped; nonzero is a refusal
       type(xc_context_t), pointer :: xc => null()
       real(dp), allocatable :: scf_density(:, :)
       real(dp), allocatable :: c(:, :), eps(:)
@@ -123,7 +125,7 @@ contains
    subroutine ri_mp2_correlation_hessian(mol, aux, coeff, orbital_energies, n_occ, &
                                          hess_corr, error, n_frozen, tol, batch, &
                                          atom_batch, parts, xc, scf_density, pt2_scale, &
-                                         dipole_derivatives, max_iter)
+                                         dipole_derivatives, max_iter, declined)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -167,6 +169,10 @@ contains
          !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3N)`,
          !! scaled by `pt2_scale`. Requires `xc`: over Hartree-Fock an MP2 dipole
          !! derivative is a different quantity.
+      logical, intent(out), optional :: declined
+         !! True only when the error set is the refusal of a metric that drops
+         !! a mode: the one condition a well-formed call can meet, and the one
+         !! a caller may answer by differencing the gradient instead
 
       type(ri_state_t) :: st
       type(timer_type) :: clock
@@ -179,6 +185,7 @@ contains
       real(dp) :: use_tol
       integer :: use_batch, nab, x, y, ax, cx, by, cy
 
+      if (present(declined)) declined = .false.
       if (error%has_error()) return
       if (ecp_refuses_derivatives(mol%core_electrons, "RI-MP2 Hessian", error)) return
 
@@ -201,7 +208,10 @@ contains
                        error, xc=xc, scf_density=scf_density)
       if (error%has_error()) return
       call build_fitted_objects(st, error)
-      if (error%has_error()) return
+      if (error%has_error()) then
+         if (present(declined)) declined = st%n_dropped > 0
+         return
+      end if
       call stage_done(clock, "three-index integrals and fit")
       if (present(max_iter)) st%max_iter = max(1, max_iter)
       call solve_unperturbed(st, use_tol, error)
@@ -445,6 +455,7 @@ contains
       call two_centre(st%aux, metric)
       call inverse_metric(metric, st%jinv, n_dropped, error)
       if (error%has_error()) return
+      st%n_dropped = n_dropped
       if (n_dropped > 0) then
          call error%set(ERROR_VALIDATION, "the RI-MP2 Hessian differentiates the "// &
                         "inverse of the auxiliary metric as -J^-1 dJ J^-1, which is only "// &

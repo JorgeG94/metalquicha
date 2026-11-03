@@ -2391,9 +2391,10 @@ contains
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
             real(dp), allocatable :: ddip(:, :), ddip_pt2(:, :)
             type(timer_type) :: hess_clock
-            logical :: pt2_built
+            logical :: pt2_built, declined
 
             pt2_built = .true.
+            declined = .false.
             call logger%info("  computing the analytic Hessian")
             call hess_clock%start()
             if (kohn_sham) then
@@ -2435,10 +2436,12 @@ contains
                         max_iter=settings%hessian_response_max_iter, &
                         batch=settings%hessian_response_batch, xc=xc, &
                         scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
-                        dipole_derivatives=ddip_pt2)
+                        dipole_derivatives=ddip_pt2, declined=declined)
                      call corr_aux%destroy()
                   end if
-                  if (error%has_error()) then
+                  ! Only the named refusal is differenced instead; any other
+                  ! error is a fault and fails the run below.
+                  if (error%has_error() .and. declined) then
                      hessian_fallback = "the fitted perturbative term: "//error%get_message()
                      call error%clear()
                      pt2_built = .false.
@@ -2655,9 +2658,10 @@ contains
                   real(dp), allocatable :: hcorr(:, :, :, :), href(:, :, :, :)
                   real(dp), allocatable :: hnuc(:, :, :, :), hresp(:, :, :, :)
                   type(timer_type) :: hess_clock
-                  logical :: built
+                  logical :: built, declined
 
                   built = .true.
+                  declined = .false.
                   call hess_clock%start()
                   if (settings%corr_density_fitting) then
                      call logger%info("  computing the analytic RI-MP2 Hessian")
@@ -2676,15 +2680,17 @@ contains
                            scf%n_occupied, href, error, n_frozen=frozen, &
                            tol=settings%hessian_response_tol, &
                            max_iter=settings%hessian_response_max_iter, &
-                           batch=settings%hessian_response_batch)
+                           batch=settings%hessian_response_batch, declined=declined)
                         call corr_aux%destroy()
                      end if
-                     if (error%has_error()) then
-                        ! Correct by differences instead, so not worth a failed run.
+                     ! A metric that drops a mode is correct by differences
+                     ! instead, so not worth a failed run; any other error is a
+                     ! fault and fails it below.
+                     if (error%has_error() .and. declined) then
                         hessian_fallback = "the fitted correlation block: "//error%get_message()
                         call error%clear()
                         built = .false.
-                     else
+                     else if (.not. error%has_error()) then
                         hcorr = hcorr + href
                      end if
                   else
