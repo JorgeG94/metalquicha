@@ -20,13 +20,22 @@ module mqc_czt_ri_mp2_hessian
    !!   objects `Gamma^P_ia`, `gamma_PQ` and `Theta^Q_ia`.
    !!
    !! **Memory.** Resident once: the three-index MO integrals and fitting
-   !! coefficients (`n^2 P` each, `P` auxiliary functions), the amplitudes
-   !! (`o^2 v^2`) and a few `n^2` matrices. Resident for all `3N` perturbations:
-   !! `n^2` matrices only. Transient per batch of atoms: the three-index
+   !! coefficients (`n^2 P` each, `P` auxiliary functions), three `o^2 v^2`
+   !! arrays -- the amplitudes `t`, the combination `u = 2 t - t^swap` in the same
+   !! layout, and `u` again as `(ia, jb)` for the products with three-index
+   !! objects -- and a few `n^2` matrices. The one-particle densities read `t`
+   !! and `u` through views of those arrays, so no rearranged copy exists.
+   !! Resident for all `3N` perturbations: about two dozen `n^2 * 3N` stacks
+   !! (rotations, Fock responses, Lagrangian carriers, the right-hand sides
+   !! of the Z-vector solves). Transient per perturbation: three `o^2 v^2`
+   !! arrays and a few `n^2 P` ones. Transient per batch of atoms: the three-index
    !! first-derivative integrals of those atoms (`3 nao^2 P` each), their MO
    !! images and the three-index densities. Nothing of size `3N * o v P` exists;
    !! the contraction of those densities with every other nucleus's derivative
-   !! integrals is one sweep per batch (`contract_first_3c`).
+   !! integrals is one sweep per batch (`contract_first_3c`). `resident_bytes`
+   !! adds the first three up before anything is allocated and the call is
+   !! refused if the figure exceeds `memory_budget`; the batch of atoms is sized
+   !! from what is left.
    !!
    !! The fitted energy differentiated is the one `czt_ri_mp2_gradient` reports
    !! with `fit_response = .false.`: an exact reference, a fitted correlation.
@@ -34,8 +43,8 @@ module mqc_czt_ri_mp2_hessian
    !! below `FIT_METRIC_THRESHOLD` dropped); the derivative `-J^-1 dJ J^-1` is exact
    !! only when none is, so a metric that drops a mode is refused.
    use, intrinsic :: iso_fortran_env, only: int64
-   use pic_types, only: dp
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_types, only: dp, default_int
+   use pic_blas_interfaces, only: pic_gemm, pic_dgemm_x
    use pic_logger, only: logger => global_logger
    use pic_timer, only: timer_type
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -44,6 +53,7 @@ module mqc_czt_ri_mp2_hessian
                                 two_centre, build_df_shell_table, max_block, shell_dim, &
                                 metric_inverse_sqrt
    use mqc_czt_direct, only: schwarz_bounds
+   use mqc_czt_gemm_threads, only: gemm_over_columns, gemm_over_inner
    use mqc_czt_ecp, only: ecp_refuses_derivatives
    use mqc_czt_cphf, only: cphf_solve
    use mqc_czt_response_product, only: response_mean_field
@@ -108,12 +118,11 @@ module mqc_czt_ri_mp2_hessian
       real(dp), allocatable :: jinv(:, :)
       real(dp), allocatable :: imo(:, :, :), cmo(:, :, :)
          !! `(pq|P)` and `c^P_pq = sum_Q J^-1_PQ (pq|Q)`, all MO pairs, `(n, n, np)`
-      real(dp), allocatable :: t2(:, :, :, :), u2(:, :)
-         !! Amplitudes `(i,j,a,b)` and `u_ijab = 2 t - t^swap` as `(ia, jb)`
+      real(dp), allocatable :: t2(:, :, :, :), u4(:, :, :, :), u2(:, :)
+         !! Amplitudes `(i,j,a,b)`, `u_ijab = 2 t - t^swap` in the same layout, and
+         !! `u` as `(ia, jb)`, `ia = i + na (a-1)`
       real(dp), allocatable :: iov2(:, :), cov2(:, :)
          !! The active-occupied virtual block of `imo` and `cmo`, `(na*nv, np)`
-      real(dp), allocatable :: tt_o(:, :), ut_o(:, :), tp_v(:, :), up_v(:, :)
-         !! `t` and `u` rearranged so the one-particle densities are matrix products
       real(dp), allocatable :: gam3(:, :, :), gam2(:, :)
          !! `Gamma^P_ia = u c`, `(na, nv, np)`, and `gamma_PQ`
       real(dp), allocatable :: d0(:, :), drel(:, :), ip(:, :), pco(:, :), z(:, :)
@@ -207,6 +216,8 @@ contains
       call clock%start()
       call setup_state(st, mol, aux, coeff, orbital_energies, n_occ, n_frozen, use_batch, &
                        error, xc=xc, scf_density=scf_density)
+      if (error%has_error()) return
+      call check_memory(st, error)
       if (error%has_error()) return
       call build_fitted_objects(st, error)
       if (error%has_error()) then
@@ -387,20 +398,78 @@ contains
       st%zero_h = 0.0_dp
    end subroutine setup_state
 
-   function default_atom_batch(st) result(nab)
-      !! Atoms per three-index derivative batch, from what the machine has
+   function atom_batch_bytes(st) result(bytes)
+      !! Bytes one atom of a three-index derivative batch costs
       !!
       !! A batch holds the AO first-derivative integrals of its atoms
       !! (`3 nao^2 P` doubles each) and, per component, an MO image and a
       !! density (`n^2 P + o v P`), so three times the AO figure is a fair price.
       type(ri_state_t), intent(in) :: st
+      real(dp) :: bytes
+
+      bytes = 8.0_dp*3.0_dp*real(st%nao, dp)**2*real(st%np, dp)*3.0_dp
+   end function atom_batch_bytes
+
+   function resident_bytes(st) result(bytes)
+      !! Bytes the routine holds regardless of how the atoms are batched
+      !!
+      !! The estimate is an upper bound counted from the allocations at the
+      !! peak: the stacks over all `3N` perturbations at ladders C and D (twenty
+      !! of them, rounded up to twenty-four), the three-index MO integrals and
+      !! fitting coefficients with the per-perturbation `n^2 P` pair, the
+      !! resident and the per-perturbation `o^2 v^2` arrays, and the objects of
+      !! size `o v P`. What the batch of atoms adds is `atom_batch_bytes` an atom.
+      type(ri_state_t), intent(in) :: st
+      real(dp) :: bytes
+
+      real(dp) :: n2, ov, np
+
+      n2 = real(st%n, dp)**2
+      ov = real(st%na, dp)*real(st%nv, dp)
+      np = real(st%np, dp)
+      bytes = 24.0_dp*n2*real(st%n3, dp) &
+              + 4.0_dp*n2*np &
+              + 6.0_dp*ov**2 &
+              + 12.0_dp*ov*np + 3.0_dp*np**2
+      bytes = 8.0_dp*bytes
+   end function resident_bytes
+
+   subroutine check_memory(st, error)
+      !! Refuse a problem whose resident arrays alone exceed the memory budget
+      !!
+      !! The budget is the deck's `memory_gb` when it gave one, else four fifths
+      !! of what the kernel reports available, and unlimited on a machine that
+      !! reports nothing. One atom's batch must fit beside the resident arrays.
+      type(ri_state_t), intent(in) :: st
+      type(error_t), intent(inout) :: error
+
+      real(dp) :: need, budget
+      character(len=64) :: need_text, budget_text
+
+      budget = memory_budget(huge(1.0_dp), 0.8_dp)
+      need = resident_bytes(st) + atom_batch_bytes(st)
+      if (need <= budget) return
+      write (need_text, "(f0.2)") need/1.0e9_dp
+      write (budget_text, "(f0.2)") budget/1.0e9_dp
+      call error%set(ERROR_VALIDATION, "the RI-MP2 Hessian needs about "// &
+                     trim(need_text)//" GB resident (the 3N perturbation stacks, the "// &
+                     "three-index MO integrals, the amplitudes and one atom's "// &
+                     "first-derivative batch) and the memory budget is "//trim(budget_text)// &
+                     " GB; raise system.memory_gb, run on a larger node, or difference the "// &
+                     "gradient instead.")
+   end subroutine check_memory
+
+   function default_atom_batch(st) result(nab)
+      !! Atoms per three-index derivative batch, from what the machine has
+      !!
+      !! A quarter of the memory budget less `resident_bytes`, at least one atom.
+      type(ri_state_t), intent(in) :: st
       integer :: nab
 
-      real(dp) :: per_atom, budget
+      real(dp) :: budget
 
-      per_atom = 8.0_dp*3.0_dp*real(st%nao, dp)**2*real(st%np, dp)*3.0_dp
-      budget = memory_budget(4.0e9_dp, 0.25_dp)
-      nab = int(max(1.0_dp, min(real(DEFAULT_ATOM_BATCH_CAP, dp), budget/per_atom)))
+      budget = memory_budget(4.0e9_dp, 0.25_dp) - resident_bytes(st)
+      nab = int(max(1.0_dp, min(real(DEFAULT_ATOM_BATCH_CAP, dp), budget/atom_batch_bytes(st))))
       nab = min(nab, st%natm)
    end function default_atom_batch
 
@@ -443,7 +512,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: three(:, :), metric(:, :), block(:, :), half(:, :)
-      real(dp), allocatable :: kia(:, :)
+      real(dp), allocatable :: gtmp(:, :)
       real(dp), pointer :: i2(:, :), c2(:, :)
       integer :: n_dropped, p, i, j, a, b, n, no, nf, na, nv, np, nao
 
@@ -460,13 +529,19 @@ contains
       ! by `gp_term`; keeping those two would cut them by up to a factor of two
       ! to four at the sizes where they matter.
       call three_centre(st%mol, st%aux, three)
-      allocate (st%imo(n, n, np), block(nao, nao), half(nao, n))
+      allocate (st%imo(n, n, np))
+      !$omp parallel default(none) shared(three, st, np, nao, n) private(p, block, half)
+      allocate (block(nao, nao), half(nao, n))
+      !$omp do schedule(static)
       do p = 1, np
          block = reshape(three(:, p), [nao, nao])
          call pic_gemm(block, st%c, half)
          call pic_gemm(st%c, half, st%imo(:, :, p), transa="T")
       end do
-      deallocate (three, block, half)
+      !$omp end do
+      deallocate (block, half)
+      !$omp end parallel
+      deallocate (three)
 
       call two_centre(st%aux, metric)
       call inverse_metric(metric, st%jinv, n_dropped, error)
@@ -486,10 +561,11 @@ contains
       allocate (st%cmo(n, n, np))
       i2(1:n*n, 1:np) => st%imo
       c2(1:n*n, 1:np) => st%cmo
-      call pic_gemm(i2, st%jinv, c2)
+      call gemm_over_columns(i2, st%jinv, c2)
 
-      ! The amplitudes, from the occupied-virtual block.
-      allocate (st%iov2(na*nv, np), st%cov2(na*nv, np), kia(na*nv, na*nv))
+      ! The amplitudes, from the occupied-virtual block. `u2` holds the integrals
+      ! `(ia|jb)` until the amplitudes are formed, then becomes `u` in place.
+      allocate (st%iov2(na*nv, np), st%cov2(na*nv, np), st%u2(na*nv, na*nv))
       do p = 1, np
          do a = 1, nv
             do i = 1, na
@@ -498,50 +574,56 @@ contains
             end do
          end do
       end do
-      call pic_gemm(st%iov2, st%cov2, kia, transb="T")
-      allocate (st%t2(na, na, nv, nv), st%u2(na*nv, na*nv))
+      call gemm_over_columns(st%iov2, st%cov2, st%u2, transb="T")
+      allocate (st%t2(na, na, nv, nv), st%u4(na, na, nv, nv))
+      !$omp parallel do default(none) collapse(2) schedule(static) &
+      !$omp    shared(st, na, nv, nf, no) private(a, b, i, j)
       do b = 1, nv
          do a = 1, nv
             do j = 1, na
                do i = 1, na
-                  st%t2(i, j, a, b) = kia(i + na*(a - 1), j + na*(b - 1)) &
+                  st%t2(i, j, a, b) = st%u2(i + na*(a - 1), j + na*(b - 1)) &
                                       /(st%eps(nf + i) + st%eps(nf + j) &
                                         - st%eps(no + a) - st%eps(no + b))
                end do
             end do
          end do
       end do
+      !$omp end parallel do
+      call combine_amplitudes(st%t2, st%u4)
+      !$omp parallel do default(none) collapse(2) schedule(static) &
+      !$omp    shared(st, na, nv) private(a, b, i, j)
       do b = 1, nv
          do a = 1, nv
             do j = 1, na
                do i = 1, na
-                  st%u2(i + na*(a - 1), j + na*(b - 1)) = 2.0_dp*st%t2(i, j, a, b) &
-                                                          - st%t2(i, j, b, a)
+                  st%u2(i + na*(a - 1), j + na*(b - 1)) = st%u4(i, j, a, b)
                end do
             end do
          end do
       end do
-      allocate (st%gam3(na, nv, np), st%gam2(np, np))
-      block
-         real(dp), allocatable :: gtmp(:, :)
-         allocate (gtmp(na*nv, np))
-         call pic_gemm(st%u2, st%cov2, gtmp)
-         st%gam3 = reshape(gtmp, [na, nv, np])
-         call pic_gemm(gtmp, st%cov2, st%gam2, transa="T")
-      end block
-      deallocate (kia)
-      call arrange_amplitudes(st, st%t2, st%tt_o, st%tp_v)
-      block
-         real(dp), allocatable :: uu(:, :, :, :)
-         allocate (uu(na, na, nv, nv))
-         do b = 1, nv
-            do a = 1, nv
-               uu(:, :, a, b) = 2.0_dp*st%t2(:, :, a, b) - st%t2(:, :, b, a)
-            end do
-         end do
-         call arrange_amplitudes(st, uu, st%ut_o, st%up_v)
-      end block
+      !$omp end parallel do
+      allocate (st%gam3(na, nv, np), st%gam2(np, np), gtmp(na*nv, np))
+      call gemm_over_columns(st%u2, st%cov2, gtmp)
+      st%gam3 = reshape(gtmp, [na, nv, np])
+      call gemm_over_inner(gtmp, st%cov2, st%gam2)
    end subroutine build_fitted_objects
+
+   subroutine combine_amplitudes(t, u)
+      !! `u(i,j,a,b) = 2 t(i,j,a,b) - t(i,j,b,a)`
+      real(dp), intent(in) :: t(:, :, :, :)
+      real(dp), intent(out) :: u(:, :, :, :)
+
+      integer :: a, b
+
+      !$omp parallel do default(none) schedule(static) shared(t, u) private(a, b)
+      do b = 1, size(t, 4)
+         do a = 1, size(t, 3)
+            u(:, :, a, b) = 2.0_dp*t(:, :, a, b) - t(:, :, b, a)
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine combine_amplitudes
 
    function int_text(i) result(text)
       integer, intent(in) :: i
@@ -658,7 +740,7 @@ contains
       real(dp), intent(in) :: a(:, :, :), g(:, :, :)
       real(dp), intent(out) :: out(:, :)
 
-      real(dp), allocatable :: acc(:, :)
+      real(dp), allocatable :: acc(:, :), part(:, :)
       integer :: p, n, no, nf, na, nv
 
       n = st%n
@@ -667,13 +749,25 @@ contains
       na = st%na
       nv = st%nv
       out = 0.0_dp
-      allocate (acc(n, n))
+      ! Each thread sums its share of the auxiliary index into a private
+      ! matrix; the sequential BLAS makes this the only way the sum threads.
+      !$omp parallel default(none) shared(st, a, g, out, n, no, nf, na, nv) &
+      !$omp    private(p, acc, part)
+      allocate (acc(n, n), part(n, n))
+      part = 0.0_dp
+      !$omp do schedule(static)
       do p = 1, st%np
          call pic_gemm(a(:, no + 1:n, p), g(:, :, p), acc(:, 1:na), transb="T")
-         out(:, nf + 1:no) = out(:, nf + 1:no) + acc(:, 1:na)
+         part(:, nf + 1:no) = part(:, nf + 1:no) + acc(:, 1:na)
          call pic_gemm(a(nf + 1:no, :, p), g(:, :, p), acc(:, 1:nv), transa="T")
-         out(:, no + 1:n) = out(:, no + 1:n) + acc(:, 1:nv)
+         part(:, no + 1:n) = part(:, no + 1:n) + acc(:, 1:nv)
       end do
+      !$omp end do
+      !$omp critical
+      out = out + part
+      !$omp end critical
+      deallocate (acc, part)
+      !$omp end parallel
    end subroutine gp_term
 
    subroutine theta_term(st, a_ov, j1, th)
@@ -692,8 +786,8 @@ contains
       allocate (a2(na*nv, np), g2(na*nv, np), t2(na*nv, np))
       a2 = reshape(a_ov, [na*nv, np])
       g2 = reshape(st%gam3, [na*nv, np])
-      call pic_gemm(st%u2, a2, t2)
-      call pic_gemm(g2, j1, t2, transb="T", alpha=-1.0_dp, beta=1.0_dp)
+      call gemm_over_columns(st%u2, a2, t2)
+      call gemm_over_columns(g2, j1, t2, transb="T", alpha=-1.0_dp, beta=1.0_dp)
       th = reshape(t2, [na, nv, np])
    end subroutine theta_term
 
@@ -758,7 +852,7 @@ contains
 
       real(dp), allocatable :: ip0(:, :), t1p(:, :, :), dd(:, :, :), x(:, :)
       real(dp), allocatable :: rhs(:, :, :), zsol(:, :, :), tmp(:, :, :), psym3(:, :, :)
-      real(dp), allocatable :: t3(:, :)
+      real(dp), allocatable :: t3(:, :), t4(:, :)
       integer :: n, no, nf, na, nv, i, a, c
 
       n = st%n
@@ -770,14 +864,11 @@ contains
       ! ---- the unrelaxed density, d0 ---------------------------------------
       allocate (st%d0(n, n))
       st%d0 = 0.0_dp
-      allocate (t3(na, na))
-      call pic_gemm(st%tt_o, st%ut_o, t3, transb="T", alpha=-2.0_dp)
+      allocate (t3(na, na), t4(nv, nv))
+      call amplitude_densities(st%t2, st%u4, t3, t4)
       st%d0(nf + 1:no, nf + 1:no) = t3
-      deallocate (t3)
-      allocate (t3(nv, nv))
-      call pic_gemm(st%up_v, st%tp_v, t3, transb="T", alpha=2.0_dp)
-      st%d0(no + 1:n, no + 1:n) = t3
-      deallocate (t3)
+      st%d0(no + 1:n, no + 1:n) = t4
+      deallocate (t3, t4)
 
       ! ---- I'(d0), core<->active rotation, Z-vector -------------------------
       allocate (tmp(n, n, 1), t1p(n, n, 1), ip0(n, n))
@@ -883,41 +974,53 @@ contains
       ip = -0.5_dp*ip
    end subroutine lagrangian_unrelaxed
 
-   subroutine arrange_amplitudes(st, t, mat_o, mat_v)
-      !! `t(i,j,a,b)` as the two matrices the one-particle densities multiply
+   subroutine amplitude_densities(t, u, doo, dvv)
+      !! The occupied and virtual blocks of the unrelaxed one-particle density
+      !! from amplitudes `t` and `u`, both `(i,j,a,b)`
       !!
-      !! `mat_o(i, m+na*(e-1+nv*(f-1))) = t(i,m,e,f)` and
-      !! `mat_v(a, k+na*(m-1+na*(e-1))) = t(k,m,a,e)`, so that
-      !! `D_ij = -2 sum_mef t_imef u_jmef` and `D_ab = 2 sum_kme u_kmae t_kmbe`
-      !! are each one product.
-      type(ri_state_t), intent(in) :: st
-      real(dp), intent(in) :: t(:, :, :, :)
-      real(dp), allocatable, intent(out) :: mat_o(:, :), mat_v(:, :)
+      !! `doo(i,j) = -2 sum_mef t_imef u_jmef` and
+      !! `dvv(a,b) = 2 sum_kme u_kmae t_kmbe`, each a product of views of the
+      !! two arrays: `(na, na nv^2)` for the occupied block, `(na^2, nv)` slabs
+      !! at fixed `e` for the virtual one. For the first derivative the same
+      !! routine is called with `(dt, u)` and `(t, du)` and the results added.
+      real(dp), intent(in) :: t(:, :, :, :), u(:, :, :, :)
+      real(dp), intent(out) :: doo(:, :), dvv(:, :)
 
-      integer :: na, nv, i, m, e, f, k, a
+      integer :: na, nv
 
-      na = st%na
-      nv = st%nv
-      allocate (mat_o(na, na*nv*nv), mat_v(nv, na*na*nv))
-      do f = 1, nv
-         do e = 1, nv
-            do m = 1, na
-               do i = 1, na
-                  mat_o(i, m + na*(e - 1 + nv*(f - 1))) = t(i, m, e, f)
-               end do
-            end do
-         end do
-      end do
+      na = size(t, 1)
+      nv = size(t, 3)
+      call densities_flat(na, nv, t, u, doo, dvv)
+   end subroutine amplitude_densities
+
+   subroutine densities_flat(na, nv, t, u, doo, dvv)
+      !! `amplitude_densities` on explicit-shape views of the amplitudes
+      integer, intent(in) :: na, nv
+      real(dp), intent(in) :: t(na, na*nv*nv), u(na, na*nv*nv)
+      real(dp), intent(out) :: doo(na, na), dvv(nv, nv)
+
+      real(dp), allocatable :: part(:, :)
+      integer :: e
+
+      call pic_gemm(t, u, doo, transb="T", alpha=-2.0_dp)
+      dvv = 0.0_dp
+      !$omp parallel default(none) shared(na, nv, t, u, dvv) private(e, part)
+      allocate (part(nv, nv))
+      part = 0.0_dp
+      !$omp do schedule(static)
       do e = 1, nv
-         do m = 1, na
-            do k = 1, na
-               do a = 1, nv
-                  mat_v(a, k + na*(m - 1 + na*(e - 1))) = t(k, m, a, e)
-               end do
-            end do
-         end do
+         call pic_dgemm_x("T", "N", int(nv, default_int), int(nv, default_int), &
+                          int(na*na, default_int), 2.0_dp, u(1, (e - 1)*na*nv + 1), &
+                          int(na*na, default_int), t(1, (e - 1)*na*nv + 1), &
+                          int(na*na, default_int), 1.0_dp, part, int(nv, default_int))
       end do
-   end subroutine arrange_amplitudes
+      !$omp end do
+      !$omp critical
+      dvv = dvv + part
+      !$omp end critical
+      deallocate (part)
+      !$omp end parallel
+   end subroutine densities_flat
 
    ! ==========================================================================
    ! first-order skeletons
@@ -1118,11 +1221,11 @@ contains
 
       integer, allocatable :: bas(:, :), orb_atom(:), aux_atom(:)
       real(dp), allocatable :: env(:), buf1(:), buf2(:), ploc(:, :), slab(:, :, :, :)
-      real(dp), allocatable :: half(:, :), tmp(:, :)
+      real(dp), allocatable :: half(:, :)
       real(dp) :: s1, s2
       integer :: shls(4)
       integer :: dummy, nbas_orb, nbas_aux, ish, jsh, ksh, di, dj, dk, io, jo, ko
-      integer :: i, j, k, comp, ret1, ret2, idx, mx, ny, y, nao, na, nv, natm
+      integer :: i, j, k, comp, ret1, ret2, idx, mx, ny, y, nao, na, nv, natm, dkmax, yk
 
       if (error%has_error()) return
       nao = orb%nao
@@ -1142,26 +1245,34 @@ contains
          aux_atom(ksh) = aux%bas(LIBCINT_ATOM_OF, ksh) + 1
       end do
       mx = max(max_block(orb), max_block(aux))
-      allocate (half(nao, nv), tmp(nao, nao))
+      dkmax = 1
+      do ksh = 1, nbas_aux
+         dkmax = max(dkmax, aux%shell_offset(ksh + 1) - aux%shell_offset(ksh))
+      end do
+      allocate (slab(nao, nao, dkmax, ny))
 
+      ! One team for the whole sweep. Per auxiliary shell the team builds the AO
+      ! slab of every density, then contracts the integrals against it; the
+      ! barrier closing each worksharing loop is what keeps the next shell's slab
+      ! from overwriting one still being read.
+      !$omp parallel default(none) &
+      !$omp    shared(slab, orb, aux, bas, env, dummy, nbas_orb, nbas_aux, mx, ny, natm, &
+      !$omp           orb_atom, aux_atom, pair, dens, c_act, c_vir, nao, na, nv) &
+      !$omp    private(buf1, buf2, ploc, half, ksh, dk, ko, shls, ish, jsh, di, dj, io, jo, &
+      !$omp            i, j, k, comp, ret1, ret2, idx, y, yk, s1, s2)
+      allocate (buf1(mx**3*3), buf2(mx**3*3), ploc(3*natm, ny), half(nao, nv))
+      ploc = 0.0_dp
       do ksh = 1, nbas_aux
          dk = aux%shell_offset(ksh + 1) - aux%shell_offset(ksh)
          ko = aux%shell_offset(ksh)
-         allocate (slab(nao, nao, dk, ny))
-         do y = 1, ny
-            do k = 1, dk
-               call pic_gemm(c_act, dens(:, :, ko + k, y), half)
-               call pic_gemm(half, c_vir, slab(:, :, k, y), transb="T")
-            end do
+         !$omp do schedule(static)
+         do yk = 1, dk*ny
+            k = mod(yk - 1, dk) + 1
+            y = (yk - 1)/dk + 1
+            call pic_gemm(c_act, dens(:, :, ko + k, y), half)
+            call pic_gemm(half, c_vir, slab(:, :, k, y), transb="T")
          end do
-
-         !$omp parallel default(none) &
-         !$omp    shared(slab, orb, bas, env, dummy, nbas_orb, ksh, dk, ko, mx, ny, natm, &
-         !$omp           orb_atom, aux_atom, pair) &
-         !$omp    private(buf1, buf2, ploc, shls, ish, jsh, di, dj, io, jo, i, j, k, comp, &
-         !$omp            ret1, ret2, idx, y, s1, s2)
-         allocate (buf1(mx**3*3), buf2(mx**3*3), ploc(3*natm, ny))
-         ploc = 0.0_dp
+         !$omp end do
          !$omp do collapse(2) schedule(dynamic)
          do ish = 1, nbas_orb
             do jsh = 1, nbas_orb
@@ -1201,13 +1312,12 @@ contains
             end do
          end do
          !$omp end do
-         !$omp critical
-         pair = pair + ploc
-         !$omp end critical
-         deallocate (buf1, buf2, ploc)
-         !$omp end parallel
-         deallocate (slab)
       end do
+      !$omp critical
+      pair = pair + ploc
+      !$omp end critical
+      deallocate (buf1, buf2, ploc, half)
+      !$omp end parallel
    end subroutine contract_first_3c
 
    ! ==========================================================================
@@ -1707,6 +1817,57 @@ contains
       dip = -0.5_dp*dip
    end subroutine lagrangian_perturbed
 
+   subroutine amplitude_response(na, nv, eo, ev, dfoo, dfvv, t, dk, dt)
+      !! `d_Y t(i,j,a,b)` from the change of the integrals and of the Fock matrix
+      !!
+      !!     [ dk(ia,jb) + sum_c dfvv(a,c) t(i,j,c,b) + sum_c dfvv(b,c) t(i,j,a,c)
+      !!       - sum_k dfoo(i,k) t(k,j,a,b) - sum_k dfoo(j,k) t(i,k,a,b) ] / D_ijab
+      !!
+      !! `eo`, `ev` are the active-occupied and virtual orbital energies, `dfoo`
+      !! and `dfvv` the matching blocks of `d_Y f`, `t` is `(i,j,a,b)`, `dk` the
+      !! change of `(ia|jb)` as `(ia, jb)`. Each of the four sums is a product
+      !! of a view of `t` with a small matrix, formed slab by slab in `b`.
+      integer, intent(in) :: na, nv
+      real(dp), intent(in) :: eo(na), ev(nv), dfoo(na, na), dfvv(nv, nv)
+      real(dp), intent(in) :: t(na, na, nv, nv), dk(na*nv, na*nv)
+      real(dp), intent(out) :: dt(na, na, nv, nv)
+
+      integer(default_int) :: m2, mv, mn, mo
+      integer :: a, b, i, j
+
+      m2 = int(na*na, default_int)
+      mv = int(nv, default_int)
+      mo = int(na, default_int)
+      mn = int(na*na*nv, default_int)
+      !$omp parallel do default(none) schedule(dynamic) &
+      !$omp    shared(na, nv, eo, ev, dfoo, dfvv, t, dk, dt, m2, mv, mo, mn) private(a, b, i, j)
+      do b = 1, nv
+         ! sum_c dfvv(a,c) t(i,j,c,b): the slab t(:,:,:,b) as (ij, c)
+         call pic_dgemm_x("N", "T", m2, mv, mv, 1.0_dp, t(1, 1, 1, b), m2, dfvv, mv, &
+                          0.0_dp, dt(1, 1, 1, b), m2)
+         ! sum_c dfvv(b,c) t(i,j,a,c): t as (ija, c), one column of the result
+         call pic_dgemm_x("N", "T", mn, 1_default_int, mv, 1.0_dp, t, mn, dfvv(b, 1), mv, &
+                          1.0_dp, dt(1, 1, 1, b), mn)
+         ! - sum_k dfoo(i,k) t(k,j,a,b): the slab as (i, ja)
+         call pic_dgemm_x("N", "N", mo, int(na*nv, default_int), mo, -1.0_dp, dfoo, mo, &
+                          t(1, 1, 1, b), mo, 1.0_dp, dt(1, 1, 1, b), mo)
+         ! - sum_k dfoo(j,k) t(i,k,a,b)
+         do a = 1, nv
+            call pic_dgemm_x("N", "T", mo, mo, mo, -1.0_dp, t(1, 1, a, b), mo, dfoo, mo, &
+                             1.0_dp, dt(1, 1, a, b), mo)
+         end do
+         do a = 1, nv
+            do j = 1, na
+               do i = 1, na
+                  dt(i, j, a, b) = (dt(i, j, a, b) + dk(i + na*(a - 1), j + na*(b - 1))) &
+                                   /(eo(i) + eo(j) - ev(a) - ev(b))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine amplitude_response
+
    subroutine member_quantities(st, ao, u, df, ip2c_c, own_aux, atom, lagc_carr, &
                                 lagc_pert, ddg, d3y, d2y)
       !! Everything one perturbation needs from its three-index first-derivative
@@ -1728,10 +1889,9 @@ contains
       real(dp), allocatable :: jx(:, :), isk(:, :, :), di3(:, :, :), half(:, :), w(:, :)
       real(dp), allocatable :: diov2(:, :), cj(:, :), dk2(:, :), dt(:, :, :, :), du(:, :, :, :)
       real(dp), allocatable :: dg2(:, :), dg3(:, :, :), th(:, :, :), th2(:, :), skov2(:, :)
-      real(dp), allocatable :: dgsk(:, :), dcy(:, :), gam2d(:, :), t3(:, :)
-      real(dp), allocatable :: dtt_o(:, :), dut_o(:, :), dtp_v(:, :), dup_v(:, :)
-      real(dp) :: acc
-      integer :: n, no, nf, na, nv, np, p, q, i, j, a, b, c, k
+      real(dp), allocatable :: dgsk(:, :), dcy(:, :), gam2d(:, :), t3(:, :), t4(:, :)
+      real(dp), allocatable :: dfoo(:, :), dfvv(:, :), eo(:), ev(:), pp(:, :)
+      integer :: n, no, nf, na, nv, np, p, q, i, a, b, j
 
       n = st%n
       no = st%no
@@ -1749,7 +1909,10 @@ contains
          end do
       end do
 
-      allocate (isk(n, n, np), di3(n, n, np), half(st%nao, n), w(n, n))
+      allocate (isk(n, n, np), di3(n, n, np))
+      !$omp parallel default(none) shared(st, ao, u, isk, di3, np, n) private(p, half, w)
+      allocate (half(st%nao, n), w(n, n))
+      !$omp do schedule(static)
       do p = 1, np
          call pic_gemm(ao(:, :, p), st%c, half)
          call pic_gemm(st%c, half, isk(:, :, p), transa="T")
@@ -1757,6 +1920,9 @@ contains
          call pic_gemm(st%imo(:, :, p), u, w, beta=1.0_dp)
          di3(:, :, p) = isk(:, :, p) + w
       end do
+      !$omp end do
+      deallocate (half, w)
+      !$omp end parallel
       call corr_lagrangian(st, isk, jx, lagc_carr)
 
       ! d_Y (ia|jb)_RI = dI c^T + c dI^T - c J^(Y) c^T
@@ -1769,68 +1935,51 @@ contains
             end do
          end do
       end do
-      call pic_gemm(st%cov2, jx, cj)
-      call pic_gemm(diov2, st%cov2, dk2, transb="T")
-      call pic_gemm(st%cov2, diov2, dk2, transb="T", beta=1.0_dp)
-      call pic_gemm(cj, st%cov2, dk2, transb="T", alpha=-1.0_dp, beta=1.0_dp)
+      call gemm_over_columns(st%cov2, jx, cj)
+      call gemm_over_columns(diov2, st%cov2, dk2, transb="T")
+      call gemm_over_columns(st%cov2, diov2, dk2, transb="T", beta=1.0_dp)
+      call gemm_over_columns(cj, st%cov2, dk2, transb="T", alpha=-1.0_dp, beta=1.0_dp)
 
-      allocate (dt(na, na, nv, nv))
+      allocate (dt(na, na, nv, nv), eo(na), ev(nv))
+      allocate (dfoo(na, na), dfvv(nv, nv))
+      dfoo = df(nf + 1:no, nf + 1:no)
+      dfvv = df(no + 1:n, no + 1:n)
+      eo = st%eps(nf + 1:no)
+      ev = st%eps(no + 1:n)
+      call amplitude_response(na, nv, eo, ev, dfoo, dfvv, st%t2, dk2, dt)
+      deallocate (dfoo, dfvv, eo, ev)
+
+      ! `dk2` is spent; its storage becomes `d_Y u` as (ia, jb)
+      !$omp parallel do default(none) collapse(2) schedule(static) &
+      !$omp    shared(dk2, dt, na, nv) private(a, b, i, j)
       do b = 1, nv
          do a = 1, nv
             do j = 1, na
                do i = 1, na
-                  acc = dk2(i + na*(a - 1), j + na*(b - 1))
-                  do c = 1, nv
-                     acc = acc + df(no + a, no + c)*st%t2(i, j, c, b) &
-                           + df(no + b, no + c)*st%t2(i, j, a, c)
-                  end do
-                  do k = 1, na
-                     acc = acc - df(nf + i, nf + k)*st%t2(k, j, a, b) &
-                           - df(nf + j, nf + k)*st%t2(i, k, a, b)
-                  end do
-                  dt(i, j, a, b) = acc/(st%eps(nf + i) + st%eps(nf + j) &
-                                        - st%eps(no + a) - st%eps(no + b))
+                  dk2(i + na*(a - 1), j + na*(b - 1)) = 2.0_dp*dt(i, j, a, b) - dt(i, j, b, a)
                end do
             end do
          end do
       end do
-
+      !$omp end parallel do
       allocate (du(na, na, nv, nv))
-      do b = 1, nv
-         do a = 1, nv
-            du(:, :, a, b) = 2.0_dp*dt(:, :, a, b) - dt(:, :, b, a)
-         end do
-      end do
-      call arrange_amplitudes(st, dt, dtt_o, dtp_v)
-      call arrange_amplitudes(st, du, dut_o, dup_v)
+      call combine_amplitudes(dt, du)
       ddg = 0.0_dp
-      allocate (t3(na, na))
-      call pic_gemm(dtt_o, st%ut_o, t3, transb="T", alpha=-2.0_dp)
-      call pic_gemm(st%tt_o, dut_o, t3, transb="T", alpha=-2.0_dp, beta=1.0_dp)
+      allocate (t3(na, na), t4(nv, nv))
+      call amplitude_densities(dt, st%u4, t3, t4)
       ddg(nf + 1:no, nf + 1:no) = t3
-      deallocate (t3)
-      allocate (t3(nv, nv))
-      call pic_gemm(st%up_v, dtp_v, t3, transb="T", alpha=2.0_dp)
-      call pic_gemm(dup_v, st%tp_v, t3, transb="T", alpha=2.0_dp, beta=1.0_dp)
-      ddg(no + 1:n, no + 1:n) = t3
-      deallocate (t3)
+      ddg(no + 1:n, no + 1:n) = t4
+      deallocate (t3, t4)
+      allocate (t3(na, na), t4(nv, nv))
+      call amplitude_densities(st%t2, du, t3, t4)
+      ddg(nf + 1:no, nf + 1:no) = ddg(nf + 1:no, nf + 1:no) + t3
+      ddg(no + 1:n, no + 1:n) = ddg(no + 1:n, no + 1:n) + t4
+      deallocate (t3, t4, du, dt)
 
       ! d_Y Gamma~ = du c, and the Lagrangian term with the density's response in
       allocate (dg2(na*nv, np), dg3(na, nv, np))
-      block
-         real(dp), allocatable :: du2(:, :)
-         allocate (du2(na*nv, na*nv))
-         do b = 1, nv
-            do a = 1, nv
-               do j = 1, na
-                  do i = 1, na
-                     du2(i + na*(a - 1), j + na*(b - 1)) = du(i, j, a, b)
-                  end do
-               end do
-            end do
-         end do
-         call pic_gemm(du2, st%cov2, dg2)
-      end block
+      call gemm_over_columns(dk2, st%cov2, dg2)
+      deallocate (dk2)
       dg3 = reshape(dg2, [na, nv, np])
       call corr_lagrangian(st, di3, jx, lagc_pert, dgam3=dg3)
 
@@ -1838,16 +1987,19 @@ contains
       allocate (th(na, nv, np), th2(na*nv, np), dgsk(na*nv, np), dcy(na*nv, np))
       call theta_term(st, reshape(skov2, [na, nv, np]), jx, th)
       th2 = reshape(th, [na*nv, np])
-      call pic_gemm(th2, st%jinv, dgsk)
+      call gemm_over_columns(th2, st%jinv, dgsk)
       cj = skov2 - cj
-      call pic_gemm(cj, st%jinv, dcy)
+      call gemm_over_columns(cj, st%jinv, dcy)
 
-      d3y = reshape(dg2 + dgsk, [na, nv, np])
+      dg2 = dg2 + dgsk
+      d3y = reshape(dg2, [na, nv, np])
       allocate (gam2d(na*nv, np))
       gam2d = reshape(st%gam3, [na*nv, np])
-      call pic_gemm(dg2, st%cov2, d2y, transa="T")
-      call pic_gemm(dgsk, st%cov2, d2y, transa="T", beta=1.0_dp)
-      call pic_gemm(gam2d, dcy, d2y, transa="T", beta=1.0_dp)
+      ! d2y = (dg2 + dgsk)^T c + gam2d^T dcy
+      call gemm_over_inner(dg2, st%cov2, d2y)
+      allocate (pp(np, np))
+      call gemm_over_inner(gam2d, dcy, pp)
+      d2y = d2y + pp
    end subroutine member_quantities
 
    ! ==========================================================================

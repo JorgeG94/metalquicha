@@ -106,6 +106,14 @@ its Z-vector with a fitted operator, which sits about 1e-7 from the
 exact-reference derivative, so the Hessian and a difference of that gradient
 agree to that and not further.
 
+The fitted block adds up what it will hold at once before it allocates -- a
+few stacks of :math:`n_{mo}^2 \times 3N`, the three-index integrals, three
+:math:`o^2 v^2` amplitude arrays and one atom's batch of derivative integrals --
+and stops with an error stating the bytes needed if that exceeds the memory
+budget (``system.memory_gb``, else four fifths of what the machine reports
+available). It does not fall back by itself: ``"semi-numerical"`` is the
+answer for a problem that does not fit.
+
 A double hybrid that took the analytic path logs ``computing the analytic
 Hessian`` followed by ``computing the perturbative term's Hessian``. Seeing
 only the first line on a ``b2plyp`` deck would mean the Hessian excluded what
