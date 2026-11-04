@@ -23,6 +23,8 @@ module test_mqc_ri_mp2_hessian_dh
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
+   use mqc_czt_hessian, only: solve_zvector_batch
+   use mqc_czt_cphf, only: cphf_solve
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
    private
@@ -57,7 +59,9 @@ contains
                                against_conventional_631g), &
                   new_unittest("b2plyp_cc_pvdz_against_the_conventional_block", &
                                against_conventional_dz), &
-                  new_unittest("batching_changes_nothing", batching) &
+                  new_unittest("batching_changes_nothing", batching), &
+                  new_unittest("batched_zvectors_match_cphf_solve", batched_zvectors), &
+                  new_unittest("batched_zvector_block_matches_per_rhs", batched_block) &
                   ]
    end subroutine collect_mqc_ri_mp2_hessian_dh_tests
 
@@ -250,6 +254,84 @@ contains
       call mol%destroy()
       call aux%destroy()
    end subroutine batching
+
+   subroutine batched_zvectors(error)
+      !! `solve_zvector_batch` against `cphf_solve` over a Kohn-Sham reference:
+      !! the same right-hand sides through the operator with the kernel and the
+      !! functional's exchange fraction
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: NRHS = 7
+      type(czt_molecule_t) :: mol, aux
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: rhs(:, :, :), batched(:, :, :), single(:, :, :)
+      integer :: nv, no, a, i, k
+
+      if (.not. xc_available()) return
+      call make_context("6-31g", ctx, err)
+      if (.not. err%has_error()) &
+         call setup_case("6-31g", "cc-pvdz-rifit", WATER, mol, aux, ctx, scf, err)
+      call check(error,.not. err%has_error(), "the reference must converge")
+      if (allocated(error)) return
+      no = 5
+      nv = size(scf%orbitals, 2) - no
+      allocate (rhs(nv, no, NRHS))
+      do k = 1, NRHS
+         do i = 1, no
+            do a = 1, nv
+               rhs(a, i, k) = 0.1_dp*sin(0.37_dp*a + 1.3_dp*i + 2.1_dp*k)
+            end do
+         end do
+      end do
+      rhs(:, :, 4) = 0.0_dp
+      call cphf_solve(mol, scf%orbitals, scf%orbital_energies, no, response=single, error=err, &
+                      mo_rhs=rhs, tol=1.0e-13_dp, max_iter=200, xc=ctx, density=scf%density)
+      call solve_zvector_batch(mol, scf%orbitals, scf%orbital_energies, no, rhs, batched, err, &
+                               xc=ctx, reference=scf%density, k_scale=ctx%exx_fraction, &
+                               tol=1.0e-13_dp, max_iter=200, batch=3)
+      call check(error,.not. err%has_error(), "both solves must succeed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(batched - single)) < 1.0e-10_dp, &
+                 "the batched Z-vectors differ from cphf_solve's")
+      if (allocated(error)) return
+      call check(error, ctx%exx_fraction > 0.0_dp .and. ctx%exx_fraction < 1.0_dp, &
+                 "the functional is not a hybrid, so the exchange fraction is not exercised")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine batched_zvectors
+
+   subroutine batched_block(error)
+      !! The double hybrid's block with the Z-vectors solved together against one
+      !! with a solve per right-hand side
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: together(:, :, :, :), apart(:, :, :, :)
+
+      if (.not. xc_available()) return
+      call make_context("6-31g", ctx, err)
+      if (.not. err%has_error()) &
+         call setup_case("6-31g", "cc-pvdz-rifit", WATER, mol, aux, ctx, scf, err)
+      call check(error,.not. err%has_error(), "the reference must converge")
+      if (allocated(error)) return
+      call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, together, &
+                                      err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
+                                      pt2_scale=ctx%pt2_fraction, batch=4)
+      call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, apart, &
+                                      err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
+                                      pt2_scale=ctx%pt2_fraction, zvector_batched=.false.)
+      call check(error,.not. err%has_error(), "both runs must succeed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(together - apart)) < 1.0e-10_dp, &
+                 "batching the Z-vectors changes the block")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine batched_block
 
 end module test_mqc_ri_mp2_hessian_dh
 

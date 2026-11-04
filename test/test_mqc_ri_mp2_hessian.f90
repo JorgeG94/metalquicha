@@ -28,7 +28,8 @@ module test_mqc_ri_mp2_hessian
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_parts_t, &
                                      inverse_metric
-   use mqc_czt_hessian, only: rhf_hessian
+   use mqc_czt_hessian, only: rhf_hessian, solve_zvector_batch
+   use mqc_czt_cphf, only: cphf_solve
    implicit none
    private
 
@@ -63,6 +64,8 @@ contains
                   new_unittest("frozen_core_against_gradient_differences", &
                                frozen_against_gradient_differences), &
                   new_unittest("batching_changes_nothing", batching_changes_nothing), &
+                  new_unittest("batched_zvectors_match_cphf_solve", batched_zvectors), &
+                  new_unittest("batched_zvector_hessian_matches_per_rhs", batched_hessian), &
                   new_unittest("translations_leave_it_alone", translations), &
                   new_unittest("a_metric_that_drops_a_mode_is_counted", dropped_modes) &
                   ]
@@ -371,6 +374,82 @@ contains
       call mol%destroy()
       call aux%destroy()
    end subroutine batching_changes_nothing
+
+   subroutine batched_zvectors(error)
+      !! `solve_zvector_batch` against `cphf_solve` on the same right-hand sides,
+      !! one of them zero and a chunk width that does not divide the count
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: WATER(3, 3) = reshape( &
+                             [0.05_dp, 0.02_dp, -0.03_dp, &
+                              0.0_dp, -1.4308_dp, 1.1078_dp, &
+                              0.04_dp, 1.4308_dp, 1.1078_dp], [3, 3])
+      character(len=2), parameter :: SYM(3) = ["O ", "H ", "H "]
+      integer, parameter :: NRHS = 7
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: rhs(:, :, :), batched(:, :, :), single(:, :, :)
+      integer :: nv, no, a, i, k
+
+      call converge(WATER, SYM, "6-31g", "cc-pvdz-rifit", mol, aux, scf, err)
+      call check(error,.not. err%has_error(), "the SCF must converge")
+      if (allocated(error)) return
+      no = 5
+      nv = size(scf%orbitals, 2) - no
+      allocate (rhs(nv, no, NRHS))
+      do k = 1, NRHS
+         do i = 1, no
+            do a = 1, nv
+               rhs(a, i, k) = 0.1_dp*sin(0.37_dp*a + 1.3_dp*i + 2.1_dp*k)
+            end do
+         end do
+      end do
+      rhs(:, :, 4) = 0.0_dp
+      call cphf_solve(mol, scf%orbitals, scf%orbital_energies, no, response=single, error=err, &
+                      mo_rhs=rhs, tol=1.0e-13_dp, max_iter=200)
+      call solve_zvector_batch(mol, scf%orbitals, scf%orbital_energies, no, rhs, batched, err, &
+                               tol=1.0e-13_dp, max_iter=200, batch=3)
+      call check(error,.not. err%has_error(), "both solves must succeed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(batched - single)) < 1.0e-10_dp, &
+                 "the batched Z-vectors differ from cphf_solve's")
+      if (allocated(error)) return
+      call check(error, maxval(abs(batched(:, :, 4))) == 0.0_dp, "a zero right-hand side is not zero")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine batched_zvectors
+
+   subroutine batched_hessian(error)
+      !! The Hessian with the Z-vectors solved together against one with a solve
+      !! per right-hand side
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: WATER(3, 3) = reshape( &
+                             [0.05_dp, 0.02_dp, -0.03_dp, &
+                              0.0_dp, -1.4308_dp, 1.1078_dp, &
+                              0.04_dp, 1.4308_dp, 1.1078_dp], [3, 3])
+      character(len=2), parameter :: SYM(3) = ["O ", "H ", "H "]
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: together(:, :, :, :), apart(:, :, :, :)
+
+      call converge(WATER, SYM, "6-31g", "cc-pvdz-rifit", mol, aux, scf, err)
+      call check(error,.not. err%has_error(), "the SCF must converge")
+      if (allocated(error)) return
+      call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                      together, err, n_frozen=1, tol=1.0e-13_dp, batch=4)
+      call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                      apart, err, n_frozen=1, tol=1.0e-13_dp, &
+                                      zvector_batched=.false.)
+      call check(error,.not. err%has_error(), "both runs must succeed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(together - apart)) < 1.0e-10_dp, &
+                 "batching the Z-vectors changes the Hessian")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine batched_hessian
 
    subroutine translations(error)
       !! Moving every atom together moves nothing: each row sums to zero over
