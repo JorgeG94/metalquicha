@@ -161,6 +161,13 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_ri_mp2_hessian_dh)
   target_link_libraries(test_mqc_ri_mp2_hessian_dh
                         PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The fitted correlation Hessian as a deck reaches it: a declined metric
+  # taking the semi-numerical Hessian with the reason logged, and a double
+  # hybrid's fitted Hessian and dipole derivatives against the conventional
+  # ones. Runs from this directory, which is where its fixture is.
+  addtest(mqc_czt_ri_hessian_bridge)
+  target_link_libraries(test_mqc_czt_ri_hessian_bridge
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
   # The exchange-correlation Hessian, against differences of its own gradient.
   # The test skips itself when the build has no libxc, so it is registered
   # beside its neighbours rather than behind another condition.
