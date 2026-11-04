@@ -16,7 +16,7 @@ module mqc_czt_hessian
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_timing, only: timing_report_t
-   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH
+   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
    use mqc_czt_gradient, only: one_electron_deriv, iprinv_deriv_at, &
                                DERIV_KIN, DERIV_NUC, DERIV_OVLP
@@ -47,6 +47,7 @@ module mqc_czt_hessian
    public :: nuclear_response_t
    public :: solve_mo1_atom
    public :: solve_mo1_batch
+   public :: solve_zvector_batch
    public :: nuclear_repulsion_hessian
    public :: partial_hessian
    public :: response_hessian
@@ -495,6 +496,14 @@ contains
       integer :: n_ao, i, a, p
 
       if (error%has_error()) return
+
+      ! A zero trial vector has a zero image and costs no integral pass. The
+      ! solver asks for exactly that when the occupied block it fixes is empty,
+      ! as in `solve_zvector_batch`.
+      if (.not. any(vector /= 0.0_dp)) then
+         image = 0.0_dp
+         return
+      end if
 
       n_ao = size(this%orbitals, 1)
       allocate (mo1(this%n_mo, this%n_occ, this%n_pert))
@@ -1423,58 +1432,15 @@ contains
       max_batch = DEFAULT_RESPONSE_BATCH
       if (present(batch)) max_batch = max(1, batch)
 
-      ! `xc` and `reference` are one argument in two halves: the context without
-      ! the density its kernel is evaluated at would reach `xc_kernel_apply`
-      ! through `nuclear_apply` with `operator%reference` unallocated.
-      if (present(xc) .neqv. present(reference)) then
-         call error%set(ERROR_VALIDATION, "the coupled-perturbed solver was given an "// &
-                        "exchange-correlation context without the reference density its "// &
-                        "kernel is evaluated at, or the reverse; it needs both or neither")
-         return
-      end if
-
-      operator%mol => mol
-      operator%orbitals = orbitals
-      operator%c_occ = orbitals(:, 1:n_occ)
-      operator%energies = energies
-      operator%n_occ = n_occ
-      operator%n_mo = n_mo
-      allocate (operator%zero_h(n_ao, n_ao))
-      operator%zero_h = 0.0_dp
-      if (present(xc)) operator%xc => xc
-      if (present(reference)) operator%reference = reference
-      if (present(k_scale)) operator%k_scale = k_scale
-      if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
-      if (present(rs_omega)) operator%rs_omega = rs_omega
-      if (present(bounds)) then
-         operator%bounds = bounds
-      else
-         call schwarz_bounds(mol, operator%bounds, error)
-         if (error%has_error()) return
-      end if
-
-      ! The exchange-correlation kernel's coefficients over the grid, once for
-      ! the whole solve. They are a property of the reference density, which
-      ! does not move here, and `nuclear_apply` would otherwise re-evaluate
-      ! them -- the reference density on every block and libxc's second
-      ! derivatives over it -- on each of the solver's dozens of applications.
-      ! The cost is up to eleven arrays over the grid, held until this
-      ! returns; the fill weighs that against the machine and declines rather
-      ! than allocating over it, which leaves the cache unfilled and the
-      ! applications below on their uncached path.
-      if (present(xc)) then
-         call xc_kernel_cache_fill(xc, mol, operator%reference, operator%kernel_cache, error)
-         if (error%has_error()) return
-      end if
+      call build_nuclear_operator(operator, mol, orbitals, energies, n_occ, error, xc=xc, &
+                                  reference=reference, k_scale=k_scale, rs_k_lr=rs_k_lr, &
+                                  rs_omega=rs_omega, bounds=bounds)
+      if (error%has_error()) return
 
       allocate (mo1(n_mo, n_occ, 3, natm))
       allocate (h1mo(n_mo, n_occ), s1mo(n_mo, n_occ), work(n_ao, n_occ))
 
-      ! Balanced rather than greedy: eighteen perturbations taken twelve at a
-      ! time leaves a chunk of six that pays a full integral pass for half the
-      ! reuse, where nine and nine costs the same two passes and amortises both.
-      n_chunks = (n_pert + max_batch - 1)/max_batch
-      per_chunk = (n_pert + n_chunks - 1)/n_chunks
+      call balanced_chunks(n_pert, max_batch, n_chunks, per_chunk)
 
       write (line, "(a,i0,a,i0,a,i0,a,i0,a)") "  solving ", n_pert, &
          " nuclear responses in ", n_chunks, " chunks of up to ", per_chunk, &
@@ -1538,6 +1504,227 @@ contains
 
       deallocate (h1mo, s1mo, work, rhs)
    end subroutine solve_mo1_batch
+
+   subroutine balanced_chunks(n_pert, max_batch, n_chunks, per_chunk)
+      !! How many chunks `n_pert` perturbations go in, and how wide each is
+      !!
+      !! Balanced rather than greedy: eighteen perturbations taken twelve at a
+      !! time leaves a chunk of six that pays a full integral pass for half the
+      !! reuse, where nine and nine costs the same two passes and amortises both.
+      integer, intent(in) :: n_pert, max_batch
+      integer, intent(out) :: n_chunks, per_chunk
+
+      n_chunks = (n_pert + max_batch - 1)/max_batch
+      per_chunk = (n_pert + n_chunks - 1)/n_chunks
+   end subroutine balanced_chunks
+
+   subroutine build_nuclear_operator(operator, mol, orbitals, energies, n_occ, error, &
+                                     xc, reference, k_scale, rs_k_lr, rs_omega, bounds)
+      !! The response operator of a reference, with its kernel's coefficients filled
+      !!
+      !! What every batched solve against `nuclear_response_t` starts from: the
+      !! orbitals, the exchange fraction, the Schwarz bounds and, for a Kohn-Sham
+      !! reference, the kernel on the grid. `n_pert` is left at one for the
+      !! caller to set per chunk.
+      type(nuclear_response_t), intent(out) :: operator
+      type(czt_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! From `schwarz_bounds`, when the caller already has them.
+
+      integer :: n_ao, n_mo
+
+      if (error%has_error()) return
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+
+      ! `xc` and `reference` are one argument in two halves: the context without
+      ! the density its kernel is evaluated at would reach `xc_kernel_apply`
+      ! through `nuclear_apply` with `operator%reference` unallocated.
+      if (present(xc) .neqv. present(reference)) then
+         call error%set(ERROR_VALIDATION, "the coupled-perturbed solver was given an "// &
+                        "exchange-correlation context without the reference density its "// &
+                        "kernel is evaluated at, or the reverse; it needs both or neither")
+         return
+      end if
+
+      operator%mol => mol
+      operator%orbitals = orbitals
+      operator%c_occ = orbitals(:, 1:n_occ)
+      operator%energies = energies
+      operator%n_occ = n_occ
+      operator%n_mo = n_mo
+      allocate (operator%zero_h(n_ao, n_ao))
+      operator%zero_h = 0.0_dp
+      if (present(xc)) operator%xc => xc
+      if (present(reference)) operator%reference = reference
+      if (present(k_scale)) operator%k_scale = k_scale
+      if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
+      if (present(rs_omega)) operator%rs_omega = rs_omega
+      if (present(bounds)) then
+         operator%bounds = bounds
+      else
+         call schwarz_bounds(mol, operator%bounds, error)
+         if (error%has_error()) return
+      end if
+
+      ! The exchange-correlation kernel's coefficients over the grid, once for
+      ! the whole solve. They are a property of the reference density, which
+      ! does not move here, and `nuclear_apply` would otherwise re-evaluate
+      ! them -- the reference density on every block and libxc's second
+      ! derivatives over it -- on each of the solver's dozens of applications.
+      ! The cost is up to eleven arrays over the grid, held until the operator
+      ! is released; the fill weighs that against the machine and declines
+      ! rather than allocating over it, which leaves the cache unfilled and the
+      ! applications on their uncached path.
+      if (present(xc)) then
+         call xc_kernel_cache_fill(xc, mol, operator%reference, operator%kernel_cache, error)
+      end if
+   end subroutine build_nuclear_operator
+
+   subroutine solve_zvector_batch(mol, orbitals, energies, n_occ, mo_rhs, response, error, &
+                                  xc, reference, k_scale, rs_k_lr, rs_omega, &
+                                  max_iter, tol, batch, bounds)
+      !! `(A+B) U = -rhs` for many right-hand sides in the occupied-virtual block,
+      !! a dozen at a time through the nuclear solver
+      !!
+      !! The same equations as `cphf_solve` with `mo_rhs`, solved by the
+      !! machinery `solve_mo1_batch` runs: each conjugate-gradient iteration is one
+      !! Fock-type build for a whole chunk of right-hand sides, where
+      !! `cphf_solve` pays one for each. A right-hand side here is a virtual
+      !! block with the occupied block empty, and the nuclear operator is
+      !! exactly `(A+B)` on such a vector, so nothing is solved differently.
+      !!
+      !! **Convergence is per right-hand side and at least as strict as
+      !! `cphf_solve`'s.** That one stops when `|r| <= tol |rhs|` in the 2-norm;
+      !! the nuclear solver stops on the largest element of `Delta^-1 r`. Each
+      !! right-hand side is scaled to unit norm and the threshold handed down is
+      !! `tol / (max(Delta) sqrt(n_vir n_occ))`, which makes the second imply
+      !! the first: `|r| <= max(Delta) |Delta^-1 r|_2 <= max(Delta) sqrt(n)
+      !! |Delta^-1 r|_max`. A zero right-hand side returns zero.
+      type(czt_molecule_t), intent(in), target :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: mo_rhs(:, :, :)
+         !! `(n_vir, n_occ, k)`, the sign `cphf_solve` takes: `(A+B) U = -mo_rhs`
+      real(dp), allocatable, intent(out) :: response(:, :, :)   !! `U_ai`, `(n_vir, n_occ, k)`
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional, target :: xc
+         !! A Kohn-Sham reference's functional, as `solve_mo1_batch` takes it
+      real(dp), intent(in), optional :: reference(:, :)
+      real(dp), intent(in), optional :: k_scale
+      real(dp), intent(in), optional :: rs_k_lr, rs_omega
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+         !! The relative residual of every right-hand side; `DEFAULT_RESPONSE_TOL`
+      integer, intent(in), optional :: batch
+         !! Most right-hand sides per chunk; `DEFAULT_RESPONSE_BATCH` when absent.
+      real(dp), intent(in), optional :: bounds(:, :)
+
+      type(nuclear_response_t) :: operator
+      real(dp), allocatable :: rhs(:), answer(:), base(:, :, :), a3(:, :, :), norms(:)
+      real(dp) :: use_tol, delta_max, solver_tol
+      integer :: n_mo, n_vir, n_pert, max_batch, n_chunks, per_chunk, chunk, first, last
+      integer :: wide, q, p, i, a
+      character(len=MAX_LINE_LENGTH) :: line
+
+      if (error%has_error()) return
+
+      n_mo = size(orbitals, 2)
+      n_vir = n_mo - n_occ
+      n_pert = size(mo_rhs, 3)
+      if (n_occ < 1 .or. n_vir < 1 .or. size(energies) /= n_mo) then
+         call error%set(ERROR_VALIDATION, "the batched Z-vector solve needs both occupied "// &
+                        "and virtual orbitals and one energy per orbital")
+         return
+      end if
+      if (size(mo_rhs, 1) /= n_vir .or. size(mo_rhs, 2) /= n_occ) then
+         call error%set(ERROR_VALIDATION, "the batched Z-vector solve's right-hand side is "// &
+                        "not (n_vir, n_occ, k)")
+         return
+      end if
+      delta_max = maxval(energies(n_occ + 1:n_mo)) - minval(energies(1:n_occ))
+      if (minval(energies(n_occ + 1:n_mo)) - maxval(energies(1:n_occ)) <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "the batched Z-vector solve: an occupied orbital "// &
+                        "lies above a virtual one, so the reference is not a minimum and "// &
+                        "the response operator is not positive definite")
+         return
+      end if
+      use_tol = DEFAULT_RESPONSE_TOL
+      if (present(tol)) use_tol = tol
+      solver_tol = use_tol/(delta_max*sqrt(real(n_vir, dp)*real(n_occ, dp)))
+      max_batch = DEFAULT_RESPONSE_BATCH
+      if (present(batch)) max_batch = max(1, batch)
+
+      allocate (response(n_vir, n_occ, n_pert))
+      response = 0.0_dp
+      if (n_pert < 1) return
+      allocate (norms(n_pert))
+      do p = 1, n_pert
+         norms(p) = sqrt(sum(mo_rhs(:, :, p)**2))
+      end do
+
+      call build_nuclear_operator(operator, mol, orbitals, energies, n_occ, error, xc=xc, &
+                                  reference=reference, k_scale=k_scale, rs_k_lr=rs_k_lr, &
+                                  rs_omega=rs_omega, bounds=bounds)
+      if (error%has_error()) return
+
+      call balanced_chunks(n_pert, max_batch, n_chunks, per_chunk)
+      write (line, "(a,i0,a,i0,a,i0,a,i0,a)") "  solving ", n_pert, &
+         " Z-vectors in ", n_chunks, " chunks of up to ", per_chunk, &
+         ", over ", n_vir*n_occ, " orbital pairs each"
+      call logger%large_info(trim(line))
+
+      chunk = 0
+      first = 1
+      do while (first <= n_pert)
+         last = min(first + per_chunk - 1, n_pert)
+         wide = last - first + 1
+         chunk = chunk + 1
+         allocate (base(n_mo, n_occ, wide))
+         base = 0.0_dp
+         do q = 1, wide
+            p = first + q - 1
+            if (norms(p) <= 0.0_dp) cycle
+            do i = 1, n_occ
+               do a = 1, n_vir
+                  base(n_occ + a, i, q) = -mo_rhs(a, i, p) &
+                                          /(norms(p)*(energies(n_occ + a) - energies(i)))
+               end do
+            end do
+         end do
+
+         operator%n_pert = wide
+         rhs = reshape(base, [n_mo*n_occ*wide])
+         write (line, "(a,i0,a,i0,a,i0,a,i0)") "Z-vector chunk ", chunk, " of ", n_chunks, &
+            ": right-hand sides ", first, " to ", last
+         call solve_response(operator, rhs, rhs, answer, error, &
+                             max_iter=max_iter, tol=solver_tol, label=trim(line), &
+                             columns=wide, conjugate_gradient=.true.)
+         if (error%has_error()) return
+
+         a3 = reshape(answer, [n_mo, n_occ, wide])
+         do q = 1, wide
+            p = first + q - 1
+            response(:, :, p) = norms(p)*a3(n_occ + 1:n_mo, :, q)
+         end do
+         deallocate (answer, base)
+         first = last + 1
+      end do
+
+      write (line, "(a,i0,a,i14,a)") "  Z-vector solve: ", operator%n_apply, &
+         " integral passes, ", operator%total_computed, " quartets computed in all"
+      call logger%large_info(trim(line))
+   end subroutine solve_zvector_batch
 
    subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, &
                                k_scale, rs_k_lr, rs_omega, batch)
