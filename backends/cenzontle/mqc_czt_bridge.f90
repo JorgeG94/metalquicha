@@ -52,6 +52,7 @@ module mqc_czt_bridge
    use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
                                        log_property_table, leading_weight
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
+   use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_metric_dropped
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
@@ -1175,6 +1176,9 @@ contains
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
+      character(len=:), allocatable :: hessian_fallback
+         !! Set when a covered analytic Hessian could not be built and the
+         !! semi-numerical path takes over; the reason, for the one warning
       ! Left unallocated for the guesses that need no free-atom solutions. An
       ! unallocated allocatable passed to an optional dummy is an absent
       ! argument, so the SCF calls below need no branching on which guess ran.
@@ -2366,10 +2370,30 @@ contains
       !     core<->active resolution has been validated over a Hartree-Fock
       !     reference only, never against a Kohn-Sham operator carrying its
       !     kernel in the response
+      !
+      ! A named auxiliary basis is *not* on that list any more: the fitted
+      ! perturbative term has its own block, `ri_mp2_correlation_hessian`, which
+      ! differentiates the energy the deck reports. It needs a metric that drops
+      ! no mode; one that does is declined at run time, below, and takes the
+      ! semi-numerical path like the rest.
       dh_analytic = kohn_sham .and. xc%pt2_fraction /= 0.0_dp &
                     .and. .not. xc%any_mgga .and. .not. xc%range_separated &
                     .and. xc%nlc_b == 0.0_dp .and. xc%nlc_c == 0.0_dp &
                     .and. .not. settings%freeze_core
+      ! Asked before the reference Hessian is built, so a declined metric costs
+      ! one two-centre build rather than a whole coupled-perturbed solve.
+      if (do_hessian .and. dh_analytic .and. settings%aux_basis_named &
+          .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
+         call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
+            result%has_error = .true.
+            call aux%destroy()
+            call mol%destroy()
+            return
+         end if
+         if (allocated(hessian_fallback)) dh_analytic = .false.
+      end if
       if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
           .and. .not. unrestricted &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
@@ -2381,7 +2405,10 @@ contains
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
             real(dp), allocatable :: ddip(:, :), ddip_pt2(:, :)
             type(timer_type) :: hess_clock
+            logical :: pt2_built, declined
 
+            pt2_built = .true.
+            declined = .false.
             call logger%info("  computing the analytic Hessian")
             call hess_clock%start()
             if (kohn_sham) then
@@ -2411,12 +2438,36 @@ contains
             ! both is the error.
             if (dh_analytic .and. .not. error%has_error()) then
                call logger%info("  computing the perturbative term's Hessian")
-               call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
-                                            scf%density, scf%n_occupied, 0, &
-                                            hess_pt2, hess_discard, error, &
-                                            xc=xc, pt2_scale=xc%pt2_fraction, &
-                                            dipole_derivatives=ddip_pt2)
-               if (.not. error%has_error()) hess4 = hess4 + hess_pt2
+               if (settings%aux_basis_named) then
+                  ! The energy above was fitted, so its Hessian is the fitted
+                  ! block's: the same auxiliary basis, an exact reference, and
+                  ! the PT2 coefficient applied once inside.
+                  call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+                  if (.not. error%has_error()) then
+                     call ri_mp2_correlation_hessian( &
+                        mol, corr_aux, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                        hess_pt2, error, tol=settings%hessian_response_tol, &
+                        max_iter=settings%hessian_response_max_iter, &
+                        batch=settings%hessian_response_batch, xc=xc, &
+                        scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
+                        dipole_derivatives=ddip_pt2, declined=declined)
+                     call corr_aux%destroy()
+                  end if
+                  ! Only the named refusal is differenced instead; any other
+                  ! error is a fault and fails the run below.
+                  if (error%has_error() .and. declined) then
+                     hessian_fallback = "the fitted perturbative term: "//error%get_message()
+                     call error%clear()
+                     pt2_built = .false.
+                  end if
+               else
+                  call mp2_correlation_hessian(mol, scf%orbitals, scf%orbital_energies, &
+                                               scf%density, scf%n_occupied, 0, &
+                                               hess_pt2, hess_discard, error, &
+                                               xc=xc, pt2_scale=xc%pt2_fraction, &
+                                               dipole_derivatives=ddip_pt2)
+               end if
+               if (.not. error%has_error() .and. pt2_built) hess4 = hess4 + hess_pt2
             end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
@@ -2426,25 +2477,27 @@ contains
                return
             end if
 
-            call hessian_to_matrix(hess4, result%hessian)
-            result%has_hessian = .true.
-            ! Infrared intensities, which the vibrational analysis works out
-            ! from these and the normal modes. Free here in the sense that
-            ! matters: the response they need was solved for the Hessian, so
-            ! what this added was two one-electron integrals.
-            !
-            ! A double hybrid's dipole is the *relaxed* one, so its intensity
-            ! needs the perturbative term's derivative added to the reference's
-            ! -- the same split as the Hessian just above, where `hess_pt2` is
-            ! added to `ks_hessian`. On water/6-31G that term is 1.26e-02
-            ! against a dipole of order one: small, and far too large to leave
-            ! out of an intensity.
-            if (allocated(ddip)) then
-               if (dh_analytic) then
-                  if (allocated(ddip_pt2)) ddip = ddip + ddip_pt2
+            if (pt2_built) then
+               call hessian_to_matrix(hess4, result%hessian)
+               result%has_hessian = .true.
+               ! Infrared intensities, which the vibrational analysis works out
+               ! from these and the normal modes. Free here in the sense that
+               ! matters: the response they need was solved for the Hessian, so
+               ! what this added was two one-electron integrals.
+               !
+               ! A double hybrid's dipole is the *relaxed* one, so its intensity
+               ! needs the perturbative term's derivative added to the reference's
+               ! -- the same split as the Hessian just above, where `hess_pt2` is
+               ! added to `ks_hessian`. On water/6-31G that term is 1.26e-02
+               ! against a dipole of order one: small, and far too large to leave
+               ! out of an intensity.
+               if (allocated(ddip)) then
+                  if (dh_analytic) then
+                     if (allocated(ddip_pt2)) ddip = ddip + ddip_pt2
+                  end if
+                  result%dipole_derivatives = ddip
+                  result%has_dipole_derivatives = .true.
                end if
-               result%dipole_derivatives = ddip
-               result%has_dipole_derivatives = .true.
             end if
             deallocate (hess4)
             write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
@@ -2598,37 +2651,97 @@ contains
             ! A positive list, because everything not on it would return a
             ! plausible, converged, wrong matrix rather than fail loudly: a
             ! restricted reference over exact integrals, unscaled MP2,
-            ! all-electron or frozen-core. The core count flows straight into
-            ! `mp2_correlation_hessian`, so an ordinary `freeze_core` deck takes
-            ! this path rather than central differences.
+            ! all-electron or frozen-core, exact or fitted. The core count flows
+            ! straight into the correlation routine, so an ordinary `freeze_core`
+            ! deck takes this path rather than central differences.
+            !
+            ! A fitted correlation (`ri-mp2`) is the reference's `rhf_hessian`
+            ! plus `ri_mp2_correlation_hessian`; the exact one is
+            ! `mp2_correlation_hessian` with the reference's skeleton and
+            ! response beside it. The fitted block differentiates the energy
+            ! reported, whereas the gradient above uses the fitted Z-vector
+            ! operator, which sits about 1e-7 from the exact-reference
+            ! derivative of that same energy -- the two agree to that and
+            ! not to the last digit.
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+                .and. settings%corr_density_fitting) then
+               call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, "MP2 Hessian: "// &
+                                        error%get_message())
+                  result%has_error = .true.
+                  call aux%destroy()
+                  call mol%destroy()
+                  return
+               end if
+            end if
+            if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+                .and. .not. allocated(hessian_fallback) &
                 .and. .not. unrestricted &
                 .and. .not. settings%density_fitting &
-                .and. .not. settings%corr_density_fitting &
                 .and. .not. settings%pcm%enabled .and. fragment%n_caps == 0 &
                 .and. settings%scs_ss == 1.0_dp .and. settings%scs_os == 1.0_dp) then
                block
                   real(dp), allocatable :: hcorr(:, :, :, :), href(:, :, :, :)
                   real(dp), allocatable :: hnuc(:, :, :, :), hresp(:, :, :, :)
                   type(timer_type) :: hess_clock
+                  logical :: built, declined
 
-                  call logger%info("  computing the analytic MP2 Hessian")
+                  built = .true.
+                  declined = .false.
                   call hess_clock%start()
-                  ! The correlation block plus the reference's AO-dependent
-                  ! skeleton come from one shared integral sweep; the
-                  ! reference's CPHF response and the nuclear repulsion
-                  ! complete the total, which is `rhf_hessian`'s own split.
-                  call mp2_correlation_hessian(mol, scf%orbitals, &
-                                               scf%orbital_energies, scf%density, &
-                                               scf%n_occupied, frozen, hcorr, href, error)
-                  if (.not. error%has_error()) then
-                     call nuclear_repulsion_hessian(fragment%element_numbers, &
-                                                    mol%coords, hnuc, error)
-                  end if
-                  if (.not. error%has_error()) then
-                     call response_hessian(mol, scf%density, scf%orbitals, &
-                                           scf%orbital_energies, scf%n_occupied, &
-                                           hresp, error)
+                  if (settings%corr_density_fitting) then
+                     call logger%info("  computing the analytic RI-MP2 Hessian")
+                     ! `href` is the whole reference -- skeleton, response and
+                     ! nuclear repulsion -- and `hcorr` the correlation block,
+                     ! as in the exact branch below.
+                     call rhf_hessian(mol, fragment%element_numbers, scf%density, &
+                                      scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                                      href, error, &
+                                      max_iter=settings%hessian_response_max_iter, &
+                                      tol=settings%hessian_response_tol, &
+                                      batch=settings%hessian_response_batch)
+                     if (.not. error%has_error()) then
+                        call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+                     end if
+                     if (.not. error%has_error()) then
+                        call ri_mp2_correlation_hessian( &
+                           mol, corr_aux, scf%orbitals, scf%orbital_energies, &
+                           scf%n_occupied, hcorr, error, n_frozen=frozen, &
+                           tol=settings%hessian_response_tol, &
+                           max_iter=settings%hessian_response_max_iter, &
+                           batch=settings%hessian_response_batch, declined=declined)
+                        call corr_aux%destroy()
+                     end if
+                     ! A metric that drops a mode is correct by differences
+                     ! instead, so not worth a failed run; any other error is a
+                     ! fault and fails it below.
+                     if (error%has_error() .and. declined) then
+                        hessian_fallback = "the fitted correlation block: "//error%get_message()
+                        call error%clear()
+                        built = .false.
+                     else if (.not. error%has_error()) then
+                        hcorr = hcorr + href
+                     end if
+                  else
+                     call logger%info("  computing the analytic MP2 Hessian")
+                     ! The correlation block plus the reference's AO-dependent
+                     ! skeleton come from one shared integral sweep; the
+                     ! reference's CPHF response and the nuclear repulsion
+                     ! complete the total, which is `rhf_hessian`'s own split.
+                     call mp2_correlation_hessian(mol, scf%orbitals, &
+                                                  scf%orbital_energies, scf%density, &
+                                                  scf%n_occupied, frozen, hcorr, href, error)
+                     if (.not. error%has_error()) then
+                        call nuclear_repulsion_hessian(fragment%element_numbers, &
+                                                       mol%coords, hnuc, error)
+                     end if
+                     if (.not. error%has_error()) then
+                        call response_hessian(mol, scf%density, scf%orbitals, &
+                                              scf%orbital_energies, scf%n_occupied, &
+                                              hresp, error)
+                     end if
+                     if (.not. error%has_error()) hcorr = hcorr + href + hresp + hnuc
                   end if
                   if (error%has_error()) then
                      call result%error%set(ERROR_VALIDATION, "MP2 Hessian: "// &
@@ -2637,12 +2750,13 @@ contains
                      call mol%destroy()
                      return
                   end if
-                  hcorr = hcorr + href + hresp + hnuc
-                  call hessian_to_matrix(hcorr, result%hessian)
-                  result%has_hessian = .true.
-                  write (line, "(a,f10.2,a)") "  Hessian done in ", &
-                     hess_clock%get_elapsed_time(), " s"
-                  call logger%info(trim(line))
+                  if (built) then
+                     call hessian_to_matrix(hcorr, result%hessian)
+                     result%has_hessian = .true.
+                     write (line, "(a,f10.2,a)") "  Hessian done in ", &
+                        hess_clock%get_elapsed_time(), " s"
+                     call logger%info(trim(line))
+                  end if
                end block
             end if
 
@@ -3059,9 +3173,13 @@ contains
             call logger%info("  analytic Hessian skipped: keywords.hessian.method is not "// &
                              '"analytic"; using the semi-numerical path')
          else
-            call logger%warning("no analytic Hessian for this run: "// &
-                                hessian_decline_reason(settings, unrestricted, kohn_sham, xc, &
-                                                       fragment%n_caps))
+            if (allocated(hessian_fallback)) then
+               call logger%warning("no analytic Hessian for this run: "//hessian_fallback)
+            else
+               call logger%warning("no analytic Hessian for this run: "// &
+                                   hessian_decline_reason(settings, unrestricted, kohn_sham, &
+                                                          xc, fragment%n_caps))
+            end if
             call logger%warning("  taking it by central differences of the analytic gradient instead")
          end if
       end if
@@ -3092,8 +3210,6 @@ contains
          reason = "coupled cluster"
       else if (settings%density_fitting) then
          reason = "density-fitted reference"
-      else if (settings%run_mp2 .and. settings%corr_density_fitting) then
-         reason = "density-fitted correlation (RI-MP2)"
       else if (settings%pcm%enabled) then
          reason = "continuum solvation"
       else if (n_caps > 0) then
@@ -4265,5 +4381,29 @@ contains
                               ghost=fragment%ghost_mask(), &
                               force_cartesian=settings%cartesian)
    end subroutine correlation_aux_basis
+
+   subroutine fitted_hessian_declined(settings, fragment, symbols, reason, error)
+      !! Why the fitted correlation Hessian would decline this deck's auxiliary
+      !! basis; `reason` is left unallocated when it would not
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(physical_fragment_t), intent(in) :: fragment
+      character(len=*), intent(in) :: symbols(:)
+      character(len=:), allocatable, intent(inout) :: reason
+      type(error_t), intent(inout) :: error
+
+      type(czt_molecule_t) :: corr_aux
+      integer :: n_dropped
+      character(len=16) :: buf
+
+      if (error%has_error()) return
+      call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+      if (error%has_error()) return
+      call ri_hessian_metric_dropped(corr_aux, n_dropped, error)
+      call corr_aux%destroy()
+      if (error%has_error() .or. n_dropped == 0) return
+      write (buf, "(i0)") n_dropped
+      reason = "the fitted correlation block: the auxiliary metric drops "// &
+               trim(buf)//" mode(s), and -J^-1 dJ J^-1 is exact only when it drops none"
+   end subroutine fitted_hessian_declined
 
 end module mqc_czt_bridge

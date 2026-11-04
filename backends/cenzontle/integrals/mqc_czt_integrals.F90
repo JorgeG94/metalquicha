@@ -74,6 +74,11 @@ module mqc_czt_integrals
       !! and that is what frees the slot. Only libfint reads a 64 there as
       !! this marker; libcint would take it for a real kappa.
 
+   real(dp), parameter :: FIT_METRIC_THRESHOLD = 1.0e-10_dp
+      !! Eigenvalues of the auxiliary metric at or below this are dropped by
+      !! `metric_inverse_sqrt`. One constant, so the fit and the derivative of the
+      !! fit (`-J^-1 dJ J^-1`, exact only when nothing is dropped) cannot disagree
+      !! about which modes survive.
    integer, parameter, public :: ERI_PATH_RYS = 1
       !! Every four-centre quartet through the Rys path, `libcint_2e_*`.
    integer, parameter, public :: ERI_PATH_ROTAXIS = 2
@@ -217,6 +222,7 @@ module mqc_czt_integrals
    public :: three_centre
    public :: two_centre
    public :: metric_inverse_sqrt
+   public :: FIT_METRIC_THRESHOLD
    public :: subshell_layout
 
    type :: czt_molecule_t
@@ -1783,12 +1789,9 @@ contains
          !! the same thing -- it fits nothing, and the error does not shrink as
          !! the auxiliary basis grows, which is how it would be noticed.
 
-      ! TODO(mqc): `NULL_THRESHOLD`, `vectors`, `values`, `nao`, `naux`, `i`,
-      ! `j`, `kept` and `info` are never read -- leftovers from before the
-      ! factorisation moved into `fit_metric_factor` and `metric_inverse_sqrt`.
-      ! The live `NULL_THRESHOLD` is the one in `metric_inverse_sqrt`, so this
-      ! copy is also a second spelling of one constant.
-      real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
+      ! TODO(mqc): `vectors`, `values`, `nao`, `naux`, `i`, `j`, `kept` and
+      ! `info` are never read -- leftovers from before the factorisation moved
+      ! into `fit_metric_factor` and `metric_inverse_sqrt`.
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
       logical :: cholesky
@@ -1947,7 +1950,7 @@ contains
       rows = max(1, min(rows, npair))
    end function metric_panel_rows
 
-   subroutine metric_inverse_sqrt(metric, half, error)
+   subroutine metric_inverse_sqrt(metric, half, error, n_dropped)
       !! J^(-1/2) = U s^(-1/2) U^T over the modes that survive the threshold
       !!
       !! **The fallback, not the usual path.** `fit_metric_factor` tries a
@@ -1960,8 +1963,11 @@ contains
       real(dp), intent(in) :: metric(:, :)
       real(dp), allocatable, intent(out) :: half(:, :)
       type(error_t), intent(inout) :: error
+      integer, intent(out), optional :: n_dropped
+         !! Modes at or below `FIT_METRIC_THRESHOLD`, which are zeroed rather
+         !! than inverted. A derivative of the fit taken as `-J^-1 dJ J^-1` is
+         !! exact only when this is zero.
 
-      real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
       real(dp), allocatable :: vectors(:, :), values(:), scaled(:, :)
       integer :: naux, i, kept, info
 
@@ -1974,7 +1980,8 @@ contains
          return
       end if
 
-      kept = count(values > NULL_THRESHOLD)
+      kept = count(values > FIT_METRIC_THRESHOLD)
+      if (present(n_dropped)) n_dropped = naux - kept
       if (kept == 0) then
          call error%set(ERROR_VALIDATION, "density fitting: the auxiliary metric is singular")
          return
@@ -1985,7 +1992,7 @@ contains
       ! of the product.
       allocate (scaled(naux, naux))
       do i = 1, naux
-         if (values(i) > NULL_THRESHOLD) then
+         if (values(i) > FIT_METRIC_THRESHOLD) then
             scaled(:, i) = vectors(:, i)/sqrt(values(i))
          else
             scaled(:, i) = 0.0_dp

@@ -31,8 +31,8 @@ module mqc_czt_gemm_threads
 
 contains
 
-   subroutine gemm_over_columns(a, b, c, transa, transb)
-      !! C = op(A) op(B), with C's columns split across threads
+   subroutine gemm_over_columns(a, b, c, transa, transb, alpha, beta)
+      !! C = alpha op(A) op(B) + beta C, with C's columns split across threads
       !!
       !! Thread t computes `C(:, s0:s1)` from all of `op(A)` and the slice of
       !! `op(B)` that feeds those columns. With `B` untransposed that slice is
@@ -40,11 +40,15 @@ contains
       !! it is the row range `B(s0:s1, :)`, which the BLAS call copies once. The
       !! ranges are disjoint, so there is no reduction and no ordering question.
       !! `transa` and `transb` are "N" (the default) or "T", passed straight to
-      !! the BLAS. `C` is overwritten.
+      !! the BLAS. `alpha` and `beta` are the BLAS's, defaulting to one and zero,
+      !! so without them `C` is overwritten; with `beta` of one a product
+      !! accumulates, and a sum of products is a sequence of calls.
       real(dp), intent(in) :: a(:, :), b(:, :)
       real(dp), intent(inout) :: c(:, :)
       character(len=1), intent(in), optional :: transa
       character(len=1), intent(in), optional :: transb
+      real(dp), intent(in), optional :: alpha
+      real(dp), intent(in), optional :: beta
 
       integer :: n, nchunk, width, chunk, s0, s1
       logical :: b_rows
@@ -58,16 +62,17 @@ contains
       if (present(transb)) b_rows = transb == "T" .or. transb == "t"
 
       !$omp parallel do default(none) &
-      !$omp    shared(a, b, c, n, nchunk, width, transa, transb, b_rows) &
+      !$omp    shared(a, b, c, n, nchunk, width, transa, transb, alpha, beta, b_rows) &
       !$omp    private(chunk, s0, s1) schedule(static)
       do chunk = 1, nchunk
          s0 = (chunk - 1)*width + 1
          s1 = min(chunk*width, n)
          if (s0 > s1) cycle
          if (b_rows) then
-            call pic_gemm(a, b(s0:s1, :), c(:, s0:s1), transa=transa, transb=transb)
+            call pic_gemm(a, b(s0:s1, :), c(:, s0:s1), transa=transa, transb=transb, &
+                          alpha=alpha, beta=beta)
          else
-            call pic_gemm(a, b(:, s0:s1), c(:, s0:s1), transa=transa)
+            call pic_gemm(a, b(:, s0:s1), c(:, s0:s1), transa=transa, alpha=alpha, beta=beta)
          end if
       end do
       !$omp end parallel do
