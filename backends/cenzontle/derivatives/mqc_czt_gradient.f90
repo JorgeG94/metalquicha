@@ -2046,7 +2046,8 @@ contains
    end subroutine two_electron_deriv
 
    subroutine two_electron_deriv_many(mol, densities, vhfs, error, screen_tol, gamma_ao_map, &
-                                      gamma_width, gamma_fill, gamma_grads)
+                                      gamma_width, gamma_fill, gamma_grads, coulomb_derivs, &
+                                      exchange_derivs)
       !! `two_electron_deriv` for a stack of densities, in one pass over the
       !! differentiated ERIs, optionally contracting general four-index AO
       !! densities against the same integrals
@@ -2065,6 +2066,9 @@ contains
       !! term of an MCSCF gradient. Gamma is supplied one block of its first
       !! index at a time, in the compressed numbering `gamma_ao_map` gives
       !! (0 for an AO that carries none), at most `gamma_width` wide.
+      !!
+      !! `coulomb_derivs` and `exchange_derivs` are the two halves of `vhfs`
+      !! kept apart, so that `vhfs = coulomb_derivs - exchange_derivs/2`.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: densities(:, :, :)   !! (n_ao, n_ao, n_set), each symmetric
       real(dp), allocatable, intent(out) :: vhfs(:, :, :, :)   !! (n_ao, n_ao, 3, n_set)
@@ -2074,6 +2078,10 @@ contains
       integer, intent(in), optional :: gamma_width
       procedure(gamma_fill_i), optional :: gamma_fill
       real(dp), intent(inout), optional :: gamma_grads(:, :, :)   !! (3, natm, n_gamma), accumulated
+      real(dp), allocatable, intent(out), optional :: coulomb_derivs(:, :, :, :)
+         !! (n_ao, n_ao, 3, n_set)
+      real(dp), allocatable, intent(out), optional :: exchange_derivs(:, :, :, :)
+         !! (n_ao, n_ao, 3, n_set)
 
       real(dp), allocatable :: buf(:), vj(:, :, :, :), vk(:, :, :, :)
       real(dp), allocatable :: vj_local(:, :, :, :), vk_local(:, :, :, :)
@@ -2347,8 +2355,20 @@ contains
 
       allocate (vhfs(nao, nao, 3, n_set))
       vhfs = -(vj - 0.5_dp*vk)
+      ! Handed over rather than copied: at a few hundred AOs and a dozen sets
+      ! each is tens of megabytes.
+      if (present(coulomb_derivs)) then
+         call move_alloc(vj, coulomb_derivs)
+         coulomb_derivs = -coulomb_derivs
+      end if
+      if (present(exchange_derivs)) then
+         call move_alloc(vk, exchange_derivs)
+         exchange_derivs = -exchange_derivs
+      end if
 
-      deallocate (bounds, bq, bra_bound, dsh, dims, offs, vj, vk)
+      deallocate (bounds, bq, bra_bound, dsh, dims, offs)
+      if (allocated(vj)) deallocate (vj)
+      if (allocated(vk)) deallocate (vk)
    end subroutine two_electron_deriv_many
 
    subroutine two_electron_gradient(mol, density, gradient, error, density_alpha, density_beta, &

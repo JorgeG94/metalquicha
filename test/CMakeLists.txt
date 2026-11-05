@@ -273,6 +273,12 @@ if(MQC_ENABLE_CZT)
   # coupling column's overrides of the two defaults.
   addtest(mqc_effective_density)
 
+  # The contraction of an effective density against the derivative integrals:
+  # restricted and unrestricted SCF providers against czt_scf_gradient.
+  addtest(mqc_density_contraction)
+  target_link_libraries(test_mqc_density_contraction
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Nonadiabatic couplings between two SA-CASSCF states.
   addtest(mqc_sa_nac)
   target_link_libraries(test_mqc_sa_nac PRIVATE ${MQC_INTEGRALS_LIBS})

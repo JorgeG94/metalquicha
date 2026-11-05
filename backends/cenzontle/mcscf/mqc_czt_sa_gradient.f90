@@ -24,14 +24,11 @@ module mqc_czt_sa_gradient
    !! `czt_sa_casscf_gradients` computes several roots together. It builds the
    !! SA Hessian state once and solves every root's Z-vector equation in one
    !! block PCG, in which a converged column stops costing Hessian-vector
-   !! products. It then makes one pass over the derivative integrals for
-   !! every root and every response piece: one `two_electron_deriv_many` call
-   !! contracts the union of every root's separable densities
-   !! (`response_separable_assemble` and `base_gradient_assemble` do the
-   !! per-root dot products from its potentials) and, in the same quartet
-   !! loop, every root's active two-body Gamma (`fill_gamma`). The
-   !! one-electron core-Hamiltonian derivative
-   !! (`build_core_hamiltonian_derivative`) is shared the same way.
+   !! products. It then hands every root and every response piece to
+   !! `contract_effective_density` as one `sa_density_t`, which makes one pass
+   !! over the derivative integrals for all of them: the union of every
+   !! root's separable densities and, in the same quartet loop, every root's
+   !! active two-body Gamma.
    !! `sa_casscf_gradient_general` (`czt_sa_casscf_gradient`'s single-root
    !! path) does not share any of this: its response pieces
    !! (`orbital_response_gradient`, `ci_response_gradient`) each run their own
@@ -47,8 +44,11 @@ module mqc_czt_sa_gradient
                                nuclear_repulsion_gradient, DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, one_index_fock
    use mqc_czt_mcscf_gradient, only: czt_mcscf_gradient, active_two_electron_gradient, &
-                                     active_two_electron_gradient_response, gamma_block, &
+                                     active_two_electron_gradient_response, &
                                      cumulant_two_particle_density
+   use mqc_czt_effective_density, only: column_t, COLUMN_KIND_GRADIENT, COLUMN_KIND_COUPLING
+   use mqc_czt_density_contraction, only: contract_effective_density
+   use mqc_czt_sa_effective_density, only: sa_density_t, sa_pool_slots
    use mqc_czt_sa_hessian, only: sa_hessian_t, build_sa_hessian, destroy_sa_hessian, &
                                  sa_hessian_n_param, sa_hessian_apply, &
                                  sa_hessian_precondition, cheap_generalized_fock, &
@@ -567,7 +567,7 @@ contains
    subroutine sa_gradients_on_state(state, orbitals, n_inactive, n_active, weights, roots, &
                                     gradients, error, cg_tol, cg_max_iter, cg_iterations, &
                                     cg_residual, extra_rhs, extra_gamma, extra_d_active, &
-                                    extra_weighted, extra_out)
+                                    extra_weighted, extra_out, extra_states)
       !! Every root in `roots`, and any extra Lagrangian columns, relaxed
       !! together on an already-built SA Hessian `state`
       !!
@@ -585,11 +585,10 @@ contains
       !! column's cheap (no derivative-integral) densities and energy-weighted
       !! matrices are built first (`orbital_response_pieces`,
       !! `ci_response_pieces`, `cumulant_two_particle_density`,
-      !! `build_active_density`, `build_weighted_from_fock`). Then the union of
-      !! every column's separable densities, and every column's active
-      !! two-body Gamma, go through **one** `two_electron_deriv_many` call. The
-      !! core-Hamiltonian derivative (`build_core_hamiltonian_derivative`) and
-      !! the nuclear-repulsion term are shared the same way.
+      !! `build_active_density`, `build_weighted_from_fock`). Then every
+      !! column goes to `contract_effective_density` as one `sa_density_t`:
+      !! the union of every column's separable densities, and every column's
+      !! active two-body Gamma, in **one** sweep over the derivative integrals.
       !!
       !! `cg_iterations`/`cg_residual` are indexed roots first, then extras.
       type(sa_hessian_t), intent(in) :: state
@@ -609,6 +608,9 @@ contains
       real(dp), intent(in), optional :: extra_d_active(:, :, :)       !! (n_ao, n_ao, n_extra)
       real(dp), intent(in), optional :: extra_weighted(:, :, :)       !! (n_ao, n_ao, n_extra)
       real(dp), allocatable, intent(out), optional :: extra_out(:, :, :)  !! (3, natm, n_extra)
+      integer, intent(in), optional :: extra_states(:, :)
+         !! (2, n_extra): the pair of roots each extra column couples, 1-based;
+         !! absent, the extra columns name no states
 
       real(dp), allocatable :: dm1_all(:, :, :), dm2_all(:, :, :, :, :)
       real(dp), allocatable :: dm1_i(:, :), dm2_i(:, :, :, :)
@@ -637,12 +639,10 @@ contains
       real(dp), allocatable :: ddm2_i(:, :, :, :), ddm2_all(:, :, :, :, :)
       real(dp), allocatable :: d_active_all(:, :, :), weighted_base_all(:, :, :)
 
-      ! Shared derivative-integral quantities.
-      real(dp), allocatable :: s1(:, :, :), kin(:, :, :), h1(:, :, :)
-      real(dp), allocatable :: hcore_all(:, :, :, :)
-      real(dp), allocatable :: density_stack(:, :, :), vhf_stack(:, :, :, :)
-      real(dp), allocatable :: nuc_grad(:, :), column_grads(:, :, :), gamma_grads(:, :, :)
-      real(dp), allocatable :: amplitude(:), c_sig(:, :), cbar_sig(:, :, :)
+      ! The contraction's input and output.
+      type(sa_density_t) :: provider
+      real(dp), allocatable :: nuc_grad(:, :), column_grads(:, :, :)
+      real(dp), allocatable :: amplitude(:)
       integer, allocatable :: ao_map(:), sig_aos(:)
       real(dp) :: cut
       integer :: n_stack, slot, s_bar, s_core_bar, n_sig, mu, gamma_width
@@ -781,34 +781,43 @@ contains
       end do
       c_active = c_active_scratch
 
-      ! ---- one derivative-integral sweep for every column and separable piece
-      call one_electron_deriv(state%mol, s1, DERIV_OVLP)
-      s1 = -s1
-      call one_electron_deriv(state%mol, kin, DERIV_KIN)
-      call one_electron_deriv(state%mol, h1, DERIV_NUC)
-      h1 = -(kin + h1)
-      deallocate (kin)
-      call build_core_hamiltonian_derivative(state%mol, h1, hcore_all)
-
-      ! The orbital- and CI-response active densities meet the potentials
-      ! only through `response_separable_assemble`, which is linear in them
-      ! and dots their potential against `d_core` alone: one slot holds both.
+      ! The orbital- and CI-response active densities enter only as the
+      ! response's active density, linearly: one slot holds both.
       d_active_bar_all = d_active_bar_all + d_ci_active_all
       weighted_bar_all = weighted_bar_all + weighted_ci_all
 
-      ! Slots: the two shared reference densities; three per root (its own
+      ! ---- every column as one effective density, contracted in one sweep.
+      ! The pool: the two shared reference densities; three per root (its own
       ! active density, then the response's active and core parts); two per
       ! extra column (no own-density slot).
       n_stack = 2 + 3*n_roots + 2*n_extra
-      allocate (density_stack(n_ao, n_ao, n_stack))
-      density_stack(:, :, 1) = d_core
-      density_stack(:, :, 2) = d_active_sa
+      allocate (provider%pool(n_ao, n_ao, n_stack))
+      provider%pool(:, :, 1) = d_core
+      provider%pool(:, :, 2) = d_active_sa
+      provider%n_roots = n_roots
+      allocate (provider%columns(n_col), provider%p(n_ao, n_ao, n_col), &
+                provider%w(n_ao, n_ao, n_col))
       do ic = 1, n_col
-         call column_slots(ic, n_roots, slot, s_bar, s_core_bar)
-         if (ic <= n_roots) density_stack(:, :, slot) = d_active_all(:, :, ic)
-         density_stack(:, :, s_bar) = d_active_bar_all(:, :, ic)
-         density_stack(:, :, s_core_bar) = d_core_bar_all(:, :, ic)
+         call sa_pool_slots(ic, n_roots, slot, s_bar, s_core_bar)
+         provider%pool(:, :, s_bar) = d_active_bar_all(:, :, ic)
+         provider%pool(:, :, s_core_bar) = d_core_bar_all(:, :, ic)
+         provider%p(:, :, ic) = d_active_bar_all(:, :, ic) + d_core_bar_all(:, :, ic)
+         provider%w(:, :, ic) = weighted_bar_all(:, :, ic)
+         if (ic <= n_roots) then
+            provider%pool(:, :, slot) = d_active_all(:, :, ic)
+            provider%p(:, :, ic) = provider%p(:, :, ic) + d_core + d_active_all(:, :, ic)
+            provider%w(:, :, ic) = provider%w(:, :, ic) + weighted_base_all(:, :, ic)
+            provider%columns(ic) = column_t(kind=COLUMN_KIND_GRADIENT, bra=roots(ic), &
+                                            ket=roots(ic))
+         else if (present(extra_states)) then
+            provider%columns(ic) = column_t(kind=COLUMN_KIND_COUPLING, &
+                                            bra=extra_states(1, ic - n_roots), &
+                                            ket=extra_states(2, ic - n_roots))
+         else
+            provider%columns(ic) = column_t(kind=COLUMN_KIND_COUPLING, bra=0, ket=0)
+         end if
       end do
+
       ! Every column's active two-body Gamma rides the same sweep. It is built
       ! only over the AOs where some leg (`c_active` or a column's `cbar`)
       ! has an amplitude above `GAMMA_SIGNIFICANCE` times the largest: the rest
@@ -827,100 +836,33 @@ contains
             ao_map(mu) = n_sig
          end if
       end do
-      allocate (gamma_grads(3, natm, n_col))
-      gamma_grads = 0.0_dp
+      gamma_width = 1
       if (n_sig > 0) then
          sig_aos = pack([(mu, mu=1, n_ao)], ao_map > 0)
-         c_sig = c_active(sig_aos, :)
-         cbar_sig = cbar_active_all(sig_aos, :, :)
+         provider%ao_map = ao_map
+         provider%c_sig = c_active(sig_aos, :)
+         provider%cbar_sig = cbar_active_all(sig_aos, :, :)
+         provider%dm2_column = ddm2_all + tdm2_total_all
+         provider%dm2_sa = state%dm2_sa
+         ! Room for the block and the one scratch copy `sa_gamma_block` makes.
          gamma_width = max(1, int(GAMMA_BLOCK_TARGET/(2.0_dp*real(n_sig, dp)**3*8.0_dp* &
                                                       real(n_col, dp))))
-         call two_electron_deriv_many(state%mol, density_stack, vhf_stack, error, &
-                                      gamma_ao_map=ao_map, gamma_width=gamma_width, &
-                                      gamma_fill=fill_gamma, gamma_grads=gamma_grads)
-      else
-         call two_electron_deriv_many(state%mol, density_stack, vhf_stack, error)
       end if
-      deallocate (density_stack)
+
+      call contract_effective_density(state%mol, provider, column_grads, error, &
+                                      gamma_width=gamma_width)
       if (error%has_error()) return
 
+      ! The nuclear repulsion is the one term that is not a trace against an
+      ! effective density; a root column has it and an extra column does not.
       allocate (nuc_grad(3, natm))
       nuc_grad = 0.0_dp
       call nuclear_repulsion_gradient(state%mol, nuc_grad)
-      allocate (column_grads(3, natm, n_col))
-      column_grads = 0.0_dp
-
-      do ic = 1, n_col
-         call column_slots(ic, n_roots, slot, s_bar, s_core_bar)
-         if (ic <= n_roots) then
-            column_grads(:, :, ic) = nuc_grad
-            call base_gradient_assemble(state%mol, hcore_all, s1, vhf_stack(:, :, :, 1), &
-                                        vhf_stack(:, :, :, slot), d_core, &
-                                        d_active_all(:, :, ic), weighted_base_all(:, :, ic), &
-                                        column_grads(:, :, ic), error)
-         end if
-         call response_separable_assemble(state%mol, hcore_all, s1, d_core, d_active_sa, &
-                                          d_active_bar_all(:, :, ic), &
-                                          weighted_bar_all(:, :, ic), vhf_stack(:, :, :, 1), &
-                                          vhf_stack(:, :, :, 2), vhf_stack(:, :, :, s_bar), &
-                                          column_grads(:, :, ic), error, &
-                                          d_core_resp=d_core_bar_all(:, :, ic), &
-                                          vhf_core_resp=vhf_stack(:, :, :, s_core_bar))
-         if (error%has_error()) return
+      do ir = 1, n_roots
+         gradients(:, :, ir) = column_grads(:, :, ir) + nuc_grad
       end do
-
-      column_grads = column_grads + gamma_grads
-      gradients = column_grads(:, :, 1:n_roots)
       if (present(extra_out)) extra_out = column_grads(:, :, n_roots + 1:n_col)
-
-   contains
-
-      subroutine fill_gamma(p_lo, p_hi, gamma)
-         !! Every column's AO Gamma over compressed first-index positions
-         !! `p_lo..p_hi`: one transform over the doubled leg `[C | Cbar]`
-         !! gives all six terms -- the base and CI-response densities in the
-         !! all-`C` block, `dm2_sa` in each block with `Cbar` on exactly one leg.
-         integer, intent(in) :: p_lo, p_hi
-         real(dp), allocatable, intent(inout) :: gamma(:, :, :, :, :)
-
-         real(dp), allocatable :: c_both(:, :), g_both(:, :, :, :), tmp(:, :, :, :)
-         integer :: jc, na2
-
-         na2 = 2*n_active
-         if (allocated(gamma)) deallocate (gamma)
-         allocate (gamma(p_hi - p_lo + 1, n_sig, n_sig, n_sig, n_col))
-         allocate (c_both(n_sig, na2), g_both(na2, na2, na2, na2))
-         do jc = 1, n_col
-            c_both(:, 1:n_active) = c_sig
-            c_both(:, n_active + 1:na2) = cbar_sig(:, :, jc)
-            g_both = 0.0_dp
-            g_both(1:n_active, 1:n_active, 1:n_active, 1:n_active) = ddm2_all(:, :, :, :, jc) &
-                                                                     + tdm2_total_all(:, :, :, :, jc)
-            g_both(n_active + 1:, 1:n_active, 1:n_active, 1:n_active) = state%dm2_sa
-            g_both(1:n_active, n_active + 1:, 1:n_active, 1:n_active) = state%dm2_sa
-            g_both(1:n_active, 1:n_active, n_active + 1:, 1:n_active) = state%dm2_sa
-            g_both(1:n_active, 1:n_active, 1:n_active, n_active + 1:) = state%dm2_sa
-            call gamma_block(c_both, g_both, p_lo, p_hi, tmp)
-            gamma(:, :, :, :, jc) = tmp
-         end do
-      end subroutine fill_gamma
    end subroutine sa_gradients_on_state
-
-   pure subroutine column_slots(ic, n_roots, own, s_bar, s_core_bar)
-      !! Column `ic`'s slots in `sa_gradients_on_state`'s density stack; `own`
-      !! is meaningful for a root column only
-      integer, intent(in) :: ic, n_roots
-      integer, intent(out) :: own, s_bar, s_core_bar
-
-      if (ic <= n_roots) then
-         own = 2 + 3*(ic - 1) + 1
-         s_bar = own + 1
-      else
-         own = 0
-         s_bar = 2 + 3*n_roots + 2*(ic - n_roots - 1) + 1
-      end if
-      s_core_bar = s_bar + 1
-   end subroutine column_slots
 
    subroutine response_separable_gradient(mol, d_core_ref, d_active_ref, d_active_resp, &
                                           weighted_resp, gradient, error, d_core_resp)
@@ -1106,57 +1048,6 @@ contains
 
       deallocate (vrinv, offsets, counts)
    end subroutine build_core_hamiltonian_derivative
-
-   subroutine base_gradient_assemble(mol, hcore_all, s1, vhf_core, vhf_active, d_core, &
-                                     d_active, weighted, gradient, error)
-      !! `czt_mcscf_gradient`'s own per-atom Hcore/Coulomb/Pulay assembly (its
-      !! active two-body cumulant term is contracted in the same sweep, by
-      !! `sa_gradients_on_state`'s `fill_gamma`), from the shared
-      !! `hcore_all`/`s1` and the two-electron potentials of `d_core` and this
-      !! root's own active density `d_active` -- `V(d_core + d_active) =
-      !! V(d_core) + V(d_active)` by linearity of `J - K/2`, so the two need
-      !! not be added before contracting, only after.
-      type(czt_molecule_t), intent(in) :: mol
-      real(dp), intent(in) :: hcore_all(:, :, :, :), s1(:, :, :)
-      real(dp), intent(in) :: vhf_core(:, :, :), vhf_active(:, :, :)
-      real(dp), intent(in) :: d_core(:, :), d_active(:, :)
-      real(dp), intent(in) :: weighted(:, :)
-      real(dp), intent(inout) :: gradient(:, :)
-      type(error_t), intent(inout) :: error
-
-      real(dp), allocatable :: d_total(:, :)
-      integer, allocatable :: offsets(:), counts(:)
-      integer :: n_ao, iatom, comp, p0, p1
-
-      if (error%has_error()) return
-      n_ao = size(d_core, 1)
-      allocate (d_total(n_ao, n_ao))
-      d_total = d_core + d_active
-
-      allocate (offsets(mol%natm), counts(mol%natm))
-      call atom_ao_blocks(mol, offsets, counts)
-
-      do iatom = 1, mol%natm
-         p0 = offsets(iatom) + 1
-         p1 = offsets(iatom) + counts(iatom)
-
-         do comp = 1, 3
-            gradient(comp, iatom) = gradient(comp, iatom) &
-                                    + sum(hcore_all(:, :, comp, iatom)*d_total)
-         end do
-
-         if (counts(iatom) == 0) cycle
-
-         do comp = 1, 3
-            gradient(comp, iatom) = gradient(comp, iatom) &
-                                    + 2.0_dp*sum(vhf_core(p0:p1, :, comp)*d_total(p0:p1, :)) &
-                                    + 2.0_dp*sum(vhf_active(p0:p1, :, comp)*d_total(p0:p1, :)) &
-                                    - 2.0_dp*sum(s1(p0:p1, :, comp)*weighted(p0:p1, :))
-         end do
-      end do
-
-      deallocate (d_total, offsets, counts)
-   end subroutine base_gradient_assemble
 
    subroutine build_active_density(c_active, dm1, d_active)
       !! The AO active density `c_active dm1 c_active^T` -- the base
