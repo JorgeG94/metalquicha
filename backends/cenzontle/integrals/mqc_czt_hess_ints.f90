@@ -20,13 +20,6 @@ module mqc_czt_hess_ints
                              omp_threads
    use pic_logger, only: logger => global_logger
    use mqc_program_limits, only: MAX_LINE_LENGTH
-   use cint_workspace, only: cint_ws
-   use cint_gen_int3c2e, only: int3c2e_ipip1_sph, int3c2e_ipip1_cart, &
-                               int3c2e_ipvip1_sph, int3c2e_ipvip1_cart, &
-                               int3c2e_ip1ip2_sph, int3c2e_ip1ip2_cart, &
-                               int3c2e_ipip2_sph, int3c2e_ipip2_cart, &
-                               int2c2e_ipip1_sph, int2c2e_ipip1_cart, &
-                               int2c2e_ip1ip2_sph, int2c2e_ip1ip2_cart
    use libcint_fortran, only: LIBCINT_ATOM_OF, LIBCINT_NPRIM_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_RINV_ORIG, &
                               LIBCINT_PTR_RANGE_OMEGA, libcint_2e_ip1_sph, libcint_2e_ip1_cart, &
                               libcint_1e_ipipovlp_sph, libcint_1e_ipipovlp_cart, &
@@ -39,7 +32,13 @@ module mqc_czt_hess_ints
                               libcint_1e_iprinvip_sph, libcint_1e_iprinvip_cart, &
                               libcint_2e_ipip1_sph, libcint_2e_ipip1_cart, &
                               libcint_2e_ipvip1_sph, libcint_2e_ipvip1_cart, &
-                              libcint_2e_ip1ip2_sph, libcint_2e_ip1ip2_cart
+                              libcint_2e_ip1ip2_sph, libcint_2e_ip1ip2_cart, &
+                              libcint_3c2e_ipip1_sph, libcint_3c2e_ipip1_cart, &
+                              libcint_3c2e_ipvip1_sph, libcint_3c2e_ipvip1_cart, &
+                              libcint_3c2e_ip1ip2_sph, libcint_3c2e_ip1ip2_cart, &
+                              libcint_3c2e_ipip2_sph, libcint_3c2e_ipip2_cart, &
+                              libcint_2c2e_ipip1_sph, libcint_2c2e_ipip1_cart, &
+                              libcint_2c2e_ip1ip2_sph, libcint_2c2e_ip1ip2_cart
    implicit none
    private
 
@@ -89,12 +88,6 @@ module mqc_czt_hess_ints
       !! together before `h1_contract` splits the atoms into groups. A copy is
       !! `nao^2 * 3 * natm` doubles per thread, which is 30 GB for a 74-atom
       !! molecule in 6-31G* on 64 threads.
-
-   type(cint_ws), save :: ws_hess3c
-      !! Scratch for the fitting-integral kernels, one per thread
-   ! `cint_ws` allocates its buffers on first use, so a threadprivate copy needs
-   ! no initialisation; libfint keeps its own workspace the same way.
-   !$omp threadprivate(ws_hess3c)
 
    integer, parameter :: N_COMPONENTS = 9
       !! Every one of these is a 3x3 Cartesian block per shell pair, laid out by
@@ -1237,7 +1230,7 @@ contains
       real(dp), allocatable, target :: env_df(:), env_aux(:)
       integer, allocatable :: bas_df(:, :), atm_flat(:), bas_flat(:), aux_atm(:), aux_bas(:)
       integer, allocatable :: orb_atom(:), aux_atom(:)
-      integer :: dims(0:3), shls(0:3)
+      integer :: shls(0:3)
       integer :: ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, comp, mx, n3, idx
       integer :: dummy, nbas_orb, nbas_aux, natm, a, b, a1, a2, a3
       logical :: have
@@ -1248,10 +1241,6 @@ contains
       ! estimate here would have to hold for an arbitrary density.
       ! A derivative with respect to an electron coordinate is minus the nuclear
       ! one, so a pair of them is plus; that is why no sign appears below.
-      ! TODO(mqc): libfint's libcint_fortran does not export the 3c2e/2c2e
-      ! second-derivative kernels, so this uses cint_gen_int3c2e internals;
-      ! switch to the public entry points once libfint exports them, or a
-      ! libfint refactor breaks this build.
       natm = orb%natm
       nbas_orb = orb%nbas
       nbas_aux = aux%nbas
@@ -1299,7 +1288,7 @@ contains
          !$omp parallel default(none) &
          !$omp    shared(orb, aux, gamma3, hess, atm_flat, bas_flat, env_df, dummy, mx, &
          !$omp           nbas_orb, nbas_aux, natm, orb_atom, aux_atom) &
-         !$omp    private(b_ii, b_ij, b_ik, b_kk, gu, gs, hloc, dims, shls, ish, jsh, ksh, &
+         !$omp    private(b_ii, b_ij, b_ik, b_kk, gu, gs, hloc, shls, ish, jsh, ksh, &
          !$omp            di, dj, dk, io, jo, ko, i, j, k, comp, n3, idx, a, b, a1, a2, a3, &
          !$omp            have, t_ii, t_ij, t_ik, t_kk)
          allocate (b_ii(mx**3*N_COMPONENTS), b_ij(mx**3*N_COMPONENTS), &
@@ -1330,14 +1319,13 @@ contains
                      end do
                   end do
                   shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, 0]
-                  dims = [di, dj, dk, 1]
 
                   if (orb%cartesian) then
-                     have = int3c2e_ipip1_cart(b_ii, dims, shls, atm_flat, natm, bas_flat, &
-                                               dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ipip1_cart(b_ii, shls(0:2), atm_flat, natm, bas_flat, &
+                                                    dummy, env_df) /= 0
                   else
-                     have = int3c2e_ipip1_sph(b_ii, dims, shls, atm_flat, natm, bas_flat, &
-                                              dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ipip1_sph(b_ii, shls(0:2), atm_flat, natm, bas_flat, &
+                                                   dummy, env_df) /= 0
                   end if
                   if (have) then
                      do comp = 1, N_COMPONENTS
@@ -1349,11 +1337,11 @@ contains
                   end if
 
                   if (orb%cartesian) then
-                     have = int3c2e_ipvip1_cart(b_ij, dims, shls, atm_flat, natm, bas_flat, &
-                                                dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ipvip1_cart(b_ij, shls(0:2), atm_flat, natm, bas_flat, &
+                                                     dummy, env_df) /= 0
                   else
-                     have = int3c2e_ipvip1_sph(b_ij, dims, shls, atm_flat, natm, bas_flat, &
-                                               dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ipvip1_sph(b_ij, shls(0:2), atm_flat, natm, bas_flat, &
+                                                    dummy, env_df) /= 0
                   end if
                   if (have) then
                      do comp = 1, N_COMPONENTS
@@ -1366,11 +1354,11 @@ contains
                   end if
 
                   if (orb%cartesian) then
-                     have = int3c2e_ip1ip2_cart(b_ik, dims, shls, atm_flat, natm, bas_flat, &
-                                                dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ip1ip2_cart(b_ik, shls(0:2), atm_flat, natm, bas_flat, &
+                                                     dummy, env_df) /= 0
                   else
-                     have = int3c2e_ip1ip2_sph(b_ik, dims, shls, atm_flat, natm, bas_flat, &
-                                               dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ip1ip2_sph(b_ik, shls(0:2), atm_flat, natm, bas_flat, &
+                                                    dummy, env_df) /= 0
                   end if
                   if (have) then
                      do comp = 1, N_COMPONENTS
@@ -1383,11 +1371,11 @@ contains
                   end if
 
                   if (orb%cartesian) then
-                     have = int3c2e_ipip2_cart(b_kk, dims, shls, atm_flat, natm, bas_flat, &
-                                               dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ipip2_cart(b_kk, shls(0:2), atm_flat, natm, bas_flat, &
+                                                    dummy, env_df) /= 0
                   else
-                     have = int3c2e_ipip2_sph(b_kk, dims, shls, atm_flat, natm, bas_flat, &
-                                              dummy, env_df, ws_hess3c)
+                     have = libcint_3c2e_ipip2_sph(b_kk, shls(0:2), atm_flat, natm, bas_flat, &
+                                                   dummy, env_df) /= 0
                   end if
                   if (have) then
                      do comp = 1, N_COMPONENTS
@@ -1417,7 +1405,7 @@ contains
          !$omp parallel default(none) &
          !$omp    shared(aux, gamma2, hess, aux_atm, aux_bas, env_aux, mx, nbas_aux, natm, &
          !$omp           aux_atom) &
-         !$omp    private(b_ii, b_ij, gu, gs, hloc, dims, shls, ish, jsh, di, dj, io, jo, &
+         !$omp    private(b_ii, b_ij, gu, gs, hloc, shls, ish, jsh, di, dj, io, jo, &
          !$omp            i, j, comp, n3, idx, a, b, a1, a2, have, t_ii, t_ij)
          allocate (b_ii(mx**2*N_COMPONENTS), b_ij(mx**2*N_COMPONENTS))
          allocate (gu(mx**2), gs(mx**2), hloc(3, 3, natm, natm))
@@ -1440,14 +1428,13 @@ contains
                   end do
                end do
                shls = [ish - 1, jsh - 1, 0, 0]
-               dims = [di, dj, 1, 1]
 
                if (aux%cartesian) then
-                  have = int2c2e_ipip1_cart(b_ii, dims, shls, aux_atm, natm, aux_bas, &
-                                            nbas_aux, env_aux, ws_hess3c)
+                  have = libcint_2c2e_ipip1_cart(b_ii, shls(0:1), aux_atm, natm, aux_bas, &
+                                                 nbas_aux, env_aux) /= 0
                else
-                  have = int2c2e_ipip1_sph(b_ii, dims, shls, aux_atm, natm, aux_bas, &
-                                           nbas_aux, env_aux, ws_hess3c)
+                  have = libcint_2c2e_ipip1_sph(b_ii, shls(0:1), aux_atm, natm, aux_bas, &
+                                                nbas_aux, env_aux) /= 0
                end if
                if (have) then
                   do comp = 1, N_COMPONENTS
@@ -1459,11 +1446,11 @@ contains
                end if
 
                if (aux%cartesian) then
-                  have = int2c2e_ip1ip2_cart(b_ij, dims, shls, aux_atm, natm, aux_bas, &
-                                             nbas_aux, env_aux, ws_hess3c)
+                  have = libcint_2c2e_ip1ip2_cart(b_ij, shls(0:1), aux_atm, natm, aux_bas, &
+                                                  nbas_aux, env_aux) /= 0
                else
-                  have = int2c2e_ip1ip2_sph(b_ij, dims, shls, aux_atm, natm, aux_bas, &
-                                            nbas_aux, env_aux, ws_hess3c)
+                  have = libcint_2c2e_ip1ip2_sph(b_ij, shls(0:1), aux_atm, natm, aux_bas, &
+                                                 nbas_aux, env_aux) /= 0
                end if
                if (have) then
                   do comp = 1, N_COMPONENTS
