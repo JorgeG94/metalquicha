@@ -148,11 +148,21 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
     # which costs time in a build that is already fifty times slower than
     # release. A raced line was still executed, so the report is not the
     # thing in doubt here.
-    COMMAND lcov --directory . --capture --ignore-errors negative --output-file
-            coverage.info
-    COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'
-            '*/build/*' '*/validation/*' --output-file coverage_filtered.info
-    COMMAND genhtml coverage_filtered.info --output-directory coverage_report
+    #
+    # `inconsistent` for the lcov on Ubuntu 26.04, which refuses a record where
+    # a function counts as not hit but one of its lines does. gfortran writes
+    # exactly that for the compiler-generated `__copy_*` routine of a derived
+    # type, which it attributes to the module's `end module` line -- a line
+    # other code also executes -- so the target failed on a record the
+    # compiler produced rather than on anything about coverage. Every step
+    # that reads the data gets it.
+    COMMAND lcov --directory . --capture --ignore-errors negative,inconsistent
+            --output-file coverage.info
+    COMMAND
+      lcov --ignore-errors unused,inconsistent --remove coverage.info '/usr/*'
+      '*/build/*' '*/validation/*' --output-file coverage_filtered.info
+    COMMAND genhtml --ignore-errors inconsistent coverage_filtered.info
+            --output-directory coverage_report
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating code coverage report")
   # The examples load the shared library through ctypes, so it has to exist
