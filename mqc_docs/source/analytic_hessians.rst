@@ -106,6 +106,14 @@ its Z-vector with a fitted operator, which sits about 1e-7 from the
 exact-reference derivative, so the Hessian and a difference of that gradient
 agree to that and not further.
 
+The :math:`3N` Z-vectors of the density response are solved together: each
+conjugate-gradient iteration is one Fock-type build for a chunk of up to
+``keywords.hessian.response_batch`` of them, the machinery the reference's own
+coupled-perturbed solve uses, instead of one build per right-hand side. Every
+right-hand side is converged on its own, to a 2-norm residual no larger than
+``response_tolerance`` times its norm. On water trimer in cc-pVDZ this took that stage
+from 45 s to 9 s on four threads, and the run from 64 s to 30 s.
+
 The fitted block adds up what it will hold at once before it allocates -- a
 few stacks of :math:`n_{mo}^2 \times 3N`, the three-index integrals, three
 :math:`o^2 v^2` amplitude arrays and one atom's batch of derivative integrals --

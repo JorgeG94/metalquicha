@@ -66,7 +66,8 @@ module mqc_czt_ri_mp2_hessian
                                 hess_3c2c_contract, h1_contract, &
                                 HESS_KIN_II, HESS_KIN_IJ, HESS_NUC_II, HESS_NUC_IJ, &
                                 HESS_OVLP_II, HESS_OVLP_IJ, HESS_RINV_II, HESS_RINV_IJ
-   use mqc_czt_hessian, only: hcore_deriv_atom, overlap_deriv_atom, solve_mo1_batch
+   use mqc_czt_hessian, only: hcore_deriv_atom, overlap_deriv_atom, solve_mo1_batch, &
+                              solve_zvector_batch
    use libcint_fortran, only: LIBCINT_ATOM_OF, libcint_3c2e_ip1_sph, libcint_3c2e_ip1_cart, &
                               libcint_3c2e_ip2_sph, libcint_3c2e_ip2_cart
    implicit none
@@ -109,6 +110,8 @@ module mqc_czt_ri_mp2_hessian
          !! Exact-exchange fraction of the reference's operator
       integer :: max_iter = 200
          !! Iteration cap of every coupled-perturbed solve
+      logical :: batched_zvector = .true.
+         !! Solve the Z-vectors of many right-hand sides together
       integer :: n_dropped = 0
          !! Metric modes the pseudo-inverse dropped; nonzero is a refusal
       type(xc_context_t), pointer :: xc => null()
@@ -135,7 +138,7 @@ contains
    subroutine ri_mp2_correlation_hessian(mol, aux, coeff, orbital_energies, n_occ, &
                                          hess_corr, error, n_frozen, tol, batch, &
                                          atom_batch, parts, xc, scf_density, pt2_scale, &
-                                         dipole_derivatives, max_iter, declined)
+                                         dipole_derivatives, max_iter, declined, zvector_batched)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -183,6 +186,12 @@ contains
          !! True only when the error set is the refusal of a metric that drops
          !! a mode: the one condition a well-formed call can meet, and the one
          !! a caller may answer by differencing the gradient instead
+      logical, intent(in), optional :: zvector_batched
+         !! Solve the `3N` Z-vectors of the density response together, one
+         !! Fock-type build per conjugate-gradient iteration for a chunk of
+         !! them (`solve_zvector_batch`). `.false.` takes one conjugate-gradient
+         !! solve per right-hand side, `cphf_solve`'s own, which is the path this
+         !! routine had before and is kept for comparison; `.true.` by default
 
       type(ri_state_t) :: st
       type(timer_type) :: clock
@@ -217,6 +226,7 @@ contains
       call setup_state(st, mol, aux, coeff, orbital_energies, n_occ, n_frozen, use_batch, &
                        error, xc=xc, scf_density=scf_density)
       if (error%has_error()) return
+      if (present(zvector_batched)) st%batched_zvector = zvector_batched
       call check_memory(st, error)
       if (error%has_error()) return
       call build_fitted_objects(st, error)
@@ -828,13 +838,28 @@ contains
    subroutine solve_response(st, rhs, response, tol, error)
       !! `(n_vir, n_occ, k)` coupled-perturbed solves against the reference's own
       !! orbital Hessian: Hartree-Fock, or Kohn-Sham with the kernel
+      !!
+      !! More than one right-hand side goes through `solve_zvector_batch`, which
+      !! shares each Fock-type build across a chunk of them; one, or the choice
+      !! of `batched_zvector`, goes through `cphf_solve`.
       type(ri_state_t), intent(in) :: st
       real(dp), intent(in) :: rhs(:, :, :)
       real(dp), allocatable, intent(out) :: response(:, :, :)
       real(dp), intent(in) :: tol
       type(error_t), intent(inout) :: error
 
-      if (st%dh) then
+      if (st%batched_zvector .and. size(rhs, 3) > 1) then
+         if (st%dh) then
+            call solve_zvector_batch(st%mol, st%c, st%eps, st%no, rhs, response, error, &
+                                     xc=st%xc, reference=st%scf_density, k_scale=st%kf, &
+                                     max_iter=st%max_iter, tol=tol, batch=st%batch, &
+                                     bounds=st%bounds)
+         else
+            call solve_zvector_batch(st%mol, st%c, st%eps, st%no, rhs, response, error, &
+                                     max_iter=st%max_iter, tol=tol, batch=st%batch, &
+                                     bounds=st%bounds)
+         end if
+      else if (st%dh) then
          call cphf_solve(st%mol, st%c, st%eps, st%no, response=response, error=error, &
                          mo_rhs=rhs, tol=tol, max_iter=st%max_iter, xc=st%xc, density=st%scf_density)
       else
@@ -1575,9 +1600,6 @@ contains
 
       call stage_done(lclock, "ladder C, Lagrangian at the unrelaxed density")
       ! ---- D: the 3N Z-vector solves -------------------------------------------
-      ! TODO(mqc): `cphf_solve` runs one conjugate-gradient solve per right-hand
-      ! side, so this stage is about 60 per cent of the run; sharing each Fock
-      ! build across the perturbations, as `solve_mo1_batch` does, removes most of it.
       allocate (rhs(nv, no, n3))
       do y = 1, n3
          rhs(:, :, y) = transpose(rhs1(:, :, y))
