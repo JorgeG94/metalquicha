@@ -102,6 +102,21 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(FLAGS_RELEASE "-march=native")
   set(FLAGS_WARNINGS "-Wall -Wextra -Wpedantic")
   set(FLAGS_COVERAGE "${MQC_COVERAGE_OPT} -g --coverage")
+  # Trampolines on the heap, not the stack. gfortran builds a trampoline
+  # whenever an internal procedure is passed as an argument -- json-fortran's
+  # json_value_module does it twice -- and by default puts it on the stack,
+  # which marks the object, and any shared library linked from it, as needing an
+  # executable stack. glibc 2.41 (Ubuntu 26.04) refuses to dlopen such a
+  # library, so the Python interface could not load libmqc.so.
+  # CMAKE_Fortran_FLAGS reaches the fetched dependencies, which is what makes
+  # this cover json-fortran rather than only our own sources. GCC 13 and older
+  # have no such flag and keep stack trampolines, which an older glibc loads.
+  include(CheckFortranCompilerFlag)
+  CHECK_Fortran_COMPILER_FLAG("-ftrampoline-impl=heap"
+                              MQC_HAVE_HEAP_TRAMPOLINES)
+  if(MQC_HAVE_HEAP_TRAMPOLINES)
+    string(APPEND FLAGS_STANDARD " -ftrampoline-impl=heap")
+  endif()
 
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
   set(FLAGS_STANDARD "-traceback -auto")
