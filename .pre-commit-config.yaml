@@ -70,6 +70,15 @@ repos:
         language: system
         types: [file]
         files: '\.(f|F|f90|F90)$'
+      - id: mqc-versions-agree
+        name: version is the same in all four places
+        # CMakeLists.txt, fpm.toml, mqc_version.f90 and the Sphinx conf are
+        # bumped by hand, and drifted apart once: v0.1.0 and v0.1.1 reported
+        # themselves as 0.2.0. Runs whenever one of the four is touched.
+        entry: tools/lint/versions_agree.sh
+        language: system
+        pass_filenames: false
+        files: '^(CMakeLists\.txt|fpm\.toml|src/core/mqc_version\.f90|mqc_docs/source/conf\.py)$'
       - id: mqc-no-agent-trailers
         name: no agent session trailers
         # A session link is unopenable by anyone but its author, dies with

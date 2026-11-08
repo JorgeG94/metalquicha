@@ -7,10 +7,10 @@ module mqc_version
 
    public :: MQC_VERSION_STR, print_version
 
-   ! TODO(mqc): nothing checks that this and `VERSION` in the top-level
-   ! CMakeLists agree, and they have drifted apart before.
+   ! tools/lint/versions_agree.sh, a pre-commit hook, checks this against
+   ! CMakeLists.txt, fpm.toml and the Sphinx conf; change all four together.
    character(len=*), parameter :: MQC_VERSION_STR = "0.2.0"
-      !! Kept in step with `VERSION` in the top-level CMakeLists by hand.
+      !! The release this binary reports itself as
 
 contains
 
