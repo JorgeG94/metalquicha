@@ -9,7 +9,7 @@ module mqc_version
 
    ! tools/lint/versions_agree.sh, a pre-commit hook, checks this against
    ! CMakeLists.txt, fpm.toml and the Sphinx conf; change all four together.
-   character(len=*), parameter :: MQC_VERSION_STR = "0.2.0"
+   character(len=*), parameter :: MQC_VERSION_STR = "0.3.0"
       !! The release this binary reports itself as
 
 contains
