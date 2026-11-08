@@ -255,6 +255,11 @@ only in libfint:
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
 - `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
+  Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
+  allowed), and a double hybrid's perturbative term, fitted when
+  `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
+  SCS/SOS, a fitted reference and a frozen-core double hybrid take the
+  semi-numerical path. See `mqc_docs/source/analytic_hessians.rst`.
 - `NEO-HF` - nuclear-electronic orbital Hartree-Fock: `keywords.neo` with
   `quantum_nuclei` (0-based indices or symbols) and `nuclear_basis` (default
   `pb4-d`, from `basis_sets/neo/`) gives the named protons orbitals of their

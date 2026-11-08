@@ -65,7 +65,8 @@ contains
                   new_unittest("one_pass_h1_matches_the_per_atom_one", h1_contract_matches), &
                   new_unittest("an_h1_omega_pass_is_actually_attenuated", h1_attenuation_is_real), &
                   new_unittest("a_two_electron_omega_pass_is_actually_attenuated", &
-                               hess_2e_attenuation_is_real) &
+                               hess_2e_attenuation_is_real), &
+                  new_unittest("two_densities_are_the_polarised_form", hess_2e_two_densities) &
                   ]
    end subroutine collect_mqc_hess_ints_tests
 
@@ -429,6 +430,64 @@ contains
                     "h1_contract at large omega does not recover the full-range exchange")
       call mol%destroy()
    end subroutine h1_attenuation_is_real
+
+   subroutine hess_2e_two_densities(error)
+      !! `hess_2e_contract` with a second density is the polarised quadratic form
+      !!
+      !! `Q(D1, D2) = Q(D1 + D2) - Q(D1) - Q(D2)`, three sweeps of the one-density
+      !! routine, which is what makes it a check that owes nothing to the new
+      !! weights. Run with a hybrid's exchange fraction and an unsymmetric pair of
+      !! unequal densities, so a dropped cross term or a swapped factor shows.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: d1(:, :), d2(:, :), ds(:, :), noise(:, :)
+      real(dp), allocatable :: q12(:, :, :, :), q1(:, :, :, :), q2(:, :, :, :), qb(:, :, :, :)
+      real(dp), parameter :: KX = 0.37_dp
+      integer :: n, natm
+
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error,.not. err%has_error(), "the reference did not converge")
+      if (allocated(error)) return
+
+      n = mol%nao
+      natm = mol%natm
+      allocate (d1(n, n), d2(n, n), noise(n, n))
+      call random_number(noise)
+      d1 = scf%density
+      d2 = 0.5_dp*(noise + transpose(noise)) - 0.5_dp
+      ds = d1 + d2
+      allocate (q12(3, 3, natm, natm), q1(3, 3, natm, natm), q2(3, 3, natm, natm), &
+                qb(3, 3, natm, natm))
+      q12 = 0.0_dp
+      q1 = 0.0_dp
+      q2 = 0.0_dp
+      qb = 0.0_dp
+      call hess_2e_contract(mol, ds, q12, err, k_scale=KX)
+      call hess_2e_contract(mol, d1, q1, err, k_scale=KX)
+      call hess_2e_contract(mol, d2, q2, err, k_scale=KX)
+      call hess_2e_contract(mol, d1, qb, err, k_scale=KX, density2=d2)
+      call check(error,.not. err%has_error(), "the two-electron second derivatives failed")
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(qb)) > 1.0e-2_dp, "the bilinear form is empty")
+      if (allocated(error)) return
+      call check(error, maxval(abs(qb - (q12 - q1 - q2))) < 1.0e-9_dp*maxval(abs(qb)), &
+                 "density2 is not the polarised form of the one-density routine")
+      if (allocated(error)) return
+
+      ! Symmetric in its two arguments.
+      qb = 0.0_dp
+      q1 = 0.0_dp
+      call hess_2e_contract(mol, d1, qb, err, k_scale=KX, density2=d2)
+      call hess_2e_contract(mol, d2, q1, err, k_scale=KX, density2=d1)
+      call check(error, maxval(abs(qb - q1)) < 1.0e-9_dp*maxval(abs(qb)), &
+                 "the two-density form is not symmetric in its densities")
+      call mol%destroy()
+   end subroutine hess_2e_two_densities
 
    subroutine hess_2e_attenuation_is_real(error)
       !! The two-electron second derivatives, at both limits of the attenuation
