@@ -5,7 +5,7 @@ module mqc_acknowledgements
    use pic_logger, only: logger => global_logger
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
-                              BACKEND_CUEST, BACKEND_CZT
+                              BACKEND_CUEST, BACKEND_CZT, BACKEND_TERCO
    use mqc_cuest_bridge, only: cuest_backend_available
    use mqc_error, only: error_t
    implicit none
@@ -13,12 +13,13 @@ module mqc_acknowledgements
 
    public :: print_acknowledgement   !! Banner for the backend this run will use
    public :: acknowledged_backend    !! Which backend that is; exposed for testing
-   public :: ACK_NONE, ACK_CUEST, ACK_LIBCINT, ACK_TBLITE
+   public :: ACK_NONE, ACK_CUEST, ACK_LIBCINT, ACK_TBLITE, ACK_TERCO
 
    integer, parameter :: ACK_NONE = 0     !! Nothing to credit (unknown method)
    integer, parameter :: ACK_CUEST = 1
    integer, parameter :: ACK_LIBCINT = 2
    integer, parameter :: ACK_TBLITE = 3
+   integer, parameter :: ACK_TERCO = 4
 
 contains
 
@@ -42,6 +43,8 @@ contains
                      "Qiming Sun's LibCint")
       case (ACK_TBLITE)
          call banner("Semi-empirical methods provided through the Grimme group's tblite")
+      case (ACK_TERCO)
+         call banner("Integrals, SCF and RI-MP2 provided through terco, on the GPU")
       case default
          ! Nothing ran that has a backend to credit. Silence beats a guess.
       end select
@@ -74,6 +77,10 @@ contains
          which = ACK_CUEST
       case (BACKEND_CZT)
          which = ACK_LIBCINT
+      case (BACKEND_TERCO)
+         ! Named, never chosen by 'auto', so it is credited as named; falling
+         ! through to the 'auto' branch credited cuEST on a build with both.
+         which = ACK_TERCO
       case default
          if (cuest_backend_available() .and. method_runs_on_cuest(method_type)) then
             which = ACK_CUEST

@@ -66,6 +66,27 @@ ELEMENTS = (
 
 _NUMBER = {sym.upper(): i + 1 for i, sym in enumerate(ELEMENTS)}
 
+#: Cordero covalent radii in Angstrom, Z = 1-96, copied from mqc_atomic_radii.f90
+#: so perceive_monomers draws bonds where the Fortran perception does.
+_COVALENT_RADII = [
+    0.31, 0.28, 1.28, 0.96, 0.84, 0.76, 0.71, 0.66,
+    0.57, 0.58, 1.66, 1.41, 1.21, 1.11, 1.07, 1.05,
+    1.02, 1.06, 2.03, 1.76, 1.70, 1.60, 1.53, 1.39,
+    1.39, 1.32, 1.26, 1.24, 1.32, 1.22, 1.22, 1.20,
+    1.19, 1.20, 1.20, 1.16, 2.20, 1.95, 1.90, 1.75,
+    1.64, 1.54, 1.47, 1.46, 1.42, 1.39, 1.45, 1.44,
+    1.42, 1.39, 1.39, 1.38, 1.39, 1.40, 2.44, 2.15,
+    2.07, 2.04, 2.03, 2.01, 1.99, 1.98, 1.98, 1.96,
+    1.94, 1.92, 1.92, 1.89, 1.90, 1.87, 1.87, 1.75,
+    1.70, 1.62, 1.51, 1.44, 1.41, 1.36, 1.36, 1.32,
+    1.45, 1.46, 1.48, 1.40, 1.50, 1.50, 2.60, 2.21,
+    2.15, 2.06, 2.00, 1.96, 1.90, 1.87, 1.80, 1.69,
+]
+
+#: Alkali and alkaline-earth metals, except Be, which does form covalent bonds.
+#: Their contacts with a solvent shell are ionic, not monomer boundaries.
+_IONIC_METALS = frozenset((3, 11, 19, 37, 55, 87, 12, 20, 38, 56, 88))
+
 
 #: Driver names the Fortran side accepts, lowercased. Mirrored from
 #: `calc_type_from_string` in `src/mqc_calc_types.f90`, including the aliases:
@@ -159,6 +180,9 @@ class System:
         if not self._handle:
             raise MQCError("could not allocate a system")
         self._monomers = None
+        self._numbers = None
+        self._coords = None
+        self._charge = 0
         if symbols is not None or numbers is not None:
             self.set_geometry(symbols, coords, numbers, charge, multiplicity)
 
@@ -194,6 +218,9 @@ class System:
             ),
             _ffi.system_last_error,
         )
+        self._numbers = [int(z) for z in numbers]
+        self._coords = [flat[3 * i : 3 * i + 3] for i in range(len(numbers))]
+        self._charge = int(charge)
         return self
 
     # -- partition ----------------------------------------------------------
@@ -232,6 +259,101 @@ class System:
         )
         self._monomers = monomers
         return self
+
+    @property
+    def numbers(self):
+        """Atomic numbers, as given to `set_geometry`."""
+        return list(self._numbers or [])
+
+    @property
+    def charge(self):
+        """Total charge of the system."""
+        return self._charge
+
+    @property
+    def monomers(self):
+        """The partition set from Python, as lists of 0-based atom indices.
+
+        `auto_monomers` runs inside libmqc and its result is not handed back,
+        so after it this raises; `perceive_monomers` gives a partition that
+        can be read.
+        """
+        if self._monomers is None:
+            raise MQCError(
+                "no monomers were set from Python; call perceive_monomers or set_monomers"
+            )
+        return [list(m) for m in self._monomers]
+
+    def perceive_monomers(self, tolerance=1.2, atom_charges=None):
+        """Partition into covalently connected molecules, then charge them.
+
+        The same criterion as `auto_monomers` -- d(i,j) < tolerance * (r_i + r_j)
+        with Cordero radii -- done here so the partition is readable and the
+        rule for ions is explicit: alkali and alkaline-earth metals (not Be)
+        bond to nothing, so Na+ in a water cluster is its own monomer. An
+        element with no tabulated radius bonds to nothing either.
+
+        `atom_charges` is {atom: formal charge}, 0-based; see
+        `assign_monomer_charges`. Monomers come out ordered by lowest atom.
+        """
+        if self._numbers is None:
+            raise MQCError("no geometry set")
+        n = len(self._numbers)
+        radii = [
+            0.0 if z in _IONIC_METALS or not 1 <= z <= len(_COVALENT_RADII)
+            else _COVALENT_RADII[z - 1]
+            for z in self._numbers
+        ]
+        parent = list(range(n))
+
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        for i in range(n):
+            if not radii[i]:
+                continue
+            for j in range(i + 1, n):
+                if not radii[j]:
+                    continue
+                limit = tolerance * (radii[i] + radii[j])
+                d2 = sum((a - b) ** 2 for a, b in zip(self._coords[i], self._coords[j]))
+                if d2 < limit * limit:
+                    parent[find(j)] = find(i)
+        groups = {}
+        for i in range(n):
+            groups.setdefault(find(i), []).append(i)
+        self._monomers = sorted(groups.values(), key=lambda m: m[0])
+        return self.assign_monomer_charges(atom_charges)
+
+    def assign_monomer_charges(self, atom_charges=None):
+        """Give each monomer the sum of `atom_charges` over its atoms.
+
+        Checks that the atom indices exist, that the monomer charges add up to
+        the system charge, and that every monomer has an even electron count,
+        since each is declared a singlet. Raises ValueError otherwise.
+        """
+        monomers = self.monomers
+        atom_charges = dict(atom_charges or {})
+        n = len(self._numbers)
+        bad = [a for a in atom_charges if not 0 <= a < n]
+        if bad:
+            raise ValueError(f"atom charge on {bad}: atoms are 0..{n - 1}")
+        charges = [sum(atom_charges.get(a, 0) for a in m) for m in monomers]
+        if sum(charges) != self._charge:
+            raise ValueError(
+                f"the atom charges sum to {sum(charges)} but the system charge is "
+                f"{self._charge}"
+            )
+        for index, (m, q) in enumerate(zip(monomers, charges)):
+            if (sum(self._numbers[a] for a in m) - q) % 2:
+                raise ValueError(
+                    f"monomer {index + 1} (atoms {m}) has charge {q} and an odd "
+                    "number of electrons, so it cannot be a singlet"
+                )
+        return self.set_monomers(monomers, charges=charges, multiplicities=[1] * len(monomers))
 
     def set_bonds(self, bonds, orders=None):
         """Declare the connectivity, as (i, j) pairs of 0-based atoms.
@@ -437,11 +559,16 @@ class System:
         name -- xTB is cheap enough to point at anything, an RHF is not. On a
         large system pick the basis deliberately.
 
-        `scheme` is "chelpg" or "mulliken". Prefer CHELPG unless the question
-        is specifically about basis-function populations: on water, going from
-        6-31G to aug-cc-pVDZ moves the Mulliken charge on oxygen from -0.79 to
-        -0.30, while CHELPG moves from -0.94 to -0.74. The molecule did not
-        change; one of the two numbers is mostly reporting the basis.
+        `scheme` is "chelpg", "mulliken", "hirshfeld" or "mbis". Prefer CHELPG unless
+        the question is specifically about basis-function populations: on
+        water, going from 6-31G to aug-cc-pVDZ moves the Mulliken charge on
+        oxygen from -0.79 to -0.30, while CHELPG moves from -0.94 to -0.74. The
+        molecule did not change; one of the two numbers is mostly reporting the
+        basis. Hirshfeld divides the density by fixed free-atom shares and
+        moves little, -0.35 to -0.32 on the same oxygen, though its charges
+        are smaller in magnitude; it needs a build with libxc, which its free
+        atoms are solved with. MBIS fits its pro-atoms to the molecule, gives
+        charges the size of CHELPG's, and moves least of all: -0.91 to -0.92.
 
         Closed shell only -- an odd electron count raises rather than being
         quietly paired up.
@@ -854,18 +981,34 @@ class Result:
         """
         return f"output_{self.label}_fragments.csv" if self.wrote else None
 
-    def breakdown(self):
+    @property
+    def counterpoise(self):
+        """The counterpoise scheme the run used, ``"vmfc"`` or ``"ssfc"``, or None."""
+        document = self._output_document()
+        scheme = document.get("counterpoise") if document else None
+        return scheme if scheme and scheme != "none" else None
+
+    def breakdown(self, include_auxiliary=False):
         """The per-term rows: monomers, energy, n-body delta, distance.
 
         Distinct from `MBE.terms`, which is only the monomer indices -- these
         rows carry what the calculation found, and are what a threshold is
         applied to.
+
+        Under counterpoise the file also holds *auxiliary* rows: a subset
+        solved in a larger basis, which its parent subtracts and the total
+        never sums. Under VMFC that is every row with ghosts; under SSFC every
+        ghosted row with one real monomer. They are left out unless
+        `include_auxiliary` is set, so the rows that remain are the terms of
+        the expansion, one per set of real monomers, each with its corrected
+        delta. A row's ghosted monomers are in `Term.ghosts`.
         """
         path = self.breakdown_csv
         if not path or not os.path.exists(path):
             raise MQCError(
                 f"no breakdown file for '{self.label}'; run with write_to_file=True"
             )
+        scheme = self.counterpoise
         rows = []
         with open(path) as handle:
             header = next(handle).strip().split(",")
@@ -883,9 +1026,13 @@ class Result:
                 if not line.strip():
                     continue
                 cells = line.split(",")
+                ghosts = tuple(-int(cells[i]) for i in mcols if int(cells[i]) < 0)
+                real = tuple(int(cells[i]) for i in mcols if int(cells[i]) > 0)
+                if not include_auxiliary and _is_auxiliary(real, ghosts, scheme):
+                    continue
                 rows.append(
                     Term(
-                        tuple(int(cells[i]) for i in mcols if int(cells[i]) > 0),
+                        real,
                         float(cells[ie]),
                         float(cells[idelta]),
                         float(cells[idist]) if idist is not None else None,
@@ -893,6 +1040,7 @@ class Result:
                         _number(cells, ihomo),
                         _number(cells, ilumo),
                         _connected(cells[iconn]) if iconn is not None else None,
+                        ghosts,
                     )
                 )
         return rows
@@ -915,11 +1063,14 @@ class Term:
     """One term of the expansion, as read back from a breakdown."""
 
     __slots__ = ("monomers", "energy", "delta", "distance", "converged", "homo",
-                 "lumo", "connected")
+                 "lumo", "connected", "ghosts")
 
     def __init__(self, monomers, energy, delta, distance, converged=None,
-                 homo=None, lumo=None, connected=None):
-        self.monomers = monomers  # 1-based, as the expansion counts them
+                 homo=None, lumo=None, connected=None, ghosts=()):
+        self.monomers = monomers  # 1-based, as the expansion counts them; real monomers only
+        self.ghosts = tuple(ghosts)
+            #: Monomers present as ghost centres -- basis functions, no
+            #: nucleus -- under counterpoise; empty otherwise. 1-based.
         self.energy = energy
         self.delta = delta  #: n-body contribution -- what a threshold is on
         self.distance = distance
@@ -956,7 +1107,22 @@ class Term:
         return len(self.monomers)
 
     def __repr__(self):
-        return f"<Term {self.monomers} delta={self.delta:+.3e}>"
+        ghosts = f" ghosts={self.ghosts}" if self.ghosts else ""
+        return f"<Term {self.monomers}{ghosts} delta={self.delta:+.3e}>"
+
+
+def _is_auxiliary(real, ghosts, scheme):
+    """Whether a counterpoise row is subtracted by its parent and never summed.
+
+    The Python twin of `is_auxiliary_row`: under VMFC every ghosted row; under
+    SSFC a ghosted row with one real monomer, the one-body term being each
+    monomer in its own basis.
+    """
+    if not ghosts:
+        return False
+    if scheme == "ssfc":
+        return len(real) == 1
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -1047,7 +1213,7 @@ class MBE:
         # go through `keywords` -- and did, before this existed -- but solvation
         # changes the Hamiltonian, and things that do that are named arguments
         # here alongside `functional` and `basis`.
-        # "cuest"/"gpu", "libcint"/"cpu", or None for the build's default. A
+        # "cuest"/"gpu", "libcint"/"cpu", "terco", or None for the build's default. A
         # request that cannot be honoured is refused rather than substituted.
         self.backend = backend
         self.pcm = dict(pcm) if pcm else None

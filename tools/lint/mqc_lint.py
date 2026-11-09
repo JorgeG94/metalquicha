@@ -9,6 +9,7 @@ Neither has an opinion about the things this checks:
   MQC003  a parameter whose value already exists there under another name
   MQC004  a GOTO statement, in any spelling
   MQC005  an arithmetic IF
+  MQC006  a ``/*``, which the C preprocessor opens a comment on
 
 MQC002 and MQC003 exist because mqc_physical_constants says in its own header
 that it is the only place a constant may be written down -- the Bohr radius had
@@ -501,6 +502,42 @@ def check_arithmetic_if(path, lines):
 
 
 # --------------------------------------------------------------------------
+# MQC006 -- a C comment opener
+# --------------------------------------------------------------------------
+
+# CMake's Ninja generator runs every Fortran source through `gfortran -cpp -E`
+# for dependency scanning. The C preprocessor takes `/*` as the start of a C
+# comment, even inside a Fortran comment: unclosed it is a hard error, closed
+# it silently deletes the text. String literals are tokenised as strings, so a
+# `/*` inside one is safe.
+C_COMMENT_OPEN = re.compile(r"/\*")
+
+
+def check_c_comment(path, lines):
+    findings = []
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("#"):
+            continue  # a preprocessor line, where a C comment is legitimate
+        col = comment_column(line)
+        code = blank_strings(line if col < 0 else line[:col])
+        comment = "" if col < 0 else line[col:]
+        if (
+            C_COMMENT_OPEN.search(code) or C_COMMENT_OPEN.search(comment)
+        ) and not suppressed(lines, i, "MQC006"):
+            findings.append(
+                Finding(
+                    path,
+                    i + 1,
+                    "MQC006",
+                    "'/*' opens a C comment when the file is preprocessed, "
+                    "which a Ninja build always does; reword it (e.g. "
+                    "'the JSON files under basis_sets/' for 'basis_sets/*.json')",
+                )
+            )
+    return findings
+
+
+# --------------------------------------------------------------------------
 
 
 def gather(root: Path, explicit):
@@ -523,7 +560,7 @@ def main(argv=None):
     ap.add_argument("--all", action="store_true", help="check the whole tree")
     ap.add_argument(
         "--rules",
-        default="MQC001,MQC002,MQC003,MQC004,MQC005",
+        default="MQC001,MQC002,MQC003,MQC004,MQC005,MQC006",
         help="comma-separated rules to apply (default: all)",
     )
     ap.add_argument(
@@ -580,6 +617,8 @@ def main(argv=None):
             findings += check_goto(rel, lines)
         if "MQC005" in rules:
             findings += check_arithmetic_if(rel, lines)
+        if "MQC006" in rules:
+            findings += check_c_comment(rel, lines)
         if rules & {"MQC002", "MQC003"}:
             same = Path(rel).as_posix() == CONSTANTS_MODULE.as_posix()
             findings += [

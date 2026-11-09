@@ -451,6 +451,25 @@ HAND_MAINTAINED = {
     "cpu/mqc/bond_orders/cpu_o2_cc-pvdz_mayer.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
     "cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+    # Condensed by Hirshfeld, whose weights come from free atoms and so divide
+    # all three states by one partition. Needs libxc, which the free atoms are
+    # solved with. The indices are pinned against PySCF in
+    # test/test_mqc_hirshfeld.f90, by tools/hirshfeld/hirshfeld_reference.py.
+    "cpu/mqc/fukui/cpu_water_6-31g_fukui_hirshfeld.json",
+    # Hirshfeld charges on their own, closed and open shell. Same situation:
+    # the manifest checks the SCF energy, which asking for charges must leave
+    # alone, and the charges are pinned in test/test_mqc_hirshfeld.f90. Triplet
+    # O2 is the open-shell path, where spin populations come from the same
+    # weights: by symmetry each oxygen is neutral and carries one unpaired
+    # electron, and the run prints 2e-10 and 0.999999999.
+    "cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
+    "cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
+    # The same two through MBIS, whose pro-atoms are fitted to the molecule
+    # rather than solved as free atoms. Pinned against denspart in
+    # test/test_mqc_mbis.f90, by tools/mbis/mbis_reference.py. Needs nothing
+    # beyond the integrals.
+    "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+    "cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
     # The ions given their own SCF group, and the neutral's energy pinned to the
     # same number as the chelpg case above. `properties.fukui.scf` configures
     # the two ion SCFs only, so a level shift and an EDIIS opening set there
@@ -463,7 +482,8 @@ HAND_MAINTAINED = {
     # Handing the wrong one across is refused rather than misread, which turns
     # into a skipped analysis and a run that still exits zero -- so a deck that
     # completes with a Fukui table is the assertion. It also omits
-    # `population`, which pins the CHELPG default.
+    # `population`, which pins the Hirshfeld default -- the deck already needs
+    # libxc for its functional, and Hirshfeld's free atoms need it too.
     "cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
     # The same analysis inside a continuum. Hand-maintained for the reason the
     # PCM decks below are: this script has no PCM support, so a regeneration
@@ -2653,7 +2673,7 @@ HESSIAN_DH_LOOSE = {"mpw2plyp": 5.0e-6}
 
 
 def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
-                     step=0.008):
+                     step=0.008, aux=""):
     """Reference double-hybrid Hessian, by second differences of the energy.
 
     **Why a difference, and why twice.** No open-source code has an analytic
@@ -2682,6 +2702,11 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
     Costs `2 * (2n + 4 * n(n-1)/2 + 1)` converged SCF-plus-MP2 runs for `3N = n`
     coordinates -- 326 for a triatomic, a few minutes at STO-3G. That is the
     price of a reference nobody else can hand us.
+
+    `aux` fits the perturbative term with that auxiliary basis, over the same
+    exact Kohn-Sham reference, which is the energy a double hybrid with a named
+    `model.aux_basis` reports; the PT2 is then PySCF's own `DFMP2`, so the
+    difference still owes nothing to our fitted Hessian.
     """
     import numpy as np
     from pyscf import dft, gto, mp
@@ -2713,7 +2738,12 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
         e_ks = mf.kernel()
         if not mf.converged:
             raise RuntimeError("the reference SCF did not converge")
-        pt2 = mp.MP2(mf)
+        if aux:
+            pt2 = mp.dfmp2.DFMP2(mf)
+            pt2.with_df = pt2.with_df.__class__(
+                mf.mol, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
+        else:
+            pt2 = mp.MP2(mf)
         pt2.frozen = 0
         return float(e_ks + c_pt2 * pt2.kernel()[0])
 
@@ -2744,6 +2774,67 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
     _, fine = second_differences(step / 2.0)
     richardson = (4.0 * fine - coarse) / 3.0
     return e0, richardson.tolist(), build(geom).nao
+
+
+# The fitted-correlation Hessians, as (molecule, basis, aux, frozen core count).
+#
+# The first Hessians in this suite whose reference is not PySCF's. PySCF has no
+# RI-MP2 Hessian -- it has no RI-MP2 gradient either -- so the correlation block
+# is `ri_mp2_hessian.py`'s, the numpy ladder this program's Fortran was written
+# from, added to PySCF's own analytic RHF Hessian. That is a check of the
+# *transcription* and of the bridge that routes a deck to it; the physics is
+# pinned separately, by `test_mqc_ri_mp2_hessian`, which differences the fitted
+# gradient and reads about 1e-9. Water in a split-valence and in a
+# double-zeta basis, the latter with d functions and a frozen oxygen core.
+HESSIAN_RI_MP2_CASES = [
+    ("water", "6-31g", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+]
+
+# Double hybrids with a named auxiliary basis, as (molecule, basis, functional,
+# aux). The reference is `pyscf_dh_hessian` with its perturbative term fitted:
+# second differences of PySCF's own energy, so unlike the block above this one
+# does not read a line of the prototype. Pinned grid, as the exact-PT2 cases.
+HESSIAN_DH_RI_CASES = [
+    ("water", "6-31g", "b2plyp", "cc-pvdz-rifit"),
+]
+
+#: Held against the prototype's block plus PySCF's RHF Hessian, both analytic.
+#: Measured worst element 7.7e-9 (6-31G) and 3.7e-8 (frozen-core cc-pVDZ) at the
+#: deck's default response tolerance of 1e-9, which is what sets them.
+HESSIAN_RI_MP2_TOLERANCE = 5.0e-7
+
+#: Held against second differences of a fitted double hybrid on a grid pinned
+#: at the reference geometry. Set by that reference and not by the fitted block:
+#: the oxygen diagonal sits 5.0e-5 away in x, y and z alike, and the *exact*
+#: perturbative term of the same functional, through the conventional Hessian,
+#: sits at 4.99e-5 from its own pinned-grid reference on the same elements. At
+#: grid level 5 the fitted case reads 2.7e-5, so it is the two codes' fixed grids
+#: differing under a split-valence oxygen -- the suite's existing 6.7e-5 for
+#: B3LYP/cc-pVDZ is the same effect -- and not a quantity that converges away.
+#: The fitting error itself is 1.6e-5 between the fitted and exact references.
+#: `test_mqc_ri_mp2_hessian_dh` is the tight check of the block: 2e-9 against
+#: the fitted gradient on one grid.
+HESSIAN_DH_RI_TOLERANCE = 1.5e-4
+
+def mqc_ri_mp2_hessian(atoms, basis, aux, frozen=0):
+    """Reference RI-MP2 energy and analytic Hessian, in Hartree/Bohr^2.
+
+    PySCF's RHF Hessian, which already carries the nuclear repulsion, plus the
+    correlation block of `ri_mp2_hessian.py`. `atoms` are in Angstrom as
+    everywhere in this file and the prototype wants Bohr.
+    """
+    from pyscf.hessian import rhf as _rhf_hess  # noqa: F401
+    from ri_mp2_gradient import build, ri_mp2_energy
+    from ri_mp2_hessian import rhf_hessian, ri_mp2_correlation_hessian
+
+    bohr = [[sym, x / ANGSTROM_PER_BOHR, y / ANGSTROM_PER_BOHR, z / ANGSTROM_PER_BOHR]
+            for sym, x, y, z in atoms]
+    corr, ref = ri_mp2_correlation_hessian(bohr, basis, aux, frozen)
+    hess = rhf_hessian(ref) + corr
+    mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
+    energy, _ = ri_mp2_energy(mol, auxmol, frozen=frozen)
+    return float(energy), hess.tolist(), mol.nao
 
 
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
@@ -3545,6 +3636,68 @@ def counterpoise_entries(written, dry_run):
     return entries
 
 
+def ri_hessian_entries(written, dry_run):
+    """Write the fitted-correlation Hessian decks and return their entries.
+
+    A function for the reason `excited_entries` is: `--only-ri-hessian` splices
+    these into the committed manifest without regenerating the other three
+    hundred references. `written` is added to in place.
+    """
+    entries = []
+    for name, basis, aux, frozen in HESSIAN_RI_MP2_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = mqc_ri_mp2_hessian(mol.atoms, basis, aux, frozen)
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_rimp2"
+        if frozen:
+            stem += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/hessian", stem + "_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen}, aux_only=True)
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"RI-MP2 Hessian {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_RI_MP2_TOLERANCE,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} RI-MP2   hess |H|={norm:.10f} "
+              f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, aux in HESSIAN_DH_RI_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_dh_hessian(mol.atoms, basis, functional, aux=aux)
+        tag = normalize_basis_name(basis) + "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian", f"cpu_{name}_{tag}_{normalize_basis_name(aux)}_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="dft",
+                          correlation={"freeze_core": False}, aux_only=True)
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"{functional.upper()} Hessian {mol.label} {basis}/{aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_DH_RI_TOLERANCE,
+            "requires": "libxc",
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} {functional.upper():8s} "
+              f"hess |H|={norm:.10f} aux={aux} nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true",
@@ -3553,6 +3706,10 @@ def main():
                     help="write only the counterpoise decks and splice their "
                          "entries into the existing manifest, leaving every "
                          "other entry and deck untouched")
+    ap.add_argument("--only-ri-hessian", action="store_true",
+                    help="write only the fitted-correlation Hessian decks and "
+                         "splice their entries into the existing manifest, "
+                         "leaving every other entry and deck untouched")
     args = ap.parse_args()
 
     # Reference energies must not depend on how many cores the generating
@@ -3575,6 +3732,20 @@ def main():
     # else is read, recomputed or rewritten.
     if args.only_counterpoise:
         entries = counterpoise_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_ri_hessian:
+        for name in {c[0] for c in HESSIAN_RI_MP2_CASES + HESSIAN_DH_RI_CASES}:
+            MOLECULES[name].atoms = read_xyz(INPUTS / MOLECULES[name].xyz)
+        entries = ri_hessian_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -4731,6 +4902,7 @@ def main():
     # read and a manifest nobody can check.
     tests.extend(excited_entries(written, args.dry_run))
     tests.extend(counterpoise_entries(written, args.dry_run))
+    tests.extend(ri_hessian_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

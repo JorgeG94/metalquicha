@@ -98,7 +98,13 @@ asking for ``iefpcm`` there is refused rather than quietly given the other
 model's charges. The GPU path has the PCM nuclear gradient; the CPU path does
 not.
 
-Both backends build their cavity from the same radii table
+**terco (GPU) backend.** C-PCM and IEF-PCM, with the same SWIG discretisation as
+the CPU path. terco's own radii table is PySCF's modified Bondi, with hydrogen
+at 1.10 Angstrom; mqc hands it the final cavity radius of every atom instead, so
+the cavity is the CPU backend's and the two agree to 1e-11 Hartree on the same
+deck. Energies only, and all three Fukui states are solvated on one cavity.
+
+All three backends build their cavity from the same radii table
 (``mqc_pcm_radii``: Bondi, filled in from Mantina, scaled by
 ``radii_scale`` = 1.2), so a deck moved between them describes the same cavity.
 

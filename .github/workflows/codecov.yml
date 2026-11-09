@@ -35,6 +35,14 @@ concurrency:
   group: codecov-${{ github.head_ref || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Open MPI is kept off UCX, as in local_conda_env.yml, which says why: the
+# runners' MANA NIC breaks it, and mqc_czt_fmo_mpi died in MPI_Comm_dup here too.
+env:
+  OMPI_MCA_pml: ob1
+  OMPI_MCA_btl: self,sm,tcp
+  OMPI_MCA_osc: ^ucx
+  OMPI_MCA_coll_ucc_enable: "0"
+
 jobs:
   codecov:
     runs-on: ubuntu-latest

@@ -26,7 +26,7 @@ module test_mqc_counterpoise_schemes
    use pic_types, only: dp, int64
    use mqc_mbe, only: compute_mbe
    use mqc_result_types, only: calculation_result_t, mbe_result_t
-   use mqc_frag_utils, only: generate_mbe_term_list
+   use mqc_frag_utils, only: generate_mbe_term_list, add_counterpoise_rows
    use mqc_combinatorics, only: is_auxiliary_row, rows_match_counterpoise, &
                                 counterpoise_scheme_of, counterpoise_scheme_name, &
                                 COUNTERPOISE_NONE, COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
@@ -54,7 +54,9 @@ contains
                   new_unittest("ssfc_with_no_pairs_is_the_own_basis_monomers", test_ssfc_no_pairs), &
                   new_unittest("level_one_adds_no_rows_in_either_scheme", test_level_one), &
                   new_unittest("two_monomers_vmfc_and_ssfc_coincide", test_two_monomers), &
-                  new_unittest("ssfc_reference_with_screening", test_ssfc_reference) &
+                  new_unittest("ssfc_reference_with_screening", test_ssfc_reference), &
+                  new_unittest("a_supplied_list_gets_the_generated_rows", test_supplied_matches_generated), &
+                  new_unittest("a_kept_subset_gets_rows_for_its_terms_only", test_kept_subset) &
                   ]
    end subroutine collect_mqc_counterpoise_schemes_tests
 
@@ -110,6 +112,102 @@ contains
       if (present(reference)) config%reference_fragment = reference
       call generate_mbe_term_list(sys_geom, config, level, polymers, count)
    end subroutine vmfc_or_plain_rows
+
+   subroutine test_supplied_matches_generated(error)
+      !! A plain list given the scheme's rows is the list the driver generates
+      !!
+      !! What a supplied list goes through: real monomers only, then
+      !! `add_counterpoise_rows`. Under both schemes it must come out as the
+      !! same set of rows `generate_mbe_term_list` builds with the scheme on,
+      !! or a screened run would be corrected differently from a full one.
+      type(error_type), allocatable, intent(out) :: error
+      character(len=4), parameter :: SCHEMES(2) = ["vmfc", "ssfc"]
+      integer, parameter :: N = 4, LEVEL = 3
+      integer, allocatable :: supplied(:, :), generated(:, :)
+      integer(int64) :: n_supplied, n_generated
+      integer :: s
+
+      do s = 1, size(SCHEMES)
+         call vmfc_or_plain_rows(N, LEVEL, "none", supplied, n_supplied)
+         call add_counterpoise_rows(supplied, n_supplied, LEVEL, N, SCHEMES(s))
+         call vmfc_or_plain_rows(N, LEVEL, SCHEMES(s), generated, n_generated)
+         call check(error, same_rows(supplied, n_supplied, generated, n_generated), &
+                    SCHEMES(s)//": a supplied list's rows differ from the generated list's")
+         if (allocated(error)) return
+      end do
+   end subroutine test_supplied_matches_generated
+
+   subroutine test_kept_subset(error)
+      !! A screened list, closed under subsets, gets ghosted rows for its terms only
+      !!
+      !! Five monomers at level 3, keeping every monomer, the pairs 1-2, 1-3,
+      !! 2-3 and 3-4, and the trimer 1-2-3. Under VMFC each kept pair adds 2
+      !! rows and the trimer 6; under SSFC each monomer adds its full-basis row
+      !! and the terms are recast in place. A dropped term must add nothing.
+      type(error_type), allocatable, intent(out) :: error
+      integer, parameter :: N = 5, LEVEL = 3, N_KEPT = 10
+      integer, parameter :: KEPT(LEVEL, N_KEPT) = reshape([ &
+                                                          1, 0, 0, 2, 0, 0, 3, 0, 0, 4, 0, 0, 5, 0, 0, &
+                                                          1, 2, 0, 1, 3, 0, 2, 3, 0, 3, 4, 0, &
+                                                          1, 2, 3], [LEVEL, N_KEPT])
+      integer, allocatable :: polymers(:, :)
+      integer(int64) :: count
+
+      polymers = transpose(KEPT)
+      count = int(N_KEPT, int64)
+      call add_counterpoise_rows(polymers, count, LEVEL, N, "vmfc")
+      call check(error, count == int(N_KEPT, int64) + 4_int64*2_int64 + 6_int64, &
+                 "VMFC added the wrong number of rows to a kept list")
+      if (allocated(error)) return
+      call check(error, rows_match_counterpoise(polymers, count, N, COUNTERPOISE_VMFC), &
+                 "a kept list given VMFC rows is not a VMFC list")
+      if (allocated(error)) return
+
+      polymers = transpose(KEPT)
+      count = int(N_KEPT, int64)
+      call add_counterpoise_rows(polymers, count, LEVEL, N, "ssfc")
+      call check(error, count == int(N_KEPT, int64) + int(N, int64), &
+                 "SSFC added the wrong number of rows to a kept list")
+      if (allocated(error)) return
+      call check(error, size(polymers, 2) == N, "SSFC did not widen the list to the system")
+      if (allocated(error)) return
+      call check(error, rows_match_counterpoise(polymers, count, N, COUNTERPOISE_SSFC), &
+                 "a kept list given SSFC rows is not an SSFC list")
+   end subroutine test_kept_subset
+
+   pure function same_rows(a, n_a, b, n_b) result(same)
+      !! Whether two term lists hold the same rows, whatever their order and width
+      integer, intent(in) :: a(:, :), b(:, :)
+      integer(int64), intent(in) :: n_a, n_b
+      logical :: same
+
+      integer :: width
+      integer(int64) :: i, j
+      integer, allocatable :: row_a(:), row_b(:)
+      logical :: found
+
+      same = n_a == n_b
+      if (.not. same) return
+      width = max(size(a, 2), size(b, 2))
+      allocate (row_a(width), row_b(width))
+      do i = 1_int64, n_a
+         row_a = 0
+         row_a(1:size(a, 2)) = a(i, :)
+         found = .false.
+         do j = 1_int64, n_b
+            row_b = 0
+            row_b(1:size(b, 2)) = b(j, :)
+            if (all(row_a == row_b)) then
+               found = .true.
+               exit
+            end if
+         end do
+         if (.not. found) then
+            same = .false.
+            return
+         end if
+      end do
+   end function same_rows
 
    function row_of(mask, n_monomers) result(row)
       !! The full-basis row of the monomers in `mask`: those real, the rest of

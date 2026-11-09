@@ -865,11 +865,11 @@ contains
       end do
    end subroutine set_optimization_constraints
 
-   subroutine check_counterpoise_support(driver_config, error, terms_supplied)
+   subroutine check_counterpoise_support(driver_config, error)
       !! Refuse a counterpoise request the chosen expansion cannot honour
       !!
       !! Counterpoise is carried by ghosted rows in the MBE term list and by
-      !! the `is_ghost` mask on the fragments those rows build. Three things
+      !! the `is_ghost` mask on the fragments those rows build. Several things
       !! read neither, and each fails differently:
       !!
       !!   * **GMBE** and **FMO/EE-MBE** build their own term lists and never
@@ -881,6 +881,9 @@ contains
       !!     though its ghost centres were nuclei, against an electron count
       !!     derived without them. That is a different molecule with the wrong
       !!     charge, not an approximation.
+      !!   * the **cuEST backend** does the same: it cannot place a centre
+      !!     with basis functions and no nucleus. That covers `auto` on a build
+      !!     that resolves it to cuEST. terco can, and is allowed.
       !!
       !! An unrecognised spelling is refused too: once it reaches the term list
       !! it cannot be told from `none`.
@@ -889,14 +892,11 @@ contains
       !! too, ahead of the checks on the expansion, so that no fragment has run
       !! when it fires. Every refusal here applies to `vmfc` and `ssfc` alike.
       !!
-      !! A **supplied term list** is refused as well. It is used as the caller
-      !! wrote it, and the ghosted rows are built only by the driver's own list
-      !! generation, so counterpoise there would be ignored and an uncorrected
-      !! energy returned.
+      !! A **supplied term list** is not refused: the driver builds the
+      !! scheme's ghosted rows for the terms it names, once it has checked the
+      !! list is closed under subsets.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
-      logical, intent(in), optional :: terms_supplied
-         !! Whether the caller brought its own term list. Absent means not.
 
       character(len=:), allocatable :: scheme
 
@@ -910,9 +910,8 @@ contains
          return
       end if
 
-      ! Before the supplied-list check below: an optimization hands every step
-      ! a frozen list as a supplied one, and it should be told that it asked
-      ! for derivatives, which is the reason, rather than about the list.
+      ! First, so that it is the reason given: an optimization hands every
+      ! step a frozen list as a supplied one, and it asked for derivatives.
       ! `compute_mbe` refuses the same late, as a backstop; this fires before
       ! any fragment has run. `freeze_term_list` cuts a full-basis row to the
       ! level, and `validate_terms` and `check_subset_closure` would reject it,
@@ -949,19 +948,6 @@ contains
          return
       end if
 
-      if (present(terms_supplied)) then
-         if (terms_supplied) then
-            call error%set(ERROR_VALIDATION, &
-                           "counterpoise is not available with a supplied fragment "// &
-                           "list. A supplied list is used as given and the ghosted "// &
-                           "rows are built only when the driver generates the list, "// &
-                           "so the request would be ignored and an uncorrected energy "// &
-                           "returned. Let the driver generate the terms, or drop "// &
-                           "counterpoise.")
-            return
-         end if
-      end if
-
       select case (driver_config%method_config%method_type)
       case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_EFP2)
          call error%set(ERROR_VALIDATION, &
@@ -973,8 +959,49 @@ contains
       case default
          ! An ab initio method: the cenzontle path reads `is_ghost` and honours it.
       end select
+      if (error%has_error()) return
+
+      if (counterpoise_reaches_cuest(driver_config%method_config)) then
+         call error%set(ERROR_VALIDATION, &
+                        "counterpoise is not available on the cuEST backend. It cannot "// &
+                        "yet place a ghost centre -- basis functions and no nucleus -- "// &
+                        "so each monomer in the dimer's basis would be computed with a "// &
+                        "nucleus on every ghost. Ask for backend 'libcint' or 'terco', "// &
+                        "or drop counterpoise.")
+      end if
 
    end subroutine check_counterpoise_support
+
+   function counterpoise_reaches_cuest(method_config) result(on_gpu)
+      !! Whether this method's fragments would be solved by cuEST
+      !!
+      !! A named `cuest` or `gpu`, or `auto` on a build where `auto` sends
+      !! Hartree-Fock and Kohn-Sham to cuEST.
+      use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, &
+                                 BACKEND_AUTO, BACKEND_CUEST
+      use mqc_cuest_bridge, only: cuest_backend_available
+      type(method_config_t), intent(in) :: method_config
+      logical :: on_gpu
+
+      type(error_t) :: parse_error
+      integer :: backend_kind
+
+      call parse_backend_name(method_config%backend, backend_kind, parse_error)
+      ! An unknown name is the reader's to refuse, not this check's.
+      if (parse_error%has_error()) then
+         on_gpu = .false.
+         return
+      end if
+      select case (backend_kind)
+      case (BACKEND_CUEST)
+         on_gpu = .true.
+      case (BACKEND_AUTO)
+         on_gpu = cuest_backend_available() .and. &
+                  method_runs_on_cuest(method_config%method_type)
+      case default
+         on_gpu = .false.
+      end select
+   end function counterpoise_reaches_cuest
 
    subroutine check_pieda_support(driver_config, error)
       !! Refuse a PIEDA request the chosen expansion or driver cannot honour

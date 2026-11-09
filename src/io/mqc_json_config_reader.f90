@@ -202,7 +202,7 @@ contains
       ! in the config -- and so in the report and the JSON.
       call json%info("properties.fukui", found=found_fukui)
       if (found_fukui) then
-         config%fukui_population = "chelpg"
+         config%fukui_population = "hirshfeld"
          call optional_string(json, "properties.fukui.population", &
                               config%fukui_population)
          config%fukui_guess = "neutral"
@@ -2566,7 +2566,7 @@ contains
    subroutine resolve_gpu_request(config, backend_named, error)
       !! Settle `system.gpu` against `backend`, then refuse a request nothing can honour
       !!
-      !! Three things happen here, all of them before a calculation is set up
+      !! Four things happen here, all of them before a calculation is set up
       !! rather than once per fragment inside one:
       !!
       !!   * `system.gpu` resolves into `backend`, so everything downstream reads
@@ -2579,8 +2579,7 @@ contains
       !!   * asking for cuEST for a method it has no implementation of is refused.
       !!     Substituting the CPU silently would report a provenance and a set of
       !!     timings that were not true.
-      !!   * asking terco for a continuum is refused, since it would be ignored.
-      !!     Needs `keywords.pcm` read first.
+      !!   * asking for terco on a build without it is refused.
       type(mqc_config_t), intent(inout) :: config
       logical, intent(in) :: backend_named  !! Whether the deck had a root `backend` key
       type(error_t), intent(out) :: error
@@ -2616,17 +2615,6 @@ contains
       if (error%has_error()) return
 
       if (backend_kind == BACKEND_TERCO) then
-         ! Before the build check, so the deck is told what it asked for that
-         ! terco cannot do whichever binary reads it.
-         ! TODO(mqc): terco has C-PCM and IEF-PCM on its feat/pcm branch; once
-         ! that merges, wire trc_set_pcm into the terco driver and drop this.
-         if (config%pcm_enabled) then
-            call error%set(ERROR_VALIDATION, "backend 'terco' does not read "// &
-                           "keywords.pcm yet: the run would come back as a gas-phase "// &
-                           "energy. Use the CPU backend for continuum solvation, or "// &
-                           "drop keywords.pcm.")
-            return
-         end if
          if (.not. terco_backend_available()) then
             call error%set(ERROR_VALIDATION, "backend 'terco' was asked for, but this "// &
                            "build has no terco backend. Rebuild with CMake and "// &

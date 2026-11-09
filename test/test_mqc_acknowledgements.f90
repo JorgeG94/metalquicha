@@ -8,7 +8,7 @@ module test_mqc_acknowledgements
    !! keeps, and the two resolutions can only drift apart silently.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_acknowledgements, only: acknowledged_backend, &
-                                   ACK_CUEST, ACK_LIBCINT, ACK_TBLITE
+                                   ACK_CUEST, ACK_LIBCINT, ACK_TBLITE, ACK_TERCO
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
                                METHOD_TYPE_DFT, METHOD_TYPE_MP2, METHOD_TYPE_CCSD_T
    use mqc_cuest_bridge, only: cuest_backend_available
@@ -60,6 +60,11 @@ contains
       if (allocated(error)) return
       call check(error, acknowledged_backend(METHOD_TYPE_HF, "cuest") == ACK_CUEST, &
                  "'cuest' credits cuEST")
+      if (allocated(error)) return
+      ! On every build, cuEST linked or not: a terco run credited to cuEST was
+      ! what a build carrying both backends printed.
+      call check(error, acknowledged_backend(METHOD_TYPE_DFT, "terco") == ACK_TERCO, &
+                 "'terco' credits terco")
    end subroutine test_explicit
 
    subroutine test_auto(error)

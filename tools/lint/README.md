@@ -82,6 +82,29 @@ matched.
 fortitude has this as `OB081`, but only as a preview rule in 0.9, where
 selecting it has no effect.
 
+### MQC006 — `/*` anywhere but a string literal
+
+CMake's Ninja generator runs every Fortran source through `gfortran -cpp -E`
+to scan its module dependencies, and the C preprocessor takes `/*` as the start
+of a C comment wherever it appears, including inside a Fortran `!` comment.
+Left open it is a hard error:
+
+```
+backends/cenzontle/scf/mqc_czt_minao.f90:35:0:
+   35 |       !! basis search path. A subdirectory because `basis_sets/*.json` is
+Error: unterminated comment
+```
+
+Closed on the same line it is worse, because it is silent: the text between
+`/*` and `*/` is deleted. The Unix Makefiles generator does not run that step,
+so a Makefile build never sees either. CI's one Ninja job builds without the
+cenzontle backend, so it never compiled the file this was first found in.
+Reword instead: "the JSON files under `basis_sets/`" for `basis_sets/*.json`.
+
+A `/*` inside a string literal is safe (the preprocessor tokenises the literal
+as a string) and is not flagged, nor is one on a `#` preprocessor line, where
+a C comment is legitimate.
+
 ## Suppressing
 
 Put the rule id in a comment on the line, or the line above, with a reason:

@@ -4690,12 +4690,50 @@
             "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
         },
         {
-            "name": "KS PBE with Fukui indices (chelpg default) H2O 6-31g grid 4 (CPU)",
+            "name": "RHF with Fukui indices (hirshfeld) H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_hirshfeld.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one, the same number as the chelpg and mulliken cases. What this case covers is that the run completes with the indices condensed by Hirshfeld weights: free atoms solved once, one partition for all three states, and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "requires": "libxc"
+        },
+        {
+            "name": "RHF with Hirshfeld charges H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is the Hirshfeld partition end to end: free atoms solved with wB97X in def2-TZVP, the molecular density divided by their shares, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off (before renormalisation the grid left it at -1.2e-8). The charges themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "requires": "libxc"
+        },
+        {
+            "name": "UHF with Hirshfeld charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented",
+            "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the same Hirshfeld weights as the charges, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 2e-10 and spin populations of 0.999999999.",
+            "requires": "libxc"
+        },
+        {
+            "name": "RHF with MBIS charges H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is MBIS end to end: the density evaluated on the grid once, exponential pro-atom shells fitted to it by the fixed-point iteration, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off. The charges themselves are pinned against denspart in test/test_mqc_mbis.f90."
+        },
+        {
+            "name": "UHF with MBIS charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented",
+            "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the converged MBIS weights, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 0 to six places and spin populations of 0.999999999."
+        },
+        {
+            "name": "KS PBE with Fukui indices (hirshfeld default) H2O 6-31g grid 4 (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
             "expected_energy": -76.298635406403,
             "tolerance": 1e-07,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the CHELPG default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the Hirshfeld default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
             "requires": "libxc"
         },
         {
@@ -5210,6 +5248,331 @@
             "expected_interaction_energy": -0.004990668756,
             "type": "fragmented",
             "reference_note": "reference is the sum over the terms of size 2 to 3 holding water 5 of their full-cluster-basis increments, each the alternating sum of its subsets' energies all in the basis of the whole cluster, evaluated in Python as plain inclusion-exclusion bookkeeping over frozensets of PySCF 2.14.0 energies, fed this repository's own basis JSON with the waters outside a term as ghost atoms, and sharing nothing with the code under test. 41 PySCF calculations stand behind it."
+        },
+        {
+            "name": "RI-MP2 Hessian H2O 6-31g/cc-pvdz-rifit frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/hessian/cpu_water_6-31g_rimp2_hess.json",
+            "expected_energy": -76.113570717402,
+            "expected_hessian": [
+                [
+                    -0.011081927369,
+                    0.0,
+                    0.0,
+                    0.005540963765,
+                    0.0,
+                    0.0,
+                    0.005540963606,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    0.0,
+                    0.742164226809,
+                    -5.88e-10,
+                    -0.0,
+                    -0.371082113685,
+                    0.277198191892,
+                    -0.0,
+                    -0.371082113117,
+                    -0.277198191304
+                ],
+                [
+                    -0.0,
+                    -5.88e-10,
+                    0.413234744663,
+                    -0.0,
+                    0.197440246314,
+                    -0.206617372494,
+                    -0.0,
+                    -0.197440245726,
+                    -0.206617372164
+                ],
+                [
+                    0.005540963765,
+                    -0.0,
+                    -0.0,
+                    -0.008351780299,
+                    0.0,
+                    0.0,
+                    0.002810816533,
+                    0.0,
+                    0.0
+                ],
+                [
+                    -0.0,
+                    -0.371082113685,
+                    0.197440246314,
+                    0.0,
+                    0.406897488559,
+                    -0.237319221231,
+                    -0.0,
+                    -0.035815374874,
+                    0.039878973945
+                ],
+                [
+                    0.0,
+                    0.277198191893,
+                    -0.206617372494,
+                    -0.0,
+                    -0.237319217935,
+                    0.199737652407,
+                    0.0,
+                    -0.039878974929,
+                    0.006879720087
+                ],
+                [
+                    0.005540963606,
+                    -0.0,
+                    0.0,
+                    0.002810816533,
+                    -0.0,
+                    -0.0,
+                    -0.008351780139,
+                    0.0,
+                    0.0
+                ],
+                [
+                    0.0,
+                    -0.371082113117,
+                    -0.197440245726,
+                    -0.0,
+                    -0.035815374874,
+                    -0.039878974929,
+                    0.0,
+                    0.40689748799,
+                    0.237319220654
+                ],
+                [
+                    -0.0,
+                    -0.277198191304,
+                    -0.206617372164,
+                    -0.0,
+                    0.039878973945,
+                    0.006879720087,
+                    0.0,
+                    0.237319217359,
+                    0.199737652077
+                ]
+            ],
+            "hessian_tolerance": 5e-07,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 Hessian H2O cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/hessian/cpu_water_cc-pvdz_rimp2_f1_hess.json",
+            "expected_energy": -76.227922438697,
+            "expected_hessian": [
+                [
+                    -0.015240060376,
+                    -0.0,
+                    0.0,
+                    0.007620030268,
+                    0.0,
+                    -0.0,
+                    0.007620030106,
+                    0.0,
+                    0.0
+                ],
+                [
+                    0.0,
+                    0.746552041507,
+                    -5.83e-10,
+                    -0.0,
+                    -0.373276021034,
+                    0.28034314621,
+                    0.0,
+                    -0.373276020471,
+                    -0.280343145627
+                ],
+                [
+                    0.0,
+                    -5.83e-10,
+                    0.455735796267,
+                    -0.0,
+                    0.213659331501,
+                    -0.2278678983,
+                    -0.0,
+                    -0.213659330918,
+                    -0.227867897968
+                ],
+                [
+                    0.007620030268,
+                    0.0,
+                    -0.0,
+                    -0.002961615398,
+                    -0.0,
+                    0.0,
+                    -0.004658414869,
+                    0.0,
+                    -0.0
+                ],
+                [
+                    0.0,
+                    -0.373276021034,
+                    0.213659331501,
+                    0.0,
+                    0.397889458865,
+                    -0.24700123855,
+                    -0.0,
+                    -0.024613437831,
+                    0.033341898344
+                ],
+                [
+                    -0.0,
+                    0.28034314621,
+                    -0.2278678983,
+                    0.0,
+                    -0.24700124786,
+                    0.217949975237,
+                    0.0,
+                    -0.033341907055,
+                    0.009917923063
+                ],
+                [
+                    0.007620030106,
+                    0.0,
+                    0.0,
+                    -0.004658414869,
+                    -0.0,
+                    -0.0,
+                    -0.002961615237,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    -0.0,
+                    -0.373276020471,
+                    -0.213659330918,
+                    0.0,
+                    -0.024613437831,
+                    -0.033341907055,
+                    -0.0,
+                    0.397889458303,
+                    0.247001237973
+                ],
+                [
+                    -0.0,
+                    -0.280343145627,
+                    -0.227867897968,
+                    0.0,
+                    0.033341898344,
+                    0.009917923063,
+                    0.0,
+                    0.247001247283,
+                    0.217949974905
+                ]
+            ],
+            "hessian_tolerance": 5e-07,
+            "type": "unfragmented"
+        },
+        {
+            "name": "B2PLYP Hessian H2O 6-31g/cc-pvdz-rifit (CPU)",
+            "input": "inputs/cpu/mqc/hessian/cpu_water_6-31g_b2plyp_cc-pvdz-rifit_hess.json",
+            "expected_energy": -76.293302822488,
+            "expected_hessian": [
+                [
+                    -0.010438889847,
+                    -2.275e-09,
+                    -8.96e-10,
+                    0.005313569375,
+                    9.923e-09,
+                    1.026e-08,
+                    0.005313558856,
+                    1.0052e-08,
+                    2.33e-10
+                ],
+                [
+                    -2.275e-09,
+                    0.730896136113,
+                    1.244e-09,
+                    -1.145e-09,
+                    -0.365441203147,
+                    0.27287917115,
+                    -1.97e-10,
+                    -0.365441207789,
+                    -0.272879166565
+                ],
+                [
+                    -8.96e-10,
+                    1.244e-09,
+                    0.407377764854,
+                    -4.1e-11,
+                    0.195781234575,
+                    -0.20374473143,
+                    -1.0125e-08,
+                    -0.195781236254,
+                    -0.203744753244
+                ],
+                [
+                    0.005313569375,
+                    -1.145e-09,
+                    -4.1e-11,
+                    -0.007572694154,
+                    1.24e-10,
+                    -7.3e-11,
+                    0.002249465283,
+                    -9.622e-09,
+                    -1.1021e-08
+                ],
+                [
+                    9.923e-09,
+                    -0.365441203147,
+                    0.195781234575,
+                    1.24e-10,
+                    0.40042238555,
+                    -0.234335230347,
+                    3.01e-10,
+                    -0.034983539815,
+                    0.038548864755
+                ],
+                [
+                    1.026e-08,
+                    0.27287917115,
+                    -0.20374473143,
+                    -7.3e-11,
+                    -0.234335230347,
+                    0.197387071843,
+                    -8.892e-09,
+                    -0.038548884227,
+                    0.006357735922
+                ],
+                [
+                    0.005313558856,
+                    -1.97e-10,
+                    -1.0125e-08,
+                    0.002249465283,
+                    3.01e-10,
+                    -8.892e-09,
+                    -0.007572690112,
+                    1.0021e-08,
+                    2.466e-09
+                ],
+                [
+                    1.0052e-08,
+                    -0.365441207789,
+                    -0.195781236254,
+                    -9.622e-09,
+                    -0.034983539815,
+                    -0.038548884227,
+                    1.0021e-08,
+                    0.400422381571,
+                    0.234335229243
+                ],
+                [
+                    2.33e-10,
+                    -0.272879166565,
+                    -0.203744753244,
+                    -1.1021e-08,
+                    0.038548864755,
+                    0.006357735922,
+                    2.466e-09,
+                    0.234335229243,
+                    0.197387070143
+                ]
+            ],
+            "hessian_tolerance": 0.00015,
+            "requires": "libxc",
+            "type": "unfragmented"
         }
     ]
 }

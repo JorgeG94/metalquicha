@@ -78,6 +78,9 @@ module mqc_czt_mp2_hessian
    public :: mp2_perturbed_response
    public :: mp2_correlation_hessian
    public :: mp2_ks_first_order_fock
+   public :: ks_pair_kernel
+   public :: ks_kernel_deriv_stack
+   public :: ks_dl_pair_kernel
 
 contains
 

@@ -11,6 +11,10 @@ three of them can break without the others noticing:
     fragmented xTB      MBE(2), tblite per fragment
     fragmented HF       MBE(2), libcint per fragment
 
+and two more on the fragmented HF path, one per counterpoise scheme, which
+check that a screened run builds its own ghosted rows -- see
+screened_counterpoise().
+
 The reference energies for the Hartree-Fock cases come from PySCF on the same
 geometry and basis. The xTB ones come from this program, which is weaker --
 they are there to catch a change, not to prove the physics -- and they are
@@ -21,7 +25,9 @@ exits non-zero if any of them is wrong. An example nobody executes stops being
 true without anyone finding out, which is the whole reason this is in CI.
 """
 
+import os
 import sys
+import tempfile
 
 import mqc
 
@@ -37,6 +43,12 @@ DIMER = dict(
             [0.0, -0.77250895, -0.46780200],
             [4.0, 0.0, 0.10077199], [4.0, 0.77250895, -0.46780200],
             [4.0, -0.77250895, -0.46780200]],
+)
+#: DIMER and a third water, so that a screen has a pair to leave out.
+TRIMER = dict(
+    symbols=DIMER["symbols"] + ["O", "H", "H"],
+    coords=DIMER["coords"] + [[2.0, 3.5, 0.10077199], [2.0, 4.27250895, -0.46780200],
+                              [2.0, 2.72749105, -0.46780200]],
 )
 
 #: PySCF RHF/sto-3g on the WATER geometry above. An external reference: if this
@@ -69,6 +81,7 @@ TOL_HF = 1.0e-6      # against PySCF
 TOL_GRAD = 1.0e-6    # against PySCF, on the gradient norm
 TOL_XTB = 1.0e-4     # against ourselves; loose on purpose
 TOL_CLOSURE = 1.0e-8 # MBE(2) against the supermolecule; exact, so tight
+TOL_IDENTITY = 1.0e-9 # one run's terms against another's; the same numbers
 
 
 #: What the library says when a backend was left out of the build. Matched on
@@ -208,6 +221,45 @@ def fragmented_hf():
         label="py_frag_hf", write_to_file=False).energy
 
 
+def screened_counterpoise(scheme):
+    """A screened counterpoise run against the deltas of an unscreened one.
+
+    Three waters at MBE(2), run twice: once in full, and once kept to the
+    monomers and the pair (1, 2). A supplied term list carries no ghosted
+    rows, so the driver has to build them for the terms it was given -- and
+    if it does, each kept term's corrected delta is the one the full run
+    found, so the screened energy is exactly the sum of those deltas. No
+    reference number: the two halves check each other, and a screened run
+    that silently dropped the correction is off by the pair's basis-set
+    superposition error -- 3.1e-6 here, small at 4 Angstrom in STO-3G but
+    three thousand times the tolerance.
+
+    Runs in a scratch directory, because `breakdown()` reads the files a run
+    leaves behind and a CI checkout is no place for them.
+    """
+    kept = {(1,), (2,), (3,), (1, 2)}
+    here = os.getcwd()
+    with tempfile.TemporaryDirectory() as scratch:
+        os.chdir(scratch)
+        try:
+            def expansion():
+                system = mqc.System(**TRIMER)
+                system.auto_monomers()
+                return mqc.MBE(system, level=2, method="hf", basis="sto-3g",
+                               keywords={"fragmentation": {"counterpoise": scheme}})
+
+            full = expansion().run(label=f"py_cp_{scheme}_full")
+            if full.counterpoise != scheme:
+                raise mqc.MQCError(f"the full run reports counterpoise "
+                                   f"{full.counterpoise!r}, not {scheme!r}")
+            deltas = {t.monomers: t.delta for t in full.breakdown()}
+            screened = expansion().keep(lambda t: t in kept).run(
+                label=f"py_cp_{scheme}_kept", write_to_file=False)
+        finally:
+            os.chdir(here)
+    return screened.energy, sum(deltas[t] for t in kept)
+
+
 def main(argv):
     pattern = argv[1] if len(argv) > 1 else ""
     failures, skipped = [], []
@@ -219,6 +271,10 @@ def main(argv):
             ("standalone hf/df", standalone_hf_df, HF_WATER_STO3G_DF, TOL_HF, "PySCF fitted"),
             ("fragmented xtb", fragmented_xtb, None, TOL_CLOSURE, "same dimer, whole"),
             ("fragmented hf", fragmented_hf, HF_DIMER_STO3G, TOL_HF, "PySCF dimer"),
+            ("screened vmfc", lambda: screened_counterpoise("vmfc"), None,
+             TOL_IDENTITY, "unscreened deltas"),
+            ("screened ssfc", lambda: screened_counterpoise("ssfc"), None,
+             TOL_IDENTITY, "unscreened deltas"),
         ]
         for name, fn, expected, tol, source in cases:
             if pattern and pattern not in name:

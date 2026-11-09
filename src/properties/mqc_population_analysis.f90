@@ -32,6 +32,10 @@ module mqc_population_analysis
    public :: mayer_atomic_bond_orders
    public :: mayer_atomic_bond_orders_open_shell
    public :: mayer_atomic_valences
+   public :: renormalise_populations   !! Grid-integrated populations to an exact count
+
+   real(dp), parameter, public :: GRID_DEFICIT_WARNING = 1.0e-4_dp
+      !! Electrons a grid may miss before a partition integrated on it says so.
 
 contains
 
@@ -297,5 +301,32 @@ contains
          orders(iatom, iatom) = 0.0_dp
       end do
    end subroutine accumulate_pair_blocks
+
+   subroutine renormalise_populations(electrons, n_exact, deficit, spins, spin_exact)
+      !! Share a quadrature's missing electrons out so the populations sum exactly
+      !!
+      !! A partition integrated on a grid accounts for the electrons the grid
+      !! resolves, and the diffuse tail of an anion is where it resolves least.
+      !! The deficit `n_exact - sum(electrons)` is shared out in proportion to
+      !! each atom's population. With `spins`, their deficit is shared out the
+      !! same way -- by electron population, since a spin total can be zero.
+      !! Nothing is done when the populations hold no electrons.
+      real(dp), intent(inout) :: electrons(:)        !! (natm) electrons per atom
+      real(dp), intent(in) :: n_exact                !! Tr(D S), the density's own count
+      real(dp), intent(out) :: deficit               !! What the grid missed, electrons
+      real(dp), intent(inout), optional :: spins(:)  !! (natm) spin populations
+      real(dp), intent(in), optional :: spin_exact   !! Tr(D_spin S), required with `spins`
+
+      real(dp) :: total, spin_deficit
+
+      total = sum(electrons)
+      deficit = n_exact - total
+      if (total <= 0.0_dp) return
+      if (present(spins) .and. present(spin_exact)) then
+         spin_deficit = spin_exact - sum(spins)
+         spins = spins + spin_deficit*electrons/total
+      end if
+      electrons = electrons*(n_exact/total)
+   end subroutine renormalise_populations
 
 end module mqc_population_analysis

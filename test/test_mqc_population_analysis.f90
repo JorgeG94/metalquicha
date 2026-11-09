@@ -13,7 +13,8 @@ module test_mqc_population_analysis
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
    use mqc_error, only: error_t
    use mqc_population_analysis, only: ao_owner_from_counts, mulliken_atomic_charges, &
-                                      mulliken_atomic_spin_populations
+                                      mulliken_atomic_spin_populations, &
+                                      renormalise_populations
    implicit none
    private
 
@@ -32,7 +33,9 @@ contains
                   new_unittest("mulliken charges sum to the molecular charge", test_sum_rule), &
                   new_unittest("mulliken splits an overlap evenly", test_even_split), &
                   new_unittest("spin populations sum to the number of unpaired electrons", test_spin), &
-                  new_unittest("a mis-sized density is refused", test_size_mismatch) &
+                  new_unittest("a mis-sized density is refused", test_size_mismatch), &
+                  new_unittest("a grid's deficit is shared out by population", &
+                               test_renormalise) &
                   ]
    end subroutine collect_population_analysis
 
@@ -192,6 +195,37 @@ contains
       call mulliken_atomic_charges(owner, [1.0_dp, 1.0_dp], density, overlap, q, err)
       call check(error, err%has_error(), .true.)
    end subroutine test_size_mismatch
+
+   subroutine test_renormalise(error)
+      !! What a grid missed goes back in proportion to each atom's electrons
+      !!
+      !! The spins take their own deficit, shared out by electron population
+      !! rather than by spin, which would divide by a total that can be zero:
+      !! here the spins sum to nothing and must reach one.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp) :: electrons(3), spins(3)
+      real(dp) :: deficit
+
+      electrons = [7.99_dp, 0.995_dp, 0.995_dp]     ! 9.98 of 10
+      spins = [0.5_dp, -0.25_dp, -0.25_dp]           ! 0 of 1
+      call renormalise_populations(electrons, 10.0_dp, deficit, spins, 1.0_dp)
+      call check(error, deficit, 0.02_dp, thr=1.0e-14_dp)
+      if (allocated(error)) return
+      call check(error, sum(electrons), 10.0_dp, thr=1.0e-14_dp)
+      if (allocated(error)) return
+      call check(error, electrons(1)/electrons(2), 7.99_dp/0.995_dp, thr=1.0e-12_dp)
+      if (allocated(error)) return
+      call check(error, sum(spins), 1.0_dp, thr=1.0e-14_dp)
+      if (allocated(error)) return
+      call check(error, spins(1), 0.5_dp + 7.99_dp/9.98_dp, thr=1.0e-14_dp)
+      if (allocated(error)) return
+
+      ! Nothing to scale: a density with no electrons is left alone.
+      electrons = 0.0_dp
+      call renormalise_populations(electrons, 0.0_dp, deficit)
+      call check(error, all(electrons == 0.0_dp) .and. deficit == 0.0_dp, &
+                 "an empty density is left alone")
+   end subroutine test_renormalise
 
 end module test_mqc_population_analysis
 

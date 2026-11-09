@@ -255,6 +255,11 @@ only in libfint:
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
 - `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
+  Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
+  allowed), and a double hybrid's perturbative term, fitted when
+  `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
+  SCS/SOS, a fitted reference and a frozen-core double hybrid take the
+  semi-numerical path. See `mqc_docs/source/analytic_hessians.rst`.
 - `NEO-HF` - nuclear-electronic orbital Hartree-Fock: `keywords.neo` with
   `quantum_nuclei` (0-based indices or symbols) and `nuclear_basis` (default
   `pb4-d`, from `basis_sets/neo/`) gives the named protons orbitals of their
@@ -489,7 +494,9 @@ for the build system. Key points:
 - Internal units: Bohr (length), Hartree (energy)
 - Use `to_bohr()` / `to_angstrom()` for conversions
 - Error handling via `error_t` type with `has_error()` / `get_message()`
-- **Linter**: Uses `fortitude check` - all `use` statements must have `only` clause
+- **Linter**: Uses `fortitude check` - all `use` statements must have `only` clause.
+  CI pins fortitude **0.9.2** (`pip install fortitude-lint==0.9.2`); install that
+  to match. 0.10 adds rules `fpm.toml` predates and reports ~1500 findings CI does not.
 - **CI/CD**: GitHub Actions workflows in `.github/workflows/` (build, test, coverage via Codecov)
 - **Environment**: Conda environment defined in `environment.yml`
 
@@ -582,7 +589,7 @@ with `../../../`. The CPU suite is **generated** - edit
 `tools/cpu_validation/gen_cpu_validation.py` and rerun it; a deck added by hand
 under `cpu/mqc/` is deleted by the next regeneration.
 
-Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t counterpoise
+Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges counterpoise
 df-dft df-hf dft dh ecp efmo efp fmo fukui gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming

@@ -54,6 +54,7 @@ mqc_add_validation_program(bench_scf_gradient LIBRARIES ${MQC_INTEGRALS_LIBS})
 mqc_add_validation_program(bench_mp2_gradient LIBRARIES ${MQC_INTEGRALS_LIBS})
 mqc_add_validation_program(bench_ri_mp2_gradient LIBRARIES
                            ${MQC_INTEGRALS_LIBS})
+mqc_add_validation_program(bench_ri_mp2_hessian LIBRARIES ${MQC_INTEGRALS_LIBS})
 
 # --- needs libxc as well as the integrals ------------------------------------
 #
