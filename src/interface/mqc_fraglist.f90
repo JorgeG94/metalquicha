@@ -38,7 +38,8 @@ module mqc_fraglist
    ! `supplied_terms` of a session are all `(n_terms, max_level)`. A
    ! counterpoise row can be wider than `max_level` (a full-cluster-basis row
    ! ghosts the whole system), so it cannot be handed out or read back through
-   ! them. The driver refuses counterpoise with a supplied list until they can.
+   ! them. A supplied list therefore carries real monomers only, and the driver
+   ! builds the ghosted rows itself.
    type :: fraglist_t
       !! A term list, and whatever has been computed about its terms
       integer(default_int) :: max_level = 0

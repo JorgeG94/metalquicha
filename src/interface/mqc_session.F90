@@ -166,7 +166,8 @@ contains
       if (error%has_error()) return
       ! Same count as rank 0, from the geometry that just arrived. See
       ! `session_run` for why leaving this out is not a crash.
-      call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers)
+      call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers, &
+                            node_rank=this%resources%mpi_comms%node_comm%rank())
       call apply_log_level(config)
 
       ! No term list: the coordinator hands out fragment definitions as tasks
@@ -224,7 +225,8 @@ contains
       ! settings-only config reports zero fragments and the driver would
       ! compute the whole thing unfragmented. Both sides pass the same count
       ! because both take it from the geometry they hold.
-      call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers)
+      call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers, &
+                            node_rank=this%resources%mpi_comms%node_comm%rank())
       ! Effective fragment potentials ride with the geometry, the settings
       ! document having no molecules block for them to live in. Copied after
       ! `config_to_driver`, which fills that field from a deck's molecules and
@@ -275,9 +277,9 @@ contains
          return
       end if
 
-      ! A counterpoise setting the expansion cannot honour, a caller's own term
-      ! list among them, which is used as given and never gets its ghosted rows.
-      call check_counterpoise_support(driver, error, terms_supplied=n_terms > 0)
+      ! A counterpoise setting the expansion cannot honour. A caller's own term
+      ! list is not one: the driver builds its ghosted rows.
+      call check_counterpoise_support(driver, error)
       if (error%has_error()) return
 
       call validate_system(sys_geom,.not. config%unchecked_input, error, &

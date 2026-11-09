@@ -1,10 +1,12 @@
 """Two-pass energy-screened MBE: cheap everywhere, expensive where it matters.
 
-    mpirun -np 64 python energy_screened_mbe.py cluster.xyz
+    srun -n 5 --gpus-per-node=4 python energy_screened_mbe.py cluster.xyz
 
 Pass 1 runs the whole expansion with GFN2, which is cheap enough to do every
 term. Pass 2 keeps the terms whose n-body contribution came back above a
-threshold and recomputes those with DFT. The point is that the criterion is
+threshold and recomputes those with DFT on terco. Rank 0 only coordinates, so
+give it one rank more than there are GPUs; each worker binds to
+node_rank mod n_gpus. The point is that the criterion is
 *energetic* rather than geometric: a distance cutoff throws away a strong
 interaction that happens to be far apart and keeps a negligible one that
 happens to be close, and neither mistake is visible in the answer.
@@ -26,7 +28,10 @@ import mqc
 THRESHOLD = 1.0e-4  #: Hartree, on the n-body delta. See below -- calibrate it.
 LEVEL = 3
 LOW = dict(method="gfn2")
-HIGH = dict(method="dft", functional="pbe0", basis="def2-svp")
+# Pass 2 runs on terco, one GPU per worker rank. Drop `backend` to run it on
+# the CPU instead, or on a build without -DMQC_ENABLE_TERCO=ON. Add
+# verbosity="debug" to see which device each worker rank bound to.
+HIGH = dict(method="dft", functional="pbe0", basis="def2-svp", backend="terco")
 
 
 def main(path):
@@ -73,7 +78,10 @@ def main(path):
     # they were interesting on their own.
     high = mqc.MBE(system, level=LEVEL, **HIGH)
     high.keep(lambda t: len(t) == 1 or t in strong)
-    print(f"pass 2: {len(high.terms())} terms at {HIGH['functional']} (closed under subsets)")
+    print(
+        f"pass 2: {len(high.terms())} terms at {HIGH['functional']} on "
+        f"{HIGH.get('backend', 'the default backend')} (closed under subsets)"
+    )
     high_result = high.run("refined", write_to_file=True)
 
     # ---- the correction --------------------------------------------------

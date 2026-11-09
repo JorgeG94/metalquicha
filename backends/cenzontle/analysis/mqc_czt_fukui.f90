@@ -31,6 +31,7 @@ module mqc_czt_fukui
    use mqc_czt_atomic_guess, only: build_atomic_guess
    use mqc_scf_common, only: build_density_spin
    use mqc_czt_charges, only: mulliken_charges, chelpg_charges
+   use mqc_czt_hirshfeld, only: hirshfeld_populations
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -39,6 +40,7 @@ module mqc_czt_fukui
 
    public :: fukui_result_t
    public :: fukui_indices
+   public :: fukui_from_states
    public :: print_fukui_report
 
    real(dp), parameter :: TOL_SUM_RULE = 1.0e-6_dp
@@ -80,7 +82,7 @@ module mqc_czt_fukui
          !! left over. **Two different things produce this and they cannot be
          !! told apart from here**: a basis with no diffuse functions, and a
          !! molecule with no bound anion.
-      character(len=16) :: scheme = "chelpg"
+      character(len=16) :: scheme = "hirshfeld"
       character(len=:), allocatable :: functional
          !! The functional the three states were computed with, empty for
          !! Hartree-Fock. IP, EA and hardness are differences of total energies
@@ -127,7 +129,7 @@ contains
       real(dp), intent(in), optional :: level_shift
          !! Applied to both ions, which are the open-shell SCFs a shift is
          !! asked for to stabilise.
-      character(len=*), intent(in) :: scheme          !! "chelpg" or "mulliken"
+      character(len=*), intent(in) :: scheme          !! "hirshfeld", "chelpg" or "mulliken"
       integer, intent(in) :: max_iter
       real(dp), intent(in) :: energy_tol, density_tol
       type(fukui_result_t), intent(out) :: res
@@ -212,7 +214,6 @@ contains
       type(error_t) :: guess_error
       logical :: seeded, keep_unconverged
       logical :: loud
-      integer :: natm
       type(xc_context_t), target :: xc_ions
       type(xc_context_t), pointer :: xc_arg
       logical :: kohn_sham, double_hybrid
@@ -286,7 +287,6 @@ contains
          res%functional = trim(functional)
       end if
 
-      natm = mol%natm
       res%scheme = scheme
       ! The neutral's perturbative term, on a closed shell and so restricted.
       ! Computed before the ions so a failure here is reported before two
@@ -456,6 +456,60 @@ contains
       res%iterations_cation = cation%iterations
       deallocate (total, overlap)
 
+      call finish_indices(res, error)
+   end subroutine fukui_indices
+
+   subroutine fukui_from_states(mol, scheme, charge, neutral_density, anion_density, &
+                                cation_density, energy_neutral, energy_anion, &
+                                energy_cation, res, error)
+      !! Condense three states some other engine converged
+      !!
+      !! For a backend that runs the neutral and both ions itself and hands
+      !! back densities in `mol`'s AO basis. Each density is the total, both
+      !! spins; each energy is the state's total, any perturbative term
+      !! included. `charge` is the neutral's, the ions carrying one less and
+      !! one more. `res%functional` and the ion iteration counts are left for
+      !! the caller, who knows them.
+      type(czt_molecule_t), intent(in) :: mol
+      character(len=*), intent(in) :: scheme
+      integer, intent(in) :: charge
+      real(dp), intent(in) :: neutral_density(:, :)
+      real(dp), intent(in) :: anion_density(:, :)
+      real(dp), intent(in) :: cation_density(:, :)
+      real(dp), intent(in) :: energy_neutral, energy_anion, energy_cation
+      type(fukui_result_t), intent(out) :: res
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: overlap(:, :)
+
+      if (error%has_error()) return
+
+      res%scheme = scheme
+      res%energy_neutral = energy_neutral
+      res%energy_anion = energy_anion
+      res%energy_cation = energy_cation
+
+      call mol%overlap(overlap)
+      call condense(mol, neutral_density, overlap, scheme, real(charge, dp), &
+                    res%q_neutral, error)
+      call condense(mol, anion_density, overlap, scheme, real(charge - 1, dp), &
+                    res%q_anion, error)
+      call condense(mol, cation_density, overlap, scheme, real(charge + 1, dp), &
+                    res%q_cation, error)
+      if (error%has_error()) return
+
+      call finish_indices(res, error)
+   end subroutine fukui_from_states
+
+   subroutine finish_indices(res, error)
+      !! The indices and the conceptual-DFT descriptors, from three charge sets
+      !! and three energies already in `res`
+      type(fukui_result_t), intent(inout) :: res
+      type(error_t), intent(inout) :: error
+
+      integer :: natm
+
+      natm = size(res%q_neutral)
       allocate (res%f_plus(natm), res%f_minus(natm), res%f_zero(natm), res%dual(natm))
       res%f_plus = res%q_neutral - res%q_anion
       res%f_minus = res%q_cation - res%q_neutral
@@ -477,7 +531,7 @@ contains
       res%anion_bound = res%electron_affinity > 0.0_dp
 
       call check_sum_rule(res, error)
-   end subroutine fukui_indices
+   end subroutine finish_indices
 
    subroutine state_pt2(mol, aux, coeff, eps, n_occ, frozen, e_corr, error)
       !! The UNSCALED MP2 correlation for the closed-shell neutral
@@ -551,9 +605,22 @@ contains
          call chelpg_charges(mol, density, charges, error, total_charge=total_charge)
       case ("mulliken")
          call mulliken_charges(mol, density, overlap, charges, error)
+      case ("hirshfeld")
+         ! The weights are the free atoms', fixed by the geometry, so the three
+         ! states are divided by one partition and an index is the stockholder
+         ! share of the density difference itself.
+         call hirshfeld_populations(mol, density, charges, error)
+      case ("mbis")
+         ! Refused rather than condensed state by state: MBIS fits its weights to
+         ! the density it divides, so each state would be divided by its own
+         ! partition and an index would mix a change of density with a change
+         ! of partition.
+         call error%set(ERROR_VALIDATION, "MBIS is not offered for Fukui indices: its "// &
+                        "weights are refitted to each state's density, so the three "// &
+                        "states would not share a partition. Use 'hirshfeld'.")
       case default
          call error%set(ERROR_VALIDATION, "unknown population scheme '"//trim(scheme)// &
-                        "' for Fukui indices; expected 'chelpg' or 'mulliken'.")
+                        "' for Fukui indices; expected 'chelpg', 'mulliken' or 'hirshfeld'.")
       end select
    end subroutine condense
 
@@ -673,11 +740,13 @@ contains
          call logger%warning("  and do not build a further descriptor on it -- f0 and "// &
                              "dual inherit the")
          call logger%warning("  artefact from whichever index carried it.")
-         if (trim(res%scheme) == "mulliken") then
+         if (trim(res%scheme) /= "hirshfeld") then
             call logger%warning("")
-            call logger%warning("  Mulliken is especially prone to this, being basis-set "// &
-                                "dependent; chelpg")
-            call logger%warning("  is the default for that reason and is worth rerunning "// &
+            call logger%warning("  "//trim(res%scheme)//" divides each state on its own, "// &
+                                "so the difference of")
+            call logger%warning("  two divisions is prone to this. hirshfeld divides all "// &
+                                "three by one partition,")
+            call logger%warning("  is the default for that reason, and is worth rerunning "// &
                                 "with before")
             call logger%warning("  concluding anything from this table.")
          else

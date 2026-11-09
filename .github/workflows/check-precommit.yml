@@ -57,12 +57,25 @@ jobs:
           tools/lint/no_agent_trailers.sh --range "$range"
 
   # Run Fortran linter with Fortitude
+  #
+  # Pinned. A new fortitude release adds rules, and the `select` in fpm.toml
+  # takes whole families, so an unpinned install turns this job red for
+  # reasons unrelated to the commit: 0.10 added S271, S901 and S902, 1481
+  # findings across the tree. Move the pin on purpose, with the config.
   linter_fortitude:
     name: Run Fortitude Linter
     runs-on: ubuntu-latest
     steps:
-      - name: Run Fortitude Linter
-        uses: gha3mi/setup-fortran-conda@latest
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          fortitude-check: true
-          fortitude-settings: "--output-format github"
+          python-version: '3.11'
+
+      - name: Install Fortitude
+        run: pip install fortitude-lint==0.9.2
+
+      - name: Run Fortitude Linter
+        run: fortitude check --output-format github

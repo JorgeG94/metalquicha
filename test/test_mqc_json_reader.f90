@@ -111,7 +111,7 @@ contains
                   new_unittest("system_gpu_conflicts_with_backend", test_gpu_conflict), &
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
-                  new_unittest("terco_refuses_pcm", test_terco_refuses_pcm), &
+                  new_unittest("terco_keeps_pcm", test_terco_keeps_pcm), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("dft_dispersion", test_dft_dispersion), &
                   new_unittest("fragment_potentials", test_fragment_potentials), &
@@ -130,6 +130,8 @@ contains
                   new_unittest("scf_stability_controls", test_stability_keywords), &
                   new_unittest("scf_second_order_controls", test_second_order_keywords), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
+                  new_unittest("fukui_population_defaults_to_hirshfeld", &
+                               test_fukui_population_default), &
                   new_unittest("fukui_scf_inherits_keywords_scf", test_fukui_scf_inherit), &
                   new_unittest("fukui_scf_overrides_per_key", test_fukui_scf_override), &
                   new_unittest("fukui_scf_inherit_false_drops_the_seed", test_fukui_scf_no_inherit), &
@@ -1643,13 +1645,13 @@ contains
                  "without the block the calculation must stay in the gas phase")
    end subroutine test_pcm_keywords
 
-   subroutine test_terco_refuses_pcm(error)
-      !! A continuum asked of terco is refused while the deck is still a deck
+   subroutine test_terco_keeps_pcm(error)
+      !! A continuum asked of terco reaches the driver
       !!
-      !! The terco driver reads no `keywords.pcm`, so letting the deck through
-      !! would report a gas-phase energy under a solvated deck's name. The
-      !! refusal comes before the check for a terco build, so it is the same
-      !! sentence on every binary, and the same deck on the CPU must still read.
+      !! The terco driver forwards `keywords.pcm` with the CPU backend's own
+      !! cavity radii. The only refusal left for a terco deck is the build's
+      !! own, so a binary without terco may still turn the deck down, but never
+      !! for the continuum. The same deck on the CPU must read as well.
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
       type(error_t) :: parse_error
@@ -1658,12 +1660,15 @@ contains
                       "Energy", '"pcm": {"dielectric": 78.39}', "", two_atoms(), &
                       root='"backend": "terco"')
       call read_deck(config, parse_error)
-      call check(error, parse_error%has_error(), "terco with keywords.pcm must be refused")
-      if (allocated(error)) return
-      call check(error, index(parse_error%get_message(), "keywords.pcm") > 0, &
-                 "the refusal must name keywords.pcm, not the build: "// &
-                 parse_error%get_message())
-      if (allocated(error)) return
+      if (parse_error%has_error()) then
+         call check(error, index(parse_error%get_message(), "keywords.pcm") == 0, &
+                    "terco with keywords.pcm must not be refused for the continuum: "// &
+                    parse_error%get_message())
+         if (allocated(error)) return
+      else
+         call check(error, config%pcm_enabled, "terco must keep the continuum")
+         if (allocated(error)) return
+      end if
 
       call write_deck('"method": "dft", "functional": "pbe0", "basis": "sto-3g"', &
                       "Energy", '"pcm": {"dielectric": 78.39}', "", two_atoms(), &
@@ -1672,7 +1677,7 @@ contains
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%pcm_enabled, "the CPU backend must keep the continuum")
-   end subroutine test_terco_refuses_pcm
+   end subroutine test_terco_keeps_pcm
 
    subroutine test_dft_keywords(error)
       !! keywords.dft, and that explicit counts take the level out of charge
@@ -3652,6 +3657,26 @@ contains
       if (allocated(error)) return
       call check(error, config%fukui_scf%inherit_scf, "inherit_scf defaults true")
    end subroutine test_fukui_scf_inherit
+
+   subroutine test_fukui_population_default(error)
+      !! An empty `properties.fukui` condenses by Hirshfeld
+      !!
+      !! The one scheme whose weights are the same for all three states, so the
+      !! default is the one whose indices are a share of the density difference
+      !! itself rather than a difference of two separate fits.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"fukui": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, allocated(config%fukui_population), "the analysis was not requested")
+      if (allocated(error)) return
+      call check(error, config%fukui_population, "hirshfeld", "the default population")
+   end subroutine test_fukui_population_default
 
    subroutine test_fukui_scf_override(error)
       !! A named key wins; its neighbours still inherit

@@ -146,6 +146,28 @@ if(MQC_ENABLE_CZT)
   # Second derivatives, the response solve and the assembled Hessian.
   addtest(mqc_hess_ints)
   target_link_libraries(test_mqc_hess_ints PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The second derivatives of the three- and two-centre fitting integrals,
+  # contracted against a density, checked against differences of the first
+  # derivatives the RI-MP2 gradient runs on.
+  addtest(mqc_hess_ints_df)
+  target_link_libraries(test_mqc_hess_ints_df PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The RI-MP2 correlation Hessian: against differences of the RI-MP2 gradient
+  # and against the numpy prototype's numbers, frozen core and d shells
+  # included.
+  addtest(mqc_ri_mp2_hessian)
+  target_link_libraries(test_mqc_ri_mp2_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The same for a double hybrid's perturbative term; skips itself without
+  # libxc.
+  addtest(mqc_ri_mp2_hessian_dh)
+  target_link_libraries(test_mqc_ri_mp2_hessian_dh
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+  # The fitted correlation Hessian as a deck reaches it: a declined metric
+  # taking the semi-numerical Hessian with the reason logged, and a double
+  # hybrid's fitted Hessian and dipole derivatives against the conventional
+  # ones. Runs from this directory, which is where its fixture is.
+  addtest(mqc_czt_ri_hessian_bridge)
+  target_link_libraries(test_mqc_czt_ri_hessian_bridge
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
   # The exchange-correlation Hessian, against differences of its own gradient.
   # The test skips itself when the build has no libxc, so it is registered
   # beside its neighbours rather than behind another condition.
@@ -162,6 +184,15 @@ if(MQC_ENABLE_CZT)
   # Fukui indices by difference in the electron count.
   addtest(mqc_fukui)
   target_link_libraries(test_mqc_fukui PRIVATE ${MQC_INTEGRALS_LIBS})
+  # Hirshfeld charges, spin populations and Fukui indices against the PySCF
+  # reference of tools/hirshfeld/hirshfeld_reference.py. Skips itself without
+  # libxc, which its free atoms are solved with.
+  addtest(mqc_hirshfeld)
+  target_link_libraries(test_mqc_hirshfeld PRIVATE ${MQC_INTEGRALS_LIBS})
+  # MBIS charges and spin populations against denspart, through
+  # tools/mbis/mbis_reference.py.
+  addtest(mqc_mbis)
+  target_link_libraries(test_mqc_mbis PRIVATE ${MQC_INTEGRALS_LIBS})
   # Every field on the shared SCF options type reaches the backend's settings.
   # The refactor removed three hand-copied blocks; this is what keeps them gone.
   addtest(mqc_scf_options)
@@ -383,6 +414,13 @@ if(MQC_ENABLE_CZT)
   # with the reference numbers from tools/minao/minao_reference.py.
   addtest(mqc_czt_minao)
   target_link_libraries(test_mqc_czt_minao PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Spherically averaged free atoms with fractional occupations, against PySCF's
+  # atom_hf and atom_ks, with the reference numbers from
+  # tools/spherical_atom/spherical_atom_reference.py.
+  addtest(mqc_czt_spherical_atom)
+  target_link_libraries(test_mqc_czt_spherical_atom
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Unrestricted Kohn-Sham, on the closed-shell limit: with equal spin densities
   # it must reproduce the restricted energy exactly, for every rung. That is

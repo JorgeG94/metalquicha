@@ -78,6 +78,34 @@ contains
          write (result_line, "(a,f25.15)") "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
 
+         ! The parts, whenever the total is more than the SCF. Every backend
+         ! fills the same fields, so this is the one place a correlated run
+         ! says what it added, whichever engine computed it.
+         if (result%energy%total() /= result%energy%scf) then
+            write (result_line, "(a,f25.15)") "    SCF:            ", result%energy%scf
+            call logger%info(trim(result_line))
+            if (result%energy%mp2%os /= 0.0_dp .or. result%energy%mp2%ss /= 0.0_dp) then
+               write (result_line, "(a,f25.15)") "    MP2 OS:         ", result%energy%mp2%os
+               call logger%info(trim(result_line))
+               write (result_line, "(a,f25.15)") "    MP2 SS:         ", result%energy%mp2%ss
+               call logger%info(trim(result_line))
+               write (result_line, "(a,f25.15)") "    MP2 corr:       ", result%energy%mp2%total()
+               call logger%info(trim(result_line))
+            end if
+            if (result%energy%cc%total() /= 0.0_dp) then
+               write (result_line, "(a,f25.15)") "    CC corr:        ", result%energy%cc%total()
+               call logger%info(trim(result_line))
+            end if
+            if (result%energy%dh_pt2 /= 0.0_dp) then
+               write (result_line, "(a,f25.15)") "    double hybrid:  ", result%energy%dh_pt2
+               call logger%info(trim(result_line))
+            end if
+            if (result%energy%dispersion /= 0.0_dp) then
+               write (result_line, "(a,f25.15)") "    dispersion:     ", result%energy%dispersion
+               call logger%info(trim(result_line))
+            end if
+         end if
+
          if (result%has_dipole) then
             write (result_line, "(a,3f15.8)") "  Dipole (e*Bohr): ", result%dipole
             call logger%info(trim(result_line))

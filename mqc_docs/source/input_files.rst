@@ -1759,11 +1759,21 @@ The driver stays ``"energy"``.
   printed in the report and the total energy printed above it are never
   computed different ways.
 
-  ``population`` is optional and defaults to ``chelpg``. It chooses how the
+  ``population`` is optional and defaults to ``hirshfeld``. It chooses how the
   density difference is condensed onto atoms:
 
-  - ``chelpg`` -- charges fitted to the molecule's own electrostatic potential.
-    The default choice, and the better behaved one.
+  - ``hirshfeld`` -- the default. The density divided among the atoms by
+    free-atom shares (see :doc:`charges_and_bond_orders`). The shares depend
+    on the geometry alone, so the neutral and both ions are divided by one
+    partition and an index is the share of the density difference itself;
+    Hirshfeld-condensed indices are rarely negative for that reason. On the
+    water of the 6-31G deck it gives ``f+`` of 0.29 on oxygen where CHELPG
+    gives -0.16. Needs a build with libxc and covers H-Kr; a build without
+    libxc has to name ``chelpg`` or ``mulliken``, and is told so rather than
+    switched.
+  - ``chelpg`` -- charges fitted to the molecule's own electrostatic potential,
+    each state's separately. Better behaved than Mulliken, but a difference of
+    two separate fits can come out negative.
   - ``mulliken`` -- **can be poor, and is offered because it is what much of
     the literature used.** It divides the overlap between two atoms straight
     down the middle regardless of what the atoms are, so it is sensitive to the
@@ -1771,6 +1781,10 @@ The driver stays ``"energy"``.
     negative indices more readily. On formaldehyde it spreads ``f+`` as
     0.27/0.28/0.23/0.23 over the four atoms, ranking nothing, where CHELPG puts
     0.59 on the carbonyl carbon.
+
+  ``mbis`` is refused here, although ``properties.charges`` takes it: its
+  weights are refitted to each state's density, so the three states would not
+  share a partition.
 
   ``guess`` chooses what each ion starts from, and defaults to ``neutral``:
 

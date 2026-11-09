@@ -61,6 +61,7 @@ module mqc_frag_utils
    public :: apply_distance_screening
    public :: apply_reference_closure
    public :: generate_mbe_term_list
+   public :: add_counterpoise_rows
    public :: sort_fragments_by_size
 
 contains
@@ -159,19 +160,49 @@ contains
       end if
 
       ! Counterpoise rows are added after screening, so a pair that was screened
-      ! out does not bring its ghosted monomers along with it, and before the
-      ! sort, so they are ordered with everything else.
+      ! out does not bring its ghosted monomers along with it.
+      call add_counterpoise_rows(polymers, total_fragments, max_level, &
+                                 sys_geom%n_monomers, driver_config%counterpoise)
+
+   end subroutine generate_mbe_term_list
+
+   subroutine add_counterpoise_rows(polymers, total_fragments, max_level, n_monomers, scheme)
+      !! Add a counterpoise scheme's ghosted rows to a term list, then sort it
+      !!
+      !! `polymers` holds real monomers only, closed under subsets; the first
+      !! `total_fragments` rows are terms. On return they are the scheme's rows
+      !! for exactly those terms, largest first: under `vmfc` every n-mer's
+      !! proper subsets in its basis, under `ssfc` every term in the basis of
+      !! the whole system. Any other `scheme` only sorts. Under `ssfc` the array
+      !! is widened to `n_monomers` columns when it is narrower.
+      integer, allocatable, intent(inout) :: polymers(:, :)
+      integer(int64), intent(inout) :: total_fragments
+      integer, intent(in) :: max_level
+      integer, intent(in) :: n_monomers
+      character(len=*), intent(in) :: scheme   !! `none`, `vmfc` or `ssfc`
+
+      integer, allocatable :: wider(:, :)
+      logical :: vmfc, ssfc
+
+      vmfc = trim(scheme) == "vmfc"
+      ssfc = trim(scheme) == "ssfc" .and. max_level >= 2
+
       if (vmfc) then
          call add_vmfc_rows(polymers, total_fragments, max_level)
-      else if (ssfc .and. max_level >= 2) then
-         call add_ssfc_rows(polymers, total_fragments, sys_geom%n_monomers)
+      else if (ssfc) then
+         if (size(polymers, 2) < n_monomers) then
+            allocate (wider(size(polymers, 1), n_monomers))
+            wider = 0
+            wider(:, 1:size(polymers, 2)) = polymers
+            call move_alloc(wider, polymers)
+         end if
+         call add_ssfc_rows(polymers, total_fragments, n_monomers)
       end if
 
       ! Every full-basis row is `n_monomers` wide, so the size of a row says
       ! nothing about its cost there; the real monomers do.
       call sort_fragments_by_size(polymers, total_fragments, max_level, by_real_count=ssfc)
-
-   end subroutine generate_mbe_term_list
+   end subroutine add_counterpoise_rows
 
    subroutine add_vmfc_rows(polymers, total_fragments, max_level)
       !! Add, for every n-mer, the subfragments solved in that n-mer's basis

@@ -37,7 +37,7 @@ contains
       result(status) bind(C, name="mqc_system_compute_charges")
       !! Run one RHF over the whole system and keep its atomic charges
       !!
-      !! `scheme` is "chelpg" or "mulliken"; an empty string takes chelpg, for
+      !! `scheme` is "chelpg", "mulliken", "hirshfeld" or "mbis"; an empty string takes chelpg, for
       !! the reason in the module header. `basis` is any basis the build
       !! carries; an empty string takes 6-31g.
       !!
@@ -80,9 +80,10 @@ contains
       ! removed for never being read.
       if (len_trim(basis_name) == 0) basis_name = "6-31g"
 
-      if (which /= "chelpg" .and. which /= "mulliken") then
+      if (which /= "chelpg" .and. which /= "mulliken" .and. which /= "hirshfeld" .and. &
+          which /= "mbis") then
          last_message = "mqc_system_compute_charges: unknown scheme '"//which// &
-                        "'; use 'chelpg' or 'mulliken'"
+                        "'; use 'chelpg', 'mulliken', 'hirshfeld' or 'mbis'"
          status = MQC_FAIL
          return
       end if
