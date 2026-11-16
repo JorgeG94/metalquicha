@@ -67,9 +67,10 @@ module mqc_czt_cosx
       !! The threshold on a grid the iterations run on. Looser than the final
       !! one because only the density has to come out right: on twenty waters
       !! the final energy moves by 9e-10 hartree against 1e-10 here.
-   real(dp), parameter :: COSX_SCREEN_FINAL = 1.0e-9_dp
-      !! The threshold on a grid an energy is taken from: 4e-7 hartree on
-      !! twenty waters, a hundredth of that grid's own quadrature error
+   real(dp), parameter :: COSX_SCREEN_FINAL = 1.0e-10_dp
+      !! The threshold on a grid an energy is taken from. On twenty waters it
+      !! moves the exchange energy by 6e-7 hartree; 1e-9 would move it by 9e-6
+      !! for a tenth off the time, which is not a trade worth making.
    real(dp), parameter :: COSX_FIT_NULL = 1.0e-10_dp
       !! Eigenvalues of the numerical overlap below this fraction of the
       !! largest are left out of its inverse: directions of the basis the grid
