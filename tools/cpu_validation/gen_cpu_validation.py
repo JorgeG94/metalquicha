@@ -1337,9 +1337,12 @@ COSX_CASES = [
 #: Hartree, by `cosx_grid`. An approximation's tolerance is a statement about
 #: the approximation and not about the SCF, so it is nowhere near the suite's
 #: 1e-9: these are a few times the quadrature error each level showed on the
-#: exchange energy of small molecules when the grids were tuned. A wrong factor
-#: on the exchange, a fit applied to the wrong index or a missing weight is
-#: millihartree to hartree, so nothing that matters hides under them.
+#: exchange energy of small molecules when the grids were tuned. The cases
+#: below sat well inside them when the references were generated: 5e-7 to
+#: 2.3e-5 at level 2 (H2S the largest), 1.8e-5 at level 1 and 1.6e-7 at level
+#: 3. A wrong factor on the exchange, a fit applied to the wrong index or a
+#: missing weight is millihartree to hartree, so nothing that matters hides
+#: under them.
 COSX_TOLERANCE = {1: 1.5e-4, 2: 1.0e-4, 3: 5.0e-5}
 
 # The same, with a functional. Density-fitted Kohn-Sham had no case here at all
