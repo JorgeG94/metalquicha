@@ -21,7 +21,7 @@ module mqc_czt_esp_batch
    !! Conventions are libcint's, because the basis functions are: the Cartesian
    !! order within a shell, the s and p factor it keeps outside its transform
    !! table, and that table itself, all through `mqc_czt_ao_data`.
-   use pic_types, only: dp
+   use pic_types, only: dp, sp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_physical_constants, only: PI
    use mqc_czt_integrals, only: czt_molecule_t
@@ -60,6 +60,9 @@ module mqc_czt_esp_batch
    integer, parameter :: BOYS_N_NODE = 2304       !! BOYS_X_MAX/BOYS_STEP
    integer, parameter :: BOYS_TAYLOR = 4          !! Highest power kept
    integer, parameter :: BOYS_SERIES_TERMS = 400  !! For the table itself
+
+   integer, parameter :: REGIME_UNKNOWN = 0, REGIME_FAR = 1, REGIME_NEAR = 2
+      !! Where a batch sits against the Boys table for one primitive pair
 
    real(dp), parameter :: PRIM_EXPONENT_CUT = 50.0_dp
       !! A primitive pair is dropped when its Gaussian product prefactor is
@@ -291,7 +294,7 @@ contains
       end do
    end subroutine boys_near
 
-   pure subroutine coulomb_seeds(shells, n, l_pair, p, r2, r, work)
+   pure subroutine coulomb_seeds(shells, n, l_pair, p, r2, regime, r, work)
       !! `R^m_000 = (-2p)^m F_m(p r^2)` for `m = 0 .. l_pair` at every point
       !!
       !! Written into `r(:, 1, m)`, where `hermite_coulomb` starts from.
@@ -305,24 +308,46 @@ contains
       integer, intent(in) :: n, l_pair
       real(dp), intent(in) :: p               !! Exponent of the product
       real(dp), intent(in) :: r2(:)           !! (n) squared distance from its centre
+      integer, intent(in) :: regime
+         !! What the batch's bounding sphere already settled: every point
+         !! beyond the Boys table, every point inside it, or not known
       real(dp), intent(inout) :: r(:, :, 0:)  !! (n, n_herm, 0:l_pair)
       real(dp), intent(inout) :: work(:, 0:)  !! (n, 0:l_pair) scratch
 
       integer :: ig, m
-      real(dp) :: lead, scale
+      real(dp) :: lead, scale, inv_r, half_r2
       real(dp) :: x(n), w(n)
-      logical :: all_far
+      logical :: all_far, all_near
+      integer :: n_far
 
-      all_far = .true.
-      do ig = 1, n
-         all_far = all_far .and. p*r2(ig) >= BOYS_X_MAX
-      end do
+      ! Where the sphere did not settle it, count. A count vectorises; a
+      ! logical reduction or `minval` over the points does not.
+      all_far = regime == REGIME_FAR
+      all_near = regime == REGIME_NEAR
+      if (regime == REGIME_UNKNOWN) then
+         n_far = 0
+         do ig = 1, n
+            n_far = n_far + merge(1, 0, p*r2(ig) >= BOYS_X_MAX)
+         end do
+         all_far = n_far == n
+         all_near = n_far == 0
+      end if
 
       if (all_far) then
          lead = 0.5_dp*sqrt(PI/p)
          do ig = 1, n
-            w(ig) = 1.0_dp/r2(ig)
-            r(ig, 1, 0) = lead*sqrt(w(ig))
+            ! 1/r without a double-precision square root or division: the
+            ! single-precision value, then two Newton steps, each of which
+            ! squares the relative error. That is rounding in double, and
+            ! less than half the cost. `r2` is at least `BOYS_X_MAX/p` here,
+            ! far inside single precision's range for any exponent a basis
+            ! carries.
+            inv_r = real(1.0_sp/sqrt(real(r2(ig), sp)), dp)
+            half_r2 = 0.5_dp*r2(ig)
+            inv_r = inv_r*(1.5_dp - half_r2*inv_r*inv_r)
+            inv_r = inv_r*(1.5_dp - half_r2*inv_r*inv_r)
+            w(ig) = inv_r*inv_r
+            r(ig, 1, 0) = lead*inv_r
          end do
          do m = 1, l_pair
             scale = -real(2*m - 1, dp)
@@ -336,7 +361,11 @@ contains
       do ig = 1, n
          x(ig) = p*r2(ig)
       end do
-      call boys_values(shells, l_pair, x, work(1:n, 0:l_pair))
+      if (all_near) then
+         call boys_near(shells, l_pair, x, work(1:n, 0:l_pair))
+      else
+         call boys_values(shells, l_pair, x, work(1:n, 0:l_pair))
+      end if
       scale = 1.0_dp
       do m = 0, l_pair
          do ig = 1, n
@@ -371,6 +400,7 @@ contains
       real(dp), allocatable :: fc(:, :), gc(:, :), f_max(:)
       real(dp), allocatable :: block(:, :, :), r(:, :, :), boys(:, :), pc(:, :), x(:)
       real(dp), allocatable :: points(:, :)
+      real(dp) :: sphere(4)
       real(dp) :: tol, f_pair
       logical :: screening, into_i, into_j, nonzero
       integer :: n, is, js, l, nc, a, b, cs, as, skipped, l_pair
@@ -402,6 +432,7 @@ contains
       ! One column per direction, so the loops over the points run down
       ! contiguous memory.
       points = transpose(coords)
+      call bounding_sphere(points, sphere)
 
       do is = 1, shells%n_shell
          do js = 1, is
@@ -419,7 +450,7 @@ contains
             f_pair = 0.0_dp
             if (into_i) f_pair = f_max(js)
             if (into_j) f_pair = max(f_pair, f_max(is))
-            call pair_block(shells, is, js, n, points, merge(tol, 0.0_dp, screening), &
+            call pair_block(shells, is, js, n, points, sphere, merge(tol, 0.0_dp, screening), &
                             f_pair, block, r, boys, pc, x, nonzero)
             if (.not. nonzero) cycle
             nca = (shells%l(is) + 1)*(shells%l(is) + 2)/2
@@ -527,6 +558,7 @@ contains
       real(dp), allocatable :: fc(:, :), yc(:, :), f_max(:), y_max(:)
       real(dp), allocatable :: block(:, :, :), r(:, :, :), boys(:, :), pc(:, :), x(:)
       real(dp), allocatable :: points(:, :)
+      real(dp) :: sphere(4)
       real(dp) :: tol, weight_i, weight_j, sum_i, sum_j, bound
       logical :: screening, into_i, into_j, nonzero
       integer :: n, is, js, skipped, l_pair, nca, ncb, csa, csb, ia, ib, ig
@@ -557,6 +589,7 @@ contains
       allocate (block(n, N_CART_MAX, N_CART_MAX), r(n, N_HERM_MAX, 0:l_pair), &
                 boys(n, 0:l_pair), pc(n, 3), x(n))
       points = transpose(coords)
+      call bounding_sphere(points, sphere)
 
       do is = 1, shells%n_shell
          do js = 1, is
@@ -576,7 +609,7 @@ contains
             end if
             if (.not. into_i) weight_i = 0.0_dp
             if (.not. into_j) weight_j = 0.0_dp
-            call pair_block(shells, is, js, n, points, merge(tol, 0.0_dp, screening), &
+            call pair_block(shells, is, js, n, points, sphere, merge(tol, 0.0_dp, screening), &
                             max(weight_i, weight_j), block, r, boys, pc, x, nonzero)
             if (.not. nonzero) cycle
             nca = (shells%l(is) + 1)*(shells%l(is) + 2)/2
@@ -605,7 +638,31 @@ contains
       if (present(n_skipped)) n_skipped = skipped
    end subroutine esp_batch_energy
 
-   subroutine pair_block(shells, is, js, n, points, tol, f_pair, block, r, boys, pc, x, nonzero)
+   pure subroutine bounding_sphere(points, sphere)
+      !! A sphere holding every point of a batch: centre in 1:3, radius in 4
+      !!
+      !! The centre is the mean, so the sphere is not the smallest one, only a
+      !! valid one.
+      real(dp), intent(in) :: points(:, :)   !! (n, 3)
+      real(dp), intent(out) :: sphere(4)
+
+      integer :: ig, n
+      real(dp) :: r2
+
+      n = size(points, 1)
+      sphere(1) = sum(points(:, 1))/real(n, dp)
+      sphere(2) = sum(points(:, 2))/real(n, dp)
+      sphere(3) = sum(points(:, 3))/real(n, dp)
+      r2 = 0.0_dp
+      do ig = 1, n
+         r2 = max(r2, (points(ig, 1) - sphere(1))**2 + (points(ig, 2) - sphere(2))**2 &
+                  + (points(ig, 3) - sphere(3))**2)
+      end do
+      sphere(4) = sqrt(r2)
+   end subroutine bounding_sphere
+
+   subroutine pair_block(shells, is, js, n, points, sphere, tol, f_pair, block, r, boys, pc, x, &
+                         nonzero)
       !! One shell pair's Cartesian integral block over the batch
       !!
       !! `block(g, a, b)` for the Cartesian functions `a` of the first shell and
@@ -613,6 +670,7 @@ contains
       type(esp_shells_t), intent(in) :: shells
       integer, intent(in) :: is, js, n
       real(dp), intent(in) :: points(:, :)   !! (n, 3): one column per direction
+      real(dp), intent(in) :: sphere(4)      !! From `bounding_sphere` of the same points
       real(dp), intent(in) :: tol
          !! A primitive pair is dropped when a bound on its integral, times
          !! `f_pair`, is below this. Zero keeps every one.
@@ -633,7 +691,11 @@ contains
       real(dp) :: ez(0:L_PAIR_MAX, 0:ESP_BATCH_LMAX, 0:ESP_BATCH_LMAX)
       real(dp) :: a_centre(3), b_centre(3), p_centre(3)
       real(dp) :: ab2, alpha, beta, p, mu
-      real(dp) :: prefactor, coefficient, bound
+      real(dp) :: prefactor, coefficient, bound, centre_distance
+      real(dp) :: c1, c2, c3, c4
+      real(dp) :: term_c((L_PAIR_MAX + 1)**3)
+      integer :: term_h((L_PAIR_MAX + 1)**3)
+      integer :: regime, n_term, k, h1, h2, h3, h4
       logical :: any_primitive
 
       la = shells%l(is)
@@ -661,6 +723,18 @@ contains
                         *shells%coef(shells%prim_first(is) + ka) &
                         *shells%coef(shells%prim_first(js) + kb)
 
+            ! The batch's sphere against this primitive pair's centre settles,
+            ! for most pairs, which branch of the Boys function every point
+            ! takes, with no pass over the points.
+            centre_distance = sqrt(sum((p_centre - sphere(1:3))**2))
+            if (p*max(centre_distance - sphere(4), 0.0_dp)**2 >= BOYS_X_MAX) then
+               regime = REGIME_FAR
+            else if (p*(centre_distance + sphere(4))**2 < BOYS_X_MAX) then
+               regime = REGIME_NEAR
+            else
+               regime = REGIME_UNKNOWN
+            end if
+
             if (l_pair == 0) then
                ! Two s functions: the prefactor times F_0 and nothing else.
                if (tol > 0.0_dp) then
@@ -670,7 +744,7 @@ contains
                   x(ig) = (p_centre(1) - points(ig, 1))**2 + (p_centre(2) - points(ig, 2))**2 &
                           + (p_centre(3) - points(ig, 3))**2
                end do
-               call coulomb_seeds(shells, n, 0, p, x, r, boys)
+               call coulomb_seeds(shells, n, 0, p, x, regime, r, boys)
                do ig = 1, n
                   block(ig, 1, 1) = block(ig, 1, 1) + prefactor*r(ig, 1, 0)
                end do
@@ -701,7 +775,7 @@ contains
                pc(ig, 3) = p_centre(3) - points(ig, 3)
                x(ig) = pc(ig, 1)**2 + pc(ig, 2)**2 + pc(ig, 3)**2
             end do
-            call coulomb_seeds(shells, n, l_pair, p, x, r, boys)
+            call coulomb_seeds(shells, n, l_pair, p, x, regime, r, boys)
             call hermite_coulomb(n, l_pair, pc, shells%h_of, r)
 
             do ib = 1, ncb
@@ -712,16 +786,40 @@ contains
                   ax = shells%powers(1, ia, la)
                   ay = shells%powers(2, ia, la)
                   az = shells%powers(3, ia, la)
+                  ! The Hermite terms this pair of functions takes, gathered
+                  ! first so they can be added four to a pass over the points
+                  ! and not one.
+                  n_term = 0
                   do v = 0, az + bz
                      do u = 0, ay + by
                         do t = 0, ax + bx
                            coefficient = prefactor*ex(t, ax, bx)*ey(u, ay, by)*ez(v, az, bz)
                            if (coefficient == 0.0_dp) cycle
-                           h = shells%h_of(t, u, v)
-                           do ig = 1, n
-                              block(ig, ia, ib) = block(ig, ia, ib) + coefficient*r(ig, h, 0)
-                           end do
+                           n_term = n_term + 1
+                           term_c(n_term) = coefficient
+                           term_h(n_term) = shells%h_of(t, u, v)
                         end do
+                     end do
+                  end do
+                  do k = 1, n_term - 3, 4
+                     c1 = term_c(k)
+                     c2 = term_c(k + 1)
+                     c3 = term_c(k + 2)
+                     c4 = term_c(k + 3)
+                     h1 = term_h(k)
+                     h2 = term_h(k + 1)
+                     h3 = term_h(k + 2)
+                     h4 = term_h(k + 3)
+                     do ig = 1, n
+                        block(ig, ia, ib) = block(ig, ia, ib) + c1*r(ig, h1, 0) + c2*r(ig, h2, 0) &
+                                            + c3*r(ig, h3, 0) + c4*r(ig, h4, 0)
+                     end do
+                  end do
+                  do k = 4*(n_term/4) + 1, n_term
+                     c1 = term_c(k)
+                     h1 = term_h(k)
+                     do ig = 1, n
+                        block(ig, ia, ib) = block(ig, ia, ib) + c1*r(ig, h1, 0)
                      end do
                   end do
                end do
