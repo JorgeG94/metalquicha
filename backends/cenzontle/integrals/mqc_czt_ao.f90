@@ -28,6 +28,7 @@ module mqc_czt_ao
    !! thousands of points, and `n_points` by `n_ao` held whole is hundreds of
    !! megabytes at a real basis size.
    use pic_types, only: dp
+   use omp_lib, only: omp_get_num_threads, omp_get_thread_num
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
@@ -53,6 +54,25 @@ module mqc_czt_ao
    integer, parameter, public :: AO_DERIV3_COMP = 10
       !! xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz -- the ten unique
       !! entries of a symmetric rank-three tensor, in `GTOval_sph_deriv3` order.
+
+   integer, parameter :: AO_CHUNK = 128
+      !! Points a shell is evaluated over at once: long enough to vectorise,
+      !! short enough that the scratch stays in cache.
+   real(dp), parameter :: EXP_CUTOFF = 50.0_dp
+      !! A primitive is dropped at a point where a*r^2 exceeds this, i.e. where
+      !! exp(-a r^2) < 2e-22. The callers' shell screening is 1e-12, so what is
+      !! left out is ten orders of magnitude under what is already left out.
+   integer, parameter :: N_DERIV_ALL = 1 + 3 + AO_HESS_COMP + AO_DERIV3_COMP
+      !! Value, gradient, Hessian and third derivatives stacked: 20 components.
+   integer, parameter :: DERIV_POWERS(3, N_DERIV_ALL) = reshape([ &
+                                                                0, 0, 0, &
+                                                                1, 0, 0, 0, 1, 0, 0, 0, 1, &
+                                                                2, 0, 0, 1, 1, 0, 1, 0, 1, 0, 2, 0, 0, 1, 1, 0, 0, 2, &
+                                                                3, 0, 0, 2, 1, 0, 2, 0, 1, 1, 2, 0, 1, 1, 1, 1, 0, 2, &
+                                                                0, 3, 0, 0, 2, 1, 0, 1, 2, 0, 0, 3], [3, N_DERIV_ALL])
+      !! How many times x, y and z are differentiated in each component of the
+      !! stacked value, gradient, Hessian and third-derivative arrays, in the
+      !! packing the public arrays use.
 
 contains
 
@@ -243,6 +263,10 @@ contains
       !! `ao` comes back as (n_points, n_ao), which is the orientation the density
       !! assembly wants: rho at a point is a row contracted against the density
       !! matrix, so points vary slowest and a gemm over them reads contiguously.
+      !!
+      !! Every element of every array is written, so none is zeroed first. Called
+      !! from inside a parallel region it runs on the calling thread; called from
+      !! serial code it splits the points over the team itself.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coords(:, :)        !! (3, n_points), Bohr
       real(dp), allocatable, intent(out) :: ao(:, :)
@@ -271,35 +295,8 @@ contains
          !! order PySCF's `GTOval_sph_deriv2` uses, so a comparison against it
          !! needs no reshuffling. A GGA *gradient* needs these.
 
-      logical :: screened
-      integer :: n_ao_here, shell_base
-      integer :: n_points, ish, l, nprim, nctr, ic, ip, ig, off_ao
-      integer :: n_cart, n_sph, n_here, comp, i, j, iatom
-      integer :: exp_ptr, coef_ptr
-      real(dp) :: dx, dy, dz, r2, radial, fac, dradial, d2radial
-      real(dp) :: dr(3)
-      real(dp) :: ex
-      real(dp), allocatable :: cart(:), sph(:), trans(:, :)
-      real(dp), allocatable :: dcart(:, :), dsph(:, :)
-      real(dp), allocatable :: d2cart(:, :), d2sph(:, :)
-      real(dp), allocatable :: d3cart(:, :), d3sph(:, :)
-      real(dp) :: d3radial
-      logical :: want_grad, want_hess, want_d3
-      integer :: id, ih, px, py, pz
-
-      ! The (j, k) each packed component stands for. The delta only enters the
-      ! second derivative of the radial part, in the assembly below.
-      integer, parameter :: HESS_J(AO_HESS_COMP) = [1, 1, 1, 2, 2, 3]
-      integer, parameter :: HESS_K(AO_HESS_COMP) = [1, 2, 3, 2, 3, 3]
-      integer, parameter :: D3_I(AO_DERIV3_COMP) = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3]
-      integer, parameter :: D3_J(AO_DERIV3_COMP) = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3]
-      integer, parameter :: D3_K(AO_DERIV3_COMP) = [1, 2, 3, 2, 3, 3, 2, 3, 3, 3]
-      integer, parameter :: HESS_OF(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
-         !! Which packed Hessian component a Cartesian pair (j,k) is.
-      ! TODO(mqc): `HESS_OF` is never read -- `assemble_third` declares the same
-      ! table again as `PAIR`, as it does `D3_I/D3_J/D3_K` under the names
-      ! `DI/DJ/DK`. Four constants written down twice, so a change to the
-      ! packing order has to be made in two places.
+      logical :: screened, threaded
+      integer :: n_ao_here, n_points, n_chunks, n_deriv, ish, kept
 
       n_points = size(coords, 2)
 
@@ -311,11 +308,12 @@ contains
          return
       end if
 
-      want_d3 = present(deriv3)
       ! Each order is built from the one below it, so asking for a third
       ! implies the second and the second implies the first.
-      want_hess = present(hess) .or. want_d3
-      want_grad = present(grad) .or. want_hess
+      n_deriv = 1
+      if (present(grad)) n_deriv = 4
+      if (present(hess)) n_deriv = 10
+      if (present(deriv3)) n_deriv = 20
       screened = present(shell_mask)
       if (screened) then
          if (.not. (present(ao_offset) .and. present(n_ao_out))) then
@@ -324,80 +322,139 @@ contains
                            "without the others would silently write the wrong columns.")
             return
          end if
+         ! Nothing below zeroes the outputs: every column is written by the
+         ! shell that owns it. A width larger than the kept shells would leave
+         ! columns holding whatever the allocator returned, so it is refused.
+         kept = 0
+         do ish = 1, mol%nbas
+            if (shell_mask(ish)) kept = kept + shell_dim(mol%cartesian, ish - 1, mol%bas)
+         end do
+         if (n_ao_out /= kept) then
+            call error%set(ERROR_VALIDATION, "AO evaluation: n_ao_out does not equal the "// &
+                           "number of functions in the masked shells, so some output "// &
+                           "columns would never be written.")
+            return
+         end if
          n_ao_here = n_ao_out
       else
          n_ao_here = mol%nao
       end if
 
       allocate (ao(n_points, n_ao_here))
-      ao = 0.0_dp
-      if (present(grad)) then
-         allocate (grad(n_points, n_ao_here, 3))
-         grad = 0.0_dp
+      if (present(grad)) allocate (grad(n_points, n_ao_here, 3))
+      if (present(hess)) allocate (hess(n_points, n_ao_here, AO_HESS_COMP))
+      if (present(deriv3)) allocate (deriv3(n_points, n_ao_here, AO_DERIV3_COMP))
+
+      ! The callers sit inside their own parallel loop over blocks of points, so
+      ! the common case is a team already running and nothing to open here. A
+      ! caller from serial code gets the team, over chunks of points.
+      n_chunks = (n_points + AO_CHUNK - 1)/AO_CHUNK
+      threaded = n_chunks > 1 .and. omp_get_num_threads() == 1
+      !$omp parallel default(shared) if(threaded)
+      call eval_chunks(mol, coords, n_chunks, omp_get_thread_num(), omp_get_num_threads(), &
+                       n_deriv, screened, shell_mask, ao_offset, ao, grad, hess, deriv3)
+      !$omp end parallel
+   end subroutine eval_ao_block
+
+   subroutine eval_chunks(mol, coords, n_chunks, first, stride, n_deriv, screened, &
+                          shell_mask, ao_offset, ao, grad, hess, deriv3)
+      !! Chunks `first+1, first+1+stride, ...` of an `eval_ao_block` call
+      !!
+      !! Holds the scratch for those chunks, sized once from the molecule's
+      !! highest l and reused for every chunk and shell.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: n_chunks, first, stride
+      integer, intent(in) :: n_deriv
+         !! 1, 4, 10 or 20: how many of value, gradient, Hessian, third
+         !! derivatives are built, each including the ones below it
+      logical, intent(in) :: screened
+      logical, intent(in), optional :: shell_mask(:)
+      integer, intent(in), optional :: ao_offset(:)
+      real(dp), intent(inout) :: ao(:, :)
+      real(dp), intent(inout), optional :: grad(:, :, :)
+      real(dp), intent(inout), optional :: hess(:, :, :)
+      real(dp), intent(inout), optional :: deriv3(:, :, :)
+
+      integer :: l_max, n_cart_max, n_sph_max, n_rad
+      integer :: ichunk, p0, np, ish, l, nprim, nctr, ic, ip, iatom, k, p
+      integer :: n_cart, n_sph, n_fun, n_here, shell_base, off_ao, comp, s, d
+      integer :: exp_ptr, coef_ptr, i, j, n_sel, px, py, pz, e
+      integer :: n_pow(3)
+      real(dp) :: ax, ay, az, expo, coef, ar2, t, p_coef
+      real(dp), allocatable :: dd(:, :), r2(:), pw(:, :, :), rad(:, :), arg(:), ev(:)
+      real(dp), allocatable :: cart(:, :, :), sph(:, :, :), trans(:, :, :), tmp(:, :)
+      integer, allocatable :: idx(:)
+
+      l_max = max_ao_l(mol)
+      n_cart_max = (l_max + 1)*(l_max + 2)/2
+      n_sph_max = 2*l_max + 1
+      n_rad = 1
+      if (n_deriv >= 4) n_rad = 2
+      if (n_deriv >= 10) n_rad = 3
+      if (n_deriv >= 20) n_rad = 4
+
+      allocate (dd(AO_CHUNK, 3), r2(AO_CHUNK), pw(AO_CHUNK, 0:l_max, 3), rad(AO_CHUNK, 4))
+      allocate (arg(AO_CHUNK), ev(AO_CHUNK), idx(AO_CHUNK))
+      allocate (cart(AO_CHUNK, n_cart_max, n_deriv))
+      if (.not. mol%cartesian) then
+         allocate (sph(AO_CHUNK, n_sph_max, n_deriv))
+         allocate (trans(n_sph_max, n_cart_max, 0:l_max))
+         trans = 0.0_dp
+         do l = 0, l_max
+            allocate (tmp(2*l + 1, (l + 1)*(l + 2)/2))
+            call c2s_block(l, tmp)
+            trans(1:2*l + 1, 1:(l + 1)*(l + 2)/2, l) = tmp
+            deallocate (tmp)
+         end do
       end if
-      if (present(hess)) then
-         allocate (hess(n_points, n_ao_here, AO_HESS_COMP))
-         hess = 0.0_dp
-      end if
-      if (want_d3) then
-         allocate (deriv3(n_points, n_ao_here, AO_DERIV3_COMP))
-         deriv3 = 0.0_dp
-      end if
 
-      !$omp parallel default(none) &
-      !$omp    shared(mol, coords, ao, grad, hess, deriv3, n_points, want_grad, &
-!$omp           want_hess, want_d3) &
-      !$omp    shared(screened, shell_mask, ao_offset) &
-      !$omp    private(ish, l, nprim, nctr, ic, ip, ig, off_ao, shell_base, &
-      !$omp            n_cart, n_sph, &
-      !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, id, ih, &
-      !$omp            px, py, pz, dr, ex, &
-      !$omp            dx, dy, dz, r2, radial, dradial, d2radial, fac, cart, sph, trans, &
-      !$omp            dcart, dsph, d2cart, d2sph, d3cart, d3sph, d3radial)
-      allocate (cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2), sph(2*C2S_LMAX + 1))
-      allocate (trans(2*C2S_LMAX + 1, (C2S_LMAX + 1)*(C2S_LMAX + 2)/2))
-      allocate (dcart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2, 3), dsph(2*C2S_LMAX + 1, 3))
-      allocate (d2cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2, AO_HESS_COMP), &
-                d2sph(2*C2S_LMAX + 1, AO_HESS_COMP))
-      allocate (d3cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2, AO_DERIV3_COMP), &
-                d3sph(2*C2S_LMAX + 1, AO_DERIV3_COMP))
+      do ichunk = first + 1, n_chunks, stride
+         p0 = (ichunk - 1)*AO_CHUNK
+         np = min(AO_CHUNK, size(coords, 2) - p0)
 
-      do ish = 1, mol%nbas
-         if (screened) then
-            if (.not. shell_mask(ish)) cycle
-            shell_base = ao_offset(ish)
-         else
-            shell_base = mol%shell_offset(ish)
-         end if
-         l = mol%bas(LIBCINT_ANG_OF, ish)
-         nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
-         nctr = mol%bas(LIBCINT_NCTR_OF, ish)
-         exp_ptr = mol%bas(LIBCINT_PTR_EXP, ish)
-         coef_ptr = mol%bas(LIBCINT_PTR_COEFF, ish)
-         iatom = mol%bas(LIBCINT_ATOM_OF, ish) + 1
+         do ish = 1, mol%nbas
+            if (screened) then
+               if (.not. shell_mask(ish)) cycle
+               shell_base = ao_offset(ish)
+            else
+               shell_base = mol%shell_offset(ish)
+            end if
+            l = mol%bas(LIBCINT_ANG_OF, ish)
+            nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
+            nctr = mol%bas(LIBCINT_NCTR_OF, ish)
+            exp_ptr = mol%bas(LIBCINT_PTR_EXP, ish)
+            coef_ptr = mol%bas(LIBCINT_PTR_COEFF, ish)
+            iatom = mol%bas(LIBCINT_ATOM_OF, ish) + 1
+            n_cart = (l + 1)*(l + 2)/2
+            n_sph = 2*l + 1
+            n_here = shell_dim(mol%cartesian, ish - 1, mol%bas)/nctr
+            n_fun = n_cart
+            if (.not. mol%cartesian) n_fun = n_sph
 
-         n_cart = (l + 1)*(l + 2)/2
-         n_sph = 2*l + 1
-         n_here = shell_dim(mol%cartesian, ish - 1, mol%bas)/nctr
+            ax = mol%coords(1, iatom)
+            ay = mol%coords(2, iatom)
+            az = mol%coords(3, iatom)
+            do p = 1, np
+               dd(p, 1) = coords(1, p0 + p) - ax
+               dd(p, 2) = coords(2, p0 + p) - ay
+               dd(p, 3) = coords(3, p0 + p) - az
+               r2(p) = dd(p, 1)*dd(p, 1) + dd(p, 2)*dd(p, 2) + dd(p, 3)*dd(p, 3)
+            end do
 
-         ! The factor libcint keeps outside its transform table. It applies to
-         ! *both* angular conventions -- `cint1e.c` multiplies every integral by
-         ! `CINTcommon_fac_sp` of each shell's l without consulting
-         ! cart-vs-sph -- so gating it on the spherical path is wrong.
-         fac = common_fac_sp(l)
-         if (.not. mol%cartesian) call c2s_block(l, trans)
+            ! x^0 .. x^l by repeated multiplication. The zeroth power is set,
+            ! not computed, so a point sitting on the nucleus still gets one.
+            do d = 1, 3
+               pw(1:np, 0, d) = 1.0_dp
+               do e = 1, l
+                  pw(1:np, e, d) = pw(1:np, e - 1, d)*dd(1:np, d)
+               end do
+            end do
 
-         !$omp do schedule(static)
-         do ig = 1, n_points
-            dx = coords(1, ig) - mol%coords(1, iatom)
-            dy = coords(2, ig) - mol%coords(2, iatom)
-            dz = coords(3, ig) - mol%coords(3, iatom)
-            r2 = dx*dx + dy*dy + dz*dz
-            dr = [dx, dy, dz]
-
-            ! Angular part, in libcint's Cartesian order, and its gradient. The
-            ! power rule term vanishes when the exponent is zero, which has to
-            ! be a branch: `pow(x, -1)` is not what it means.
+            ! Angular part in libcint's Cartesian order, with every derivative
+            ! taken from the same power tables. `common_fac_sp` is folded in
+            ! here; it applies to both angular conventions, and the transform
+            ! below is linear.
             comp = 0
             do i = 0, l
                do j = 0, i
@@ -405,67 +462,33 @@ contains
                   px = l - i
                   py = i - j
                   pz = j
-                  cart(comp) = pow(dx, px)*pow(dy, py)*pow(dz, pz)
-                  if (want_grad) then
-                     dcart(comp, :) = 0.0_dp
-                     if (px > 0) dcart(comp, 1) = real(px, dp) &
-                                                  *pow(dx, px - 1)*pow(dy, py)*pow(dz, pz)
-                     if (py > 0) dcart(comp, 2) = real(py, dp) &
-                                                  *pow(dx, px)*pow(dy, py - 1)*pow(dz, pz)
-                     if (pz > 0) dcart(comp, 3) = real(pz, dp) &
-                                                  *pow(dx, px)*pow(dy, py)*pow(dz, pz - 1)
-                  end if
-                  if (want_hess) then
-                     ! Same power rule applied twice. The guards are on the
-                     ! *original* exponent rather than the reduced one, because
-                     ! the prefactor already vanishes when it should: a first
-                     ! power differentiated twice gives 1*0, and `pow` would
-                     ! otherwise be asked for a negative exponent.
-                     d2cart(comp, :) = 0.0_dp
-                     if (px > 1) d2cart(comp, 1) = real(px*(px - 1), dp) &
-                                                   *pow(dx, px - 2)*pow(dy, py)*pow(dz, pz)
-                     if (px > 0 .and. py > 0) d2cart(comp, 2) = real(px*py, dp) &
-                                                                *pow(dx, px - 1)*pow(dy, py - 1)*pow(dz, pz)
-                     if (px > 0 .and. pz > 0) d2cart(comp, 3) = real(px*pz, dp) &
-                                                                *pow(dx, px - 1)*pow(dy, py)*pow(dz, pz - 1)
-                     if (py > 1) d2cart(comp, 4) = real(py*(py - 1), dp) &
-                                                   *pow(dx, px)*pow(dy, py - 2)*pow(dz, pz)
-                     if (py > 0 .and. pz > 0) d2cart(comp, 5) = real(py*pz, dp) &
-                                                                *pow(dx, px)*pow(dy, py - 1)*pow(dz, pz - 1)
-                     if (pz > 1) d2cart(comp, 6) = real(pz*(pz - 1), dp) &
-                                                   *pow(dx, px)*pow(dy, py)*pow(dz, pz - 2)
-                  end if
-                  if (want_d3) then
-                     ! The power rule a third time, with `angular_third`
-                     ! keeping the exponent bookkeeping in one place.
-                     do ih = 1, AO_DERIV3_COMP
-                        d3cart(comp, ih) = angular_third(px, py, pz, dx, dy, dz, &
-                                                         D3_I(ih), D3_J(ih), D3_K(ih))
-                     end do
-                  end if
+                  do d = 1, n_deriv
+                     n_pow = DERIV_POWERS(:, d)
+                     if (n_pow(1) > px .or. n_pow(2) > py .or. n_pow(3) > pz) then
+                        cart(1:np, comp, d) = 0.0_dp
+                        cycle
+                     end if
+                     p_coef = common_fac_sp(l)*falling(px, n_pow(1))*falling(py, n_pow(2)) &
+                              *falling(pz, n_pow(3))
+                     cart(1:np, comp, d) = p_coef*pw(1:np, px - n_pow(1), 1) &
+                                           *pw(1:np, py - n_pow(2), 2)*pw(1:np, pz - n_pow(3), 3)
+                  end do
                end do
             end do
 
             ! The transform is linear and does not depend on position, so it
-            ! applies to the gradient exactly as it does to the value.
+            ! applies to every derivative as it does to the value. Most of its
+            ! coefficients are zero and are skipped.
             if (.not. mol%cartesian) then
-               do comp = 1, n_sph
-                  sph(comp) = fac*sum(trans(comp, 1:n_cart)*cart(1:n_cart))
-                  if (want_grad) then
-                     do id = 1, 3
-                        dsph(comp, id) = fac*sum(trans(comp, 1:n_cart)*dcart(1:n_cart, id))
+               do d = 1, n_deriv
+                  do s = 1, n_sph
+                     sph(1:np, s, d) = 0.0_dp
+                     do comp = 1, n_cart
+                        t = trans(s, comp, l)
+                        if (t == 0.0_dp) cycle
+                        sph(1:np, s, d) = sph(1:np, s, d) + t*cart(1:np, comp, d)
                      end do
-                  end if
-                  if (want_hess) then
-                     do ih = 1, AO_HESS_COMP
-                        d2sph(comp, ih) = fac*sum(trans(comp, 1:n_cart)*d2cart(1:n_cart, ih))
-                     end do
-                  end if
-                  if (want_d3) then
-                     do ih = 1, AO_DERIV3_COMP
-                        d3sph(comp, ih) = fac*sum(trans(comp, 1:n_cart)*d3cart(1:n_cart, ih))
-                     end do
-                  end if
+                  end do
                end do
             end if
 
@@ -473,216 +496,164 @@ contains
             ! functions out with the contraction index outermost, so the AO
             ! offset advances by `n_here` per column.
             do ic = 1, nctr
-               radial = 0.0_dp
-               dradial = 0.0_dp
-               d2radial = 0.0_dp
-               d3radial = 0.0_dp
+               rad(1:np, 1:n_rad) = 0.0_dp
                do ip = 1, nprim
+                  expo = mol%env(exp_ptr + ip)
+                  coef = mol%env(coef_ptr + (ic - 1)*nprim + ip)
+                  ! Only where the exponential is above e^-EXP_CUTOFF; gathered
+                  ! so that the `exp` runs over a dense list.
+                  n_sel = 0
+                  do p = 1, np
+                     ar2 = expo*r2(p)
+                     if (ar2 <= EXP_CUTOFF) then
+                        n_sel = n_sel + 1
+                        idx(n_sel) = p
+                        arg(n_sel) = -ar2
+                     end if
+                  end do
+                  !$omp simd
+                  do k = 1, n_sel
+                     ev(k) = coef*exp(arg(k))
+                  end do
                   ! d/dr_k exp(-a r^2) = -2 a r_k exp(-a r^2), so the -2a is
                   ! accumulated here and the r_k factor applied per component.
                   ! Differentiating again gives 4 a^2 r_j r_k - 2 a delta_jk;
                   ! the 4 a^2 is what accumulates below and the delta is applied
-                  ! in the assembly, where it multiplies `dradial`.
-                  ex = mol%env(coef_ptr + (ic - 1)*nprim + ip) &
-                       *exp(-mol%env(exp_ptr + ip)*r2)
-                  radial = radial + ex
-                  if (want_grad) then
-                     dradial = dradial - 2.0_dp*mol%env(exp_ptr + ip)*ex
+                  ! in the assembly, where it multiplies `rad(:, 2)`.
+                  do k = 1, n_sel
+                     rad(idx(k), 1) = rad(idx(k), 1) + ev(k)
+                  end do
+                  if (n_rad >= 2) then
+                     do k = 1, n_sel
+                        rad(idx(k), 2) = rad(idx(k), 2) - 2.0_dp*expo*ev(k)
+                     end do
                   end if
-                  if (want_hess) then
-                     d2radial = d2radial + 4.0_dp*mol%env(exp_ptr + ip) &
-                                *mol%env(exp_ptr + ip)*ex
+                  if (n_rad >= 3) then
+                     do k = 1, n_sel
+                        rad(idx(k), 3) = rad(idx(k), 3) + 4.0_dp*expo*expo*ev(k)
+                     end do
                   end if
-                  if (want_d3) then
+                  if (n_rad >= 4) then
                      ! One more factor of -2a per derivative of the exponential.
-                     d3radial = d3radial - 8.0_dp*mol%env(exp_ptr + ip)**3*ex
+                     do k = 1, n_sel
+                        rad(idx(k), 4) = rad(idx(k), 4) - 8.0_dp*expo**3*ev(k)
+                     end do
                   end if
                end do
+
                off_ao = shell_base + (ic - 1)*n_here
                if (mol%cartesian) then
-                  do comp = 1, n_cart
-                     ao(ig, off_ao + comp) = fac*radial*cart(comp)
-                  end do
-                  if (present(grad)) then
-                     do comp = 1, n_cart
-                        grad(ig, off_ao + comp, 1) = fac*(dcart(comp, 1)*radial &
-                                                          + cart(comp)*dradial*dx)
-                        grad(ig, off_ao + comp, 2) = fac*(dcart(comp, 2)*radial &
-                                                          + cart(comp)*dradial*dy)
-                        grad(ig, off_ao + comp, 3) = fac*(dcart(comp, 3)*radial &
-                                                          + cart(comp)*dradial*dz)
-                     end do
-                  end if
-                  if (want_d3) then
-                     call assemble_third(d3cart, d2cart, dcart, cart, n_cart, &
-                                         radial, dradial, d2radial, d3radial, dr, &
-                                         fac, deriv3(ig, off_ao + 1:off_ao + n_cart, :))
-                  end if
-                  if (present(hess)) then
-                     ! Product rule on chi = A(r) R(r^2), twice. The two cross
-                     ! terms are not one term doubled: for an off-diagonal (j,k)
-                     ! they differ, dA/dx_j pairing with dR/dx_k and vice versa.
-                     do ih = 1, AO_HESS_COMP
-                        i = HESS_J(ih)
-                        j = HESS_K(ih)
-                        hess(ig, off_ao + 1:off_ao + n_cart, ih) = &
-                           fac*(d2cart(1:n_cart, ih)*radial &
-                                + dcart(1:n_cart, i)*dradial*dr(j) &
-                                + dcart(1:n_cart, j)*dradial*dr(i) &
-                                + cart(1:n_cart)*d2radial*dr(i)*dr(j))
-                        if (i == j) then
-                           hess(ig, off_ao + 1:off_ao + n_cart, ih) = &
-                              hess(ig, off_ao + 1:off_ao + n_cart, ih) &
-                              + fac*cart(1:n_cart)*dradial
-                        end if
-                     end do
-                  end if
+                  call store_shell(cart, n_fun, np, p0, off_ao, rad, dd, ao, grad, hess, deriv3)
                else
-                  do comp = 1, n_sph
-                     ao(ig, off_ao + comp) = radial*sph(comp)
-                  end do
-                  if (present(grad)) then
-                     do comp = 1, n_sph
-                        grad(ig, off_ao + comp, 1) = dsph(comp, 1)*radial &
-                                                     + sph(comp)*dradial*dx
-                        grad(ig, off_ao + comp, 2) = dsph(comp, 2)*radial &
-                                                     + sph(comp)*dradial*dy
-                        grad(ig, off_ao + comp, 3) = dsph(comp, 3)*radial &
-                                                     + sph(comp)*dradial*dz
-                     end do
-                  end if
-                  if (want_d3) then
-                     call assemble_third(d3sph, d2sph, dsph, sph, n_sph, &
-                                         radial, dradial, d2radial, d3radial, dr, &
-                                         1.0_dp, deriv3(ig, off_ao + 1:off_ao + n_sph, :))
-                  end if
-                  if (present(hess)) then
-                     ! As the Cartesian branch, with `fac` already inside sph,
-                     ! dsph and d2sph rather than applied here.
-                     do ih = 1, AO_HESS_COMP
-                        i = HESS_J(ih)
-                        j = HESS_K(ih)
-                        hess(ig, off_ao + 1:off_ao + n_sph, ih) = &
-                           d2sph(1:n_sph, ih)*radial &
-                           + dsph(1:n_sph, i)*dradial*dr(j) &
-                           + dsph(1:n_sph, j)*dradial*dr(i) &
-                           + sph(1:n_sph)*d2radial*dr(i)*dr(j)
-                        if (i == j) then
-                           hess(ig, off_ao + 1:off_ao + n_sph, ih) = &
-                              hess(ig, off_ao + 1:off_ao + n_sph, ih) &
-                              + sph(1:n_sph)*dradial
-                        end if
-                     end do
-                  end if
+                  call store_shell(sph, n_fun, np, p0, off_ao, rad, dd, ao, grad, hess, deriv3)
                end if
             end do
          end do
-         !$omp end do
       end do
+   end subroutine eval_chunks
 
-      ! TODO(mqc): `d3cart` and `d3sph` are allocated per thread above and are
-      ! not in this list, so every thread's third-derivative scratch is left
-      ! allocated at the end of the parallel region.
-      deallocate (cart, sph, trans, dcart, dsph, d2cart, d2sph)
-      !$omp end parallel
-   end subroutine eval_ao_block
-
-   pure subroutine assemble_third(a3, a2, a1, a0, n, r0, r1, r2, r3, dr, fac, out)
-      !! The product rule on chi = A(r) R(r^2), three times
+   subroutine store_shell(a, n_fun, np, p0, off_ao, rad, dd, ao, grad, hess, deriv3)
+      !! Angular times radial, by the product rule, into the output columns
       !!
-      !!   d3(AR) = A_ijk R
-      !!          + A_ij R_k + A_ik R_j + A_jk R_i
-      !!          + A_i R_jk + A_j R_ik + A_k R_ij
-      !!          + A R_ijk
-      !!
-      !! with the radial factors following from R depending on r^2 alone:
+      !! chi = A(r) R(r^2). The radial factors follow from R depending on r^2
+      !! alone:
       !!
       !!   R_i   = r1 x_i
       !!   R_ij  = r2 x_i x_j + r1 delta_ij
       !!   R_ijk = r3 x_i x_j x_k + r2 (delta_ij x_k + delta_ik x_j + delta_jk x_i)
       !!
-      !! Shared by the Cartesian and spherical branches: the transform is
-      !! linear and position-independent, so it commutes with every derivative.
-      !! `fac` is folded in on the Cartesian side and is already inside the
-      !! angular arrays on the other.
-      real(dp), intent(in) :: a3(:, :), a2(:, :), a1(:, :), a0(:)
-      integer, intent(in) :: n
-      real(dp), intent(in) :: r0, r1, r2, r3, fac
-      real(dp), intent(in) :: dr(3)
-      real(dp), intent(out) :: out(:, :)
+      !! and the angular derivatives are in `a`, packed as `DERIV_POWERS`. The
+      !! two cross terms of a second derivative are not one term doubled: for an
+      !! off-diagonal (j,k) they differ, dA/dx_j pairing with dR/dx_k and vice
+      !! versa.
+      real(dp), intent(in) :: a(:, :, :)
+         !! (chunk, n_fun, n_deriv) angular parts and their derivatives, with the
+         !! shell's normalisation inside
+      integer, intent(in) :: n_fun, np, p0, off_ao
+      real(dp), intent(in) :: rad(:, :)  !! (chunk, 4) R, R', R'', R''' summed over primitives
+      real(dp), intent(in) :: dd(:, :)   !! (chunk, 3) displacement from the shell's centre
+      real(dp), intent(inout) :: ao(:, :)
+      real(dp), intent(inout), optional :: grad(:, :, :)
+      real(dp), intent(inout), optional :: hess(:, :, :)
+      real(dp), intent(inout), optional :: deriv3(:, :, :)
 
-      integer, parameter :: DI(AO_DERIV3_COMP) = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3]
-      integer, parameter :: DJ(AO_DERIV3_COMP) = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3]
-      integer, parameter :: DK(AO_DERIV3_COMP) = [1, 2, 3, 2, 3, 3, 2, 3, 3, 3]
+      integer, parameter :: HESS_J(AO_HESS_COMP) = [1, 1, 1, 2, 2, 3]
+      integer, parameter :: HESS_K(AO_HESS_COMP) = [1, 2, 3, 2, 3, 3]
+      integer, parameter :: D3_I(AO_DERIV3_COMP) = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3]
+      integer, parameter :: D3_J(AO_DERIV3_COMP) = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3]
+      integer, parameter :: D3_K(AO_DERIV3_COMP) = [1, 2, 3, 2, 3, 3, 2, 3, 3, 3]
       integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
-      integer :: ih, i, j, k
-      real(dp) :: rk, rj, ri, rjk, rik, rij, rijk
+      integer :: s, col, p, ih, i, j, k
+      real(dp) :: r0, r1, r2, r3, di, dj, dk, dij, dik, djk
+      real(dp) :: ri, rj, rk, rij, rik, rjk, rijk
 
-      do ih = 1, AO_DERIV3_COMP
-         i = DI(ih)
-         j = DJ(ih)
-         k = DK(ih)
-
-         ri = r1*dr(i)
-         rj = r1*dr(j)
-         rk = r1*dr(k)
-
-         rij = r2*dr(i)*dr(j)
-         rik = r2*dr(i)*dr(k)
-         rjk = r2*dr(j)*dr(k)
-         if (i == j) rij = rij + r1
-         if (i == k) rik = rik + r1
-         if (j == k) rjk = rjk + r1
-
-         rijk = r3*dr(i)*dr(j)*dr(k)
-         if (i == j) rijk = rijk + r2*dr(k)
-         if (i == k) rijk = rijk + r2*dr(j)
-         if (j == k) rijk = rijk + r2*dr(i)
-
-         out(1:n, ih) = fac*(a3(1:n, ih)*r0 &
-                             + a2(1:n, PAIR(i, j))*rk &
-                             + a2(1:n, PAIR(i, k))*rj &
-                             + a2(1:n, PAIR(j, k))*ri &
-                             + a1(1:n, i)*rjk &
-                             + a1(1:n, j)*rik &
-                             + a1(1:n, k)*rij &
-                             + a0(1:n)*rijk)
+      do s = 1, n_fun
+         col = off_ao + s
+         do p = 1, np
+            ao(p0 + p, col) = rad(p, 1)*a(p, s, 1)
+         end do
+         if (present(grad)) then
+            do i = 1, 3
+               do p = 1, np
+                  grad(p0 + p, col, i) = a(p, s, 1 + i)*rad(p, 1) + a(p, s, 1)*rad(p, 2)*dd(p, i)
+               end do
+            end do
+         end if
+         if (present(hess)) then
+            do ih = 1, AO_HESS_COMP
+               i = HESS_J(ih)
+               j = HESS_K(ih)
+               dij = 0.0_dp
+               if (i == j) dij = 1.0_dp
+               do p = 1, np
+                  hess(p0 + p, col, ih) = a(p, s, 4 + ih)*rad(p, 1) &
+                                          + a(p, s, 1 + i)*rad(p, 2)*dd(p, j) &
+                                          + a(p, s, 1 + j)*rad(p, 2)*dd(p, i) &
+                                          + a(p, s, 1)*rad(p, 3)*dd(p, i)*dd(p, j) &
+                                          + dij*a(p, s, 1)*rad(p, 2)
+               end do
+            end do
+         end if
+         if (present(deriv3)) then
+            do ih = 1, AO_DERIV3_COMP
+               i = D3_I(ih)
+               j = D3_J(ih)
+               k = D3_K(ih)
+               dij = 0.0_dp
+               dik = 0.0_dp
+               djk = 0.0_dp
+               if (i == j) dij = 1.0_dp
+               if (i == k) dik = 1.0_dp
+               if (j == k) djk = 1.0_dp
+               do p = 1, np
+                  r0 = rad(p, 1)
+                  r1 = rad(p, 2)
+                  r2 = rad(p, 3)
+                  r3 = rad(p, 4)
+                  di = dd(p, i)
+                  dj = dd(p, j)
+                  dk = dd(p, k)
+                  ri = r1*di
+                  rj = r1*dj
+                  rk = r1*dk
+                  rij = r2*di*dj + dij*r1
+                  rik = r2*di*dk + dik*r1
+                  rjk = r2*dj*dk + djk*r1
+                  rijk = r3*di*dj*dk + r2*(dij*dk + dik*dj + djk*di)
+                  deriv3(p0 + p, col, ih) = a(p, s, 10 + ih)*r0 &
+                                            + a(p, s, 4 + PAIR(i, j))*rk &
+                                            + a(p, s, 4 + PAIR(i, k))*rj &
+                                            + a(p, s, 4 + PAIR(j, k))*ri &
+                                            + a(p, s, 1 + i)*rjk &
+                                            + a(p, s, 1 + j)*rik &
+                                            + a(p, s, 1 + k)*rij &
+                                            + a(p, s, 1)*rijk
+               end do
+            end do
+         end if
       end do
-   end subroutine assemble_third
-
-   pure function angular_third(px, py, pz, dx, dy, dz, i, j, k) result(v)
-      !! d3/dx_i dx_j dx_k of x^px y^py z^pz, at (dx, dy, dz)
-      !!
-      !! Count how many derivatives fall on each axis, drop the term if any
-      !! axis is differentiated more times than its exponent allows, and
-      !! multiply the falling factorials. That guard is also what keeps `pow`
-      !! from being asked for a negative exponent.
-      integer, intent(in) :: px, py, pz, i, j, k
-      real(dp), intent(in) :: dx, dy, dz
-      real(dp) :: v
-
-      integer :: n(3), p(3)
-      integer :: m
-      real(dp) :: coeff
-
-      n = 0
-      n(i) = n(i) + 1
-      n(j) = n(j) + 1
-      n(k) = n(k) + 1
-      p = [px, py, pz]
-
-      if (any(n > p)) then
-         v = 0.0_dp
-         return
-      end if
-
-      coeff = 1.0_dp
-      do m = 1, 3
-         coeff = coeff*falling(p(m), n(m))
-      end do
-      v = coeff*pow(dx, px - n(1))*pow(dy, py - n(2))*pow(dz, pz - n(3))
-   end function angular_third
+   end subroutine store_shell
 
    pure function falling(p, n) result(f)
       !! p (p-1) ... (p-n+1), the factor n derivatives of x^p bring down
@@ -789,22 +760,5 @@ contains
 
       deallocate (work)
    end subroutine eval_rho
-
-   pure function pow(x, n) result(v)
-      !! x**n for small non-negative n, without the intrinsic's generality
-      !!
-      !! `x**0` must be one even when x is zero, which is what happens at a grid
-      !! point sitting on a nucleus, and there are such points.
-      real(dp), intent(in) :: x
-      integer, intent(in) :: n
-      real(dp) :: v
-
-      integer :: k
-
-      v = 1.0_dp
-      do k = 1, n
-         v = v*x
-      end do
-   end function pow
 
 end module mqc_czt_ao
