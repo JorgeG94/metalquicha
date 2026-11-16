@@ -456,6 +456,11 @@ if(MQC_ENABLE_CZT)
   # dipole rank being the first.
   addtest(mqc_czt_esp)
   target_link_libraries(test_mqc_czt_esp PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Chain-of-spheres exchange against the direct four-index build: the exact
+  # parts to rounding, and the quadrature by its convergence with the grid.
+  addtest(mqc_czt_cosx)
+  target_link_libraries(test_mqc_czt_cosx PRIVATE ${MQC_INTEGRALS_LIBS})
   # The continuum: cavity geometry, the Born ion in closed form, and one
   # solvated SCF pinned against PySCF.
   addtest(mqc_pcm)
