@@ -1711,6 +1711,19 @@ contains
       call check(error, config%dft_radial_points, 99)
       if (allocated(error)) return
       call check(error, config%dft_angular_points, 590)
+      if (allocated(error)) return
+
+      ! Off when absent, as in PySCF, and an explicit value read as given.
+      call check(error, config%dft_small_rho_cutoff == 0.0_dp, &
+                 "small_rho_cutoff defaults to off, as PySCF's does")
+      if (allocated(error)) return
+      call write_deck('"method": "dft", "functional": "pbe", "basis": "sto-3g"', &
+                      "Energy", '"dft": {"small_rho_cutoff": 1.0e-7}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, abs(config%dft_small_rho_cutoff - 1.0e-7_dp) < 1.0e-20_dp, &
+                 "an explicit cutoff is read as given")
    end subroutine test_dft_keywords
 
    subroutine test_dft_dispersion(error)

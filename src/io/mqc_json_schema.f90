@@ -501,6 +501,7 @@ contains
       call allow(keys, "radial_points")
       call allow(keys, "angular_points")
       call allow(keys, "screening_tolerance")
+      call allow(keys, "small_rho_cutoff")
       call allow(keys, "block_size")
       ! Not quadrature, and the exception to the comment above: the empirical
       ! dispersion correction is a term added to the energy, but it is chosen

@@ -76,6 +76,11 @@ module mqc_cuest_iface
       integer :: nlc_grid_level = -1
          !! VV10's quadrature level; negative means the backend default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
+      real(dp) :: small_rho_cutoff = 0.0_dp
+         !! Grid points with `abs(rho*w)` not above this over the grid size, on the
+         !! guess density, are dropped once per SCF; zero or negative keeps the whole grid. Off here
+         !! so that a caller building settings by hand keeps the grid it names;
+         !! a deck reaches the PySCF default of 1e-7 through `mqc_config_t`.
       integer :: block_size = -1
       integer :: backend = BACKEND_AUTO
          !! One of BACKEND_*. Resolved from the deck's `backend` key.

@@ -312,6 +312,7 @@ contains
       m%options%grid_level = config%dft%grid_level
       m%options%nlc_grid_level = config%dft%nlc_grid_level
       m%options%screening_tolerance = config%dft%screening_tolerance
+      m%options%small_rho_cutoff = config%dft%small_rho_cutoff
       m%options%block_size = config%dft%block_size
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points

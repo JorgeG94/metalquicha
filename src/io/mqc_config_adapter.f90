@@ -409,6 +409,8 @@ contains
          mqc_config%dft_nlc_grid_level
       driver_config%method_config%dft%screening_tolerance = &
          mqc_config%dft_screening_tolerance
+      driver_config%method_config%dft%small_rho_cutoff = &
+         mqc_config%dft_small_rho_cutoff
       driver_config%method_config%dft%block_size = mqc_config%dft_block_size
       ! `keywords.dft.dispersion`. Both halves travel, because "off" and "off
       ! but it would have been d3bj" are the same calculation and the method

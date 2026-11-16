@@ -285,6 +285,9 @@ module mqc_method_config
          !! Negative means the backend's own default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
          !! AO value below which a shell is dropped from a grid block.
+      real(dp) :: small_rho_cutoff = 1.0e-7_dp
+         !! Grid points with `abs(rho*w)` not above this over the grid size, on the
+         !! guess density, are dropped once per SCF; zero or negative keeps the whole grid.
       integer :: block_size = -1
          !! Grid points per block; -1 keeps the backend default.
       integer :: radial_points = 75

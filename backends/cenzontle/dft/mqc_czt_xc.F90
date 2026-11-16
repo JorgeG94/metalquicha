@@ -73,6 +73,7 @@ module mqc_czt_xc
    public :: xc_profile_take
    public :: xc_add_potential
    public :: xc_add_potential_uks
+   public :: xc_prune_small_rho
    public :: xc_available
    public :: xc_grid_lda_quantities
    public :: xc_grid_gga_quantities
@@ -163,6 +164,13 @@ module mqc_czt_xc
          !! Two things at once. A smaller block is spatially tighter, so fewer
          !! shells reach it and the screen keeps less; and the loop over blocks
          !! *is* the OpenMP loop, so the block count is the thread granularity.
+      real(dp) :: small_rho_cutoff = 0.0_dp
+         !! From `keywords.dft.small_rho_cutoff`. Zero or negative leaves the
+         !! grid whole; the default here is off, so a context built outside an
+         !! SCF is never pruned. The SCF reads it in `xc_prune_small_rho`.
+      logical :: grid_pruned = .false.
+         !! Whether `xc_prune_small_rho` has already run, so a second SCF on the
+         !! same context does not prune again on a converged density.
       logical :: polarized = .false.
          !! Whether the functionals were initialised spin-polarised.
          !!
@@ -448,7 +456,7 @@ contains
 
    subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
                                 screen_tol, point_block, nlc_level, allow_half, &
-                                n_radial, n_angular)
+                                n_radial, n_angular, small_rho_cutoff)
       !! Resolve a functional name and build the grid it will be integrated on
       type(czt_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
@@ -477,6 +485,9 @@ contains
          !! evaluates the whole basis, which is the way to check what it costs.
       integer, intent(in), optional :: point_block
          !! Grid points per block. Non-positive keeps the default.
+      real(dp), intent(in), optional :: small_rho_cutoff
+         !! Threshold of `xc_prune_small_rho`, which an SCF applies to the grid
+         !! on its initial guess density. Absent leaves pruning off.
       logical, intent(in), optional :: allow_half
          !! Accept a libxc name carrying only exchange or only correlation.
          !! Passed to `xc_spec_from_name`, which explains why it exists and why
@@ -665,6 +676,7 @@ contains
 #endif
 
       if (present(screen_tol)) ctx%screen_tol = screen_tol
+      if (present(small_rho_cutoff)) ctx%small_rho_cutoff = small_rho_cutoff
       if (present(point_block)) then
          if (point_block > 0) ctx%point_block = point_block
       end if
@@ -1786,6 +1798,111 @@ contains
       end if
 #endif
    end subroutine xc_add_potential
+
+   subroutine xc_prune_small_rho(ctx, mol, density, n_electrons, error, dropped)
+      !! Drop the grid points where the density is negligible, once per context
+      !!
+      !! A point stays when `abs(rho*w) > ctx%small_rho_cutoff/n_points`, `rho`
+      !! being the total density of `density` there, `w` the point's weight and
+      !! `n_points` the size of the grid before pruning. This is
+      !! PySCF's `prune_small_rho_grids_`, called on the initial guess density
+      !! before the first exchange-correlation evaluation; for an unrestricted
+      !! calculation `density` is alpha plus beta. Every per-point array of the
+      !! grid is compacted, in order.
+      !!
+      !! Does nothing when the context is inactive, the cutoff is not positive,
+      !! the grid was already pruned, or the density integrates to further than
+      !! two per cent from `n_electrons` (a guess that bad says nothing about
+      !! where the density is). The separate VV10 grid is left alone.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+         !! Total density matrix, `(n_ao, n_ao)`
+      integer, intent(in) :: n_electrons
+         !! Electron count the density should integrate to
+      type(error_t), intent(inout) :: error
+      real(dp), intent(out), optional :: dropped
+         !! Electrons the removed points carried, `sum(rho*w)` over them; zero
+         !! when nothing was removed
+
+      real(dp), allocatable :: rho_pt(:), ao(:, :), rho(:), d_sig(:, :), extents(:)
+      logical, allocatable :: shell_mask(:), keep(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: g0, g1, nb, n_sig, ia, ja, n_before, n_after
+      real(dp) :: n_total, n_dropped
+      type(error_t) :: local_error
+      logical :: failed
+      character(len=160) :: line
+
+      if (present(dropped)) dropped = 0.0_dp
+      if (.not. ctx%active) return
+      if (ctx%small_rho_cutoff <= 0.0_dp) return
+      if (ctx%grid_pruned) return
+      ctx%grid_pruned = .true.
+      n_before = ctx%grid%n_points
+      if (n_before == 0) return
+
+      allocate (rho_pt(n_before))
+      rho_pt = 0.0_dp
+      failed = .false.
+      call shell_extents(mol, ctx%screen_tol, extents)
+
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, rho_pt, error, failed, extents) &
+      !$omp    private(g0, g1, nb, ao, rho, d_sig, shell_mask, ao_list, ao_offset, n_sig, ia, ja) &
+      !$omp    firstprivate(local_error)
+      allocate (d_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      !$omp do schedule(dynamic)
+      do g0 = 1, ctx%grid%n_points, ctx%point_block
+         if (failed) cycle
+         g1 = min(g0 + ctx%point_block - 1, ctx%grid%n_points)
+         nb = g1 - g0 + 1
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+            end do
+         end do
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                            shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         if (local_error%has_error()) then
+            !$omp critical (xc_prune_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_prune_failure)
+            cycle
+         end if
+         call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
+         rho_pt(g0:g1) = rho(1:nb)
+      end do
+      !$omp end do
+      !$omp end parallel
+      if (failed) return
+
+      n_total = sum(rho_pt*ctx%grid%weights)
+      if (abs(n_total - real(n_electrons, dp)) >= 0.02_dp*n_total) then
+         write (line, "(a,f10.4,a,i0,a)") "  XC grid: small-rho pruning skipped, the guess density integrates to ", &
+            n_total, " electrons, not ", n_electrons, "."
+         call logger%info(trim(line))
+         return
+      end if
+
+      allocate (keep(n_before))
+      keep = abs(rho_pt*ctx%grid%weights) > ctx%small_rho_cutoff/real(n_before, dp)
+      n_dropped = sum(rho_pt*ctx%grid%weights, mask=.not. keep)
+      call ctx%grid%keep_points(keep)
+      if (present(dropped)) dropped = n_dropped
+      n_after = ctx%grid%n_points
+      write (line, "(a,es9.2,a,i0,a,i0,a,es10.2,a)") "  XC grid: small-rho pruning (cutoff ", &
+         ctx%small_rho_cutoff, "): ", n_before, " -> ", n_after, " points, dropped electrons ", &
+         n_dropped, "."
+      call logger%info(trim(line))
+   end subroutine xc_prune_small_rho
 
    subroutine xc_add_potential_uks(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, &
                                    e_xc, n_elec, error)

@@ -100,6 +100,7 @@ module mqc_dft_grid
       integer, allocatable :: numbers(:)     !! (n_atoms), Z, for the partition radii
    contains
       procedure :: destroy => dft_grid_destroy
+      procedure :: keep_points => dft_grid_keep_points
    end type dft_grid_t
 
 contains
@@ -354,5 +355,37 @@ contains
       if (allocated(this%numbers)) deallocate (this%numbers)
       if (allocated(this%atom)) deallocate (this%atom)
    end subroutine dft_grid_destroy
+
+   subroutine dft_grid_keep_points(this, keep)
+      !! Compact every per-point array to the points where `keep` is true, in order
+      class(dft_grid_t), intent(inout) :: this
+      logical, intent(in) :: keep(:)
+         !! (n_points), true for a point that stays
+
+      real(dp), allocatable :: tmp2(:, :), tmp1(:)
+      integer, allocatable :: itmp(:), idx(:)
+      integer :: n_new, i_pt
+
+      n_new = count(keep)
+      allocate (idx(this%n_points))
+      do i_pt = 1, this%n_points
+         idx(i_pt) = i_pt
+      end do
+      idx = pack(idx, keep)
+      tmp2 = this%coords(:, :this%n_points)
+      deallocate (this%coords)
+      allocate (this%coords(N_DIM, n_new))
+      this%coords = tmp2(:, idx)
+      tmp1 = this%weights(:this%n_points)
+      deallocate (this%weights)
+      this%weights = pack(tmp1, keep)
+      tmp1 = this%quad_weights(:this%n_points)
+      deallocate (this%quad_weights)
+      this%quad_weights = pack(tmp1, keep)
+      itmp = this%atom(:this%n_points)
+      deallocate (this%atom)
+      this%atom = pack(itmp, keep)
+      this%n_points = n_new
+   end subroutine dft_grid_keep_points
 
 end module mqc_dft_grid

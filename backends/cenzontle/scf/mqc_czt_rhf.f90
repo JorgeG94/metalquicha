@@ -24,7 +24,8 @@ module mqc_czt_rhf
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                              direct_stats_t, build_fock
    use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
-   use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks, xc_profile_take
+   use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks, xc_profile_take, &
+                         xc_prune_small_rho
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
@@ -839,6 +840,18 @@ contains
       ! is what says a functional was constructed.
       ctrl%kohn_sham = .false.
       if (present(xc)) ctrl%kohn_sham = xc%active
+      ! Once per context, on the guess density, before the first quadrature:
+      ! the atomic guess when there is one, else the density the guess Fock
+      ! matrix just gave. A no-op for a cutoff of zero.
+      if (ctrl%kohn_sham) then
+         select case (guess_kind)
+         case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
+            call xc_prune_small_rho(xc, mol, guess_density, nelec, error)
+         case default
+            call xc_prune_small_rho(xc, mol, st%density, nelec, error)
+         end select
+         if (error%has_error()) return
+      end if
       call scf_table_header(verbose, ctrl%kohn_sham)
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
@@ -1981,6 +1994,16 @@ contains
       ! is what says a functional was constructed.
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
+      ! Once per context, on the total guess density; see `run_czt_rhf`.
+      if (kohn_sham_run) then
+         select case (guess_kind)
+         case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
+            call xc_prune_small_rho(xc, mol, guess_density_alpha + guess_density_beta, nelec, error)
+         case default
+            call xc_prune_small_rho(xc, mol, st%d_a + st%d_b, nelec, error)
+         end select
+         if (error%has_error()) return
+      end if
       call scf_table_header(verbose, kohn_sham_run)
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a

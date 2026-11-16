@@ -633,6 +633,7 @@ The integration grid, and how the quadrature walks it:
      "grid_level": 3,
      "nlc_grid_level": 1,
      "screening_tolerance": 1e-12,
+     "small_rho_cutoff": 1e-7,
      "block_size": 512
    }
 
@@ -655,6 +656,21 @@ The integration grid, and how the quadrature walks it:
   how a disagreement gets bisected without rebuilding. The two paths should agree
   to a few times the threshold -- on glycine tripeptide in 6-31G* they give
   ``-700.413700086596`` and ``-700.413700086592``.
+- ``small_rho_cutoff``: drop grid points where the density is negligible, as
+  PySCF's ``small_rho_cutoff`` does. Once per SCF, before the first quadrature,
+  the density of the initial guess is evaluated on the grid (alpha plus beta for
+  an unrestricted run) and every point with ``abs(rho * weight)`` not above this
+  value divided by the number of grid points is removed -- PySCF's rule, so the
+  same number prunes the same points; the number of points and the electrons they carried are
+  logged. Default ``0``, off, as in PySCF; ``1e-7`` is the usual value to turn it
+  on, and on ten waters in def2-SVP it removes 14 per cent of the points, takes 14
+  per cent off the quadrature, and moves the energy by 3e-10 hartree. It moves a
+  meta-GGA Hessian more -- about 2e-7 on water in STO-3G -- which is why it is
+  not on by default. **Zero or negative keeps the whole grid.** A guess
+  that integrates more than two per cent away from the electron count leaves the
+  grid whole. Later stages that reuse the SCF's grid (gradient, Hessian, response)
+  use the pruned one. The separate VV10 grid is not pruned, and neither is a grid
+  built outside an SCF.
 - ``block_size``: grid points per block. Default 512; a non-positive value keeps
   it.
 
