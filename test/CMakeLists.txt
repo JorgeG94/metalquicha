@@ -525,6 +525,12 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_soscf)
   target_link_libraries(test_mqc_czt_soscf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The Coulomb-only density fit, against the dense fitted tensor it replaces for
+  # a functional with no exact exchange: the same J with and without the screen
+  # removing pairs, and the same RKS energy.
+  addtest(mqc_czt_jfit)
+  target_link_libraries(test_mqc_czt_jfit PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The linear algebra threaded from outside the sequential BLAS -- the split
   # products and the blocked LU -- against the single BLAS call each replaces.
   addtest(mqc_czt_gemm_threads)

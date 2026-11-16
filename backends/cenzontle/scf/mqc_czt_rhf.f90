@@ -23,7 +23,8 @@ module mqc_czt_rhf
    ! needs it and this module uses `mqc_czt_hessian`, which uses that.
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                              direct_stats_t, build_fock
-   use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
+   use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential, &
+                                df_jfit_t, build_df_jfit, df_jfit_coulomb
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks, xc_profile_take, &
                          xc_prune_small_rho
    use mqc_czt_pcm, only: pcm_context_t
@@ -74,11 +75,17 @@ module mqc_czt_rhf
    public :: rhf_result_t
    public :: run_czt_rhf
    public :: run_czt_uhf
+   public :: set_df_jfit_enabled      !! Testing switch: false forces the dense fitted tensor for pure functionals
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
    public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
    public :: density_energy            !! The closed-shell energy functional of a given density
    public :: assemble_fock_uhf         !! Both spin Fock matrices and their energy, no SCF
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
+
+   logical, protected :: df_jfit_enabled = .true.
+      !! Whether a density-fitted reference with no exact exchange is built from the
+      !! Coulomb-only fit rather than the dense tensor. Only `set_df_jfit_enabled` moves it,
+      !! and only a test has reason to.
 
    type :: incremental_state_t
       !! What an incremental Fock build carries between iterations
@@ -224,6 +231,7 @@ module mqc_czt_rhf
       real(dp), allocatable :: x(:, :)        !! Orthogonaliser, (n_ao, n_mo)
       real(dp), allocatable :: bmat(:, :)     !! Fitted B(mu nu, P); unallocated if not fitted
       real(dp), allocatable :: bmat_lr(:, :)  !! The same against erf(omega r)/r
+      type(df_jfit_t) :: jfit         !! Coulomb-only fit; `jfit%raw` unallocated unless one was built
       real(dp), allocatable :: eri(:, :, :, :)  !! In-core integrals; unallocated on the direct path
       real(dp), allocatable :: bounds(:, :)   !! Schwarz bounds for screening
       integer :: n_ao = 0
@@ -531,6 +539,13 @@ contains
       deallocate (kinetic, core)
    end subroutine energy_components
 
+   subroutine set_df_jfit_enabled(enabled)
+      !! Force (false) or release (true) the dense fitted tensor for pure functionals
+      logical, intent(in) :: enabled
+
+      df_jfit_enabled = enabled
+   end subroutine set_df_jfit_enabled
+
    subroutine run_czt_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                           verbose, result, error, aux, diis_vectors, in_core, &
                           guess, guess_density, xc, h_extra, pcm, projector, &
@@ -658,7 +673,7 @@ contains
 
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
-      logical :: use_in_core
+      logical :: use_in_core, wants_jfit
       real(dp), allocatable :: bounds(:, :)
       ! TODO(mqc): `stats` is declared here and never used; the screening counts
       ! come back in `screening`, which `assemble_fock` fills.
@@ -741,7 +756,22 @@ contains
          ops%h = ops%h + h_extra
       end if
       if (present(aux)) then
-         call build_df_tensor(mol, aux, ops%bmat, error)
+         ! A reference with no exact exchange only ever contracts B into J, so
+         ! it keeps the raw integrals and the metric factor and skips the
+         ! `(mn|Q) J^-1/2` transform. Whoever asked for B back (`b_ao_out`) gets
+         ! the dense tensor from the start rather than a second build at the end.
+         wants_jfit = df_jfit_enabled .and. .not. present(b_ao_out)
+         if (wants_jfit) then
+            wants_jfit = .false.
+            if (present(xc)) wants_jfit = xc%active .and. xc%exx_fraction == 0.0_dp &
+                                          .and. .not. xc%range_separated
+         end if
+         if (wants_jfit) then
+            call build_df_jfit(mol, aux, ops%jfit, error)
+            if (error%has_error()) return
+         else
+            call build_df_tensor(mol, aux, ops%bmat, error)
+         end if
          if (error%has_error()) return
          ! A second fit, against the attenuated kernel, when the functional
          ! splits its exchange by range. Built once beside the first rather than
@@ -817,7 +847,8 @@ contains
             return
          end if
          st%density = guess_density
-         call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, error)
+         call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, error, &
+                                jfit=ops%jfit, xc=xc)
          if (error%has_error()) return
       case default
          call error%set(ERROR_VALIDATION, "RHF: unknown initial guess")
@@ -984,7 +1015,7 @@ contains
       ! `incr`: this one is a full build, and the number that leaves must not
       ! carry the corrections accumulated since the last reset.
       call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
-                         st%fock, result%electronic, error, clk=clk, bmat_lr=ops%bmat_lr)
+                         st%fock, result%electronic, error, clk=clk, bmat_lr=ops%bmat_lr, jfit=ops%jfit)
       if (error%has_error()) return
       ! Last use of the fitted tensor: a caller that asked for it takes the
       ! allocation itself rather than a copy of several gigabytes.
@@ -1086,14 +1117,14 @@ contains
       if (ctrl%incremental) then
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, incr=st%incr, &
-                            bmat_lr=ops%bmat_lr)
+                            bmat_lr=ops%bmat_lr, jfit=ops%jfit)
       else
          ! Counted here rather than in the assembler: without `incr` it has
          ! no state to record into, and every build here is a full one.
          st%incr%full_builds = st%incr%full_builds + 1
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, &
-                            bmat_lr=ops%bmat_lr)
+                            bmat_lr=ops%bmat_lr, jfit=ops%jfit)
       end if
       if (error%has_error()) return
       ! The continuum, after the gas-phase pieces and before the commutator:
@@ -1495,7 +1526,7 @@ contains
       ! last diagonalisation -- neither is a state this can differentiate.
       call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, &
                          ops%eri, ops%bounds, xc, fock_cur, e_cur, error, clk=clk, &
-                         bmat_lr=ops%bmat_lr)
+                         bmat_lr=ops%bmat_lr, jfit=ops%jfit)
       if (error%has_error()) return
       st%incr%full_builds = st%incr%full_builds + 1
 
@@ -1581,7 +1612,7 @@ contains
             call assemble_fock(mol, ops%h, density_try, coeff_try, ops%n_occ, &
                                ops%bmat, ops%eri, ops%bounds, xc, fock_try, e_try, &
                                error, clk=clk, screening=st%screening, &
-                               bmat_lr=ops%bmat_lr)
+                               bmat_lr=ops%bmat_lr, jfit=ops%jfit)
             if (error%has_error()) return
             st%incr%full_builds = st%incr%full_builds + 1
             builds = builds + 1
@@ -2101,7 +2132,7 @@ contains
    end subroutine run_czt_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk, screening, incr, bmat_lr)
+                            fock, e_elec, error, clk, screening, incr, bmat_lr, jfit)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! The energy comes back with the Fock matrix because for Kohn-Sham the
@@ -2117,6 +2148,9 @@ contains
       real(dp), allocatable, intent(in) :: bmat(:, :)
       real(dp), allocatable, intent(in) :: eri(:, :, :, :)
       real(dp), allocatable, intent(in) :: bounds(:, :)
+      type(df_jfit_t), intent(in), optional :: jfit
+         !! The Coulomb-only fit, used when it is built (`jfit%raw` allocated)
+         !! and `bmat` is not. Only a reference with no exact exchange builds one.
       real(dp), allocatable, intent(in), optional :: bmat_lr(:, :)
          !! The same fit against `erf(omega r)/r`, for a range-separated
          !! functional whose reference is density fitted. Unallocated otherwise,
@@ -2147,6 +2181,8 @@ contains
       real(dp) :: k_scale, e_xc, n_elec
       logical :: have_lr
       logical :: kohn_sham
+      logical :: use_jfit
+      real(dp), allocatable :: j_fit(:, :)
 
       kohn_sham = .false.
       k_scale = 1.0_dp
@@ -2199,8 +2235,18 @@ contains
       ! Incremental building is for the direct path only: the fitted and in-core
       ! paths contract a stored tensor, whose cost does not depend on how large
       ! the density elements are.
+      use_jfit = .false.
+      if (present(jfit)) use_jfit = allocated(jfit%raw)
+      if (use_jfit .and. (k_scale /= 0.0_dp .or. want_lr)) then
+         call error%set(ERROR_VALIDATION, "a Coulomb-only density fit was built for a "// &
+                        "functional that needs exact exchange. This is an internal "// &
+                        "inconsistency rather than a deck error.")
+         return
+      end if
+
       use_incremental = .false.
-      if (present(incr) .and. .not. allocated(bmat) .and. .not. allocated(eri)) then
+      if (present(incr) .and. .not. allocated(bmat) .and. .not. allocated(eri) &
+          .and. .not. use_jfit) then
          use_incremental = .true.
       end if
 
@@ -2222,6 +2268,11 @@ contains
                end block
             end if
          end if
+      else if (use_jfit) then
+         allocate (j_fit(size(h, 1), size(h, 2)))
+         call df_jfit_coulomb(jfit, density, j_fit)
+         fock = h + j_fit
+         deallocate (j_fit)
       else if (allocated(eri)) then
          call build_fock(h, eri, density, fock, k_scale=k_scale)
       else
@@ -2634,7 +2685,7 @@ contains
       fock = h + v
    end subroutine sap_fock
 
-   subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error)
+   subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error, jfit, xc)
       !! One Fock build from a guess density, through whichever path is active
       !!
       !! Brings an atomic guess to the loop in the same state as the core guess:
@@ -2646,12 +2697,33 @@ contains
       real(dp), allocatable, intent(in) :: bounds(:, :)
       real(dp), intent(out) :: fock(:, :)
       type(error_t), intent(inout) :: error
+      type(df_jfit_t), intent(in), optional :: jfit
+         !! Present with a Coulomb-only fit. The guess Fock is then `H + J`
+         !! plus the exchange-correlation potential of the guess density, where
+         !! the other paths carry `-K/2`: exchange is not available without B,
+         !! and `H + J` alone is a poor starting point that costs iterations.
+      type(xc_context_t), intent(inout), optional :: xc
 
-      real(dp), allocatable :: pseudo(:, :)
+      real(dp), allocatable :: pseudo(:, :), j_fit(:, :), v_xc(:, :)
+      real(dp) :: e_xc, n_elec
       integer :: n_modes
       type(direct_stats_t) :: stats
+      logical :: use_jfit
 
-      if (allocated(bmat)) then
+      use_jfit = .false.
+      if (present(jfit)) use_jfit = allocated(jfit%raw)
+
+      if (use_jfit) then
+         allocate (j_fit(size(h, 1), size(h, 2)))
+         call df_jfit_coulomb(jfit, density, j_fit)
+         fock = h + j_fit
+         if (present(xc)) then
+            allocate (v_xc(size(h, 1), size(h, 2)))
+            call xc_add_potential(xc, mol, density, v_xc, e_xc, n_elec, error)
+            if (error%has_error()) return
+            fock = fock + v_xc
+         end if
+      else if (allocated(bmat)) then
          call density_pseudo_orbitals(density, pseudo, n_modes, error)
          if (error%has_error()) return
          call build_fock_df(h, bmat, density, pseudo, n_modes, fock)
