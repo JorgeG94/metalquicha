@@ -18,7 +18,7 @@ module test_mqc_czt_cosx_scf
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, set_df_jfit_enabled
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    implicit none
    private
@@ -44,7 +44,7 @@ contains
                   new_unittest("rijcosx_energy_converges_with_the_grid", test_grid), &
                   new_unittest("rijcosx_final_grid_energy_is_second_order", test_final_grid), &
                   new_unittest("rijcosx_is_close_to_hartree_fock", test_against_exact), &
-                  new_unittest("rijcosx_coulomb_stored_or_recomputed", test_direct_coulomb), &
+                  new_unittest("rijcosx_coulomb_from_either_fit", test_coulomb_fits), &
                   new_unittest("rijcosx_changes_nothing_for_a_pure_functional", test_pure), &
                   new_unittest("rijcosx_scales_with_a_hybrid", test_hybrid), &
                   new_unittest("rijcosx_refuses_what_it_does_not_build", test_refusals) &
@@ -65,7 +65,7 @@ contains
       call check(error,.not. err%has_error(), "the molecules should build: "//err%get_full_trace())
    end subroutine molecules
 
-   subroutine converge(mol, energy, error, aux, cosx, level, xc, final_grid, rij_in_core)
+   subroutine converge(mol, energy, error, aux, cosx, level, xc, final_grid)
       !! One closed-shell SCF, tightly converged, and its total energy
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(out) :: energy
@@ -75,7 +75,6 @@ contains
       integer, intent(in), optional :: level
       type(xc_context_t), intent(inout), optional :: xc
       logical, intent(in), optional :: final_grid
-      logical, intent(in), optional :: rij_in_core
 
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -83,7 +82,7 @@ contains
       energy = 0.0_dp
       call run_czt_rhf(mol, N_ELEC, 60, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
                        aux=aux, xc=xc, cosx=cosx, cosx_grid_level=level, &
-                       cosx_final_grid=final_grid, rij_in_core=rij_in_core)
+                       cosx_final_grid=final_grid)
       call check(error,.not. err%has_error(), "the SCF should run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, scf%converged, "the SCF should converge")
@@ -193,28 +192,31 @@ contains
       call aux%destroy()
    end subroutine test_against_exact
 
-   subroutine test_direct_coulomb(error)
-      !! Recomputing the three-centre integrals every build gives the stored-integral energy
+   subroutine test_coulomb_fits(error)
+      !! The Coulomb-only fit and the dense fitted tensor give one RIJCOSX energy
       !!
-      !! Which of the two an SCF takes is decided by how much memory there is,
-      !! so it must not decide the answer. The two are the same contractions
-      !! of the same integrals.
+      !! A chain-of-spheres run takes its Coulomb matrix from the Coulomb-only
+      !! fit, which never forms the fitted tensor. With that fit switched off it
+      !! falls back to the tensor, contracted for J alone. The two are the same
+      !! fit held differently, so which one ran must not decide the answer.
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol, aux
-      real(dp) :: e_stored, e_direct
+      real(dp) :: e_jfit, e_dense
 
       call molecules(mol, aux, error)
       if (allocated(error)) return
-      call converge(mol, e_stored, error, aux=aux, cosx=.true., rij_in_core=.true.)
+      call converge(mol, e_jfit, error, aux=aux, cosx=.true.)
       if (allocated(error)) return
-      call converge(mol, e_direct, error, aux=aux, cosx=.true., rij_in_core=.false.)
+      call set_df_jfit_enabled(.false.)
+      call converge(mol, e_dense, error, aux=aux, cosx=.true.)
+      call set_df_jfit_enabled(.true.)
       if (allocated(error)) return
-      call check(error, abs(e_direct - e_stored) < 1.0e-10_dp, &
-                 "the energy depends on whether the three-centre integrals were stored")
+      call check(error, abs(e_dense - e_jfit) < 1.0e-9_dp, &
+                 "the energy depends on which form of the Coulomb fit was used")
       call mol%destroy()
       call aux%destroy()
-   end subroutine test_direct_coulomb
+   end subroutine test_coulomb_fits
 
    subroutine test_pure(error)
       !! PBE has no exact exchange, so the request must be a no-op to rounding

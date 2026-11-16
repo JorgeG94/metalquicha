@@ -23,9 +23,10 @@ module mqc_czt_rhf
    ! needs it and this module uses `mqc_czt_hessian`, which uses that.
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                              direct_stats_t, build_fock
-   use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
-   use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
-   use mqc_czt_rij, only: rij_t, build_rij, rij_coulomb
+   use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential, &
+                                df_jfit_t, build_df_jfit, df_jfit_coulomb
+   use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks, xc_profile_take, &
+                         xc_prune_small_rho
    use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange, cosx_exchange_trace, &
                            COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_ROLE_COARSE, &
                            COSX_COARSE_UNTIL, COSX_DEFAULT_GRID_LEVEL
@@ -77,11 +78,17 @@ module mqc_czt_rhf
    public :: rhf_result_t
    public :: run_czt_rhf
    public :: run_czt_uhf
+   public :: set_df_jfit_enabled      !! Testing switch: false forces the dense fitted tensor for pure functionals
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
    public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
    public :: density_energy            !! The closed-shell energy functional of a given density
    public :: assemble_fock_uhf         !! Both spin Fock matrices and their energy, no SCF
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
+
+   logical, protected :: df_jfit_enabled = .true.
+      !! Whether a density-fitted reference with no exact exchange is built from the
+      !! Coulomb-only fit rather than the dense tensor. Only `set_df_jfit_enabled` moves it,
+      !! and only a test has reason to.
 
    type :: incremental_state_t
       !! What an incremental Fock build carries between iterations
@@ -227,12 +234,9 @@ module mqc_czt_rhf
       real(dp), allocatable :: x(:, :)        !! Orthogonaliser, (n_ao, n_mo)
       real(dp), allocatable :: bmat(:, :)     !! Fitted B(mu nu, P); unallocated if not fitted
       real(dp), allocatable :: bmat_lr(:, :)  !! The same against erf(omega r)/r
+      type(df_jfit_t) :: jfit         !! Coulomb-only fit; `jfit%raw` unallocated unless one was built
       real(dp), allocatable :: eri(:, :, :, :)  !! In-core integrals; unallocated on the direct path
       real(dp), allocatable :: bounds(:, :)   !! Schwarz bounds for screening
-      type(rij_t) :: rij
-         !! The fitted Coulomb build of a chain-of-spheres run, which keeps the
-         !! three-centre integrals and not the fitted tensor. Unbuilt
-         !! otherwise, and then `bmat` carries the fit.
       type(cosx_grid_t) :: cosx
          !! The grid the exchange is integrated on during the iterations;
          !! unbuilt unless the exchange is chain-of-spheres
@@ -344,6 +348,35 @@ module mqc_czt_rhf
    character(len=*), parameter :: STAGE_SOSCF = "second-order step"
 
 contains
+
+   subroutine xc_breakdown_summary(verbose)
+      !! Where the XC quadrature spent its thread time, at `verbose`
+      !!
+      !! Summed over threads, so the total is up to the thread count times the
+      !! `XC quadrature` wall row above. Empty, and reset, when there was no
+      !! quadrature.
+      logical, intent(in) :: verbose
+
+      character(len=*), parameter :: LABEL(4) = [character(len=20) :: "basis evaluation", "density", &
+                                                                               "functional (libxc)", "potential assembly"]
+      real(dp) :: total
+      real(dp) :: sec(4)
+      character(len=LINE_LEN) :: line
+      integer :: i
+
+      call xc_profile_take(sec)
+      total = sum(sec)
+      if (.not. verbose .or. total <= 0.0_dp) return
+
+      call logger%verbose("")
+      call logger%verbose("  XC quadrature breakdown (thread-seconds)")
+      do i = 1, 4
+         write (line, "(4x,a,f10.2,a,f7.1,a)") LABEL(i), sec(i), " s", 100.0_dp*sec(i)/total, " %"
+         call logger%verbose(trim(line))
+      end do
+      write (line, "(4x,a,f10.2,a)") "total               ", total, " s"
+      call logger%verbose(trim(line))
+   end subroutine xc_breakdown_summary
 
    subroutine screening_summary(verbose, stats)
       !! How much of the quartet space each screening test removed
@@ -521,12 +554,19 @@ contains
       deallocate (kinetic, core)
    end subroutine energy_components
 
+   subroutine set_df_jfit_enabled(enabled)
+      !! Force (false) or release (true) the dense fitted tensor for pure functionals
+      logical, intent(in) :: enabled
+
+      df_jfit_enabled = enabled
+   end subroutine set_df_jfit_enabled
+
    subroutine run_czt_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                           verbose, result, error, aux, diis_vectors, in_core, &
                           guess, guess_density, xc, h_extra, pcm, projector, &
                           level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
                           incremental_fock, convergence, scf, second_order, soscf_start, &
-                          cosx, cosx_grid_level, cosx_final_grid, rij_in_core)
+                          cosx, cosx_grid_level, cosx_final_grid)
       !! Drive a closed-shell SCF to convergence
       type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -642,10 +682,6 @@ contains
          !! False: iterate on the larger grid throughout, which costs more and
          !! makes the energy self-consistent on that grid. Read only with
          !! `cosx`.
-      logical, intent(in), optional :: rij_in_core
-         !! Whether a chain-of-spheres run stores its three-centre integrals
-         !! (true) or recomputes them in every Coulomb build (false). Absent,
-         !! they are stored when they fit in memory. Read only with `cosx`.
       real(dp), intent(in), optional :: soscf_start
          !! The commutator at which that switch happens, as
          !! `max|FDS - SDF|` in the orthogonal basis. Absent or non-positive
@@ -667,7 +703,7 @@ contains
 
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
-      logical :: use_in_core, use_cosx, use_final_grid
+      logical :: use_in_core, use_cosx, use_final_grid, wants_jfit
       real(dp), allocatable :: cosx_bounds(:, :), fock_energy(:, :)
       integer :: cosx_level
       real(dp), allocatable :: bounds(:, :)
@@ -686,6 +722,7 @@ contains
       integer :: iter
       integer :: soscf_switch   !! DIIS iteration the Newton phase took over after
       type(timing_report_t) :: clk
+      real(dp) :: xc_discard(4)
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
 
@@ -763,6 +800,9 @@ contains
       end if
 
       call clk%start()
+      ! The quadrature accumulator is module-wide; anything an earlier caller
+      ! left in it is not this SCF's time.
+      call xc_profile_take(xc_discard)
       call mol%overlap(ops%s)
       call mol%core_hamiltonian(ops%h)
       if (present(h_extra)) then
@@ -772,30 +812,27 @@ contains
          end if
          ops%h = ops%h + h_extra
       end if
-      if (present(aux) .and. use_cosx) then
-         ! The exchange comes from the grid, so the fitted tensor the fitted
-         ! exchange needs is never formed: the Coulomb matrix is built from
-         ! the three-centre integrals themselves.
-         ! One set of Schwarz bounds serves the Coulomb build and both
-         ! exchange grids.
-         call schwarz_bounds(mol, cosx_bounds, error)
-         if (error%has_error()) return
-         call build_rij(mol, aux, ops%rij, error, in_core=rij_in_core, bounds=cosx_bounds)
-         if (error%has_error()) return
-         if (verbose) then
-            write (line, "(a,i0,a,i0,a)") "  Coulomb: fitted, ", ops%rij%n_pair, " of ", &
-               mol%nbas*(mol%nbas + 1)/2, " orbital shell pairs kept"
-            call logger%info(trim(line))
-            if (ops%rij%in_core) then
-               write (line, "(a,f8.2,a)") "    three-centre integrals stored, ", &
-                  8.0e-9_dp*real(ops%rij%n_row, dp)*real(ops%rij%n_aux, dp), " GB"
-            else
-               line = "    three-centre integrals recomputed in every build"
-            end if
-            call logger%info(trim(line))
+      if (present(aux)) then
+         ! A reference that takes no exchange from the fit only ever contracts
+         ! B into J, so it keeps the raw integrals and the metric factor and
+         ! skips the `(mn|Q) J^-1/2` transform. That is a functional with no
+         ! exact exchange, and a chain-of-spheres run, whose exchange comes
+         ! from the grid. Whoever asked for B back (`b_ao_out`) gets the dense
+         ! tensor from the start rather than a second build at the end; a
+         ! chain-of-spheres run has no use for B, so it does not wait on that.
+         wants_jfit = .false.
+         if (use_cosx) then
+            wants_jfit = df_jfit_enabled
+         else if (df_jfit_enabled .and. .not. present(b_ao_out)) then
+            if (present(xc)) wants_jfit = xc%active .and. xc%exx_fraction == 0.0_dp &
+                                          .and. .not. xc%range_separated
          end if
-      else if (present(aux)) then
-         call build_df_tensor(mol, aux, ops%bmat, error)
+         if (wants_jfit) then
+            call build_df_jfit(mol, aux, ops%jfit, error)
+            if (error%has_error()) return
+         else
+            call build_df_tensor(mol, aux, ops%bmat, error)
+         end if
          if (error%has_error()) return
          ! A second fit, against the attenuated kernel, when the functional
          ! splits its exchange by range. Built once beside the first rather than
@@ -810,6 +847,9 @@ contains
       end if
       if (present(aux)) then
          if (use_cosx) then
+            ! One set of Schwarz bounds serves every exchange grid.
+            call schwarz_bounds(mol, cosx_bounds, error)
+            if (error%has_error()) return
             cosx_level = COSX_DEFAULT_GRID_LEVEL
             if (present(cosx_grid_level)) cosx_level = cosx_grid_level
             use_final_grid = .true.
@@ -909,10 +949,10 @@ contains
          st%density = guess_density
          if (ops%cosx_coarse%active()) then
             call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, &
-                                   error, rij=ops%rij, cosx=ops%cosx_coarse)
+                                   error, jfit=ops%jfit, xc=xc, cosx=ops%cosx_coarse)
          else
             call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, &
-                                   error, rij=ops%rij, cosx=ops%cosx)
+                                   error, jfit=ops%jfit, xc=xc, cosx=ops%cosx)
          end if
          if (error%has_error()) return
       case default
@@ -936,6 +976,18 @@ contains
       ! is what says a functional was constructed.
       ctrl%kohn_sham = .false.
       if (present(xc)) ctrl%kohn_sham = xc%active
+      ! Once per context, on the guess density, before the first quadrature:
+      ! the atomic guess when there is one, else the density the guess Fock
+      ! matrix just gave. A no-op for a cutoff of zero.
+      if (ctrl%kohn_sham) then
+         select case (guess_kind)
+         case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
+            call xc_prune_small_rho(xc, mol, guess_density, nelec, error)
+         case default
+            call xc_prune_small_rho(xc, mol, st%density, nelec, error)
+         end select
+         if (error%has_error()) return
+      end if
       call scf_table_header(verbose, ctrl%kohn_sham)
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
@@ -1089,19 +1141,19 @@ contains
          if (ops%cosx_final%active()) then
             call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
                                ops%bounds, xc, fock_energy, result%electronic, error, clk=clk, &
-                               bmat_lr=ops%bmat_lr, cosx=ops%cosx_final, rij=ops%rij, &
+                               bmat_lr=ops%bmat_lr, cosx=ops%cosx_final, jfit=ops%jfit, &
                                energy_only=.true.)
          else
             call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
                                ops%bounds, xc, fock_energy, result%electronic, error, clk=clk, &
-                               bmat_lr=ops%bmat_lr, cosx=ops%cosx, rij=ops%rij, &
+                               bmat_lr=ops%bmat_lr, cosx=ops%cosx, jfit=ops%jfit, &
                                energy_only=.true.)
          end if
          deallocate (fock_energy)
       else
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
                             ops%bounds, xc, st%fock, result%electronic, error, clk=clk, &
-                            bmat_lr=ops%bmat_lr, cosx=ops%cosx, rij=ops%rij)
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx, jfit=ops%jfit)
       end if
       if (error%has_error()) return
       ! Last use of the fitted tensor: a caller that asked for it takes the
@@ -1156,6 +1208,7 @@ contains
                              result%nuclear_repulsion)
       call screening_summary(verbose, st%screening)
       call clk%report("RHF", verbose)
+      call xc_breakdown_summary(verbose)
    end subroutine run_czt_rhf
 
    subroutine do_rhf_iteration(iter, mol, ops, ctrl, st, clk, xc, pcm, projector, &
@@ -1211,18 +1264,18 @@ contains
          st%incr%full_builds = st%incr%full_builds + 1
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, &
-                            bmat_lr=ops%bmat_lr, cosx=ops%cosx_coarse, rij=ops%rij)
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx_coarse, jfit=ops%jfit)
       else if (ctrl%incremental) then
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, incr=st%incr, &
-                            bmat_lr=ops%bmat_lr, cosx=ops%cosx, rij=ops%rij)
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx, jfit=ops%jfit)
       else
          ! Counted here rather than in the assembler: without `incr` it has
          ! no state to record into, and every build here is a full one.
          st%incr%full_builds = st%incr%full_builds + 1
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, &
-                            bmat_lr=ops%bmat_lr, cosx=ops%cosx, rij=ops%rij)
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx, jfit=ops%jfit)
       end if
       if (error%has_error()) return
       ! The continuum, after the gas-phase pieces and before the commutator:
@@ -1624,7 +1677,7 @@ contains
       ! last diagonalisation -- neither is a state this can differentiate.
       call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, &
                          ops%eri, ops%bounds, xc, fock_cur, e_cur, error, clk=clk, &
-                         bmat_lr=ops%bmat_lr)
+                         bmat_lr=ops%bmat_lr, jfit=ops%jfit)
       if (error%has_error()) return
       st%incr%full_builds = st%incr%full_builds + 1
 
@@ -1710,7 +1763,7 @@ contains
             call assemble_fock(mol, ops%h, density_try, coeff_try, ops%n_occ, &
                                ops%bmat, ops%eri, ops%bounds, xc, fock_try, e_try, &
                                error, clk=clk, screening=st%screening, &
-                               bmat_lr=ops%bmat_lr)
+                               bmat_lr=ops%bmat_lr, jfit=ops%jfit)
             if (error%has_error()) return
             st%incr%full_builds = st%incr%full_builds + 1
             builds = builds + 1
@@ -1958,6 +2011,7 @@ contains
       real(dp) :: shift, shift_now, taper
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
+      real(dp) :: xc_discard(4)
       logical :: want_incremental
          !! Owned by the loop and handed only to the loop's own build. The guess
          !! and the final rebuild go without it, so the energy that leaves this
@@ -2025,6 +2079,7 @@ contains
       end if
 
       call clk%start()
+      call xc_profile_take(xc_discard)   ! as in run_czt_rhf
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
       if (use_in_core) then
@@ -2121,6 +2176,16 @@ contains
       ! is what says a functional was constructed.
       kohn_sham_run = .false.
       if (present(xc)) kohn_sham_run = xc%active
+      ! Once per context, on the total guess density; see `run_czt_rhf`.
+      if (kohn_sham_run) then
+         select case (guess_kind)
+         case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
+            call xc_prune_small_rho(xc, mol, guess_density_alpha + guess_density_beta, nelec, error)
+         case default
+            call xc_prune_small_rho(xc, mol, st%d_a + st%d_b, nelec, error)
+         end select
+         if (error%has_error()) return
+      end if
       call scf_table_header(verbose, kohn_sham_run)
 
       ! pyscf's `conv_tol_grad`: derived from the energy tolerance unless a
@@ -2202,6 +2267,7 @@ contains
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
       call clk%report("UHF", verbose)
+      call xc_breakdown_summary(verbose)
       if (verbose) then
          write (line, "(a,f12.8,a,f12.8)") "  <S^2> = ", result%spin_squared, &
             "   exact = ", 0.25_dp*real(n_alpha - n_beta, dp)*real(n_alpha - n_beta + 2, dp)
@@ -2217,7 +2283,7 @@ contains
    end subroutine run_czt_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk, screening, incr, bmat_lr, cosx, rij, &
+                            fock, e_elec, error, clk, screening, incr, bmat_lr, jfit, cosx, &
                             energy_only)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
@@ -2234,6 +2300,9 @@ contains
       real(dp), allocatable, intent(in) :: bmat(:, :)
       real(dp), allocatable, intent(in) :: eri(:, :, :, :)
       real(dp), allocatable, intent(in) :: bounds(:, :)
+      type(df_jfit_t), intent(in), optional :: jfit
+         !! The Coulomb-only fit, used when it is built (`jfit%raw` allocated)
+         !! and `bmat` is not. Only a reference with no exact exchange builds one.
       real(dp), allocatable, intent(in), optional :: bmat_lr(:, :)
          !! The same fit against `erf(omega r)/r`, for a range-separated
          !! functional whose reference is density fitted. Unallocated otherwise,
@@ -2256,12 +2325,10 @@ contains
          !! build.
 
       type(cosx_grid_t), intent(in), optional :: cosx
-         !! The grid for a chain-of-spheres exchange. When it and `rij` are
-         !! both present and built, the Coulomb matrix comes from `rij` and the
-         !! exchange from the quadrature, and `bmat`, `eri` and `bounds` are
-         !! not read.
-      type(rij_t), intent(in), optional :: rij
-         !! The fitted Coulomb build that goes with `cosx`
+         !! The grid for a chain-of-spheres exchange. When it is present and
+         !! built, the exchange comes from the quadrature and the Coulomb
+         !! matrix from the fit: `jfit` when that was built, else `bmat`. `eri`
+         !! and `bounds` are then not read.
       logical, intent(in), optional :: energy_only
          !! The caller wants `e_elec` and will not read `fock`. A
          !! chain-of-spheres build then takes the exchange energy as a trace
@@ -2269,7 +2336,7 @@ contains
          !! Default false, and ignored on every other path.
       type(direct_stats_t) :: stats
       real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
-      real(dp), allocatable :: k_lr(:, :), k_cosx(:, :), j_fit(:, :)
+      real(dp), allocatable :: k_lr(:, :), k_cosx(:, :)
       logical :: use_cosx, trace_only
       real(dp) :: e_exchange, tr_dk
       logical :: use_incremental, full_build
@@ -2278,6 +2345,8 @@ contains
       real(dp) :: k_scale, e_xc, n_elec
       logical :: have_lr
       logical :: kohn_sham
+      logical :: use_jfit
+      real(dp), allocatable :: j_fit(:, :)
 
       kohn_sham = .false.
       k_scale = 1.0_dp
@@ -2330,13 +2399,24 @@ contains
       ! Incremental building is for the direct path only: the fitted and in-core
       ! paths contract a stored tensor, whose cost does not depend on how large
       ! the density elements are.
+      use_jfit = .false.
+      if (present(jfit)) use_jfit = allocated(jfit%raw)
+      ! Chain-of-spheres exchange goes with a fitted Coulomb matrix, from the
+      ! Coulomb-only fit or, where that was not built, from the fitted tensor.
       use_cosx = .false.
-      if (present(cosx) .and. present(rij)) use_cosx = cosx%active() .and. rij%active()
+      if (present(cosx)) use_cosx = cosx%active() .and. (use_jfit .or. allocated(bmat))
       e_exchange = 0.0_dp
+      if (use_jfit .and. .not. use_cosx .and. (k_scale /= 0.0_dp .or. want_lr)) then
+         call error%set(ERROR_VALIDATION, "a Coulomb-only density fit was built for a "// &
+                        "functional that needs exact exchange, with nothing else to "// &
+                        "supply it. This is an internal inconsistency rather than a "// &
+                        "deck error.")
+         return
+      end if
 
       use_incremental = .false.
       if (present(incr) .and. .not. allocated(bmat) .and. .not. allocated(eri) &
-          .and. .not. use_cosx) then
+          .and. .not. use_jfit) then
          use_incremental = .true.
       end if
 
@@ -2354,10 +2434,14 @@ contains
          ! below. The overlap fit breaks that by the size of its own
          ! correction, so a fitted SCF converges to a point that is stationary
          ! to within the quadrature error and no better.
-         call rij_coulomb(mol, rij, density, j_fit, error)
-         if (error%has_error()) return
-         fock = h + j_fit
-         deallocate (j_fit)
+         if (use_jfit) then
+            allocate (j_fit(size(h, 1), size(h, 2)))
+            call df_jfit_coulomb(jfit, density, j_fit)
+            fock = h + j_fit
+            deallocate (j_fit)
+         else
+            call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=0.0_dp)
+         end if
          e_exchange = 0.0_dp
          trace_only = .false.
          if (present(energy_only)) trace_only = energy_only .and. cosx%shells%n_shell > 0
@@ -2395,6 +2479,11 @@ contains
                end block
             end if
          end if
+      else if (use_jfit) then
+         allocate (j_fit(size(h, 1), size(h, 2)))
+         call df_jfit_coulomb(jfit, density, j_fit)
+         fock = h + j_fit
+         deallocate (j_fit)
       else if (allocated(eri)) then
          call build_fock(h, eri, density, fock, k_scale=k_scale)
       else
@@ -2810,7 +2899,7 @@ contains
       fock = h + v
    end subroutine sap_fock
 
-   subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error, rij, cosx)
+   subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error, jfit, xc, cosx)
       !! One Fock build from a guess density, through whichever path is active
       !!
       !! Brings an atomic guess to the loop in the same state as the core guess:
@@ -2822,27 +2911,43 @@ contains
       real(dp), allocatable, intent(in) :: bounds(:, :)
       real(dp), intent(out) :: fock(:, :)
       type(error_t), intent(inout) :: error
-      type(rij_t), intent(in), optional :: rij
-         !! The fitted Coulomb build and exchange grid of a chain-of-spheres
-         !! run. Both present and built, they are the path that is active.
+      type(df_jfit_t), intent(in), optional :: jfit
+         !! Present with a Coulomb-only fit. The guess Fock is then `H + J`
+         !! plus whatever stands in for the exchange the fit cannot give: the
+         !! chain-of-spheres exchange when `cosx` is built, otherwise the
+         !! exchange-correlation potential of the guess density. `H + J` alone
+         !! is a poor starting point that costs iterations.
+      type(xc_context_t), intent(inout), optional :: xc
       type(cosx_grid_t), intent(in), optional :: cosx
+         !! The exchange grid of a chain-of-spheres run
 
-      real(dp), allocatable :: pseudo(:, :), j_fit(:, :), k_cosx(:, :)
+      real(dp), allocatable :: pseudo(:, :), j_fit(:, :), v_xc(:, :), k_cosx(:, :)
+      real(dp) :: e_xc, n_elec
       integer :: n_modes
       type(direct_stats_t) :: stats
-      logical :: seminumerical
+      logical :: use_jfit, seminumerical
 
+      use_jfit = .false.
+      if (present(jfit)) use_jfit = allocated(jfit%raw)
       seminumerical = .false.
-      if (present(rij) .and. present(cosx)) seminumerical = rij%active() .and. cosx%active()
+      if (present(cosx)) seminumerical = cosx%active()
 
-      if (seminumerical) then
-         call rij_coulomb(mol, rij, density, j_fit, error)
-         if (error%has_error()) return
-         call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
-                            fit=cosx%fit, bounds=cosx%bounds, shells=cosx%shells, &
-                            screen_tol=cosx%screen_tol)
-         if (error%has_error()) return
-         fock = h + j_fit - 0.5_dp*k_cosx
+      if (use_jfit) then
+         allocate (j_fit(size(h, 1), size(h, 2)))
+         call df_jfit_coulomb(jfit, density, j_fit)
+         fock = h + j_fit
+         if (seminumerical) then
+            call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
+                               fit=cosx%fit, bounds=cosx%bounds, shells=cosx%shells, &
+                               screen_tol=cosx%screen_tol)
+            if (error%has_error()) return
+            fock = fock - 0.5_dp*k_cosx
+         else if (present(xc)) then
+            allocate (v_xc(size(h, 1), size(h, 2)))
+            call xc_add_potential(xc, mol, density, v_xc, e_xc, n_elec, error)
+            if (error%has_error()) return
+            fock = fock + v_xc
+         end if
       else if (allocated(bmat)) then
          call density_pseudo_orbitals(density, pseudo, n_modes, error)
          if (error%has_error()) return

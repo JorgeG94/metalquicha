@@ -322,6 +322,12 @@ module mqc_config_types
          !! From `keywords.dft.screening_tolerance`. The AO value below which a
          !! shell is dropped from a grid block. Zero or negative evaluates the
          !! whole basis, which is how a run measures what the screen is worth.
+      real(dp) :: dft_small_rho_cutoff = 0.0_dp
+         !! From `keywords.dft.small_rho_cutoff`. Grid points where
+         !! `abs(rho*w)` on the initial guess density is not above this divided
+         !! by the grid size are dropped once per SCF, as PySCF's
+         !! `small_rho_cutoff` does. Off (zero) by default, as in PySCF; zero or
+         !! negative keeps the whole grid.
       integer :: dft_block_size = -1
          !! From `keywords.dft.block_size`. Grid points per block; -1 keeps the
          !! backend default. Sets both how tightly the screen bites and how many

@@ -1444,6 +1444,7 @@ contains
                                 nlc_level=settings%nlc_grid_level, &
                                 screen_tol=settings%screening_tolerance, &
                                 point_block=settings%block_size, &
+                                small_rho_cutoff=settings%small_rho_cutoff, &
                                 n_radial=settings%radial_points, &
                                 n_angular=settings%angular_points)
          if (error%has_error()) then

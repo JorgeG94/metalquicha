@@ -177,6 +177,10 @@ if(MQC_ENABLE_CZT)
   # one thread, on a GGA, a meta-GGA and a hybrid. Skips itself without libxc.
   addtest(mqc_xc_kernel_cache)
   target_link_libraries(test_mqc_xc_kernel_cache PRIVATE ${MQC_INTEGRALS_LIBS})
+  # Small-density grid pruning: consistency of every per-point array, the
+  # electron bookkeeping, and an SCF that starts on a pruned grid.
+  addtest(mqc_xc_prune)
+  target_link_libraries(test_mqc_xc_prune PRIVATE ${MQC_INTEGRALS_LIBS})
   # The second exchange derivative a range-separated functional needs, against a
   # difference of its own energy. Skips itself without libxc.
   addlongtest(mqc_rsh_gradient)
@@ -472,11 +476,6 @@ if(MQC_ENABLE_CZT)
   # shell form up to g, and its Boys function against the defining series.
   addtest(mqc_czt_esp_batch)
   target_link_libraries(test_mqc_czt_esp_batch PRIVATE ${MQC_INTEGRALS_LIBS})
-
-  # The fitted Coulomb matrix built without the fitted tensor, against the same
-  # matrix contracted out of that tensor, stored and recomputed.
-  addtest(mqc_czt_rij)
-  target_link_libraries(test_mqc_czt_rij PRIVATE ${MQC_INTEGRALS_LIBS})
   # The continuum: cavity geometry, the Born ion in closed form, and one
   # solvated SCF pinned against PySCF.
   addtest(mqc_pcm)
@@ -541,6 +540,12 @@ if(MQC_ENABLE_CZT)
   # the factor of four that no amount of reading can.
   addtest(mqc_czt_soscf)
   target_link_libraries(test_mqc_czt_soscf PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The Coulomb-only density fit, against the dense fitted tensor it replaces
+  # for a functional with no exact exchange: the same J with and without the
+  # screen removing pairs, and the same RKS energy.
+  addtest(mqc_czt_jfit)
+  target_link_libraries(test_mqc_czt_jfit PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The linear algebra threaded from outside the sequential BLAS -- the split
   # products and the blocked LU -- against the single BLAS call each replaces.

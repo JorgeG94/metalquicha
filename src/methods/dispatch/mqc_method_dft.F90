@@ -51,6 +51,10 @@ module mqc_method_dft
          !! VV10's quadrature level; negative means the backend default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
          !! AO value below which a shell is dropped from a grid block.
+      real(dp) :: small_rho_cutoff = 0.0_dp
+         !! Grid points with `abs(rho*w)` not above this over the grid size, on the
+         !! guess density, are dropped once per SCF; zero or negative keeps the whole grid. The
+         !! factory fills it from the deck, whose default is 1e-7.
       integer :: block_size = -1
          !! Grid points per block; -1 keeps the backend default.
       logical :: use_dispersion = .false.
@@ -104,6 +108,7 @@ contains
       settings%grid_level = options%grid_level
       settings%nlc_grid_level = options%nlc_grid_level
       settings%screening_tolerance = options%screening_tolerance
+      settings%small_rho_cutoff = options%small_rho_cutoff
       settings%block_size = options%block_size
       ! TODO(mqc): `grid_type` is not copied here, and is read nowhere in the
       ! tree, although the factory fills it from `dft.grid_type`. A deck naming
@@ -322,11 +327,20 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
+      type(dft_method_t) :: unpruned
+
+      ! Differences are taken between runs on a grid that is not pruned. Which
+      ! points `small_rho_cutoff` removes depends on the geometry, so each
+      ! displaced run would integrate on a different point set and the
+      ! difference would carry a step the size of the pruning error.
+      unpruned = this
+      unpruned%options%small_rho_cutoff = 0.0_dp
+
       ! `keywords.hessian.method = "numerical"` differences energies, which
       ! carry the dispersion correction as they carry everything else, so
       ! there is nothing to ask the backend and no gradient to run.
       if (this%options%hessian_method == HESSIAN_METHOD_NUMERICAL) then
-         call finite_difference_hessian_energies(this, fragment, result, verbose=this%options%verbose, &
+         call finite_difference_hessian_energies(unpruned, fragment, result, verbose=this%options%verbose, &
                                                  displacement_in=this%options%hessian_displacement)
          return
       end if
@@ -351,7 +365,7 @@ contains
       ! Declined. The finite-difference path runs its own reference point, so
       ! nothing computed above is reusable.
       call result%destroy()
-      call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
+      call finite_difference_hessian(unpruned, fragment, result, verbose=this%options%verbose, &
                                      displacement_in=this%options%hessian_displacement)
       call suggest_numerical_hessian(result)
    end subroutine dft_calc_hessian

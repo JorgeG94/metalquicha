@@ -3,7 +3,6 @@ target_sources(
   PRIVATE mqc_czt_rhf.f90
           mqc_czt_atomic_guess.f90
           mqc_czt_cosx.f90
-          mqc_czt_rij.f90
           mqc_czt_projection.f90
           mqc_czt_minao.f90
           mqc_czt_pcm.f90

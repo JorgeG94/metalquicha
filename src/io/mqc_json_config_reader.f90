@@ -389,6 +389,8 @@ contains
                         config%dft_nlc_grid_level)
       call optional_real(json, "keywords.dft.screening_tolerance", &
                          config%dft_screening_tolerance)
+      call optional_real(json, "keywords.dft.small_rho_cutoff", &
+                         config%dft_small_rho_cutoff)
       call optional_int(json, "keywords.dft.block_size", config%dft_block_size)
       call read_dft_dispersion(json, config, error)
       if (error%has_error()) return
