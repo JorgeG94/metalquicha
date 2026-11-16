@@ -692,7 +692,7 @@ contains
       real(dp) :: a_centre(3), b_centre(3), p_centre(3)
       real(dp) :: ab2, alpha, beta, p, mu
       real(dp) :: prefactor, coefficient, bound, centre_distance
-      real(dp) :: c1, c2, c3, c4
+      real(dp) :: c1, c2, c3, c4, ex_max, ey_max, ez_max
       real(dp) :: term_c((L_PAIR_MAX + 1)**3)
       integer :: term_h((L_PAIR_MAX + 1)**3)
       integer :: regime, n_term, k, h1, h2, h3, h4
@@ -752,19 +752,16 @@ contains
             end if
 
             call hermite_expansion(la, lb, p, p_centre(1) - a_centre(1), &
-                                   p_centre(1) - b_centre(1), ex)
+                                   p_centre(1) - b_centre(1), ex, ex_max)
             call hermite_expansion(la, lb, p, p_centre(2) - a_centre(2), &
-                                   p_centre(2) - b_centre(2), ey)
+                                   p_centre(2) - b_centre(2), ey, ey_max)
             call hermite_expansion(la, lb, p, p_centre(3) - a_centre(3), &
-                                   p_centre(3) - b_centre(3), ez)
+                                   p_centre(3) - b_centre(3), ez, ez_max)
 
             if (tol > 0.0_dp) then
                ! |R_tuv| is at most of order (2p)^(degree/2), and F_0 at most
                ! one, so this bounds every element of the primitive block.
-               bound = abs(prefactor)*maxval(abs(ex(0:l_pair, 0:la, 0:lb))) &
-                       *maxval(abs(ey(0:l_pair, 0:la, 0:lb))) &
-                       *maxval(abs(ez(0:l_pair, 0:la, 0:lb))) &
-                       *max(1.0_dp, 2.0_dp*p)**(0.5_dp*real(l_pair, dp))
+               bound = abs(prefactor)*ex_max*ey_max*ez_max*sqrt(max(1.0_dp, 2.0_dp*p))**l_pair
                if (bound*f_pair < tol) then
                   cycle
                end if
@@ -867,7 +864,7 @@ contains
       end do
    end subroutine hermite_index
 
-   pure subroutine hermite_expansion(la, lb, p, pa, pb, e)
+   pure subroutine hermite_expansion(la, lb, p, pa, pb, e, largest)
       !! One Cartesian direction of the Hermite expansion of a Gaussian product
       !!
       !! `e(t, i, j)`, with the product's own prefactor left out:
@@ -877,6 +874,7 @@ contains
       real(dp), intent(in) :: pa   !! Product centre minus the first centre
       real(dp), intent(in) :: pb   !! Product centre minus the second
       real(dp), intent(out) :: e(0:, 0:, 0:)
+      real(dp), intent(out) :: largest   !! The largest `|e(t, i, j)|` filled in
 
       integer :: i, j, t
       real(dp) :: half_inv_p
@@ -900,6 +898,15 @@ contains
             end do
          end do
       end do
+
+      largest = 0.0_dp
+      do j = 0, lb
+         do i = 0, la
+            do t = 0, i + j
+               largest = max(largest, abs(e(t, i, j)))
+            end do
+         end do
+      end do
    end subroutine hermite_expansion
 
    pure subroutine hermite_coulomb(n, l_pair, pc, h_of, r)
@@ -913,10 +920,25 @@ contains
       integer, intent(in) :: h_of(0:, 0:, 0:)
       real(dp), intent(inout) :: r(:, :, 0:)  !! (n, n_herm, 0:l_pair)
 
-      integer :: m, degree, t, u, v, h, h1, h2, ig, axis, lower
+      integer :: m, degree, t, u, v, h, h1, h2, ig, axis, lower, hx, hy, hz
       real(dp) :: weight
 
-      do degree = 1, l_pair
+      ! Degree one is the three first derivatives, each the product centre's
+      ! offset times the next auxiliary order: one pass fills all three.
+      if (l_pair >= 1) then
+         hx = h_of(1, 0, 0)
+         hy = h_of(0, 1, 0)
+         hz = h_of(0, 0, 1)
+         do m = 0, l_pair - 1
+            do ig = 1, n
+               r(ig, hx, m) = pc(ig, 1)*r(ig, 1, m + 1)
+               r(ig, hy, m) = pc(ig, 2)*r(ig, 1, m + 1)
+               r(ig, hz, m) = pc(ig, 3)*r(ig, 1, m + 1)
+            end do
+         end do
+      end if
+
+      do degree = 2, l_pair
          do t = degree, 0, -1
             do u = degree - t, 0, -1
                v = degree - t - u
