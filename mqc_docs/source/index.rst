@@ -42,6 +42,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    counterpoise
    interaction_energy
    continuum_solvation
+   rijcosx
    charges_and_bond_orders
    bonding_analysis
    makefp

@@ -290,6 +290,25 @@ separately. meta-GGA, VV10, density fitting, PCM, capped fragments, a
 correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
+RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
+`keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
+exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a
+restricted Hartree-Fock or global-hybrid energy on the CPU backend; everything
+else is refused by name. Three things to know before touching it:
+
+- **The reference for it is a fitted Coulomb matrix with exact exchange**
+  (PySCF's `only_dfj`), not Hartree-Fock and not another code's seminumerical
+  exchange. The fit is then common to both numbers and only the quadrature
+  separates them. Its validation tolerances are 5e-5 to 1.5e-4 hartree because
+  they bound an approximation, not an SCF.
+- **It needs a `-jfit` or `-jkfit` auxiliary basis.** With an `-rifit` set it
+  is millihartrees off, because RI-JK's Coulomb and exchange errors cancel and
+  RIJCOSX has no exchange fit to cancel against.
+- **It is not faster than RI-JK yet.** Nine tenths of the time is libfint's
+  general `int1e_grids` at about 55 ns per shell pair per grid point; the
+  three steps are separate public routines so that one integral step can be
+  replaced, on the CPU or by a GPU backend. See `mqc_docs/source/rijcosx.rst`.
+
 Initial guess is `keywords.scf.guess`: `core`, `gwh`, `sac`, `sad`, or `auto`.
 `auto` resolves per backend - `sad` on the CPU path, `gwh` on cuEST - so the two
 can differ without either knowing what the other chose.
@@ -589,7 +608,7 @@ with `../../../`. The CPU suite is **generated** - edit
 `tools/cpu_validation/gen_cpu_validation.py` and rerun it; a deck added by hand
 under `cpu/mqc/` is deleted by the next regeneration.
 
-Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges counterpoise
+Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf dft dh ecp efmo efp fmo fukui gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
