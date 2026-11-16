@@ -674,6 +674,7 @@ contains
       integer :: iter
       integer :: soscf_switch   !! DIIS iteration the Newton phase took over after
       type(timing_report_t) :: clk
+      real(dp) :: xc_discard(4)
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
       real(dp) :: lindep
 
@@ -726,6 +727,9 @@ contains
       end if
 
       call clk%start()
+      ! The quadrature accumulator is module-wide; anything an earlier caller
+      ! left in it is not this SCF's time.
+      call xc_profile_take(xc_discard)
       call mol%overlap(ops%s)
       call mol%core_hamiltonian(ops%h)
       if (present(h_extra)) then
@@ -1812,6 +1816,7 @@ contains
       real(dp) :: shift, shift_now, taper
       integer :: n_ao, n_mo, n_alpha, n_beta, iter, nsq, msq
       type(timing_report_t) :: clk
+      real(dp) :: xc_discard(4)
       logical :: want_incremental
          !! Owned by the loop and handed only to the loop's own build. The guess
          !! and the final rebuild go without it, so the energy that leaves this
@@ -1879,6 +1884,7 @@ contains
       end if
 
       call clk%start()
+      call xc_profile_take(xc_discard)   ! as in run_czt_rhf
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
       if (use_in_core) then
