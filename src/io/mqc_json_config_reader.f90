@@ -818,6 +818,10 @@ contains
                            "fragmentation method '"//trim(config%frag_method)// &
                            "', whose fragment SCF builds its own Fock matrix.")
             return
+         case default
+            ! The many-body expansions run each fragment through the ordinary
+            ! SCF, which is where chain-of-spheres exchange lives.
+            continue
          end select
       end if
       call parse_backend_name(config%backend, backend_kind, error)
