@@ -24,7 +24,7 @@ module mqc_czt_rhf
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                              direct_stats_t, build_fock
    use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
-   use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
+   use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks, xc_profile_take
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
@@ -324,6 +324,35 @@ module mqc_czt_rhf
    character(len=*), parameter :: STAGE_SOSCF = "second-order step"
 
 contains
+
+   subroutine xc_breakdown_summary(verbose)
+      !! Where the XC quadrature spent its thread time, at `verbose`
+      !!
+      !! Summed over threads, so the total is up to the thread count times the
+      !! `XC quadrature` wall row above. Empty, and reset, when there was no
+      !! quadrature.
+      logical, intent(in) :: verbose
+
+      character(len=*), parameter :: LABEL(4) = [character(len=20) :: "basis evaluation", "density", &
+                                                                               "functional (libxc)", "potential assembly"]
+      real(dp) :: total
+      real(dp) :: sec(4)
+      character(len=LINE_LEN) :: line
+      integer :: i
+
+      call xc_profile_take(sec)
+      total = sum(sec)
+      if (.not. verbose .or. total <= 0.0_dp) return
+
+      call logger%verbose("")
+      call logger%verbose("  XC quadrature breakdown (thread-seconds)")
+      do i = 1, 4
+         write (line, "(4x,a,f10.2,a,f7.1,a)") LABEL(i), sec(i), " s", 100.0_dp*sec(i)/total, " %"
+         call logger%verbose(trim(line))
+      end do
+      write (line, "(4x,a,f10.2,a)") "total               ", total, " s"
+      call logger%verbose(trim(line))
+   end subroutine xc_breakdown_summary
 
    subroutine screening_summary(verbose, stats)
       !! How much of the quartet space each screening test removed
@@ -992,6 +1021,7 @@ contains
                              result%nuclear_repulsion)
       call screening_summary(verbose, st%screening)
       call clk%report("RHF", verbose)
+      call xc_breakdown_summary(verbose)
    end subroutine run_czt_rhf
 
    subroutine do_rhf_iteration(iter, mol, ops, ctrl, st, clk, xc, pcm, projector, &
@@ -2026,6 +2056,7 @@ contains
       call clk%finish()
       call scf_table_footer(verbose, result%converged, result%iterations)
       call clk%report("UHF", verbose)
+      call xc_breakdown_summary(verbose)
       if (verbose) then
          write (line, "(a,f12.8,a,f12.8)") "  <S^2> = ", result%spin_squared, &
             "   exact = ", 0.25_dp*real(n_alpha - n_beta, dp)*real(n_alpha - n_beta + 2, dp)

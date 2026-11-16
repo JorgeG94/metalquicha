@@ -19,7 +19,7 @@ module mqc_czt_xc
    !! the polarised arrays are spin-interleaved, so the two cases take different
    !! array shapes. What they share -- the three terms that turn a pointwise
    !! potential into a matrix -- is `accumulate_xc_matrix`.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use pic_blas_interfaces, only: pic_gemm
@@ -70,6 +70,7 @@ module mqc_czt_xc
    public :: xc_context_create
    public :: xc_reference_t
    public :: xc_functional_references
+   public :: xc_profile_take
    public :: xc_add_potential
    public :: xc_add_potential_uks
    public :: xc_available
@@ -383,6 +384,11 @@ module mqc_czt_xc
       character(len=:), allocatable :: doi
          !! Empty when libxc gives none
    end type xc_reference_t
+
+   real(dp), save :: profile_seconds(4) = 0.0_dp
+      !! Thread-seconds `xc_add_potential` and `xc_add_potential_uks` have spent in
+      !! basis evaluation, density, functional and potential assembly since the
+      !! last `xc_profile_take`
 
 contains
 
@@ -1494,6 +1500,29 @@ contains
 #endif
    end subroutine xc_grid_kernel_quantities
 
+   function wall_seconds() result(t)
+      !! Wall clock in seconds, for the quadrature's per-thread accounting
+!$    use omp_lib, only: omp_get_wtime
+      real(dp) :: t
+      integer(int64) :: count, rate
+
+!$    t = omp_get_wtime()
+!$    return
+      call system_clock(count, rate)
+      t = real(count, dp)/real(rate, dp)
+   end function wall_seconds
+
+   subroutine xc_profile_take(seconds)
+      !! Thread-seconds of the quadrature by phase, then reset
+      !!
+      !! Order: basis evaluation, density, functional, potential assembly. Summed
+      !! over threads, so the total is up to the thread count times the wall time.
+      real(dp), intent(out) :: seconds(4)
+
+      seconds = profile_seconds
+      profile_seconds = 0.0_dp
+   end subroutine xc_profile_take
+
    subroutine xc_add_potential(ctx, mol, density, v_xc, e_xc, n_elec, error)
       !! The exchange-correlation potential and energy for one density
       !!
@@ -1529,6 +1558,8 @@ contains
       type(error_t) :: local_error
       logical :: failed
       integer :: g0, g1, nb, i, ig, id
+      real(dp) :: t0, t1, t2, t3, t4, t5, t6
+      real(dp) :: t_acc(4)
 
       v_xc = 0.0_dp
       e_xc = 0.0_dp
@@ -1574,12 +1605,13 @@ contains
       call shell_extents(mol, ctx%screen_tol, extents)
 
       !$omp parallel default(none) &
-      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents) &
+      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents, profile_seconds) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
       !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
       !$omp    private(v_local, e_local, n_local, v_sig, d_sig, shell_mask, &
       !$omp            ao_list, ao_offset, n_sig, ia, ja) &
+      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc) &
       !$omp    firstprivate(local_error)
       allocate (v_local(size(v_xc, 1), size(v_xc, 2)))
       v_local = 0.0_dp
@@ -1590,6 +1622,7 @@ contains
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
       e_local = 0.0_dp
       n_local = 0.0_dp
+      t_acc = 0.0_dp
 
       !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, ctx%point_block
@@ -1605,8 +1638,10 @@ contains
          ! basis evaluation, the density contraction, the potential gemm -- runs
          ! on that subset: both gemms are n_points * n_ao^2, so halving n_ao
          ! quarters them.
+         t0 = wall_seconds()
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
+         t1 = wall_seconds()
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
          ! The density restricted to the same subset. Gathered per block, which
@@ -1617,22 +1652,26 @@ contains
             end do
          end do
 
+         t2 = wall_seconds()
          if (ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
+            t3 = wall_seconds()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad, tau=tau)
          else if (ctx%any_gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
+            t3 = wall_seconds()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad)
          else
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
+            t3 = wall_seconds()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
          end if
          if (local_error%has_error()) then
@@ -1645,6 +1684,7 @@ contains
             cycle
          end if
 
+         t4 = wall_seconds()
          if (allocated(exc)) deallocate (exc, vrho, exc_i, vrho_i)
          allocate (exc(nb), vrho(nb), exc_i(nb), vrho_i(nb))
          exc = 0.0_dp
@@ -1687,6 +1727,7 @@ contains
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
 
+         t5 = wall_seconds()
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*rho)
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
@@ -1719,6 +1760,8 @@ contains
                   v_local(ao_list(ia), ao_list(ja)) + v_sig(ia, ja)
             end do
          end do
+         t6 = wall_seconds()
+         t_acc = t_acc + [(t1 - t0) + (t3 - t2), (t2 - t1) + (t4 - t3), t5 - t4, t6 - t5]
       end do
       !$omp end do
 
@@ -1727,6 +1770,7 @@ contains
       ! contending for the shared one a hundred times each.
       !$omp critical (xc_reduce)
       v_xc = v_xc + v_local
+      profile_seconds = profile_seconds + t_acc
       e_xc = e_xc + e_local
       n_elec = n_elec + n_local
       !$omp end critical (xc_reduce)
@@ -1795,6 +1839,8 @@ contains
       type(error_t) :: local_error
       logical :: failed
       integer :: g0, g1, nb, i, ig, id
+      real(dp) :: t0, t1, t2, t3, t4, t5, t6
+      real(dp) :: t_acc(4)
 
       v_alpha = 0.0_dp
       v_beta = 0.0_dp
@@ -1826,7 +1872,7 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, e_xc, n_elec, &
-      !$omp           error, failed, extents) &
+      !$omp           error, failed, extents, profile_seconds) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho_a, rho_b, grad_a, &
       !$omp            grad_b, tau_a, tau_b, rho, sigma, tau, lapl, exc, vrho, &
       !$omp            vsigma, vtau, exc_i, vrho_i, vsigma_i, vtau_i, vlapl, &
@@ -1834,6 +1880,7 @@ contains
       !$omp    private(va_local, vb_local, e_local, n_local) &
       !$omp    private(va_sig, vb_sig, da_sig, db_sig, shell_mask, ao_list, &
       !$omp            ao_offset, n_sig, ia, ja) &
+      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc) &
       !$omp    firstprivate(local_error)
       allocate (va_local(size(v_alpha, 1), size(v_alpha, 2)))
       allocate (vb_local(size(v_beta, 1), size(v_beta, 2)))
@@ -1847,6 +1894,7 @@ contains
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
       e_local = 0.0_dp
       n_local = 0.0_dp
+      t_acc = 0.0_dp
 
       !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, ctx%point_block
@@ -1862,8 +1910,10 @@ contains
          ! the test is on the basis and the geometry, and knows nothing about
          ! which density is being contracted -- so one screen serves both, and
          ! the two spin matrices stay on the same index set as each other.
+         t0 = wall_seconds()
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
+         t1 = wall_seconds()
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
          do ja = 1, n_sig
@@ -1880,6 +1930,7 @@ contains
          ! checked once, before anything reads `ao`. That ordering is load-bearing:
          ! `eval_ao_block` returns without allocating `ao` on its error paths, so
          ! calling `eval_rho` first would hand it an unallocated array.
+         t2 = wall_seconds()
          if (ctx%any_gga .or. ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
@@ -1889,6 +1940,7 @@ contains
                                shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
          end if
+         t3 = wall_seconds()
          if (local_error%has_error()) then
             !$omp critical (xc_uks_failure)
             if (.not. failed) then
@@ -1914,6 +1966,7 @@ contains
             call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), rho_b)
          end if
 
+         t4 = wall_seconds()
          if (allocated(rho)) deallocate (rho, exc, vrho, exc_i, vrho_i, vrho_s)
          allocate (rho(2*nb), exc(nb), vrho(2*nb), exc_i(nb), vrho_i(2*nb), vrho_s(nb))
          exc = 0.0_dp
@@ -1967,6 +2020,7 @@ contains
 
          ! exc is per particle, so the energy density is the *total* density times
          ! it -- one of the two places a polarised functional is silently halved.
+         t5 = wall_seconds()
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b))
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b)*exc)
 
@@ -2032,6 +2086,8 @@ contains
                   vb_local(ao_list(ia), ao_list(ja)) + vb_sig(ia, ja)
             end do
          end do
+         t6 = wall_seconds()
+         t_acc = t_acc + [(t1 - t0) + (t3 - t2), (t2 - t1) + (t4 - t3), t5 - t4, t6 - t5]
       end do
       !$omp end do
 
@@ -2040,6 +2096,7 @@ contains
       ! shared pair on every block.
       !$omp critical (xc_uks_reduce)
       v_alpha = v_alpha + va_local
+      profile_seconds = profile_seconds + t_acc
       v_beta = v_beta + vb_local
       e_xc = e_xc + e_local
       n_elec = n_elec + n_local
