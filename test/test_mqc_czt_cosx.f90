@@ -30,7 +30,8 @@ module test_mqc_czt_cosx
                              direct_stats_t
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_ao, only: eval_ao_block
-   use mqc_czt_cosx, only: cosx_exchange, cosx_batch_exchange, cosx_esp_contract, &
+   use mqc_czt_cosx, only: cosx_exchange, cosx_exchange_trace, cosx_batch_exchange, &
+                           cosx_esp_contract, &
                            cosx_density_on_grid, cosx_accumulate, cosx_grid_t, &
                            build_cosx_grid, cosx_overlap_fit, cosx_numerical_overlap, &
                            cosx_radial_points, cosx_angular_points, &
@@ -66,6 +67,7 @@ contains
                   new_unittest("cosx_grid_levels_are_ordered", test_grid_levels), &
                   new_unittest("cosx_screening_drops_only_what_is_negligible", test_screening), &
                   new_unittest("cosx_batch_integral_gives_the_same_exchange", test_batch_kernel), &
+                  new_unittest("cosx_trace_is_the_trace_of_the_exchange", test_trace), &
                   new_unittest("cosx_refuses_malformed_input", test_refusals) &
                   ]
    end subroutine collect_mqc_czt_cosx_tests
@@ -669,6 +671,63 @@ contains
                  "the grids do not carry the screening thresholds of their roles")
       call mol%destroy()
    end subroutine test_batch_kernel
+
+   subroutine test_trace(error)
+      !! `cosx_exchange_trace` is `Tr[D K]` of the fitted, symmetrised matrix
+      !!
+      !! The final energy of an SCF comes from this and never forms `K`, so it
+      !! has to be the same number the matrix would have given: the fit on the
+      !! right side, the symmetrisation accounted for, the weights once.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(cosx_grid_t) :: grid
+      type(error_t) :: err
+      real(dp), allocatable :: density(:, :), s(:, :), k(:, :)
+      real(dp) :: from_matrix, plain, fitted, screened
+
+      call water_density("cc-pvdz", mol, density, error)
+      if (allocated(error)) return
+      call mol%overlap(s)
+      call build_cosx_grid(mol, grid, err, level=1, role=COSX_ROLE_SCF, overlap=s, screen=.true.)
+      call check(error,.not. err%has_error(), "the grid should build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      ! Without the fit.
+      call cosx_exchange(mol, grid%coords, grid%weights, density, k, err, shells=grid%shells)
+      from_matrix = sum(density*k)
+      call cosx_exchange_trace(mol, grid%coords, grid%weights, density, plain, err, grid%shells)
+      call check(error,.not. err%has_error(), "COSX failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(plain - from_matrix) < 1.0e-10_dp, &
+                 "the unfitted trace is not the trace of the unfitted matrix")
+      if (allocated(error)) return
+
+      ! With it, which is what an SCF uses. This grid is coarse enough for the
+      ! fit to move the trace by far more than the tolerance.
+      call cosx_exchange(mol, grid%coords, grid%weights, density, k, err, fit=grid%fit, &
+                         shells=grid%shells)
+      call check(error, abs(sum(density*k) - from_matrix) > 1.0e-6_dp, &
+                 "the fit did not change the trace, so this case cannot tell if it is applied")
+      if (allocated(error)) return
+      from_matrix = sum(density*k)
+      call cosx_exchange_trace(mol, grid%coords, grid%weights, density, fitted, err, &
+                               grid%shells, fit=grid%fit)
+      call cosx_exchange_trace(mol, grid%coords, grid%weights, density, screened, err, &
+                               grid%shells, fit=grid%fit, bounds=grid%bounds)
+      call check(error,.not. err%has_error(), "COSX failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(fitted - from_matrix) < 1.0e-10_dp, &
+                 "the fitted trace is not the trace of the fitted matrix")
+      if (allocated(error)) return
+      call check(error, abs(screened - from_matrix) < 1.0e-8_dp, &
+                 "screening moved the trace")
+      if (allocated(error)) return
+      ! Guards the guard: Tr[D K] of water is about four times its exchange
+      ! energy of -9 hartree, in magnitude.
+      call check(error, abs(from_matrix) > 20.0_dp, "the reference trace is implausible")
+      call mol%destroy()
+   end subroutine test_trace
 
    subroutine test_refusals(error)
       !! Shapes that cannot be right are refused, not read out of bounds

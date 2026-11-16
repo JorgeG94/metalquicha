@@ -35,6 +35,7 @@ module mqc_czt_cosx
    use mqc_czt_ao, only: eval_ao_block
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_esp_batch, only: esp_shells_t, build_esp_shells, esp_batch_contract, &
+                                esp_batch_energy, &
                                 ESP_BATCH_LMAX
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, element_period
    use libcint_fortran, only: LIBCINT_PTR_GRIDS, LIBCINT_ANG_OF, &
@@ -45,6 +46,7 @@ module mqc_czt_cosx
    public :: cosx_grid_t
    public :: build_cosx_grid
    public :: cosx_exchange
+   public :: cosx_exchange_trace
    public :: cosx_overlap_fit
    public :: cosx_numerical_overlap
    public :: cosx_batch_exchange
@@ -538,6 +540,111 @@ contains
       allocate (fit(n_ao, n_ao))
       call pic_gemm(overlap, inverse, fit)
    end subroutine cosx_overlap_fit
+
+   subroutine cosx_exchange_trace(mol, coords, weights, density, trace, error, shells, fit, &
+                                  bounds, screen_tol, batch_size)
+      !! `Tr[D K]` for the exchange matrix `cosx_exchange` would build, without building it
+      !!
+      !! The exchange energy of a closed shell is `-Tr[D K]/4`. A build that
+      !! wants only that number needs the contraction `G(g, nu)` only where
+      !! the density also reaches `nu` from the batch, so shell pairs are
+      !! screened on both shells where the matrix build can screen on one.
+      !! Equal to the trace over the matrix to within the screening, and several
+      !! times cheaper on a molecule large enough for the density to decay.
+      !!
+      !! The density must be symmetric: the trace against the symmetrised
+      !! matrix is then the trace against the unsymmetrised one.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)       !! (3, n_points), Bohr
+      real(dp), intent(in) :: weights(:)         !! (n_points)
+      real(dp), intent(in) :: density(:, :)      !! (n_ao, n_ao), symmetric
+      real(dp), intent(out) :: trace
+      type(error_t), intent(inout) :: error
+      type(esp_shells_t), intent(in) :: shells   !! From `build_esp_shells`, not empty
+      real(dp), intent(in), optional :: fit(:, :)
+         !! The overlap fit of these points; absent is the plain quadrature
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! Schwarz bounds; absent keeps every shell pair
+      real(dp), intent(in), optional :: screen_tol
+         !! Threshold on bound times the largest `|F|` of one shell times the
+         !! largest `|Y|` of the other over a batch, default
+         !! `COSX_DEFAULT_SCREEN`. Read only with `bounds`.
+      integer, intent(in), optional :: batch_size   !! Default `COSX_DEFAULT_BATCH`
+
+      real(dp), allocatable :: left(:, :), ao(:, :), f(:, :), y(:, :)
+      type(error_t) :: local_error
+      real(dp) :: tol, part, total
+      integer :: n_points, n_ao, step, g0, g1
+      logical :: failed
+
+      trace = 0.0_dp
+      n_ao = mol%nao
+      n_points = size(coords, 2)
+      if (size(coords, 1) /= 3 .or. n_points < 1 .or. size(weights) /= n_points) then
+         call error%set(ERROR_VALIDATION, "COSX: the grid must be (3, n) points with "// &
+                        "n > 0 and one weight each")
+         return
+      end if
+      if (size(density, 1) /= n_ao .or. size(density, 2) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "COSX: the density does not match the basis")
+         return
+      end if
+      if (shells%n_shell < 1) then
+         call error%set(ERROR_VALIDATION, "COSX: the exchange trace needs the batch "// &
+                        "potential integral's shells")
+         return
+      end if
+      step = COSX_DEFAULT_BATCH
+      if (present(batch_size)) step = batch_size
+      if (step < 1) then
+         call error%set(ERROR_VALIDATION, "COSX: the batch size must be positive")
+         return
+      end if
+      tol = COSX_DEFAULT_SCREEN
+      if (present(screen_tol)) tol = screen_tol
+
+      ! Tr[D fit K] = sum_g sum_nu [chi(g) fit^T D](nu) G(g, nu): the fit moves
+      ! onto the density's side once, outside the loop over the points.
+      allocate (left(n_ao, n_ao))
+      if (present(fit)) then
+         call pic_gemm(fit, density, left, transa="T")
+      else
+         left = density
+      end if
+
+      total = 0.0_dp
+      failed = .false.
+      ! `default(shared)`: `bounds` is an optional dummy.
+      !$omp parallel default(shared) private(g0, g1, ao, f, y, part) &
+      !$omp    firstprivate(local_error) reduction(+:total)
+      !$omp do schedule(dynamic)
+      do g0 = 1, n_points, step
+         if (failed) cycle
+         g1 = min(g0 + step - 1, n_points)
+         call eval_ao_block(mol, coords(:, g0:g1), ao, local_error)
+         if (.not. local_error%has_error()) then
+            call cosx_density_on_grid(ao, weights(g0:g1), density, f)
+            if (allocated(y)) deallocate (y)
+            allocate (y(size(ao, 1), n_ao))
+            call pic_gemm(ao, left, y)
+            call esp_batch_energy(shells, coords(:, g0:g1), f, y, part, local_error, &
+                                  bounds=bounds, screen_tol=tol)
+         end if
+         if (local_error%has_error()) then
+            !$omp critical(mqc_cosx_trace_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical(mqc_cosx_trace_failure)
+            cycle
+         end if
+         total = total + part
+      end do
+      !$omp end do
+      !$omp end parallel
+      if (.not. failed) trace = total
+   end subroutine cosx_exchange_trace
 
    subroutine cosx_batch_exchange(mol, coords, weights, density, k, error, bounds, screen_tol, &
                                   shells)

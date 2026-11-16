@@ -21,7 +21,7 @@ module test_mqc_czt_esp_batch
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_cosx, only: cosx_esp_contract
    use mqc_czt_esp_batch, only: esp_shells_t, build_esp_shells, esp_batch_contract, &
-                                boys_values, ESP_BATCH_LMAX
+                                esp_batch_energy, boys_values, ESP_BATCH_LMAX
    implicit none
    private
 
@@ -48,6 +48,7 @@ contains
                   new_unittest("esp_batch_f", test_f), &
                   new_unittest("esp_batch_g", test_g), &
                   new_unittest("esp_batch_screens_as_the_library_path_does", test_screen), &
+                  new_unittest("esp_batch_energy_is_the_contraction_traced", test_energy), &
                   new_unittest("esp_batch_refuses_what_it_cannot_take", test_refusals) &
                   ]
    end subroutine collect_mqc_czt_esp_batch_tests
@@ -180,7 +181,7 @@ contains
       call build_esp_shells(mol, shells, err)
       call check(error,.not. err%has_error(), "the shells should build: "//err%get_full_trace())
       if (allocated(error)) return
-      call boys_values(shells%boys, N_MAX, X, values)
+      call boys_values(shells, N_MAX, X, values)
 
       worst = 0.0_dp
       do n = 0, N_MAX
@@ -253,6 +254,70 @@ contains
                  "the screened batch integral differs from the library's")
       call mol%destroy()
    end subroutine test_screen
+
+   subroutine test_energy(error)
+      !! `esp_batch_energy` is `sum Y G` over what `esp_batch_contract` returns
+      !!
+      !! Unscreened the two are the same sum in a different order, so they
+      !! agree to rounding. Screened, the energy form may skip more -- it
+      !! knows where `Y` is small as well as where `F` is -- and must still
+      !! land on the same number.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(esp_shells_t) :: shells
+      type(error_t) :: err
+      real(dp) :: points(3, N_PTS)
+      real(dp), allocatable :: f(:, :), y(:, :), g(:, :), bounds(:, :)
+      real(dp) :: direct, traced, screened
+      integer :: ig, mu, skipped_matrix, skipped_energy
+
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "def2-svp", mol, err)
+      call build_esp_shells(mol, shells, err)
+      call schwarz_bounds(mol, bounds, err)
+      call check(error,.not. err%has_error(), "setup failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call probe_points(points)
+      allocate (f(N_PTS, mol%nao), y(N_PTS, mol%nao))
+      ! F on the first half of the functions and Y negligible on the second:
+      ! a pair from the second half to the first carries F and so the matrix
+      ! form evaluates it, while the energy form sees that nothing reads the
+      ! result.
+      f = 0.0_dp
+      do mu = 1, mol%nao
+         do ig = 1, N_PTS
+            if (mu <= mol%nao/2) f(ig, mu) = sin(1.7_dp*real(ig, dp) + 0.37_dp*real(mu, dp))
+            y(ig, mu) = cos(0.9_dp*real(ig, dp) - 0.53_dp*real(mu, dp))
+         end do
+      end do
+      y(:, mol%nao/2 + 1:) = 1.0e-14_dp*y(:, mol%nao/2 + 1:)
+
+      call esp_batch_contract(shells, points, f, g, err)
+      direct = sum(y*g)
+      call esp_batch_energy(shells, points, f, y, traced, err)
+      call check(error,.not. err%has_error(), "a contraction failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(traced - direct) < 1.0e-11_dp*max(1.0_dp, abs(direct)), &
+                 "the traced contraction is not the trace of the contraction")
+      if (allocated(error)) return
+      call check(error, abs(direct) > 1.0e-3_dp, "the trace is too small to test")
+      if (allocated(error)) return
+
+      call esp_batch_contract(shells, points, f, g, err, bounds=bounds, &
+                              screen_tol=1.0e-10_dp, n_skipped=skipped_matrix)
+      call esp_batch_energy(shells, points, f, y, screened, err, bounds=bounds, &
+                            screen_tol=1.0e-10_dp, n_skipped=skipped_energy)
+      call check(error,.not. err%has_error(), "a contraction failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(screened - direct) < 1.0e-9_dp, &
+                 "screening moved the traced contraction")
+      if (allocated(error)) return
+      call check(error, skipped_energy > skipped_matrix, &
+                 "the energy form skipped no more than the matrix form, so the "// &
+                 "second factor is not screening anything")
+      call mol%destroy()
+   end subroutine test_energy
 
    subroutine test_refusals(error)
       !! Shapes that cannot be right are refused

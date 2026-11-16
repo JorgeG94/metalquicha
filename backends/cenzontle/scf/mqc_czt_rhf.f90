@@ -26,7 +26,7 @@ module mqc_czt_rhf
    use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_czt_rij, only: rij_t, build_rij, rij_coulomb
-   use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange, &
+   use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange, cosx_exchange_trace, &
                            COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_DEFAULT_GRID_LEVEL
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
@@ -661,7 +661,7 @@ contains
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
       logical :: use_in_core, use_cosx, use_final_grid
-      real(dp), allocatable :: cosx_bounds(:, :)
+      real(dp), allocatable :: cosx_bounds(:, :), fock_energy(:, :)
       integer :: cosx_level
       real(dp), allocatable :: bounds(:, :)
       ! TODO(mqc): `stats` is declared here and never used; the screening counts
@@ -1065,10 +1065,24 @@ contains
       ! has one: the density was converged on the smaller, and the energy's
       ! error in the density is second order while its error in the quadrature
       ! is first.
-      if (ops%cosx_final%active()) then
-         call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
-                            ops%bounds, xc, st%fock, result%electronic, error, clk=clk, &
-                            bmat_lr=ops%bmat_lr, cosx=ops%cosx_final, rij=ops%rij)
+      !
+      ! Only the energy is wanted from this build, so a chain-of-spheres run
+      ! takes its exchange as a trace and the Fock matrix it leaves, which has
+      ! no exchange in it, goes into a scratch array and not into the state.
+      if (ops%cosx%active()) then
+         allocate (fock_energy(ops%n_ao, ops%n_ao))
+         if (ops%cosx_final%active()) then
+            call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
+                               ops%bounds, xc, fock_energy, result%electronic, error, clk=clk, &
+                               bmat_lr=ops%bmat_lr, cosx=ops%cosx_final, rij=ops%rij, &
+                               energy_only=.true.)
+         else
+            call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
+                               ops%bounds, xc, fock_energy, result%electronic, error, clk=clk, &
+                               bmat_lr=ops%bmat_lr, cosx=ops%cosx, rij=ops%rij, &
+                               energy_only=.true.)
+         end if
+         deallocate (fock_energy)
       else
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
                             ops%bounds, xc, st%fock, result%electronic, error, clk=clk, &
@@ -2176,7 +2190,8 @@ contains
    end subroutine run_czt_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk, screening, incr, bmat_lr, cosx, rij)
+                            fock, e_elec, error, clk, screening, incr, bmat_lr, cosx, rij, &
+                            energy_only)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! The energy comes back with the Fock matrix because for Kohn-Sham the
@@ -2220,10 +2235,16 @@ contains
          !! not read.
       type(rij_t), intent(in), optional :: rij
          !! The fitted Coulomb build that goes with `cosx`
+      logical, intent(in), optional :: energy_only
+         !! The caller wants `e_elec` and will not read `fock`. A
+         !! chain-of-spheres build then takes the exchange energy as a trace
+         !! and leaves the exchange out of `fock`, which is much cheaper.
+         !! Default false, and ignored on every other path.
       type(direct_stats_t) :: stats
       real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
       real(dp), allocatable :: k_lr(:, :), k_cosx(:, :), j_fit(:, :)
-      logical :: use_cosx
+      logical :: use_cosx, trace_only
+      real(dp) :: e_exchange, tr_dk
       logical :: use_incremental, full_build
       logical :: want_lr
       real(dp), allocatable :: v_xc(:, :)
@@ -2284,6 +2305,7 @@ contains
       ! the density elements are.
       use_cosx = .false.
       if (present(cosx) .and. present(rij)) use_cosx = cosx%active() .and. rij%active()
+      e_exchange = 0.0_dp
 
       use_incremental = .false.
       if (present(incr) .and. .not. allocated(bmat) .and. .not. allocated(eri) &
@@ -2309,7 +2331,17 @@ contains
          if (error%has_error()) return
          fock = h + j_fit
          deallocate (j_fit)
-         if (k_scale /= 0.0_dp) then
+         e_exchange = 0.0_dp
+         trace_only = .false.
+         if (present(energy_only)) trace_only = energy_only .and. cosx%shells%n_shell > 0
+         if (k_scale /= 0.0_dp .and. trace_only) then
+            call cosx_exchange_trace(mol, cosx%coords, cosx%weights, density, tr_dk, error, &
+                                     cosx%shells, fit=cosx%fit, bounds=cosx%bounds, &
+                                     screen_tol=cosx%screen_tol)
+            if (error%has_error()) return
+            ! E_x = -Tr[D K]/4, scaled by the exact-exchange fraction.
+            e_exchange = -0.25_dp*k_scale*tr_dk
+         else if (k_scale /= 0.0_dp) then
             ! An SCF's grids always carry the fit and the bounds.
             call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
                                fit=cosx%fit, bounds=cosx%bounds, shells=cosx%shells, &
@@ -2441,6 +2473,9 @@ contains
 
       ! Taken here, from the Fock matrix that is still a mean field.
       e_elec = electronic_energy(h, fock, density)
+      ! The exchange energy a chain-of-spheres build took as a trace, which
+      ! `fock` then does not carry.
+      if (use_cosx) e_elec = e_elec + e_exchange
 
       ! Close the Fock bucket before the quadrature opens. `lap` charges
       ! everything since the previous lap, which is in the caller, so a single

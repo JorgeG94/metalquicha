@@ -34,6 +34,7 @@ module mqc_czt_esp_batch
    public :: esp_shells_t
    public :: build_esp_shells
    public :: esp_batch_contract
+   public :: esp_batch_energy
    public :: boys_values
    public :: ESP_BATCH_LMAX
 
@@ -92,6 +93,9 @@ module mqc_czt_esp_batch
          !! (0:2*l_max, 0:2*l_max, 0:2*l_max) position of the Hermite function
          !! (t, u, v) in a flat list ordered by degree, so one table serves
          !! every shell pair
+      real(dp), allocatable :: boys_exp(:)
+         !! (0:BOYS_N_NODE) exp(-x) at the mesh nodes, for the downward
+         !! recurrence
       real(dp), allocatable :: boys(:, :)
          !! (0:L_PAIR_MAX + BOYS_TAYLOR, 0:BOYS_N_NODE) the Boys function at the
          !! mesh nodes, every order the expansion reaches. Order first, so the
@@ -187,22 +191,24 @@ contains
       allocate (shells%h_of(0:2*shells%l_max, 0:2*shells%l_max, 0:2*shells%l_max))
       call hermite_index(2*shells%l_max, shells%h_of)
 
-      call tabulate_boys(shells%boys)
+      call tabulate_boys(shells%boys, shells%boys_exp)
    end subroutine build_esp_shells
 
-   pure subroutine tabulate_boys(table)
+   pure subroutine tabulate_boys(table, exp_table)
       !! The Boys function at the mesh nodes, for every order the expansion needs
       !!
       !! From `F_n(x) = exp(-x) sum_k (2x)^k / ((2n+1)(2n+3)...(2n+2k+1))`, whose
       !! terms are all positive, so nothing cancels at large `x`.
       real(dp), allocatable, intent(out) :: table(:, :)
+      real(dp), allocatable, intent(out) :: exp_table(:)   !! exp(-x) at the nodes
 
       integer :: i, n, k
       real(dp) :: x, term, total
 
-      allocate (table(0:L_PAIR_MAX + BOYS_TAYLOR, 0:BOYS_N_NODE))
+      allocate (table(0:L_PAIR_MAX + BOYS_TAYLOR, 0:BOYS_N_NODE), exp_table(0:BOYS_N_NODE))
       do i = 0, BOYS_N_NODE
          x = BOYS_STEP*real(i, dp)
+         exp_table(i) = exp(-x)
          do n = 0, L_PAIR_MAX + BOYS_TAYLOR
             term = 1.0_dp/real(2*n + 1, dp)
             total = term
@@ -216,73 +222,129 @@ contains
       end do
    end subroutine tabulate_boys
 
-   pure subroutine boys_values(table, n_max, x, values)
+   pure subroutine boys_values(shells, n_max, x, values)
       !! `F_n(x)` for `n = 0 .. n_max` at each of a set of arguments
-      real(dp), intent(in) :: table(0:, 0:)   !! From `build_esp_shells`
-      integer, intent(in) :: n_max            !! At most `2*ESP_BATCH_LMAX`
-      real(dp), intent(in) :: x(:)            !! Non-negative
-      real(dp), intent(out) :: values(:, 0:)  !! (size(x), 0:n_max)
+      type(esp_shells_t), intent(in) :: shells   !! For its tables
+      integer, intent(in) :: n_max               !! At most `2*ESP_BATCH_LMAX`
+      real(dp), intent(in) :: x(:)               !! Non-negative
+      real(dp), intent(out) :: values(:, 0:)     !! (size(x), 0:n_max)
 
-      real(dp), parameter :: HALF = 0.5_dp, THIRD = 1.0_dp/3.0_dp, QUARTER = 0.25_dp
-      integer :: ig, n, np
-      integer :: node(size(x))
-      real(dp) :: d(size(x)), inv_2x(size(x)), far(size(x))
+      integer :: ig, m
+      real(dp) :: inv_2x
 
-      logical :: any_near, any_far
-
-      ! A batch is compact, so for one primitive pair its points are usually
-      ! all inside the table or all beyond it, and only that branch is
-      ! computed. Where both are needed, both are computed for every point and
-      ! selected afterwards: no branch sits inside a loop over the points, and
-      ! the arguments are clamped so the branch a point does not take still
-      ! computes something finite.
-      np = size(x)
-      any_near = .false.
-      any_far = .false.
-      do ig = 1, np
-         any_near = any_near .or. x(ig) < BOYS_X_MAX
-         any_far = any_far .or. x(ig) >= BOYS_X_MAX
-      end do
-
-      if (any_near) then
-         do ig = 1, np
-            node(ig) = int(min(x(ig), BOYS_X_MAX)*BOYS_INV_STEP + HALF)
-            d(ig) = BOYS_STEP*real(node(ig), dp) - x(ig)
+      call boys_near(shells, n_max, x, values)
+      ! Beyond the table: (2n-1)!! / (2x)^n * sqrt(pi/x) / 2.
+      do ig = 1, size(x)
+         if (x(ig) < BOYS_X_MAX) cycle
+         inv_2x = 0.5_dp/x(ig)
+         values(ig, 0) = sqrt(0.5_dp*PI*inv_2x)
+         do m = 1, n_max
+            values(ig, m) = values(ig, m - 1)*real(2*m - 1, dp)*inv_2x
          end do
-         do n = 0, n_max
-            do ig = 1, np
-               ! F_n(x) = sum_k F_(n+k)(x0) (x0 - x)^k / k!, by Horner.
-               values(ig, n) = table(n, node(ig)) + d(ig)*(table(n + 1, node(ig)) &
-                                                           + HALF*d(ig)*(table(n + 2, node(ig)) &
-                                                                         + THIRD*d(ig)*(table(n + 3, node(ig)) &
-                                                                                 + QUARTER*d(ig)*table(n + 4, node(ig)))))
-            end do
-         end do
-      end if
-      if (.not. any_far) return
-
-      ! (2n-1)!! / (2x)^n * sqrt(pi/x) / 2
-      do ig = 1, np
-         inv_2x(ig) = HALF/max(x(ig), BOYS_X_MAX)
-         far(ig) = sqrt(HALF*PI*inv_2x(ig))
-      end do
-      do n = 0, n_max
-         if (n > 0) then
-            do ig = 1, np
-               far(ig) = far(ig)*real(2*n - 1, dp)*inv_2x(ig)
-            end do
-         end if
-         if (any_near) then
-            do ig = 1, np
-               if (x(ig) >= BOYS_X_MAX) values(ig, n) = far(ig)
-            end do
-         else
-            do ig = 1, np
-               values(ig, n) = far(ig)
-            end do
-         end if
       end do
    end subroutine boys_values
+
+   pure subroutine boys_near(shells, n_max, x, values)
+      !! `F_n(x)` for arguments inside the table; anything beyond it is clamped to its edge
+      !!
+      !! The highest order comes from the table, expanded about the nearest
+      !! node, and the rest by the downward recurrence
+      !! `F_(m-1) = (2x F_m + exp(-x)) / (2m - 1)`, which is stable in that
+      !! direction. One set of table reads serves every order, and nothing
+      !! after the reads depends on anything but the point, so the loops over
+      !! the points vectorise.
+      type(esp_shells_t), intent(in) :: shells
+      integer, intent(in) :: n_max
+      real(dp), intent(in) :: x(:)
+      real(dp), intent(out) :: values(:, 0:)
+
+      real(dp), parameter :: HALF = 0.5_dp, THIRD = 1.0_dp/3.0_dp, QUARTER = 0.25_dp
+      integer :: ig, m, np, node
+      real(dp) :: xc(size(x)), d(size(x)), emx(size(x))
+      real(dp) :: f0(size(x)), f1(size(x)), f2(size(x)), f3(size(x)), f4(size(x)), e0(size(x))
+      real(dp) :: inv_odd
+
+      np = size(x)
+      do ig = 1, np
+         xc(ig) = min(x(ig), BOYS_X_MAX)
+         node = int(xc(ig)*BOYS_INV_STEP + HALF)
+         d(ig) = BOYS_STEP*real(node, dp) - xc(ig)
+         f0(ig) = shells%boys(n_max, node)
+         f1(ig) = shells%boys(n_max + 1, node)
+         f2(ig) = shells%boys(n_max + 2, node)
+         f3(ig) = shells%boys(n_max + 3, node)
+         f4(ig) = shells%boys(n_max + 4, node)
+         e0(ig) = shells%boys_exp(node)
+      end do
+      do ig = 1, np
+         ! F_n(x) = sum_k F_(n+k)(x0) (x0 - x)^k / k!, and exp(-x) the same way.
+         values(ig, n_max) = f0(ig) + d(ig)*(f1(ig) + HALF*d(ig)*(f2(ig) &
+                                                                  + THIRD*d(ig)*(f3(ig) + QUARTER*d(ig)*f4(ig))))
+         emx(ig) = e0(ig)*(1.0_dp + d(ig)*(1.0_dp + HALF*d(ig)*(1.0_dp &
+                                                                + THIRD*d(ig)*(1.0_dp + QUARTER*d(ig)))))
+      end do
+      do m = n_max, 1, -1
+         inv_odd = 1.0_dp/real(2*m - 1, dp)
+         do ig = 1, np
+            values(ig, m - 1) = (2.0_dp*xc(ig)*values(ig, m) + emx(ig))*inv_odd
+         end do
+      end do
+   end subroutine boys_near
+
+   pure subroutine coulomb_seeds(shells, n, l_pair, p, r2, r, work)
+      !! `R^m_000 = (-2p)^m F_m(p r^2)` for `m = 0 .. l_pair` at every point
+      !!
+      !! Written into `r(:, 1, m)`, where `hermite_coulomb` starts from.
+      !!
+      !! A batch is compact, so for one primitive pair its points are usually
+      !! all beyond the range where the Boys function differs from its
+      !! asymptotic form. There the integral is the potential of point
+      !! multipoles and needs no table:
+      !! `R^m_000 = sqrt(pi/p)/2 (-1)^m (2m-1)!! / r^(2m+1)`.
+      type(esp_shells_t), intent(in) :: shells
+      integer, intent(in) :: n, l_pair
+      real(dp), intent(in) :: p               !! Exponent of the product
+      real(dp), intent(in) :: r2(:)           !! (n) squared distance from its centre
+      real(dp), intent(inout) :: r(:, :, 0:)  !! (n, n_herm, 0:l_pair)
+      real(dp), intent(inout) :: work(:, 0:)  !! (n, 0:l_pair) scratch
+
+      integer :: ig, m
+      real(dp) :: lead, scale
+      real(dp) :: x(n), w(n)
+      logical :: all_far
+
+      all_far = .true.
+      do ig = 1, n
+         all_far = all_far .and. p*r2(ig) >= BOYS_X_MAX
+      end do
+
+      if (all_far) then
+         lead = 0.5_dp*sqrt(PI/p)
+         do ig = 1, n
+            w(ig) = 1.0_dp/r2(ig)
+            r(ig, 1, 0) = lead*sqrt(w(ig))
+         end do
+         do m = 1, l_pair
+            scale = -real(2*m - 1, dp)
+            do ig = 1, n
+               r(ig, 1, m) = scale*w(ig)*r(ig, 1, m - 1)
+            end do
+         end do
+         return
+      end if
+
+      do ig = 1, n
+         x(ig) = p*r2(ig)
+      end do
+      call boys_values(shells, l_pair, x, work(1:n, 0:l_pair))
+      scale = 1.0_dp
+      do m = 0, l_pair
+         do ig = 1, n
+            r(ig, 1, m) = scale*work(ig, m)
+         end do
+         scale = -2.0_dp*p*scale
+      end do
+   end subroutine coulomb_seeds
 
    subroutine esp_batch_contract(shells, coords, f, g, error, bounds, screen_tol, n_skipped)
       !! `G(g, nu) = sum_lambda <nu| 1/|r - r_g| |lambda> F(g, lambda)`
@@ -310,8 +372,9 @@ contains
       real(dp), allocatable :: block(:, :, :), r(:, :, :), boys(:, :), pc(:, :), x(:)
       real(dp), allocatable :: points(:, :)
       real(dp) :: tol, f_pair
-      logical :: screening, into_i, into_j
-      integer :: n, is, js, l, nc, ns, a, b, cs, as, skipped, l_pair
+      logical :: screening, into_i, into_j, nonzero
+      integer :: n, is, js, l, nc, a, b, cs, as, skipped, l_pair
+      integer :: nca, ncb, csa, csb, ia, ib, ig
 
       n = size(coords, 2)
       if (size(coords, 1) /= 3 .or. n < 1) then
@@ -326,28 +389,7 @@ contains
       allocate (fc(n, shells%n_cart), gc(n, shells%n_cart), f_max(shells%n_shell))
       gc = 0.0_dp
 
-      ! F in the Cartesian functions of each shell, and the largest element
-      ! each shell carries over the batch.
-      do is = 1, shells%n_shell
-         l = shells%l(is)
-         nc = (l + 1)*(l + 2)/2
-         cs = shells%cart_first(is)
-         as = shells%ao_first(is)
-         if (shells%cartesian) then
-            fc(:, cs + 1:cs + nc) = f(:, as + 1:as + nc)
-            f_max(is) = maxval(abs(f(:, as + 1:as + nc)))
-         else
-            ns = 2*l + 1
-            f_max(is) = maxval(abs(f(:, as + 1:as + ns)))
-            do b = 1, nc
-               fc(:, cs + b) = 0.0_dp
-               do a = 1, ns
-                  if (shells%c2s(a, b, l) == 0.0_dp) cycle
-                  fc(:, cs + b) = fc(:, cs + b) + shells%c2s(a, b, l)*f(:, as + a)
-               end do
-            end do
-         end if
-      end do
+      call to_cartesian(shells, f, fc, f_max)
 
       screening = present(bounds)
       tol = 0.0_dp
@@ -377,8 +419,27 @@ contains
             f_pair = 0.0_dp
             if (into_i) f_pair = f_max(js)
             if (into_j) f_pair = max(f_pair, f_max(is))
-            call pair_contract(shells, is, js, n, points, fc, gc, into_i, into_j, &
-                               merge(tol, 0.0_dp, screening), f_pair, block, r, boys, pc, x)
+            call pair_block(shells, is, js, n, points, merge(tol, 0.0_dp, screening), &
+                            f_pair, block, r, boys, pc, x, nonzero)
+            if (.not. nonzero) cycle
+            nca = (shells%l(is) + 1)*(shells%l(is) + 2)/2
+            ncb = (shells%l(js) + 1)*(shells%l(js) + 2)/2
+            csa = shells%cart_first(is)
+            csb = shells%cart_first(js)
+            do ib = 1, ncb
+               do ia = 1, nca
+                  if (into_i) then
+                     do ig = 1, n
+                        gc(ig, csa + ia) = gc(ig, csa + ia) + block(ig, ia, ib)*fc(ig, csb + ib)
+                     end do
+                  end if
+                  if (into_j) then
+                     do ig = 1, n
+                        gc(ig, csb + ib) = gc(ig, csb + ib) + block(ig, ia, ib)*fc(ig, csa + ia)
+                     end do
+                  end if
+               end do
+            end do
          end do
       end do
       if (present(n_skipped)) n_skipped = skipped
@@ -404,15 +465,154 @@ contains
       end do
    end subroutine esp_batch_contract
 
-   subroutine pair_contract(shells, is, js, n, points, fc, gc, into_i, into_j, &
-                            tol, f_pair, block, r, boys, pc, x)
-      !! One shell pair: its Cartesian integral block over the batch, then both halves
+   subroutine to_cartesian(shells, f, fc, f_max)
+      !! A (point, function) array in the Cartesian functions of each shell
+      !!
+      !! `fc = f T` with `T` the spherical-to-Cartesian rows, which is how both
+      !! sides of `sum_nu Y(nu) G(nu)` transform; and the largest `|f|` each
+      !! shell carries over the batch.
+      type(esp_shells_t), intent(in) :: shells
+      real(dp), intent(in) :: f(:, :)          !! (n, n_ao)
+      real(dp), intent(out) :: fc(:, :)        !! (n, n_cart)
+      real(dp), intent(out) :: f_max(:)        !! (n_shell)
+
+      integer :: is, l, nc, ns, cs, as, a, b
+
+      do is = 1, shells%n_shell
+         l = shells%l(is)
+         nc = (l + 1)*(l + 2)/2
+         cs = shells%cart_first(is)
+         as = shells%ao_first(is)
+         if (shells%cartesian) then
+            fc(:, cs + 1:cs + nc) = f(:, as + 1:as + nc)
+            f_max(is) = maxval(abs(f(:, as + 1:as + nc)))
+         else
+            ns = 2*l + 1
+            f_max(is) = maxval(abs(f(:, as + 1:as + ns)))
+            do b = 1, nc
+               fc(:, cs + b) = 0.0_dp
+               do a = 1, ns
+                  if (shells%c2s(a, b, l) == 0.0_dp) cycle
+                  fc(:, cs + b) = fc(:, cs + b) + shells%c2s(a, b, l)*f(:, as + a)
+               end do
+            end do
+         end if
+      end do
+   end subroutine to_cartesian
+
+   subroutine esp_batch_energy(shells, coords, f, y, total, error, bounds, screen_tol, n_skipped)
+      !! `sum_g sum_nu Y(g, nu) G(g, nu)`, with `G` as in `esp_batch_contract`
+      !!
+      !! The same integrals, contracted on both sides at once. A build that
+      !! wants an energy and not a matrix needs `G(g, nu)` only where `Y(g, nu)`
+      !! is not negligible, so a half of a shell pair is skipped when its
+      !! bound times the largest `|F|` of one shell times the largest `|Y|` of
+      !! the other is under the threshold. Both of those fall off with the
+      !! distance of a shell from the batch, where the matrix build can use
+      !! only one.
+      type(esp_shells_t), intent(in) :: shells
+      real(dp), intent(in) :: coords(:, :)     !! (3, n_batch), Bohr
+      real(dp), intent(in) :: f(:, :)          !! (n_batch, n_ao)
+      real(dp), intent(in) :: y(:, :)          !! (n_batch, n_ao)
+      real(dp), intent(out) :: total
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! Schwarz bounds over the molecule's shells; absent keeps every pair
+      real(dp), intent(in), optional :: screen_tol
+         !! Threshold on bound times largest `|F|` times largest `|Y|`; zero
+         !! keeps everything. Read only with `bounds`.
+      integer, intent(out), optional :: n_skipped
+         !! Shell pairs, of the lower triangle, not evaluated for this batch
+
+      real(dp), allocatable :: fc(:, :), yc(:, :), f_max(:), y_max(:)
+      real(dp), allocatable :: block(:, :, :), r(:, :, :), boys(:, :), pc(:, :), x(:)
+      real(dp), allocatable :: points(:, :)
+      real(dp) :: tol, weight_i, weight_j, sum_i, sum_j, bound
+      logical :: screening, into_i, into_j, nonzero
+      integer :: n, is, js, skipped, l_pair, nca, ncb, csa, csb, ia, ib, ig
+
+      total = 0.0_dp
+      n = size(coords, 2)
+      if (size(coords, 1) /= 3 .or. n < 1) then
+         call error%set(ERROR_VALIDATION, "ESP batch: grid points must be (3, n) with n > 0")
+         return
+      end if
+      if (size(f, 1) /= n .or. size(f, 2) /= shells%n_ao .or. &
+          size(y, 1) /= n .or. size(y, 2) /= shells%n_ao) then
+         call error%set(ERROR_VALIDATION, "ESP batch: F and Y must be (n_points, n_ao)")
+         return
+      end if
+
+      allocate (fc(n, shells%n_cart), yc(n, shells%n_cart), f_max(shells%n_shell), &
+                y_max(shells%n_shell))
+      call to_cartesian(shells, f, fc, f_max)
+      call to_cartesian(shells, y, yc, y_max)
+
+      screening = present(bounds)
+      tol = 0.0_dp
+      if (present(screen_tol)) tol = screen_tol
+      skipped = 0
+
+      l_pair = 2*shells%l_max
+      allocate (block(n, N_CART_MAX, N_CART_MAX), r(n, N_HERM_MAX, 0:l_pair), &
+                boys(n, 0:l_pair), pc(n, 3), x(n))
+      points = transpose(coords)
+
+      do is = 1, shells%n_shell
+         do js = 1, is
+            ! Y on the first shell with F on the second, and the mirror.
+            into_i = .true.
+            into_j = is /= js
+            weight_i = f_max(js)*y_max(is)
+            weight_j = f_max(is)*y_max(js)
+            if (screening) then
+               bound = bounds(shells%parent(is), shells%parent(js))
+               into_i = bound*weight_i >= tol
+               into_j = into_j .and. bound*weight_j >= tol
+               if (.not. (into_i .or. into_j)) then
+                  skipped = skipped + 1
+                  cycle
+               end if
+            end if
+            if (.not. into_i) weight_i = 0.0_dp
+            if (.not. into_j) weight_j = 0.0_dp
+            call pair_block(shells, is, js, n, points, merge(tol, 0.0_dp, screening), &
+                            max(weight_i, weight_j), block, r, boys, pc, x, nonzero)
+            if (.not. nonzero) cycle
+            nca = (shells%l(is) + 1)*(shells%l(is) + 2)/2
+            ncb = (shells%l(js) + 1)*(shells%l(js) + 2)/2
+            csa = shells%cart_first(is)
+            csb = shells%cart_first(js)
+            sum_i = 0.0_dp
+            sum_j = 0.0_dp
+            do ib = 1, ncb
+               do ia = 1, nca
+                  if (into_i) then
+                     do ig = 1, n
+                        sum_i = sum_i + block(ig, ia, ib)*yc(ig, csa + ia)*fc(ig, csb + ib)
+                     end do
+                  end if
+                  if (into_j) then
+                     do ig = 1, n
+                        sum_j = sum_j + block(ig, ia, ib)*yc(ig, csb + ib)*fc(ig, csa + ia)
+                     end do
+                  end if
+               end do
+            end do
+            total = total + sum_i + sum_j
+         end do
+      end do
+      if (present(n_skipped)) n_skipped = skipped
+   end subroutine esp_batch_energy
+
+   subroutine pair_block(shells, is, js, n, points, tol, f_pair, block, r, boys, pc, x, nonzero)
+      !! One shell pair's Cartesian integral block over the batch
+      !!
+      !! `block(g, a, b)` for the Cartesian functions `a` of the first shell and
+      !! `b` of the second, summed over the primitive pairs.
       type(esp_shells_t), intent(in) :: shells
       integer, intent(in) :: is, js, n
       real(dp), intent(in) :: points(:, :)   !! (n, 3): one column per direction
-      real(dp), intent(in) :: fc(:, :)
-      real(dp), intent(inout) :: gc(:, :)
-      logical, intent(in) :: into_i, into_j
       real(dp), intent(in) :: tol
          !! A primitive pair is dropped when a bound on its integral, times
          !! `f_pair`, is below this. Zero keeps every one.
@@ -422,10 +622,12 @@ contains
       real(dp), intent(inout) :: r(:, :, 0:)      !! (n, N_HERM_MAX, 0:) scratch
       real(dp), intent(inout) :: boys(:, 0:)      !! (n, 0:) scratch
       real(dp), intent(inout) :: pc(:, :)         !! (n, 3) scratch
-      real(dp), intent(inout) :: x(:)             !! (n) scratch
+      real(dp), intent(inout) :: x(:)             !! (n) scratch: squared distances
+      logical, intent(out) :: nonzero
+         !! False when every primitive pair was dropped and the block is zero
 
       integer :: la, lb, l_pair, nca, ncb, ka, kb, ia, ib, ig, t, u, v, h
-      integer :: ax, ay, az, bx, by, bz, csa, csb
+      integer :: ax, ay, az, bx, by, bz
       real(dp) :: ex(0:L_PAIR_MAX, 0:ESP_BATCH_LMAX, 0:ESP_BATCH_LMAX)
       real(dp) :: ey(0:L_PAIR_MAX, 0:ESP_BATCH_LMAX, 0:ESP_BATCH_LMAX)
       real(dp) :: ez(0:L_PAIR_MAX, 0:ESP_BATCH_LMAX, 0:ESP_BATCH_LMAX)
@@ -439,8 +641,6 @@ contains
       l_pair = la + lb
       nca = (la + 1)*(la + 2)/2
       ncb = (lb + 1)*(lb + 2)/2
-      csa = shells%cart_first(is)
-      csb = shells%cart_first(js)
       a_centre = shells%centre(:, is)
       b_centre = shells%centre(:, js)
       ab2 = sum((a_centre - b_centre)**2)
@@ -467,12 +667,12 @@ contains
                   if (abs(prefactor)*f_pair < tol) cycle
                end if
                do ig = 1, n
-                  x(ig) = p*((p_centre(1) - points(ig, 1))**2 + (p_centre(2) - points(ig, 2))**2 &
-                             + (p_centre(3) - points(ig, 3))**2)
+                  x(ig) = (p_centre(1) - points(ig, 1))**2 + (p_centre(2) - points(ig, 2))**2 &
+                          + (p_centre(3) - points(ig, 3))**2
                end do
-               call boys_values(shells%boys, 0, x(1:n), boys(1:n, 0:0))
+               call coulomb_seeds(shells, n, 0, p, x, r, boys)
                do ig = 1, n
-                  block(ig, 1, 1) = block(ig, 1, 1) + prefactor*boys(ig, 0)
+                  block(ig, 1, 1) = block(ig, 1, 1) + prefactor*r(ig, 1, 0)
                end do
                cycle
             end if
@@ -499,10 +699,10 @@ contains
                pc(ig, 1) = p_centre(1) - points(ig, 1)
                pc(ig, 2) = p_centre(2) - points(ig, 2)
                pc(ig, 3) = p_centre(3) - points(ig, 3)
-               x(ig) = p*(pc(ig, 1)**2 + pc(ig, 2)**2 + pc(ig, 3)**2)
+               x(ig) = pc(ig, 1)**2 + pc(ig, 2)**2 + pc(ig, 3)**2
             end do
-            call boys_values(shells%boys, l_pair, x(1:n), boys(1:n, 0:l_pair))
-            call hermite_coulomb(n, l_pair, p, pc, boys, shells%h_of, r)
+            call coulomb_seeds(shells, n, l_pair, p, x, r, boys)
+            call hermite_coulomb(n, l_pair, pc, shells%h_of, r)
 
             do ib = 1, ncb
                bx = shells%powers(1, ib, lb)
@@ -528,23 +728,8 @@ contains
             end do
          end do
       end do
-      if (.not. any_primitive) return
-
-      do ib = 1, ncb
-         do ia = 1, nca
-            if (into_i) then
-               do ig = 1, n
-                  gc(ig, csa + ia) = gc(ig, csa + ia) + block(ig, ia, ib)*fc(ig, csb + ib)
-               end do
-            end if
-            if (into_j) then
-               do ig = 1, n
-                  gc(ig, csb + ib) = gc(ig, csb + ib) + block(ig, ia, ib)*fc(ig, csa + ia)
-               end do
-            end if
-         end do
-      end do
-   end subroutine pair_contract
+      nonzero = any_primitive
+   end subroutine pair_block
 
    pure subroutine cartesian_powers(l, powers)
       !! The exponents of x, y, z for each Cartesian function of a shell, libcint's order
@@ -619,29 +804,19 @@ contains
       end do
    end subroutine hermite_expansion
 
-   pure subroutine hermite_coulomb(n, l_pair, p, pc, boys, h_of, r)
+   pure subroutine hermite_coulomb(n, l_pair, pc, h_of, r)
       !! The Hermite Coulomb integrals `R_tuv` at every point of the batch
       !!
-      !! `r(:, h, 0)` on return is `R_tuv` for `h = h_of(t, u, v)`; the higher
-      !! auxiliary orders in the last index are scratch.
+      !! From `r(:, 1, m) = R^m_000`, which `coulomb_seeds` leaves. On return
+      !! `r(:, h, 0)` is `R_tuv` for `h = h_of(t, u, v)`; the higher auxiliary
+      !! orders in the last index are scratch.
       integer, intent(in) :: n, l_pair
-      real(dp), intent(in) :: p
       real(dp), intent(in) :: pc(:, :)        !! (n, 3) product centre minus the point
-      real(dp), intent(in) :: boys(:, 0:)     !! (n, 0:l_pair)
       integer, intent(in) :: h_of(0:, 0:, 0:)
       real(dp), intent(inout) :: r(:, :, 0:)  !! (n, n_herm, 0:l_pair)
 
       integer :: m, degree, t, u, v, h, h1, h2, ig, axis, lower
-      real(dp) :: scale, weight
-
-      ! R^m_000 = (-2p)^m F_m
-      scale = 1.0_dp
-      do m = 0, l_pair
-         do ig = 1, n
-            r(ig, 1, m) = scale*boys(ig, m)
-         end do
-         scale = -2.0_dp*p*scale
-      end do
+      real(dp) :: weight
 
       do degree = 1, l_pair
          do t = degree, 0, -1
