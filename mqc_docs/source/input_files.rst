@@ -634,7 +634,7 @@ The integration grid, and how the quadrature walks it:
      "nlc_grid_level": 1,
      "screening_tolerance": 1e-12,
      "small_rho_cutoff": 1e-7,
-     "block_size": 512
+     "block_size": 128
    }
 
 - ``grid_level``: 0 to 9, from the standard per-element tables -- the same tables
@@ -671,18 +671,24 @@ The integration grid, and how the quadrature walks it:
   grid whole. Later stages that reuse the SCF's grid (gradient, Hessian, response)
   use the pruned one. The separate VV10 grid is not pruned, and neither is a grid
   built outside an SCF.
-- ``block_size``: grid points per block. Default 512; a non-positive value keeps
+- ``block_size``: grid points per block. Default 128; a non-positive value keeps
   it.
 
   This is two decisions wearing one name, which is worth knowing before turning
   it. A smaller block covers less space, so fewer shells reach it and the screen
-  keeps less of the basis -- on a 638-function peptide, 4096-point blocks keep
-  141 functions and 256-point blocks keep 116. But the loop over blocks *is* the
-  OpenMP loop, so the block count is also the thread granularity: at 4096 points
-  a level-1 grid is only 72 blocks, which on a 104-thread node leaves a third of
-  the threads with nothing to do at all. Too small and the per-block bookkeeping
-  starts to show instead. The useful value depends on the grid and the machine
-  together, which is why it is a keyword rather than a constant.
+  keeps less of the basis. The grid is reordered once, after it is built and again
+  after small-density pruning, so that every run of ``block_size`` consecutive
+  points is a compact region (recursive bisection along the longest axis), and
+  that is what makes the screen effective: on ten waters in def2-SVP the mean
+  number of functions reaching a block falls from 172 of 240 at 512 points to 129
+  at 128 and 107 at 32; on thirty-two waters, from 275 of 768 to 197 and 171.
+  A verbose run prints the mean and the largest figure for the grid in use. But
+  the loop over blocks *is* the OpenMP loop, so the block count is also the
+  thread granularity: at 4096 points a level-1 grid is only 72 blocks, which on a
+  104-thread node leaves a third of the threads with nothing to do at all. Too
+  small and the per-block bookkeeping starts to show instead. The useful value
+  depends on the grid and the machine together, which is why it is a keyword
+  rather than a constant.
 - ``dispersion``: an empirical dispersion correction on top of the Kohn-Sham
   energy and gradient. ``"d3bj"`` is D3 with Becke-Johnson rational damping and
   no three-body term, which is what ``-D3(BJ)`` names in the literature.

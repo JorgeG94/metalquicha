@@ -29,7 +29,7 @@ module mqc_czt_xc
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, DEFAULT_GRID_LEVEL
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, MAX_XC_COMPONENTS
    use mqc_czt_integrals, only: czt_molecule_t
-   use mqc_czt_ao, only: eval_ao_block, eval_rho, AO_POINT_BLOCK, &
+   use mqc_czt_ao, only: eval_ao_block, eval_rho, &
                          shell_extents, block_significant_aos
 #ifdef MQC_WITH_LIBXC
    use xc_f03_lib_m, only: xc_f03_func_t, xc_f03_func_init, xc_f03_func_end, &
@@ -58,6 +58,12 @@ module mqc_czt_xc
       !! Tighter than the 1e-10 often quoted: the quantity being converged is a
       !! total energy at the microhartree level over ~10^6 points, and the extra
       !! digit costs a couple of bohr of radius on the most diffuse shells.
+
+   integer, parameter, public :: XC_POINT_BLOCK = 128
+      !! Default grid points per quadrature block.
+      !!
+      !! Measured on PBE/def2-SVP water clusters on the block-ordered grid:
+      !! 128 was fastest on 32 waters and within 7 per cent of the best on 10.
 
    integer, parameter, public :: NLC_GRID_LEVEL_DEFAULT = 1
       !! Default level for the non-local inner grid.
@@ -158,12 +164,13 @@ module mqc_czt_xc
       real(dp) :: screen_tol = AO_SCREEN_TOL
          !! The AO value below which a shell is dropped from a grid block.
          !! From `keywords.dft.screening_tolerance`; the default is the constant.
-      integer :: point_block = AO_POINT_BLOCK
+      integer :: point_block = XC_POINT_BLOCK
          !! Grid points per block. From `keywords.dft.block_size`.
          !!
          !! Two things at once. A smaller block is spatially tighter, so fewer
          !! shells reach it and the screen keeps less; and the loop over blocks
          !! *is* the OpenMP loop, so the block count is the thread granularity.
+         !! The grid is reordered in runs of exactly this many points.
       real(dp) :: small_rho_cutoff = 0.0_dp
          !! From `keywords.dft.small_rho_cutoff`. Zero or negative leaves the
          !! grid whole; the default here is off, so a context built outside an
@@ -171,6 +178,9 @@ module mqc_czt_xc
       logical :: grid_pruned = .false.
          !! Whether `xc_prune_small_rho` has already run, so a second SCF on the
          !! same context does not prune again on a converged density.
+      logical :: block_stats_logged = .false.
+         !! Whether the shells-per-block figures of the current grid have been
+         !! reported; cleared whenever the grid is reordered or pruned.
       logical :: polarized = .false.
          !! Whether the functionals were initialised spin-polarised.
          !!
@@ -680,6 +690,9 @@ contains
       if (present(point_block)) then
          if (point_block > 0) ctx%point_block = point_block
       end if
+      ! Consecutive runs of `point_block` points become spatially compact, which is
+      ! what lets a block's shell screen remove anything.
+      call ctx%grid%block_order(ctx%point_block)
       ctx%active = .true.
    end subroutine xc_context_create
 
@@ -1615,6 +1628,7 @@ contains
       ! shell dropped beyond its radius contributes less than that at every point
       ! of the block, so this is a truncation with a stated bound.
       call shell_extents(mol, ctx%screen_tol, extents)
+      call xc_log_block_stats(ctx, mol, extents)
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents, profile_seconds) &
@@ -1799,6 +1813,47 @@ contains
 #endif
    end subroutine xc_add_potential
 
+   subroutine xc_log_block_stats(ctx, mol, extents)
+      !! Report, once per grid, how many basis functions reach a block of points
+      !!
+      !! The mean and the largest `n_sig` over the blocks the quadrature walks, out
+      !! of `mol%nao`. Both gemms of a block scale as `n_sig` squared, so this is
+      !! the figure the grid's block order is judged by.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: extents(:)
+
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: g0, g1, n_sig, n_blocks, n_max
+      integer(int64) :: n_total
+      character(len=160) :: line
+      if (ctx%block_stats_logged) return
+      ctx%block_stats_logged = .true.
+      if (ctx%grid%n_points == 0) return
+      n_blocks = 0
+      n_max = 0
+      n_total = 0_int64
+      !$omp parallel default(none) shared(ctx, mol, extents) private(g0, g1, n_sig, shell_mask, ao_list, ao_offset) &
+      !$omp    reduction(+: n_blocks, n_total) reduction(max: n_max)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      !$omp do schedule(dynamic)
+      do g0 = 1, ctx%grid%n_points, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, ctx%grid%n_points)
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         n_blocks = n_blocks + 1
+         n_total = n_total + n_sig
+         n_max = max(n_max, n_sig)
+      end do
+      !$omp end do
+      !$omp end parallel
+      write (line, "(a,i0,a,i0,a,i0,a,f7.1,a,i0,a,i0)") "  XC grid: ", ctx%grid%n_points, " points in ", &
+         n_blocks, " blocks of ", ctx%point_block, "; basis functions per block: mean ", &
+         real(n_total, dp)/real(max(n_blocks, 1), dp), ", max ", n_max, " of ", mol%nao
+      call logger%verbose(trim(line))
+   end subroutine xc_log_block_stats
+
    subroutine xc_prune_small_rho(ctx, mol, density, n_electrons, error, dropped)
       !! Drop the grid points where the density is negligible, once per context
       !!
@@ -1896,6 +1951,9 @@ contains
       keep = abs(rho_pt*ctx%grid%weights) > ctx%small_rho_cutoff/real(n_before, dp)
       n_dropped = sum(rho_pt*ctx%grid%weights, mask=.not. keep)
       call ctx%grid%keep_points(keep)
+      ! Removing points shifted every block boundary after the first gap.
+      call ctx%grid%block_order(ctx%point_block)
+      ctx%block_stats_logged = .false.
       if (present(dropped)) dropped = n_dropped
       n_after = ctx%grid%n_points
       write (line, "(a,es9.2,a,i0,a,i0,a,es10.2,a)") "  XC grid: small-rho pruning (cutoff ", &
@@ -1986,6 +2044,7 @@ contains
       ! One bound per shell for the whole molecule, computed once and read by
       ! every block of every iteration.
       call shell_extents(mol, ctx%screen_tol, extents)
+      call xc_log_block_stats(ctx, mol, extents)
 
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, e_xc, n_elec, &
@@ -4164,6 +4223,8 @@ contains
       call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
                           level=ctx%nlc_grid_level)
       deallocate (numbers)
+      if (error%has_error()) return
+      call ctx%nlc_grid%block_order(ctx%point_block)
    end subroutine ensure_nlc_grid
 
 #ifdef MQC_WITH_LIBXC

@@ -3,13 +3,15 @@ module test_mqc_xc_prune
    !! `xc_prune_small_rho` removes the points where `abs(rho*w)` on a density is
    !! at or below the cutoff divided by the grid size, and nothing else about the quadrature may change.
    !! Checked on a water dimer, PBE, def2-SVP, grid level 3: that points go, that
-   !! every per-point array of the grid is compacted together and keeps its order,
+   !! every per-point array of the grid is compacted together and the survivors are
+   !! original points with their own weights and owners,
    !! that the electrons the grid integrates to move by exactly what was reported
    !! dropped, that a cutoff of zero keeps everything, that a second call on the
    !! same context does nothing, and that an SCF started on a pruned context lands
    !! on the unpruned energy to well under a millihartree.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use pic_types, only: dp
+   use pic_types, only: dp, int_index
+   use pic_sorting, only: sort_index
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
@@ -71,6 +73,14 @@ contains
       call xc%destroy()
    end subroutine converged_density
 
+   pure function grid_key(coords) result(key)
+      !! A scalar that tells two grid points apart for a sorted lookup
+      real(dp), intent(in) :: coords(:, :)
+      real(dp) :: key(size(coords, 2))
+
+      key = coords(1, :) + 1.2345_dp*coords(2, :) + 2.3456_dp*coords(3, :)
+   end function grid_key
+
    subroutine test_prune(error)
       type(error_type), allocatable, intent(out) :: error
       type(czt_molecule_t) :: mol
@@ -78,7 +88,11 @@ contains
       type(error_t) :: err
       real(dp), allocatable :: density(:, :), v(:, :)
       real(dp) :: energy, e_full, n_full, n_cut, e_cut, dropped
-      integer :: n0, n1, i, j, maxbad
+      integer :: n0, n1, i, j, maxbad, lo, hi, mid
+      real(dp), allocatable :: key_full(:), key_cut(:)
+      integer(int_index), allocatable :: perm(:)
+      logical, allocatable :: used(:)
+      logical :: found
 
       if (.not. xc_available()) return
       call dimer(mol, err)
@@ -110,24 +124,42 @@ contains
                  "every per-point array must be compacted to the same length")
       if (allocated(error)) return
 
-      ! The kept points are the originals, in order: walk the old grid once.
-      j = 0
+      ! The kept points are a subset of the originals, each with its own weights
+      ! and owner. Order is not asserted: the grid is reordered into compact
+      ! blocks again after pruning, so the survivors move.
+      allocate (key_full(n0), perm(n0), used(n0))
+      key_full = grid_key(full%grid%coords)
+      call sort_index(key_full, perm)   ! sorts key_full in place
+      used = .false.
       maxbad = 0
+      key_cut = grid_key(cut%grid%coords)
       do i = 1, n1
-         do
-            j = j + 1
-            if (j > n0) exit
-            if (all(full%grid%coords(:, j) == cut%grid%coords(:, i))) exit
+         lo = 1
+         hi = n0
+         do while (lo < hi)
+            mid = (lo + hi)/2
+            if (key_full(mid) < key_cut(i)) then
+               lo = mid + 1
+            else
+               hi = mid
+            end if
          end do
-         if (j > n0) then
-            maxbad = maxbad + 1
-            exit
-         end if
-         if (full%grid%weights(j) /= cut%grid%weights(i) .or. &
-             full%grid%quad_weights(j) /= cut%grid%quad_weights(i) .or. &
-             full%grid%atom(j) /= cut%grid%atom(i)) maxbad = maxbad + 1
+         found = .false.
+         do j = lo, n0
+            if (key_full(j) > key_cut(i)) exit
+            if (used(perm(j))) cycle
+            if (all(full%grid%coords(:, perm(j)) == cut%grid%coords(:, i)) .and. &
+                full%grid%weights(perm(j)) == cut%grid%weights(i) .and. &
+                full%grid%quad_weights(perm(j)) == cut%grid%quad_weights(i) .and. &
+                full%grid%atom(perm(j)) == cut%grid%atom(i)) then
+               used(perm(j)) = .true.
+               found = .true.
+               exit
+            end if
+         end do
+         if (.not. found) maxbad = maxbad + 1
       end do
-      call check(error, maxbad == 0, "kept points must be the original ones, in order, with "// &
+      call check(error, maxbad == 0, "kept points must be original ones, each used once, with "// &
                  "their own weights and owners")
       if (allocated(error)) return
 

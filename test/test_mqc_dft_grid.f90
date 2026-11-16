@@ -1,7 +1,8 @@
 !! Unit tests for the assembled molecular DFT grid
 module test_mqc_dft_grid
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use pic_types, only: dp
+   use pic_types, only: dp, int_index
+   use pic_sorting, only: sort_index
    use mqc_error, only: error_t
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, grid_level_radial, &
                            grid_level_angular, MIN_GRID_LEVEL, MAX_GRID_LEVEL, &
@@ -29,7 +30,10 @@ contains
                   new_unittest("grid_improves_with_level", test_convergence), &
                   new_unittest("grid_overrides_apply_to_every_atom", test_override), &
                   new_unittest("grid_rejects_a_half_given_override", test_half_override), &
-                  new_unittest("grid_rejects_a_mismatched_system", test_mismatch) &
+                  new_unittest("grid_rejects_a_mismatched_system", test_mismatch), &
+                  new_unittest("grid_block_order_keeps_the_points", test_block_order_multiset), &
+                  new_unittest("grid_block_order_makes_blocks_compact", test_block_order_compact), &
+                  new_unittest("grid_block_order_keeps_the_integral", test_block_order_integral) &
                   ]
    end subroutine collect_mqc_dft_grid
 
@@ -213,6 +217,127 @@ contains
       call build_dft_grid(coords, [8], grid, err)
       call check(error, err%has_error(), "atomic_numbers must match the coordinates")
    end subroutine test_mismatch
+
+   subroutine water_chain(coords, z, n_water)
+      !! `n_water` waters spaced 7 Bohr apart along x with a zigzag in y and z
+      integer, intent(in) :: n_water
+      real(dp), allocatable, intent(out) :: coords(:, :)
+      integer, allocatable, intent(out) :: z(:)
+      real(dp), allocatable :: w(:, :)
+      integer, allocatable :: wz(:)
+      integer :: i, k
+
+      call water(w, wz)
+      allocate (coords(N_DIM, 3*n_water), z(3*n_water))
+      do i = 1, n_water
+         do k = 1, 3
+            coords(:, 3*(i - 1) + k) = w(:, k) + [7.0_dp*(i - 1), 2.5_dp*mod(i, 2), 1.5_dp*mod(i/2, 2)]
+         end do
+         z(3*i - 2:3*i) = wz
+      end do
+   end subroutine water_chain
+
+   subroutine canonical_order(grid, perm)
+      !! The permutation that sorts a grid by a key no two of its points share
+      type(dft_grid_t), intent(in) :: grid
+      integer(int_index), allocatable, intent(out) :: perm(:)
+      real(dp), allocatable :: key(:)
+
+      allocate (perm(grid%n_points))
+      key = grid%coords(1, :) + 1.2345_dp*grid%coords(2, :) + 2.3456_dp*grid%coords(3, :) &
+            + 0.0123_dp*grid%weights
+      call sort_index(key, perm)
+   end subroutine canonical_order
+
+   subroutine test_block_order_multiset(error)
+      !! Reordering moves points and nothing else: the same (coord, weight,
+      !! quad_weight, atom) tuples, with each array permuted together
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: coords(:, :)
+      integer, allocatable :: z(:)
+      type(dft_grid_t) :: before, after
+      type(error_t) :: err
+      integer(int_index), allocatable :: pb(:), pa(:)
+      logical :: moved
+
+      call water_chain(coords, z, 6)
+      call build_dft_grid(coords, z, before, err, level=2)
+      call check(error,.not. err%has_error(), "grid must build")
+      if (allocated(error)) return
+      after = before
+      call after%block_order(256)
+      call check(error, after%n_points, before%n_points)
+      if (allocated(error)) return
+      moved = any(after%coords /= before%coords)
+      call check(error, moved, "the order must actually change")
+      if (allocated(error)) return
+      call canonical_order(before, pb)
+      call canonical_order(after, pa)
+      call check(error, all(before%coords(:, pb) == after%coords(:, pa)), "coordinates must be the same set")
+      if (allocated(error)) return
+      call check(error, all(before%weights(pb) == after%weights(pa)), "weights must follow their points")
+      if (allocated(error)) return
+      call check(error, all(before%quad_weights(pb) == after%quad_weights(pa)), "quad_weights must follow their points")
+      if (allocated(error)) return
+      call check(error, all(before%atom(pb) == after%atom(pa)), "owning atoms must follow their points")
+   end subroutine test_block_order_multiset
+
+   subroutine test_block_order_compact(error)
+      !! Every block of `point_block` points is a small region of the molecule
+      !!
+      !! Checked as the bounding-box diagonal of each block against the
+      !! molecule's: the mean must be below a fifth and the worst below half.
+      !! The generation order, one atom's whole radial shell at a time, has
+      !! blocks as wide as the molecule.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: coords(:, :)
+      integer, allocatable :: z(:)
+      type(dft_grid_t) :: grid
+      type(error_t) :: err
+      real(dp) :: whole, diag, mean, worst
+      integer :: g0, g1, nblk
+      integer, parameter :: BLOCK = 256
+
+      call water_chain(coords, z, 6)
+      call build_dft_grid(coords, z, grid, err, level=2)
+      call check(error,.not. err%has_error(), "grid must build")
+      if (allocated(error)) return
+      call grid%block_order(BLOCK)
+      whole = norm2(maxval(grid%coords, dim=2) - minval(grid%coords, dim=2))
+      mean = 0.0_dp
+      worst = 0.0_dp
+      nblk = 0
+      do g0 = 1, grid%n_points, BLOCK
+         g1 = min(g0 + BLOCK - 1, grid%n_points)
+         diag = norm2(maxval(grid%coords(:, g0:g1), dim=2) - minval(grid%coords(:, g0:g1), dim=2))
+         mean = mean + diag
+         worst = max(worst, diag)
+         nblk = nblk + 1
+      end do
+      mean = mean/nblk
+      call check(error, mean < 0.2_dp*whole, "the mean block must span under a fifth of the molecule")
+      if (allocated(error)) return
+      call check(error, worst < 0.5_dp*whole, "no block may span half the molecule")
+   end subroutine test_block_order_compact
+
+   subroutine test_block_order_integral(error)
+      !! A sum of Gaussians integrates to the same number in either order
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: coords(:, :)
+      integer, allocatable :: z(:)
+      type(dft_grid_t) :: grid
+      type(error_t) :: err
+      real(dp) :: t0, t1
+
+      call water_chain(coords, z, 4)
+      call build_dft_grid(coords, z, grid, err, level=2)
+      call check(error,.not. err%has_error(), "grid must build")
+      if (allocated(error)) return
+      t0 = integrate_gaussians(grid, coords, 1.3_dp)
+      call grid%block_order(128)
+      t1 = integrate_gaussians(grid, coords, 1.3_dp)
+      call check(error, abs(t1 - t0) <= 1.0e-13_dp*abs(t0), "the quadrature is a sum; order may only move roundoff")
+   end subroutine test_block_order_integral
 
    function integrate_gaussians(grid, coords, alpha) result(total)
       type(dft_grid_t), intent(in) :: grid
