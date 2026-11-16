@@ -8,7 +8,7 @@ module mqc_cuest_iface
    ! from behind an `#ifdef`.
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t, deltascf_options_t
-   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC, DEFAULT_COSX_GRID
    use mqc_cube_config, only: cube_config_t
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, &
                                 properties_config_t, excited_config_t
@@ -50,6 +50,8 @@ module mqc_cuest_iface
       logical :: cosx = .false.
          !! `keywords.scf.exchange: "cosx"`. CPU backend only, and only beside
          !! `density_fitting`.
+      integer :: cosx_grid = DEFAULT_COSX_GRID  !! `keywords.scf.cosx_grid`, 1 to 3
+      logical :: cosx_final_grid = .true.  !! `keywords.scf.cosx_final_grid`
       ! `density_fitting` and `corr_density_fitting` are separate flags on
       ! purpose: they have to be able to disagree.
       logical :: run_mp2 = .false.
@@ -253,6 +255,8 @@ contains
       settings%spherical = options%spherical
       settings%density_fitting = options%density_fitting
       settings%cosx = options%cosx
+      settings%cosx_grid = options%cosx_grid
+      settings%cosx_final_grid = options%cosx_final_grid
       settings%freeze_core = options%freeze_core
       settings%n_frozen_core = options%n_frozen_core
       settings%unrestricted = options%unrestricted

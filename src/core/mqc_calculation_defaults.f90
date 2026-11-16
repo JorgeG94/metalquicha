@@ -88,6 +88,11 @@ module mqc_calculation_defaults
    !! Davidson iterations the stability analysis may take before it reports
    !! non-convergence.
 
+   integer, parameter, public :: DEFAULT_COSX_GRID = 2
+   !! Level of the chain-of-spheres exchange grids, 1 (smallest) to 3, when a
+   !! deck does not say. Here and not in the backend so the deck reader, which
+   !! is built without it, and the exchange kernel share one value.
+
    real(dp), parameter, public :: DEFAULT_SOSCF_START = 1.0e-2_dp
    !! Commutator below which a second-order SCF stops extrapolating and starts
    !! taking Newton steps, as `max|FDS - SDF|` in the orthogonal basis.

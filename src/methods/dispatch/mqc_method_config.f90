@@ -18,7 +18,7 @@ module mqc_method_config
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
                                        DEFAULT_EXCITED_BATCH, &
-                                       DEFAULT_SOSCF_START
+                                       DEFAULT_SOSCF_START, DEFAULT_COSX_GRID
    implicit none
    private
 
@@ -149,6 +149,10 @@ module mqc_method_config
          !! `keywords.scf.exchange: "cosx"`. Build the exchange matrix by
          !! chain-of-spheres quadrature, with the Coulomb matrix still fitted.
          !! CPU backend only, restricted only, and only with `density_fitting`.
+      integer :: cosx_grid = DEFAULT_COSX_GRID
+         !! `keywords.scf.cosx_grid`, 1 to 3: the size of the exchange grids
+      logical :: cosx_final_grid = .true.
+         !! `keywords.scf.cosx_final_grid`: the final energy on the larger grid
    end type scf_config_t
 
    !============================================================================
@@ -451,6 +455,8 @@ module mqc_method_config
       logical :: cosx = .false.
          !! Build the exchange matrix by chain-of-spheres quadrature; see
          !! `scf_config_t`
+      integer :: cosx_grid = DEFAULT_COSX_GRID  !! See `scf_config_t`
+      logical :: cosx_final_grid = .true.  !! See `scf_config_t`
       logical :: freeze_core = .true.
          !! Exclude core orbitals from a post-SCF correlation treatment. Always
          !! filled from `correlation_config_t`, whose default this must match:

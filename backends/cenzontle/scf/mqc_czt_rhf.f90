@@ -25,7 +25,8 @@ module mqc_czt_rhf
                              direct_stats_t, build_fock
    use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
-   use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange
+   use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange, &
+                           COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_DEFAULT_GRID_LEVEL
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
@@ -227,8 +228,11 @@ module mqc_czt_rhf
       real(dp), allocatable :: eri(:, :, :, :)  !! In-core integrals; unallocated on the direct path
       real(dp), allocatable :: bounds(:, :)   !! Schwarz bounds for screening
       type(cosx_grid_t) :: cosx
-         !! The grid the exchange is integrated on; unbuilt unless the
-         !! exchange is chain-of-spheres
+         !! The grid the exchange is integrated on during the iterations;
+         !! unbuilt unless the exchange is chain-of-spheres
+      type(cosx_grid_t) :: cosx_final
+         !! The larger grid the final energy is taken on; unbuilt when that
+         !! step is off, and then the final energy is on `cosx`
       integer :: n_ao = 0
       integer :: n_mo = 0                     !! May be below n_ao where the overlap was singular
       integer :: n_occ = 0
@@ -510,7 +514,7 @@ contains
                           guess, guess_density, xc, h_extra, pcm, projector, &
                           level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
                           incremental_fock, convergence, scf, second_order, soscf_start, &
-                          cosx, cosx_grid_level)
+                          cosx, cosx_grid_level, cosx_final_grid)
       !! Drive a closed-shell SCF to convergence
       type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -617,8 +621,13 @@ contains
          !! chain-of-spheres quadrature and the Coulomb matrix from the fit, so
          !! `aux` must be present. Default false.
       integer, intent(in), optional :: cosx_grid_level
-         !! Level of the grid that quadrature runs on, on the DFT grid's
-         !! scale. Absent takes `COSX_DEFAULT_GRID_LEVEL`. Read only with `cosx`.
+         !! `keywords.scf.cosx_grid`, 1 to 3: the size of the grids that
+         !! quadrature runs on. Absent takes `COSX_DEFAULT_GRID_LEVEL`. Read
+         !! only with `cosx`.
+      logical, intent(in), optional :: cosx_final_grid
+         !! `keywords.scf.cosx_final_grid`. Take the final energy on the
+         !! level's larger grid, from the density converged on its smaller one.
+         !! Default true. Read only with `cosx`.
       real(dp), intent(in), optional :: soscf_start
          !! The commutator at which that switch happens, as
          !! `max|FDS - SDF|` in the orthogonal basis. Absent or non-positive
@@ -640,7 +649,8 @@ contains
 
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
-      logical :: use_in_core, use_cosx
+      logical :: use_in_core, use_cosx, use_final_grid
+      integer :: cosx_level
       real(dp), allocatable :: bounds(:, :)
       ! TODO(mqc): `stats` is declared here and never used; the screening counts
       ! come back in `screening`, which `assemble_fock` fills.
@@ -757,16 +767,29 @@ contains
          end if
          if (error%has_error()) return
          if (use_cosx) then
-            if (present(cosx_grid_level)) then
-               call build_cosx_grid(mol, ops%cosx, error, level=cosx_grid_level)
-            else
-               call build_cosx_grid(mol, ops%cosx, error)
-            end if
+            cosx_level = COSX_DEFAULT_GRID_LEVEL
+            if (present(cosx_grid_level)) cosx_level = cosx_grid_level
+            use_final_grid = .true.
+            if (present(cosx_final_grid)) use_final_grid = cosx_final_grid
+            ! Both grids carry the overlap fit, which is what lets them be
+            ! this small.
+            call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
+                                 role=COSX_ROLE_SCF, overlap=ops%s)
             if (error%has_error()) return
+            if (use_final_grid) then
+               call build_cosx_grid(mol, ops%cosx_final, error, level=cosx_level, &
+                                    role=COSX_ROLE_FINAL, overlap=ops%s)
+               if (error%has_error()) return
+            end if
             if (verbose) then
-               call logger%info("  exchange: chain of spheres on "// &
-                                to_char(ops%cosx%n_points)//" grid points (level "// &
-                                to_char(ops%cosx%level)//"), Coulomb fitted")
+               call logger%info("  exchange: chain of spheres, grid level "// &
+                                to_char(cosx_level)//", overlap fitted; Coulomb fitted")
+               call logger%info("    iterations on "//to_char(ops%cosx%n_points)// &
+                                " points")
+               if (use_final_grid) then
+                  call logger%info("    final energy on "// &
+                                   to_char(ops%cosx_final%n_points)//" points")
+               end if
             end if
          end if
       else if (use_in_core) then
@@ -995,9 +1018,20 @@ contains
       ! test, so it is recomputed from the final Fock. Deliberately without
       ! `incr`: this one is a full build, and the number that leaves must not
       ! carry the corrections accumulated since the last reset.
-      call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
-                         st%fock, result%electronic, error, clk=clk, bmat_lr=ops%bmat_lr, &
-                         cosx=ops%cosx)
+      !
+      ! A chain-of-spheres run takes it on the larger of its two grids when it
+      ! has one: the density was converged on the smaller, and the energy's
+      ! error in the density is second order while its error in the quadrature
+      ! is first.
+      if (ops%cosx_final%active()) then
+         call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
+                            ops%bounds, xc, st%fock, result%electronic, error, clk=clk, &
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx_final)
+      else
+         call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, &
+                            ops%bounds, xc, st%fock, result%electronic, error, clk=clk, &
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx)
+      end if
       if (error%has_error()) return
       ! Last use of the fitted tensor: a caller that asked for it takes the
       ! allocation itself rather than a copy of several gigabytes.
@@ -2220,13 +2254,20 @@ contains
       end if
 
       if (use_cosx) then
-         ! The fit for J alone, then K from the grid. The quadrature's K is
-         ! symmetrised, and it is linear in the density with
-         ! `Tr[D1 K(D2)] = Tr[D2 K(D1)]`, so this Fock matrix is the derivative
-         ! of the energy taken from it below.
+         ! The fit for J alone, then K from the grid. Unfitted, the
+         ! symmetrised quadrature has `Tr[D1 K(D2)] = Tr[D2 K(D1)]` and this
+         ! Fock matrix is exactly the derivative of the energy taken from it
+         ! below. The overlap fit breaks that by the size of its own
+         ! correction, so a fitted SCF converges to a point that is stationary
+         ! to within the quadrature error and no better.
          call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=0.0_dp)
          if (k_scale /= 0.0_dp) then
-            call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error)
+            if (allocated(cosx%fit)) then
+               call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
+                                  fit=cosx%fit)
+            else
+               call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error)
+            end if
             if (error%has_error()) return
             fock = fock - 0.5_dp*k_scale*k_cosx
             deallocate (k_cosx)

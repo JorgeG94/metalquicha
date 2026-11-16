@@ -414,6 +414,8 @@ contains
       call allow(keys, "density_fitting")
       ! How the exchange matrix is built: "exact" or "cosx".
       call allow(keys, "exchange")
+      call allow(keys, "cosx_grid")
+      call allow(keys, "cosx_final_grid")
       call allow(keys, "level_shift")
       call allow(keys, "diis")
       call allow(keys, "diis_size")

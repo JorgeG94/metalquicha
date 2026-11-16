@@ -715,19 +715,40 @@ contains
       type(error_t), intent(inout) :: error
 
       character(len=:), allocatable :: text
-      logical :: found
+      logical :: found, grid_named, final_named
 
       call json%get("keywords.scf.exchange", text, found)
-      if (.not. found .or. .not. allocated(text)) return
-      select case (to_lower(trim(adjustl(text))))
-      case ("exact")
-         config%scf_cosx = .false.
-      case ("cosx")
-         config%scf_cosx = .true.
-      case default
-         call error%set(ERROR_VALIDATION, "keywords.scf.exchange is '"//trim(text)// &
-                        "'. Accepted: 'exact' or 'cosx'.")
-      end select
+      if (found .and. allocated(text)) then
+         select case (to_lower(trim(adjustl(text))))
+         case ("exact")
+            config%scf_cosx = .false.
+         case ("cosx")
+            config%scf_cosx = .true.
+         case default
+            call error%set(ERROR_VALIDATION, "keywords.scf.exchange is '"//trim(text)// &
+                           "'. Accepted: 'exact' or 'cosx'.")
+            return
+         end select
+      end if
+
+      call optional_int(json, "keywords.scf.cosx_grid", config%scf_cosx_grid, &
+                        was_named=grid_named)
+      call optional_logical_seen(json, "keywords.scf.cosx_final_grid", &
+                                 config%scf_cosx_final_grid, final_named)
+      ! Either one without the exchange it configures would be read, carried
+      ! and never used.
+      if ((grid_named .or. final_named) .and. .not. config%scf_cosx) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.cosx_grid and "// &
+                        "cosx_final_grid configure chain-of-spheres exchange and do "// &
+                        "nothing without it. Set keywords.scf.exchange to 'cosx', or "// &
+                        "drop them.")
+         return
+      end if
+      if (config%scf_cosx_grid < 1 .or. config%scf_cosx_grid > 3) then
+         call error%set(ERROR_VALIDATION, "keywords.scf.cosx_grid is "// &
+                        to_char(config%scf_cosx_grid)//" and must be 1, 2 or 3.")
+         return
+      end if
    end subroutine read_scf_exchange
 
    subroutine check_cosx_run(config, error)

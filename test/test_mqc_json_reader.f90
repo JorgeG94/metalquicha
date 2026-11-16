@@ -20,6 +20,7 @@ module test_mqc_json_reader
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       DEFAULT_COSX_GRID, &
                                        HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
                                        HESSIAN_METHOD_NUMERICAL, &
                                        DEFAULT_FRAG_LEVEL, &
@@ -3589,6 +3590,45 @@ contains
       call check(error, parse_error%has_error() .and. &
                  index(parse_error%get_message(), "cosx") > 0, &
                  "cosx with an unrestricted reference was accepted")
+      if (allocated(error)) return
+
+      ! The grids. Level 2 with the final grid on is the default, and it has
+      ! to be the kernel's own default or a deck that says nothing and a
+      ! caller that passes nothing would disagree.
+      call write_deck(FITTED, "Energy", COSX, "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_cosx_grid == DEFAULT_COSX_GRID, &
+                 "the default exchange grid is not the shared default level")
+      if (allocated(error)) return
+      call check(error, config%scf_cosx_final_grid, "the final grid should default on")
+      if (allocated(error)) return
+
+      call write_deck(FITTED, "Energy", '"scf": {"density_fitting": true, '// &
+                      '"exchange": "cosx", "cosx_grid": 3, "cosx_final_grid": false}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_cosx_grid == 3, "cosx_grid should have been read")
+      if (allocated(error)) return
+      call check(error,.not. config%scf_cosx_final_grid, "cosx_final_grid should have been read")
+      if (allocated(error)) return
+
+      call write_deck(FITTED, "Energy", '"scf": {"density_fitting": true, '// &
+                      '"exchange": "cosx", "cosx_grid": 4}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "a grid level that does not exist was accepted")
+      if (allocated(error)) return
+
+      ! Named without the exchange they configure: read, carried, never used.
+      call write_deck(FITTED, "Energy", '"scf": {"density_fitting": true, "cosx_grid": 2}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx_grid without cosx exchange was accepted")
    end subroutine test_scf_exchange
 
    subroutine test_second_order_keywords(error)

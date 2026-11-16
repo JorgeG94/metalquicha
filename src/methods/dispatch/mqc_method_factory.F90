@@ -198,6 +198,8 @@ contains
       options%aux_basis_named = config%scf%aux_basis_named
       options%density_fitting = config%scf%density_fitting
       options%cosx = config%scf%cosx
+      options%cosx_grid = config%scf%cosx_grid
+      options%cosx_final_grid = config%scf%cosx_final_grid
       options%unrestricted = config%scf%unrestricted
       options%guess = config%scf%guess
       if (allocated(config%scf%guess_steps)) options%guess_steps = config%scf%guess_steps

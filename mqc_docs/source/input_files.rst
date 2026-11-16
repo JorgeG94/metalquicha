@@ -861,6 +861,8 @@ SCF Options
        "accelerator": "diis",
        "density_fitting": false,
        "exchange": "exact",
+       "cosx_grid": 2,
+       "cosx_final_grid": true,
        "level_shift": 0.0,
        "allow_crap_scf": false,
        "linear_dependence_threshold": 1e-7
@@ -927,7 +929,19 @@ SCF Options
   hybrids, correlated methods, excited states, the stability analysis and the
   second-order SCF are refused by name. The result depends on the exchange
   grid, so it is not identical to the exact-exchange energy: on water in
-  def2-SVP it is 2.8e-5 hartree from Hartree-Fock.
+  def2-SVP it is 2.6e-5 hartree from Hartree-Fock, most of which is the fit of
+  the Coulomb matrix and not the quadrature.
+- ``cosx_grid``: Size of the chain-of-spheres grids, 1 to 3 (default: 2). Each
+  level is a pair: a small grid the iterations run on and a larger one for the
+  final energy. Both are overlap fitted, which is what lets them be far
+  smaller than a DFT grid. Measured on the exchange energy of eight small
+  molecules in def2-SVP and def2-TZVP, against the analytic exchange: level 1
+  is within 0.27 kcal/mol, level 2 within 0.02 and level 3 within 0.015. Only
+  read with ``exchange: "cosx"``, and refused without it.
+- ``cosx_final_grid``: Take the final energy on the level's larger grid, from
+  the density converged on the smaller (default: true). Off, the energy is the
+  one the iterations converged, on the small grid: cheaper by one exchange
+  build and less accurate. Only read with ``exchange: "cosx"``.
 - ``level_shift``: Hartree added to the virtual orbitals before each
   diagonalisation, to widen the gap the next density is built through (default:
   0.0, meaning off). Use it on an SCF that oscillates rather than one that

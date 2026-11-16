@@ -17,15 +17,23 @@ module mqc_czt_cosx
    !! matrix takes `-K/2` of the total density, and the exchange energy is
    !! `-Tr(P K)/4`.
    !!
+   !! A grid small enough to be worth using integrates products of basis
+   !! functions poorly, so the grids here carry an overlap fit: a matrix,
+   !! applied to the left index of `K`, that makes the same quadrature exact
+   !! for the overlap. See `cosx_overlap_fit`.
+   !!
    !! Every array is indexed (point, function), points in the order given. The
    !! steps are separate public routines over plain arrays, and
    !! `cosx_esp_contract` is the only one that evaluates an integral.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_syev
+   use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_calculation_defaults, only: DEFAULT_COSX_GRID
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use mqc_czt_ao, only: eval_ao_block
-   use mqc_dft_grid, only: dft_grid_t, build_dft_grid
+   use mqc_dft_grid, only: dft_grid_t, build_dft_grid, element_period
    use libcint_fortran, only: LIBCINT_PTR_GRIDS, &
                               libcint_1e_grids_cart, libcint_1e_grids_sph
    implicit none
@@ -34,18 +42,41 @@ module mqc_czt_cosx
    public :: cosx_grid_t
    public :: build_cosx_grid
    public :: cosx_exchange
+   public :: cosx_overlap_fit
+   public :: cosx_numerical_overlap
    public :: cosx_batch_exchange
    public :: cosx_density_on_grid
    public :: cosx_esp_contract
    public :: cosx_accumulate
    public :: COSX_DEFAULT_BATCH
-   public :: COSX_DEFAULT_GRID_LEVEL
+   public :: COSX_DEFAULT_GRID_LEVEL, COSX_MIN_GRID_LEVEL, COSX_MAX_GRID_LEVEL
+   public :: COSX_ROLE_SCF, COSX_ROLE_FINAL
+   public :: cosx_radial_points, cosx_angular_points
 
    integer, parameter :: COSX_DEFAULT_BATCH = 128
       !! Points per batch when the caller does not say
-   integer, parameter :: COSX_DEFAULT_GRID_LEVEL = 2
-      !! Level of the molecular grid the exchange is integrated on, on the
-      !! scale `build_dft_grid` uses
+   real(dp), parameter :: COSX_FIT_NULL = 1.0e-10_dp
+      !! Eigenvalues of the numerical overlap below this fraction of the
+      !! largest are left out of its inverse: directions of the basis the grid
+      !! cannot resolve, which a plain inverse would amplify
+   integer, parameter :: COSX_MIN_GRID_LEVEL = 1
+   integer, parameter :: COSX_MAX_GRID_LEVEL = 3
+   integer, parameter :: COSX_DEFAULT_GRID_LEVEL = DEFAULT_COSX_GRID
+      !! Level of the exchange grids, 1 (smallest) to 3. Not the DFT grid's
+      !! scale: an exchange grid is far smaller than one for a functional.
+
+   integer, parameter :: COSX_ROLE_SCF = 1     !! The grid the iterations run on
+   integer, parameter :: COSX_ROLE_FINAL = 2   !! The larger one the final energy is taken on
+
+   integer, parameter :: COSX_RADIAL_BASE(2, COSX_MAX_GRID_LEVEL) = &
+                         reshape([20, 20, 20, 20, 20, 25], [2, COSX_MAX_GRID_LEVEL])
+      !! (role, level). Radial shells are this plus `COSX_RADIAL_PER_PERIOD`
+      !! times the period.
+   integer, parameter :: COSX_RADIAL_PER_PERIOD = 5
+   integer, parameter :: COSX_ANGULAR(2, COSX_MAX_GRID_LEVEL) = &
+                         reshape([50, 86, 50, 194, 86, 302], [2, COSX_MAX_GRID_LEVEL])
+      !! (role, level). Lebedev points in the valence zone; the pruning steps
+      !! down from it towards the nucleus and far from it.
 
    type :: cosx_grid_t
       !! The points the exchange is integrated over
@@ -56,6 +87,9 @@ module mqc_czt_cosx
       integer :: level = -1                   !! The level it was built at
       real(dp), allocatable :: coords(:, :)   !! (3, n_points), Bohr
       real(dp), allocatable :: weights(:)     !! (n_points)
+      real(dp), allocatable :: fit(:, :)
+         !! (n_ao, n_ao), the overlap-fitting matrix from `cosx_overlap_fit`.
+         !! Unallocated means the quadrature is used as it stands.
    contains
       procedure :: active => cosx_grid_active
       procedure :: destroy => cosx_grid_destroy
@@ -77,25 +111,77 @@ contains
 
       if (allocated(this%coords)) deallocate (this%coords)
       if (allocated(this%weights)) deallocate (this%weights)
+      if (allocated(this%fit)) deallocate (this%fit)
       this%n_points = 0
       this%level = -1
    end subroutine cosx_grid_destroy
 
-   subroutine build_cosx_grid(mol, grid, error, level)
-      !! The molecular grid for the exchange, at a level of the DFT grid's scale
+   pure function cosx_radial_points(atomic_number, level, role) result(n_radial)
+      !! Radial shells an element gets on an exchange grid
+      integer, intent(in) :: atomic_number
+      integer, intent(in) :: level   !! Clamped to the levels that exist
+      integer, intent(in) :: role    !! `COSX_ROLE_SCF` or `COSX_ROLE_FINAL`
+      integer :: n_radial
+
+      n_radial = COSX_RADIAL_BASE(role, clamp_level(level)) &
+                 + COSX_RADIAL_PER_PERIOD*element_period(atomic_number)
+   end function cosx_radial_points
+
+   pure function cosx_angular_points(level, role) result(n_angular)
+      !! Lebedev points in the valence zone of an exchange grid
+      integer, intent(in) :: level
+      integer, intent(in) :: role
+      integer :: n_angular
+
+      n_angular = COSX_ANGULAR(role, clamp_level(level))
+   end function cosx_angular_points
+
+   pure function clamp_level(level) result(clamped)
+      integer, intent(in) :: level
+      integer :: clamped
+
+      clamped = max(COSX_MIN_GRID_LEVEL, min(COSX_MAX_GRID_LEVEL, level))
+   end function clamp_level
+
+   subroutine build_cosx_grid(mol, grid, error, level, role, n_radial, n_angular, overlap)
+      !! The molecular grid for the exchange
       !!
-      !! Ghost centres get points: they carry basis functions, and the
-      !! quadrature integrates products of basis functions.
+      !! Sized from the exchange grid tables by `level` and `role`, or from
+      !! `n_radial` and `n_angular` when those are given. Ghost centres get
+      !! points: they carry basis functions, and the quadrature integrates
+      !! products of basis functions.
       type(czt_molecule_t), intent(in) :: mol
       type(cosx_grid_t), intent(out) :: grid
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: level   !! Default `COSX_DEFAULT_GRID_LEVEL`
+      integer, intent(in), optional :: role    !! Default `COSX_ROLE_SCF`
+      integer, intent(in), optional :: n_radial
+         !! Radial shells on every atom, overriding the tables. Given with
+         !! `n_angular` or not at all.
+      integer, intent(in), optional :: n_angular
+         !! Lebedev points in the valence zone of every atom
+      real(dp), intent(in), optional :: overlap(:, :)
+         !! The analytic overlap. Present, the grid carries the overlap fit
+         !! and every exchange built on it is fitted.
 
       type(dft_grid_t) :: full
-      integer, allocatable :: numbers(:)
+      integer, allocatable :: numbers(:), radial(:), angular(:)
+      integer :: used_role, ia
 
       grid%level = COSX_DEFAULT_GRID_LEVEL
       if (present(level)) grid%level = level
+      used_role = COSX_ROLE_SCF
+      if (present(role)) used_role = role
+      if (used_role /= COSX_ROLE_SCF .and. used_role /= COSX_ROLE_FINAL) then
+         call error%set(ERROR_VALIDATION, "COSX: unknown grid role")
+         return
+      end if
+      if (grid%level < COSX_MIN_GRID_LEVEL .or. grid%level > COSX_MAX_GRID_LEVEL) then
+         call error%set(ERROR_VALIDATION, "COSX: the grid level is "// &
+                        to_char(grid%level)//" and must be "// &
+                        to_char(COSX_MIN_GRID_LEVEL)//" to "//to_char(COSX_MAX_GRID_LEVEL))
+         return
+      end if
 
       ! The element and not the charge it presents, as the XC grid does: the
       ! charge is reduced by an ECP's core and is zero on a ghost.
@@ -106,15 +192,30 @@ contains
          numbers = nint(mol%charges) + mol%core_electrons
       end if
 
-      call build_dft_grid(mol%coords, numbers, full, error, level=grid%level)
+      if (present(n_radial) .or. present(n_angular)) then
+         call build_dft_grid(mol%coords, numbers, full, error, &
+                             n_radial=n_radial, n_angular=n_angular)
+         grid%level = -1
+      else
+         allocate (radial(mol%natm), angular(mol%natm))
+         do ia = 1, mol%natm
+            radial(ia) = cosx_radial_points(numbers(ia), grid%level, used_role)
+            angular(ia) = cosx_angular_points(grid%level, used_role)
+         end do
+         call build_dft_grid(mol%coords, numbers, full, error, &
+                             radial_by_atom=radial, angular_by_atom=angular)
+      end if
       if (error%has_error()) return
       grid%n_points = full%n_points
       call move_alloc(full%coords, grid%coords)
       call move_alloc(full%weights, grid%weights)
       call full%destroy()
+      if (present(overlap)) then
+         call cosx_overlap_fit(mol, grid%coords, grid%weights, overlap, grid%fit, error)
+      end if
    end subroutine build_cosx_grid
 
-   subroutine cosx_exchange(mol, coords, weights, density, k, error, batch_size, symmetrize)
+   subroutine cosx_exchange(mol, coords, weights, density, k, error, batch_size, symmetrize, fit)
       !! The exchange matrix of a density, by quadrature over the points given
       !!
       !! Converges to the analytic exchange matrix as the grid grows. Threaded
@@ -134,8 +235,13 @@ contains
          !! electrons differently, so `K` is symmetric only in the limit of an
          !! exact grid even when the density is. Pass false for a density that
          !! is not symmetric, whose exchange matrix is not either.
+      real(dp), intent(in), optional :: fit(:, :)
+         !! (n_ao, n_ao) from `cosx_overlap_fit` on the same points. Applied
+         !! to the left index of `K` before any symmetrisation, which makes the
+         !! quadrature exact for the overlap and far more accurate for the
+         !! exchange on a small grid. Absent is the plain quadrature.
 
-      real(dp), allocatable :: k_local(:, :)
+      real(dp), allocatable :: k_local(:, :), k_plain(:, :)
       type(error_t) :: local_error
       integer :: n_points, n_ao, step, g0, g1
       logical :: fold, failed
@@ -167,6 +273,12 @@ contains
       end if
       fold = .true.
       if (present(symmetrize)) fold = symmetrize
+      if (present(fit)) then
+         if (size(fit, 1) /= n_ao .or. size(fit, 2) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "COSX: the overlap fit does not match the basis")
+            return
+         end if
+      end if
 
       allocate (k(n_ao, n_ao))
       k = 0.0_dp
@@ -205,8 +317,148 @@ contains
          deallocate (k)
          return
       end if
+      if (present(fit)) then
+         call move_alloc(k, k_plain)
+         allocate (k(n_ao, n_ao))
+         call pic_gemm(fit, k_plain, k)
+         deallocate (k_plain)
+      end if
       if (fold) k = 0.5_dp*(k + transpose(k))
    end subroutine cosx_exchange
+
+   subroutine cosx_numerical_overlap(mol, coords, weights, s_grid, error, batch_size)
+      !! The overlap matrix as the grid integrates it
+      !!
+      !! `S(mu, nu) = sum_g w_g chi_mu(r_g) chi_nu(r_g)`. Equal to the analytic
+      !! overlap in the limit of the grid, and how far it is from it on a given
+      !! grid is how well that grid integrates a product of basis functions.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)       !! (3, n_points), Bohr
+      real(dp), intent(in) :: weights(:)         !! (n_points)
+      real(dp), allocatable, intent(out) :: s_grid(:, :)   !! (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: batch_size   !! Default `COSX_DEFAULT_BATCH`
+
+      real(dp), allocatable :: s_local(:, :), ao(:, :), wao(:, :)
+      type(error_t) :: local_error
+      integer :: n_points, n_ao, step, g0, g1, ig, mu
+      logical :: failed
+
+      n_ao = mol%nao
+      n_points = size(coords, 2)
+      if (size(coords, 1) /= 3 .or. n_points < 1 .or. size(weights) /= n_points) then
+         call error%set(ERROR_VALIDATION, "COSX: the grid must be (3, n) points with "// &
+                        "n > 0 and one weight each")
+         return
+      end if
+      step = COSX_DEFAULT_BATCH
+      if (present(batch_size)) step = batch_size
+      if (step < 1) then
+         call error%set(ERROR_VALIDATION, "COSX: the batch size must be positive")
+         return
+      end if
+
+      allocate (s_grid(n_ao, n_ao))
+      s_grid = 0.0_dp
+      failed = .false.
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, coords, weights, s_grid, error, failed, n_points, n_ao, step) &
+      !$omp    private(g0, g1, ig, mu, s_local, ao, wao) &
+      !$omp    firstprivate(local_error)
+      allocate (s_local(n_ao, n_ao))
+      s_local = 0.0_dp
+      !$omp do schedule(dynamic)
+      do g0 = 1, n_points, step
+         if (failed) cycle
+         g1 = min(g0 + step - 1, n_points)
+         call eval_ao_block(mol, coords(:, g0:g1), ao, local_error)
+         if (local_error%has_error()) then
+            !$omp critical(mqc_cosx_overlap_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical(mqc_cosx_overlap_failure)
+            cycle
+         end if
+         if (allocated(wao)) deallocate (wao)
+         allocate (wao(size(ao, 1), n_ao))
+         do mu = 1, n_ao
+            do ig = 1, size(ao, 1)
+               wao(ig, mu) = weights(g0 + ig - 1)*ao(ig, mu)
+            end do
+         end do
+         call pic_gemm(ao, wao, s_local, transa="T", beta=1.0_dp)
+      end do
+      !$omp end do
+      !$omp critical(mqc_cosx_overlap_accumulate)
+      s_grid = s_grid + s_local
+      !$omp end critical(mqc_cosx_overlap_accumulate)
+      deallocate (s_local)
+      !$omp end parallel
+
+      if (failed) deallocate (s_grid)
+   end subroutine cosx_numerical_overlap
+
+   subroutine cosx_overlap_fit(mol, coords, weights, overlap, fit, error, n_dropped)
+      !! The matrix that makes a grid integrate the overlap exactly
+      !!
+      !! `fit = S_analytic S_grid^-1`, with `S_grid` from
+      !! `cosx_numerical_overlap`. Replacing the function values on one side of
+      !! the quadrature by `chi fit^T` turns the numerical overlap into the
+      !! analytic one, and applied to the exchange that is `K <- fit K`.
+      !!
+      !! It depends on the grid and the basis and not on the density, so it is
+      !! built once per grid. It is the identity in the limit of the grid.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)       !! (3, n_points), Bohr
+      real(dp), intent(in) :: weights(:)         !! (n_points)
+      real(dp), intent(in) :: overlap(:, :)      !! (n_ao, n_ao), analytic
+      real(dp), allocatable, intent(out) :: fit(:, :)   !! (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+      integer, intent(out), optional :: n_dropped
+         !! Directions of the numerical overlap left out of its inverse as
+         !! unresolved by the grid. Zero on any grid adequate for the basis.
+
+      real(dp), allocatable :: s_grid(:, :), values(:), scaled(:, :), inverse(:, :)
+      integer :: n_ao, info, i, dropped
+      real(dp) :: floor_value
+
+      n_ao = mol%nao
+      if (size(overlap, 1) /= n_ao .or. size(overlap, 2) /= n_ao) then
+         call error%set(ERROR_VALIDATION, "COSX: the overlap does not match the basis")
+         return
+      end if
+      call cosx_numerical_overlap(mol, coords, weights, s_grid, error)
+      if (error%has_error()) return
+
+      ! A pseudo-inverse through the eigenvectors: on a coarse grid the
+      ! numerical overlap of a large basis can be singular where the analytic
+      ! one is not.
+      allocate (values(n_ao))
+      call pic_syev(s_grid, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "COSX: the numerical overlap could not be "// &
+                        "diagonalized (info = "//to_char(info)//")")
+         return
+      end if
+      floor_value = COSX_FIT_NULL*maxval(abs(values))
+      allocate (scaled(n_ao, n_ao), inverse(n_ao, n_ao))
+      dropped = 0
+      do i = 1, n_ao
+         if (values(i) > floor_value) then
+            scaled(:, i) = s_grid(:, i)/values(i)
+         else
+            scaled(:, i) = 0.0_dp
+            dropped = dropped + 1
+         end if
+      end do
+      if (present(n_dropped)) n_dropped = dropped
+      call pic_gemm(scaled, s_grid, inverse, transb="T")
+      allocate (fit(n_ao, n_ao))
+      call pic_gemm(overlap, inverse, fit)
+   end subroutine cosx_overlap_fit
 
    subroutine cosx_batch_exchange(mol, coords, weights, density, k, error)
       !! Add one batch of points to an exchange matrix

@@ -42,6 +42,7 @@ contains
 
       testsuite = [ &
                   new_unittest("rijcosx_energy_converges_with_the_grid", test_grid), &
+                  new_unittest("rijcosx_final_grid_improves_the_energy", test_final_grid), &
                   new_unittest("rijcosx_is_close_to_hartree_fock", test_against_exact), &
                   new_unittest("rijcosx_changes_nothing_for_a_pure_functional", test_pure), &
                   new_unittest("rijcosx_scales_with_a_hybrid", test_hybrid), &
@@ -63,7 +64,7 @@ contains
       call check(error,.not. err%has_error(), "the molecules should build: "//err%get_full_trace())
    end subroutine molecules
 
-   subroutine converge(mol, energy, error, aux, cosx, level, xc)
+   subroutine converge(mol, energy, error, aux, cosx, level, xc, final_grid)
       !! One closed-shell SCF, tightly converged, and its total energy
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(out) :: energy
@@ -72,13 +73,15 @@ contains
       logical, intent(in), optional :: cosx
       integer, intent(in), optional :: level
       type(xc_context_t), intent(inout), optional :: xc
+      logical, intent(in), optional :: final_grid
 
       type(rhf_result_t) :: scf
       type(error_t) :: err
 
       energy = 0.0_dp
       call run_czt_rhf(mol, N_ELEC, 60, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
-                       aux=aux, xc=xc, cosx=cosx, cosx_grid_level=level)
+                       aux=aux, xc=xc, cosx=cosx, cosx_grid_level=level, &
+                       cosx_final_grid=final_grid)
       call check(error,.not. err%has_error(), "the SCF should run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, scf%converged, "the SCF should converge")
@@ -87,44 +90,73 @@ contains
    end subroutine converge
 
    subroutine test_grid(error)
-      !! With the fit fixed, the SCF energy settles as the exchange grid grows
+      !! With the fit fixed, the SCF energy settles as the exchange grid level rises
       !!
-      !! Levels 1, 3 and 5. Measured when this was written: the energy at
-      !! level 1 is 2.8e-5 hartree from the one at level 5, and at level 3 it
-      !! is 2.0e-7.
+      !! The three levels, each with its final grid. Measured when this was
+      !! written: level 1 is 8.3e-6 hartree from level 3 and level 2 is 2.9e-6.
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol, aux
-      real(dp) :: e1, e3, e5
+      real(dp) :: e1, e2, e3
 
       call molecules(mol, aux, error)
       if (allocated(error)) return
       call converge(mol, e1, error, aux=aux, cosx=.true., level=1)
       if (allocated(error)) return
+      call converge(mol, e2, error, aux=aux, cosx=.true., level=2)
+      if (allocated(error)) return
       call converge(mol, e3, error, aux=aux, cosx=.true., level=3)
       if (allocated(error)) return
-      call converge(mol, e5, error, aux=aux, cosx=.true., level=5)
-      if (allocated(error)) return
 
-      call check(error, abs(e3 - e5) < abs(e1 - e5), &
-                 "the SCF energy does not settle as the exchange grid grows")
+      call check(error, abs(e2 - e3) < abs(e1 - e3), &
+                 "the SCF energy does not settle as the exchange grid level rises")
       if (allocated(error)) return
-      call check(error, abs(e3 - e5) < 1.0e-6_dp, &
-                 "the SCF energy is not converged with the exchange grid at level 3")
+      call check(error, abs(e2 - e3) < 2.0e-5_dp, &
+                 "the default exchange grid is too far from the largest")
       if (allocated(error)) return
       ! Guards the guard: a grid level that never reached the exchange would
       ! give three identical energies and pass both checks above.
-      call check(error, abs(e1 - e5) > 1.0e-7_dp, &
+      call check(error, abs(e1 - e3) > 1.0e-7_dp, &
                  "the grid level did not change the energy, so it was not used")
       call mol%destroy()
       call aux%destroy()
    end subroutine test_grid
 
+   subroutine test_final_grid(error)
+      !! The final energy on the larger grid is closer to converged than on the SCF grid
+      !!
+      !! Level 2, with and without its final grid, against level 3. The SCF
+      !! grid alone is the coarser quadrature, so switching the final step off
+      !! must move the energy, and away from the converged one. Measured when
+      !! this was written: 1.2e-4 hartree without the final grid, 2.9e-6 with.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      real(dp) :: e_with, e_without, e_fine
+
+      call molecules(mol, aux, error)
+      if (allocated(error)) return
+      call converge(mol, e_with, error, aux=aux, cosx=.true., level=2)
+      if (allocated(error)) return
+      call converge(mol, e_without, error, aux=aux, cosx=.true., level=2, final_grid=.false.)
+      if (allocated(error)) return
+      call converge(mol, e_fine, error, aux=aux, cosx=.true., level=3)
+      if (allocated(error)) return
+
+      call check(error, abs(e_with - e_without) > 1.0e-6_dp, &
+                 "switching the final grid off did not change the energy")
+      if (allocated(error)) return
+      call check(error, abs(e_with - e_fine) < abs(e_without - e_fine), &
+                 "the final grid did not bring the energy closer to the converged one")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine test_final_grid
+
    subroutine test_against_exact(error)
       !! RIJCOSX at the default grid, against Hartree-Fock with no approximation
       !!
       !! With a JK fitting set. Measured when this was written: the fitted
-      !! energy is 5.5e-5 hartree above the exact one and RIJCOSX 2.8e-5 below
+      !! energy is 5.6e-5 hartree above the exact one and RIJCOSX 2.6e-5 below
       !! it. The bound is an order of magnitude below what a missing or doubled
       !! exchange would leave, which is hartrees.
       type(error_type), allocatable, intent(out) :: error
@@ -190,16 +222,16 @@ contains
    subroutine test_hybrid(error)
       !! PBE0 takes a quarter of the exchange, and the quadrature error scales with it
       !!
-      !! Same grids as the Hartree-Fock case, so the difference between the
-      !! coarse and the fine exchange grid should be about a quarter of what it
-      !! is there. A fraction applied twice, or not at all, is off by a factor
-      !! of four in one direction or the other. Measured 0.248.
+      !! Same grids as the Hartree-Fock case, and no final grid so each energy
+      !! is on one quadrature. The difference between the coarse and the fine
+      !! exchange grid should then be about a quarter of what it is there. A fraction applied twice, or not at all, is off by a factor
+      !! of four in one direction or the other. Measured 0.246.
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol, aux
       type(xc_context_t) :: ctx
       type(error_t) :: err
-      real(dp) :: hf1, hf5, ks1, ks5, e_fit, ratio
+      real(dp) :: hf1, hf3, ks1, ks3, e_fit, ratio
 
       if (.not. xc_available()) then
          call skip_test(error, "this build has no libxc")
@@ -208,9 +240,9 @@ contains
       call molecules(mol, aux, error)
       if (allocated(error)) return
 
-      call converge(mol, hf1, error, aux=aux, cosx=.true., level=1)
+      call converge(mol, hf1, error, aux=aux, cosx=.true., level=1, final_grid=.false.)
       if (allocated(error)) return
-      call converge(mol, hf5, error, aux=aux, cosx=.true., level=5)
+      call converge(mol, hf3, error, aux=aux, cosx=.true., level=3, final_grid=.false.)
       if (allocated(error)) return
 
       call xc_context_create(mol, "pbe0", ctx, err, level=1)
@@ -218,15 +250,15 @@ contains
       if (allocated(error)) return
       call converge(mol, e_fit, error, aux=aux, xc=ctx)
       if (allocated(error)) return
-      call converge(mol, ks1, error, aux=aux, cosx=.true., level=1, xc=ctx)
+      call converge(mol, ks1, error, aux=aux, cosx=.true., level=1, xc=ctx, final_grid=.false.)
       if (allocated(error)) return
-      call converge(mol, ks5, error, aux=aux, cosx=.true., level=5, xc=ctx)
+      call converge(mol, ks3, error, aux=aux, cosx=.true., level=3, final_grid=.false., xc=ctx)
       if (allocated(error)) return
 
-      call check(error, abs(ks5 - e_fit) < 1.0e-4_dp, &
+      call check(error, abs(ks3 - e_fit) < 1.0e-4_dp, &
                  "PBE0 with chain-of-spheres is too far from the fitted energy")
       if (allocated(error)) return
-      ratio = (ks1 - ks5)/(hf1 - hf5)
+      ratio = (ks1 - ks3)/(hf1 - hf3)
       call check(error, ratio > 0.20_dp .and. ratio < 0.30_dp, &
                  "the quadrature error of a 25% hybrid is not about a quarter of "// &
                  "Hartree-Fock's, so the exchange fraction is misapplied")

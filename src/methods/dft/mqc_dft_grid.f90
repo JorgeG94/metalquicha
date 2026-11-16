@@ -30,6 +30,7 @@ module mqc_dft_grid
    public :: dft_grid_t
    public :: build_dft_grid
    public :: grid_level_radial, grid_level_angular
+   public :: element_period
    public :: MIN_GRID_LEVEL, MAX_GRID_LEVEL, DEFAULT_GRID_LEVEL
    public :: DEFAULT_PRUNE
 
@@ -140,7 +141,8 @@ contains
    end function clamp_level
 
    subroutine build_dft_grid(atom_coords, atomic_numbers, grid, error, &
-                             level, scheme, adjust, n_radial, n_angular, prune)
+                             level, scheme, adjust, n_radial, n_angular, prune, &
+                             radial_by_atom, angular_by_atom)
       !! Build the molecular grid
       !!
       !! `level` picks per-element sizes from the standard tables. `n_radial`
@@ -160,6 +162,12 @@ contains
       integer, intent(in), optional :: n_radial   !! Override, all atoms
       integer, intent(in), optional :: n_angular  !! Override, all atoms
       integer, intent(in), optional :: prune      !! PRUNE_NONE or PRUNE_NWCHEM
+      integer, intent(in), optional :: radial_by_atom(:)
+         !! (n_atoms) radial shells for each atom, overriding `level`. Given
+         !! with `angular_by_atom` or not at all, and not with the two scalar
+         !! overrides.
+      integer, intent(in), optional :: angular_by_atom(:)
+         !! (n_atoms) Lebedev points in each atom's valence zone
 
       real(dp), allocatable :: r(:), dr(:), sphere(:, :), w_ang(:)
       integer, allocatable :: shell_order(:)
@@ -190,6 +198,22 @@ contains
                         "grid: n_radial and n_angular must be given together")
          return
       end if
+      if (present(radial_by_atom) .neqv. present(angular_by_atom)) then
+         call error%set(ERROR_VALIDATION, &
+                        "grid: radial_by_atom and angular_by_atom must be given together")
+         return
+      end if
+      if (present(radial_by_atom)) then
+         if (present(n_radial)) then
+            call error%set(ERROR_VALIDATION, "grid: per-atom sizes and the scalar "// &
+                           "overrides cannot both be given")
+            return
+         end if
+         if (size(radial_by_atom) /= n_atoms .or. size(angular_by_atom) /= n_atoms) then
+            call error%set(ERROR_VALIDATION, "grid: per-atom sizes do not match atom_coords")
+            return
+         end if
+      end if
 
       ! Size the whole grid first so it can be allocated once. With pruning the
       ! count is no longer nr*na: each shell carries its own order, and those
@@ -197,6 +221,10 @@ contains
       total = 0
       do ia = 1, n_atoms
          call atom_sizes(atomic_numbers(ia), used_level, n_radial, n_angular, nr, na)
+         if (present(radial_by_atom)) then
+            nr = radial_by_atom(ia)
+            na = angular_by_atom(ia)
+         end if
          call treutler_ahlrichs_radial(nr, atomic_numbers(ia), r, dr, error)
          if (error%has_error()) return
          allocate (shell_order(nr))
@@ -214,6 +242,10 @@ contains
       offset = 0
       do ia = 1, n_atoms
          call atom_sizes(atomic_numbers(ia), used_level, n_radial, n_angular, nr, na)
+         if (present(radial_by_atom)) then
+            nr = radial_by_atom(ia)
+            na = angular_by_atom(ia)
+         end if
 
          call treutler_ahlrichs_radial(nr, atomic_numbers(ia), r, dr, error)
          if (error%has_error()) return

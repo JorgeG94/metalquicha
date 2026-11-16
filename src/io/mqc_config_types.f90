@@ -17,7 +17,7 @@ module mqc_config_types
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_AIMD_DT, &
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
-                                       DEFAULT_SOSCF_START, &
+                                       DEFAULT_SOSCF_START, DEFAULT_COSX_GRID, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -233,6 +233,12 @@ module mqc_config_types
          !! chain-of-spheres quadrature, beside a fitted Coulomb matrix. False
          !! is "exact", the default, which leaves the exchange to whatever
          !! `scf_density_fitting` selects.
+      integer :: scf_cosx_grid = DEFAULT_COSX_GRID
+         !! `keywords.scf.cosx_grid`, 1 to 3: the size of the chain-of-spheres
+         !! grids
+      logical :: scf_cosx_final_grid = .true.
+         !! `keywords.scf.cosx_final_grid`: take the final energy on the
+         !! level's larger grid
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements

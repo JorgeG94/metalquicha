@@ -399,6 +399,8 @@ contains
       driver_config%method_config%scf%unrestricted = mqc_config%unrestricted
       driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
       driver_config%method_config%scf%cosx = mqc_config%scf_cosx
+      driver_config%method_config%scf%cosx_grid = mqc_config%scf_cosx_grid
+      driver_config%method_config%scf%cosx_final_grid = mqc_config%scf_cosx_final_grid
       driver_config%method_config%corr%freeze_core = mqc_config%corr_freeze_core
       driver_config%method_config%corr%n_frozen_core = mqc_config%corr_n_frozen_core
       driver_config%method_config%corr%use_df = mqc_config%corr_density_fitting

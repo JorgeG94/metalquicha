@@ -30,7 +30,10 @@ module test_mqc_czt_cosx
    use mqc_czt_esp, only: esp_matrices
    use mqc_czt_ao, only: eval_ao_block
    use mqc_czt_cosx, only: cosx_exchange, cosx_batch_exchange, cosx_esp_contract, &
-                           cosx_density_on_grid, cosx_accumulate
+                           cosx_density_on_grid, cosx_accumulate, cosx_grid_t, &
+                           build_cosx_grid, cosx_overlap_fit, cosx_numerical_overlap, &
+                           cosx_radial_points, cosx_angular_points, &
+                           COSX_ROLE_SCF, COSX_ROLE_FINAL
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    implicit none
    private
@@ -56,6 +59,9 @@ contains
                   new_unittest("cosx_converges_to_the_analytic_exchange", test_convergence), &
                   new_unittest("cosx_handles_a_density_of_no_symmetry", test_nosym), &
                   new_unittest("cosx_in_a_spherical_basis", test_spherical), &
+                  new_unittest("cosx_overlap_fit_makes_the_overlap_exact", test_fit_overlap), &
+                  new_unittest("cosx_overlap_fit_improves_a_small_grid", test_fit_exchange), &
+                  new_unittest("cosx_grid_levels_are_ordered", test_grid_levels), &
                   new_unittest("cosx_refuses_malformed_input", test_refusals) &
                   ]
    end subroutine collect_mqc_czt_cosx_tests
@@ -381,6 +387,158 @@ contains
                  "the exchange matrix in the spherical form is wrong")
       call mol%destroy()
    end subroutine test_spherical
+
+   subroutine test_fit_overlap(error)
+      !! The fit turns the grid's overlap into the analytic one, and is the identity on a fine grid
+      !!
+      !! `fit S_grid = S` is the definition, so it holds to rounding on any
+      !! grid, including one too coarse to be used. On a fine grid the two
+      !! overlaps already agree and the fit has nothing to do.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(cosx_grid_t) :: coarse
+      type(dft_grid_t) :: fine
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), s_grid(:, :), fit(:, :), fitted(:, :)
+      real(dp) :: raw, off_identity
+      integer :: n_dropped, mu
+
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "6-31g*", mol, err)
+      call check(error,.not. err%has_error(), "the molecule should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call mol%overlap(s)
+
+      call build_cosx_grid(mol, coarse, err, level=1, role=COSX_ROLE_SCF)
+      call cosx_numerical_overlap(mol, coarse%coords, coarse%weights, s_grid, err)
+      call cosx_overlap_fit(mol, coarse%coords, coarse%weights, s, fit, err, n_dropped=n_dropped)
+      call check(error,.not. err%has_error(), "the fit failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      raw = maxval(abs(s_grid - s))
+      fitted = matmul(fit, s_grid)
+      call check(error, maxval(abs(fitted - s)) < 1.0e-10_dp, &
+                 "the fitted overlap is not the analytic one")
+      if (allocated(error)) return
+      call check(error, n_dropped == 0, "the grid left a direction of this basis unresolved")
+      if (allocated(error)) return
+      ! Guards the guard: on a grid that already integrated the overlap the
+      ! check above would pass with the fit doing nothing.
+      call check(error, raw > 1.0e-6_dp, "the coarse grid is too good to test the fit on")
+      if (allocated(error)) return
+
+      call build_dft_grid(mol%coords, mol%atomic_numbers, fine, err, level=9)
+      call cosx_overlap_fit(mol, fine%coords, fine%weights, s, fit, err)
+      call check(error,.not. err%has_error(), "the fit failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      off_identity = 0.0_dp
+      do mu = 1, mol%nao
+         fit(mu, mu) = fit(mu, mu) - 1.0_dp
+      end do
+      off_identity = maxval(abs(fit))
+      call check(error, off_identity < 1.0e-7_dp, &
+                 "the fit is not the identity on a grid that needs none")
+      call mol%destroy()
+   end subroutine test_fit_overlap
+
+   subroutine test_fit_exchange(error)
+      !! On the grids the SCF uses, the fitted exchange is closer to the analytic one
+      !!
+      !! This is what the fit is for. Water in 6-31G* on the level 1 iteration
+      !! grid: measured when this was written, the exchange energy is off by
+      !! 4.8e-4 hartree as the quadrature stands and 8.4e-5 fitted. A fit
+      !! applied to the wrong index, or transposed, makes it worse and not
+      !! better.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(cosx_grid_t) :: grid
+      type(error_t) :: err
+      real(dp), allocatable :: density(:, :), exact(:, :), s(:, :), k(:, :)
+      real(dp) :: e_exact, plain, fitted
+
+      call water_density("6-31g*", mol, density, error)
+      if (allocated(error)) return
+      call analytic_exchange(mol, density, exact, error)
+      if (allocated(error)) return
+      e_exact = -0.25_dp*sum(density*exact)
+      call mol%overlap(s)
+
+      call build_cosx_grid(mol, grid, err, level=1, role=COSX_ROLE_SCF, overlap=s)
+      call check(error,.not. err%has_error(), "the grid should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, allocated(grid%fit), "a grid built with the overlap should carry the fit")
+      if (allocated(error)) return
+
+      call cosx_exchange(mol, grid%coords, grid%weights, density, k, err)
+      plain = abs(-0.25_dp*sum(density*k) - e_exact)
+      call cosx_exchange(mol, grid%coords, grid%weights, density, k, err, fit=grid%fit)
+      call check(error,.not. err%has_error(), "COSX failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      fitted = abs(-0.25_dp*sum(density*k) - e_exact)
+
+      call check(error, fitted < 0.5_dp*plain, &
+                 "the overlap fit did not improve the exchange energy on a small grid")
+      if (allocated(error)) return
+      call check(error, fitted < 3.0e-4_dp, &
+                 "the fitted exchange energy on the smallest grid is too far off")
+      if (allocated(error)) return
+      call check(error, maxval(abs(k - transpose(k))) < 1.0e-14_dp, &
+                 "the fitted exchange matrix is not symmetric")
+      call mol%destroy()
+   end subroutine test_fit_exchange
+
+   subroutine test_grid_levels(error)
+      !! The grid tables: larger with the level, with the role and with the period
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(cosx_grid_t) :: grid
+      type(error_t) :: err
+      integer :: level, n_scf, n_final, last_final
+
+      ! Hydrogen, oxygen, sulfur: one more period, more radial shells.
+      call check(error, cosx_radial_points(1, 2, COSX_ROLE_SCF) < &
+                 cosx_radial_points(8, 2, COSX_ROLE_SCF) .and. &
+                 cosx_radial_points(8, 2, COSX_ROLE_SCF) < &
+                 cosx_radial_points(16, 2, COSX_ROLE_SCF), &
+                 "the radial count does not grow with the period")
+      if (allocated(error)) return
+
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      call check(error,.not. err%has_error(), "the molecule should build")
+      if (allocated(error)) return
+
+      last_final = 0
+      do level = 1, 3
+         call check(error, cosx_angular_points(level, COSX_ROLE_FINAL) > &
+                    cosx_angular_points(level, COSX_ROLE_SCF), &
+                    "the final grid has no more angular points than the SCF grid")
+         if (allocated(error)) return
+         call build_cosx_grid(mol, grid, err, level=level, role=COSX_ROLE_SCF)
+         n_scf = grid%n_points
+         call build_cosx_grid(mol, grid, err, level=level, role=COSX_ROLE_FINAL)
+         n_final = grid%n_points
+         call check(error,.not. err%has_error(), "the grid should build: "//err%get_full_trace())
+         if (allocated(error)) return
+         call check(error, n_final > n_scf, "the final grid is not larger than the SCF grid")
+         if (allocated(error)) return
+         call check(error, n_final > last_final, "the final grid does not grow with the level")
+         if (allocated(error)) return
+         call check(error,.not. allocated(grid%fit), &
+                    "a grid built without the overlap should carry no fit")
+         if (allocated(error)) return
+         last_final = n_final
+      end do
+
+      call build_cosx_grid(mol, grid, err, level=4)
+      call check(error, err%has_error(), "a grid level that does not exist was accepted")
+      if (allocated(error)) return
+      call err%clear()
+      call build_cosx_grid(mol, grid, err, level=0)
+      call check(error, err%has_error(), "grid level zero was accepted")
+      call mol%destroy()
+   end subroutine test_grid_levels
 
    subroutine test_refusals(error)
       !! Shapes that cannot be right are refused, not read out of bounds

@@ -1729,7 +1729,9 @@ contains
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
                              second_order=use_second_order, &
                              soscf_start=settings%soscf_start, &
-                             cosx=settings%cosx, b_ao_out=scf_b_ao)
+                             cosx=settings%cosx, cosx_grid_level=settings%cosx_grid, &
+                             cosx_final_grid=settings%cosx_final_grid, &
+                             b_ao_out=scf_b_ao)
          else
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
@@ -1740,7 +1742,9 @@ contains
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
                              second_order=use_second_order, &
-                             soscf_start=settings%soscf_start, cosx=settings%cosx)
+                             soscf_start=settings%soscf_start, cosx=settings%cosx, &
+                             cosx_grid_level=settings%cosx_grid, &
+                             cosx_final_grid=settings%cosx_final_grid)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
