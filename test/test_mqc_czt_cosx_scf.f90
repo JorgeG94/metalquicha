@@ -44,6 +44,7 @@ contains
                   new_unittest("rijcosx_energy_converges_with_the_grid", test_grid), &
                   new_unittest("rijcosx_final_grid_energy_is_second_order", test_final_grid), &
                   new_unittest("rijcosx_is_close_to_hartree_fock", test_against_exact), &
+                  new_unittest("rijcosx_coulomb_stored_or_recomputed", test_direct_coulomb), &
                   new_unittest("rijcosx_changes_nothing_for_a_pure_functional", test_pure), &
                   new_unittest("rijcosx_scales_with_a_hybrid", test_hybrid), &
                   new_unittest("rijcosx_refuses_what_it_does_not_build", test_refusals) &
@@ -64,7 +65,7 @@ contains
       call check(error,.not. err%has_error(), "the molecules should build: "//err%get_full_trace())
    end subroutine molecules
 
-   subroutine converge(mol, energy, error, aux, cosx, level, xc, final_grid)
+   subroutine converge(mol, energy, error, aux, cosx, level, xc, final_grid, rij_in_core)
       !! One closed-shell SCF, tightly converged, and its total energy
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(out) :: energy
@@ -74,6 +75,7 @@ contains
       integer, intent(in), optional :: level
       type(xc_context_t), intent(inout), optional :: xc
       logical, intent(in), optional :: final_grid
+      logical, intent(in), optional :: rij_in_core
 
       type(rhf_result_t) :: scf
       type(error_t) :: err
@@ -81,7 +83,7 @@ contains
       energy = 0.0_dp
       call run_czt_rhf(mol, N_ELEC, 60, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
                        aux=aux, xc=xc, cosx=cosx, cosx_grid_level=level, &
-                       cosx_final_grid=final_grid)
+                       cosx_final_grid=final_grid, rij_in_core=rij_in_core)
       call check(error,.not. err%has_error(), "the SCF should run: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, scf%converged, "the SCF should converge")
@@ -190,6 +192,29 @@ contains
       call mol%destroy()
       call aux%destroy()
    end subroutine test_against_exact
+
+   subroutine test_direct_coulomb(error)
+      !! Recomputing the three-centre integrals every build gives the stored-integral energy
+      !!
+      !! Which of the two an SCF takes is decided by how much memory there is,
+      !! so it must not decide the answer. The two are the same contractions
+      !! of the same integrals.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      real(dp) :: e_stored, e_direct
+
+      call molecules(mol, aux, error)
+      if (allocated(error)) return
+      call converge(mol, e_stored, error, aux=aux, cosx=.true., rij_in_core=.true.)
+      if (allocated(error)) return
+      call converge(mol, e_direct, error, aux=aux, cosx=.true., rij_in_core=.false.)
+      if (allocated(error)) return
+      call check(error, abs(e_direct - e_stored) < 1.0e-10_dp, &
+                 "the energy depends on whether the three-centre integrals were stored")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine test_direct_coulomb
 
    subroutine test_pure(error)
       !! PBE has no exact exchange, so the request must be a no-op to rounding

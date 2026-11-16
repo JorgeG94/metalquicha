@@ -472,6 +472,11 @@ if(MQC_ENABLE_CZT)
   # shell form up to g, and its Boys function against the defining series.
   addtest(mqc_czt_esp_batch)
   target_link_libraries(test_mqc_czt_esp_batch PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The fitted Coulomb matrix built without the fitted tensor, against the same
+  # matrix contracted out of that tensor, stored and recomputed.
+  addtest(mqc_czt_rij)
+  target_link_libraries(test_mqc_czt_rij PRIVATE ${MQC_INTEGRALS_LIBS})
   # The continuum: cavity geometry, the Born ion in closed form, and one
   # solvated SCF pinned against PySCF.
   addtest(mqc_pcm)

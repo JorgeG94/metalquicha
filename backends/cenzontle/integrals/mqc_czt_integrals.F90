@@ -220,6 +220,8 @@ module mqc_czt_integrals
    ! from the *same* eigenvalue threshold: a pseudo-inverse that kept different
    ! modes than the SCF's would not differentiate the energy the SCF converged.
    public :: three_centre
+   public :: shell_pair_bounds, aux_shell_bounds
+   public :: fit_metric_factor
    public :: two_centre
    public :: metric_inverse_sqrt
    public :: FIT_METRIC_THRESHOLD
