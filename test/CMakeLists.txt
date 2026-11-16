@@ -467,6 +467,11 @@ if(MQC_ENABLE_CZT)
   # refusals.
   addtest(mqc_czt_cosx_scf)
   target_link_libraries(test_mqc_czt_cosx_scf PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The batch potential integral against the integral library's, shell form by
+  # shell form up to g, and its Boys function against the defining series.
+  addtest(mqc_czt_esp_batch)
+  target_link_libraries(test_mqc_czt_esp_batch PRIVATE ${MQC_INTEGRALS_LIBS})
   # The continuum: cavity geometry, the Born ion in closed form, and one
   # solvated SCF pinned against PySCF.
   addtest(mqc_pcm)

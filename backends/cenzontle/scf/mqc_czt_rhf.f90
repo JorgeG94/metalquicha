@@ -2270,7 +2270,8 @@ contains
          if (k_scale /= 0.0_dp) then
             ! An SCF's grids always carry the fit and the bounds.
             call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
-                               fit=cosx%fit, bounds=cosx%bounds)
+                               fit=cosx%fit, bounds=cosx%bounds, shells=cosx%shells, &
+                               screen_tol=cosx%screen_tol)
             if (error%has_error()) return
             fock = fock - 0.5_dp*k_scale*k_cosx
             deallocate (k_cosx)

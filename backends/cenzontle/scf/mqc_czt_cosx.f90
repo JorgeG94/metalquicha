@@ -34,8 +34,10 @@ module mqc_czt_cosx
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use mqc_czt_ao, only: eval_ao_block
    use mqc_czt_direct, only: schwarz_bounds
+   use mqc_czt_esp_batch, only: esp_shells_t, build_esp_shells, esp_batch_contract, &
+                                ESP_BATCH_LMAX
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, element_period
-   use libcint_fortran, only: LIBCINT_PTR_GRIDS, &
+   use libcint_fortran, only: LIBCINT_PTR_GRIDS, LIBCINT_ANG_OF, &
                               libcint_1e_grids_cart, libcint_1e_grids_sph
    implicit none
    private
@@ -50,7 +52,7 @@ module mqc_czt_cosx
    public :: cosx_esp_contract
    public :: cosx_accumulate
    public :: COSX_DEFAULT_BATCH
-   public :: COSX_DEFAULT_SCREEN
+   public :: COSX_DEFAULT_SCREEN, COSX_SCREEN_ITERATION, COSX_SCREEN_FINAL
    public :: COSX_DEFAULT_GRID_LEVEL, COSX_MIN_GRID_LEVEL, COSX_MAX_GRID_LEVEL
    public :: COSX_ROLE_SCF, COSX_ROLE_FINAL
    public :: cosx_radial_points, cosx_angular_points
@@ -61,6 +63,13 @@ module mqc_czt_cosx
       !! A shell pair's potential integral is skipped for a batch when its
       !! Schwarz bound times the largest element of `F` it would multiply is
       !! below this
+   real(dp), parameter :: COSX_SCREEN_ITERATION = 1.0e-8_dp
+      !! The threshold on a grid the iterations run on. Looser than the final
+      !! one because only the density has to come out right: on twenty waters
+      !! the final energy moves by 9e-10 hartree against 1e-10 here.
+   real(dp), parameter :: COSX_SCREEN_FINAL = 1.0e-9_dp
+      !! The threshold on a grid an energy is taken from: 4e-7 hartree on
+      !! twenty waters, a hundredth of that grid's own quadrature error
    real(dp), parameter :: COSX_FIT_NULL = 1.0e-10_dp
       !! Eigenvalues of the numerical overlap below this fraction of the
       !! largest are left out of its inverse: directions of the basis the grid
@@ -102,6 +111,12 @@ module mqc_czt_cosx
          !! (n_shell, n_shell) Schwarz bounds, `sqrt(max |(MN|MN)|)`, that the
          !! contraction screens shell pairs with. Unallocated means every pair
          !! is evaluated.
+      type(esp_shells_t) :: shells
+         !! The shells laid out for the batch potential integral. Empty
+         !! (`n_shell` zero) means the integral library is used instead.
+      real(dp) :: screen_tol = COSX_DEFAULT_SCREEN
+         !! The screening threshold an exchange build on this grid should use:
+         !! `COSX_SCREEN_ITERATION` or `COSX_SCREEN_FINAL` by its role
    contains
       procedure :: active => cosx_grid_active
       procedure :: destroy => cosx_grid_destroy
@@ -234,11 +249,25 @@ contains
       end if
       if (present(screen)) then
          if (screen) call schwarz_bounds(mol, grid%bounds, error)
+         if (error%has_error()) return
+      end if
+      ! The batch potential integral where the basis allows it. A shell above
+      ! what it takes leaves the grid on the integral library, which is slower
+      ! and gives the same numbers.
+      ! The iteration grid only has to converge the density, so its builds
+      ! screen more loosely than the one the energy is taken from.
+      if (used_role == COSX_ROLE_SCF) then
+         grid%screen_tol = COSX_SCREEN_ITERATION
+      else
+         grid%screen_tol = COSX_SCREEN_FINAL
+      end if
+      if (maxval(mol%bas(LIBCINT_ANG_OF, 1:mol%nbas)) <= ESP_BATCH_LMAX) then
+         call build_esp_shells(mol, grid%shells, error)
       end if
    end subroutine build_cosx_grid
 
    subroutine cosx_exchange(mol, coords, weights, density, k, error, batch_size, symmetrize, fit, &
-                            bounds, screen_tol)
+                            bounds, screen_tol, shells)
       !! The exchange matrix of a density, by quadrature over the points given
       !!
       !! Converges to the analytic exchange matrix as the grid grows. Threaded
@@ -270,6 +299,10 @@ contains
       real(dp), intent(in), optional :: screen_tol
          !! The threshold for that, default `COSX_DEFAULT_SCREEN`. Zero keeps
          !! every pair. Read only with `bounds`.
+      type(esp_shells_t), intent(in), optional :: shells
+         !! From `build_esp_shells`. Present and not empty, the potential
+         !! integral is the batch evaluator's; otherwise the integral
+         !! library's. The two agree to rounding.
 
       real(dp), allocatable :: k_local(:, :), k_plain(:, :)
       type(error_t) :: local_error
@@ -335,7 +368,7 @@ contains
          g1 = min(g0 + step - 1, n_points)
          call cosx_batch_exchange(mol, coords(:, g0:g1), weights(g0:g1), density, &
                                   k_local, local_error, bounds=bounds, &
-                                  screen_tol=screen_tol)
+                                  screen_tol=screen_tol, shells=shells)
          if (local_error%has_error()) then
             !$omp critical(mqc_cosx_exchange_failure)
             if (.not. failed) then
@@ -499,7 +532,8 @@ contains
       call pic_gemm(overlap, inverse, fit)
    end subroutine cosx_overlap_fit
 
-   subroutine cosx_batch_exchange(mol, coords, weights, density, k, error, bounds, screen_tol)
+   subroutine cosx_batch_exchange(mol, coords, weights, density, k, error, bounds, screen_tol, &
+                                  shells)
       !! Add one batch of points to an exchange matrix
       !!
       !! The whole method for the points given, with no threading of its own.
@@ -511,13 +545,24 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: bounds(:, :)   !! See `cosx_exchange`
       real(dp), intent(in), optional :: screen_tol     !! See `cosx_exchange`
+      type(esp_shells_t), intent(in), optional :: shells   !! See `cosx_exchange`
 
       real(dp), allocatable :: ao(:, :), f(:, :), g(:, :)
+      real(dp) :: tol
+      logical :: batch_kernel
 
       call eval_ao_block(mol, coords, ao, error)
       if (error%has_error()) return
       call cosx_density_on_grid(ao, weights, density, f)
-      call cosx_esp_contract(mol, coords, f, g, error, bounds=bounds, screen_tol=screen_tol)
+      batch_kernel = .false.
+      if (present(shells)) batch_kernel = shells%n_shell > 0
+      if (batch_kernel) then
+         tol = COSX_DEFAULT_SCREEN
+         if (present(screen_tol)) tol = screen_tol
+         call esp_batch_contract(shells, coords, f, g, error, bounds=bounds, screen_tol=tol)
+      else
+         call cosx_esp_contract(mol, coords, f, g, error, bounds=bounds, screen_tol=screen_tol)
+      end if
       if (error%has_error()) return
       call cosx_accumulate(ao, g, k)
    end subroutine cosx_batch_exchange

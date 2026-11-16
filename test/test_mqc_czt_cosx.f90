@@ -34,7 +34,8 @@ module test_mqc_czt_cosx
                            cosx_density_on_grid, cosx_accumulate, cosx_grid_t, &
                            build_cosx_grid, cosx_overlap_fit, cosx_numerical_overlap, &
                            cosx_radial_points, cosx_angular_points, &
-                           COSX_ROLE_SCF, COSX_ROLE_FINAL
+                           COSX_ROLE_SCF, COSX_ROLE_FINAL, &
+                           COSX_SCREEN_ITERATION, COSX_SCREEN_FINAL
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    implicit none
    private
@@ -64,6 +65,7 @@ contains
                   new_unittest("cosx_overlap_fit_improves_a_small_grid", test_fit_exchange), &
                   new_unittest("cosx_grid_levels_are_ordered", test_grid_levels), &
                   new_unittest("cosx_screening_drops_only_what_is_negligible", test_screening), &
+                  new_unittest("cosx_batch_integral_gives_the_same_exchange", test_batch_kernel), &
                   new_unittest("cosx_refuses_malformed_input", test_refusals) &
                   ]
    end subroutine collect_mqc_czt_cosx_tests
@@ -624,6 +626,49 @@ contains
       call check(error, err%has_error(), "bounds of the wrong size were accepted")
       call mol%destroy()
    end subroutine test_screening
+
+   subroutine test_batch_kernel(error)
+      !! The exchange matrix through the batch potential integral is the library's, to rounding
+      !!
+      !! A grid carries the shells for the batch evaluator whenever the basis
+      !! allows, and an SCF then uses them. Unscreened, the two routes are the
+      !! same sum, so they agree to rounding; `test_mqc_czt_esp_batch` checks
+      !! the integral itself shell form by shell form, and this checks that the
+      !! exchange build reaches it and comes back with the same matrix.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(cosx_grid_t) :: iteration, final
+      type(error_t) :: err
+      real(dp), allocatable :: density(:, :), k_library(:, :), k_batch(:, :)
+
+      call water_density("cc-pvdz", mol, density, error)
+      if (allocated(error)) return
+      call build_cosx_grid(mol, iteration, err, level=2, role=COSX_ROLE_SCF, screen=.true.)
+      call build_cosx_grid(mol, final, err, level=2, role=COSX_ROLE_FINAL, screen=.true.)
+      call check(error,.not. err%has_error(), "the grids should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, final%shells%n_shell > 0, &
+                 "a grid over a basis the batch evaluator takes should carry its shells")
+      if (allocated(error)) return
+
+      call cosx_exchange(mol, final%coords, final%weights, density, k_library, err)
+      call cosx_exchange(mol, final%coords, final%weights, density, k_batch, err, &
+                         shells=final%shells)
+      call check(error,.not. err%has_error(), "COSX failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(k_batch - k_library)) < 1.0e-11_dp, &
+                 "the exchange matrix depends on which potential integral built it")
+      if (allocated(error)) return
+
+      ! The thresholds a grid asks for: looser where only the density has to
+      ! come out right.
+      call check(error, iteration%screen_tol == COSX_SCREEN_ITERATION .and. &
+                 final%screen_tol == COSX_SCREEN_FINAL .and. &
+                 COSX_SCREEN_ITERATION > COSX_SCREEN_FINAL, &
+                 "the grids do not carry the screening thresholds of their roles")
+      call mol%destroy()
+   end subroutine test_batch_kernel
 
    subroutine test_refusals(error)
       !! Shapes that cannot be right are refused, not read out of bounds
