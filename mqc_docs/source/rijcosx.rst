@@ -223,7 +223,8 @@ by name, not run with a different exchange:
 * unrestricted references;
 * range-separated functionals and double hybrids;
 * MP2, coupled cluster and other correlated methods;
-* excited states, the stability analysis and the second-order SCF;
+* excited states, the stability analysis, the second-order SCF and quantum
+  nuclei (``keywords.neo``);
 * Fukui functions and the bonding energy decomposition;
 * FMO and EFMO fragment SCFs;
 * the cuEST and terco backends.
@@ -245,7 +246,7 @@ How it was validated
 * **The SCF** against PySCF with the same fitted Coulomb matrix and exact
   exchange, so that the fit is common to both numbers and only the quadrature
   separates them. These are the ``cosx`` cases of the CPU validation suite:
-  nine molecules and basis sets, within 5e-7 to 2.3e-5 hartree of PySCF at the
+  nine cases, within 5e-7 to 2.3e-5 hartree of PySCF at the
   default grid and 1.6e-7 at level 3.
 * **The hybrid fraction**: PBE0's grid error is a quarter of Hartree-Fock's,
   and PBE is unchanged to 1e-13.

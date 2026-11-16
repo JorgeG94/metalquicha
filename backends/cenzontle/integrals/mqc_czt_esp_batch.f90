@@ -103,9 +103,35 @@ module mqc_czt_esp_batch
          !! (0:L_PAIR_MAX + BOYS_TAYLOR, 0:BOYS_N_NODE) the Boys function at the
          !! mesh nodes, every order the expansion reaches. Order first, so the
          !! orders one point needs sit together.
+   contains
+      procedure :: destroy => esp_shells_destroy
    end type esp_shells_t
 
 contains
+
+   pure subroutine esp_shells_destroy(this)
+      !! Release the layout and the Boys table
+      class(esp_shells_t), intent(inout) :: this
+
+      if (allocated(this%l)) deallocate (this%l)
+      if (allocated(this%parent)) deallocate (this%parent)
+      if (allocated(this%n_prim)) deallocate (this%n_prim)
+      if (allocated(this%prim_first)) deallocate (this%prim_first)
+      if (allocated(this%cart_first)) deallocate (this%cart_first)
+      if (allocated(this%ao_first)) deallocate (this%ao_first)
+      if (allocated(this%centre)) deallocate (this%centre)
+      if (allocated(this%expo)) deallocate (this%expo)
+      if (allocated(this%coef)) deallocate (this%coef)
+      if (allocated(this%c2s)) deallocate (this%c2s)
+      if (allocated(this%powers)) deallocate (this%powers)
+      if (allocated(this%h_of)) deallocate (this%h_of)
+      if (allocated(this%boys_exp)) deallocate (this%boys_exp)
+      if (allocated(this%boys)) deallocate (this%boys)
+      this%n_shell = 0
+      this%n_cart = 0
+      this%n_ao = 0
+      this%l_max = 0
+   end subroutine esp_shells_destroy
 
    subroutine build_esp_shells(mol, shells, error)
       !! Lay a molecule's shells out for `esp_batch_contract`
@@ -643,7 +669,7 @@ contains
       !!
       !! The centre is the mean, so the sphere is not the smallest one, only a
       !! valid one.
-      real(dp), intent(in) :: points(:, :)   !! (n, 3)
+      real(dp), intent(in) :: points(:, :)   !! (n, 3), n at least one
       real(dp), intent(out) :: sphere(4)
 
       integer :: ig, n
@@ -759,8 +785,10 @@ contains
                                    p_centre(3) - b_centre(3), ez, ez_max)
 
             if (tol > 0.0_dp) then
-               ! |R_tuv| is at most of order (2p)^(degree/2), and F_0 at most
-               ! one, so this bounds every element of the primitive block.
+               ! |R_tuv| is of order (2p)^(degree/2) and F_0 at most one, so
+               ! this is the size of the primitive block's largest element. It
+               ! is an estimate and not a strict bound: the combinatorial
+               ! factor in R_tuv, about ten at g, is left out.
                bound = abs(prefactor)*ex_max*ey_max*ez_max*sqrt(max(1.0_dp, 2.0_dp*p))**l_pair
                if (bound*f_pair < tol) then
                   cycle

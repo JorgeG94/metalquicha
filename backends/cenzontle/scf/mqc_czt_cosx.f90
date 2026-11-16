@@ -29,6 +29,7 @@ module mqc_czt_cosx
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use pic_io, only: to_char
+   use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_calculation_defaults, only: DEFAULT_COSX_GRID
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
@@ -156,6 +157,7 @@ contains
       if (allocated(this%weights)) deallocate (this%weights)
       if (allocated(this%fit)) deallocate (this%fit)
       if (allocated(this%bounds)) deallocate (this%bounds)
+      call this%shells%destroy()
       this%n_points = 0
       this%level = -1
    end subroutine cosx_grid_destroy
@@ -219,7 +221,7 @@ contains
 
       type(dft_grid_t) :: full
       integer, allocatable :: numbers(:), radial(:), angular(:)
-      integer :: used_role, ia
+      integer :: used_role, ia, n_dropped
 
       grid%level = COSX_DEFAULT_GRID_LEVEL
       if (present(level)) grid%level = level
@@ -264,8 +266,15 @@ contains
       call move_alloc(full%weights, grid%weights)
       call full%destroy()
       if (present(overlap)) then
-         call cosx_overlap_fit(mol, grid%coords, grid%weights, overlap, grid%fit, error)
+         call cosx_overlap_fit(mol, grid%coords, grid%weights, overlap, grid%fit, error, &
+                               n_dropped=n_dropped)
          if (error%has_error()) return
+         if (n_dropped > 0) then
+            call logger%warning("    chain-of-spheres grid: "//to_char(n_dropped)// &
+                                " combinations of basis functions are not resolved by "// &
+                                "the grid and are left unfitted; a larger "// &
+                                "keywords.scf.cosx_grid resolves more")
+         end if
       end if
       if (present(bounds)) then
          grid%bounds = bounds

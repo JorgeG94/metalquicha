@@ -3581,6 +3581,17 @@ contains
 
       ! Things that rebuild the exchange their own way.
       call write_deck(FITTED, "Energy", &
+                      '"scf": {"density_fitting": true, "exchange": "cosx"}, '// &
+                      '"neo": {"quantum_nuclei": [0]}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0 .and. &
+                 index(parse_error%get_message(), "keywords.neo") > 0, &
+                 "cosx with quantum nuclei was accepted")
+      if (allocated(error)) return
+
+      call write_deck(FITTED, "Energy", &
                       '"scf": {"density_fitting": true, "exchange": "cosx", "second_order": true}', &
                       "", two_atoms())
       call read_deck(config, parse_error)

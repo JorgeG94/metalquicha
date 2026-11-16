@@ -47,6 +47,7 @@ contains
                   new_unittest("esp_batch_spherical_d", test_sph_d), &
                   new_unittest("esp_batch_f", test_f), &
                   new_unittest("esp_batch_g", test_g), &
+                  new_unittest("esp_batch_far_and_near_batches", test_regimes), &
                   new_unittest("esp_batch_screens_as_the_library_path_does", test_screen), &
                   new_unittest("esp_batch_energy_is_the_contraction_traced", test_energy), &
                   new_unittest("esp_batch_refuses_what_it_cannot_take", test_refusals) &
@@ -72,11 +73,14 @@ contains
       points(:, N_PTS - 1) = [1.0e-3_dp, -2.0e-3_dp, 1.5e-3_dp]
    end subroutine probe_points
 
-   subroutine compare(basis, error, expect_l)
+   subroutine compare(basis, error, expect_l, cluster)
       !! Both evaluators on one basis, with an arbitrary F and then unit vectors
       character(len=*), intent(in) :: basis
       type(error_type), allocatable, intent(out) :: error
       integer, intent(in) :: expect_l   !! Highest angular momentum the basis must reach
+      real(dp), intent(in), optional :: cluster(4)
+         !! Centre and radius, Bohr: the points are drawn into this sphere
+         !! instead of being spread from the nuclei outwards
 
       type(czt_molecule_t) :: mol
       type(esp_shells_t) :: shells
@@ -99,6 +103,13 @@ contains
       if (allocated(error)) return
 
       call probe_points(points)
+      if (present(cluster)) then
+         ! The spread points are within about 25 Bohr of the origin; scaled by
+         ! that they sit inside the unit sphere.
+         do ig = 1, N_PTS
+            points(:, ig) = cluster(1:3) + cluster(4)*points(:, ig)/25.0_dp
+         end do
+      end if
       allocate (f(N_PTS, mol%nao))
       do mu = 1, mol%nao
          do ig = 1, N_PTS
@@ -115,7 +126,7 @@ contains
       call check(error, worst < 1.0e-11_dp*max(1.0_dp, scale), &
                  "the batch integral differs from the library's on "//basis)
       if (allocated(error)) return
-      call check(error, scale > 0.1_dp, "the contracted values are too small to test")
+      call check(error, scale > 1.0e-3_dp, "the contracted values are too small to test")
       if (allocated(error)) return
 
       ! Single columns of the integral, first, middle and last function.
@@ -158,6 +169,21 @@ contains
       type(error_type), allocatable, intent(out) :: error
       call compare("def2-qzvp", error, ESP_BATCH_LMAX)
    end subroutine test_g
+
+   subroutine test_regimes(error)
+      !! Batches that lie wholly beyond the Boys table, and wholly inside it
+      !!
+      !! The evaluator picks one way of seeding the Coulomb integrals for a
+      !! whole batch when the batch's bounding sphere allows it. The spread
+      !! points of the other cases straddle the table for most primitive pairs,
+      !! so they exercise the point-by-point choice; these two exercise the
+      !! shortcuts. def2-TZVP has both the tight and the diffuse exponents.
+      type(error_type), allocatable, intent(out) :: error
+
+      call compare("def2-tzvp", error, 3, cluster=[14.0_dp, -9.0_dp, 11.0_dp, 0.5_dp])
+      if (allocated(error)) return
+      call compare("def2-tzvp", error, 3, cluster=[0.05_dp, -0.1_dp, 0.2_dp, 0.2_dp])
+   end subroutine test_regimes
 
    subroutine test_boys(error)
       !! `F_n(x)` against the series that defines it, across both branches

@@ -955,12 +955,13 @@ SCF Options
   the Coulomb matrix and not the quadrature.
 - ``cosx_grid``: Size of the chain-of-spheres grids, 1 to 3 (default: 2). Each
   level is three grids: a coarse one for the first iterations, a small one the
-  rest run on, and a larger one for the final energy. Both are overlap fitted, which is what lets them be far
-  smaller than a DFT grid. The small grid is radially too coarse to take an
-  energy from; it is there to converge the density. Measured on the exchange energy of eight small
-  molecules in def2-SVP and def2-TZVP, against the analytic exchange: level 1
-  is within 0.27 kcal/mol, level 2 within 0.02 and level 3 within 0.015. Only
-  read with ``exchange: "cosx"``, and refused without it.
+  rest run on, and a larger one for the final energy. All three are overlap
+  fitted, which is what lets them be far smaller than a DFT grid. The first two
+  are radially too coarse to take an energy from; they are there to converge
+  the density. Measured on the exchange energy of eight small molecules in
+  def2-SVP and def2-TZVP, against the analytic exchange: level 1 is within
+  0.27 kcal/mol, level 2 within 0.02 and level 3 within 0.015. Only read with
+  ``exchange: "cosx"``, and refused without it.
 - ``cosx_final_grid``: Take the final energy on the level's larger grid, from
   the density converged on the smaller (default: true). Off, the iterations
   run on the larger grid throughout, which costs several times more and makes

@@ -813,6 +813,12 @@ contains
                         "built from the exact exchange.")
          return
       end if
+      if (allocated(config%neo_quantum_indices) .or. allocated(config%neo_quantum_symbols)) then
+         call error%set(ERROR_VALIDATION, KEY//" cannot be combined with keywords.neo: "// &
+                        "the nuclear-electronic SCF builds its own exchange and would "// &
+                        "ignore the request.")
+         return
+      end if
       if (allocated(config%frag_method)) then
          select case (to_lower(trim(adjustl(config%frag_method))))
          case ("fmo", "efmo")
