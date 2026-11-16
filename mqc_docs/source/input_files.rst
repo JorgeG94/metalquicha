@@ -934,14 +934,18 @@ SCF Options
 - ``cosx_grid``: Size of the chain-of-spheres grids, 1 to 3 (default: 2). Each
   level is a pair: a small grid the iterations run on and a larger one for the
   final energy. Both are overlap fitted, which is what lets them be far
-  smaller than a DFT grid. Measured on the exchange energy of eight small
+  smaller than a DFT grid. The small grid is radially too coarse to take an
+  energy from; it is there to converge the density. Measured on the exchange energy of eight small
   molecules in def2-SVP and def2-TZVP, against the analytic exchange: level 1
   is within 0.27 kcal/mol, level 2 within 0.02 and level 3 within 0.015. Only
   read with ``exchange: "cosx"``, and refused without it.
 - ``cosx_final_grid``: Take the final energy on the level's larger grid, from
-  the density converged on the smaller (default: true). Off, the energy is the
-  one the iterations converged, on the small grid: cheaper by one exchange
-  build and less accurate. Only read with ``exchange: "cosx"``.
+  the density converged on the smaller (default: true). Off, the iterations
+  run on the larger grid throughout, which costs several times more and makes
+  the energy self-consistent on that grid. The two energies differ at second
+  order in the density -- under 1e-6 hartree on everything measured -- so
+  leave it on unless that difference matters. Only read with
+  ``exchange: "cosx"``.
 - ``level_shift``: Hartree added to the virtual orbitals before each
   diagonalisation, to widen the gap the next density is built through (default:
   0.0, meaning off). Use it on an SCF that oscillates rather than one that

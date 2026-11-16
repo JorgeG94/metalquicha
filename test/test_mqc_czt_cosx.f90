@@ -25,6 +25,7 @@ module test_mqc_czt_cosx
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_calculation_defaults, only: DEFAULT_COSX_GRID
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_nosym, &
                              direct_stats_t
    use mqc_czt_esp, only: esp_matrices
@@ -62,6 +63,7 @@ contains
                   new_unittest("cosx_overlap_fit_makes_the_overlap_exact", test_fit_overlap), &
                   new_unittest("cosx_overlap_fit_improves_a_small_grid", test_fit_exchange), &
                   new_unittest("cosx_grid_levels_are_ordered", test_grid_levels), &
+                  new_unittest("cosx_screening_drops_only_what_is_negligible", test_screening), &
                   new_unittest("cosx_refuses_malformed_input", test_refusals) &
                   ]
    end subroutine collect_mqc_czt_cosx_tests
@@ -444,9 +446,10 @@ contains
    subroutine test_fit_exchange(error)
       !! On the grids the SCF uses, the fitted exchange is closer to the analytic one
       !!
-      !! This is what the fit is for. Water in 6-31G* on the level 1 iteration
-      !! grid: measured when this was written, the exchange energy is off by
-      !! 4.8e-4 hartree as the quadrature stands and 8.4e-5 fitted. A fit
+      !! This is what the fit is for. Water in 6-31G* on 25 radial shells and
+      !! 50 angular points, sized here and not from the tables so the test does
+      !! not move when they are retuned: measured when this was written, the exchange energy is off by
+      !! 5.0e-4 hartree as the quadrature stands and 7.6e-5 fitted. A fit
       !! applied to the wrong index, or transposed, makes it worse and not
       !! better.
       type(error_type), allocatable, intent(out) :: error
@@ -464,7 +467,7 @@ contains
       e_exact = -0.25_dp*sum(density*exact)
       call mol%overlap(s)
 
-      call build_cosx_grid(mol, grid, err, level=1, role=COSX_ROLE_SCF, overlap=s)
+      call build_cosx_grid(mol, grid, err, n_radial=25, n_angular=50, overlap=s)
       call check(error,.not. err%has_error(), "the grid should build: "//err%get_full_trace())
       if (allocated(error)) return
       call check(error, allocated(grid%fit), "a grid built with the overlap should carry the fit")
@@ -539,6 +542,88 @@ contains
       call check(error, err%has_error(), "grid level zero was accepted")
       call mol%destroy()
    end subroutine test_grid_levels
+
+   subroutine test_screening(error)
+      !! Screening skips shell pairs, and what it skips does not change the answer
+      !!
+      !! Two waters 40 bohr apart, so the pairs with one shell on each have
+      !! Schwarz bounds near zero and there is something to skip. Three
+      !! things, because a screen has three ways to be wrong:
+      !!
+      !!   * a threshold of zero must keep everything, to rounding;
+      !!   * the default threshold must skip pairs and leave the matrix where
+      !!     it was;
+      !!   * a threshold loose enough to cut real contributions must visibly
+      !!     change it, or the threshold was never read.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: Z2(6) = [8, 1, 1, 8, 1, 1]
+      character(len=2), parameter :: SYM2(6) = ["O ", "H ", "H ", "O ", "H ", "H "]
+      real(dp), parameter :: APART = 40.0_dp
+      type(czt_molecule_t) :: mol
+      type(cosx_grid_t) :: grid
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp) :: xyz(3, 6)
+      real(dp), allocatable :: k_all(:, :), k_zero(:, :), k_default(:, :), k_loose(:, :)
+      real(dp), allocatable :: ao(:, :), f(:, :), g(:, :)
+      integer :: n_skipped, n_pairs
+
+      xyz(:, 1:3) = WATER
+      xyz(:, 4:6) = WATER
+      xyz(1, 4:6) = xyz(1, 4:6) + APART
+      call build_czt_molecule(Z2, SYM2, xyz, "6-31g*", mol, err)
+      call check(error,.not. err%has_error(), "the molecule should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call run_czt_rhf(mol, 20, 60, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err)
+      call check(error,.not. err%has_error() .and. scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+
+      call build_cosx_grid(mol, grid, err, level=DEFAULT_COSX_GRID, role=COSX_ROLE_FINAL, &
+                           screen=.true.)
+      call check(error,.not. err%has_error(), "the grid should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, allocated(grid%bounds), "a grid built to screen should carry the bounds")
+      if (allocated(error)) return
+
+      call cosx_exchange(mol, grid%coords, grid%weights, scf%density, k_all, err)
+      call cosx_exchange(mol, grid%coords, grid%weights, scf%density, k_zero, err, &
+                         bounds=grid%bounds, screen_tol=0.0_dp)
+      call cosx_exchange(mol, grid%coords, grid%weights, scf%density, k_default, err, &
+                         bounds=grid%bounds)
+      call cosx_exchange(mol, grid%coords, grid%weights, scf%density, k_loose, err, &
+                         bounds=grid%bounds, screen_tol=1.0e-2_dp)
+      call check(error,.not. err%has_error(), "COSX failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(k_zero - k_all)) < 1.0e-13_dp, &
+                 "a threshold of zero did not keep every shell pair")
+      if (allocated(error)) return
+      call check(error, maxval(abs(k_default - k_all)) < 1.0e-9_dp, &
+                 "the default screening changed the exchange matrix")
+      if (allocated(error)) return
+      call check(error, maxval(abs(k_loose - k_all)) > 1.0e-6_dp, &
+                 "a loose threshold changed nothing, so the threshold is not read")
+      if (allocated(error)) return
+
+      ! That the default skipped anything at all, on the first batch: without
+      ! this the second check above passes with the screen doing nothing.
+      call eval_ao_block(mol, grid%coords(:, 1:64), ao, err)
+      call cosx_density_on_grid(ao, grid%weights(1:64), scf%density, f)
+      call cosx_esp_contract(mol, grid%coords(:, 1:64), f, g, err, bounds=grid%bounds, &
+                             n_skipped=n_skipped)
+      call check(error,.not. err%has_error(), "the contraction failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      n_pairs = mol%nbas*(mol%nbas + 1)/2
+      call check(error, n_skipped > n_pairs/4, &
+                 "the screening skipped too few pairs of two molecules far apart")
+      if (allocated(error)) return
+
+      call cosx_exchange(mol, grid%coords, grid%weights, scf%density, k_zero, err, &
+                         bounds=grid%bounds(1:2, 1:2))
+      call check(error, err%has_error(), "bounds of the wrong size were accepted")
+      call mol%destroy()
+   end subroutine test_screening
 
    subroutine test_refusals(error)
       !! Shapes that cannot be right are refused, not read out of bounds

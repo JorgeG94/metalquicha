@@ -33,6 +33,7 @@ module mqc_czt_cosx
    use mqc_calculation_defaults, only: DEFAULT_COSX_GRID
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use mqc_czt_ao, only: eval_ao_block
+   use mqc_czt_direct, only: schwarz_bounds
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, element_period
    use libcint_fortran, only: LIBCINT_PTR_GRIDS, &
                               libcint_1e_grids_cart, libcint_1e_grids_sph
@@ -49,12 +50,17 @@ module mqc_czt_cosx
    public :: cosx_esp_contract
    public :: cosx_accumulate
    public :: COSX_DEFAULT_BATCH
+   public :: COSX_DEFAULT_SCREEN
    public :: COSX_DEFAULT_GRID_LEVEL, COSX_MIN_GRID_LEVEL, COSX_MAX_GRID_LEVEL
    public :: COSX_ROLE_SCF, COSX_ROLE_FINAL
    public :: cosx_radial_points, cosx_angular_points
 
    integer, parameter :: COSX_DEFAULT_BATCH = 128
       !! Points per batch when the caller does not say
+   real(dp), parameter :: COSX_DEFAULT_SCREEN = 1.0e-10_dp
+      !! A shell pair's potential integral is skipped for a batch when its
+      !! Schwarz bound times the largest element of `F` it would multiply is
+      !! below this
    real(dp), parameter :: COSX_FIT_NULL = 1.0e-10_dp
       !! Eigenvalues of the numerical overlap below this fraction of the
       !! largest are left out of its inverse: directions of the basis the grid
@@ -69,9 +75,11 @@ module mqc_czt_cosx
    integer, parameter :: COSX_ROLE_FINAL = 2   !! The larger one the final energy is taken on
 
    integer, parameter :: COSX_RADIAL_BASE(2, COSX_MAX_GRID_LEVEL) = &
-                         reshape([20, 20, 20, 20, 20, 25], [2, COSX_MAX_GRID_LEVEL])
+                         reshape([5, 20, 10, 20, 10, 25], [2, COSX_MAX_GRID_LEVEL])
       !! (role, level). Radial shells are this plus `COSX_RADIAL_PER_PERIOD`
-      !! times the period.
+      !! times the period. The iteration grid is radially much coarser than
+      !! the final one: its own exchange energy is poor, but the density it
+      !! converges is not, and the energy is taken on the final grid.
    integer, parameter :: COSX_RADIAL_PER_PERIOD = 5
    integer, parameter :: COSX_ANGULAR(2, COSX_MAX_GRID_LEVEL) = &
                          reshape([50, 86, 50, 194, 86, 302], [2, COSX_MAX_GRID_LEVEL])
@@ -90,6 +98,10 @@ module mqc_czt_cosx
       real(dp), allocatable :: fit(:, :)
          !! (n_ao, n_ao), the overlap-fitting matrix from `cosx_overlap_fit`.
          !! Unallocated means the quadrature is used as it stands.
+      real(dp), allocatable :: bounds(:, :)
+         !! (n_shell, n_shell) Schwarz bounds, `sqrt(max |(MN|MN)|)`, that the
+         !! contraction screens shell pairs with. Unallocated means every pair
+         !! is evaluated.
    contains
       procedure :: active => cosx_grid_active
       procedure :: destroy => cosx_grid_destroy
@@ -112,6 +124,7 @@ contains
       if (allocated(this%coords)) deallocate (this%coords)
       if (allocated(this%weights)) deallocate (this%weights)
       if (allocated(this%fit)) deallocate (this%fit)
+      if (allocated(this%bounds)) deallocate (this%bounds)
       this%n_points = 0
       this%level = -1
    end subroutine cosx_grid_destroy
@@ -143,7 +156,8 @@ contains
       clamped = max(COSX_MIN_GRID_LEVEL, min(COSX_MAX_GRID_LEVEL, level))
    end function clamp_level
 
-   subroutine build_cosx_grid(mol, grid, error, level, role, n_radial, n_angular, overlap)
+   subroutine build_cosx_grid(mol, grid, error, level, role, n_radial, n_angular, overlap, &
+                              screen)
       !! The molecular grid for the exchange
       !!
       !! Sized from the exchange grid tables by `level` and `role`, or from
@@ -163,6 +177,10 @@ contains
       real(dp), intent(in), optional :: overlap(:, :)
          !! The analytic overlap. Present, the grid carries the overlap fit
          !! and every exchange built on it is fitted.
+      logical, intent(in), optional :: screen
+         !! Build the Schwarz bounds the contraction screens with. Default
+         !! false: one quartet per shell pair, worth paying only for a grid an
+         !! SCF will reuse.
 
       type(dft_grid_t) :: full
       integer, allocatable :: numbers(:), radial(:), angular(:)
@@ -212,10 +230,15 @@ contains
       call full%destroy()
       if (present(overlap)) then
          call cosx_overlap_fit(mol, grid%coords, grid%weights, overlap, grid%fit, error)
+         if (error%has_error()) return
+      end if
+      if (present(screen)) then
+         if (screen) call schwarz_bounds(mol, grid%bounds, error)
       end if
    end subroutine build_cosx_grid
 
-   subroutine cosx_exchange(mol, coords, weights, density, k, error, batch_size, symmetrize, fit)
+   subroutine cosx_exchange(mol, coords, weights, density, k, error, batch_size, symmetrize, fit, &
+                            bounds, screen_tol)
       !! The exchange matrix of a density, by quadrature over the points given
       !!
       !! Converges to the analytic exchange matrix as the grid grows. Threaded
@@ -240,6 +263,13 @@ contains
          !! to the left index of `K` before any symmetrisation, which makes the
          !! quadrature exact for the overlap and far more accurate for the
          !! exchange on a small grid. Absent is the plain quadrature.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! (n_shell, n_shell) Schwarz bounds from `schwarz_bounds`. Present,
+         !! a shell pair is skipped for a batch whose `F` makes its
+         !! contribution negligible. Absent, every pair is evaluated.
+      real(dp), intent(in), optional :: screen_tol
+         !! The threshold for that, default `COSX_DEFAULT_SCREEN`. Zero keeps
+         !! every pair. Read only with `bounds`.
 
       real(dp), allocatable :: k_local(:, :), k_plain(:, :)
       type(error_t) :: local_error
@@ -284,9 +314,17 @@ contains
       k = 0.0_dp
       failed = .false.
 
-      !$omp parallel default(none) &
-      !$omp    shared(mol, coords, weights, density, k, error, failed, &
-      !$omp           n_points, n_ao, step) &
+      if (present(bounds)) then
+         if (size(bounds, 1) /= mol%nbas .or. size(bounds, 2) /= mol%nbas) then
+            call error%set(ERROR_VALIDATION, "COSX: the Schwarz bounds do not match the basis")
+            deallocate (k)
+            return
+         end if
+      end if
+
+      ! `default(shared)`: `bounds` and `screen_tol` are optional dummies, and
+      ! naming an absent one in a data-sharing clause is not portable.
+      !$omp parallel default(shared) &
       !$omp    private(g0, g1, k_local) &
       !$omp    firstprivate(local_error)
       allocate (k_local(n_ao, n_ao))
@@ -296,7 +334,8 @@ contains
          if (failed) cycle
          g1 = min(g0 + step - 1, n_points)
          call cosx_batch_exchange(mol, coords(:, g0:g1), weights(g0:g1), density, &
-                                  k_local, local_error)
+                                  k_local, local_error, bounds=bounds, &
+                                  screen_tol=screen_tol)
          if (local_error%has_error()) then
             !$omp critical(mqc_cosx_exchange_failure)
             if (.not. failed) then
@@ -460,7 +499,7 @@ contains
       call pic_gemm(overlap, inverse, fit)
    end subroutine cosx_overlap_fit
 
-   subroutine cosx_batch_exchange(mol, coords, weights, density, k, error)
+   subroutine cosx_batch_exchange(mol, coords, weights, density, k, error, bounds, screen_tol)
       !! Add one batch of points to an exchange matrix
       !!
       !! The whole method for the points given, with no threading of its own.
@@ -470,13 +509,15 @@ contains
       real(dp), intent(in) :: density(:, :)    !! (n_ao, n_ao)
       real(dp), intent(inout) :: k(:, :)       !! (n_ao, n_ao), accumulated into
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: bounds(:, :)   !! See `cosx_exchange`
+      real(dp), intent(in), optional :: screen_tol     !! See `cosx_exchange`
 
       real(dp), allocatable :: ao(:, :), f(:, :), g(:, :)
 
       call eval_ao_block(mol, coords, ao, error)
       if (error%has_error()) return
       call cosx_density_on_grid(ao, weights, density, f)
-      call cosx_esp_contract(mol, coords, f, g, error)
+      call cosx_esp_contract(mol, coords, f, g, error, bounds=bounds, screen_tol=screen_tol)
       if (error%has_error()) return
       call cosx_accumulate(ao, g, k)
    end subroutine cosx_batch_exchange
@@ -499,7 +540,7 @@ contains
       end do
    end subroutine cosx_density_on_grid
 
-   subroutine cosx_esp_contract(mol, coords, f, g, error)
+   subroutine cosx_esp_contract(mol, coords, f, g, error, bounds, screen_tol, n_skipped)
       !! `G(g, nu) = sum_lambda <nu| 1/|r - r_g| |lambda> F(g, lambda)`
       !!
       !! Point `g` of `f` is contracted with the potential integral at point
@@ -511,8 +552,21 @@ contains
       real(dp), intent(in) :: f(:, :)          !! (n_batch, n_ao)
       real(dp), allocatable, intent(out) :: g(:, :)   !! (n_batch, n_ao)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! (n_shell, n_shell) Schwarz bounds. Present, the half of a shell
+         !! pair that would add `A F(:, shell)` is skipped when the bound times
+         !! the largest `|F|` of that shell over the batch is below
+         !! `screen_tol`, and the integral is not evaluated when both halves are.
+      real(dp), intent(in), optional :: screen_tol
+         !! Default `COSX_DEFAULT_SCREEN`; zero keeps everything
+      integer, intent(out), optional :: n_skipped
+         !! Shell pairs, of the lower triangle, whose integral was not
+         !! evaluated for this batch
 
-      real(dp), allocatable :: env_local(:), buf(:)
+      real(dp), allocatable :: env_local(:), buf(:), f_max(:)
+      real(dp) :: tol
+      logical :: screening, into_i, into_j
+      integer :: skipped
       integer :: shls(4)
       integer :: ish, jsh, di, dj, i, j, ig, io, jo, ret, block_max
       integer :: n_batch, grid_offset, base
@@ -546,6 +600,22 @@ contains
       allocate (g(n_batch, mol%nao))
       g = 0.0_dp
 
+      ! The largest element of F each shell carries over this batch. F falls
+      ! off with the distance of a shell from the batch as the density matrix
+      ! does, which is where the linear scaling comes from.
+      skipped = 0
+      screening = present(bounds)
+      tol = COSX_DEFAULT_SCREEN
+      if (present(screen_tol)) tol = screen_tol
+      if (screening) then
+         allocate (f_max(mol%nbas))
+         do ish = 1, mol%nbas
+            di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+            io = mol%shell_offset(ish)
+            f_max(ish) = maxval(abs(f(:, io + 1:io + di)))
+         end do
+      end if
+
       ! The integral is symmetric in its two functions, so the lower triangle
       ! of shell pairs serves both `G(:, i) += A F(:, j)` and its mirror.
       do ish = 1, mol%nbas
@@ -554,6 +624,18 @@ contains
          do jsh = 1, ish
             dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
             jo = mol%shell_offset(jsh)
+            ! Which halves are worth having: G(:, i) takes F(:, j) and its
+            ! mirror the reverse.
+            into_i = .true.
+            into_j = ish /= jsh
+            if (screening) then
+               into_i = bounds(ish, jsh)*f_max(jsh) >= tol
+               into_j = into_j .and. bounds(ish, jsh)*f_max(ish) >= tol
+               if (.not. (into_i .or. into_j)) then
+                  skipped = skipped + 1
+                  cycle
+               end if
+            end if
             shls = [ish - 1, jsh - 1, 0, n_batch]
             if (mol%cartesian) then
                ret = libcint_1e_grids_cart(buf, shls, mol%atm, mol%natm, &
@@ -568,17 +650,21 @@ contains
             do j = 1, dj
                do i = 1, di
                   base = (i - 1)*n_batch + (j - 1)*n_batch*di
-                  do ig = 1, n_batch
-                     g(ig, io + i) = g(ig, io + i) + buf(base + ig)*f(ig, jo + j)
-                  end do
-                  if (ish == jsh) cycle
-                  do ig = 1, n_batch
-                     g(ig, jo + j) = g(ig, jo + j) + buf(base + ig)*f(ig, io + i)
-                  end do
+                  if (into_i) then
+                     do ig = 1, n_batch
+                        g(ig, io + i) = g(ig, io + i) + buf(base + ig)*f(ig, jo + j)
+                     end do
+                  end if
+                  if (into_j) then
+                     do ig = 1, n_batch
+                        g(ig, jo + j) = g(ig, jo + j) + buf(base + ig)*f(ig, io + i)
+                     end do
+                  end if
                end do
             end do
          end do
       end do
+      if (present(n_skipped)) n_skipped = skipped
    end subroutine cosx_esp_contract
 
    subroutine cosx_accumulate(ao, g, k)

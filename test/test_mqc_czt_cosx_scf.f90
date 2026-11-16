@@ -42,7 +42,7 @@ contains
 
       testsuite = [ &
                   new_unittest("rijcosx_energy_converges_with_the_grid", test_grid), &
-                  new_unittest("rijcosx_final_grid_improves_the_energy", test_final_grid), &
+                  new_unittest("rijcosx_final_grid_energy_is_second_order", test_final_grid), &
                   new_unittest("rijcosx_is_close_to_hartree_fock", test_against_exact), &
                   new_unittest("rijcosx_changes_nothing_for_a_pure_functional", test_pure), &
                   new_unittest("rijcosx_scales_with_a_hybrid", test_hybrid), &
@@ -93,7 +93,7 @@ contains
       !! With the fit fixed, the SCF energy settles as the exchange grid level rises
       !!
       !! The three levels, each with its final grid. Measured when this was
-      !! written: level 1 is 8.3e-6 hartree from level 3 and level 2 is 2.9e-6.
+      !! written: level 1 is 8.6e-6 hartree from level 3 and level 2 is 2.9e-6.
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol, aux
@@ -123,16 +123,19 @@ contains
    end subroutine test_grid
 
    subroutine test_final_grid(error)
-      !! The final energy on the larger grid is closer to converged than on the SCF grid
+      !! The energy from a density converged on the small grid is second order from self-consistent
       !!
-      !! Level 2, with and without its final grid, against level 3. The SCF
-      !! grid alone is the coarser quadrature, so switching the final step off
-      !! must move the energy, and away from the converged one. Measured when
-      !! this was written: 1.2e-4 hartree without the final grid, 2.9e-6 with.
+      !! With the final step on, the iterations run on a grid too coarse
+      !! radially to take an energy from, and the energy is one build on the
+      !! larger grid. With it off the iterations run on the larger grid
+      !! throughout. The two differ only by how the density was converged,
+      !! which the energy sees at second order: measured when this was
+      !! written, 5.4e-8 hartree, where the small grid's own exchange
+      !! energy is wrong by thousandths.
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol, aux
-      real(dp) :: e_with, e_without, e_fine
+      real(dp) :: e_with, e_without
 
       call molecules(mol, aux, error)
       if (allocated(error)) return
@@ -140,14 +143,14 @@ contains
       if (allocated(error)) return
       call converge(mol, e_without, error, aux=aux, cosx=.true., level=2, final_grid=.false.)
       if (allocated(error)) return
-      call converge(mol, e_fine, error, aux=aux, cosx=.true., level=3)
-      if (allocated(error)) return
 
-      call check(error, abs(e_with - e_without) > 1.0e-6_dp, &
-                 "switching the final grid off did not change the energy")
+      call check(error, abs(e_with - e_without) < 2.0e-6_dp, &
+                 "the energy from the small-grid density is too far from the "// &
+                 "self-consistent one on the larger grid")
       if (allocated(error)) return
-      call check(error, abs(e_with - e_fine) < abs(e_without - e_fine), &
-                 "the final grid did not bring the energy closer to the converged one")
+      ! Guards the guard: identical would mean the switch selected nothing.
+      call check(error, abs(e_with - e_without) > 1.0e-12_dp, &
+                 "switching the final grid off did not change how the SCF ran")
       call mol%destroy()
       call aux%destroy()
    end subroutine test_final_grid
@@ -225,7 +228,8 @@ contains
       !! Same grids as the Hartree-Fock case, and no final grid so each energy
       !! is on one quadrature. The difference between the coarse and the fine
       !! exchange grid should then be about a quarter of what it is there. A fraction applied twice, or not at all, is off by a factor
-      !! of four in one direction or the other. Measured 0.246.
+      !! of four in one direction or the other. Measured 0.29: the two
+      !! differences are a few microhartree, so the ratio is not sharper than that.
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol, aux
@@ -259,7 +263,7 @@ contains
                  "PBE0 with chain-of-spheres is too far from the fitted energy")
       if (allocated(error)) return
       ratio = (ks1 - ks3)/(hf1 - hf3)
-      call check(error, ratio > 0.20_dp .and. ratio < 0.30_dp, &
+      call check(error, ratio > 0.15_dp .and. ratio < 0.40_dp, &
                  "the quadrature error of a 25% hybrid is not about a quarter of "// &
                  "Hartree-Fock's, so the exchange fraction is misapplied")
       call ctx%destroy()

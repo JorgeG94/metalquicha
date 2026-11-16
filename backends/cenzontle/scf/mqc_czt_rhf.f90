@@ -231,8 +231,8 @@ module mqc_czt_rhf
          !! The grid the exchange is integrated on during the iterations;
          !! unbuilt unless the exchange is chain-of-spheres
       type(cosx_grid_t) :: cosx_final
-         !! The larger grid the final energy is taken on; unbuilt when that
-         !! step is off, and then the final energy is on `cosx`
+         !! The larger grid the final energy is taken on. Unbuilt when that
+         !! step is off, and then `cosx` is the larger grid itself.
       integer :: n_ao = 0
       integer :: n_mo = 0                     !! May be below n_ao where the overlap was singular
       integer :: n_occ = 0
@@ -625,9 +625,11 @@ contains
          !! quadrature runs on. Absent takes `COSX_DEFAULT_GRID_LEVEL`. Read
          !! only with `cosx`.
       logical, intent(in), optional :: cosx_final_grid
-         !! `keywords.scf.cosx_final_grid`. Take the final energy on the
-         !! level's larger grid, from the density converged on its smaller one.
-         !! Default true. Read only with `cosx`.
+         !! `keywords.scf.cosx_final_grid`. True, the default: iterate on the
+         !! level's small grid and take the final energy on its larger one.
+         !! False: iterate on the larger grid throughout, which costs more and
+         !! makes the energy self-consistent on that grid. Read only with
+         !! `cosx`.
       real(dp), intent(in), optional :: soscf_start
          !! The commutator at which that switch happens, as
          !! `max|FDS - SDF|` in the orthogonal basis. Absent or non-positive
@@ -772,15 +774,20 @@ contains
             use_final_grid = .true.
             if (present(cosx_final_grid)) use_final_grid = cosx_final_grid
             ! Both grids carry the overlap fit, which is what lets them be
-            ! this small.
-            call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
-                                 role=COSX_ROLE_SCF, overlap=ops%s)
-            if (error%has_error()) return
+            ! this small. The iteration grid is too coarse radially to take an
+            ! energy from, so with the final step off the iterations run on
+            ! the larger grid from the start.
             if (use_final_grid) then
-               call build_cosx_grid(mol, ops%cosx_final, error, level=cosx_level, &
-                                    role=COSX_ROLE_FINAL, overlap=ops%s)
+               call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
+                                    role=COSX_ROLE_SCF, overlap=ops%s, screen=.true.)
                if (error%has_error()) return
+               call build_cosx_grid(mol, ops%cosx_final, error, level=cosx_level, &
+                                    role=COSX_ROLE_FINAL, overlap=ops%s, screen=.true.)
+            else
+               call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
+                                    role=COSX_ROLE_FINAL, overlap=ops%s, screen=.true.)
             end if
+            if (error%has_error()) return
             if (verbose) then
                call logger%info("  exchange: chain of spheres, grid level "// &
                                 to_char(cosx_level)//", overlap fitted; Coulomb fitted")
@@ -2176,7 +2183,6 @@ contains
          !! and `bmat` is allocated, the Coulomb matrix comes from the fit and
          !! the exchange from the quadrature. Absent or unbuilt is the fitted
          !! exchange. Not read on the direct or in-core paths.
-
       type(direct_stats_t) :: stats
       real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
       real(dp), allocatable :: k_lr(:, :), k_cosx(:, :)
@@ -2262,12 +2268,9 @@ contains
          ! to within the quadrature error and no better.
          call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=0.0_dp)
          if (k_scale /= 0.0_dp) then
-            if (allocated(cosx%fit)) then
-               call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
-                                  fit=cosx%fit)
-            else
-               call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error)
-            end if
+            ! An SCF's grids always carry the fit and the bounds.
+            call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error, &
+                               fit=cosx%fit, bounds=cosx%bounds)
             if (error%has_error()) return
             fock = fock - 0.5_dp*k_scale*k_cosx
             deallocate (k_cosx)
