@@ -56,11 +56,11 @@ of basis functions poorly. Each grid therefore carries one matrix,
 exact for the overlap [Izsak2011]_. Applied to :math:`\mathbf K` it reduces the
 error of the exchange energy on the smallest grid several-fold.
 
-**Two grids.** The iterations run on a small grid and the final energy is one
-exchange build on a larger one, from the converged density. The energy's error
-in the density is second order, so the small grid only has to converge the
-density, not integrate the energy. ``cosx_final_grid: false`` iterates on the
-larger grid throughout.
+**Three grids.** The first iterations run on a coarse grid, the rest on a
+small one, and the final energy is one exchange build on a larger one, from
+the converged density. The energy's error in the density is second order, so
+the first two only have to converge the density, not integrate the energy.
+``cosx_final_grid: false`` iterates on the larger grid throughout.
 
 Accuracy
 --------
@@ -137,7 +137,8 @@ the quadrature error, which is inherent to fitted COSX.
 Speed
 -----
 
-Wall time for the whole SCF on four threads, energies converged to 1e-8:
+Wall time for the whole SCF on four threads, energies converged to 1e-8. The
+machine was shared while these were taken, so read them to about ten per cent:
 
 .. list-table::
    :header-rows: 1
@@ -151,44 +152,65 @@ Wall time for the whole SCF on four threads, energies converged to 1e-8:
      - 144
      - 5.7 s
      - 0.6 s
-     - 11 s
+     - 2.8 s
    * - (H\ :sub:`2`\ O)\ :sub:`6`, def2-TZVP
      - 258
      - 29 s
      - 2.1 s
-     - 24 s
+     - 6.1 s
    * - (H\ :sub:`2`\ O)\ :sub:`6`, def2-QZVP
      - 702
      - 559 s
      - 16 s
-     - 127 s
+     - 43 s
    * - Triglycine, def2-TZVP
      - 469
      - 252 s
      - 15 s
-     - 126 s
+     - 34 s
    * - (H\ :sub:`2`\ O)\ :sub:`20`, def2-SVP
      - 480
      - 153 s
      - 28 s
-     - 166 s
+     - 30 s
+   * - Decaglycine, def2-SVP
+     - 734
+     - 397 s
+     - does not fit
+     - 68 s
 
-**RIJCOSX here is not yet faster than RI-JK, and you should not pick it for
-speed.** It overtakes the direct build as the basis grows -- four times faster
-in def2-QZVP -- but the fully fitted build is several times faster again
-wherever its three-index tensor fits in memory. About nine tenths of the
-RIJCOSX time is the potential integral, evaluated through the general-purpose
-routine of the integral library at roughly 55 ns per shell pair per grid
-point. A kernel written for this one integral is what closes the gap, and it
-is the step a GPU backend replaces.
+RIJCOSX is several times faster than the direct build everywhere, and more so
+as the basis grows: thirteen times in def2-QZVP. Against the fully fitted
+build it is slower on small systems, level by twenty waters, and the only one
+of the two that runs once the fitted tensor no longer fits: decaglycine in
+def2-SVP wants 15.8 GB for RI-JK and 2.5 GB here.
 
-Two things limit it further today:
+Where the time goes, and what was done about it:
 
-* The Coulomb half still stores the full three-index fitting tensor, so
-  RIJCOSX needs as much memory as RI-JK.
-* Shell pairs are screened by their Schwarz bound times the density on the
-  grid, at 1e-10. That is worth a factor of 2.5 on twenty waters. The threshold
-  cannot be loosened much: what it drops has one sign and adds up.
+* **The potential integral** is about two thirds of a run. It is evaluated by
+  a kernel written for this one integral (``mqc_czt_esp_batch``):
+  McMurchie-Davidson, every inner loop over the points of a batch, contracted
+  in place. It agrees with the integral library to 1e-11 for every shell type
+  through g and is about three and a half times faster. A basis with shells
+  above g falls back to the library.
+* **Three grids, not two.** The iterations before the commutator falls below
+  1e-2 run on a coarser grid still, with a looser screening threshold.
+* **The final energy is a trace.** The last build wants an energy and not a
+  matrix, so it screens each shell pair on both shells where a matrix build
+  can screen on one.
+* **Only the functions that reach a batch** are evaluated and multiplied.
+* **The Coulomb matrix** comes from a Coulomb-only fit that keeps the raw
+  three-centre integrals over the screened pairs and never forms the fitted
+  tensor.
+
+Shell pairs are screened by their Schwarz bound times the density on the
+grid: 1e-6 on the coarse grid, 1e-8 on the iteration grid and 1e-10 where the
+energy is taken. Looser than that on the final grid is not worth it: what the
+screening drops has one sign and adds up, and 1e-9 moves the energy of twenty
+waters by 9e-6 hartree for a tenth off the time.
+
+The integral is still the step a GPU backend would replace, behind
+``cosx_esp_contract`` and ``esp_batch_contract``.
 
 What it does not do
 -------------------

@@ -304,10 +304,18 @@ else is refused by name. Three things to know before touching it:
 - **It needs a `-jfit` or `-jkfit` auxiliary basis.** With an `-rifit` set it
   is millihartrees off, because RI-JK's Coulomb and exchange errors cancel and
   RIJCOSX has no exchange fit to cancel against.
-- **It is not faster than RI-JK yet.** Nine tenths of the time is libfint's
-  general `int1e_grids` at about 55 ns per shell pair per grid point; the
-  three steps are separate public routines so that one integral step can be
-  replaced, on the CPU or by a GPU backend. See `mqc_docs/source/rijcosx.rst`.
+- **Two thirds of a run is one integral**, `<mu| 1/|r - r_g| |nu>` over
+  batches of grid points, and it does not come from libfint: `mqc_czt_esp_batch`
+  is a McMurchie-Davidson kernel written for it, about three and a half times
+  faster than `int1e_grids` and checked against it to 1e-11 for every shell
+  type through g. Profile before touching it (`perf` with `-e cpu-clock`
+  works here once `linux-tools-generic` is installed): the things that
+  mattered were a logical reduction and a `minval` that do not vectorise, a
+  double-precision `1/sqrt`, and adding Hermite terms one to a pass. Its
+  Coulomb matrix comes from `df_jfit`, the same Coulomb-only fit a pure
+  functional uses. Against RI-JK it is slower on small systems, level by
+  twenty waters in def2-SVP, and runs where the fitted tensor does not fit.
+  See `mqc_docs/source/rijcosx.rst`.
 
 Initial guess is `keywords.scf.guess`: `core`, `gwh`, `sac`, `sad`, or `auto`.
 `auto` resolves per backend - `sad` on the CPU path, `gwh` on cuEST - so the two

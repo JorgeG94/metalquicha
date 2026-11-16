@@ -954,8 +954,8 @@ SCF Options
   def2-SVP it is 2.6e-5 hartree from Hartree-Fock, most of which is the fit of
   the Coulomb matrix and not the quadrature.
 - ``cosx_grid``: Size of the chain-of-spheres grids, 1 to 3 (default: 2). Each
-  level is a pair: a small grid the iterations run on and a larger one for the
-  final energy. Both are overlap fitted, which is what lets them be far
+  level is three grids: a coarse one for the first iterations, a small one the
+  rest run on, and a larger one for the final energy. Both are overlap fitted, which is what lets them be far
   smaller than a DFT grid. The small grid is radially too coarse to take an
   energy from; it is there to converge the density. Measured on the exchange energy of eight small
   molecules in def2-SVP and def2-TZVP, against the analytic exchange: level 1
