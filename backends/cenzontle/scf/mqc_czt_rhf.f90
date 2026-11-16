@@ -27,7 +27,8 @@ module mqc_czt_rhf
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    use mqc_czt_rij, only: rij_t, build_rij, rij_coulomb
    use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange, cosx_exchange_trace, &
-                           COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_DEFAULT_GRID_LEVEL
+                           COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_ROLE_COARSE, &
+                           COSX_COARSE_UNTIL, COSX_DEFAULT_GRID_LEVEL
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
@@ -235,6 +236,9 @@ module mqc_czt_rhf
       type(cosx_grid_t) :: cosx
          !! The grid the exchange is integrated on during the iterations;
          !! unbuilt unless the exchange is chain-of-spheres
+      type(cosx_grid_t) :: cosx_coarse
+         !! A smaller grid for the iterations before the commutator falls
+         !! below `COSX_COARSE_UNTIL`. Unbuilt when the final step is off.
       type(cosx_grid_t) :: cosx_final
          !! The larger grid the final energy is taken on. Unbuilt when that
          !! step is off, and then `cosx` is the larger grid itself.
@@ -278,6 +282,9 @@ module mqc_czt_rhf
       type(diis_state_t) :: diis
       type(incremental_state_t) :: incr
       type(direct_stats_t) :: screening
+      logical :: cosx_coarse = .true.
+         !! Whether a chain-of-spheres run is still on its coarse grid. Cleared
+         !! once and never set again.
    end type rhf_state_t
 
    type :: uhf_state_t
@@ -817,6 +824,9 @@ contains
                if (error%has_error()) return
                call build_cosx_grid(mol, ops%cosx_final, error, level=cosx_level, &
                                     role=COSX_ROLE_FINAL, overlap=ops%s, bounds=cosx_bounds)
+               if (error%has_error()) return
+               call build_cosx_grid(mol, ops%cosx_coarse, error, level=cosx_level, &
+                                    role=COSX_ROLE_COARSE, overlap=ops%s, bounds=cosx_bounds)
             else
                call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
                                     role=COSX_ROLE_FINAL, overlap=ops%s, bounds=cosx_bounds)
@@ -897,8 +907,13 @@ contains
             return
          end if
          st%density = guess_density
-         call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, error, &
-                                rij=ops%rij, cosx=ops%cosx)
+         if (ops%cosx_coarse%active()) then
+            call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, &
+                                   error, rij=ops%rij, cosx=ops%cosx_coarse)
+         else
+            call atomic_guess_fock(mol, ops%h, st%density, ops%bmat, ops%eri, ops%bounds, st%fock, &
+                                   error, rij=ops%rij, cosx=ops%cosx)
+         end if
          if (error%has_error()) return
       case default
          call error%set(ERROR_VALIDATION, "RHF: unknown initial guess")
@@ -1185,7 +1200,19 @@ contains
       t_xc_iter = clk%seconds_of(STAGE_XC)
       ! `incr` present is what switches incremental building on inside
       ! `assemble_fock`, so withholding it is how the deck turns it off.
-      if (ctrl%incremental) then
+      !
+      ! A chain-of-spheres run starts on its coarse grid and leaves it, for
+      ! good, once the previous iteration's commutator says the density is
+      ! close. `result%commutator` is still the previous iteration's here.
+      if (st%cosx_coarse .and. iter > 1) then
+         if (result%commutator < COSX_COARSE_UNTIL) st%cosx_coarse = .false.
+      end if
+      if (st%cosx_coarse .and. ops%cosx_coarse%active()) then
+         st%incr%full_builds = st%incr%full_builds + 1
+         call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
+                            st%fock, st%e_elec, error, clk=clk, screening=st%screening, &
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx_coarse, rij=ops%rij)
+      else if (ctrl%incremental) then
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, incr=st%incr, &
                             bmat_lr=ops%bmat_lr, cosx=ops%cosx, rij=ops%rij)

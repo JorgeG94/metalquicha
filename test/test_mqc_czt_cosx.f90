@@ -29,14 +29,14 @@ module test_mqc_czt_cosx
    use mqc_czt_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_nosym, &
                              direct_stats_t
    use mqc_czt_esp, only: esp_matrices
-   use mqc_czt_ao, only: eval_ao_block
+   use mqc_czt_ao, only: eval_ao_block, shell_extents
    use mqc_czt_cosx, only: cosx_exchange, cosx_exchange_trace, cosx_batch_exchange, &
                            cosx_esp_contract, &
                            cosx_density_on_grid, cosx_accumulate, cosx_grid_t, &
                            build_cosx_grid, cosx_overlap_fit, cosx_numerical_overlap, &
                            cosx_radial_points, cosx_angular_points, &
-                           COSX_ROLE_SCF, COSX_ROLE_FINAL, &
-                           COSX_SCREEN_ITERATION, COSX_SCREEN_FINAL
+                           COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_ROLE_COARSE, &
+                           COSX_SCREEN_ITERATION, COSX_SCREEN_FINAL, COSX_SCREEN_COARSE
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    implicit none
    private
@@ -68,6 +68,7 @@ contains
                   new_unittest("cosx_screening_drops_only_what_is_negligible", test_screening), &
                   new_unittest("cosx_batch_integral_gives_the_same_exchange", test_batch_kernel), &
                   new_unittest("cosx_trace_is_the_trace_of_the_exchange", test_trace), &
+                  new_unittest("cosx_function_screening_changes_nothing", test_functions), &
                   new_unittest("cosx_refuses_malformed_input", test_refusals) &
                   ]
    end subroutine collect_mqc_czt_cosx_tests
@@ -640,7 +641,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(czt_molecule_t) :: mol
-      type(cosx_grid_t) :: iteration, final
+      type(cosx_grid_t) :: iteration, final, coarse
       type(error_t) :: err
       real(dp), allocatable :: density(:, :), k_library(:, :), k_batch(:, :)
 
@@ -669,6 +670,17 @@ contains
                  final%screen_tol == COSX_SCREEN_FINAL .and. &
                  COSX_SCREEN_ITERATION > COSX_SCREEN_FINAL, &
                  "the grids do not carry the screening thresholds of their roles")
+      if (allocated(error)) return
+
+      ! The coarse grid an SCF starts on: fewer points than the iteration grid
+      ! and a looser threshold still.
+      call build_cosx_grid(mol, coarse, err, level=2, role=COSX_ROLE_COARSE, screen=.true.)
+      call check(error,.not. err%has_error(), "the coarse grid should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, coarse%n_points < iteration%n_points .and. &
+                 coarse%screen_tol == COSX_SCREEN_COARSE .and. &
+                 COSX_SCREEN_COARSE > COSX_SCREEN_ITERATION, &
+                 "the coarse grid is not smaller and looser than the iteration grid")
       call mol%destroy()
    end subroutine test_batch_kernel
 
@@ -728,6 +740,67 @@ contains
       call check(error, abs(from_matrix) > 20.0_dp, "the reference trace is implausible")
       call mol%destroy()
    end subroutine test_trace
+
+   subroutine test_functions(error)
+      !! Leaving out the functions that do not reach a batch gives the same matrix
+      !!
+      !! Two waters 40 bohr apart, and a batch of points on the first: the
+      !! second molecule's functions are zero there to any precision, so a
+      !! batch built from the first molecule's functions alone is the same
+      !! sum. The exchange build takes this path always; here it is compared
+      !! with the path that evaluates everything.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: Z2(6) = [8, 1, 1, 8, 1, 1]
+      character(len=2), parameter :: SYM2(6) = ["O ", "H ", "H ", "O ", "H ", "H "]
+      integer, parameter :: N_USE = 60
+      type(czt_molecule_t) :: mol
+      type(dft_grid_t) :: grid
+      type(error_t) :: err
+      real(dp) :: xyz(3, 6)
+      real(dp), allocatable :: density(:, :), all_functions(:, :), reaching(:, :), extents(:)
+      real(dp), allocatable :: ao(:, :)
+      integer :: mu, nu
+
+      xyz(:, 1:3) = WATER
+      xyz(:, 4:6) = WATER
+      xyz(1, 4:6) = xyz(1, 4:6) + 40.0_dp
+      call build_czt_molecule(Z2, SYM2, xyz, "6-31g*", mol, err)
+      call check(error,.not. err%has_error(), "the molecule should build: "//err%get_full_trace())
+      if (allocated(error)) return
+      allocate (density(mol%nao, mol%nao))
+      do nu = 1, mol%nao
+         do mu = 1, mol%nao
+            density(mu, nu) = cos(0.3_dp*real(mu + nu, dp))/(1.0_dp + abs(real(mu - nu, dp)))
+         end do
+      end do
+
+      ! Points around the first molecule only.
+      call build_dft_grid(mol%coords(:, 1:3), mol%atomic_numbers(1:3), grid, err, level=0)
+      call check(error,.not. err%has_error(), "the grid should build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      allocate (all_functions(mol%nao, mol%nao), reaching(mol%nao, mol%nao))
+      all_functions = 0.0_dp
+      reaching = 0.0_dp
+      call shell_extents(mol, 1.0e-14_dp, extents)
+      call cosx_batch_exchange(mol, grid%coords(:, 1:N_USE), grid%weights(1:N_USE), density, &
+                               all_functions, err)
+      call cosx_batch_exchange(mol, grid%coords(:, 1:N_USE), grid%weights(1:N_USE), density, &
+                               reaching, err, extents=extents)
+      call check(error,.not. err%has_error(), "the batch failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(reaching - all_functions)) < 1.0e-12_dp, &
+                 "leaving out the functions that do not reach the batch changed the matrix")
+      if (allocated(error)) return
+
+      ! Guards the guard: some function really is absent from these points.
+      call eval_ao_block(mol, grid%coords(:, 1:N_USE), ao, err)
+      call check(error, maxval(abs(ao(:, mol%nao))) < 1.0e-30_dp .and. &
+                 maxval(abs(all_functions)) > 1.0e-3_dp, &
+                 "the far molecule's functions reach the batch, so nothing was left out")
+      call mol%destroy()
+   end subroutine test_functions
 
    subroutine test_refusals(error)
       !! Shapes that cannot be right are refused, not read out of bounds

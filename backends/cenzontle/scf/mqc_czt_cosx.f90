@@ -32,7 +32,7 @@ module mqc_czt_cosx
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_calculation_defaults, only: DEFAULT_COSX_GRID
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
-   use mqc_czt_ao, only: eval_ao_block
+   use mqc_czt_ao, only: eval_ao_block, shell_extents, block_significant_aos
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_esp_batch, only: esp_shells_t, build_esp_shells, esp_batch_contract, &
                                 esp_batch_energy, &
@@ -56,7 +56,8 @@ module mqc_czt_cosx
    public :: COSX_DEFAULT_BATCH
    public :: COSX_DEFAULT_SCREEN, COSX_SCREEN_ITERATION, COSX_SCREEN_FINAL
    public :: COSX_DEFAULT_GRID_LEVEL, COSX_MIN_GRID_LEVEL, COSX_MAX_GRID_LEVEL
-   public :: COSX_ROLE_SCF, COSX_ROLE_FINAL
+   public :: COSX_ROLE_SCF, COSX_ROLE_FINAL, COSX_ROLE_COARSE
+   public :: COSX_SCREEN_COARSE, COSX_COARSE_UNTIL
    public :: cosx_radial_points, cosx_angular_points
 
    integer, parameter :: COSX_DEFAULT_BATCH = 128
@@ -69,10 +70,19 @@ module mqc_czt_cosx
       !! The threshold on a grid the iterations run on. Looser than the final
       !! one because only the density has to come out right: on twenty waters
       !! the final energy moves by 9e-10 hartree against 1e-10 here.
+   real(dp), parameter :: COSX_SCREEN_COARSE = 1.0e-6_dp
+      !! The threshold on the coarse grid, whose builds only have to move the
+      !! density towards the right one
+   real(dp), parameter :: COSX_COARSE_UNTIL = 1.0e-2_dp
+      !! The commutator below which an SCF leaves the coarse grid for the
+      !! iteration grid
    real(dp), parameter :: COSX_SCREEN_FINAL = 1.0e-10_dp
       !! The threshold on a grid an energy is taken from. On twenty waters it
       !! moves the exchange energy by 6e-7 hartree; 1e-9 would move it by 9e-6
       !! for a tenth off the time, which is not a trade worth making.
+   real(dp), parameter :: COSX_AO_CUT = 1.0e-14_dp
+      !! A shell is left out of a batch when every one of its functions is
+      !! below this at every point of it
    real(dp), parameter :: COSX_FIT_NULL = 1.0e-10_dp
       !! Eigenvalues of the numerical overlap below this fraction of the
       !! largest are left out of its inverse: directions of the basis the grid
@@ -85,16 +95,19 @@ module mqc_czt_cosx
 
    integer, parameter :: COSX_ROLE_SCF = 1     !! The grid the iterations run on
    integer, parameter :: COSX_ROLE_FINAL = 2   !! The larger one the final energy is taken on
+   integer, parameter :: COSX_ROLE_COARSE = 3
+      !! A smaller one still, for the iterations before the SCF is close
+   integer, parameter :: N_ROLES = 3
 
-   integer, parameter :: COSX_RADIAL_BASE(2, COSX_MAX_GRID_LEVEL) = &
-                         reshape([5, 20, 10, 20, 10, 25], [2, COSX_MAX_GRID_LEVEL])
+   integer, parameter :: COSX_RADIAL_BASE(N_ROLES, COSX_MAX_GRID_LEVEL) = &
+                         reshape([5, 20, 5, 10, 20, 10, 10, 25, 10], [N_ROLES, COSX_MAX_GRID_LEVEL])
       !! (role, level). Radial shells are this plus `COSX_RADIAL_PER_PERIOD`
       !! times the period. The iteration grid is radially much coarser than
       !! the final one: its own exchange energy is poor, but the density it
       !! converges is not, and the energy is taken on the final grid.
    integer, parameter :: COSX_RADIAL_PER_PERIOD = 5
-   integer, parameter :: COSX_ANGULAR(2, COSX_MAX_GRID_LEVEL) = &
-                         reshape([50, 86, 50, 194, 86, 302], [2, COSX_MAX_GRID_LEVEL])
+   integer, parameter :: COSX_ANGULAR(N_ROLES, COSX_MAX_GRID_LEVEL) = &
+                         reshape([50, 86, 26, 50, 194, 26, 86, 302, 50], [N_ROLES, COSX_MAX_GRID_LEVEL])
       !! (role, level). Lebedev points in the valence zone; the pruning steps
       !! down from it towards the nucleus and far from it.
 
@@ -212,7 +225,7 @@ contains
       if (present(level)) grid%level = level
       used_role = COSX_ROLE_SCF
       if (present(role)) used_role = role
-      if (used_role /= COSX_ROLE_SCF .and. used_role /= COSX_ROLE_FINAL) then
+      if (used_role < 1 .or. used_role > N_ROLES) then
          call error%set(ERROR_VALIDATION, "COSX: unknown grid role")
          return
       end if
@@ -265,11 +278,14 @@ contains
       ! and gives the same numbers.
       ! The iteration grid only has to converge the density, so its builds
       ! screen more loosely than the one the energy is taken from.
-      if (used_role == COSX_ROLE_SCF) then
+      select case (used_role)
+      case (COSX_ROLE_COARSE)
+         grid%screen_tol = COSX_SCREEN_COARSE
+      case (COSX_ROLE_SCF)
          grid%screen_tol = COSX_SCREEN_ITERATION
-      else
+      case default
          grid%screen_tol = COSX_SCREEN_FINAL
-      end if
+      end select
       if (maxval(mol%bas(LIBCINT_ANG_OF, 1:mol%nbas)) <= ESP_BATCH_LMAX) then
          call build_esp_shells(mol, grid%shells, error)
       end if
@@ -313,7 +329,7 @@ contains
          !! integral is the batch evaluator's; otherwise the integral
          !! library's. The two agree to rounding.
 
-      real(dp), allocatable :: k_local(:, :), k_plain(:, :)
+      real(dp), allocatable :: k_local(:, :), k_plain(:, :), extents(:)
       type(error_t) :: local_error
       integer :: n_points, n_ao, step, g0, g1
       logical :: fold, failed
@@ -355,6 +371,7 @@ contains
       allocate (k(n_ao, n_ao))
       k = 0.0_dp
       failed = .false.
+      call shell_extents(mol, COSX_AO_CUT, extents)
 
       if (present(bounds)) then
          if (size(bounds, 1) /= mol%nbas .or. size(bounds, 2) /= mol%nbas) then
@@ -377,7 +394,7 @@ contains
          g1 = min(g0 + step - 1, n_points)
          call cosx_batch_exchange(mol, coords(:, g0:g1), weights(g0:g1), density, &
                                   k_local, local_error, bounds=bounds, &
-                                  screen_tol=screen_tol, shells=shells)
+                                  screen_tol=screen_tol, shells=shells, extents=extents)
          if (local_error%has_error()) then
             !$omp critical(mqc_cosx_exchange_failure)
             if (.not. failed) then
@@ -420,9 +437,10 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: batch_size   !! Default `COSX_DEFAULT_BATCH`
 
-      real(dp), allocatable :: s_local(:, :), ao(:, :), wao(:, :)
+      real(dp), allocatable :: s_local(:, :), ao(:, :), wao(:, :), s_sig(:, :), extents(:)
+      integer, allocatable :: ao_list(:)
       type(error_t) :: local_error
-      integer :: n_points, n_ao, step, g0, g1, ig, mu
+      integer :: n_points, n_ao, step, g0, g1, ig, mu, nu, n_sig
       logical :: failed
 
       n_ao = mol%nao
@@ -443,17 +461,19 @@ contains
       s_grid = 0.0_dp
       failed = .false.
 
+      call shell_extents(mol, COSX_AO_CUT, extents)
+
       !$omp parallel default(none) &
-      !$omp    shared(mol, coords, weights, s_grid, error, failed, n_points, n_ao, step) &
-      !$omp    private(g0, g1, ig, mu, s_local, ao, wao) &
+      !$omp    shared(mol, coords, weights, s_grid, error, failed, n_points, n_ao, step, extents) &
+      !$omp    private(g0, g1, ig, mu, nu, n_sig, s_local, ao, wao, s_sig, ao_list) &
       !$omp    firstprivate(local_error)
-      allocate (s_local(n_ao, n_ao))
+      allocate (s_local(n_ao, n_ao), ao_list(n_ao))
       s_local = 0.0_dp
       !$omp do schedule(dynamic)
       do g0 = 1, n_points, step
          if (failed) cycle
          g1 = min(g0 + step - 1, n_points)
-         call eval_ao_block(mol, coords(:, g0:g1), ao, local_error)
+         call batch_functions(mol, coords(:, g0:g1), extents, ao, ao_list, n_sig, local_error)
          if (local_error%has_error()) then
             !$omp critical(mqc_cosx_overlap_failure)
             if (.not. failed) then
@@ -463,20 +483,27 @@ contains
             !$omp end critical(mqc_cosx_overlap_failure)
             cycle
          end if
-         if (allocated(wao)) deallocate (wao)
-         allocate (wao(size(ao, 1), n_ao))
-         do mu = 1, n_ao
+         if (n_sig == 0) cycle
+         ! Only the functions that reach the batch, then scattered back.
+         if (allocated(wao)) deallocate (wao, s_sig)
+         allocate (wao(size(ao, 1), n_sig), s_sig(n_sig, n_sig))
+         do mu = 1, n_sig
             do ig = 1, size(ao, 1)
                wao(ig, mu) = weights(g0 + ig - 1)*ao(ig, mu)
             end do
          end do
-         call pic_gemm(ao, wao, s_local, transa="T", beta=1.0_dp)
+         call pic_gemm(ao, wao, s_sig, transa="T")
+         do nu = 1, n_sig
+            do mu = 1, n_sig
+               s_local(ao_list(mu), ao_list(nu)) = s_local(ao_list(mu), ao_list(nu)) + s_sig(mu, nu)
+            end do
+         end do
       end do
       !$omp end do
       !$omp critical(mqc_cosx_overlap_accumulate)
       s_grid = s_grid + s_local
       !$omp end critical(mqc_cosx_overlap_accumulate)
-      deallocate (s_local)
+      deallocate (s_local, ao_list)
       !$omp end parallel
 
       if (failed) deallocate (s_grid)
@@ -571,10 +598,11 @@ contains
          !! `COSX_DEFAULT_SCREEN`. Read only with `bounds`.
       integer, intent(in), optional :: batch_size   !! Default `COSX_DEFAULT_BATCH`
 
-      real(dp), allocatable :: left(:, :), ao(:, :), f(:, :), y(:, :)
+      real(dp), allocatable :: left(:, :), ao(:, :), f(:, :), y(:, :), rows(:, :), extents(:)
+      integer, allocatable :: ao_list(:)
       type(error_t) :: local_error
       real(dp) :: tol, part, total
-      integer :: n_points, n_ao, step, g0, g1
+      integer :: n_points, n_ao, step, g0, g1, n_sig, i, ig, nu
       logical :: failed
 
       trace = 0.0_dp
@@ -614,19 +642,39 @@ contains
 
       total = 0.0_dp
       failed = .false.
+      call shell_extents(mol, COSX_AO_CUT, extents)
       ! `default(shared)`: `bounds` is an optional dummy.
-      !$omp parallel default(shared) private(g0, g1, ao, f, y, part) &
+      !$omp parallel default(shared) &
+      !$omp    private(g0, g1, ao, f, y, part, rows, ao_list, n_sig, i, ig, nu) &
       !$omp    firstprivate(local_error) reduction(+:total)
+      allocate (ao_list(n_ao))
       !$omp do schedule(dynamic)
       do g0 = 1, n_points, step
          if (failed) cycle
          g1 = min(g0 + step - 1, n_points)
-         call eval_ao_block(mol, coords(:, g0:g1), ao, local_error)
-         if (.not. local_error%has_error()) then
-            call cosx_density_on_grid(ao, weights(g0:g1), density, f)
-            if (allocated(y)) deallocate (y)
-            allocate (y(size(ao, 1), n_ao))
-            call pic_gemm(ao, left, y)
+         part = 0.0_dp
+         call batch_functions(mol, coords(:, g0:g1), extents, ao, ao_list, n_sig, local_error)
+         if (.not. local_error%has_error() .and. n_sig > 0) then
+            ! Both sides over the functions that reach the batch.
+            if (allocated(rows)) deallocate (rows, f, y)
+            allocate (rows(n_sig, n_ao), f(size(ao, 1), n_ao), y(size(ao, 1), n_ao))
+            do nu = 1, n_ao
+               do i = 1, n_sig
+                  rows(i, nu) = density(ao_list(i), nu)
+               end do
+            end do
+            call pic_gemm(ao, rows, f)
+            do nu = 1, n_ao
+               do ig = 1, size(f, 1)
+                  f(ig, nu) = weights(g0 + ig - 1)*f(ig, nu)
+               end do
+            end do
+            do nu = 1, n_ao
+               do i = 1, n_sig
+                  rows(i, nu) = left(ao_list(i), nu)
+               end do
+            end do
+            call pic_gemm(ao, rows, y)
             call esp_batch_energy(shells, coords(:, g0:g1), f, y, part, local_error, &
                                   bounds=bounds, screen_tol=tol)
          end if
@@ -642,12 +690,35 @@ contains
          total = total + part
       end do
       !$omp end do
+      deallocate (ao_list)
       !$omp end parallel
       if (.not. failed) trace = total
    end subroutine cosx_exchange_trace
 
+   subroutine batch_functions(mol, coords, extents, ao, ao_list, n_sig, error)
+      !! The basis functions that reach a batch, and their values on it
+      !!
+      !! `ao` comes back (n_batch, n_sig), holding function `ao_list(i)` of the
+      !! molecule in column `i`.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)       !! (3, n_batch)
+      real(dp), intent(in) :: extents(:)         !! (n_shell) from `shell_extents`
+      real(dp), allocatable, intent(out) :: ao(:, :)
+      integer, intent(out) :: ao_list(:)         !! (n_ao), first `n_sig` entries used
+      integer, intent(out) :: n_sig
+      type(error_t), intent(inout) :: error
+
+      logical :: mask(mol%nbas)
+      integer :: offset(mol%nbas)
+
+      call block_significant_aos(mol, coords, extents, mask, ao_list, offset, n_sig)
+      if (n_sig == 0) return
+      call eval_ao_block(mol, coords, ao, error, shell_mask=mask, ao_offset=offset, &
+                         n_ao_out=n_sig)
+   end subroutine batch_functions
+
    subroutine cosx_batch_exchange(mol, coords, weights, density, k, error, bounds, screen_tol, &
-                                  shells)
+                                  shells, extents)
       !! Add one batch of points to an exchange matrix
       !!
       !! The whole method for the points given, with no threading of its own.
@@ -660,14 +731,41 @@ contains
       real(dp), intent(in), optional :: bounds(:, :)   !! See `cosx_exchange`
       real(dp), intent(in), optional :: screen_tol     !! See `cosx_exchange`
       type(esp_shells_t), intent(in), optional :: shells   !! See `cosx_exchange`
+      real(dp), intent(in), optional :: extents(:)
+         !! (n_shell) from `shell_extents`. Present, only the functions that
+         !! reach the batch are evaluated and multiplied, which is the same
+         !! sum to within the cutoff the extents were built with.
 
-      real(dp), allocatable :: ao(:, :), f(:, :), g(:, :)
+      real(dp), allocatable :: ao(:, :), f(:, :), g(:, :), rows(:, :), k_rows(:, :)
+      integer :: ao_list(mol%nao)
+      integer :: n_sig, i, ig, nu, n_ao
       real(dp) :: tol
       logical :: batch_kernel
 
-      call eval_ao_block(mol, coords, ao, error)
-      if (error%has_error()) return
-      call cosx_density_on_grid(ao, weights, density, f)
+      n_ao = mol%nao
+      if (present(extents)) then
+         call batch_functions(mol, coords, extents, ao, ao_list, n_sig, error)
+         if (error%has_error() .or. n_sig == 0) return
+         ! F(g, lambda) = w_g sum_kappa chi_kappa(g) P(kappa, lambda), over the
+         ! kappa that reach the batch.
+         allocate (rows(n_sig, n_ao), f(size(ao, 1), n_ao))
+         do nu = 1, n_ao
+            do i = 1, n_sig
+               rows(i, nu) = density(ao_list(i), nu)
+            end do
+         end do
+         call pic_gemm(ao, rows, f)
+         do nu = 1, n_ao
+            do ig = 1, size(f, 1)
+               f(ig, nu) = weights(ig)*f(ig, nu)
+            end do
+         end do
+      else
+         call eval_ao_block(mol, coords, ao, error)
+         if (error%has_error()) return
+         call cosx_density_on_grid(ao, weights, density, f)
+      end if
+
       batch_kernel = .false.
       if (present(shells)) batch_kernel = shells%n_shell > 0
       if (batch_kernel) then
@@ -678,7 +776,19 @@ contains
          call cosx_esp_contract(mol, coords, f, g, error, bounds=bounds, screen_tol=screen_tol)
       end if
       if (error%has_error()) return
-      call cosx_accumulate(ao, g, k)
+
+      if (present(extents)) then
+         ! K(mu, nu) += sum_g chi_mu(g) G(g, nu), for the mu that reach the batch.
+         allocate (k_rows(n_sig, n_ao))
+         call pic_gemm(ao, g, k_rows, transa="T")
+         do nu = 1, n_ao
+            do i = 1, n_sig
+               k(ao_list(i), nu) = k(ao_list(i), nu) + k_rows(i, nu)
+            end do
+         end do
+      else
+         call cosx_accumulate(ao, g, k)
+      end if
    end subroutine cosx_batch_exchange
 
    subroutine cosx_density_on_grid(ao, weights, density, f)
