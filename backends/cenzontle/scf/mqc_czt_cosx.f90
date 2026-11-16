@@ -173,7 +173,7 @@ contains
    end function clamp_level
 
    subroutine build_cosx_grid(mol, grid, error, level, role, n_radial, n_angular, overlap, &
-                              screen)
+                              screen, bounds)
       !! The molecular grid for the exchange
       !!
       !! Sized from the exchange grid tables by `level` and `role`, or from
@@ -197,6 +197,10 @@ contains
          !! Build the Schwarz bounds the contraction screens with. Default
          !! false: one quartet per shell pair, worth paying only for a grid an
          !! SCF will reuse.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! (n_shell, n_shell) Schwarz bounds already in hand, to screen with.
+         !! They depend on the molecule and not the grid, so a caller building
+         !! several grids computes them once. Takes the place of `screen`.
 
       type(dft_grid_t) :: full
       integer, allocatable :: numbers(:), radial(:), angular(:)
@@ -248,7 +252,9 @@ contains
          call cosx_overlap_fit(mol, grid%coords, grid%weights, overlap, grid%fit, error)
          if (error%has_error()) return
       end if
-      if (present(screen)) then
+      if (present(bounds)) then
+         grid%bounds = bounds
+      else if (present(screen)) then
          if (screen) call schwarz_bounds(mol, grid%bounds, error)
          if (error%has_error()) return
       end if

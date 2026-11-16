@@ -100,7 +100,7 @@ contains
       this%n_row = 0
    end subroutine rij_destroy
 
-   subroutine build_rij(orb, aux, rij, error, in_core)
+   subroutine build_rij(orb, aux, rij, error, in_core, bounds)
       !! Set up the fitted Coulomb build for a molecule
       !!
       !! Factors the metric, screens the orbital shell pairs, and stores the
@@ -113,6 +113,9 @@ contains
          !! Store the integrals (true) or recompute them every build (false).
          !! Absent, they are stored when they fit in the memory this run may
          !! plan on.
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! (n_shell, n_shell) Schwarz bounds of the orbital shell pairs,
+         !! `sqrt(max |(MN|MN)|)`, when the caller already has them
 
       real(dp), allocatable :: metric(:, :), q_pair(:, :)
       real(dp) :: q_aux_max, bytes
@@ -147,7 +150,11 @@ contains
       ! (mu nu|P) is symmetric in its orbital pair, so the lower triangle of
       ! shell pairs carries everything, and a pair whose Schwarz bound cannot
       ! reach even the largest auxiliary shell carries nothing.
-      call shell_pair_bounds(orb, q_pair)
+      if (present(bounds)) then
+         q_pair = bounds
+      else
+         call shell_pair_bounds(orb, q_pair)
+      end if
       q_aux_max = maxval(rij%aux_bound)
       n_pair_max = orb%nbas*(orb%nbas + 1)/2
       allocate (rij%pair_i(n_pair_max), rij%pair_j(n_pair_max), rij%pair_row(n_pair_max), &

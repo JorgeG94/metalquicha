@@ -661,6 +661,7 @@ contains
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
       logical :: use_in_core, use_cosx, use_final_grid
+      real(dp), allocatable :: cosx_bounds(:, :)
       integer :: cosx_level
       real(dp), allocatable :: bounds(:, :)
       ! TODO(mqc): `stats` is declared here and never used; the screening counts
@@ -768,7 +769,11 @@ contains
          ! The exchange comes from the grid, so the fitted tensor the fitted
          ! exchange needs is never formed: the Coulomb matrix is built from
          ! the three-centre integrals themselves.
-         call build_rij(mol, aux, ops%rij, error, in_core=rij_in_core)
+         ! One set of Schwarz bounds serves the Coulomb build and both
+         ! exchange grids.
+         call schwarz_bounds(mol, cosx_bounds, error)
+         if (error%has_error()) return
+         call build_rij(mol, aux, ops%rij, error, in_core=rij_in_core, bounds=cosx_bounds)
          if (error%has_error()) return
          if (verbose) then
             write (line, "(a,i0,a,i0,a)") "  Coulomb: fitted, ", ops%rij%n_pair, " of ", &
@@ -808,13 +813,13 @@ contains
             ! the larger grid from the start.
             if (use_final_grid) then
                call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
-                                    role=COSX_ROLE_SCF, overlap=ops%s, screen=.true.)
+                                    role=COSX_ROLE_SCF, overlap=ops%s, bounds=cosx_bounds)
                if (error%has_error()) return
                call build_cosx_grid(mol, ops%cosx_final, error, level=cosx_level, &
-                                    role=COSX_ROLE_FINAL, overlap=ops%s, screen=.true.)
+                                    role=COSX_ROLE_FINAL, overlap=ops%s, bounds=cosx_bounds)
             else
                call build_cosx_grid(mol, ops%cosx, error, level=cosx_level, &
-                                    role=COSX_ROLE_FINAL, overlap=ops%s, screen=.true.)
+                                    role=COSX_ROLE_FINAL, overlap=ops%s, bounds=cosx_bounds)
             end if
             if (error%has_error()) return
             if (verbose) then
