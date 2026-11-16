@@ -18,7 +18,7 @@ module test_mqc_czt_jfit
    !!
    !! **Does an RKS SCF land on the same energy?** The switch that forces the
    !! dense tensor is a testing one and is released again afterwards.
-   use testdrive, only: new_unittest, unittest_type, error_type, check
+   use testdrive, only: new_unittest, unittest_type, error_type, check, skip_test
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t
@@ -26,7 +26,7 @@ module test_mqc_czt_jfit
                                 df_jfit_t, build_df_jfit, df_jfit_coulomb, &
                                 three_centre, two_centre, metric_inverse_sqrt
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, set_df_jfit_enabled
-   use mqc_czt_xc, only: xc_context_t, xc_context_create
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    implicit none
    private
 
@@ -224,6 +224,10 @@ contains
       real(dp) :: shifts(3, 2)
       real(dp) :: diff
 
+      if (.not. xc_available()) then
+         call skip_test(error, "this build has no libxc")
+         return
+      end if
       shifts = reshape([0.0_dp, 0.0_dp, 0.0_dp, 5.6_dp, 0.0_dp, 0.8_dp], [3, 2])
       call place(2, shifts, orb, aux, err)
       call check(error,.not. err%has_error(), "the bases were not built")
