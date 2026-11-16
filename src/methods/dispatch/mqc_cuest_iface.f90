@@ -47,6 +47,9 @@ module mqc_cuest_iface
          !! Auxiliary (JKFIT) basis. Required by cuEST, which fits J and K
          !! always.
       logical :: density_fitting = .false.
+      logical :: cosx = .false.
+         !! `keywords.scf.exchange: "cosx"`. CPU backend only, and only beside
+         !! `density_fitting`.
       ! `density_fitting` and `corr_density_fitting` are separate flags on
       ! purpose: they have to be able to disagree.
       logical :: run_mp2 = .false.
@@ -249,6 +252,7 @@ contains
       settings%cartesian = options%cartesian
       settings%spherical = options%spherical
       settings%density_fitting = options%density_fitting
+      settings%cosx = options%cosx
       settings%freeze_core = options%freeze_core
       settings%n_frozen_core = options%n_frozen_core
       settings%unrestricted = options%unrestricted

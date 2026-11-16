@@ -25,22 +25,94 @@ module mqc_czt_cosx
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use mqc_czt_ao, only: eval_ao_block
+   use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use libcint_fortran, only: LIBCINT_PTR_GRIDS, &
                               libcint_1e_grids_cart, libcint_1e_grids_sph
    implicit none
    private
 
+   public :: cosx_grid_t
+   public :: build_cosx_grid
    public :: cosx_exchange
    public :: cosx_batch_exchange
    public :: cosx_density_on_grid
    public :: cosx_esp_contract
    public :: cosx_accumulate
    public :: COSX_DEFAULT_BATCH
+   public :: COSX_DEFAULT_GRID_LEVEL
 
    integer, parameter :: COSX_DEFAULT_BATCH = 128
       !! Points per batch when the caller does not say
+   integer, parameter :: COSX_DEFAULT_GRID_LEVEL = 2
+      !! Level of the molecular grid the exchange is integrated on, on the
+      !! scale `build_dft_grid` uses
+
+   type :: cosx_grid_t
+      !! The points the exchange is integrated over
+      !!
+      !! Unallocated means the exchange is not seminumerical, which is how a
+      !! Fock build reads it.
+      integer :: n_points = 0
+      integer :: level = -1                   !! The level it was built at
+      real(dp), allocatable :: coords(:, :)   !! (3, n_points), Bohr
+      real(dp), allocatable :: weights(:)     !! (n_points)
+   contains
+      procedure :: active => cosx_grid_active
+      procedure :: destroy => cosx_grid_destroy
+   end type cosx_grid_t
 
 contains
+
+   pure function cosx_grid_active(this) result(active)
+      !! Whether a grid was built
+      class(cosx_grid_t), intent(in) :: this
+      logical :: active
+
+      active = allocated(this%coords)
+   end function cosx_grid_active
+
+   pure subroutine cosx_grid_destroy(this)
+      !! Release the points
+      class(cosx_grid_t), intent(inout) :: this
+
+      if (allocated(this%coords)) deallocate (this%coords)
+      if (allocated(this%weights)) deallocate (this%weights)
+      this%n_points = 0
+      this%level = -1
+   end subroutine cosx_grid_destroy
+
+   subroutine build_cosx_grid(mol, grid, error, level)
+      !! The molecular grid for the exchange, at a level of the DFT grid's scale
+      !!
+      !! Ghost centres get points: they carry basis functions, and the
+      !! quadrature integrates products of basis functions.
+      type(czt_molecule_t), intent(in) :: mol
+      type(cosx_grid_t), intent(out) :: grid
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: level   !! Default `COSX_DEFAULT_GRID_LEVEL`
+
+      type(dft_grid_t) :: full
+      integer, allocatable :: numbers(:)
+
+      grid%level = COSX_DEFAULT_GRID_LEVEL
+      if (present(level)) grid%level = level
+
+      ! The element and not the charge it presents, as the XC grid does: the
+      ! charge is reduced by an ECP's core and is zero on a ghost.
+      allocate (numbers(mol%natm))
+      if (allocated(mol%atomic_numbers)) then
+         numbers = mol%atomic_numbers
+      else
+         numbers = nint(mol%charges) + mol%core_electrons
+      end if
+
+      call build_dft_grid(mol%coords, numbers, full, error, level=grid%level)
+      if (error%has_error()) return
+      grid%n_points = full%n_points
+      call move_alloc(full%coords, grid%coords)
+      call move_alloc(full%weights, grid%weights)
+      call full%destroy()
+   end subroutine build_cosx_grid
 
    subroutine cosx_exchange(mol, coords, weights, density, k, error, batch_size, symmetrize)
       !! The exchange matrix of a density, by quadrature over the points given

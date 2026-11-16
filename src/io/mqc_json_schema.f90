@@ -412,6 +412,8 @@ contains
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
+      ! How the exchange matrix is built: "exact" or "cosx".
+      call allow(keys, "exchange")
       call allow(keys, "level_shift")
       call allow(keys, "diis")
       call allow(keys, "diis_size")

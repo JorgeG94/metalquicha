@@ -25,6 +25,7 @@ module mqc_czt_rhf
                              direct_stats_t, build_fock
    use mqc_czt_integrals, only: czt_molecule_t, build_df_tensor, build_sap_potential
    use mqc_czt_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
+   use mqc_czt_cosx, only: cosx_grid_t, build_cosx_grid, cosx_exchange
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_program_limits, only: DF_AUX_CHUNK
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
@@ -225,6 +226,9 @@ module mqc_czt_rhf
       real(dp), allocatable :: bmat_lr(:, :)  !! The same against erf(omega r)/r
       real(dp), allocatable :: eri(:, :, :, :)  !! In-core integrals; unallocated on the direct path
       real(dp), allocatable :: bounds(:, :)   !! Schwarz bounds for screening
+      type(cosx_grid_t) :: cosx
+         !! The grid the exchange is integrated on; unbuilt unless the
+         !! exchange is chain-of-spheres
       integer :: n_ao = 0
       integer :: n_mo = 0                     !! May be below n_ao where the overlap was singular
       integer :: n_occ = 0
@@ -505,7 +509,8 @@ contains
                           verbose, result, error, aux, diis_vectors, in_core, &
                           guess, guess_density, xc, h_extra, pcm, projector, &
                           level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
-                          incremental_fock, convergence, scf, second_order, soscf_start)
+                          incremental_fock, convergence, scf, second_order, soscf_start, &
+                          cosx, cosx_grid_level)
       !! Drive a closed-shell SCF to convergence
       type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -607,6 +612,13 @@ contains
          !! **Not a way to start second order.** A Newton step from a poor
          !! density diverges, so the DIIS phase is not optional and the switch
          !! threshold is what makes the method robust; see `run_soscf_phase`.
+      logical, intent(in), optional :: cosx
+         !! `keywords.scf.exchange: "cosx"`. Build the exchange matrix by
+         !! chain-of-spheres quadrature and the Coulomb matrix from the fit, so
+         !! `aux` must be present. Default false.
+      integer, intent(in), optional :: cosx_grid_level
+         !! Level of the grid that quadrature runs on, on the DFT grid's
+         !! scale. Absent takes `COSX_DEFAULT_GRID_LEVEL`. Read only with `cosx`.
       real(dp), intent(in), optional :: soscf_start
          !! The commutator at which that switch happens, as
          !! `max|FDS - SDF|` in the orthogonal basis. Absent or non-positive
@@ -628,7 +640,7 @@ contains
 
       character(len=LINE_LEN) :: line
       integer :: diis_size, guess_kind
-      logical :: use_in_core
+      logical :: use_in_core, use_cosx
       real(dp), allocatable :: bounds(:, :)
       ! TODO(mqc): `stats` is declared here and never used; the screening counts
       ! come back in `screening`, which `assemble_fock` fills.
@@ -665,6 +677,31 @@ contains
       if (present(scf)) ctrl%incremental = scf%incremental_fock
       if (present(incremental_fock)) ctrl%incremental = incremental_fock
       if (present(in_core)) use_in_core = in_core
+      use_cosx = .false.
+      if (present(cosx)) use_cosx = cosx
+      if (use_cosx) then
+         ! The Coulomb half of the method is the fitted one, so there is no
+         ! chain-of-spheres run without a fit.
+         if (.not. present(aux)) then
+            call error%set(ERROR_VALIDATION, "chain-of-spheres exchange pairs with a "// &
+                           "density-fitted Coulomb matrix and no auxiliary basis was "// &
+                           "given. Set keywords.scf.density_fitting and model.aux_basis.")
+            return
+         end if
+         ! The attenuated potential integral on the grid is not built, and
+         ! falling back to the fitted long-range exchange would make the run
+         ! half seminumerical without saying so.
+         if (present(xc)) then
+            if (xc%active .and. xc%range_separated) then
+               call error%set(ERROR_VALIDATION, "chain-of-spheres exchange with a "// &
+                              "range-separated functional is not implemented: the "// &
+                              "long-range exchange needs the attenuated potential "// &
+                              "integral on the grid. Set keywords.scf.exchange to "// &
+                              "exact for this functional.")
+               return
+            end if
+         end if
+      end if
       guess_kind = SCF_GUESS_GWH
       if (present(guess)) guess_kind = guess
       ctrl%use_pcm = .false.
@@ -719,6 +756,19 @@ contains
             end if
          end if
          if (error%has_error()) return
+         if (use_cosx) then
+            if (present(cosx_grid_level)) then
+               call build_cosx_grid(mol, ops%cosx, error, level=cosx_grid_level)
+            else
+               call build_cosx_grid(mol, ops%cosx, error)
+            end if
+            if (error%has_error()) return
+            if (verbose) then
+               call logger%info("  exchange: chain of spheres on "// &
+                                to_char(ops%cosx%n_points)//" grid points (level "// &
+                                to_char(ops%cosx%level)//"), Coulomb fitted")
+            end if
+         end if
       else if (use_in_core) then
          call mol%eris(ops%eri)
       else
@@ -886,6 +936,14 @@ contains
          if (soscf_start > 0.0_dp) ctrl%soscf_start = soscf_start
       end if
       if (ctrl%second_order) then
+         if (ops%cosx%active()) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.second_order with "// &
+                           "chain-of-spheres exchange: the orbital-rotation Hessian "// &
+                           "is built from the exact exchange, which is not the "// &
+                           "curvature of the energy this SCF minimises. Converge "// &
+                           "this one by DIIS.")
+            return
+         end if
          if (ctrl%use_pcm) then
             call error%set(ERROR_VALIDATION, "keywords.scf.second_order with a "// &
                            "continuum solvent: the orbital-rotation Hessian carries "// &
@@ -938,7 +996,8 @@ contains
       ! `incr`: this one is a full build, and the number that leaves must not
       ! carry the corrections accumulated since the last reset.
       call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
-                         st%fock, result%electronic, error, clk=clk, bmat_lr=ops%bmat_lr)
+                         st%fock, result%electronic, error, clk=clk, bmat_lr=ops%bmat_lr, &
+                         cosx=ops%cosx)
       if (error%has_error()) return
       ! Last use of the fitted tensor: a caller that asked for it takes the
       ! allocation itself rather than a copy of several gigabytes.
@@ -1039,14 +1098,14 @@ contains
       if (ctrl%incremental) then
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, incr=st%incr, &
-                            bmat_lr=ops%bmat_lr)
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx)
       else
          ! Counted here rather than in the assembler: without `incr` it has
          ! no state to record into, and every build here is a full one.
          st%incr%full_builds = st%incr%full_builds + 1
          call assemble_fock(mol, ops%h, st%density, st%coeff, ops%n_occ, ops%bmat, ops%eri, ops%bounds, xc, &
                             st%fock, st%e_elec, error, clk=clk, screening=st%screening, &
-                            bmat_lr=ops%bmat_lr)
+                            bmat_lr=ops%bmat_lr, cosx=ops%cosx)
       end if
       if (error%has_error()) return
       ! The continuum, after the gas-phase pieces and before the commutator:
@@ -2041,7 +2100,7 @@ contains
    end subroutine run_czt_uhf
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
-                            fock, e_elec, error, clk, screening, incr, bmat_lr)
+                            fock, e_elec, error, clk, screening, incr, bmat_lr, cosx)
       !! The Fock matrix for this density, and the electronic energy that belongs to it
       !!
       !! The energy comes back with the Fock matrix because for Kohn-Sham the
@@ -2078,9 +2137,16 @@ contains
          !! callers and the final energy rebuild, all of which want an exact
          !! build.
 
+      type(cosx_grid_t), intent(in), optional :: cosx
+         !! The grid for a chain-of-spheres exchange. When present and built,
+         !! and `bmat` is allocated, the Coulomb matrix comes from the fit and
+         !! the exchange from the quadrature. Absent or unbuilt is the fitted
+         !! exchange. Not read on the direct or in-core paths.
+
       type(direct_stats_t) :: stats
       real(dp), allocatable :: g_delta(:, :), d_delta(:, :), h_zero(:, :)
-      real(dp), allocatable :: k_lr(:, :)
+      real(dp), allocatable :: k_lr(:, :), k_cosx(:, :)
+      logical :: use_cosx
       logical :: use_incremental, full_build
       logical :: want_lr
       real(dp), allocatable :: v_xc(:, :)
@@ -2144,7 +2210,28 @@ contains
          use_incremental = .true.
       end if
 
-      if (allocated(bmat)) then
+      use_cosx = .false.
+      if (present(cosx)) use_cosx = cosx%active() .and. allocated(bmat)
+      if (use_cosx .and. want_lr) then
+         call error%set(ERROR_VALIDATION, "chain-of-spheres exchange was handed a "// &
+                        "range-separated functional, which it does not build. This "// &
+                        "is an internal inconsistency rather than a deck error.")
+         return
+      end if
+
+      if (use_cosx) then
+         ! The fit for J alone, then K from the grid. The quadrature's K is
+         ! symmetrised, and it is linear in the density with
+         ! `Tr[D1 K(D2)] = Tr[D2 K(D1)]`, so this Fock matrix is the derivative
+         ! of the energy taken from it below.
+         call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=0.0_dp)
+         if (k_scale /= 0.0_dp) then
+            call cosx_exchange(mol, cosx%coords, cosx%weights, density, k_cosx, error)
+            if (error%has_error()) return
+            fock = fock - 0.5_dp*k_scale*k_cosx
+            deallocate (k_cosx)
+         end if
+      else if (allocated(bmat)) then
          call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=k_scale)
          ! The long-range exchange, from the tensor fitted against the
          ! attenuated kernel. Same shape as the direct path's second pass: no

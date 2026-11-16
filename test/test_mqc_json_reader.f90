@@ -129,6 +129,7 @@ contains
                   new_unittest("scf_diis_controls", test_diis_keywords), &
                   new_unittest("scf_stability_controls", test_stability_keywords), &
                   new_unittest("scf_second_order_controls", test_second_order_keywords), &
+                  new_unittest("scf_exchange_cosx", test_scf_exchange), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
                   new_unittest("fukui_population_defaults_to_hirshfeld", &
                                test_fukui_population_default), &
@@ -3487,6 +3488,108 @@ contains
       call check(error, config%scf_stability_maxiter == DEFAULT_STABILITY_MAX_ITER, &
                  "the default iteration cap is the one in mqc_calculation_defaults")
    end subroutine test_stability_keywords
+
+   subroutine test_scf_exchange(error)
+      !! `keywords.scf.exchange`: "exact" by default, "cosx" on request, and refused
+      !! wherever chain-of-spheres exchange is not implemented
+      !!
+      !! The refusals are the larger half. The keyword selects an approximation
+      !! that exists for one kind of run -- a restricted Hartree-Fock or DFT
+      !! energy with a fitted Coulomb matrix -- and a deck that asks for it
+      !! anywhere else must stop here, by name, and not run with the exact
+      !! exchange while reporting nothing.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      character(len=*), parameter :: FITTED = &
+                                     '"method": "hf", "basis": "sto-3g", "aux_basis": "def2-universal-jkfit"'
+      character(len=*), parameter :: COSX = '"scf": {"density_fitting": true, "exchange": "cosx"}'
+
+      ! Absent: exact.
+      call write_deck(FITTED, "Energy", '"scf": {"density_fitting": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_cosx, "the exchange should default to exact")
+      if (allocated(error)) return
+
+      ! Asked for, where it is implemented.
+      call write_deck(FITTED, "Energy", COSX, "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_cosx, "'cosx' should have been read")
+      if (allocated(error)) return
+
+      ! Spelled out, and in another case.
+      call write_deck(FITTED, "Energy", &
+                      '"scf": {"density_fitting": true, "exchange": "Exact"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_cosx, "'Exact' should read as exact")
+      if (allocated(error)) return
+
+      ! A value that is neither. The checks from here on also read the
+      ! message, so a deck refused for some unrelated reason does not pass.
+      call write_deck(FITTED, "Energy", &
+                      '"scf": {"density_fitting": true, "exchange": "sometimes"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown exchange was accepted")
+      if (allocated(error)) return
+
+      ! Without the fitted Coulomb matrix it pairs with.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"exchange": "cosx"}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx without density fitting was accepted")
+      if (allocated(error)) return
+
+      ! A derivative.
+      call write_deck(FITTED, "Gradient", COSX, "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx with a gradient was accepted")
+      if (allocated(error)) return
+
+      ! A correlated method.
+      call write_deck('"method": "mp2", "basis": "sto-3g", "aux_basis": "def2-universal-jkfit"', &
+                      "Energy", COSX, "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx with MP2 was accepted")
+      if (allocated(error)) return
+
+      ! Things that rebuild the exchange their own way.
+      call write_deck(FITTED, "Energy", &
+                      '"scf": {"density_fitting": true, "exchange": "cosx", "second_order": true}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx with a second-order SCF was accepted")
+      if (allocated(error)) return
+
+      call write_deck(FITTED, "Energy", &
+                      '"scf": {"density_fitting": true, "exchange": "cosx", "stability": true}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx with a stability analysis was accepted")
+      if (allocated(error)) return
+
+      call write_deck(FITTED//', "unrestricted": true', "Energy", COSX, "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "cosx") > 0, &
+                 "cosx with an unrestricted reference was accepted")
+   end subroutine test_scf_exchange
 
    subroutine test_second_order_keywords(error)
       !! `keywords.scf.second_order` and `soscf_start`

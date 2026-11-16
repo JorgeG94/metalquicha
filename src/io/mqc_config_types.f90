@@ -228,6 +228,11 @@ module mqc_config_types
          !! table.
       logical :: scf_density_fitting = .false.
          !! Fit J and K against the auxiliary basis, on the CPU backend
+      logical :: scf_cosx = .false.
+         !! `keywords.scf.exchange` is "cosx": the exchange matrix by
+         !! chain-of-spheres quadrature, beside a fitted Coulomb matrix. False
+         !! is "exact", the default, which leaves the exchange to whatever
+         !! `scf_density_fitting` selects.
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements

@@ -44,6 +44,7 @@ module mqc_json_config_reader
                                method_wants_density_fitting, method_type_to_string, &
                                method_is_casci, METHOD_TYPE_UNKNOWN, &
                                METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD_F12, &
+                               METHOD_TYPE_HF, METHOD_TYPE_DFT, &
                                METHOD_TYPE_CCSD_T_F12
    use mqc_cuest_iface, only: parse_backend_name, method_runs_on_cuest, BACKEND_CUEST, &
                               BACKEND_TERCO
@@ -312,6 +313,8 @@ contains
       call read_fukui_scf(json, config)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
+      call read_scf_exchange(json, config, error)
+      if (error%has_error()) return
       ! MAKEFP's own group: the response solve and the screening fit. Nothing
       ! here is an SCF setting -- that is `keywords.scf`, which it reads.
       call optional_real(json, "keywords.efp.dynamic_tolerance", &
@@ -570,6 +573,8 @@ contains
       ! fragmentation block and the molecules together.
       call check_excited_states_run(config, error)
       if (error%has_error()) return
+      call check_cosx_run(config, error)
+      if (error%has_error()) return
       call check_state_averaged_run(config, error)
       if (error%has_error()) return
       call check_interaction_energy_run(config, error)
@@ -702,6 +707,106 @@ contains
          return
       end if
    end subroutine check_excited_states_run
+
+   subroutine read_scf_exchange(json, config, error)
+      !! `keywords.scf.exchange`: "exact" (the default) or "cosx"
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: text
+      logical :: found
+
+      call json%get("keywords.scf.exchange", text, found)
+      if (.not. found .or. .not. allocated(text)) return
+      select case (to_lower(trim(adjustl(text))))
+      case ("exact")
+         config%scf_cosx = .false.
+      case ("cosx")
+         config%scf_cosx = .true.
+      case default
+         call error%set(ERROR_VALIDATION, "keywords.scf.exchange is '"//trim(text)// &
+                        "'. Accepted: 'exact' or 'cosx'.")
+      end select
+   end subroutine read_scf_exchange
+
+   subroutine check_cosx_run(config, error)
+      !! Refuse `keywords.scf.exchange: "cosx"` where nothing implements it
+      !!
+      !! Chain-of-spheres exchange exists for a restricted Hartree-Fock or
+      !! global-hybrid energy on the CPU backend, beside a fitted Coulomb
+      !! matrix. Everything else is named here, where the deck's own spellings
+      !! are still in hand; the backend refuses the cases only it can see.
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=*), parameter :: KEY = "keywords.scf.exchange 'cosx'"
+      integer :: backend_kind
+
+      if (.not. config%scf_cosx) return
+
+      if (.not. config%scf_density_fitting) then
+         call error%set(ERROR_VALIDATION, KEY//" is the exchange half of RIJCOSX and "// &
+                        "needs the fitted Coulomb matrix beside it. Set "// &
+                        "keywords.scf.density_fitting to true and name model.aux_basis.")
+         return
+      end if
+      if (config%method /= METHOD_TYPE_HF .and. config%method /= METHOD_TYPE_DFT) then
+         call error%set(ERROR_VALIDATION, KEY//" is implemented for Hartree-Fock and "// &
+                        "DFT only, and the method is '"// &
+                        trim(method_type_to_string(config%method))//"'. A correlated "// &
+                        "method on a chain-of-spheres reference is not wired up.")
+         return
+      end if
+      if (config%calc_type /= CALC_TYPE_ENERGY) then
+         call error%set(ERROR_VALIDATION, KEY//" gives an energy only: driver '"// &
+                        calc_type_to_string(config%calc_type)//"' needs the derivative "// &
+                        "of the quadrature, which is not implemented. Use driver "// &
+                        "'energy', or keywords.scf.exchange 'exact'.")
+         return
+      end if
+      if (config%unrestricted) then
+         call error%set(ERROR_VALIDATION, KEY//" is implemented for a restricted "// &
+                        "reference only.")
+         return
+      end if
+      if (config%excited_n_states > 0) then
+         call error%set(ERROR_VALIDATION, KEY//" cannot be combined with "// &
+                        "keywords.excited_states: the response kernel is built from "// &
+                        "the exact exchange, not the one the reference was converged "// &
+                        "with.")
+         return
+      end if
+      if (config%scf_stability) then
+         call error%set(ERROR_VALIDATION, KEY//" cannot be combined with "// &
+                        "keywords.scf.stability: the orbital Hessian is built from "// &
+                        "the exact exchange, not the one the reference was converged "// &
+                        "with.")
+         return
+      end if
+      if (config%scf_second_order) then
+         call error%set(ERROR_VALIDATION, KEY//" cannot be combined with "// &
+                        "keywords.scf.second_order: the Newton step's Hessian is "// &
+                        "built from the exact exchange.")
+         return
+      end if
+      if (allocated(config%frag_method)) then
+         select case (to_lower(trim(adjustl(config%frag_method))))
+         case ("fmo", "efmo")
+            call error%set(ERROR_VALIDATION, KEY//" is not implemented for "// &
+                           "fragmentation method '"//trim(config%frag_method)// &
+                           "', whose fragment SCF builds its own Fock matrix.")
+            return
+         end select
+      end if
+      call parse_backend_name(config%backend, backend_kind, error)
+      if (error%has_error()) return
+      if (backend_kind == BACKEND_CUEST .or. backend_kind == BACKEND_TERCO) then
+         call error%set(ERROR_VALIDATION, KEY//" is implemented on the CPU backend "// &
+                        "only, and backend '"//trim(config%backend)//"' was asked for.")
+         return
+      end if
+   end subroutine check_cosx_run
 
    subroutine read_bonding_cube(json, config, error)
       !! `properties.bonding_analysis.cube`, which orbitals to write as cube

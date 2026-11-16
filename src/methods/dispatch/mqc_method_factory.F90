@@ -197,6 +197,7 @@ contains
       options%aux_basis_set = config%scf%aux_basis_set
       options%aux_basis_named = config%scf%aux_basis_named
       options%density_fitting = config%scf%density_fitting
+      options%cosx = config%scf%cosx
       options%unrestricted = config%scf%unrestricted
       options%guess = config%scf%guess
       if (allocated(config%scf%guess_steps)) options%guess_steps = config%scf%guess_steps

@@ -860,6 +860,7 @@ SCF Options
        "guess": "auto",
        "accelerator": "diis",
        "density_fitting": false,
+       "exchange": "exact",
        "level_shift": 0.0,
        "allow_crap_scf": false,
        "linear_dependence_threshold": 1e-7
@@ -914,6 +915,19 @@ SCF Options
   and are not bit-identical.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
+- ``exchange``: How the exchange matrix is built: ``"exact"`` (the default) or
+  ``"cosx"``. ``"cosx"`` is chain-of-spheres exchange, integrated on a grid,
+  and with ``density_fitting`` it is the RIJCOSX approximation: Coulomb from
+  the fit, exchange from the quadrature. It needs ``density_fitting: true`` and
+  an ``aux_basis`` that fits the Coulomb matrix well -- a ``-jfit`` or
+  ``-jkfit`` set, not an ``-rifit`` one, whose Coulomb and exchange errors
+  cancel only when both come from the fit. Implemented for a restricted
+  Hartree-Fock or global-hybrid DFT energy on the CPU backend; gradients,
+  Hessians, unrestricted references, range-separated functionals, double
+  hybrids, correlated methods, excited states, the stability analysis and the
+  second-order SCF are refused by name. The result depends on the exchange
+  grid, so it is not identical to the exact-exchange energy: on water in
+  def2-SVP it is 2.8e-5 hartree from Hartree-Fock.
 - ``level_shift``: Hartree added to the virtual orbitals before each
   diagonalisation, to widen the gap the next density is built through (default:
   0.0, meaning off). Use it on an SCF that oscillates rather than one that

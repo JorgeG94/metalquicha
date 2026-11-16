@@ -461,6 +461,12 @@ if(MQC_ENABLE_CZT)
   # parts to rounding, and the quadrature by its convergence with the grid.
   addtest(mqc_czt_cosx)
   target_link_libraries(test_mqc_czt_cosx PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The same exchange through the SCF, beside a fitted Coulomb matrix: the grid
+  # varied with the fit fixed, a pure functional as the exact no-op, and the
+  # refusals.
+  addtest(mqc_czt_cosx_scf)
+  target_link_libraries(test_mqc_czt_cosx_scf PRIVATE ${MQC_INTEGRALS_LIBS})
   # The continuum: cavity geometry, the Born ion in closed form, and one
   # solvated SCF pinned against PySCF.
   addtest(mqc_pcm)
