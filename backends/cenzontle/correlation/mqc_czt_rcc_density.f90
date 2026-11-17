@@ -23,6 +23,7 @@ module mqc_czt_rcc_density
    use mqc_tensor_contract, only: contract, transposed
    use mqc_czt_rcc, only: rcc_state_t
    use mqc_czt_rcc_lambda, only: rcc_lambda_t
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
    implicit none
    private
 
@@ -32,7 +33,7 @@ module mqc_czt_rcc_density
 
 contains
 
-   subroutine rccsd_one_particle_density(state, lambda, gamma)
+   subroutine rccsd_one_particle_density(state, lambda, gamma, triples)
       !! The correlation part of the spin-summed one-particle density
       !!
       !! Over the active orbitals, occupied first and then virtual, and
@@ -41,10 +42,14 @@ contains
       type(rcc_state_t), intent(in) :: state
       type(rcc_lambda_t), intent(in) :: lambda
       real(dp), allocatable, intent(out) :: gamma(:, :)   !! (no + nv, no + nv)
+      type(rcc_triples_terms_t), intent(in), optional :: triples
+         !! Present, the density of CCSD(T). The correction adds to the diagonal
+         !! only: it depends on the orbital energies and on nothing else of the
+         !! Fock matrix.
 
       real(dp), allocatable :: doo(:, :), dvv(:, :), dvo(:, :)
       real(dp), allocatable :: xtv(:, :), xt1(:, :), xt2(:, :), theta(:, :, :, :)
-      integer :: no, nv, n
+      integer :: no, nv, n, p
 
       no = state%no
       nv = state%nv
@@ -73,6 +78,14 @@ contains
          gamma(no + 1:n, 1:no) = transpose(gamma(1:no, no + 1:n))
          gamma(no + 1:n, no + 1:n) = dvv + transpose(dvv)
       end associate
+      if (present(triples)) then
+         do p = 1, no
+            gamma(p, p) = gamma(p, p) + triples%gamma_occ(p)
+         end do
+         do p = 1, nv
+            gamma(no + p, no + p) = gamma(no + p, no + p) + triples%gamma_vir(p)
+         end do
+      end if
    end subroutine rccsd_one_particle_density
 
    subroutine rcc_active_fit(state, b, error)
@@ -105,7 +118,7 @@ contains
       end do
    end subroutine rcc_active_fit
 
-   subroutine rccsd_fitted_two_particle_density(state, lambda, b, g3, error)
+   subroutine rccsd_fitted_two_particle_density(state, lambda, b, g3, error, triples)
       !! The two-particle density contracted once with the fit
       !!
       !!     g3(p,q,P) = sum_rs Gamma(p,q,r,s) b(r,s,P)
@@ -125,6 +138,8 @@ contains
          !! whichever factorisation of the metric the caller will go on to use
       real(dp), allocatable, intent(out) :: g3(:, :, :)   !! (no + nv, no + nv, n_aux)
       type(error_t), intent(inout) :: error
+      type(rcc_triples_terms_t), intent(in), optional :: triples
+         !! Present, the density of CCSD(T)
 
       real(dp), allocatable :: t(:, :, :), tp(:, :, :)
       real(dp), allocatable :: dovov(:, :, :, :), doooo(:, :, :, :), doovv(:, :, :, :)
@@ -150,6 +165,11 @@ contains
       allocate (t(n, n, n_aux), tp(n, n, n_aux), source=0.0_dp)
 
       call gamma2_blocks(state, lambda, dovov, doooo, doovv, dovvo, dovvv, dooov)
+      if (present(triples)) then
+         dovov = dovov + triples%dovov
+         dovvv = dovvv + triples%dovvv
+         dooov = dooov + triples%dooov
+      end if
 
       ! Each block of the density, and each of the blocks its symmetry makes of
       ! it, contracted with the fit on its second pair and on its first.

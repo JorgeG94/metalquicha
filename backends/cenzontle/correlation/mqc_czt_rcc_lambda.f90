@@ -29,6 +29,7 @@ module mqc_czt_rcc_lambda
    use mqc_convergence_report, only: convergence_header, convergence_footer
    use mqc_tensor_contract, only: contract, transposed
    use mqc_czt_rcc, only: rcc_state_t, rcc_ladder
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
    implicit none
    private
 
@@ -74,7 +75,7 @@ module mqc_czt_rcc_lambda
 contains
 
    subroutine run_czt_rccsd_lambda(state, max_iter, tolerance, verbose, lambda, error, &
-                                   diis_vectors)
+                                   diis_vectors, triples)
       !! Solve the Lambda equations for a converged CCSD calculation
       type(rcc_state_t), intent(in) :: state
       integer, intent(in) :: max_iter
@@ -84,6 +85,10 @@ contains
       type(rcc_lambda_t), intent(out) :: lambda
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
+      type(rcc_triples_terms_t), intent(in), optional :: triples
+         !! Present, the equations are those of CCSD(T): the perturbative
+         !! correction's derivative with respect to the amplitudes is a source
+         !! in each residual
 
       type(lambda_integrals_t) :: ints
       type(lambda_intermediates_t) :: imds
@@ -120,6 +125,10 @@ contains
                               "    iter        |change|   diis", 34)
       do iter = 1, max_iter
          call update_lambda(state, ints, imds, l1, l2, l1n, l2n)
+         if (present(triples)) then
+            l1n = l1n + triples%l1_source
+            l2n = l2n + triples%l2_source
+         end if
 
          flat(1:n1) = reshape(l1n, [n1])
          flat(n1 + 1:) = reshape(l2n, [n2])

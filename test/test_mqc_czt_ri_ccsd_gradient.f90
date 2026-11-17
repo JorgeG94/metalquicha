@@ -23,6 +23,7 @@ module test_mqc_czt_ri_ccsd_gradient
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_rcc, only: rcc_result_t, rcc_state_t, run_czt_rccsd
    use mqc_czt_rcc_lambda, only: rcc_lambda_t, run_czt_rccsd_lambda
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t, rccsd_triples_terms
    use mqc_czt_ri_ccsd_gradient, only: czt_ri_ccsd_gradient
    implicit none
    private
@@ -40,6 +41,16 @@ module test_mqc_czt_ri_ccsd_gradient
                            0.0_dp, 0.0021651591_dp, 0.0081072346_dp, &
                            0.0_dp, -0.0021651592_dp, 0.0081072345_dp], [3, 3])
 
+   ! The same with the perturbative triples.
+   real(dp), parameter :: G_T_STO3G(3, 3) = reshape( &
+                          [0.0_dp, 0.0_dp, -0.1151431065_dp, &
+                           0.0_dp, -0.0410635589_dp, 0.0575715533_dp, &
+                           0.0_dp, 0.0410635587_dp, 0.0575715532_dp], [3, 3])
+   real(dp), parameter :: G_T_PVDZ_F1(3, 3) = reshape( &
+                          [0.0_dp, 0.0_dp, -0.0181309958_dp, &
+                           0.0_dp, 0.0013577995_dp, 0.0090654979_dp, &
+                           0.0_dp, -0.0013577996_dp, 0.0090654979_dp], [3, 3])
+
 contains
 
    subroutine collect_mqc_czt_ri_ccsd_gradient_tests(testsuite)
@@ -48,7 +59,9 @@ contains
       testsuite = [ &
                   new_unittest("gradient_sto3g_matches_reference", test_sto3g), &
                   new_unittest("gradient_cc_pvdz_frozen_core_matches_reference", test_pvdz), &
-                  new_unittest("fitted_response_moves_it_by_the_fitting_error", test_fitted) &
+                  new_unittest("fitted_response_moves_it_by_the_fitting_error", test_fitted), &
+                  new_unittest("triples_gradient_sto3g_matches_reference", test_t_sto3g), &
+                  new_unittest("triples_gradient_cc_pvdz_frozen_core", test_t_pvdz) &
                   ]
    end subroutine collect_mqc_czt_ri_ccsd_gradient_tests
 
@@ -64,11 +77,12 @@ contains
       call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
    end subroutine water
 
-   subroutine gradient_of(basis, frozen, fit_response, gradient, error)
+   subroutine gradient_of(basis, frozen, fit_response, gradient, error, with_triples)
       !! SCF, CCSD, Lambda and the gradient, for water
       character(len=*), intent(in) :: basis
       integer, intent(in) :: frozen
       logical, intent(in) :: fit_response
+      logical, intent(in), optional :: with_triples   !! The gradient of CCSD(T)
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_type), allocatable, intent(out) :: error
 
@@ -77,8 +91,12 @@ contains
       type(rcc_result_t) :: cc
       type(rcc_state_t) :: state
       type(rcc_lambda_t) :: lambda
+      type(rcc_triples_terms_t) :: terms
       type(error_t) :: err
+      logical :: triples
 
+      triples = .false.
+      if (present(with_triples)) triples = with_triples
       call water(mol, err, basis)
       call water(aux, err, "cc-pvdz-rifit")
       call check(error,.not. err%has_error(), "the molecule should build")
@@ -90,12 +108,25 @@ contains
                          1.0e-13_dp, .false., .false., cc, err, aux=aux, state=state)
       call check(error,.not. err%has_error() .and. cc%converged, "CCSD should converge")
       if (allocated(error)) return
-      call run_czt_rccsd_lambda(state, 100, 1.0e-11_dp, .false., lambda, err)
+      if (triples) then
+         call rccsd_triples_terms(state, terms)
+         call run_czt_rccsd_lambda(state, 200, 1.0e-11_dp, .false., lambda, err, &
+                                   triples=terms)
+      else
+         call run_czt_rccsd_lambda(state, 100, 1.0e-11_dp, .false., lambda, err)
+      end if
       call check(error,.not. err%has_error() .and. lambda%converged, &
                  "the Lambda equations should converge")
       if (allocated(error)) return
-      call czt_ri_ccsd_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, frozen, &
-                                state, lambda, gradient, err, fit_response=fit_response)
+      if (triples) then
+         call czt_ri_ccsd_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                   frozen, state, lambda, gradient, err, &
+                                   fit_response=fit_response, triples=terms)
+      else
+         call czt_ri_ccsd_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                   frozen, state, lambda, gradient, err, &
+                                   fit_response=fit_response)
+      end if
       call check(error,.not. err%has_error(), "the gradient failed: "//err%get_message())
       call mol%destroy()
       call aux%destroy()
@@ -147,6 +178,29 @@ contains
       if (allocated(error)) return
       call hold_to(gradient, G_PVDZ_F1, 1.0e-5_dp, "cc-pVDZ, fitted response", error)
    end subroutine test_fitted
+
+   subroutine test_t_sto3g(error)
+      !! RI-CCSD(T). The correction is not invariant to a rotation among the
+      !! occupied orbitals or among the virtuals, as CCSD is, so this also
+      !! exercises the relaxation of those two blocks, which CCSD leaves at
+      !! what the amplitudes gave.
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: gradient(:, :)
+
+      call gradient_of("sto-3g", 0, .false., gradient, error, with_triples=.true.)
+      if (allocated(error)) return
+      call hold_to(gradient, G_T_STO3G, 5.0e-8_dp, "STO-3G with (T)", error)
+   end subroutine test_t_sto3g
+
+   subroutine test_t_pvdz(error)
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), allocatable :: gradient(:, :)
+
+      call gradient_of("cc-pvdz", 1, .false., gradient, error, with_triples=.true.)
+      if (allocated(error)) return
+      call hold_to(gradient, G_T_PVDZ_F1, 5.0e-8_dp, "cc-pVDZ with a frozen core and (T)", &
+                   error)
+   end subroutine test_t_pvdz
 
    function real_to_text(value) result(text)
       !! A number in a failure message, so the message says how badly

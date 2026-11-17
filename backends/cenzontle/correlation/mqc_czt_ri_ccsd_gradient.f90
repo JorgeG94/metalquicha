@@ -27,6 +27,7 @@ module mqc_czt_ri_ccsd_gradient
    use mqc_czt_ecp, only: ecp_refuses_derivatives
    use mqc_czt_rcc, only: rcc_state_t
    use mqc_czt_rcc_lambda, only: rcc_lambda_t
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
    use mqc_czt_rcc_density, only: rccsd_one_particle_density, &
                                   rccsd_fitted_two_particle_density
    use mqc_czt_ri_mp2_gradient, only: relaxation_input_t, relaxed_fitted_gradient
@@ -35,10 +36,14 @@ module mqc_czt_ri_ccsd_gradient
 
    public :: czt_ri_ccsd_gradient
 
+   real(dp), parameter :: DEGENERATE = 1.0e-7_dp
+      !! Two orbital energies closer than this, in hartree, are one level: a
+      !! rotation between the orbitals changes nothing, and is not solved for
+
 contains
 
    subroutine czt_ri_ccsd_gradient(mol, aux, coeff, orbital_energies, n_occ, frozen, &
-                                   state, lambda, gradient, error, fit_response)
+                                   state, lambda, gradient, error, fit_response, triples)
       !! dE(RI-CCSD)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! The total gradient: the reference's and the correlation's together.
@@ -58,11 +63,16 @@ contains
          !! reason; `.false.` is the exact operator, which is what this energy's
          !! derivative strictly is.
 
+      type(rcc_triples_terms_t), intent(in), optional :: triples
+         !! Present, the gradient of RI-CCSD(T). `lambda` must then have been
+         !! solved with the same terms.
+
       type(relaxation_input_t), target :: inp
       real(dp), allocatable :: metric(:, :), b_all(:, :, :), g3(:, :, :), gamma(:, :)
       real(dp), allocatable :: block(:, :), c_act(:, :), g_ao(:, :), overlap_lm(:, :)
       real(dp), allocatable :: half(:, :), gflat(:, :), bflat(:, :)
-      integer :: n_ao, n_mo, n_act, n_aux, no, nv, k
+      integer :: n_ao, n_mo, n_act, n_aux, no, nv, k, p, q
+      real(dp) :: gap
 
       if (ecp_refuses_derivatives(mol%core_electrons, "RI-CCSD gradient", error)) return
 
@@ -115,10 +125,10 @@ contains
       deallocate (block)
 
       ! ---- the densities ---------------------------------------------------
-      call rccsd_one_particle_density(state, lambda, gamma)
+      call rccsd_one_particle_density(state, lambda, gamma, triples)
       call rccsd_fitted_two_particle_density(state, lambda, &
                                              b_all(frozen + 1:n_mo, frozen + 1:n_mo, :), &
-                                             g3, error)
+                                             g3, error, triples)
       if (error%has_error()) return
 
       ! The unrelaxed density, without its occupied-virtual block: the
@@ -134,6 +144,31 @@ contains
       do k = 1, n_aux
          call pic_gemm(b_all(:, frozen + 1:n_mo, k), g3(:, :, k), &
                        inp%imat(:, frozen + 1:n_mo), transb="T", alpha=-1.0_dp, beta=1.0_dp)
+      end do
+
+      ! The correlation energy is written for canonical orbitals, so the Fock
+      ! matrix is held diagonal within the active occupied and within the
+      ! virtual space, and the multipliers that hold it are the off-diagonal
+      ! elements of the relaxed density there. They follow from the
+      ! Lagrangian alone, as the occupied-frozen ones do. For CCSD this gives
+      ! back what the amplitudes gave, because CCSD is invariant to such a
+      ! rotation; for (T), whose denominators single out the canonical
+      ! orbitals, it does not. A degenerate pair keeps the amplitudes' value.
+      do q = frozen + 1, n_occ
+         do p = q + 1, n_occ
+            gap = orbital_energies(p) - orbital_energies(q)
+            if (abs(gap) <= DEGENERATE) cycle
+            inp%dm1mo(p, q) = (inp%imat(p, q) - inp%imat(q, p))/gap
+            inp%dm1mo(q, p) = inp%dm1mo(p, q)
+         end do
+      end do
+      do q = n_occ + 1, n_mo
+         do p = q + 1, n_mo
+            gap = orbital_energies(p) - orbital_energies(q)
+            if (abs(gap) <= DEGENERATE) cycle
+            inp%dm1mo(p, q) = (inp%imat(p, q) - inp%imat(q, p))/gap
+            inp%dm1mo(q, p) = inp%dm1mo(p, q)
+         end do
       end do
 
       ! A quarter of the density contracted twice with the fit, and once and

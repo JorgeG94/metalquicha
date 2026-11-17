@@ -18,6 +18,7 @@ module test_mqc_czt_rcc_density
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_rcc, only: rcc_result_t, rcc_state_t, run_czt_rccsd
    use mqc_czt_rcc_lambda, only: rcc_lambda_t, run_czt_rccsd_lambda
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t, rccsd_triples_terms
    use mqc_czt_rcc_density, only: rccsd_one_particle_density, &
                                   rccsd_fitted_two_particle_density, rcc_active_fit
    implicit none
@@ -40,7 +41,9 @@ contains
                   new_unittest("two_particle_density_sto3g", test_two_particle_sto3g), &
                   new_unittest("two_particle_density_cc_pvdz", test_two_particle_pvdz), &
                   new_unittest("two_particle_density_frozen_core", test_two_particle_frozen), &
-                  new_unittest("two_particle_density_needs_a_fit", test_needs_fit) &
+                  new_unittest("two_particle_density_needs_a_fit", test_needs_fit), &
+                  new_unittest("triples_terms_sto3g", test_triples_sto3g), &
+                  new_unittest("triples_terms_cc_pvdz_frozen_core", test_triples_pvdz) &
                   ]
    end subroutine collect_mqc_czt_rcc_density_tests
 
@@ -260,6 +263,129 @@ contains
       call rccsd_fitted_two_particle_density(state, lambda, b, g3, err)
       call check(error, err%has_error(), "a density was built with no amplitudes")
    end subroutine test_needs_fit
+
+   subroutine compare_triples(basis, frozen, reference, error)
+      !! What (T) adds to the Lambda equations and to the densities
+      !!
+      !! **Term by term**, against `pyscf.cc.ccsd_t_lambda_slow` and
+      !! `ccsd_t_rdm_slow`: the two Lambda sources by their norms and their
+      !! overlaps with the amplitudes, the one-particle diagonal by its sum and
+      !! its sum of squares in each space, and the three two-particle blocks by
+      !! their norms. None depends on the sign of an orbital.
+      !!
+      !! **Together**, with no reference. The correction's denominators are
+      !! orbital energies and its numerators are integrals, so the energy is
+      !! homogeneous in the pair, and the one- and two-particle densities
+      !! against the Fock matrix and the integrals must give back the CCSD
+      !! energy *and* the triples correction. The diagonal the correction adds
+      !! to the one-particle density must also have no trace.
+      character(len=*), intent(in) :: basis
+      integer, intent(in) :: frozen
+      real(dp), intent(in) :: reference(11)
+         !! Sums of squares of the `l1` and `l2` sources; their overlaps with
+         !! `t1` and `t2`; the sum of the occupied diagonal, negated; the sums
+         !! of squares of the occupied and virtual diagonals; and the sums of
+         !! squares of the additions to `dovov`, `dooov` and `dovvv`. The last
+         !! is the correction itself.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(rcc_result_t) :: cc
+      type(rcc_state_t) :: state
+      type(rcc_lambda_t) :: lambda
+      type(rcc_triples_terms_t) :: terms
+      type(error_t) :: err
+      real(dp), allocatable :: gamma(:, :), g3(:, :, :), b(:, :, :)
+      real(dp) :: got(10), e_one, e_two
+      character(len=*), parameter :: NAMES(10) = [character(len=24) :: &
+                                           "l1 source norm", "l2 source norm", "l1 source with t1", "l2 source with t2", &
+                                             "occupied diagonal sum", "occupied diagonal norm", "virtual diagonal norm", &
+                                                  "dovov addition", "dooov addition", "dovvv addition"]
+      integer :: k, p
+
+      call water(mol, err, basis)
+      call water(aux, err, "cc-pvdz-rifit")
+      call check(error,.not. err%has_error(), "the molecule should build")
+      if (allocated(error)) return
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error,.not. err%has_error() .and. scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+      call run_czt_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, 80, &
+                         1.0e-12_dp, .true., .false., cc, err, aux=aux, state=state)
+      call check(error,.not. err%has_error() .and. cc%converged, "CCSD(T) should converge")
+      if (allocated(error)) return
+      call check(error, abs(cc%e_triples - reference(11)) < TOL, &
+                 "the triples correction itself differs from PySCF's in "//basis)
+      if (allocated(error)) return
+
+      call rccsd_triples_terms(state, terms)
+      got(1) = sum(terms%l1_source**2)
+      got(2) = sum(terms%l2_source**2)
+      got(3) = sum(terms%l1_source*state%t1)
+      got(4) = sum(terms%l2_source*state%t2)
+      got(5) = -sum(terms%gamma_occ)
+      got(6) = sum(terms%gamma_occ**2)
+      got(7) = sum(terms%gamma_vir**2)
+      got(8) = sum(terms%dovov**2)
+      got(9) = sum(terms%dooov**2)
+      got(10) = sum(terms%dovvv**2)
+      do k = 1, 10
+         call check(error, abs(got(k) - reference(k)) < TOL*max(1.0_dp, abs(reference(k))) &
+                    .and. abs(got(k) - reference(k)) < 1.0e-6_dp*abs(reference(k)), &
+                    trim(NAMES(k))//" differs from PySCF's by "// &
+                    real_to_text(got(k) - reference(k))//" in "//basis)
+         if (allocated(error)) return
+      end do
+      call check(error, abs(sum(terms%gamma_occ) + sum(terms%gamma_vir)) < 1.0e-13_dp, &
+                 "the triples' one-particle diagonal has a trace in "//basis)
+      if (allocated(error)) return
+
+      call run_czt_rccsd_lambda(state, 200, 1.0e-10_dp, .false., lambda, err, triples=terms)
+      call check(error,.not. err%has_error() .and. lambda%converged, &
+                 "the Lambda equations should converge with their triples sources")
+      if (allocated(error)) return
+      call rccsd_one_particle_density(state, lambda, gamma, terms)
+      call rcc_active_fit(state, b, err)
+      call rccsd_fitted_two_particle_density(state, lambda, b, g3, err, terms)
+      call check(error,.not. err%has_error(), "the density failed: "//err%get_message())
+      if (allocated(error)) return
+      e_one = 0.0_dp
+      do p = 1, state%no
+         e_one = e_one + gamma(p, p)*state%eps_o(p)
+      end do
+      do p = 1, state%nv
+         e_one = e_one + gamma(state%no + p, state%no + p)*state%eps_v(p)
+      end do
+      e_two = 0.5_dp*sum(g3*b)
+      call check(error, abs(e_one + e_two - cc%e_correlation) < 1.0e-9_dp, &
+                 "the CCSD(T) densities give back a correlation energy off by "// &
+                 real_to_text(e_one + e_two - cc%e_correlation)//" in "//basis)
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine compare_triples
+
+   subroutine test_triples_sto3g(error)
+      type(error_type), allocatable, intent(out) :: error
+      call compare_triples("sto-3g", 0, &
+                           [1.450961230632e-07_dp, 8.797389984237e-07_dp, &
+                            -4.686920165586e-06_dp, 5.681792254221e-05_dp, &
+                            5.591504728020e-05_dp, 7.977139787946e-10_dp, &
+                            1.587261986887e-09_dp, 1.578094046696e-09_dp, &
+                            6.252371391667e-07_dp, 7.236460319319e-07_dp, &
+                            -0.000072751439_dp], error)
+   end subroutine test_triples_sto3g
+
+   subroutine test_triples_pvdz(error)
+      type(error_type), allocatable, intent(out) :: error
+      call compare_triples("cc-pvdz", 1, &
+                           [2.854075656811e-06_dp, 9.766911826857e-05_dp, &
+                            -2.346618685550e-05_dp, 1.502037729958e-03_dp, &
+                            1.447772647282e-03_dp, 5.794903305181e-07_dp, &
+                            1.520217469078e-07_dp, 3.342912848745e-08_dp, &
+                            9.163956572795e-06_dp, 3.499270962604e-05_dp, &
+                            -0.003019775465_dp], error)
+   end subroutine test_triples_pvdz
 
    function real_to_text(value) result(text)
       !! A number in a failure message, so the message says how badly
