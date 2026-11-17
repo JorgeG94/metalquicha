@@ -22,6 +22,7 @@ module mqc_tensor_contract
    private
 
    public :: contract
+   public :: transposed
 
    integer, parameter :: MAX_RANK = 4
       !! Highest rank of an operand or a result
@@ -144,6 +145,22 @@ contains
                          reshape(b, [size(b)]), shape(b), shape(c), r)
       c = c + scale*reshape(r, shape(c))
    end subroutine contract_22_4
+
+   function transposed(x, order) result(y)
+      !! `x` with its indices reordered: index `k` of the result is index
+      !! `order(k)` of `x`
+      real(dp), intent(in) :: x(:, :, :, :)
+      integer, intent(in) :: order(4)   !! A permutation of 1 to 4
+      real(dp), allocatable :: y(:, :, :, :)
+
+      real(dp), allocatable :: flat(:)
+      integer :: extents(4)
+
+      extents = shape(x)
+      call permute(reshape(x, [size(x)]), extents, order, flat)
+      y = reshape(flat, [extents(order(1)), extents(order(2)), extents(order(3)), &
+                         extents(order(4))])
+   end function transposed
 
    subroutine contract_flat(spec, a, shape_a, b, shape_b, shape_c, r)
       !! The contraction over flattened operands, in the result's index order

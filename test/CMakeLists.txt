@@ -482,6 +482,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_rcc)
   target_link_libraries(test_mqc_czt_rcc PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The Lambda amplitudes, by what does not depend on the sign of an orbital:
+  # their norms and their overlaps with the amplitudes, against PySCF's.
+  addtest(mqc_czt_rcc_lambda)
+  target_link_libraries(test_mqc_czt_rcc_lambda PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_czt_mp2)
