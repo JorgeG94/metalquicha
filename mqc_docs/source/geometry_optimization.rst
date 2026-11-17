@@ -62,9 +62,13 @@ which backends have gradients, not about the optimizer:
      - Supported, for whatever combination has a gradient -- see
        :doc:`capabilities`, which lists both what is covered and what is
        refused
-   * - cenzontle (CPU ``ccsd``, ``ccsd(t)``)
+   * - cenzontle (CPU ``ri-ccsd``)
+     - yes
+     - Closed shell over a reference with exact integrals; see
+       :doc:`capabilities`
+   * - cenzontle (CPU ``ccsd``, ``ccsd(t)``, ``ri-ccsd(t)``)
      - **no**
-     - Refused: a coupled cluster gradient needs the Lambda amplitudes
+     - Refused: the coupled cluster gradient is implemented for RI-CCSD only
    * - anything with ``model.ecp``
      - **no**
      - Refused whatever the method: the potential's contribution to the
@@ -81,9 +85,9 @@ before DL-FIND is entered:
 
 .. code-block:: text
 
-   The initial gradient check failed: a coupled cluster gradient needs the
-   Lambda amplitudes, which are not implemented. Run the gradient at the
-   Hartree-Fock or MP2 level, or coupled cluster as an energy.
+   The initial gradient check failed: the coupled cluster gradient is
+   implemented for RI-CCSD over a closed-shell reference with exact integrals,
+   and not for the perturbative triples. Run that as an energy.
    Geometry optimization failed: This method cannot produce a gradient, so it
    cannot be optimized.
 

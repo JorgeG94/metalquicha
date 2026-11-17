@@ -272,6 +272,16 @@ only in libfint:
   agree to machine precision, so that flag chooses how a number is computed and
   not which number. Spatial is the default because it is roughly sixteen times
   smaller and several times faster.
+  **Analytic gradient: RI-CCSD only**, closed shell over an exact reference,
+  frozen core allowed (`mqc_czt_ri_ccsd_gradient`). The Lambda equations
+  (`mqc_czt_rcc_lambda`) and the densities (`mqc_czt_rcc_density`) are PySCF's
+  term for term, written with `contract` from `mqc_tensor_contract` so each
+  line carries the reference's index string -- correct first, and not yet
+  fast. The relaxation and assembly are `relaxed_fitted_gradient`, shared with
+  the RI-MP2 gradient. PySCF has no fitted CCSD gradient, so the reference is
+  `tools/cpu_validation/ri_ccsd_gradient.py`, itself held to finite
+  differences. Conventional integrals, (T), open shells and a fitted reference
+  are refused by name.
 
 An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
 intent is recovered in the reader by `method_wants_density_fitting` while the

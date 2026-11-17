@@ -388,9 +388,18 @@ What has a gradient on the CPU backend, at a glance:
      - yes
      - Equal weights only. Any or all roots, plus nonadiabatic couplings
        between pairs; this does need a Z-vector. See :doc:`sa_casscf`
-   * - Coupled cluster
+   * - RI-CCSD
+     - yes
+     - Closed shell, over a reference with exact integrals; frozen core
+       allowed. The Lambda equations are solved after the energy, and the
+       relaxation is the RI-MP2 gradient's own. The amplitudes are converged
+       to 1e-10 hartree in the energy when a gradient follows, whatever the
+       deck's tolerance
+   * - Any other coupled cluster
      - no
-     - Needs the Lambda amplitudes
+     - Conventional integrals, the perturbative triples, an open shell, the
+       spin-orbital formulation and a density-fitted reference are each
+       refused by name
    * - Anything unrestricted beyond HF and semilocal/hybrid KS
      - no
      - See the refusal table below
@@ -537,8 +546,11 @@ number computed from a formula that does not apply:
        Kohn-Sham operator with its kernel in the response. The *energy* does
        honour ``freeze_core``, so this refuses rather than returning the
        all-electron gradient of a frozen-core energy
-   * - Coupled cluster
-     - Needs the Lambda amplitudes, which are not implemented
+   * - Coupled cluster other than closed-shell RI-CCSD
+     - The gradient exists for fitted, spin-adapted CCSD over an exact
+       closed-shell reference. Conventional CCSD would need the two-particle
+       density carried back to the atomic orbitals in four-index form, and the
+       triples their own Lambda equations
 
 Geometry Optimization
 ---------------------
@@ -936,7 +948,7 @@ does not apply.
    equivalent, so coupled cluster is canonical and scales like it. The F12
    method names parse and are then refused
 5. **Derivatives that do not exist**: there are no nuclear gradients for
-   coupled cluster (no Lambda amplitudes), spin-scaled MP2, excited states,
+   coupled cluster beyond closed-shell RI-CCSD, spin-scaled MP2, excited states,
    NEO or anything with an ECP. There is also no CASSCF Hessian, single-state
    or averaged. The gradient table above gives the full list. An excited-state
    ``Gradient`` deck is refused by the reader
@@ -983,7 +995,8 @@ Planned Features
 
 1. **Additional QC methods**:
 
-   - Coupled-cluster gradients, through the Lambda equations
+   - Coupled-cluster gradients beyond RI-CCSD: the perturbative triples and
+     conventional integrals
    - Density-fitted unrestricted coupled cluster. The conventional path takes an
      unrestricted reference; the fitted one does not, because its three-index
      block carries no spin blocks, and a deck asking for both is refused rather
