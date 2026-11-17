@@ -60,6 +60,7 @@ module mqc_czt_bridge
    use mqc_czt_cc, only: cc_result_t, run_czt_ccsd
    use mqc_czt_rcc, only: rcc_result_t, rcc_state_t, run_czt_rccsd
    use mqc_czt_rcc_lambda, only: rcc_lambda_t, run_czt_rccsd_lambda
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t, rccsd_triples_terms
    use mqc_czt_ri_ccsd_gradient, only: czt_ri_ccsd_gradient
    use mqc_cube_config, only: cube_config_t
    use mqc_io_helpers, only: get_basename
@@ -1233,7 +1234,7 @@ contains
             why = cc_gradient_decline_reason(settings, unrestricted)
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "the coupled cluster gradient is "// &
-                                     "implemented for RI-CCSD over a closed-shell "// &
+                                     "implemented for RI-CCSD and RI-CCSD(T) over a closed-shell "// &
                                      "reference with exact integrals, and not for "// &
                                      why//". Run that as an energy.")
                result%has_error = .true.
@@ -2835,6 +2836,7 @@ contains
             type(rcc_result_t) :: rcc
             type(rcc_state_t) :: cc_state
             type(rcc_lambda_t) :: cc_lambda
+            type(rcc_triples_terms_t) :: cc_triples_terms
             real(dp) :: cc_tol
             integer :: frozen, cc_iterations
             logical :: cc_converged, spin_adapted
@@ -2986,22 +2988,41 @@ contains
 
             ! ---- dE/dR, analytically --------------------------------------
             ! Only the combination `cc_gradient_decline_reason` let through
-            ! reaches here: fitted, spin-adapted CCSD over an exact closed
-            ! shell.
+            ! reaches here: fitted, spin-adapted CCSD or CCSD(T) over an exact
+            ! closed shell.
             if (do_gradient) then
                call logger%info("  energy converged, solving the Lambda equations")
                call grad_clock%start()
-               call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
-                                         settings%verbose, cc_lambda, error, &
-                                         diis_vectors=settings%cc_diis_size)
+               if (settings%cc_triples) then
+                  ! The correction's derivative with respect to the amplitudes
+                  ! drives the Lambda equations, and its derivatives with
+                  ! respect to the orbital energies and the integrals join the
+                  ! densities. All three come from one pass.
+                  call rccsd_triples_terms(cc_state, cc_triples_terms)
+                  call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
+                                            settings%verbose, cc_lambda, error, &
+                                            diis_vectors=settings%cc_diis_size, &
+                                            triples=cc_triples_terms)
+               else
+                  call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
+                                            settings%verbose, cc_lambda, error, &
+                                            diis_vectors=settings%cc_diis_size)
+               end if
                if (.not. error%has_error()) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                end if
                if (.not. error%has_error()) then
                   call logger%info("  computing the gradient")
-                  call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
-                                            scf%orbital_energies, nelec/2, frozen, &
-                                            cc_state, cc_lambda, result%gradient, error)
+                  if (settings%cc_triples) then
+                     call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
+                                               scf%orbital_energies, nelec/2, frozen, &
+                                               cc_state, cc_lambda, result%gradient, &
+                                               error, triples=cc_triples_terms)
+                  else
+                     call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
+                                               scf%orbital_energies, nelec/2, frozen, &
+                                               cc_state, cc_lambda, result%gradient, error)
+                  end if
                   call corr_aux%destroy()
                end if
                if (error%has_error()) then
@@ -3294,8 +3315,6 @@ contains
 
       if (.not. settings%corr_density_fitting) then
          reason = "conventional integrals (ask for ri-ccsd, with model.aux_basis)"
-      else if (settings%cc_triples) then
-         reason = "the perturbative triples"
       else if (unrestricted) then
          reason = "an open shell"
       else if (.not. settings%cc_spin_adapted) then
