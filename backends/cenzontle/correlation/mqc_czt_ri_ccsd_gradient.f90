@@ -20,6 +20,7 @@ module mqc_czt_ri_ccsd_gradient
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_timing, only: timing_report_t
    use mqc_czt_integrals, only: czt_molecule_t, three_centre, two_centre, &
                                 metric_inverse_sqrt
    use mqc_czt_cphf, only: IN_CORE_LIMIT
@@ -73,6 +74,7 @@ contains
       real(dp), allocatable :: half(:, :), gflat(:, :), bflat(:, :)
       integer :: n_ao, n_mo, n_act, n_aux, no, nv, k, p, q
       real(dp) :: gap
+      type(timing_report_t) :: clk
 
       if (ecp_refuses_derivatives(mol%core_electrons, "RI-CCSD gradient", error)) return
 
@@ -108,6 +110,8 @@ contains
       ! energy calculation: that one used whichever factor was cheapest, and
       ! the densities below have to be in the factorisation the derivative
       ! integrals are contracted in.
+      call clk%start()
+      call clk%begin("fit over every orbital")
       call three_centre(mol, aux, inp%three_ao)
       call two_centre(aux, metric)
       call metric_inverse_sqrt(metric, inp%jm12, error)
@@ -124,12 +128,19 @@ contains
       end do
       deallocate (block)
 
+      call clk%lap()
+
       ! ---- the densities ---------------------------------------------------
+      call clk%begin("one-particle density")
       call rccsd_one_particle_density(state, lambda, gamma, triples)
+      call clk%lap()
+      call clk%begin("two-particle density")
       call rccsd_fitted_two_particle_density(state, lambda, &
                                              b_all(frozen + 1:n_mo, frozen + 1:n_mo, :), &
                                              g3, error, triples)
       if (error%has_error()) return
+      call clk%lap()
+      call clk%begin("Lagrangian and fitted densities")
 
       ! The unrelaxed density, without its occupied-virtual block: the
       ! relaxation solves for the whole of that block, so whatever the
@@ -199,8 +210,13 @@ contains
       inp%gamma_ao = 0.25_dp*reshape(half, [n_ao, n_ao, n_aux])
       deallocate (half)
 
+      call clk%lap()
+      call clk%begin("relaxation and assembly")
       call relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
                                    gradient, error)
+      call clk%lap()
+      call clk%finish()
+      call clk%report("RI-CCSD gradient")
    end subroutine czt_ri_ccsd_gradient
 
 end module mqc_czt_ri_ccsd_gradient

@@ -144,8 +144,9 @@ contains
       real(dp), allocatable :: t(:, :, :), tp(:, :, :)
       real(dp), allocatable :: dovov(:, :, :, :), doooo(:, :, :, :), doovv(:, :, :, :)
       real(dp), allocatable :: dovvo(:, :, :, :), dovvv(:, :, :, :), dooov(:, :, :, :)
-      real(dp), allocatable :: tau(:, :, :, :), work(:, :, :, :)
-      real(dp), allocatable :: bm(:, :), y(:, :), yp(:, :)
+      real(dp), allocatable :: work(:, :, :, :)
+      real(dp), allocatable :: bvv(:, :, :), y(:, :, :), e(:, :, :)
+      real(dp), allocatable :: l2ij(:, :), theta(:, :)
       integer :: no, nv, n, n_aux, k, i, j, a, c
 
       no = state%no
@@ -196,33 +197,51 @@ contains
 
       ! The all-virtual block. With g(a,b,c,d) = sum_ij l2(i,j,a,b) tau(i,j,c,d)
       ! the block is 2 (d + d transposed in both pairs) for
-      ! d(p,q,r,s) = g(p,r,q,s) - g(p,r,s,q)/2.
-      allocate (tau(no, no, nv, nv))
+      ! d(p,q,r,s) = g(p,r,q,s) - g(p,r,s,q)/2, and its contraction with the
+      ! fit on the second pair is, for each auxiliary function P,
+      !
+      !     y_P = sum_ij l2_ij b_P theta_ij,   theta_ij = tau_ij^T - tau_ij/2
+      !
+      ! with every factor a matrix over the virtuals. The contraction on the
+      ! first pair is the same sum with i and j exchanged, so it is the same
+      ! matrix. Two products for each occupied pair, every auxiliary function
+      ! at once: l2_ij against the fit laid out (r, (P, s)), and the result,
+      ! read as ((p, P), s), against theta_ij.
+      allocate (bvv(nv, n_aux, nv), y(nv, n_aux, nv))
       do c = 1, nv
-         do a = 1, nv
-            do j = 1, no
-               do i = 1, no
-                  tau(i, j, a, c) = state%t2(i, j, a, c) + state%t1(i, a)*state%t1(j, c)
-               end do
-            end do
+         do k = 1, n_aux
+            bvv(:, k, c) = b(no + 1:n, no + c, k)
          end do
       end do
-      allocate (work(no, no, nv, nv), y(nv, nv), yp(nv, nv))
-      do k = 1, n_aux
-         bm = b(no + 1:n, no + 1:n, k)
-         work = 0.0_dp
-         y = 0.0_dp
-         call contract("ijpr,rs->ijps", lambda%l2, bm, work, 1.0_dp)
-         call contract("ijps,ijqs->pq", work, tau, y, 1.0_dp)
-         call contract("ijps,ijsq->pq", work, tau, y, -0.5_dp)
-         work = 0.0_dp
-         yp = 0.0_dp
-         call contract("ijpr,pq->ijrq", lambda%l2, bm, work, 1.0_dp)
-         call contract("ijrq,ijqs->rs", work, tau, yp, 1.0_dp)
-         call contract("ijrq,ijsq->rs", work, tau, yp, -0.5_dp)
-         t(no + 1:n, no + 1:n, k) = t(no + 1:n, no + 1:n, k) + 2.0_dp*(y + transpose(y))
-         tp(no + 1:n, no + 1:n, k) = tp(no + 1:n, no + 1:n, k) + 2.0_dp*(yp + transpose(yp))
+      y = 0.0_dp
+      !$omp parallel default(none) shared(state, lambda, bvv, y, no, nv, n_aux) &
+      !$omp    private(i, j, a, c, l2ij, theta, e)
+      allocate (l2ij(nv, nv), theta(nv, nv), e(nv, n_aux, nv))
+      !$omp do collapse(2) schedule(dynamic) reduction(+:y)
+      do j = 1, no
+         do i = 1, no
+            do c = 1, nv
+               do a = 1, nv
+                  l2ij(a, c) = lambda%l2(i, j, a, c)
+                  ! theta(s, q) = tau(q, s) - tau(s, q)/2 at this (i, j)
+                  theta(a, c) = state%t2(i, j, c, a) + state%t1(i, c)*state%t1(j, a) &
+                                - 0.5_dp*(state%t2(i, j, a, c) + state%t1(i, a)*state%t1(j, c))
+               end do
+            end do
+            call fit_product(l2ij, bvv, nv, nv*n_aux, e)
+            call add_product(e, theta, nv*n_aux, nv, y)
+         end do
       end do
+      !$omp end do
+      deallocate (l2ij, theta, e)
+      !$omp end parallel
+      do k = 1, n_aux
+         t(no + 1:n, no + 1:n, k) = t(no + 1:n, no + 1:n, k) &
+                                    + 2.0_dp*(y(:, k, :) + transpose(y(:, k, :)))
+         tp(no + 1:n, no + 1:n, k) = tp(no + 1:n, no + 1:n, k) &
+                                     + 2.0_dp*(y(:, k, :) + transpose(y(:, k, :)))
+      end do
+      deallocate (bvv, y)
 
       allocate (g3(n, n, n_aux))
       do k = 1, n_aux
@@ -263,6 +282,24 @@ contains
       end subroutine accumulate
 
    end subroutine rccsd_fitted_two_particle_density
+
+   subroutine fit_product(left, fit, nv, n_cols, out)
+      !! `out = left fit`, the fit read as a matrix with `n_cols` columns
+      integer, intent(in) :: nv, n_cols
+      real(dp), intent(in) :: left(nv, nv), fit(nv, n_cols)
+      real(dp), intent(out) :: out(nv, n_cols)
+
+      call pic_gemm(left, fit, out)
+   end subroutine fit_product
+
+   subroutine add_product(left, right, n_rows, nv, acc)
+      !! `acc += left right`, with `left` and `acc` read as `n_rows` rows
+      integer, intent(in) :: n_rows, nv
+      real(dp), intent(in) :: left(n_rows, nv), right(nv, nv)
+      real(dp), intent(inout) :: acc(n_rows, nv)
+
+      call pic_gemm(left, right, acc, beta=1.0_dp)
+   end subroutine add_product
 
    subroutine gamma2_blocks(state, lambda, dovov, doooo, doovv, dovvo, dovvv, dooov)
       !! `_gamma2_outcore` of the reference, without its all-virtual block

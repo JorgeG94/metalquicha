@@ -33,7 +33,8 @@ contains
                   new_unittest("outer_product", test_outer), &
                   new_unittest("rank_four_to_rank_two", test_to_matrix), &
                   new_unittest("matrix_with_rank_four", test_matrix_first), &
-                  new_unittest("adds_and_scales", test_accumulates) &
+                  new_unittest("adds_and_scales", test_accumulates), &
+                  new_unittest("large_enough_to_be_threaded", test_large) &
                   ]
    end subroutine collect_mqc_tensor_contract_tests
 
@@ -279,6 +280,44 @@ contains
       call check(error, maxval(abs(got - (1.0_dp + 1.5_dp*once))) < TOL, &
                  "two calls did not add up to one and a half products on top of what was there")
    end subroutine test_accumulates
+
+   subroutine test_large(error)
+      !! 'kalb,ijkl->ijab' again, on operands big enough to cross the sizes at
+      !! which the permutations and the product are split over threads
+      !!
+      !! The small cases all run on one thread, whatever the machine, so they
+      !! say nothing about the split: a slab offset wrong by one, or a block of
+      !! columns counted twice, shows only here.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: MI = 12, MJ = 13, MK = 37, ML = 41, MA = 39, MB = 43
+      real(dp), allocatable :: ovov(:, :, :, :), x(:, :, :, :)
+      real(dp), allocatable :: got(:, :, :, :), want(:, :, :, :)
+      integer :: i, j, k, l, a, b
+
+      allocate (ovov(MK, MA, ML, MB), x(MI, MJ, MK, ML))
+      allocate (got(MI, MJ, MA, MB), want(MI, MJ, MA, MB))
+      call fill4(ovov, 2.1_dp)
+      call fill4(x, 2.2_dp)
+      want = 0.0_dp
+      do b = 1, MB
+         do l = 1, ML
+            do a = 1, MA
+               do k = 1, MK
+                  do j = 1, MJ
+                     do i = 1, MI
+                        want(i, j, a, b) = want(i, j, a, b) + ovov(k, a, l, b)*x(i, j, k, l)
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      got = 0.0_dp
+      call contract("kalb,ijkl->ijab", ovov, x, got, 1.0_dp)
+      call check(error, maxval(abs(got - want)) < 1.0e-10_dp, &
+                 "a contraction large enough to thread is wrong")
+   end subroutine test_large
 
 end module test_mqc_tensor_contract
 

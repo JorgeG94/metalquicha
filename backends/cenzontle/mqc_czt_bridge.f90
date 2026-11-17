@@ -2999,6 +2999,9 @@ contains
                   ! respect to the orbital energies and the integrals join the
                   ! densities. All three come from one pass.
                   call rccsd_triples_terms(cc_state, cc_triples_terms)
+                  write (line, "(a,f10.2,a)") "  triples terms in  ", &
+                     grad_clock%get_elapsed_time(), " s"
+                  call logger%info(trim(line))
                   call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
                                             settings%verbose, cc_lambda, error, &
                                             diis_vectors=settings%cc_diis_size, &
@@ -3008,6 +3011,9 @@ contains
                                             settings%verbose, cc_lambda, error, &
                                             diis_vectors=settings%cc_diis_size)
                end if
+               write (line, "(a,f10.2,a)") "  Lambda done at    ", &
+                  grad_clock%get_elapsed_time(), " s"
+               call logger%info(trim(line))
                if (.not. error%has_error()) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                end if

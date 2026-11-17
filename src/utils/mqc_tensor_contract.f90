@@ -18,6 +18,7 @@ module mqc_tensor_contract
    !! Operands and result are rank two or rank four, in any combination.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use omp_lib, only: omp_get_max_threads
    implicit none
    private
 
@@ -26,6 +27,9 @@ module mqc_tensor_contract
 
    integer, parameter :: MAX_RANK = 4
       !! Highest rank of an operand or a result
+   real(dp), parameter :: THREAD_ABOVE = 2.0e6_dp
+      !! A product is split over threads when it takes more multiplications
+      !! than this, and a permutation when it moves more elements
 
    interface contract
       module procedure contract_44_4, contract_44_2, contract_42_4, contract_24_4
@@ -257,15 +261,32 @@ contains
 
    subroutine multiply(am, bm, rows, inner, cols, rm)
       !! `rm(rows, cols) = am(rows, inner) bm(inner, cols)` over flat storage
+      !!
+      !! The BLAS this is built against is sequential, so a product worth
+      !! threading is split by hand into one block of columns for each thread.
       integer, intent(in) :: rows, inner, cols
       real(dp), intent(in) :: am(rows, inner), bm(inner, cols)
       real(dp), intent(out) :: rm(rows, cols)
+
+      integer :: n_blocks, block, first, last
 
       if (rows == 0 .or. cols == 0 .or. inner == 0) then
          rm = 0.0_dp
          return
       end if
-      call pic_gemm(am, bm, rm)
+      n_blocks = min(omp_get_max_threads(), cols)
+      if (n_blocks < 2 .or. real(rows, dp)*real(inner, dp)*real(cols, dp) < THREAD_ABOVE) then
+         call pic_gemm(am, bm, rm)
+         return
+      end if
+      !$omp parallel do default(none) shared(am, bm, rm, n_blocks, cols) &
+      !$omp    private(block, first, last) schedule(static)
+      do block = 1, n_blocks
+         first = (block - 1)*cols/n_blocks + 1
+         last = block*cols/n_blocks
+         if (last >= first) call pic_gemm(am, bm(:, first:last), rm(:, first:last))
+      end do
+      !$omp end parallel do
    end subroutine multiply
 
    subroutine split_spec(spec, la, na, lb, nb, lc, nc)
@@ -312,7 +333,7 @@ contains
       integer, intent(in) :: perm(:)
       real(dp), allocatable, intent(out) :: dst(:)
 
-      integer :: n, k, at, first, step, offset
+      integer :: n, k, at, first, step, offset, slab, outer, n_outer
       integer :: stride(MAX_RANK), jump(MAX_RANK), top(MAX_RANK), counter(MAX_RANK)
 
       n = size(extents)
@@ -328,30 +349,46 @@ contains
          jump(k) = stride(perm(k))
          top(k) = extents(perm(k))
       end do
-
-      counter(1:n) = 0
       first = top(1)
       step = jump(1)
-      at = 0
-      do
-         offset = 1
-         do k = 2, n
-            offset = offset + counter(k)*jump(k)
-         end do
-         do k = 1, first
-            dst(at + k) = src(offset + (k - 1)*step)
-         end do
-         at = at + first
-         ! Advance every index but the first, which the loop above ran.
-         k = 2
+
+      ! One value of the result's last index is one contiguous slab of it, and
+      ! the slabs are independent.
+      n_outer = top(n)
+      slab = size(src)/n_outer
+      !$omp parallel do default(none) if (real(size(src), dp) > THREAD_ABOVE) &
+      !$omp    shared(src, dst, n, jump, top, first, step, slab, n_outer) &
+      !$omp    private(outer, counter, at, offset, k) schedule(static)
+      do outer = 0, n_outer - 1
+         counter(1:n) = 0
+         at = outer*slab
+         if (n == 1) then
+            dst(outer + 1) = src(1 + outer*jump(1))
+            cycle
+         end if
          do
-            if (k > n) return
-            counter(k) = counter(k) + 1
-            if (counter(k) < top(k)) exit
-            counter(k) = 0
-            k = k + 1
+            offset = 1 + outer*jump(n)
+            do k = 2, n - 1
+               offset = offset + counter(k)*jump(k)
+            end do
+            do k = 1, first
+               dst(at + k) = src(offset + (k - 1)*step)
+            end do
+            at = at + first
+            ! Advance every index but the first, which the loop above ran, and
+            ! the last, which the slab fixes.
+            k = 2
+            do
+               if (k > n - 1) exit
+               counter(k) = counter(k) + 1
+               if (counter(k) < top(k)) exit
+               counter(k) = 0
+               k = k + 1
+            end do
+            if (k > n - 1) exit
          end do
       end do
+      !$omp end parallel do
    end subroutine permute
 
 end module mqc_tensor_contract
