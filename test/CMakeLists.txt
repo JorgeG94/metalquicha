@@ -511,6 +511,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_rcc_density)
   target_link_libraries(test_mqc_czt_rcc_density PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The RI-CCSD gradient, against the numpy reference in tools/cpu_validation.
+  addtest(mqc_czt_ri_ccsd_gradient)
+  target_link_libraries(test_mqc_czt_ri_ccsd_gradient
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_czt_mp2)

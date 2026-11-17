@@ -105,7 +105,7 @@ contains
       end do
    end subroutine rcc_active_fit
 
-   subroutine rccsd_fitted_two_particle_density(state, lambda, g3, error)
+   subroutine rccsd_fitted_two_particle_density(state, lambda, b, g3, error)
       !! The two-particle density contracted once with the fit
       !!
       !!     g3(p,q,P) = sum_rs Gamma(p,q,r,s) b(r,s,P)
@@ -120,21 +120,32 @@ contains
       !! function at a time.
       type(rcc_state_t), intent(in) :: state
       type(rcc_lambda_t), intent(in) :: lambda
+      real(dp), intent(in) :: b(:, :, :)
+         !! (no + nv, no + nv, n_aux) the fit over the active orbitals, in
+         !! whichever factorisation of the metric the caller will go on to use
       real(dp), allocatable, intent(out) :: g3(:, :, :)   !! (no + nv, no + nv, n_aux)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: b(:, :, :), t(:, :, :), tp(:, :, :)
+      real(dp), allocatable :: t(:, :, :), tp(:, :, :)
       real(dp), allocatable :: dovov(:, :, :, :), doooo(:, :, :, :), doovv(:, :, :, :)
       real(dp), allocatable :: dovvo(:, :, :, :), dovvv(:, :, :, :), dooov(:, :, :, :)
       real(dp), allocatable :: tau(:, :, :, :), work(:, :, :, :)
       real(dp), allocatable :: bm(:, :), y(:, :), yp(:, :)
       integer :: no, nv, n, n_aux, k, i, j, a, c
 
-      call rcc_active_fit(state, b, error)
-      if (error%has_error()) return
       no = state%no
       nv = state%nv
       n = no + nv
+      if (.not. allocated(state%t2) .or. .not. allocated(lambda%l2)) then
+         call error%set(ERROR_VALIDATION, "the two-particle density needs converged "// &
+                        "amplitudes and Lambda amplitudes")
+         return
+      end if
+      if (size(b, 1) /= n .or. size(b, 2) /= n) then
+         call error%set(ERROR_VALIDATION, "the two-particle density was handed a fit "// &
+                        "that does not span the active orbitals")
+         return
+      end if
       n_aux = size(b, 3)
       allocate (t(n, n, n_aux), tp(n, n, n_aux), source=0.0_dp)
 

@@ -202,10 +202,10 @@ contains
       if (allocated(error)) return
 
       call rccsd_one_particle_density(state, lambda, gamma)
-      call rccsd_fitted_two_particle_density(state, lambda, g3, err)
+      call rcc_active_fit(state, b, err)
+      call rccsd_fitted_two_particle_density(state, lambda, b, g3, err)
       call check(error,.not. err%has_error(), "the density failed: "//err%get_message())
       if (allocated(error)) return
-      call rcc_active_fit(state, b, err)
 
       e_one = 0.0_dp
       do p = 1, state%no
@@ -251,10 +251,14 @@ contains
       type(rcc_state_t) :: state
       type(rcc_lambda_t) :: lambda
       type(error_t) :: err
-      real(dp), allocatable :: g3(:, :, :)
+      real(dp), allocatable :: g3(:, :, :), b(:, :, :)
 
-      call rccsd_fitted_two_particle_density(state, lambda, g3, err)
-      call check(error, err%has_error(), "a density was built with no fit to contract with")
+      call rcc_active_fit(state, b, err)
+      call check(error, err%has_error(), "a fit was handed on where none was built")
+      if (allocated(error)) return
+      allocate (b(1, 1, 1), source=0.0_dp)
+      call rccsd_fitted_two_particle_density(state, lambda, b, g3, err)
+      call check(error, err%has_error(), "a density was built with no amplitudes")
    end subroutine test_needs_fit
 
    function real_to_text(value) result(text)

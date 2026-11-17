@@ -8,4 +8,5 @@ target_sources(
           mqc_czt_mp2_gradient.f90
           mqc_czt_mp2_hessian.f90
           mqc_czt_ri_mp2_hessian.f90
-          mqc_czt_ri_mp2_gradient.f90)
+          mqc_czt_ri_mp2_gradient.f90
+          mqc_czt_ri_ccsd_gradient.f90)
