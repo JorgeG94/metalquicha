@@ -276,15 +276,20 @@ only in libfint:
   exact reference, frozen core allowed (`mqc_czt_ri_ccsd_gradient`). The Lambda equations
   (`mqc_czt_rcc_lambda`) and the densities (`mqc_czt_rcc_density`) are PySCF's
   term for term, written with `contract` from `mqc_tensor_contract` so each
-  line carries the reference's index string -- correct first, and not yet
-  fast. The relaxation and assembly are `relaxed_fitted_gradient`, shared with
+  line carries the reference's index string. The two places that dominated
+  have been rewritten by hand and the rest left readable: the all-virtual
+  block of the two-particle density, and the triples' terms. The gradient
+  prints its phases; **read them before optimising anything else** -- a Lambda
+  iteration already costs what an amplitude iteration does.
+  The relaxation and assembly are `relaxed_fitted_gradient`, shared with
   the RI-MP2 gradient. PySCF has no fitted CCSD gradient, so the reference is
   `tools/cpu_validation/ri_ccsd_gradient.py`, itself held to finite
   differences. Conventional integrals, open shells and a fitted reference are
   refused by name. (T) enters as three sets of terms from
   `mqc_czt_rcc_triples_terms` -- sources in the Lambda equations, a diagonal
-  on the one-particle density, additions to the two-particle density -- and
-  holds two `n_occ^3 n_vir^3` arrays whole. **(T) is not invariant to a
+  on the one-particle density, additions to the two-particle density -- built
+  one set of three virtuals at a time, as the energy is, at about two and a
+  half times the energy's cost. **(T) is not invariant to a
   rotation among the occupied orbitals or among the virtuals**, so the
   gradient takes the off-diagonal relaxed density in those blocks from the
   Lagrangian, divided by the orbital-energy gap, and skips degenerate pairs;

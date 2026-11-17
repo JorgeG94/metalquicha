@@ -394,8 +394,9 @@ What has a gradient on the CPU backend, at a glance:
        allowed. The Lambda equations are solved after the energy, and the
        relaxation is the RI-MP2 gradient's own. The amplitudes are converged
        to 1e-10 hartree in the energy when a gradient follows, whatever the
-       deck's tolerance. The triples' part holds two arrays of
-       ``n_occ^3 n_vir^3`` and is for small molecules as it stands
+       deck's tolerance. The gradient costs about as much again as the energy
+       for CCSD, and the triples' part about two and a half times the triples'
+       energy
    * - Any other coupled cluster
      - no
      - Conventional integrals, an open shell, the spin-orbital formulation
@@ -995,8 +996,7 @@ Planned Features
 
 1. **Additional QC methods**:
 
-   - Coupled-cluster gradients over conventional integrals, and a triples
-     gradient that does not hold its six-index intermediates whole
+   - Coupled-cluster gradients over conventional integrals
    - Density-fitted unrestricted coupled cluster. The conventional path takes an
      unrestricted reference; the fitted one does not, because its three-index
      block carries no spin blocks, and a deck asking for both is refused rather

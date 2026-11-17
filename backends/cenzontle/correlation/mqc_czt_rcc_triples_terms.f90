@@ -14,13 +14,15 @@ module mqc_czt_rcc_triples_terms
    !! **Equations.** PySCF's `cc/ccsd_t_lambda_slow.py` and
    !! `cc/ccsd_t_rdm_slow.py`, term for term, with `f_ov = 0`.
    !!
-   !! **Cost.** One virtual triple at a time, as the energy is evaluated: the
-   !! six-index intermediates the reference holds whole are built and consumed
-   !! an `n_occ^3` block at a time, so nothing here is larger than the
-   !! four-index results, and the work is `n_occ^3 n_vir^4`, threaded over the
-   !! first virtual index.
+   !! **Cost.** One set of three virtuals at a time, as the energy is
+   !! evaluated: the six-index intermediates the reference holds whole are
+   !! built and consumed an `n_occ^3` block at a time, so nothing here is
+   !! larger than the four-index results. The work is `n_occ^3 n_vir^4`,
+   !! threaded.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, &
+                      omp_destroy_lock
    use mqc_tensor_contract, only: transposed
    use mqc_czt_rcc, only: rcc_state_t
    implicit none
@@ -28,6 +30,13 @@ module mqc_czt_rcc_triples_terms
 
    public :: rcc_triples_terms_t
    public :: rccsd_triples_terms
+
+   integer, parameter :: N_ORDERINGS = 6
+      !! Orderings of three virtuals
+   integer, parameter :: ORDERINGS(3, N_ORDERINGS) = reshape( &
+                         [1, 2, 3, 1, 3, 2, 2, 1, 3, 2, 3, 1, 3, 1, 2, 3, 2, 1], &
+                         [3, N_ORDERINGS])
+      !! Each column is one: which member of the set is first, second and third
 
    type :: rcc_triples_terms_t
       !! The (T) contributions, each in the reference's layout
@@ -50,11 +59,14 @@ contains
 
       real(dp), allocatable :: tvoo(:, :, :, :), tjk(:, :, :, :), ovvv_p(:, :, :, :)
       real(dp), allocatable :: ovoo_p(:, :, :, :), ovoo_q(:, :, :, :), joovv(:, :, :, :)
-      real(dp), allocatable :: w(:, :, :), v(:, :, :), rw(:, :, :), x(:, :, :), m(:, :, :)
-      real(dp), allocatable :: blk(:, :, :), out_ov(:, :), out_oo(:, :), out_ooo(:, :, :)
-      real(dp), allocatable :: gamma_occ(:)
-      integer :: no, nv, i, j, k, a, b, c
-      real(dp) :: acc, d3
+      real(dp), allocatable :: w(:, :, :), v(:, :, :), wp(:, :, :), vp(:, :, :)
+      real(dp), allocatable :: rw(:, :, :), x(:, :, :), m(:, :, :), blk(:, :, :)
+      real(dp), allocatable :: out_ov(:, :), out_oo(:, :), out_ooo(:, :, :)
+      real(dp), allocatable :: j_add(:, :, :), dov_add(:, :), l1_add(:), gamma_occ(:)
+      integer(omp_lock_kind), allocatable :: locks(:)
+      integer :: no, nv, i, j, k, a, b, c, p, q, virt(3), now(3), inverse(3)
+      real(dp) :: acc, d3, gv_add
+      logical :: seen
 
       no = state%no
       nv = state%nv
@@ -71,21 +83,35 @@ contains
       allocate (terms%dovov(no, nv, no, nv), terms%dooov(no, no, no, nv), source=0.0_dp)
       allocate (terms%dovvv(no, nv, nv, nv), joovv(no, no, nv, nv), source=0.0_dp)
       allocate (gamma_occ(no), source=0.0_dp)
-
-      ! One virtual triple at a time. Every result but one is indexed by the
-      ! triple's first virtual, so the threads share that index out and write
-      ! to disjoint slices; the occupied diagonal is the exception and is
-      ! reduced.
-      !$omp parallel default(none) &
-      !$omp    shared(state, terms, joovv, tvoo, tjk, ovvv_p, ovoo_p, ovoo_q, no, nv) &
-      !$omp    private(a, b, c, i, j, k, d3, acc, w, v, rw, x, m, blk, out_ov, out_oo, out_ooo) &
-      !$omp    reduction(+:gamma_occ)
-      allocate (w(no, no, no), v(no, no, no), rw(no, no, no), x(no, no, no), m(no, no, no))
-      allocate (blk(no, no, no), out_ov(no, nv), out_oo(no, no), out_ooo(no, no, no))
-      !$omp do schedule(dynamic)
+      allocate (locks(nv))
       do a = 1, nv
-         do b = 1, nv
-            do c = 1, nv
+         call omp_init_lock(locks(a))
+      end do
+
+      ! One set of three virtuals at a time. The symmetrised intermediate is
+      ! built once for the set, at six products, and each ordering of the set
+      ! is that block with its occupied indices permuted to match. Every
+      ! result but one is indexed by an ordering's first virtual, which any
+      ! thread may be holding, so each ordering computes into its own arrays
+      ! and adds them under that virtual's lock. The occupied diagonal is the
+      ! exception and is reduced.
+      !$omp parallel default(none) &
+      !$omp    shared(state, terms, joovv, tvoo, tjk, ovvv_p, ovoo_p, ovoo_q, no, nv, locks) &
+      !$omp    private(a, b, c, i, j, k, p, q, virt, now, inverse, seen, d3, acc, gv_add) &
+      !$omp    private(w, v, wp, vp, rw, x, m, blk, out_ov, out_oo, out_ooo) &
+      !$omp    private(j_add, dov_add, l1_add) &
+      !$omp    reduction(+:gamma_occ)
+      allocate (w(no, no, no), v(no, no, no), wp(no, no, no), vp(no, no, no))
+      allocate (rw(no, no, no), x(no, no, no), m(no, no, no), blk(no, no, no))
+      allocate (out_ov(no, nv), out_oo(no, no), out_ooo(no, no, no))
+      allocate (j_add(no, no, nv), dov_add(no, no), l1_add(no))
+      ! Descending, because the first index of a set carries work in
+      ! proportion to its square and the large ones should be handed out
+      ! first.
+      !$omp do schedule(dynamic)
+      do a = nv, 1, -1
+         do b = 1, a
+            do c = 1, b
                ! The reference's p6: the six simultaneous permutations of the
                ! three (occupied, virtual) pairs.
                w = 0.0_dp
@@ -118,69 +144,102 @@ contains
                   end do
                end do
 
-               ! ---- with r6(w) ---------------------------------------------
-               call spin_sum(w, rw)
-               ! l1 source: 'jbkc,ijkabc->ia', halved; and 'kc,ijkabc->iajb',
-               ! halved, into dovov.
-               do i = 1, no
-                  acc = 0.0_dp
-                  do k = 1, no
-                     do j = 1, no
-                        acc = acc + state%eris%ovov(j, b, k, c)*rw(i, j, k)
-                     end do
+               virt = [a, b, c]
+               do p = 1, N_ORDERINGS
+                  ! This ordering, unless an earlier one of a set with a
+                  ! repeated virtual was the same triple.
+                  now = virt(ORDERINGS(:, p))
+                  seen = .false.
+                  do q = 1, p - 1
+                     if (all(virt(ORDERINGS(:, q)) == now)) seen = .true.
                   end do
-                  terms%l1_source(i, a) = terms%l1_source(i, a) + 0.5_dp*acc
-               end do
-               do j = 1, no
+                  if (seen) cycle
+                  ! The occupied index that goes with each virtual goes with it.
+                  do q = 1, 3
+                     inverse(ORDERINGS(q, p)) = q
+                  end do
+                  wp = 0.0_dp
+                  vp = 0.0_dp
+                  call add_permuted(w, inverse, wp)
+                  call add_permuted(v, inverse, vp)
+
+                  ! ---- with r6(w) ------------------------------------------
+                  call spin_sum(wp, rw)
+                  ! l1 source: 'jbkc,ijkabc->ia', halved; and
+                  ! 'kc,ijkabc->iajb', halved, into dovov.
                   do i = 1, no
                      acc = 0.0_dp
                      do k = 1, no
-                        acc = acc + state%t1(k, c)*rw(i, j, k)
+                        do j = 1, no
+                           acc = acc + state%eris%ovov(j, now(2), k, now(3))*rw(i, j, k)
+                        end do
                      end do
-                     terms%dovov(i, a, j, b) = terms%dovov(i, a, j, b) + 0.5_dp*acc
+                     l1_add(i) = 0.5_dp*acc
                   end do
-               end do
-               ! The one-particle diagonals, of (w + v/2) with r6(w).
-               do k = 1, no
                   do j = 1, no
                      do i = 1, no
-                        acc = (w(i, j, k) + 0.5_dp*v(i, j, k))*rw(i, j, k)
-                        gamma_occ(i) = gamma_occ(i) - acc
-                        terms%gamma_vir(a) = terms%gamma_vir(a) + acc
+                        acc = 0.0_dp
+                        do k = 1, no
+                           acc = acc + state%t1(k, now(3))*rw(i, j, k)
+                        end do
+                        dov_add(i, j) = 0.5_dp*acc
                      end do
                   end do
-               end do
-
-               ! ---- with 2 w + v/2 -----------------------------------------
-               x = 2.0_dp*w + 0.5_dp*v
-               ! l2 source. 'kfbe,ijkaef->ijab': this triple is (a, e, f), so it
-               ! reaches every b through (kf|be). Then 'ncmj,imnabc->ijab'.
-               call spin_pair(x, m)
-               call product_into(m, no*no, no, ovvv_p(:, :, c, b), nv, joovv(:, :, a, :), 1.0_dp)
-               call pic_gemm(reshape(m, [no, no*no]), &
-                             reshape(ovoo_q(:, :, :, c), [no*no, no]), out_oo)
-               joovv(:, :, a, b) = joovv(:, :, a, b) - out_oo
-
-               ! dooov -= 'mkbc,ijkabc->jmia' and dovvv += 'kjcf,ijkabc->iafb'.
-               call spin_sum(x, rw)
-               call fold_ooo(rw, state%t2(:, :, b, c), out_ooo)
-               do k = 1, no
-                  do j = 1, no
-                     do i = 1, no
-                        terms%dooov(j, k, i, a) = terms%dooov(j, k, i, a) - out_ooo(i, j, k)
+                  ! The one-particle diagonals, of (w + v/2) with r6(w).
+                  gv_add = 0.0_dp
+                  do k = 1, no
+                     do j = 1, no
+                        do i = 1, no
+                           acc = (wp(i, j, k) + 0.5_dp*vp(i, j, k))*rw(i, j, k)
+                           gamma_occ(i) = gamma_occ(i) - acc
+                           gv_add = gv_add + acc
+                        end do
                      end do
                   end do
+
+                  ! ---- with 2 w + v/2 --------------------------------------
+                  x = 2.0_dp*wp + 0.5_dp*vp
+                  ! l2 source. 'kfbe,ijkaef->ijab': this ordering is (a, e, f),
+                  ! so it reaches every b through (kf|be). Then
+                  ! 'ncmj,imnabc->ijab'.
+                  call spin_pair(x, m)
+                  call product_of(m, no*no, no, ovvv_p(:, :, now(3), now(2)), nv, j_add)
+                  call pic_gemm(reshape(m, [no, no*no]), &
+                                reshape(ovoo_q(:, :, :, now(3)), [no*no, no]), out_oo)
+
+                  ! dooov -= 'mkbc,ijkabc->jmia' and dovvv += 'kjcf,ijkabc->iafb'.
+                  call spin_sum(x, rw)
+                  call fold_ooo(rw, state%t2(:, :, now(2), now(3)), out_ooo)
+                  call pic_gemm(reshape(rw, [no, no*no]), &
+                                reshape(tjk(:, :, :, now(3)), [no*no, nv]), out_ov)
+
+                  call omp_set_lock(locks(now(1)))
+                  terms%l1_source(:, now(1)) = terms%l1_source(:, now(1)) + l1_add
+                  terms%dovov(:, now(1), :, now(2)) = terms%dovov(:, now(1), :, now(2)) + dov_add
+                  terms%gamma_vir(now(1)) = terms%gamma_vir(now(1)) + gv_add
+                  joovv(:, :, now(1), :) = joovv(:, :, now(1), :) + j_add
+                  joovv(:, :, now(1), now(2)) = joovv(:, :, now(1), now(2)) - out_oo
+                  do k = 1, no
+                     do j = 1, no
+                        do i = 1, no
+                           terms%dooov(j, k, i, now(1)) = terms%dooov(j, k, i, now(1)) &
+                                                          - out_ooo(i, j, k)
+                        end do
+                     end do
+                  end do
+                  terms%dovvv(:, now(1), :, now(2)) = terms%dovvv(:, now(1), :, now(2)) + out_ov
+                  call omp_unset_lock(locks(now(1)))
                end do
-               call pic_gemm(reshape(rw, [no, no*no]), &
-                             reshape(tjk(:, :, :, c), [no*no, nv]), out_ov)
-               terms%dovvv(:, a, :, b) = terms%dovvv(:, a, :, b) + out_ov
             end do
          end do
       end do
       !$omp end do
-      deallocate (w, v, rw, x, m, blk, out_ov, out_oo, out_ooo)
+      deallocate (w, v, wp, vp, rw, x, m, blk, out_ov, out_oo, out_ooo, j_add, dov_add, l1_add)
       !$omp end parallel
       call move_alloc(gamma_occ, terms%gamma_occ)
+      do a = 1, nv
+         call omp_destroy_lock(locks(a))
+      end do
 
       do a = 1, nv
          do i = 1, no
@@ -262,19 +321,14 @@ contains
       out = reshape(flat, shape(out))
    end subroutine fold_ooo
 
-   subroutine product_into(m, n_rows, n_inner, right, n_cols, acc, scale)
-      !! `acc(i, j, b) += scale sum_k m(i, j, k) right(k, b)`
+   subroutine product_of(m, n_rows, n_inner, right, n_cols, out)
+      !! `out(i, j, b) = sum_k m(i, j, k) right(k, b)`
       integer, intent(in) :: n_rows, n_inner, n_cols
       real(dp), intent(in) :: m(n_rows, n_inner), right(:, :)
-      real(dp), intent(inout) :: acc(:, :, :)
-      real(dp), intent(in) :: scale
+      real(dp), intent(out) :: out(n_rows, n_cols)
 
-      real(dp), allocatable :: flat(:, :)
-
-      allocate (flat(n_rows, n_cols))
-      call pic_gemm(m, right, flat)
-      acc = acc + scale*reshape(flat, shape(acc))
-   end subroutine product_into
+      call pic_gemm(m, right, out)
+   end subroutine product_of
 
    pure subroutine add_permuted(blk, order, acc)
       !! `acc(i, j, k) += blk` at the occupied indices taken in `order`: with
