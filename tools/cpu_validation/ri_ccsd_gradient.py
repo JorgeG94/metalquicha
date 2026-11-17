@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import numpy as np
 from pyscf import df, gto, scf
-from pyscf.cc import ccsd_rdm, dfccsd
+from pyscf.cc import ccsd_rdm, ccsd_t_lambda_slow, ccsd_t_rdm_slow, dfccsd
 
 
 # --------------------------------------------------------------------------
@@ -50,8 +50,12 @@ from pyscf.cc import ccsd_rdm, dfccsd
 # gradient claims to
 # --------------------------------------------------------------------------
 
-def run_ri_ccsd(mol, auxbasis, frozen=0, with_lambda=False):
-    """Exact-ERI RHF, then CCSD over fitted integrals."""
+def run_ri_ccsd(mol, auxbasis, frozen=0, with_lambda=False, triples=False):
+    """Exact-ERI RHF, then CCSD over fitted integrals, and (T) when asked.
+
+    With `triples` the Lambda equations carry the two source terms the
+    perturbative correction adds, and `mycc.e_triples` holds the correction.
+    """
     mf = scf.RHF(mol)
     mf.conv_tol = 1e-13
     mf.kernel()
@@ -64,7 +68,17 @@ def run_ri_ccsd(mol, auxbasis, frozen=0, with_lambda=False):
     mycc.kernel()
     if not mycc.converged:
         raise RuntimeError("CCSD did not converge")
-    if with_lambda:
+    mycc.e_triples = 0.0
+    mycc.eris_kept = None
+    if triples:
+        mycc.eris_kept = mycc.ao2mo()
+        mycc.e_triples = mycc.ccsd_t(eris=mycc.eris_kept)
+    if with_lambda and triples:
+        converged, mycc.l1, mycc.l2 = ccsd_t_lambda_slow.kernel(
+            mycc, mycc.eris_kept, mycc.t1, mycc.t2, max_cycle=200, tol=1e-10, verbose=0)
+        if not converged:
+            raise RuntimeError("the Lambda equations did not converge")
+    elif with_lambda:
         mycc.conv_tol_normt = 1e-10
         mycc.solve_lambda()
         if not mycc.converged_lambda:
@@ -72,25 +86,34 @@ def run_ri_ccsd(mol, auxbasis, frozen=0, with_lambda=False):
     return mf, mycc
 
 
-def ri_ccsd_energy(mol, auxbasis, frozen=0):
-    mf, mycc = run_ri_ccsd(mol, auxbasis, frozen)
-    return mycc.e_tot
+def ri_ccsd_energy(mol, auxbasis, frozen=0, triples=False):
+    mf, mycc = run_ri_ccsd(mol, auxbasis, frozen, triples=triples)
+    return mycc.e_tot + mycc.e_triples
 
 
 # --------------------------------------------------------------------------
 # densities
 # --------------------------------------------------------------------------
 
-def correlation_densities(mycc):
+def correlation_densities(mycc, triples=False):
     """gamma (n,n) and Gamma (n,n,n,n) over all MOs, symmetrised.
 
     The parts of the one- and two-particle densities that multiply the Fock
     matrix and the fluctuation integrals in the correlation energy: no
     reference density, and none of its products with gamma.
+
+    With `triples`, the densities of CCSD(T). The correction is a function of
+    the orbital energies, through its denominators, so the diagonal of gamma is
+    its derivative with respect to them; the off-diagonal elements are whatever
+    the reference puts there, and the gradient does not use them.
     """
     t1, t2, l1, l2 = mycc.t1, mycc.t2, mycc.l1, mycc.l2
-    d1 = ccsd_rdm._gamma1_intermediates(mycc, t1, t2, l1, l2)
-    d2 = ccsd_rdm._gamma2_intermediates(mycc, t1, t2, l1, l2)
+    if triples:
+        d1 = ccsd_t_rdm_slow._gamma1_intermediates(mycc, t1, t2, l1, l2, mycc.eris_kept)
+        d2 = ccsd_t_rdm_slow._gamma2_intermediates(mycc, t1, t2, l1, l2, mycc.eris_kept)
+    else:
+        d1 = ccsd_rdm._gamma1_intermediates(mycc, t1, t2, l1, l2)
+        d2 = ccsd_rdm._gamma2_intermediates(mycc, t1, t2, l1, l2)
     gamma = ccsd_rdm._make_rdm1(mycc, d1, with_frozen=True, with_mf=False)
     big = ccsd_rdm._make_rdm2(mycc, d1, d2, with_dm1=False, with_frozen=True)
     gamma = 0.5 * (gamma + gamma.T)
@@ -104,6 +127,9 @@ def correlation_densities(mycc):
 # the gradient
 # --------------------------------------------------------------------------
 
+DEGENERATE = 1.0e-7   # hartree; orbitals closer than this are one level
+
+
 def generalised_fock(fock, g_mo, gamma, big, v_gamma, n_occ):
     """X_tp, whose antisymmetric part is the orbital gradient."""
     x = fock @ gamma + np.einsum("tqrs,pqrs->tp", g_mo, big)
@@ -111,8 +137,8 @@ def generalised_fock(fock, g_mo, gamma, big, v_gamma, n_occ):
     return x
 
 
-def ri_ccsd_gradient(mol, auxbasis, frozen=0, checks=None):
-    mf, mycc = run_ri_ccsd(mol, auxbasis, frozen, with_lambda=True)
+def ri_ccsd_gradient(mol, auxbasis, frozen=0, checks=None, triples=False):
+    mf, mycc = run_ri_ccsd(mol, auxbasis, frozen, with_lambda=True, triples=triples)
     c = mf.mo_coeff
     n = c.shape[0]
     n_occ = mol.nelectron // 2
@@ -131,7 +157,7 @@ def ri_ccsd_gradient(mol, auxbasis, frozen=0, checks=None):
     fit_mo = np.einsum("Pmn,mp,nq->Ppq", fit, c, c)
     g_mo = np.einsum("pqP,Prs->pqrs", three_mo, fit_mo)
 
-    gamma, big = correlation_densities(mycc)
+    gamma, big = correlation_densities(mycc, triples)
 
     def v_of(gam_mo):
         """J - K/2 of an MO-basis symmetric matrix, back in the MO basis."""
@@ -143,11 +169,21 @@ def ri_ccsd_gradient(mol, auxbasis, frozen=0, checks=None):
     # nothing after this line differentiates the right thing.
     e_corr = np.einsum("pq,pq", gamma, fock) + 0.5 * np.einsum("pqrs,pqrs", big, g_mo)
     if checks is not None:
-        checks["energy"] = abs(e_corr - mycc.e_corr)
+        checks["energy"] = abs(e_corr - mycc.e_corr - mycc.e_triples)
 
     # ----- the multipliers that keep the orbitals canonical -----
     pairs = [(a, i) for i in range(n_occ) for a in range(n_occ, n)]
     pairs += [(i, k) for k in range(n_core) for i in range(n_core, n_occ)]
+    # The correlation energy is written for canonical orbitals, so the Fock
+    # matrix is held diagonal within the active occupied and within the virtual
+    # space as well. CCSD does not need these -- it is invariant to such a
+    # rotation and they come out zero -- but (T) is not: its denominators single
+    # out the canonical orbitals. A degenerate pair is left out, because a
+    # rotation within it changes nothing and its row would be all zeros.
+    pairs += [(j, i) for i in range(n_core, n_occ) for j in range(i + 1, n_occ)
+              if abs(eps[j] - eps[i]) > DEGENERATE]
+    pairs += [(b, a) for a in range(n_occ, n) for b in range(a + 1, n)
+              if abs(eps[b] - eps[a]) > DEGENERATE]
 
     def z_matrix(z):
         zs = np.zeros((n, n))
@@ -225,7 +261,7 @@ def ri_ccsd_gradient(mol, auxbasis, frozen=0, checks=None):
     return gradient
 
 
-def finite_difference(mol, auxbasis, frozen, atom, axis, step=1.0e-3):
+def finite_difference(mol, auxbasis, frozen, atom, axis, step=1.0e-3, triples=False):
     coords = mol.atom_coords()
     values = []
     for sign in (1.0, -1.0):
@@ -233,28 +269,31 @@ def finite_difference(mol, auxbasis, frozen, atom, axis, step=1.0e-3):
         moved[atom, axis] += sign * step
         shifted = mol.copy()
         shifted.set_geom_(moved, unit="Bohr")
-        values.append(ri_ccsd_energy(shifted, auxbasis, frozen))
+        values.append(ri_ccsd_energy(shifted, auxbasis, frozen, triples))
     return (values[0] - values[1]) / (2.0 * step)
 
 
 def main():
     cases = [
-        ("sto-3g", "cc-pvdz-ri", 0),
-        ("sto-3g", "cc-pvdz-ri", 1),
-        ("cc-pvdz", "cc-pvdz-ri", 1),
+        ("sto-3g", "cc-pvdz-ri", 0, False),
+        ("sto-3g", "cc-pvdz-ri", 1, False),
+        ("cc-pvdz", "cc-pvdz-ri", 1, False),
+        ("sto-3g", "cc-pvdz-ri", 0, True),
+        ("sto-3g", "cc-pvdz-ri", 1, True),
+        ("cc-pvdz", "cc-pvdz-ri", 1, True),
     ]
-    for basis, auxbasis, frozen in cases:
+    for basis, auxbasis, frozen, triples in cases:
         mol = gto.M(atom="O 0 0 0.117; H 0 0.757 -0.469; H 0.1 -0.757 -0.469",
                     basis=basis, verbose=0)
         checks = {}
-        gradient = ri_ccsd_gradient(mol, auxbasis, frozen, checks)
-        print(f"water {basis} / {auxbasis}, {frozen} frozen")
+        gradient = ri_ccsd_gradient(mol, auxbasis, frozen, checks, triples)
+        print(f"water {basis} / {auxbasis}, {frozen} frozen" + (", with (T)" if triples else ""))
         for name, value in checks.items():
             print(f"  {name:12s} {value:.2e}")
         print(f"  sum over atoms {abs(gradient.sum(axis=0)).max():.2e}")
         worst = 0.0
         for atom, axis in ((0, 2), (1, 1), (2, 0)):
-            fd = finite_difference(mol, auxbasis, frozen, atom, axis)
+            fd = finite_difference(mol, auxbasis, frozen, atom, axis, triples=triples)
             worst = max(worst, abs(fd - gradient[atom, axis]))
             print(f"  atom {atom} axis {axis}: analytic {gradient[atom, axis]: .9f}"
                   f"  finite difference {fd: .9f}")
