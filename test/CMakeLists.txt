@@ -82,6 +82,7 @@ endmacro(ADDTESTPP)
 message(STATUS "Adding individual test executables for ${project_name}...")
 
 # Non-MPI tests
+addtest(mqc_tensor_contract)
 addtest(mqc_xyz_reader)
 addtest(mqc_xyz_reader_detailed)
 addtest(mqc_config_roundtrip)
