@@ -18,7 +18,8 @@ module test_mqc_czt_rcc_density
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_rcc, only: rcc_result_t, rcc_state_t, run_czt_rccsd
    use mqc_czt_rcc_lambda, only: rcc_lambda_t, run_czt_rccsd_lambda
-   use mqc_czt_rcc_density, only: rccsd_one_particle_density
+   use mqc_czt_rcc_density, only: rccsd_one_particle_density, &
+                                  rccsd_fitted_two_particle_density, rcc_active_fit
    implicit none
    private
    public :: collect_mqc_czt_rcc_density_tests
@@ -35,7 +36,11 @@ contains
                   new_unittest("density_conventional_sto3g", test_conventional_sto3g), &
                   new_unittest("density_conventional_cc_pvdz", test_conventional_pvdz), &
                   new_unittest("density_conventional_frozen_core", test_conventional_frozen), &
-                  new_unittest("density_fitted_frozen_core", test_fitted_frozen) &
+                  new_unittest("density_fitted_frozen_core", test_fitted_frozen), &
+                  new_unittest("two_particle_density_sto3g", test_two_particle_sto3g), &
+                  new_unittest("two_particle_density_cc_pvdz", test_two_particle_pvdz), &
+                  new_unittest("two_particle_density_frozen_core", test_two_particle_frozen), &
+                  new_unittest("two_particle_density_needs_a_fit", test_needs_fit) &
                   ]
    end subroutine collect_mqc_czt_rcc_density_tests
 
@@ -149,6 +154,108 @@ contains
       call compare("cc-pvdz", 1, .true., [-0.111514889082_dp, 0.006932680085_dp, &
                                           0.224326411618_dp], error)
    end subroutine test_fitted_frozen
+
+   subroutine compare_two_particle(basis, frozen, reference, error)
+      !! The fitted two-particle density, by two things that need no element
+      !!
+      !! **The energy.** The correlation energy is the one-particle density
+      !! against the Fock matrix plus half the two-particle density against the
+      !! integrals, and the integrals are the fit times itself. So the two
+      !! densities built here must give back the energy the amplitudes
+      !! converged to. Nothing external enters, and every block of the density
+      !! contributes: a sign or a factor wrong in one of them moves the sum.
+      !!
+      !! **The norm.** The energy weights each block by its integrals and would
+      !! miss an error that the integrals happen to cancel, so the sum of
+      !! squares is compared with PySCF's as well. It does not depend on the
+      !! sign of an orbital or on which factor of the metric the fit was built
+      !! with.
+      character(len=*), intent(in) :: basis
+      integer, intent(in) :: frozen
+      real(dp), intent(in) :: reference   !! Sum of squares of the contracted density
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(rcc_result_t) :: cc
+      type(rcc_state_t) :: state
+      type(rcc_lambda_t) :: lambda
+      type(error_t) :: err
+      real(dp), allocatable :: gamma(:, :), g3(:, :, :), b(:, :, :)
+      real(dp) :: e_one, e_two
+      integer :: p
+
+      call water(mol, err, basis)
+      call water(aux, err, "cc-pvdz-rifit")
+      call check(error,.not. err%has_error(), "the molecule should build")
+      if (allocated(error)) return
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error,.not. err%has_error() .and. scf%converged, "the SCF should converge")
+      if (allocated(error)) return
+      call run_czt_rccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, 80, &
+                         1.0e-12_dp, .false., .false., cc, err, aux=aux, state=state)
+      call check(error,.not. err%has_error() .and. cc%converged, "CCSD should converge")
+      if (allocated(error)) return
+      call run_czt_rccsd_lambda(state, 80, 1.0e-10_dp, .false., lambda, err)
+      call check(error,.not. err%has_error() .and. lambda%converged, &
+                 "the Lambda equations should converge")
+      if (allocated(error)) return
+
+      call rccsd_one_particle_density(state, lambda, gamma)
+      call rccsd_fitted_two_particle_density(state, lambda, g3, err)
+      call check(error,.not. err%has_error(), "the density failed: "//err%get_message())
+      if (allocated(error)) return
+      call rcc_active_fit(state, b, err)
+
+      e_one = 0.0_dp
+      do p = 1, state%no
+         e_one = e_one + gamma(p, p)*state%eps_o(p)
+      end do
+      do p = 1, state%nv
+         e_one = e_one + gamma(state%no + p, state%no + p)*state%eps_v(p)
+      end do
+      e_two = 0.5_dp*sum(g3*b)
+      call check(error, abs(e_one + e_two - cc%e_correlation) < 1.0e-9_dp, &
+                 "the densities give back a correlation energy off by "// &
+                 real_to_text(e_one + e_two - cc%e_correlation)//" in "//basis)
+      if (allocated(error)) return
+      call check(error, maxval(abs(g3 - reshape(g3, shape(g3), order=[2, 1, 3]))) &
+                 < 1.0e-13_dp, "the contracted density is not symmetric in "//basis)
+      if (allocated(error)) return
+      call check(error, abs(sum(g3**2) - reference) < TOL, &
+                 "the sum of squares differs from PySCF's by "// &
+                 real_to_text(sum(g3**2) - reference)//" in "//basis)
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine compare_two_particle
+
+   subroutine test_two_particle_sto3g(error)
+      type(error_type), allocatable, intent(out) :: error
+      call compare_two_particle("sto-3g", 0, 0.037657971213_dp, error)
+   end subroutine test_two_particle_sto3g
+
+   subroutine test_two_particle_pvdz(error)
+      type(error_type), allocatable, intent(out) :: error
+      call compare_two_particle("cc-pvdz", 0, 0.175031155204_dp, error)
+   end subroutine test_two_particle_pvdz
+
+   subroutine test_two_particle_frozen(error)
+      type(error_type), allocatable, intent(out) :: error
+      call compare_two_particle("cc-pvdz", 1, 0.174157632852_dp, error)
+   end subroutine test_two_particle_frozen
+
+   subroutine test_needs_fit(error)
+      !! Conventional integrals leave no three-index tensor, and that is said
+      type(error_type), allocatable, intent(out) :: error
+
+      type(rcc_state_t) :: state
+      type(rcc_lambda_t) :: lambda
+      type(error_t) :: err
+      real(dp), allocatable :: g3(:, :, :)
+
+      call rccsd_fitted_two_particle_density(state, lambda, g3, err)
+      call check(error, err%has_error(), "a density was built with no fit to contract with")
+   end subroutine test_needs_fit
 
    function real_to_text(value) result(text)
       !! A number in a failure message, so the message says how badly

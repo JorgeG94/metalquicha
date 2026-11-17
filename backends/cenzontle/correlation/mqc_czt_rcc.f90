@@ -90,6 +90,8 @@ module mqc_czt_rcc
       real(dp), allocatable :: ovvv(:, :, :, :)   !! (ia|bc)
       real(dp), allocatable :: vvvv(:, :, :, :)   !! (ab|cd), conventional only
       real(dp), allocatable :: b_vv(:, :)         !! (ab, P), fitted only
+      real(dp), allocatable :: b_oo(:, :)         !! (ij, P), fitted only
+      real(dp), allocatable :: b_ov(:, :)         !! (ia, P), fitted only
    end type rcc_eris_t
 
    type :: rcc_scratch_t
@@ -206,6 +208,8 @@ contains
 
       real(dp), allocatable :: b_oo(:, :), b_ov(:, :), b_vv_pq(:, :)
       integer :: no, nv
+      ! All three are indexed by a compound pair with its first index running
+      ! fastest, then the auxiliary function.
 
       no = size(c_occ, 2)
       nv = size(c_vir, 2)
@@ -228,7 +232,10 @@ contains
       call df_block_gemm(b_ov, b_ov, no*nv, no*nv, eris%ovov)
       call df_block_gemm(b_ov, b_vv_pq, no*nv, nv*nv, eris%ovvv)
 
-      deallocate (b_oo, b_ov)
+      ! The occupied blocks are kept for the densities, which contract with
+      ! the fit rather than with the integrals assembled from it.
+      call move_alloc(b_oo, eris%b_oo)
+      call move_alloc(b_ov, eris%b_ov)
 
       ! Kept as (ab, P): the ladder slices it by compound virtual pair, which is
       ! the leading dimension here and so contiguous.
@@ -1889,6 +1896,8 @@ contains
          call move_alloc(eris%ovvv, state%eris%ovvv)
          if (allocated(eris%vvvv)) call move_alloc(eris%vvvv, state%eris%vvvv)
          if (allocated(eris%b_vv)) call move_alloc(eris%b_vv, state%eris%b_vv)
+         if (allocated(eris%b_oo)) call move_alloc(eris%b_oo, state%eris%b_oo)
+         if (allocated(eris%b_ov)) call move_alloc(eris%b_ov, state%eris%b_ov)
          call move_alloc(eps_o, state%eps_o)
          call move_alloc(eps_v, state%eps_v)
          call move_alloc(t1, state%t1)
