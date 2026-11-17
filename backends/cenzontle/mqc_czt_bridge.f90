@@ -1272,6 +1272,25 @@ contains
          end if
       end if
 
+      ! Chain-of-spheres exchange is an energy of a restricted reference and
+      ! nothing more yet. Each thing downstream of the SCF that would rebuild
+      ! an exchange matrix its own way is refused here rather than left to mix
+      ! two different exchanges in one number.
+      if (settings%cosx) then
+         block
+            character(len=:), allocatable :: why
+            why = cosx_decline_reason(settings, unrestricted, do_gradient, do_hessian)
+            if (len(why) > 0) then
+               call result%error%set(ERROR_VALIDATION, "chain-of-spheres exchange "// &
+                                     "(keywords.scf.exchange 'cosx') is not "// &
+                                     "implemented with "//why//". Set "// &
+                                     "keywords.scf.exchange to 'exact' for this run.")
+               result%has_error = .true.
+               return
+            end if
+         end block
+      end if
+
       if (unrestricted .and. settings%density_fitting) then
          call result%error%set(ERROR_VALIDATION, "unrestricted density fitting is not "// &
                                "implemented on the CPU backend: the fitted J and K are "// &
@@ -1425,6 +1444,7 @@ contains
                                 nlc_level=settings%nlc_grid_level, &
                                 screen_tol=settings%screening_tolerance, &
                                 point_block=settings%block_size, &
+                                small_rho_cutoff=settings%small_rho_cutoff, &
                                 n_radial=settings%radial_points, &
                                 n_angular=settings%angular_points)
          if (error%has_error()) then
@@ -1460,6 +1480,17 @@ contains
          ! reference, and correlation over a solvated reference is refused
          ! above by name. This is the same refusal for the case where the deck
          ! spells MP2 as part of the functional.
+         if (settings%cosx .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "chain-of-spheres exchange "// &
+                                  "(keywords.scf.exchange 'cosx') is not implemented "// &
+                                  "with a double hybrid: the perturbative term would "// &
+                                  "run on a reference converged with a different "// &
+                                  "exchange. Set keywords.scf.exchange to 'exact'.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
          if (settings%pcm%enabled .and. xc%pt2_fraction /= 0.0_dp) then
             call result%error%set(ERROR_VALIDATION, "a double hybrid under continuum "// &
                                   "solvation is correlation on a solvated reference, "// &
@@ -1699,6 +1730,8 @@ contains
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
                              second_order=use_second_order, &
                              soscf_start=settings%soscf_start, &
+                             cosx=settings%cosx, cosx_grid_level=settings%cosx_grid, &
+                             cosx_final_grid=settings%cosx_final_grid, &
                              b_ao_out=scf_b_ao)
          else
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
@@ -1710,7 +1743,9 @@ contains
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, &
                              second_order=use_second_order, &
-                             soscf_start=settings%soscf_start)
+                             soscf_start=settings%soscf_start, cosx=settings%cosx, &
+                             cosx_grid_level=settings%cosx_grid, &
+                             cosx_final_grid=settings%cosx_final_grid)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
@@ -3187,6 +3222,45 @@ contains
       if (kohn_sham) call xc%destroy()
       call mol%destroy()
    end subroutine run_czt_hf
+
+   function cosx_decline_reason(settings, unrestricted, do_gradient, do_hessian) result(reason)
+      !! What a chain-of-spheres run was asked for that it cannot do, or empty
+      !!
+      !! The first condition that fails, as a phrase that completes "is not
+      !! implemented with ...". A range-separated functional is refused by the
+      !! SCF itself, which is the first place the functional is resolved.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      logical, intent(in) :: unrestricted
+      logical, intent(in) :: do_gradient
+      logical, intent(in) :: do_hessian
+      character(len=:), allocatable :: reason
+
+      if (.not. settings%density_fitting) then
+         reason = "an unfitted Coulomb matrix (it needs keywords.scf.density_fitting)"
+      else if (unrestricted) then
+         reason = "an unrestricted reference"
+      else if (do_gradient) then
+         reason = "a nuclear gradient"
+      else if (do_hessian) then
+         reason = "a Hessian"
+      else if (settings%run_mp2) then
+         reason = "MP2 or a double hybrid"
+      else if (settings%run_cc) then
+         reason = "coupled cluster"
+      else if (settings%excited%n_states > 0) then
+         reason = "excited states"
+      else if (settings%stability) then
+         reason = "the stability analysis"
+      else if (settings%second_order) then
+         reason = "the second-order SCF"
+      else if (allocated(settings%fukui_population)) then
+         reason = "Fukui functions, whose ions run their own SCF"
+      else if (settings%bonding_energy) then
+         reason = "the bonding energy decomposition"
+      else
+         reason = ""
+      end if
+   end function cosx_decline_reason
 
    function hessian_decline_reason(settings, unrestricted, kohn_sham, xc, n_caps) result(reason)
       !! Why `run_czt_hf` left a requested Hessian uncomputed, in a few words

@@ -197,6 +197,9 @@ contains
       options%aux_basis_set = config%scf%aux_basis_set
       options%aux_basis_named = config%scf%aux_basis_named
       options%density_fitting = config%scf%density_fitting
+      options%cosx = config%scf%cosx
+      options%cosx_grid = config%scf%cosx_grid
+      options%cosx_final_grid = config%scf%cosx_final_grid
       options%unrestricted = config%scf%unrestricted
       options%guess = config%scf%guess
       if (allocated(config%scf%guess_steps)) options%guess_steps = config%scf%guess_steps
@@ -312,6 +315,7 @@ contains
       m%options%grid_level = config%dft%grid_level
       m%options%nlc_grid_level = config%dft%nlc_grid_level
       m%options%screening_tolerance = config%dft%screening_tolerance
+      m%options%small_rho_cutoff = config%dft%small_rho_cutoff
       m%options%block_size = config%dft%block_size
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points

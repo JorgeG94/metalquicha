@@ -30,6 +30,7 @@ module mqc_dft_grid
    public :: dft_grid_t
    public :: build_dft_grid
    public :: grid_level_radial, grid_level_angular
+   public :: element_period
    public :: MIN_GRID_LEVEL, MAX_GRID_LEVEL, DEFAULT_GRID_LEVEL
    public :: DEFAULT_PRUNE
 
@@ -100,6 +101,8 @@ module mqc_dft_grid
       integer, allocatable :: numbers(:)     !! (n_atoms), Z, for the partition radii
    contains
       procedure :: destroy => dft_grid_destroy
+      procedure :: keep_points => dft_grid_keep_points
+      procedure :: block_order => dft_grid_block_order
    end type dft_grid_t
 
 contains
@@ -140,7 +143,8 @@ contains
    end function clamp_level
 
    subroutine build_dft_grid(atom_coords, atomic_numbers, grid, error, &
-                             level, scheme, adjust, n_radial, n_angular, prune)
+                             level, scheme, adjust, n_radial, n_angular, prune, &
+                             radial_by_atom, angular_by_atom)
       !! Build the molecular grid
       !!
       !! `level` picks per-element sizes from the standard tables. `n_radial`
@@ -160,6 +164,12 @@ contains
       integer, intent(in), optional :: n_radial   !! Override, all atoms
       integer, intent(in), optional :: n_angular  !! Override, all atoms
       integer, intent(in), optional :: prune      !! PRUNE_NONE or PRUNE_NWCHEM
+      integer, intent(in), optional :: radial_by_atom(:)
+         !! (n_atoms) radial shells for each atom, overriding `level`. Given
+         !! with `angular_by_atom` or not at all, and not with the two scalar
+         !! overrides.
+      integer, intent(in), optional :: angular_by_atom(:)
+         !! (n_atoms) Lebedev points in each atom's valence zone
 
       real(dp), allocatable :: r(:), dr(:), sphere(:, :), w_ang(:)
       integer, allocatable :: shell_order(:)
@@ -190,6 +200,22 @@ contains
                         "grid: n_radial and n_angular must be given together")
          return
       end if
+      if (present(radial_by_atom) .neqv. present(angular_by_atom)) then
+         call error%set(ERROR_VALIDATION, &
+                        "grid: radial_by_atom and angular_by_atom must be given together")
+         return
+      end if
+      if (present(radial_by_atom)) then
+         if (present(n_radial)) then
+            call error%set(ERROR_VALIDATION, "grid: per-atom sizes and the scalar "// &
+                           "overrides cannot both be given")
+            return
+         end if
+         if (size(radial_by_atom) /= n_atoms .or. size(angular_by_atom) /= n_atoms) then
+            call error%set(ERROR_VALIDATION, "grid: per-atom sizes do not match atom_coords")
+            return
+         end if
+      end if
 
       ! Size the whole grid first so it can be allocated once. With pruning the
       ! count is no longer nr*na: each shell carries its own order, and those
@@ -197,6 +223,10 @@ contains
       total = 0
       do ia = 1, n_atoms
          call atom_sizes(atomic_numbers(ia), used_level, n_radial, n_angular, nr, na)
+         if (present(radial_by_atom)) then
+            nr = radial_by_atom(ia)
+            na = angular_by_atom(ia)
+         end if
          call treutler_ahlrichs_radial(nr, atomic_numbers(ia), r, dr, error)
          if (error%has_error()) return
          allocate (shell_order(nr))
@@ -214,6 +244,10 @@ contains
       offset = 0
       do ia = 1, n_atoms
          call atom_sizes(atomic_numbers(ia), used_level, n_radial, n_angular, nr, na)
+         if (present(radial_by_atom)) then
+            nr = radial_by_atom(ia)
+            na = angular_by_atom(ia)
+         end if
 
          call treutler_ahlrichs_radial(nr, atomic_numbers(ia), r, dr, error)
          if (error%has_error()) return
@@ -354,5 +388,141 @@ contains
       if (allocated(this%numbers)) deallocate (this%numbers)
       if (allocated(this%atom)) deallocate (this%atom)
    end subroutine dft_grid_destroy
+
+   subroutine dft_grid_keep_points(this, keep)
+      !! Compact every per-point array to the points where `keep` is true, in order
+      class(dft_grid_t), intent(inout) :: this
+      logical, intent(in) :: keep(:)
+         !! (n_points), true for a point that stays
+
+      real(dp), allocatable :: tmp2(:, :), tmp1(:)
+      integer, allocatable :: itmp(:), idx(:)
+      integer :: n_new, i_pt
+
+      n_new = count(keep)
+      allocate (idx(this%n_points))
+      do i_pt = 1, this%n_points
+         idx(i_pt) = i_pt
+      end do
+      idx = pack(idx, keep)
+      tmp2 = this%coords(:, :this%n_points)
+      deallocate (this%coords)
+      allocate (this%coords(N_DIM, n_new))
+      this%coords = tmp2(:, idx)
+      tmp1 = this%weights(:this%n_points)
+      deallocate (this%weights)
+      this%weights = pack(tmp1, keep)
+      tmp1 = this%quad_weights(:this%n_points)
+      deallocate (this%quad_weights)
+      this%quad_weights = pack(tmp1, keep)
+      itmp = this%atom(:this%n_points)
+      deallocate (this%atom)
+      this%atom = pack(itmp, keep)
+      this%n_points = n_new
+   end subroutine dft_grid_keep_points
+
+   subroutine dft_grid_block_order(this, block)
+      !! Reorder the points so every run of `block` consecutive ones is compact in space
+      !!
+      !! Recursive bisection: the bounding box of the current subset is split
+      !! across its longest axis, with a whole number of blocks on the near side,
+      !! until a subset holds no more than one block. The blocks the quadrature
+      !! walks -- `g0 = 1, n, block` -- are then each a small region, so the
+      !! shells that reach one are the ones near it and the screening in
+      !! `block_significant_aos` has something to remove. The final block is the
+      !! short one. Every per-point array moves together; the quadrature is a
+      !! sum, so only roundoff changes. Call again after `keep_points`, which
+      !! moves the block boundaries.
+      class(dft_grid_t), intent(inout) :: this
+      integer, intent(in) :: block
+         !! Points per block, as the quadrature will use it
+
+      integer, allocatable :: idx(:)
+      integer :: k
+
+      if (block < 1 .or. this%n_points <= block) return
+      allocate (idx(this%n_points))
+      do k = 1, this%n_points
+         idx(k) = k
+      end do
+      call bisect_blocks(this%coords, idx, 1, this%n_points, block)
+      this%coords = this%coords(:, idx)
+      this%weights = this%weights(idx)
+      if (allocated(this%quad_weights)) this%quad_weights = this%quad_weights(idx)
+      this%atom = this%atom(idx)
+   end subroutine dft_grid_block_order
+
+   recursive subroutine bisect_blocks(coords, idx, lo, hi, block)
+      !! Permute `idx(lo:hi)` so each `block`-sized run of it is spatially compact
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(inout) :: idx(:)
+      integer, intent(in) :: lo, hi, block
+
+      real(dp) :: bmin(N_DIM), bmax(N_DIM)
+      integer :: m, nb, n_left, ax, k
+
+      m = hi - lo + 1
+      if (m <= block) return
+      bmin = coords(:, idx(lo))
+      bmax = bmin
+      do k = lo + 1, hi
+         bmin = min(bmin, coords(:, idx(k)))
+         bmax = max(bmax, coords(:, idx(k)))
+      end do
+      ax = maxloc(bmax - bmin, dim=1)
+      nb = (m + block - 1)/block
+      n_left = (nb/2)*block
+      call select_nth(coords, ax, idx, lo, hi, lo + n_left - 1)
+      call bisect_blocks(coords, idx, lo, lo + n_left - 1, block)
+      call bisect_blocks(coords, idx, lo + n_left, hi, block)
+   end subroutine bisect_blocks
+
+   subroutine select_nth(coords, ax, idx, lo, hi, nth)
+      !! Quickselect: after it, `idx(nth)` holds the point of rank `nth` along
+      !! axis `ax` within `lo:hi`, nothing before it lies beyond it, nothing after
+      !! it lies short of it
+      real(dp), intent(in) :: coords(:, :)
+      integer, intent(in) :: ax
+      integer, intent(inout) :: idx(:)
+      integer, intent(in) :: lo, hi, nth
+
+      integer :: l, r, i, j, mid, t
+      real(dp) :: pivot, a, b, c
+
+      l = lo
+      r = hi
+      do while (l < r)
+         mid = (l + r)/2
+         a = coords(ax, idx(l))
+         b = coords(ax, idx(mid))
+         c = coords(ax, idx(r))
+         pivot = max(min(a, b), min(max(a, b), c))
+         i = l
+         j = r
+         do
+            do while (coords(ax, idx(i)) < pivot)
+               i = i + 1
+            end do
+            do while (coords(ax, idx(j)) > pivot)
+               j = j - 1
+            end do
+            if (i <= j) then
+               t = idx(i)
+               idx(i) = idx(j)
+               idx(j) = t
+               i = i + 1
+               j = j - 1
+            end if
+            if (i > j) exit
+         end do
+         if (nth <= j) then
+            r = j
+         else if (nth >= i) then
+            l = i
+         else
+            exit
+         end if
+      end do
+   end subroutine select_nth
 
 end module mqc_dft_grid

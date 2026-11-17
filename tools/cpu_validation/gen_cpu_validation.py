@@ -1307,6 +1307,44 @@ DF_CASES = [
     ("ch4", "6-31g**", "6-31g**"),
 ]
 
+# RIJCOSX: a fitted Coulomb matrix beside a chain-of-spheres exchange.
+#
+# The reference is PySCF with the Coulomb matrix fitted against the same
+# auxiliary basis and the exchange *exact* (`only_dfj`). That isolates the one
+# thing these cases are here for: what is left between the two numbers is the
+# quadrature of the exchange and nothing else, because the fit is common to
+# both. Comparing against unfitted Hartree-Fock would fold the fit's error in,
+# and against PySCF's own seminumerical exchange would compare two grids.
+#
+# (molecule, basis, auxiliary basis, cosx_grid). The auxiliary set has to fit
+# the Coulomb matrix well -- a `-jkfit` set -- because RIJCOSX has no exchange
+# fit for a poor one's Coulomb error to cancel against.
+COSX_CASES = [
+    ("water", "def2-svp", "def2-universal-jkfit", 2),
+    ("water", "def2-tzvp", "def2-universal-jkfit", 2),
+    ("ch4", "def2-svp", "def2-universal-jkfit", 2),
+    ("nh3", "def2-tzvp", "def2-universal-jkfit", 2),
+    ("hcn", "def2-svp", "def2-universal-jkfit", 2),
+    # Third row: the radial count of the exchange grids grows with the period,
+    # and these are the cases that showed it had to.
+    ("h2s", "def2-svp", "def2-universal-jkfit", 2),
+    ("hcl", "def2-tzvp", "def2-universal-jkfit", 2),
+    # The other two levels, on one molecule.
+    ("water", "def2-svp", "def2-universal-jkfit", 1),
+    ("water", "def2-svp", "def2-universal-jkfit", 3),
+]
+
+#: Hartree, by `cosx_grid`. An approximation's tolerance is a statement about
+#: the approximation and not about the SCF, so it is nowhere near the suite's
+#: 1e-9: these are a few times the quadrature error each level showed on the
+#: exchange energy of small molecules when the grids were tuned. The cases
+#: below sat well inside them when the references were generated: 5e-7 to
+#: 2.3e-5 at level 2 (H2S the largest), 1.8e-5 at level 1 and 1.6e-7 at level
+#: 3. A wrong factor on the exchange, a fit applied to the wrong index or a
+#: missing weight is millihartree to hartree, so nothing that matters hides
+#: under them.
+COSX_TOLERANCE = {1: 1.5e-4, 2: 1.0e-4, 3: 5.0e-5}
+
 # The same, with a functional. Density-fitted Kohn-Sham had no case here at all
 # -- not one entry in the manifest carried both a functional and an auxiliary
 # basis -- because until the method factory was taught to read
@@ -2090,6 +2128,71 @@ def pyscf_uks(atoms, basis, functional, level, multiplicity):
     mf.grids.level = level
     mf.conv_tol = 1e-11
     return mf.kernel(), mol.nao_nr()
+
+
+def pyscf_rij_exact_k(atoms, basis, aux):
+    """Closed-shell Hartree-Fock with a fitted Coulomb matrix and exact exchange.
+
+    What RIJCOSX converges to as its exchange grid grows: the same fit, and the
+    exchange it is approximating.
+    """
+    from pyscf import gto, scf
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    if molecule_form(aux, symbols) != molecule_form(basis, symbols):
+        raise SystemExit(
+            f"{basis} is {molecule_form(basis, symbols)} and {aux} is "
+            f"{molecule_form(aux, symbols)}; the two cannot be fitted together"
+        )
+    mf = scf.RHF(mol).density_fit(
+        auxbasis={s: bse_to_pyscf(aux, s) for s in symbols}, only_dfj=True)
+    mf.conv_tol = 1e-12
+    energy = mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF RI-J did not converge for {basis}")
+    return float(energy)
+
+
+def cosx_entries(written, dry_run):
+    """Write the RIJCOSX decks and return their manifest entries.
+
+    A function for the reason `counterpoise_entries` is: it is also what
+    splices these cases into an existing manifest without regenerating the
+    rest. `written` is added to in place, so the stale-deck sweep still sees
+    what this produced.
+    """
+    entries = []
+    for name, basis, aux, level in COSX_CASES:
+        mol = MOLECULES[name]
+        energy = pyscf_rij_exact_k(mol.atoms, basis, aux)
+        deck = deck_for(f"{CPU_MQC}/cosx",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_rijcosx_grid{level}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            _write_deck(VALIDATION / deck, json.dumps(
+                deck_json(xyz_for(mol), basis, aux=aux,
+                          scf_extra={"exchange": "cosx", "cosx_grid": level}),
+                indent=4) + "\n")
+        entries.append({
+            "name": f"RIJCOSX {mol.label} {basis} grid {level}, against a fitted "
+                    f"Coulomb matrix with exact exchange (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "tolerance": COSX_TOLERANCE[level],
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} rijcosx grid {level} "
+              f"reference E={energy:.12f}", flush=True)
+    return entries
 
 
 def pyscf_rks(atoms, basis, functional, level, aux="", ecp="", charge=0):
@@ -3706,6 +3809,10 @@ def main():
                     help="write only the counterpoise decks and splice their "
                          "entries into the existing manifest, leaving every "
                          "other entry and deck untouched")
+    ap.add_argument("--only-cosx", action="store_true",
+                    help="write only the RIJCOSX decks and splice their "
+                         "entries into the existing manifest, leaving every "
+                         "other entry and deck untouched")
     ap.add_argument("--only-ri-hessian", action="store_true",
                     help="write only the fitted-correlation Hessian decks and "
                          "splice their entries into the existing manifest, "
@@ -3732,6 +3839,27 @@ def main():
     # else is read, recomputed or rewritten.
     if args.only_counterpoise:
         entries = counterpoise_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_cosx:
+        # The geometries the full run would have settled before any case:
+        # read where the tree already holds one, and the generated molecules'
+        # files are on disk from an earlier full run.
+        for name in {c[0] for c in COSX_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = cosx_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -4903,6 +5031,7 @@ def main():
     tests.extend(excited_entries(written, args.dry_run))
     tests.extend(counterpoise_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
+    tests.extend(cosx_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

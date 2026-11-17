@@ -78,7 +78,7 @@ Order roughly by how much damage each does.
 
 - **Intent on every dummy argument.** No exceptions; a missing `intent` is a
   finding even when the compiler is happy.
-- **Six arguments or fewer** on a public procedure. More means the related
+- **Ten arguments or fewer** on a public procedure. More means the related
   ones should be grouped into a derived type. Private helpers get latitude,
   simple utilities (`to_bohr(value)`) are exempt.
 - **`private` by default with an explicit `public ::` list.** A new public

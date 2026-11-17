@@ -311,6 +311,12 @@ contains
          end if
       end if
 
+      ! Once per run and from one rank, not once per fragment.
+      if (config%method_config%scf%cosx .and. resources%mpi_comms%world_comm%rank() == 0) then
+         call logger%warning("WARNING: RIJCOSX (keywords.scf.exchange 'cosx') is a beta "// &
+                             "feature, report any issues")
+      end if
+
       if (max_level == 0) then
          ! One thread, for the methods that need it rather than for all of them.
          ! tblite run threaded corrupts a result instead of failing, so xTB is

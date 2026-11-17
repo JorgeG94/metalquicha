@@ -63,6 +63,27 @@ module mqc_dft_partition
 
    integer, parameter :: N_DIM = 3
 
+   integer, parameter :: SCREEN_NONE = 0       !! Every pair, the reference
+   integer, parameter :: SCREEN_STRATMANN = 1  !! Exact: skip what is exactly zero
+   integer, parameter :: SCREEN_BOUNDED = 2    !! Becke: drop what is provably negligible
+
+   integer, parameter :: MIN_STRATMANN_ATOMS = 12
+      !! Below this a point costs less to evaluate in full than to classify
+   integer, parameter :: MIN_BOUNDED_ATOMS = 48
+      !! The Becke bound needs a survivor's whole product on top of the bounds, and
+      !! measured slower than the plain loop at 30 atoms (1.7 s against 0.8 s
+      !! serial on ten waters); it is faster at 96
+   integer, parameter :: N_NEAR = 6
+      !! Atoms nearest a point used to bound the Becke cell functions
+   integer, parameter :: POINT_CHUNK = 64
+      !! Grid points handed to a thread at a time
+
+   real(dp), parameter :: SCREEN_TOL = 1.0e-18_dp
+      !! Becke screening drops an atom whose cell function is provably below
+      !! SCREEN_TOL times the owner's. Each weight then moves by a relative
+      !! (n_atoms - 1) * SCREEN_TOL at most: 2e-15 at 2000 atoms, inside the 1e-14
+      !! this scheme promises up to that size with a factor of five to spare.
+
 contains
 
    pure function partition_scheme_name(scheme) result(name)
@@ -81,16 +102,20 @@ contains
    end function partition_scheme_name
 
    subroutine becke_partition_weights(points, atom_coords, atomic_numbers, owner, &
-                                      scheme, adjust, weights, error)
+                                      scheme, adjust, weights, error, screening)
       !! Partition weight at each grid point, for the atom that owns it
       !!
       !! The returned weight is w_owner(r): the fraction of the integrand at
       !! that point assigned to the atom whose atomic grid produced it. Multiply
       !! it by the point's radial and angular weight to get its contribution.
-      ! TODO(mqc): neither this loop nor `becke_partition_derivatives` skips a
-      ! pair under `PARTITION_STRATMANN`, where the cutoff is exactly 0 or 1
-      ! beyond |nu| >= STRATMANN_A. Both are unconditionally n_atoms^2 per
-      ! point, which is the screening the module header credits the scheme with.
+      !!
+      !! Threaded over points. Every point is independent and writes only its own
+      !! `weights(k)`, so the result does not depend on the thread count.
+      !!
+      !! Screening (on by default) leaves the weights unchanged under
+      !! `PARTITION_STRATMANN` (bitwise) and moves each one by a relative
+      !! `n_atoms * SCREEN_TOL` at most under `PARTITION_BECKE`; see
+      !! `cell_stratmann` and `cell_bounded`.
       real(dp), intent(in) :: points(:, :)       !! (3, n_points), Bohr
       real(dp), intent(in) :: atom_coords(:, :)  !! (3, n_atoms), Bohr
       integer, intent(in) :: atomic_numbers(:)   !! Z per atom, for the radii
@@ -99,10 +124,14 @@ contains
       integer, intent(in) :: adjust              !! ADJUST_NONE, _BECKE or _TREUTLER
       real(dp), intent(out) :: weights(:)        !! (n_points)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: screening
+         !! `.false.` evaluates every atom pair at every point, the reference the
+         !! screened paths are checked against. Default `.true.`
 
       real(dp), allocatable :: shift(:, :), inv_distance(:, :), cell(:), atom_r(:)
-      integer :: n_atoms, n_points, i, j, k
-      real(dp) :: mu, nu, s, total
+      integer, allocatable :: near(:)
+      integer :: n_atoms, n_points, i, j, k, mode
+      real(dp) :: total
 
       n_atoms = size(atom_coords, 2)
       n_points = size(points, 2)
@@ -131,10 +160,26 @@ contains
          return
       end if
 
+      mode = SCREEN_NONE
+      if (scheme == PARTITION_STRATMANN .and. n_atoms >= MIN_STRATMANN_ATOMS) then
+         mode = SCREEN_STRATMANN
+      else if (scheme == PARTITION_BECKE .and. n_atoms >= MIN_BOUNDED_ATOMS) then
+         mode = SCREEN_BOUNDED
+      end if
+      if (present(screening)) then
+         if (.not. screening) mode = SCREEN_NONE
+      end if
+
       allocate (shift(n_atoms, n_atoms), inv_distance(n_atoms, n_atoms))
-      allocate (cell(n_atoms), atom_r(n_atoms))
 
       call size_adjustment(atomic_numbers, adjust, shift)
+      ! Only the upper triangle is ever the shift of a pair (lo, hi); mirroring
+      ! it makes the matrix symmetric for `pair_factor`'s column access.
+      do i = 1, n_atoms
+         do j = 1, i - 1
+            shift(i, j) = shift(j, i)
+         end do
+      end do
 
       ! 1/R_AB, precomputed: it is the same for every point.
       inv_distance = 0.0_dp
@@ -146,30 +191,30 @@ contains
          end do
       end do
 
+      ! Scratch is allocated inside the region so each thread owns its own;
+      ! `shift` and `inv_distance` depend only on the nuclei and stay shared.
+      ! Dynamic, because a screened point costs between one atom's product and
+      ! a handful, depending on how far it is from the nearest nucleus.
+      !$omp parallel default(none) &
+      !$omp    shared(points, atom_coords, owner, scheme, weights, shift, &
+      !$omp           inv_distance, n_points, n_atoms, mode) &
+      !$omp    private(k, i, atom_r, cell, near, total)
+      allocate (atom_r(n_atoms), cell(n_atoms), near(min(N_NEAR, n_atoms)))
+
+      !$omp do schedule(dynamic, POINT_CHUNK)
       do k = 1, n_points
          do i = 1, n_atoms
             atom_r(i) = norm2(points(:, k) - atom_coords(:, i))
          end do
 
-         cell = 1.0_dp
-         do i = 1, n_atoms
-            do j = i + 1, n_atoms
-               mu = (atom_r(i) - atom_r(j))*inv_distance(i, j)
-               nu = mu + shift(i, j)*(1.0_dp - mu*mu)
-
-               if (scheme == PARTITION_BECKE) then
-                  s = becke_cutoff(nu)
-               else
-                  s = stratmann_cutoff(nu)
-               end if
-
-               ! s is the fraction going to i; the complement goes to j. Doing
-               ! both here keeps the pair symmetric by construction, so the
-               ! weights cannot fail to sum to 1 through an asymmetry in nu.
-               cell(i) = cell(i)*s
-               cell(j) = cell(j)*(1.0_dp - s)
-            end do
-         end do
+         select case (mode)
+         case (SCREEN_STRATMANN)
+            call cell_stratmann(atom_r, inv_distance, shift, cell)
+         case (SCREEN_BOUNDED)
+            call cell_bounded(owner(k), atom_r, inv_distance, shift, near, cell)
+         case default
+            call cell_full(scheme, atom_r, inv_distance, shift, cell)
+         end select
 
          total = sum(cell)
          if (total > 0.0_dp) then
@@ -180,10 +225,199 @@ contains
             weights(k) = 0.0_dp
          end if
       end do
+      !$omp end do
+      !$omp end parallel
    end subroutine becke_partition_weights
 
+   pure subroutine cell_full(scheme, atom_r, inv_distance, shift, cell)
+      !! Unnormalised cell function of every atom at one point, every pair visited
+      integer, intent(in) :: scheme
+      real(dp), intent(in) :: atom_r(:), inv_distance(:, :), shift(:, :)
+      real(dp), intent(out) :: cell(:)
+
+      integer :: i, j
+      real(dp) :: s
+
+      cell = 1.0_dp
+      do i = 1, size(cell)
+         do j = i + 1, size(cell)
+            s = cutoff(scheme, pair_nu(i, j, atom_r, inv_distance, shift))
+            ! s is the fraction going to i; the complement goes to j. Doing
+            ! both here keeps the pair symmetric by construction, so the
+            ! weights cannot fail to sum to 1 through an asymmetry in nu.
+            cell(i) = cell(i)*s
+            cell(j) = cell(j)*(1.0_dp - s)
+         end do
+      end do
+   end subroutine cell_full
+
+   pure subroutine cell_stratmann(atom_r, inv_distance, shift, cell)
+      !! Cell functions at one point, skipping what is exactly zero
+      !!
+      !! Exact: the result is bitwise that of `cell_full`. Let m be the atom
+      !! nearest the point. If the cutoff of the pair (j, m) is flat at 0 for j,
+      !! then cell(j) carries a factor of exactly zero and is exactly zero, so j
+      !! is skipped. Every atom that survives is multiplied out over *all* its
+      !! partners, in the same order `cell_full` uses (partner index ascending),
+      !! because a dead partner can still contribute a fractional factor to a
+      !! live atom. Cost is O(n_atoms) to classify plus O(n_atoms) per survivor.
+      real(dp), intent(in) :: atom_r(:), inv_distance(:, :), shift(:, :)
+      real(dp), intent(out) :: cell(:)
+
+      integer :: n, m, j, k
+      real(dp) :: nu, p
+
+      n = size(cell)
+      m = minloc(atom_r, dim=1)
+      cell = 0.0_dp
+      do j = 1, n
+         if (j < m) then
+            nu = pair_nu(j, m, atom_r, inv_distance, shift)
+            if (nu >= STRATMANN_A) cycle
+         else if (j > m) then
+            nu = pair_nu(m, j, atom_r, inv_distance, shift)
+            if (nu <= -STRATMANN_A) cycle
+         end if
+         p = 1.0_dp
+         do k = 1, n
+            if (k /= j) p = p*pair_factor(PARTITION_STRATMANN, j, k, atom_r, inv_distance, shift)
+         end do
+         cell(j) = p
+      end do
+   end subroutine cell_stratmann
+
+   pure subroutine cell_bounded(owner, atom_r, inv_distance, shift, near, cell)
+      !! Cell functions at one point, dropping atoms whose cell is negligible
+      !!
+      !! Every factor of P_i = prod_{j/=i} s(nu_ij) lies in [0, 1], so a product
+      !! over any subset of the partners bounds it from above. Taking the
+      !! `N_NEAR` atoms nearest the point as that subset (they are the ones that
+      !! make the factors small), an atom i is dropped when the bound
+      !! b_i <= SCREEN_TOL * P_owner, and the owner's own P is always computed
+      !! in full. Each dropped atom then removes at most SCREEN_TOL * P_owner
+      !! from sum_i P_i, which is itself at least P_owner, so the weight
+      !! w = P_owner / sum_i P_i changes by a relative amount of at most
+      !! (n_atoms - 1) * SCREEN_TOL. The same test is applied to the running
+      !! product while a survivor is multiplied out, which is again a subset.
+      !! Survivors are multiplied in the order `cell_full` uses, so they are
+      !! bitwise its values; only the dropped mass differs.
+      integer, intent(in) :: owner
+      real(dp), intent(in) :: atom_r(:), inv_distance(:, :), shift(:, :)
+      integer, intent(inout) :: near(:)
+      real(dp), intent(out) :: cell(:)
+
+      integer :: n, kn, i, j, q, slot
+      real(dp) :: p_owner, thresh, b
+      logical :: dropped
+
+      n = size(cell)
+      kn = size(near)
+
+      ! The kn smallest distances, kept sorted, by insertion.
+      near = 0
+      do i = 1, n
+         if (near(kn) /= 0) then
+            if (atom_r(i) >= atom_r(near(kn))) cycle
+         end if
+         slot = kn
+         do while (slot > 1)
+            if (near(slot - 1) /= 0) then
+               if (atom_r(near(slot - 1)) <= atom_r(i)) exit
+            end if
+            near(slot) = near(slot - 1)
+            slot = slot - 1
+         end do
+         near(slot) = i
+      end do
+
+      p_owner = 1.0_dp
+      do j = 1, n
+         if (j /= owner) then
+            p_owner = p_owner*pair_factor(PARTITION_BECKE, owner, j, atom_r, inv_distance, shift)
+         end if
+      end do
+      thresh = SCREEN_TOL*p_owner
+
+      cell = 0.0_dp
+      cell(owner) = p_owner
+      do i = 1, n
+         if (i == owner) cycle
+         dropped = .false.
+         b = 1.0_dp
+         do q = 1, kn
+            j = near(q)
+            if (j == i) cycle
+            b = b*pair_factor(PARTITION_BECKE, i, j, atom_r, inv_distance, shift)
+            if (b <= thresh) then
+               dropped = .true.
+               exit
+            end if
+         end do
+         if (dropped) cycle
+
+         b = 1.0_dp
+         do j = 1, n
+            if (j == i) cycle
+            b = b*pair_factor(PARTITION_BECKE, i, j, atom_r, inv_distance, shift)
+            if (b <= thresh) then
+               dropped = .true.
+               exit
+            end if
+         end do
+         if (.not. dropped) cell(i) = b
+      end do
+   end subroutine cell_bounded
+
+   pure function pair_nu(lo, hi, atom_r, inv_distance, shift) result(nu)
+      !! The size-adjusted elliptical coordinate of the pair (lo, hi), lo < hi
+      integer, intent(in) :: lo, hi
+      real(dp), intent(in) :: atom_r(:), inv_distance(:, :), shift(:, :)
+      real(dp) :: nu
+      real(dp) :: mu
+
+      mu = (atom_r(lo) - atom_r(hi))*inv_distance(lo, hi)
+      nu = mu + shift(lo, hi)*(1.0_dp - mu*mu)
+   end function pair_nu
+
+   pure function cutoff(scheme, nu) result(s)
+      !! The cutoff of `scheme` at `nu`
+      integer, intent(in) :: scheme
+      real(dp), intent(in) :: nu
+      real(dp) :: s
+
+      if (scheme == PARTITION_BECKE) then
+         s = becke_cutoff(nu)
+      else
+         s = stratmann_cutoff(nu)
+      end if
+   end function cutoff
+
+   pure function pair_factor(scheme, i, j, atom_r, inv_distance, shift) result(f)
+      !! The factor atom i's cell function takes from partner j
+      !!
+      !! s(nu_ij) when i < j and 1 - s(nu_ji) when i > j, the same two numbers
+      !! `cell_full` multiplies in, so a product of these is bitwise its cell.
+      !! `inv_distance` and `shift` are symmetric here (the triangle `pair_nu`
+      !! reads is mirrored by the caller), which lets a loop over j at fixed i
+      !! walk down a column instead of across a row.
+      integer, intent(in) :: scheme, i, j
+      real(dp), intent(in) :: atom_r(:), inv_distance(:, :), shift(:, :)
+      real(dp) :: f
+      real(dp) :: mu, nu
+
+      if (i < j) then
+         mu = (atom_r(i) - atom_r(j))*inv_distance(j, i)
+         nu = mu + shift(j, i)*(1.0_dp - mu*mu)
+         f = cutoff(scheme, nu)
+      else
+         mu = (atom_r(j) - atom_r(i))*inv_distance(j, i)
+         nu = mu + shift(j, i)*(1.0_dp - mu*mu)
+         f = 1.0_dp - cutoff(scheme, nu)
+      end if
+   end function pair_factor
+
    subroutine becke_partition_derivatives(points, atom_coords, atomic_numbers, owner, &
-                                          scheme, adjust, dweights, error)
+                                          scheme, adjust, dweights, error, screening)
       !! dP_k/dR_A at fixed grid points, as (3, n_atoms, n_points)
       !!
       !! The partition weight depends on every nuclear position, so moving any
@@ -198,9 +432,16 @@ contains
       !! divides by each cutoff factor, and those reach zero far from the
       !! molecule where the derivative does not, so the quotient is 0/0 exactly
       !! where a guard would have to guess.
-      ! TODO(mqc): unlike `becke_partition_weights`, this checks neither
-      ! `size(owner)` nor `size(dweights)` against the point count and does not
-      ! bound `owner`, yet indexes `dcell(:, a, owner(k))`.
+      !!
+      !! Screening (on by default) is exact and applies to `PARTITION_STRATMANN`
+      !! only. An atom whose cutoff against the nearest atom is flat at zero has a
+      !! cell function *and* a cell derivative of exactly zero, since every term of
+      !! the product rule contains either that zero factor or that flat
+      !! derivative, so it is skipped, as is any partner whose factor is exactly 1
+      !! with an exactly zero derivative. The result is bitwise the unscreened one.
+      !! `PARTITION_BECKE` has no exact zeros to skip, and a bound for it would
+      !! need a bound on the derivative as well as on the value; it is evaluated
+      !! in full.
       real(dp), intent(in) :: points(:, :)       !! (3, n_points), Bohr
       real(dp), intent(in) :: atom_coords(:, :)  !! (3, n_atoms), Bohr
       integer, intent(in) :: atomic_numbers(:)   !! Z per atom, for the radii
@@ -209,13 +450,18 @@ contains
       integer, intent(in) :: adjust
       real(dp), intent(out) :: dweights(:, :, :)  !! (3, n_atoms, n_points)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: screening
+         !! `.false.` keeps every atom as a candidate. Default `.true.`
 
       real(dp), allocatable :: shift(:, :), inv_distance(:, :)
       real(dp), allocatable :: atom_r(:), unit_vec(:, :)
-      real(dp), allocatable :: cell(:), dcell(:, :, :)
-      real(dp) :: dtotal(3), rij(3), ds_i(3), ds_j(3), dmu_i(3), dmu_j(3)
-      real(dp) :: mu, nu, s, total, dnu_dmu, ds_dnu, invd
-      integer :: n_atoms, n_points, i, j, k, a
+      real(dp), allocatable :: cell(:), dcell(:, :, :), grow(:, :, :)
+      integer, allocatable :: cand(:), slot(:)
+      real(dp) :: dtotal(3), rij(3), ds_lo(3), ds_hi(3), dmu_lo(3), dmu_hi(3)
+      real(dp) :: df_i(3), df_k(3)
+      real(dp) :: mu, nu, s, f, total, dnu_dmu, ds_dnu, invd, ci
+      integer :: n_atoms, n_points, i, j, k, a, c, nc, m, lo, hi
+      logical :: screen, dead
 
       n_atoms = size(atom_coords, 2)
       n_points = size(points, 2)
@@ -226,14 +472,27 @@ contains
                         "partition derivatives: atomic_numbers does not match atom_coords")
          return
       end if
+      if (size(owner) /= n_points .or. size(dweights, 3) /= n_points &
+          .or. size(dweights, 2) /= n_atoms) then
+         call error%set(ERROR_VALIDATION, &
+                        "partition derivatives: owner and dweights must match the points and atoms")
+         return
+      end if
       if (scheme /= PARTITION_BECKE .and. scheme /= PARTITION_STRATMANN) then
          call error%set(ERROR_VALIDATION, "partition derivatives: unknown scheme")
+         return
+      end if
+      if (any(owner < 1) .or. any(owner > n_atoms)) then
+         call error%set(ERROR_VALIDATION, "partition derivatives: owner index outside the atom list")
          return
       end if
 
       ! One atom owns everything and its weight is identically one, so it does
       ! not change when the atom moves.
       if (n_atoms == 1) return
+
+      screen = scheme == PARTITION_STRATMANN
+      if (present(screening)) screen = screen .and. screening
 
       allocate (shift(n_atoms, n_atoms), inv_distance(n_atoms, n_atoms))
 
@@ -249,21 +508,26 @@ contains
       end do
 
       ! One thread per grid point. Every iteration writes its own
-      ! `dweights(:, :, k)`, so nothing is reduced; the per-point scratch `cell`
-      ! and `dcell` is allocated inside the region so each thread gets its own,
-      ! while `shift` and `inv_distance` depend only on the nuclei and stay
-      ! shared. `schedule(static)` because every point costs the same n_atoms
-      ! squared wherever it sits.
+      ! `dweights(:, :, k)`, so nothing is reduced; the per-point scratch is
+      ! allocated inside the region so each thread gets its own, while `shift`
+      ! and `inv_distance` depend only on the nuclei and stay shared. Dynamic
+      ! scheduling because a screened point's cost depends on where it sits.
+      !
+      ! `dcell(:, :, c)` is the derivative of candidate c's cell function with
+      ! respect to every nucleus. It is sized to the candidate count and grown on
+      ! demand, so a screened run does not carry an (n_atoms, n_atoms) block per
+      ! thread.
       !$omp parallel default(none) &
       !$omp    shared(points, atom_coords, owner, scheme, dweights, shift, &
-      !$omp           inv_distance, n_points, n_atoms) &
-      !$omp    private(k, i, j, a, atom_r, unit_vec, cell, dcell, dtotal, rij, &
-      !$omp            ds_i, ds_j, dmu_i, dmu_j, mu, nu, s, total, dnu_dmu, &
-      !$omp            ds_dnu, invd)
-      allocate (atom_r(n_atoms), unit_vec(3, n_atoms))
-      allocate (cell(n_atoms), dcell(3, n_atoms, n_atoms))
+      !$omp           inv_distance, n_points, n_atoms, screen) &
+      !$omp    private(k, i, j, a, c, nc, m, lo, hi, dead, atom_r, unit_vec, cell, dcell, grow, &
+      !$omp            cand, slot, dtotal, rij, ds_lo, ds_hi, dmu_lo, dmu_hi, df_i, df_k, &
+      !$omp            mu, nu, s, f, total, dnu_dmu, ds_dnu, invd, ci)
+      allocate (atom_r(n_atoms), unit_vec(3, n_atoms), cell(n_atoms))
+      allocate (cand(n_atoms), slot(n_atoms))
+      allocate (dcell(3, n_atoms, min(n_atoms, 8)))
 
-      !$omp do schedule(static)
+      !$omp do schedule(dynamic, POINT_CHUNK)
       do k = 1, n_points
          do i = 1, n_atoms
             atom_r(i) = norm2(points(:, k) - atom_coords(:, i))
@@ -277,16 +541,48 @@ contains
             end if
          end do
 
-         cell = 1.0_dp
-         dcell = 0.0_dp
-
+         ! The atoms whose cell function can be non-zero, in ascending order.
+         nc = 0
+         slot = 0
+         m = minloc(atom_r, dim=1)
          do i = 1, n_atoms
-            do j = i + 1, n_atoms
-               invd = inv_distance(i, j)
-               rij = atom_coords(:, i) - atom_coords(:, j)
+            dead = .false.
+            if (screen) then
+               if (i < m) then
+                  dead = pair_nu(i, m, atom_r, inv_distance, shift) >= STRATMANN_A
+               else if (i > m) then
+                  dead = pair_nu(m, i, atom_r, inv_distance, shift) <= -STRATMANN_A
+               end if
+            end if
+            if (.not. dead) then
+               nc = nc + 1
+               cand(nc) = i
+               slot(i) = nc
+            end if
+         end do
 
-               mu = (atom_r(i) - atom_r(j))*invd
-               nu = mu + shift(i, j)*(1.0_dp - mu*mu)
+         if (nc > size(dcell, 3)) then
+            allocate (grow(3, n_atoms, min(n_atoms, max(nc, 2*size(dcell, 3)))))
+            call move_alloc(grow, dcell)
+         end if
+
+         cell = 0.0_dp
+         do c = 1, nc
+            i = cand(c)
+            ci = 1.0_dp
+            dcell(:, :, c) = 0.0_dp
+
+            ! Partners in ascending order, which is the order the pairs reach
+            ! atom i in a double loop over (lo, hi): the value and derivative
+            ! then accumulate in the same sequence as an unscreened run.
+            do j = 1, n_atoms
+               if (j == i) cycle
+               lo = min(i, j)
+               hi = max(i, j)
+               invd = inv_distance(lo, hi)
+
+               mu = (atom_r(lo) - atom_r(hi))*invd
+               nu = mu + shift(lo, hi)*(1.0_dp - mu*mu)
 
                if (scheme == PARTITION_BECKE) then
                   s = becke_cutoff(nu)
@@ -296,41 +592,53 @@ contains
                   ds_dnu = stratmann_cutoff_derivative(nu)
                end if
 
-               dnu_dmu = 1.0_dp - 2.0_dp*shift(i, j)*mu
+               if (i < j) then
+                  f = s
+               else
+                  f = 1.0_dp - s
+               end if
+               if (f == 1.0_dp .and. ds_dnu == 0.0_dp) cycle
 
-               ! mu depends on R_i and R_j only: through the distances from the
+               rij = atom_coords(:, lo) - atom_coords(:, hi)
+               dnu_dmu = 1.0_dp - 2.0_dp*shift(lo, hi)*mu
+
+               ! mu depends on R_lo and R_hi only: through the distances from the
                ! point, and through the internuclear distance in the denominator.
-               dmu_i = -unit_vec(:, i)*invd - (atom_r(i) - atom_r(j))*invd**3*rij
-               dmu_j = unit_vec(:, j)*invd + (atom_r(i) - atom_r(j))*invd**3*rij
+               dmu_lo = -unit_vec(:, lo)*invd - (atom_r(lo) - atom_r(hi))*invd**3*rij
+               dmu_hi = unit_vec(:, hi)*invd + (atom_r(lo) - atom_r(hi))*invd**3*rij
 
-               ds_i = ds_dnu*dnu_dmu*dmu_i
-               ds_j = ds_dnu*dnu_dmu*dmu_j
+               ds_lo = ds_dnu*dnu_dmu*dmu_lo
+               ds_hi = ds_dnu*dnu_dmu*dmu_hi
+
+               if (i < j) then
+                  df_i = ds_lo
+                  df_k = ds_hi
+               else
+                  df_i = -ds_hi
+                  df_k = -ds_lo
+               end if
 
                ! Product rule, value and derivative together. Order matters:
                ! the derivative uses the cell value from before this factor.
-               do a = 1, n_atoms
-                  dcell(:, a, i) = dcell(:, a, i)*s
-                  dcell(:, a, j) = dcell(:, a, j)*(1.0_dp - s)
-               end do
-               dcell(:, i, i) = dcell(:, i, i) + cell(i)*ds_i
-               dcell(:, j, i) = dcell(:, j, i) + cell(i)*ds_j
-               dcell(:, i, j) = dcell(:, i, j) - cell(j)*ds_i
-               dcell(:, j, j) = dcell(:, j, j) - cell(j)*ds_j
-
-               cell(i) = cell(i)*s
-               cell(j) = cell(j)*(1.0_dp - s)
+               dcell(:, :, c) = dcell(:, :, c)*f
+               dcell(:, i, c) = dcell(:, i, c) + ci*df_i
+               dcell(:, j, c) = dcell(:, j, c) + ci*df_k
+               ci = ci*f
             end do
+            cell(i) = ci
          end do
 
          total = sum(cell)
          if (total <= 0.0_dp) cycle
+         ! A skipped owner has a cell function and derivative of exactly zero.
+         if (slot(owner(k)) == 0) cycle
 
          do a = 1, n_atoms
             dtotal = 0.0_dp
-            do i = 1, n_atoms
-               dtotal = dtotal + dcell(:, a, i)
+            do c = 1, nc
+               dtotal = dtotal + dcell(:, a, c)
             end do
-            dweights(:, a, k) = (dcell(:, a, owner(k))*total &
+            dweights(:, a, k) = (dcell(:, a, slot(owner(k)))*total &
                                  - cell(owner(k))*dtotal)/(total*total)
          end do
       end do

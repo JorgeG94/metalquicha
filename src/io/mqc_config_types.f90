@@ -17,7 +17,7 @@ module mqc_config_types
                                        DEFAULT_RESPONSE_MAX_ITER, DEFAULT_AIMD_DT, &
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
-                                       DEFAULT_SOSCF_START, &
+                                       DEFAULT_SOSCF_START, DEFAULT_COSX_GRID, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -228,6 +228,17 @@ module mqc_config_types
          !! table.
       logical :: scf_density_fitting = .false.
          !! Fit J and K against the auxiliary basis, on the CPU backend
+      logical :: scf_cosx = .false.
+         !! `keywords.scf.exchange` is "cosx": the exchange matrix by
+         !! chain-of-spheres quadrature, beside a fitted Coulomb matrix. False
+         !! is "exact", the default, which leaves the exchange to whatever
+         !! `scf_density_fitting` selects.
+      integer :: scf_cosx_grid = DEFAULT_COSX_GRID
+         !! `keywords.scf.cosx_grid`, 1 to 3: the size of the chain-of-spheres
+         !! grids
+      logical :: scf_cosx_final_grid = .true.
+         !! `keywords.scf.cosx_final_grid`: take the final energy on the
+         !! level's larger grid
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements
@@ -311,6 +322,12 @@ module mqc_config_types
          !! From `keywords.dft.screening_tolerance`. The AO value below which a
          !! shell is dropped from a grid block. Zero or negative evaluates the
          !! whole basis, which is how a run measures what the screen is worth.
+      real(dp) :: dft_small_rho_cutoff = 0.0_dp
+         !! From `keywords.dft.small_rho_cutoff`. Grid points where
+         !! `abs(rho*w)` on the initial guess density is not above this divided
+         !! by the grid size are dropped once per SCF, as PySCF's
+         !! `small_rho_cutoff` does. Off (zero) by default, as in PySCF; zero or
+         !! negative keeps the whole grid.
       integer :: dft_block_size = -1
          !! From `keywords.dft.block_size`. Grid points per block; -1 keeps the
          !! backend default. Sets both how tightly the screen bites and how many
