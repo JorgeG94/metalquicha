@@ -981,6 +981,17 @@ GRADIENT_RI_CCSD_CASES = [
     ("hcl", "def2-svp", "def2-svp-rifit", 5),
 ]
 
+# The same with the perturbative triples, as (molecule, basis, aux, frozen).
+# Ammonia is there for its degenerate pair of orbitals: (T) is not invariant
+# to a rotation among the occupied orbitals, so the gradient relaxes each such
+# rotation by its orbital-energy gap, and a degenerate pair has none.
+GRADIENT_RI_CCSD_T_CASES = [
+    ("water", "sto-3g", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+    ("nh3", "def2-svp", "def2-svp-rifit", 1),
+    ("hcl", "def2-svp", "def2-svp-rifit", 5),
+]
+
 # The RI-MP2 gradient's bound, for the RI-MP2 gradient's reason: the reference
 # solves its relaxation with the exact orbital Hessian and the program fits
 # that operator, which moves the answer by the fitting error and no more. The
@@ -2368,18 +2379,18 @@ def mqc_ri_mp2_gradient(atoms, basis, aux, frozen=0):
     return float(energy), gradient.tolist(), mol.nao
 
 
-def mqc_ri_ccsd_gradient(atoms, basis, aux, frozen=0):
+def mqc_ri_ccsd_gradient(atoms, basis, aux, frozen=0, triples=False):
     """Reference RI-CCSD energy and analytic gradient, from `ri_ccsd_gradient.py`.
 
     Not a third party's, because there is none to ask -- see
-    `GRADIENT_RI_CCSD_CASES`.
+    `GRADIENT_RI_CCSD_CASES`. `triples` makes both those of RI-CCSD(T).
     """
     from ri_mp2_gradient import build
     from ri_ccsd_gradient import ri_ccsd_energy, ri_ccsd_gradient
 
     mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
-    energy = ri_ccsd_energy(mol, auxmol._basis, frozen)
-    gradient = ri_ccsd_gradient(mol, auxmol._basis, frozen)
+    energy = ri_ccsd_energy(mol, auxmol._basis, frozen, triples)
+    gradient = ri_ccsd_gradient(mol, auxmol._basis, frozen, triples=triples)
     return float(energy), gradient.tolist(), mol.nao
 
 
@@ -2390,10 +2401,14 @@ def ri_ccsd_gradient_entries(written, dry_run):
     cases into an existing manifest without regenerating the rest.
     """
     entries = []
-    for name, basis, aux, frozen in GRADIENT_RI_CCSD_CASES:
+    cases = [(c, False) for c in GRADIENT_RI_CCSD_CASES]
+    cases += [(c, True) for c in GRADIENT_RI_CCSD_T_CASES]
+    for (name, basis, aux, frozen), triples in cases:
         mol = MOLECULES[name]
-        energy, gradient, nao = mqc_ri_ccsd_gradient(mol.atoms, basis, aux, frozen)
-        stem = f"cpu_{name}_{normalize_basis_name(basis)}_riccsd"
+        energy, gradient, nao = mqc_ri_ccsd_gradient(mol.atoms, basis, aux, frozen, triples)
+        method = "ri-ccsd(t)" if triples else "ri-ccsd"
+        label = "RI-CCSD(T)" if triples else "RI-CCSD"
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_riccsd" + ("t" if triples else "")
         if frozen:
             stem += f"_f{frozen}"
         deck = deck_for(f"{CPU_MQC}/gradient", stem + "_grad")
@@ -2401,13 +2416,13 @@ def ri_ccsd_gradient_entries(written, dry_run):
         if not dry_run:
             # `aux_only`, as for RI-MP2: the auxiliary fits the correlation and
             # not the SCF.
-            d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-ccsd",
+            d = deck_json(xyz_for(mol), basis, aux=aux, method=method,
                           correlation={"freeze_core": frozen > 0,
                                        "n_frozen_core": frozen}, aux_only=True)
             d["driver"] = "Gradient"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         entries.append({
-            "name": f"RI-CCSD gradient {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
+            "name": f"{label} gradient {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
@@ -2416,7 +2431,7 @@ def ri_ccsd_gradient_entries(written, dry_run):
             "type": "unfragmented",
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
-        print(f"{mol.label:6s} {basis:12s} {'RI-CCSD':8s} grad |g|={norm:.10f} "
+        print(f"{mol.label:6s} {basis:12s} {label:10s} grad |g|={norm:.10f} "
               f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
     return entries
 
@@ -3955,7 +3970,7 @@ def main():
         return 0
 
     if args.only_ri_ccsd_gradient:
-        for name in {c[0] for c in GRADIENT_RI_CCSD_CASES}:
+        for name in {c[0] for c in GRADIENT_RI_CCSD_CASES + GRADIENT_RI_CCSD_T_CASES}:
             mol = MOLECULES[name]
             if mol.xyz:
                 mol.atoms = read_xyz(INPUTS / mol.xyz)

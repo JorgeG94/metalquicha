@@ -5645,7 +5645,7 @@
                 [
                     0.0,
                     3.01e-10,
-                    -0.115177788448
+                    -0.115177788447
                 ],
                 [
                     0.0,
@@ -5670,17 +5670,17 @@
                 [
                     -0.0,
                     2.29e-10,
-                    -0.016214469067
+                    -0.016214469085
                 ],
                 [
                     0.0,
-                    0.002165159038,
-                    0.00810723462
+                    0.002165159028,
+                    0.008107234628
                 ],
                 [
                     0.0,
-                    -0.002165159268,
-                    0.008107234448
+                    -0.002165159257,
+                    0.008107234456
                 ]
             ],
             "gradient_tolerance": 1e-05,
@@ -5695,22 +5695,22 @@
                 [
                     -0.0,
                     0.0,
-                    0.011146607283
+                    0.011146607289
                 ],
                 [
-                    -0.00456847911,
+                    -0.004568479112,
                     0.0,
-                    -0.003715535761
+                    -0.003715535763
                 ],
                 [
-                    0.002284239555,
-                    -0.003956418966,
-                    -0.003715535761
+                    0.002284239556,
+                    -0.003956418968,
+                    -0.003715535763
                 ],
                 [
-                    0.002284239555,
-                    0.003956418966,
-                    -0.003715535761
+                    0.002284239556,
+                    0.003956418968,
+                    -0.003715535763
                 ]
             ],
             "gradient_tolerance": 1e-05,
@@ -5725,12 +5725,112 @@
                 [
                     0.0,
                     -0.0,
-                    0.003110633815
+                    0.003110633814
                 ],
                 [
                     -0.0,
                     0.0,
-                    -0.003110633815
+                    -0.003110633814
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD(T) gradient H2O sto-3g/cc-pvdz-rifit frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_sto-3g_riccsdt_grad.json",
+            "expected_energy": -75.011251946621,
+            "expected_gradient": [
+                [
+                    0.0,
+                    3.01e-10,
+                    -0.115143112868
+                ],
+                [
+                    0.0,
+                    -0.041063561259,
+                    0.057571556553
+                ],
+                [
+                    -0.0,
+                    0.041063560957,
+                    0.057571556315
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD(T) gradient H2O cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_water_cc-pvdz_riccsdt_f1_grad.json",
+            "expected_energy": -76.240689531506,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    2.29e-10,
+                    -0.018130995754
+                ],
+                [
+                    0.0,
+                    0.001357799517,
+                    0.009065497963
+                ],
+                [
+                    0.0,
+                    -0.001357799746,
+                    0.009065497791
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD(T) gradient NH3 def2-svp/def2-svp-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_nh3_def2-svp_riccsdt_f1_grad.json",
+            "expected_energy": -56.355018586633,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    0.0,
+                    0.013103529766
+                ],
+                [
+                    -0.005430095166,
+                    0.0,
+                    -0.004367843255
+                ],
+                [
+                    0.002715047583,
+                    -0.004702600359,
+                    -0.004367843255
+                ],
+                [
+                    0.002715047583,
+                    0.004702600359,
+                    -0.004367843255
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD(T) gradient HCl def2-svp/def2-svp-rifit frozen 5 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hcl_def2-svp_riccsdt_f5_grad.json",
+            "expected_energy": -460.102591737346,
+            "expected_gradient": [
+                [
+                    0.0,
+                    -0.0,
+                    0.00380691354
+                ],
+                [
+                    -0.0,
+                    0.0,
+                    -0.00380691354
                 ]
             ],
             "gradient_tolerance": 1e-05,
