@@ -19,8 +19,9 @@ module mqc_czt_xc
    !! the polarised arrays are spin-interleaved, so the two cases take different
    !! array shapes. What they share -- the three terms that turn a pointwise
    !! potential into a matrix -- is `accumulate_xc_matrix`.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use pic_logger, only: logger => global_logger
+   use pic_timer, only: timer_type
    use pic_io, only: to_char
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -29,7 +30,7 @@ module mqc_czt_xc
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, DEFAULT_GRID_LEVEL
    use mqc_xc_spec, only: xc_spec_t, xc_spec_from_name, MAX_XC_COMPONENTS
    use mqc_czt_integrals, only: czt_molecule_t
-   use mqc_czt_ao, only: eval_ao_block, eval_rho, AO_POINT_BLOCK, &
+   use mqc_czt_ao, only: eval_ao_block, eval_rho, &
                          shell_extents, block_significant_aos
 #ifdef MQC_WITH_LIBXC
    use xc_f03_lib_m, only: xc_f03_func_t, xc_f03_func_init, xc_f03_func_end, &
@@ -59,6 +60,12 @@ module mqc_czt_xc
       !! total energy at the microhartree level over ~10^6 points, and the extra
       !! digit costs a couple of bohr of radius on the most diffuse shells.
 
+   integer, parameter, public :: XC_POINT_BLOCK = 128
+      !! Default grid points per quadrature block.
+      !!
+      !! Measured on PBE/def2-SVP water clusters on the block-ordered grid:
+      !! 128 was fastest on 32 waters and within 7 per cent of the best on 10.
+
    integer, parameter, public :: NLC_GRID_LEVEL_DEFAULT = 1
       !! Default level for the non-local inner grid.
       !!
@@ -70,8 +77,10 @@ module mqc_czt_xc
    public :: xc_context_create
    public :: xc_reference_t
    public :: xc_functional_references
+   public :: xc_profile_take
    public :: xc_add_potential
    public :: xc_add_potential_uks
+   public :: xc_prune_small_rho
    public :: xc_available
    public :: xc_grid_lda_quantities
    public :: xc_grid_gga_quantities
@@ -156,12 +165,23 @@ module mqc_czt_xc
       real(dp) :: screen_tol = AO_SCREEN_TOL
          !! The AO value below which a shell is dropped from a grid block.
          !! From `keywords.dft.screening_tolerance`; the default is the constant.
-      integer :: point_block = AO_POINT_BLOCK
+      integer :: point_block = XC_POINT_BLOCK
          !! Grid points per block. From `keywords.dft.block_size`.
          !!
          !! Two things at once. A smaller block is spatially tighter, so fewer
          !! shells reach it and the screen keeps less; and the loop over blocks
          !! *is* the OpenMP loop, so the block count is the thread granularity.
+         !! The grid is reordered in runs of exactly this many points.
+      real(dp) :: small_rho_cutoff = 0.0_dp
+         !! From `keywords.dft.small_rho_cutoff`. Zero or negative leaves the
+         !! grid whole; the default here is off, so a context built outside an
+         !! SCF is never pruned. The SCF reads it in `xc_prune_small_rho`.
+      logical :: grid_pruned = .false.
+         !! Whether `xc_prune_small_rho` has already run, so a second SCF on the
+         !! same context does not prune again on a converged density.
+      logical :: block_stats_logged = .false.
+         !! Whether the shells-per-block figures of the current grid have been
+         !! reported; cleared whenever the grid is reordered or pruned.
       logical :: polarized = .false.
          !! Whether the functionals were initialised spin-polarised.
          !!
@@ -384,6 +404,11 @@ module mqc_czt_xc
          !! Empty when libxc gives none
    end type xc_reference_t
 
+   real(dp), save :: profile_seconds(4) = 0.0_dp
+      !! Seconds `xc_add_potential` and `xc_add_potential_uks` have spent in
+      !! basis evaluation, density, functional and potential assembly since the
+      !! last `xc_profile_take`
+
 contains
 
    pure function xc_available() result(available)
@@ -442,7 +467,7 @@ contains
 
    subroutine xc_context_create(mol, functional, ctx, error, level, polarized, &
                                 screen_tol, point_block, nlc_level, allow_half, &
-                                n_radial, n_angular)
+                                n_radial, n_angular, small_rho_cutoff)
       !! Resolve a functional name and build the grid it will be integrated on
       type(czt_molecule_t), intent(in) :: mol
       character(len=*), intent(in) :: functional
@@ -471,6 +496,9 @@ contains
          !! evaluates the whole basis, which is the way to check what it costs.
       integer, intent(in), optional :: point_block
          !! Grid points per block. Non-positive keeps the default.
+      real(dp), intent(in), optional :: small_rho_cutoff
+         !! Threshold of `xc_prune_small_rho`, which an SCF applies to the grid
+         !! on its initial guess density. Absent leaves pruning off.
       logical, intent(in), optional :: allow_half
          !! Accept a libxc name carrying only exchange or only correlation.
          !! Passed to `xc_spec_from_name`, which explains why it exists and why
@@ -659,9 +687,13 @@ contains
 #endif
 
       if (present(screen_tol)) ctx%screen_tol = screen_tol
+      if (present(small_rho_cutoff)) ctx%small_rho_cutoff = small_rho_cutoff
       if (present(point_block)) then
          if (point_block > 0) ctx%point_block = point_block
       end if
+      ! Consecutive runs of `point_block` points become spatially compact, which is
+      ! what lets a block's shell screen remove anything.
+      call ctx%grid%block_order(ctx%point_block)
       ctx%active = .true.
    end subroutine xc_context_create
 
@@ -1494,6 +1526,18 @@ contains
 #endif
    end subroutine xc_grid_kernel_quantities
 
+   subroutine xc_profile_take(seconds)
+      !! Seconds of the quadrature by phase, then reset
+      !!
+      !! Order: basis evaluation, density, functional, potential assembly. Each
+      !! is the mean over the threads that ran, so the four add up to the wall
+      !! time of the threaded loop.
+      real(dp), intent(out) :: seconds(4)
+
+      seconds = profile_seconds
+      profile_seconds = 0.0_dp
+   end subroutine xc_profile_take
+
    subroutine xc_add_potential(ctx, mol, density, v_xc, e_xc, n_elec, error)
       !! The exchange-correlation potential and energy for one density
       !!
@@ -1529,6 +1573,12 @@ contains
       type(error_t) :: local_error
       logical :: failed
       integer :: g0, g1, nb, i, ig, id
+      real(dp) :: t0, t1, t2, t3, t4, t5, t6
+      type(timer_type) :: clock
+         !! One per thread, started once; the phases are read off it
+      real(dp) :: t_acc(4)
+      real(dp) :: t_sum(4)   !! `t_acc` summed over the threads that ran
+      integer :: n_ran       !! Threads that entered the region
 
       v_xc = 0.0_dp
       e_xc = 0.0_dp
@@ -1572,14 +1622,18 @@ contains
       ! shell dropped beyond its radius contributes less than that at every point
       ! of the block, so this is a truncation with a stated bound.
       call shell_extents(mol, ctx%screen_tol, extents)
+      call xc_log_block_stats(ctx, mol, extents)
 
+      t_sum = 0.0_dp
+      n_ran = 0
       !$omp parallel default(none) &
-      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents) &
+      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents, t_sum, n_ran) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
       !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
       !$omp    private(v_local, e_local, n_local, v_sig, d_sig, shell_mask, &
       !$omp            ao_list, ao_offset, n_sig, ia, ja) &
+      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc, clock) &
       !$omp    firstprivate(local_error)
       allocate (v_local(size(v_xc, 1), size(v_xc, 2)))
       v_local = 0.0_dp
@@ -1590,6 +1644,8 @@ contains
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
       e_local = 0.0_dp
       n_local = 0.0_dp
+      t_acc = 0.0_dp
+      call clock%start()
 
       !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, ctx%point_block
@@ -1605,8 +1661,10 @@ contains
          ! basis evaluation, the density contraction, the potential gemm -- runs
          ! on that subset: both gemms are n_points * n_ao^2, so halving n_ao
          ! quarters them.
+         t0 = clock%get_elapsed_time()
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
+         t1 = clock%get_elapsed_time()
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
          ! The density restricted to the same subset. Gathered per block, which
@@ -1617,22 +1675,26 @@ contains
             end do
          end do
 
+         t2 = clock%get_elapsed_time()
          if (ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
+            t3 = clock%get_elapsed_time()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad, tau=tau)
          else if (ctx%any_gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
+            t3 = clock%get_elapsed_time()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad)
          else
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
+            t3 = clock%get_elapsed_time()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
          end if
          if (local_error%has_error()) then
@@ -1645,6 +1707,7 @@ contains
             cycle
          end if
 
+         t4 = clock%get_elapsed_time()
          if (allocated(exc)) deallocate (exc, vrho, exc_i, vrho_i)
          allocate (exc(nb), vrho(nb), exc_i(nb), vrho_i(nb))
          exc = 0.0_dp
@@ -1687,6 +1750,7 @@ contains
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
 
+         t5 = clock%get_elapsed_time()
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*rho)
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
@@ -1719,6 +1783,8 @@ contains
                   v_local(ao_list(ia), ao_list(ja)) + v_sig(ia, ja)
             end do
          end do
+         t6 = clock%get_elapsed_time()
+         t_acc = t_acc + [(t1 - t0) + (t3 - t2), (t2 - t1) + (t4 - t3), t5 - t4, t6 - t5]
       end do
       !$omp end do
 
@@ -1727,10 +1793,13 @@ contains
       ! contending for the shared one a hundred times each.
       !$omp critical (xc_reduce)
       v_xc = v_xc + v_local
+      t_sum = t_sum + t_acc
+      n_ran = n_ran + 1
       e_xc = e_xc + e_local
       n_elec = n_elec + n_local
       !$omp end critical (xc_reduce)
       !$omp end parallel
+      profile_seconds = profile_seconds + t_sum/real(max(1, n_ran), dp)
 
       ! VV10 last, on its own grid, adding into the same matrix and the same
       ! energy. Outside the parallel region because it runs its own two sweeps
@@ -1742,6 +1811,155 @@ contains
       end if
 #endif
    end subroutine xc_add_potential
+
+   subroutine xc_log_block_stats(ctx, mol, extents)
+      !! Report, once per grid, how many basis functions reach a block of points
+      !!
+      !! The mean and the largest `n_sig` over the blocks the quadrature walks, out
+      !! of `mol%nao`. Both gemms of a block scale as `n_sig` squared, so this is
+      !! the figure the grid's block order is judged by.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: extents(:)
+
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: g0, g1, n_sig, n_blocks, n_max
+      integer(int64) :: n_total
+      character(len=160) :: line
+      if (ctx%block_stats_logged) return
+      ctx%block_stats_logged = .true.
+      if (ctx%grid%n_points == 0) return
+      n_blocks = 0
+      n_max = 0
+      n_total = 0_int64
+      !$omp parallel default(none) shared(ctx, mol, extents) private(g0, g1, n_sig, shell_mask, ao_list, ao_offset) &
+      !$omp    reduction(+: n_blocks, n_total) reduction(max: n_max)
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      !$omp do schedule(dynamic)
+      do g0 = 1, ctx%grid%n_points, ctx%point_block
+         g1 = min(g0 + ctx%point_block - 1, ctx%grid%n_points)
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         n_blocks = n_blocks + 1
+         n_total = n_total + n_sig
+         n_max = max(n_max, n_sig)
+      end do
+      !$omp end do
+      !$omp end parallel
+      write (line, "(a,i0,a,i0,a,i0,a,f7.1,a,i0,a,i0)") "  XC grid: ", ctx%grid%n_points, " points in ", &
+         n_blocks, " blocks of ", ctx%point_block, "; basis functions per block: mean ", &
+         real(n_total, dp)/real(max(n_blocks, 1), dp), ", max ", n_max, " of ", mol%nao
+      call logger%verbose(trim(line))
+   end subroutine xc_log_block_stats
+
+   subroutine xc_prune_small_rho(ctx, mol, density, n_electrons, error, dropped)
+      !! Drop the grid points where the density is negligible, once per context
+      !!
+      !! A point stays when `abs(rho*w) > ctx%small_rho_cutoff/n_points`, `rho`
+      !! being the total density of `density` there, `w` the point's weight and
+      !! `n_points` the size of the grid before pruning. This is
+      !! PySCF's `prune_small_rho_grids_`, called on the initial guess density
+      !! before the first exchange-correlation evaluation; for an unrestricted
+      !! calculation `density` is alpha plus beta. Every per-point array of the
+      !! grid is compacted, in order.
+      !!
+      !! Does nothing when the context is inactive, the cutoff is not positive,
+      !! the grid was already pruned, or the density integrates to further than
+      !! two per cent from `n_electrons` (a guess that bad says nothing about
+      !! where the density is). The separate VV10 grid is left alone.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)
+         !! Total density matrix, `(n_ao, n_ao)`
+      integer, intent(in) :: n_electrons
+         !! Electron count the density should integrate to
+      type(error_t), intent(inout) :: error
+      real(dp), intent(out), optional :: dropped
+         !! Electrons the removed points carried, `sum(rho*w)` over them; zero
+         !! when nothing was removed
+
+      real(dp), allocatable :: rho_pt(:), ao(:, :), rho(:), d_sig(:, :), extents(:)
+      logical, allocatable :: shell_mask(:), keep(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer :: g0, g1, nb, n_sig, ia, ja, n_before, n_after
+      real(dp) :: n_total, n_dropped
+      type(error_t) :: local_error
+      logical :: failed
+      character(len=160) :: line
+
+      if (present(dropped)) dropped = 0.0_dp
+      if (.not. ctx%active) return
+      if (ctx%small_rho_cutoff <= 0.0_dp) return
+      if (ctx%grid_pruned) return
+      ctx%grid_pruned = .true.
+      n_before = ctx%grid%n_points
+      if (n_before == 0) return
+
+      allocate (rho_pt(n_before))
+      rho_pt = 0.0_dp
+      failed = .false.
+      call shell_extents(mol, ctx%screen_tol, extents)
+
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, rho_pt, error, failed, extents) &
+      !$omp    private(g0, g1, nb, ao, rho, d_sig, shell_mask, ao_list, ao_offset, n_sig, ia, ja) &
+      !$omp    firstprivate(local_error)
+      allocate (d_sig(mol%nao, mol%nao))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
+      !$omp do schedule(dynamic)
+      do g0 = 1, ctx%grid%n_points, ctx%point_block
+         if (failed) cycle
+         g1 = min(g0 + ctx%point_block - 1, ctx%grid%n_points)
+         nb = g1 - g0 + 1
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig)
+         if (n_sig == 0) cycle
+         do ja = 1, n_sig
+            do ia = 1, n_sig
+               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+            end do
+         end do
+         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
+                            shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
+         if (local_error%has_error()) then
+            !$omp critical (xc_prune_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_prune_failure)
+            cycle
+         end if
+         call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
+         rho_pt(g0:g1) = rho(1:nb)
+      end do
+      !$omp end do
+      !$omp end parallel
+      if (failed) return
+
+      n_total = sum(rho_pt*ctx%grid%weights)
+      if (abs(n_total - real(n_electrons, dp)) >= 0.02_dp*n_total) then
+         write (line, "(a,f10.4,a,i0,a)") "  XC grid: small-rho pruning skipped, the guess density integrates to ", &
+            n_total, " electrons, not ", n_electrons, "."
+         call logger%info(trim(line))
+         return
+      end if
+
+      allocate (keep(n_before))
+      keep = abs(rho_pt*ctx%grid%weights) > ctx%small_rho_cutoff/real(n_before, dp)
+      n_dropped = sum(rho_pt*ctx%grid%weights, mask=.not. keep)
+      call ctx%grid%keep_points(keep)
+      ! Removing points shifted every block boundary after the first gap.
+      call ctx%grid%block_order(ctx%point_block)
+      ctx%block_stats_logged = .false.
+      if (present(dropped)) dropped = n_dropped
+      n_after = ctx%grid%n_points
+      write (line, "(a,es9.2,a,i0,a,i0,a,es10.2,a)") "  XC grid: small-rho pruning (cutoff ", &
+         ctx%small_rho_cutoff, "): ", n_before, " -> ", n_after, " points, dropped electrons ", &
+         n_dropped, "."
+      call logger%info(trim(line))
+   end subroutine xc_prune_small_rho
 
    subroutine xc_add_potential_uks(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, &
                                    e_xc, n_elec, error)
@@ -1795,6 +2013,12 @@ contains
       type(error_t) :: local_error
       logical :: failed
       integer :: g0, g1, nb, i, ig, id
+      real(dp) :: t0, t1, t2, t3, t4, t5, t6
+      type(timer_type) :: clock
+         !! One per thread, started once; the phases are read off it
+      real(dp) :: t_acc(4)
+      real(dp) :: t_sum(4)   !! `t_acc` summed over the threads that ran
+      integer :: n_ran       !! Threads that entered the region
 
       v_alpha = 0.0_dp
       v_beta = 0.0_dp
@@ -1823,10 +2047,13 @@ contains
       ! One bound per shell for the whole molecule, computed once and read by
       ! every block of every iteration.
       call shell_extents(mol, ctx%screen_tol, extents)
+      call xc_log_block_stats(ctx, mol, extents)
 
+      t_sum = 0.0_dp
+      n_ran = 0
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, e_xc, n_elec, &
-      !$omp           error, failed, extents) &
+      !$omp           error, failed, extents, t_sum, n_ran) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho_a, rho_b, grad_a, &
       !$omp            grad_b, tau_a, tau_b, rho, sigma, tau, lapl, exc, vrho, &
       !$omp            vsigma, vtau, exc_i, vrho_i, vsigma_i, vtau_i, vlapl, &
@@ -1834,6 +2061,7 @@ contains
       !$omp    private(va_local, vb_local, e_local, n_local) &
       !$omp    private(va_sig, vb_sig, da_sig, db_sig, shell_mask, ao_list, &
       !$omp            ao_offset, n_sig, ia, ja) &
+      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc, clock) &
       !$omp    firstprivate(local_error)
       allocate (va_local(size(v_alpha, 1), size(v_alpha, 2)))
       allocate (vb_local(size(v_beta, 1), size(v_beta, 2)))
@@ -1847,6 +2075,8 @@ contains
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
       e_local = 0.0_dp
       n_local = 0.0_dp
+      t_acc = 0.0_dp
+      call clock%start()
 
       !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, ctx%point_block
@@ -1862,8 +2092,10 @@ contains
          ! the test is on the basis and the geometry, and knows nothing about
          ! which density is being contracted -- so one screen serves both, and
          ! the two spin matrices stay on the same index set as each other.
+         t0 = clock%get_elapsed_time()
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
+         t1 = clock%get_elapsed_time()
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
          do ja = 1, n_sig
@@ -1880,6 +2112,7 @@ contains
          ! checked once, before anything reads `ao`. That ordering is load-bearing:
          ! `eval_ao_block` returns without allocating `ao` on its error paths, so
          ! calling `eval_rho` first would hand it an unallocated array.
+         t2 = clock%get_elapsed_time()
          if (ctx%any_gga .or. ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
@@ -1889,6 +2122,7 @@ contains
                                shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
          end if
+         t3 = clock%get_elapsed_time()
          if (local_error%has_error()) then
             !$omp critical (xc_uks_failure)
             if (.not. failed) then
@@ -1914,6 +2148,7 @@ contains
             call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), rho_b)
          end if
 
+         t4 = clock%get_elapsed_time()
          if (allocated(rho)) deallocate (rho, exc, vrho, exc_i, vrho_i, vrho_s)
          allocate (rho(2*nb), exc(nb), vrho(2*nb), exc_i(nb), vrho_i(2*nb), vrho_s(nb))
          exc = 0.0_dp
@@ -1967,6 +2202,7 @@ contains
 
          ! exc is per particle, so the energy density is the *total* density times
          ! it -- one of the two places a polarised functional is silently halved.
+         t5 = clock%get_elapsed_time()
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b))
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b)*exc)
 
@@ -2032,6 +2268,8 @@ contains
                   vb_local(ao_list(ia), ao_list(ja)) + vb_sig(ia, ja)
             end do
          end do
+         t6 = clock%get_elapsed_time()
+         t_acc = t_acc + [(t1 - t0) + (t3 - t2), (t2 - t1) + (t4 - t3), t5 - t4, t6 - t5]
       end do
       !$omp end do
 
@@ -2040,11 +2278,14 @@ contains
       ! shared pair on every block.
       !$omp critical (xc_uks_reduce)
       v_alpha = v_alpha + va_local
+      t_sum = t_sum + t_acc
+      n_ran = n_ran + 1
       v_beta = v_beta + vb_local
       e_xc = e_xc + e_local
       n_elec = n_elec + n_local
       !$omp end critical (xc_uks_reduce)
       !$omp end parallel
+      profile_seconds = profile_seconds + t_sum/real(max(1, n_ran), dp)
 
       ! VV10 sees only the total density, so one evaluation serves both spins and
       ! its contribution is identical in each: the kernel is built from rho and
@@ -3990,6 +4231,8 @@ contains
       call build_dft_grid(mol%coords, numbers, ctx%nlc_grid, error, &
                           level=ctx%nlc_grid_level)
       deallocate (numbers)
+      if (error%has_error()) return
+      call ctx%nlc_grid%block_order(ctx%point_block)
    end subroutine ensure_nlc_grid
 
 #ifdef MQC_WITH_LIBXC

@@ -18,7 +18,7 @@ module mqc_method_config
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
                                        DEFAULT_EXCITED_BATCH, &
-                                       DEFAULT_SOSCF_START
+                                       DEFAULT_SOSCF_START, DEFAULT_COSX_GRID
    implicit none
    private
 
@@ -145,6 +145,14 @@ module mqc_method_config
          !! four-index path and fits whether or not this is set. libcint has
          !! both, and `aux_basis_set` carries a default, so which one runs has
          !! to be asked for rather than inferred from an auxiliary being present.
+      logical :: cosx = .false.
+         !! `keywords.scf.exchange: "cosx"`. Build the exchange matrix by
+         !! chain-of-spheres quadrature, with the Coulomb matrix still fitted.
+         !! CPU backend only, restricted only, and only with `density_fitting`.
+      integer :: cosx_grid = DEFAULT_COSX_GRID
+         !! `keywords.scf.cosx_grid`, 1 to 3: the size of the exchange grids
+      logical :: cosx_final_grid = .true.
+         !! `keywords.scf.cosx_final_grid`: the final energy on the larger grid
    end type scf_config_t
 
    !============================================================================
@@ -285,6 +293,9 @@ module mqc_method_config
          !! Negative means the backend's own default.
       real(dp) :: screening_tolerance = 1.0e-12_dp
          !! AO value below which a shell is dropped from a grid block.
+      real(dp) :: small_rho_cutoff = 1.0e-7_dp
+         !! Grid points with `abs(rho*w)` not above this over the grid size, on the
+         !! guess density, are dropped once per SCF; zero or negative keeps the whole grid.
       integer :: block_size = -1
          !! Grid points per block; -1 keeps the backend default.
       integer :: radial_points = 75
@@ -444,6 +455,11 @@ module mqc_method_config
          !! Force UHF/UKS even for a closed shell
       logical :: density_fitting = .false.
          !! Fit J and K rather than computing exact integrals
+      logical :: cosx = .false.
+         !! Build the exchange matrix by chain-of-spheres quadrature; see
+         !! `scf_config_t`
+      integer :: cosx_grid = DEFAULT_COSX_GRID  !! See `scf_config_t`
+      logical :: cosx_final_grid = .true.  !! See `scf_config_t`
       logical :: freeze_core = .true.
          !! Exclude core orbitals from a post-SCF correlation treatment. Always
          !! filled from `correlation_config_t`, whose default this must match:

@@ -5573,6 +5573,69 @@
             "hessian_tolerance": 0.00015,
             "requires": "libxc",
             "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX H2O def2-svp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_water_def2-svp_rijcosx_grid2.json",
+            "expected_energy": -75.96074964512,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX H2O def2-tzvp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_water_def2-tzvp_rijcosx_grid2.json",
+            "expected_energy": -76.058948846516,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX CH4 def2-svp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_ch4_def2-svp_rijcosx_grid2.json",
+            "expected_energy": -40.169193324268,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX NH3 def2-tzvp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_nh3_def2-tzvp_rijcosx_grid2.json",
+            "expected_energy": -56.218311385288,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX HCN def2-svp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_hcn_def2-svp_rijcosx_grid2.json",
+            "expected_energy": -92.799716342665,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX H2S def2-svp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_h2s_def2-svp_rijcosx_grid2.json",
+            "expected_energy": -398.567112391554,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX HCl def2-tzvp grid 2, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_hcl_def2-tzvp_rijcosx_grid2.json",
+            "expected_energy": -460.098126124042,
+            "tolerance": 0.0001,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX H2O def2-svp grid 1, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_water_def2-svp_rijcosx_grid1.json",
+            "expected_energy": -75.96074964512,
+            "tolerance": 0.00015,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RIJCOSX H2O def2-svp grid 3, against a fitted Coulomb matrix with exact exchange (CPU)",
+            "input": "inputs/cpu/mqc/cosx/cpu_water_def2-svp_rijcosx_grid3.json",
+            "expected_energy": -75.96074964512,
+            "tolerance": 5e-05,
+            "type": "unfragmented"
         }
     ]
 }

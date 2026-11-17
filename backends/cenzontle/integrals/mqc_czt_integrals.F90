@@ -21,8 +21,9 @@ module mqc_czt_integrals
    !! `mqc_czt_direct` and in `build_df_tensor` below.
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: nuclear_repulsion
-   use pic_blas_interfaces, only: pic_gemm, pic_trsm
-   use mqc_program_limits, only: DF_METRIC_PANEL_BYTES, DF_PAIR_SCREEN, ERI_PACKED_SCREEN
+   use pic_blas_interfaces, only: pic_gemm, pic_gemv, pic_trsm
+   use pic_logger, only: logger => global_logger
+   use mqc_program_limits, only: DF_AUX_CHUNK, DF_METRIC_PANEL_BYTES, DF_PAIR_SCREEN, ERI_PACKED_SCREEN
    use mqc_timing, only: timing_report_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type, atomic_basis_type
@@ -191,6 +192,9 @@ module mqc_czt_integrals
    public :: hgp_libfint_covers
    public :: build_czt_molecule
    public :: build_df_tensor
+   public :: df_jfit_t
+   public :: build_df_jfit
+   public :: df_jfit_coulomb
    public :: build_sap_potential
    public :: build_df_mo_tensor
    public :: build_df_mo_block
@@ -224,6 +228,36 @@ module mqc_czt_integrals
    public :: metric_inverse_sqrt
    public :: FIT_METRIC_THRESHOLD
    public :: subshell_layout
+
+   type :: df_jfit_t
+      !! What a Coulomb-only density fit keeps instead of the fitted tensor B
+      !!
+      !! `J_mn = sum_PQ (mn|P) [J^-1]_PQ sum_ls (Q|ls) D_ls` needs the raw
+      !! three-centre integrals and the metric's factor, and nothing else: B,
+      !! which folds `J^-1/2` into every row, is only wanted by exchange. So
+      !! the `(mn|Q) J^-1/2` transform is not done, and the integrals are kept
+      !! for the unique orbital pairs of the kept shell pairs rather than for
+      !! the full `nao^2` square.
+      !!
+      !! Rows are the functions `mu >= nu` of every shell pair `ish >= jsh`
+      !! that passed the same Schwarz screen `three_centre` applies, pair after
+      !! pair; within a pair, off-diagonal shell pairs are `di x dj` with `i`
+      !! fastest, and a diagonal one holds `mu >= nu` only, column by column.
+      integer :: nao = 0
+      integer :: naux = 0
+      integer :: nrow = 0                         !! Rows of `raw`
+      integer :: npair = 0                        !! Shell pairs kept
+      integer, allocatable :: pair_i(:)           !! Shell `ish` of each kept pair, 1-based
+      integer, allocatable :: pair_j(:)           !! Shell `jsh <= ish`, 1-based
+      integer, allocatable :: pair_row(:)         !! Row before the first one of each pair, 0-based
+      integer, allocatable :: row_mu(:)           !! Function `mu` of each row, 1-based
+      integer, allocatable :: row_nu(:)           !! Function `nu <= mu` of each row
+      real(dp), allocatable :: raw(:, :)          !! `(mu nu | P)`, `(nrow, naux)`
+      real(dp), allocatable :: factor(:, :)       !! The metric's factor, as `fit_metric_factor` returns it
+      logical :: cholesky = .true.                !! True: `factor` is `U` with `J = U^T U`; else `J^(-1/2)`
+   contains
+      procedure :: bytes => df_jfit_bytes
+   end type df_jfit_t
 
    type :: czt_molecule_t
       !! One molecule, packed the way libcint wants it
@@ -1847,6 +1881,249 @@ contains
       call clk%report("density fitting")
    end subroutine build_df_tensor
 
+   subroutine build_df_jfit(orb, aux, jfit, error, screen)
+      !! The Coulomb-only density fit: raw `(mu nu|P)` for the kept pairs, and the metric factor
+      !!
+      !! The same two-centre metric, screen, shell pairs and libcint calls
+      !! `build_df_tensor` makes, through the helpers it shares with
+      !! `three_centre`; what it does not do is expand to the `nao^2` square or
+      !! solve against the metric over every row. Fit the density instead with
+      !! `df_jfit_coulomb`.
+      type(czt_molecule_t), intent(in) :: orb   !! Orbital basis
+      type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
+      type(df_jfit_t), intent(out) :: jfit
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: screen
+         !! Default true: the Schwarz screen of `three_centre`. False keeps every
+         !! shell pair and triplet, which is what a test compares the screened
+         !! build against.
+
+      real(dp), allocatable :: metric(:, :), aux_bound(:), buf(:), q_pair(:, :)
+      real(dp) :: q_bra
+      logical :: screening
+      integer, allocatable :: bas(:, :)
+      real(dp), allocatable :: env(:)
+      integer :: nbas_orb, nbas_aux, dummy, ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko
+      integer :: i, j, k, r, row0, kcol, ret, idx, npair
+      type(c_ptr) :: opt
+      type(timing_report_t) :: clk
+      real(dp) :: dense_bytes
+      character(len=160) :: line
+
+      if (orb%cartesian .neqv. aux%cartesian) then
+         call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
+                        angular_form_name(orb%cartesian)//" and the auxiliary basis is "// &
+                        angular_form_name(aux%cartesian)//". libcint builds all three "// &
+                        "centres of a fitting integral in one form, so the two must "// &
+                        "agree; choose an auxiliary basis of the same kind.")
+         return
+      end if
+
+      nbas_orb = orb%nbas
+      nbas_aux = aux%nbas
+      jfit%nao = orb%nao
+      jfit%naux = aux%nao
+
+      call clk%start()
+      call clk%begin("2-centre metric")
+      call two_centre(aux, metric)
+      call clk%lap()
+
+      call clk%begin("3-centre integrals (packed)")
+      screening = .true.
+      if (present(screen)) screening = screen
+      if (screening) then
+         aux_bound = aux_shell_bounds(aux, metric)
+         call screened_pair_list(orb, aux_bound, jfit%pair_i, jfit%pair_j, npair, q_pair)
+      else
+         allocate (aux_bound(0), q_pair(0, 0))
+         call screened_pair_list(orb, pair_i=jfit%pair_i, pair_j=jfit%pair_j, npair=npair)
+      end if
+      jfit%npair = npair
+
+      ! Rows: one per function pair `mu >= nu` of each kept shell pair.
+      allocate (jfit%pair_row(npair + 1))
+      jfit%pair_row(1) = 0
+      do ipair = 1, npair
+         di = orb%shell_offset(jfit%pair_i(ipair) + 1) - orb%shell_offset(jfit%pair_i(ipair))
+         dj = orb%shell_offset(jfit%pair_j(ipair) + 1) - orb%shell_offset(jfit%pair_j(ipair))
+         if (jfit%pair_i(ipair) == jfit%pair_j(ipair)) then
+            jfit%pair_row(ipair + 1) = jfit%pair_row(ipair) + di*(di + 1)/2
+         else
+            jfit%pair_row(ipair + 1) = jfit%pair_row(ipair) + di*dj
+         end if
+      end do
+      jfit%nrow = jfit%pair_row(npair + 1)
+
+      allocate (jfit%row_mu(jfit%nrow), jfit%row_nu(jfit%nrow))
+      do ipair = 1, npair
+         ish = jfit%pair_i(ipair)
+         jsh = jfit%pair_j(ipair)
+         di = orb%shell_offset(ish + 1) - orb%shell_offset(ish)
+         dj = orb%shell_offset(jsh + 1) - orb%shell_offset(jsh)
+         io = orb%shell_offset(ish)
+         jo = orb%shell_offset(jsh)
+         r = jfit%pair_row(ipair)
+         do j = 1, dj
+            do i = merge(j, 1, ish == jsh), di
+               r = r + 1
+               jfit%row_mu(r) = io + i
+               jfit%row_nu(r) = jo + j
+            end do
+         end do
+      end do
+
+      allocate (jfit%raw(jfit%nrow, jfit%naux))
+      ! First touch in parallel, for the reason `three_centre` gives.
+      !$omp parallel do default(none) shared(jfit) private(kcol) schedule(static)
+      do kcol = 1, jfit%naux
+         jfit%raw(:, kcol) = 0.0_dp
+      end do
+      !$omp end parallel do
+
+      call build_df_shell_table(orb, aux, bas, env, dummy)
+      call df_three_centre_optimizer(orb, aux, bas, env, opt)
+
+      !$omp parallel default(none) &
+      !$omp    shared(orb, aux, bas, env, jfit, nbas_orb, nbas_aux, dummy, npair, opt, aux_bound, q_pair, &
+      !$omp           screening) &
+      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, r, row0, ret, idx, buf, q_bra)
+      allocate (buf(max_block(orb)**2*max_block(aux)))
+      !$omp do schedule(dynamic)
+      do ipair = 1, npair
+         ish = jfit%pair_i(ipair)
+         jsh = jfit%pair_j(ipair)
+         di = shell_dim(orb%cartesian, ish - 1, bas)
+         dj = shell_dim(orb%cartesian, jsh - 1, bas)
+         io = orb%shell_offset(ish)
+         jo = orb%shell_offset(jsh)
+         row0 = jfit%pair_row(ipair)
+         q_bra = 0.0_dp
+         if (screening) q_bra = q_pair(ish, jsh)
+         do ksh = 1, nbas_aux
+            ! The same per-triplet test `three_centre` applies.
+            if (screening) then
+               if (q_bra*aux_bound(ksh) < DF_PAIR_SCREEN) cycle
+            end if
+            dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
+            ko = aux%shell_offset(ksh)
+            call df_three_centre_block(orb, aux, bas, env, dummy, opt, ish, jsh, ksh, buf, ret)
+            if (ret == 0) cycle
+            do k = 1, dk
+               r = row0
+               do j = 1, dj
+                  do i = merge(j, 1, ish == jsh), di
+                     r = r + 1
+                     idx = i + (j - 1)*di + (k - 1)*di*dj
+                     jfit%raw(r, ko + k) = buf(idx)
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
+      call libcint_del_optimizer(opt)
+      call clk%lap()
+
+      call clk%begin("metric factor")
+      call fit_metric_factor(metric, jfit%factor, jfit%cholesky, error)
+      call clk%lap()
+      if (error%has_error()) return
+      call clk%finish()
+      call clk%report("density fitting (J only)")
+
+      dense_bytes = 8.0_dp*real(orb%nao, dp)**2*real(aux%nao, dp)
+      write (line, "(a,i0,a,i0,a,f9.3,a,f9.3,a)") "    J fit: ", jfit%nrow, " of ", &
+         orb%nao*(orb%nao + 1)/2, " function pairs kept, ", jfit%bytes()/1.0e9_dp, &
+         " GB against ", dense_bytes/1.0e9_dp, " GB for the dense tensor"
+      call logger%verbose(trim(line))
+   end subroutine build_df_jfit
+
+   subroutine df_jfit_coulomb(jfit, density, j_mat)
+      !! The fitted Coulomb matrix `J_mn = sum_P (mn|P) c_P` for a symmetric density
+      !!
+      !! `d_P = sum_ls (P|ls) D_ls`, `c = J^-1 d` by the factor `build_df_jfit`
+      !! kept (two triangular solves, or two products with `J^(-1/2)` where the
+      !! metric was too nearly singular for a Cholesky), then back through the
+      !! same integrals. Equal to `B (B^T D)` of the dense path.
+      !!
+      !! Off-diagonal function pairs stand for both `(mu nu)` and `(nu mu)`, so
+      !! they enter `d` with `D_mn + D_nm`; the diagonal ones once. `j_mat` is
+      !! filled in both triangles.
+      type(df_jfit_t), intent(in) :: jfit
+      real(dp), intent(in) :: density(:, :)   !! `(nao, nao)`
+      real(dp), intent(out) :: j_mat(:, :)    !! `(nao, nao)`
+
+      real(dp), allocatable :: dvec(:), d(:), c(:, :), tmp(:), jvec(:), j_local(:)
+      integer :: p0, p1, r, mu, nu, naux
+
+      naux = jfit%naux
+      allocate (dvec(jfit%nrow), d(naux), c(naux, 1), tmp(naux), jvec(jfit%nrow))
+
+      do r = 1, jfit%nrow
+         mu = jfit%row_mu(r)
+         nu = jfit%row_nu(r)
+         if (mu == nu) then
+            dvec(r) = density(mu, mu)
+         else
+            dvec(r) = density(mu, nu) + density(nu, mu)
+         end if
+      end do
+
+      !$omp parallel do default(none) shared(jfit, dvec, d, naux) private(p0, p1) schedule(static)
+      do p0 = 1, naux, DF_AUX_CHUNK
+         p1 = min(p0 + DF_AUX_CHUNK - 1, naux)
+         call pic_gemv(jfit%raw(:, p0:p1), dvec, d(p0:p1), trans_a="T")
+      end do
+      !$omp end parallel do
+
+      if (jfit%cholesky) then
+         ! J = U^T U, so c = U^-1 U^-T d.
+         c(:, 1) = d
+         call pic_trsm(jfit%factor, c, side="L", uplo="U", transa="T")
+         call pic_trsm(jfit%factor, c, side="L", uplo="U", transa="N")
+      else
+         call pic_gemv(jfit%factor, d, tmp)
+         call pic_gemv(jfit%factor, tmp, c(:, 1))
+      end if
+
+      jvec = 0.0_dp
+      !$omp parallel default(none) shared(jfit, c, jvec, naux) private(p0, p1, j_local)
+      allocate (j_local(jfit%nrow))
+      j_local = 0.0_dp
+      !$omp do schedule(static)
+      do p0 = 1, naux, DF_AUX_CHUNK
+         p1 = min(p0 + DF_AUX_CHUNK - 1, naux)
+         call pic_gemv(jfit%raw(:, p0:p1), c(p0:p1, 1), j_local, beta=1.0_dp)
+      end do
+      !$omp end do
+      !$omp critical(mqc_df_jfit_coulomb)
+      jvec = jvec + j_local
+      !$omp end critical(mqc_df_jfit_coulomb)
+      deallocate (j_local)
+      !$omp end parallel
+
+      ! Pairs the screen removed have no row and their elements are zero.
+      j_mat = 0.0_dp
+      do r = 1, jfit%nrow
+         j_mat(jfit%row_mu(r), jfit%row_nu(r)) = jvec(r)
+         j_mat(jfit%row_nu(r), jfit%row_mu(r)) = jvec(r)
+      end do
+   end subroutine df_jfit_coulomb
+
+   pure function df_jfit_bytes(this) result(n)
+      !! Bytes held by the packed integrals, the factor and the row maps
+      class(df_jfit_t), intent(in) :: this
+      real(dp) :: n
+
+      n = 0.0_dp
+      if (allocated(this%raw)) n = n + 8.0_dp*real(size(this%raw), dp)
+      if (allocated(this%factor)) n = n + 8.0_dp*real(size(this%factor), dp)
+      if (allocated(this%row_mu)) n = n + 8.0_dp*real(size(this%row_mu), dp)
+   end function df_jfit_bytes
+
    subroutine fit_metric_factor(metric, factor, cholesky, error)
       !! Factor the fitting metric, the cheap way if it will take one
       !!
@@ -2463,12 +2740,11 @@ contains
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:), buf(:)
       integer :: nbas_orb, nbas_aux, dummy
-      integer :: shls(4)
       integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
       integer :: npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:)
       real(dp), allocatable :: q_pair(:, :)
-      real(dp) :: q_aux_max, q_bra
+      real(dp) :: q_bra
       logical :: screening
       integer :: kcol
       type(c_ptr) :: opt
@@ -2494,42 +2770,14 @@ contains
       ! (ij|K) is symmetric in i and j, so only the lower triangle of the
       ! orbital shell pairs is computed and each block is written into both
       ! halves.
-      !
-      ! Pairs that cannot contribute are dropped before the list is built.
-      ! `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so one bound per pair decides it
-      ! for every auxiliary function at once. The bounds cost nbas^2 quartets
-      ! against the nbas^2 * nbas_aux triplets they screen.
-      allocate (pair_i(nbas_orb*(nbas_orb + 1)/2), pair_j(nbas_orb*(nbas_orb + 1)/2))
       screening = present(aux_bound)
       if (screening) then
-         call shell_pair_bounds(orb, q_pair)
-         q_aux_max = maxval(aux_bound)
-      end if
-      npair = 0
-      do ish = 1, nbas_orb
-         do jsh = 1, ish
-            ! The pair level first, against the largest auxiliary shell: a pair
-            ! that cannot reach even that one never enters the loop below.
-            if (screening) then
-               if (q_pair(ish, jsh)*q_aux_max < DF_PAIR_SCREEN) cycle
-            end if
-            npair = npair + 1
-            pair_i(npair) = ish
-            pair_j(npair) = jsh
-         end do
-      end do
-
-      ! Built once for the combined orbital+auxiliary shell set and read by
-      ! every thread. Without it libcint redoes the per-shell-pair setup --
-      ! `CINTinit_int3c2e_EnvVars`, `CINTset_pairdata` -- on every call.
-      opt = c_null_ptr
-      if (orb%cartesian) then
-         call libcint_3c2e_cart_optimizer(opt, orb%atm, orb%natm, bas, &
-                                          nbas_orb + nbas_aux + 1, env)
+         call screened_pair_list(orb, aux_bound, pair_i, pair_j, npair, q_pair)
       else
-         call libcint_3c2e_sph_optimizer(opt, orb%atm, orb%natm, bas, &
-                                         nbas_orb + nbas_aux + 1, env)
+         call screened_pair_list(orb, pair_i=pair_i, pair_j=pair_j, npair=npair)
       end if
+
+      call df_three_centre_optimizer(orb, aux, bas, env, opt)
 
       ! No accumulator to reduce, unlike the Fock build: a shell pair owns its
       ! block of `three`, so no two iterations write the same element and the
@@ -2538,7 +2786,7 @@ contains
       !$omp parallel default(none) &
       !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt, &
       !$omp           screening, q_pair, aux_bound) &
-      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf, q_bra)
+      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, ret, idx, buf, q_bra)
       allocate (buf(max_block(orb)**2*max_block(aux)))
 
       !$omp do schedule(dynamic)
@@ -2561,14 +2809,7 @@ contains
             end if
             dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
             ko = aux%shell_offset(ksh)
-            shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
-            if (orb%cartesian) then
-               ret = libcint_3c2e_cart(buf, shls, orb%atm, orb%natm, bas, &
-                                       nbas_orb + nbas_aux + 1, env, opt)
-            else
-               ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
-                                      nbas_orb + nbas_aux + 1, env, opt)
-            end if
+            call df_three_centre_block(orb, aux, bas, env, dummy, opt, ish, jsh, ksh, buf, ret)
             if (ret == 0) cycle
             do k = 1, dk
                do j = 1, dj
@@ -2592,6 +2833,101 @@ contains
       call libcint_del_optimizer(opt)
       deallocate (pair_i, pair_j)
    end subroutine three_centre
+
+   subroutine screened_pair_list(orb, aux_bound, pair_i, pair_j, npair, q_pair)
+      !! The orbital shell pairs `ish >= jsh` that can reach any auxiliary function
+      !!
+      !! Shared by `three_centre` and `build_df_jfit`, so the dense tensor and
+      !! the packed one keep the same pairs by construction.
+      !!
+      !! Pairs that cannot contribute are dropped before the list is built.
+      !! `|(mn|P)| <= sqrt((mn|mn)) sqrt((P|P))`, so one bound per pair decides it
+      !! for every auxiliary function at once. The bounds cost nbas^2 quartets
+      !! against the nbas^2 * nbas_aux triplets they screen.
+      type(czt_molecule_t), intent(in) :: orb
+      real(dp), intent(in), optional :: aux_bound(:)
+         !! As for `three_centre`. Absent keeps every pair, and `q_pair` is then
+         !! not allocated.
+      integer, allocatable, intent(out) :: pair_i(:), pair_j(:)
+         !! Shell indices, 1-based, `npair` of them
+      integer, intent(out) :: npair
+      real(dp), allocatable, intent(out), optional :: q_pair(:, :)
+         !! `sqrt(max |(MN|MN)|)`, which the caller's per-triplet test needs too
+
+      real(dp), allocatable :: q_loc(:, :)
+      real(dp) :: q_aux_max
+      integer :: ish, jsh
+      logical :: screening
+
+      allocate (pair_i(orb%nbas*(orb%nbas + 1)/2), pair_j(orb%nbas*(orb%nbas + 1)/2))
+      screening = present(aux_bound)
+      q_aux_max = 0.0_dp
+      if (screening) then
+         call shell_pair_bounds(orb, q_loc)
+         q_aux_max = maxval(aux_bound)
+      end if
+      npair = 0
+      do ish = 1, orb%nbas
+         do jsh = 1, ish
+            ! The pair level first, against the largest auxiliary shell: a pair
+            ! that cannot reach even that one never enters the loop below.
+            if (screening) then
+               if (q_loc(ish, jsh)*q_aux_max < DF_PAIR_SCREEN) cycle
+            end if
+            npair = npair + 1
+            pair_i(npair) = ish
+            pair_j(npair) = jsh
+         end do
+      end do
+      if (present(q_pair) .and. screening) call move_alloc(q_loc, q_pair)
+   end subroutine screened_pair_list
+
+   subroutine df_three_centre_optimizer(orb, aux, bas, env, opt)
+      !! The libcint optimizer for the combined orbital + auxiliary shell table
+      !!
+      !! Built once and read by every thread. Without it libcint redoes the
+      !! per-shell-pair setup -- `CINTinit_int3c2e_EnvVars`, `CINTset_pairdata`
+      !! -- on every call. Release with `libcint_del_optimizer`.
+      type(czt_molecule_t), intent(in) :: orb, aux
+      integer, intent(in) :: bas(:, :)
+      real(dp), intent(in) :: env(:)
+      type(c_ptr), intent(out) :: opt
+
+      opt = c_null_ptr
+      if (orb%cartesian) then
+         call libcint_3c2e_cart_optimizer(opt, orb%atm, orb%natm, bas, &
+                                          orb%nbas + aux%nbas + 1, env)
+      else
+         call libcint_3c2e_sph_optimizer(opt, orb%atm, orb%natm, bas, &
+                                         orb%nbas + aux%nbas + 1, env)
+      end if
+   end subroutine df_three_centre_optimizer
+
+   subroutine df_three_centre_block(orb, aux, bas, env, dummy, opt, ish, jsh, ksh, buf, ret)
+      !! One shell triplet `(ish jsh | ksh)` of the fitting integrals
+      !!
+      !! `buf` comes back as `(di, dj, dk)`, `di` fastest. `ret` is zero when
+      !! libcint found the block to vanish, in which case `buf` is not written.
+      type(czt_molecule_t), intent(in) :: orb, aux
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: dummy, ish, jsh, ksh
+      real(dp), intent(in) :: env(:)
+      type(c_ptr), intent(in) :: opt
+      real(dp), intent(inout) :: buf(:)
+      contiguous :: buf
+      integer, intent(out) :: ret
+
+      integer :: shls(4)
+
+      shls = [ish - 1, jsh - 1, orb%nbas + ksh - 1, dummy - 1]
+      if (orb%cartesian) then
+         ret = libcint_3c2e_cart(buf, shls, orb%atm, orb%natm, bas, &
+                                 orb%nbas + aux%nbas + 1, env, opt)
+      else
+         ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                orb%nbas + aux%nbas + 1, env, opt)
+      end if
+   end subroutine df_three_centre_block
 
    subroutine molecule_eris(this, eri)
       !! Every two-electron integral, in core, as (ij|kl)

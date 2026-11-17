@@ -412,6 +412,10 @@ contains
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")
       call allow(keys, "density_fitting")
+      ! How the exchange matrix is built: "exact" or "cosx".
+      call allow(keys, "exchange")
+      call allow(keys, "cosx_grid")
+      call allow(keys, "cosx_final_grid")
       call allow(keys, "level_shift")
       call allow(keys, "diis")
       call allow(keys, "diis_size")
@@ -501,6 +505,7 @@ contains
       call allow(keys, "radial_points")
       call allow(keys, "angular_points")
       call allow(keys, "screening_tolerance")
+      call allow(keys, "small_rho_cutoff")
       call allow(keys, "block_size")
       ! Not quadrature, and the exception to the comment above: the empirical
       ! dispersion correction is a term added to the energy, but it is chosen

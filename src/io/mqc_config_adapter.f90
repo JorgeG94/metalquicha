@@ -398,6 +398,9 @@ contains
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%unrestricted
       driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
+      driver_config%method_config%scf%cosx = mqc_config%scf_cosx
+      driver_config%method_config%scf%cosx_grid = mqc_config%scf_cosx_grid
+      driver_config%method_config%scf%cosx_final_grid = mqc_config%scf_cosx_final_grid
       driver_config%method_config%corr%freeze_core = mqc_config%corr_freeze_core
       driver_config%method_config%corr%n_frozen_core = mqc_config%corr_n_frozen_core
       driver_config%method_config%corr%use_df = mqc_config%corr_density_fitting
@@ -409,6 +412,8 @@ contains
          mqc_config%dft_nlc_grid_level
       driver_config%method_config%dft%screening_tolerance = &
          mqc_config%dft_screening_tolerance
+      driver_config%method_config%dft%small_rho_cutoff = &
+         mqc_config%dft_small_rho_cutoff
       driver_config%method_config%dft%block_size = mqc_config%dft_block_size
       ! `keywords.dft.dispersion`. Both halves travel, because "off" and "off
       ! but it would have been d3bj" are the same calculation and the method

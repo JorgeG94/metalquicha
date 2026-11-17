@@ -130,7 +130,7 @@ end module
 ```
 
 ### Limit Procedure Arguments
-- Public subroutines/functions should have **6 or fewer arguments**
+- Public subroutines/functions should have **10 or fewer arguments**
 - If more are needed, group related arguments into a derived type
 - This improves readability, maintainability, and makes API changes easier
 

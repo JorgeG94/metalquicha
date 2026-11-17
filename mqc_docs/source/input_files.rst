@@ -633,7 +633,8 @@ The integration grid, and how the quadrature walks it:
      "grid_level": 3,
      "nlc_grid_level": 1,
      "screening_tolerance": 1e-12,
-     "block_size": 512
+     "small_rho_cutoff": 1e-7,
+     "block_size": 128
    }
 
 - ``grid_level``: 0 to 9, from the standard per-element tables -- the same tables
@@ -655,18 +656,39 @@ The integration grid, and how the quadrature walks it:
   how a disagreement gets bisected without rebuilding. The two paths should agree
   to a few times the threshold -- on glycine tripeptide in 6-31G* they give
   ``-700.413700086596`` and ``-700.413700086592``.
-- ``block_size``: grid points per block. Default 512; a non-positive value keeps
+- ``small_rho_cutoff``: drop grid points where the density is negligible, as
+  PySCF's ``small_rho_cutoff`` does. Once per SCF, before the first quadrature,
+  the density of the initial guess is evaluated on the grid (alpha plus beta for
+  an unrestricted run) and every point with ``abs(rho * weight)`` not above this
+  value divided by the number of grid points is removed -- PySCF's rule, so the
+  same number prunes the same points; the number of points and the electrons they carried are
+  logged. Default ``0``, off, as in PySCF; ``1e-7`` is the usual value to turn it
+  on, and on ten waters in def2-SVP it removes 14 per cent of the points, takes 14
+  per cent off the quadrature, and moves the energy by 3e-10 hartree. It moves a
+  meta-GGA Hessian more -- about 2e-7 on water in STO-3G -- which is why it is
+  not on by default. **Zero or negative keeps the whole grid.** A guess
+  that integrates more than two per cent away from the electron count leaves the
+  grid whole. Later stages that reuse the SCF's grid (gradient, Hessian, response)
+  use the pruned one. The separate VV10 grid is not pruned, and neither is a grid
+  built outside an SCF.
+- ``block_size``: grid points per block. Default 128; a non-positive value keeps
   it.
 
   This is two decisions wearing one name, which is worth knowing before turning
   it. A smaller block covers less space, so fewer shells reach it and the screen
-  keeps less of the basis -- on a 638-function peptide, 4096-point blocks keep
-  141 functions and 256-point blocks keep 116. But the loop over blocks *is* the
-  OpenMP loop, so the block count is also the thread granularity: at 4096 points
-  a level-1 grid is only 72 blocks, which on a 104-thread node leaves a third of
-  the threads with nothing to do at all. Too small and the per-block bookkeeping
-  starts to show instead. The useful value depends on the grid and the machine
-  together, which is why it is a keyword rather than a constant.
+  keeps less of the basis. The grid is reordered once, after it is built and again
+  after small-density pruning, so that every run of ``block_size`` consecutive
+  points is a compact region (recursive bisection along the longest axis), and
+  that is what makes the screen effective: on ten waters in def2-SVP the mean
+  number of functions reaching a block falls from 172 of 240 at 512 points to 129
+  at 128 and 107 at 32; on thirty-two waters, from 275 of 768 to 197 and 171.
+  A verbose run prints the mean and the largest figure for the grid in use. But
+  the loop over blocks *is* the OpenMP loop, so the block count is also the
+  thread granularity: at 4096 points a level-1 grid is only 72 blocks, which on a
+  104-thread node leaves a third of the threads with nothing to do at all. Too
+  small and the per-block bookkeeping starts to show instead. The useful value
+  depends on the grid and the machine together, which is why it is a keyword
+  rather than a constant.
 - ``dispersion``: an empirical dispersion correction on top of the Kohn-Sham
   energy and gradient. ``"d3bj"`` is D3 with Becke-Johnson rational damping and
   no three-body term, which is what ``-D3(BJ)`` names in the literature.
@@ -860,6 +882,9 @@ SCF Options
        "guess": "auto",
        "accelerator": "diis",
        "density_fitting": false,
+       "exchange": "exact",
+       "cosx_grid": 2,
+       "cosx_final_grid": true,
        "level_shift": 0.0,
        "allow_crap_scf": false,
        "linear_dependence_threshold": 1e-7
@@ -914,6 +939,36 @@ SCF Options
   and are not bit-identical.
 - ``density_fitting``: Fit J and K in the reference (default: false). Asked for
   explicitly rather than inferred from ``aux_basis`` being present.
+- ``exchange``: How the exchange matrix is built: ``"exact"`` (the default) or
+  ``"cosx"``. ``"cosx"`` is chain-of-spheres exchange, integrated on a grid,
+  and with ``density_fitting`` it is the RIJCOSX approximation: Coulomb from
+  the fit, exchange from the quadrature. It needs ``density_fitting: true`` and
+  an ``aux_basis`` that fits the Coulomb matrix well -- a ``-jfit`` or
+  ``-jkfit`` set, not an ``-rifit`` one, whose Coulomb and exchange errors
+  cancel only when both come from the fit. Implemented for a restricted
+  Hartree-Fock or global-hybrid DFT energy on the CPU backend; gradients,
+  Hessians, unrestricted references, range-separated functionals, double
+  hybrids, correlated methods, excited states, the stability analysis and the
+  second-order SCF are refused by name. The result depends on the exchange
+  grid, so it is not identical to the exact-exchange energy: on water in
+  def2-SVP it is 2.6e-5 hartree from Hartree-Fock, most of which is the fit of
+  the Coulomb matrix and not the quadrature.
+- ``cosx_grid``: Size of the chain-of-spheres grids, 1 to 3 (default: 2). Each
+  level is three grids: a coarse one for the first iterations, a small one the
+  rest run on, and a larger one for the final energy. All three are overlap
+  fitted, which is what lets them be far smaller than a DFT grid. The first two
+  are radially too coarse to take an energy from; they are there to converge
+  the density. Measured on the exchange energy of eight small molecules in
+  def2-SVP and def2-TZVP, against the analytic exchange: level 1 is within
+  0.27 kcal/mol, level 2 within 0.02 and level 3 within 0.015. Only read with
+  ``exchange: "cosx"``, and refused without it.
+- ``cosx_final_grid``: Take the final energy on the level's larger grid, from
+  the density converged on the smaller (default: true). Off, the iterations
+  run on the larger grid throughout, which costs several times more and makes
+  the energy self-consistent on that grid. The two energies differ at second
+  order in the density -- under 1e-6 hartree on everything measured -- so
+  leave it on unless that difference matters. Only read with
+  ``exchange: "cosx"``.
 - ``level_shift``: Hartree added to the virtual orbitals before each
   diagonalisation, to widen the gap the next density is built through (default:
   0.0, meaning off). Use it on an SCF that oscillates rather than one that
