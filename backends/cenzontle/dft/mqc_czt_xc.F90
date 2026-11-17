@@ -21,6 +21,7 @@ module mqc_czt_xc
    !! potential into a matrix -- is `accumulate_xc_matrix`.
    use pic_types, only: dp, int64
    use pic_logger, only: logger => global_logger
+   use pic_timer, only: timer_type
    use pic_io, only: to_char
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -1525,18 +1526,6 @@ contains
 #endif
    end subroutine xc_grid_kernel_quantities
 
-   function wall_seconds() result(t)
-      !! Wall clock in seconds, for the quadrature's per-thread accounting
-!$    use omp_lib, only: omp_get_wtime
-      real(dp) :: t
-      integer(int64) :: count, rate
-
-!$    t = omp_get_wtime()
-!$    return
-      call system_clock(count, rate)
-      t = real(count, dp)/real(rate, dp)
-   end function wall_seconds
-
    subroutine xc_profile_take(seconds)
       !! Thread-seconds of the quadrature by phase, then reset
       !!
@@ -1584,6 +1573,8 @@ contains
       logical :: failed
       integer :: g0, g1, nb, i, ig, id
       real(dp) :: t0, t1, t2, t3, t4, t5, t6
+      type(timer_type) :: clock
+         !! One per thread, started once; the phases are read off it
       real(dp) :: t_acc(4)
 
       v_xc = 0.0_dp
@@ -1637,7 +1628,7 @@ contains
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
       !$omp    private(v_local, e_local, n_local, v_sig, d_sig, shell_mask, &
       !$omp            ao_list, ao_offset, n_sig, ia, ja) &
-      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc) &
+      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc, clock) &
       !$omp    firstprivate(local_error)
       allocate (v_local(size(v_xc, 1), size(v_xc, 2)))
       v_local = 0.0_dp
@@ -1649,6 +1640,7 @@ contains
       e_local = 0.0_dp
       n_local = 0.0_dp
       t_acc = 0.0_dp
+      call clock%start()
 
       !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, ctx%point_block
@@ -1664,10 +1656,10 @@ contains
          ! basis evaluation, the density contraction, the potential gemm -- runs
          ! on that subset: both gemms are n_points * n_ao^2, so halving n_ao
          ! quarters them.
-         t0 = wall_seconds()
+         t0 = clock%get_elapsed_time()
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
-         t1 = wall_seconds()
+         t1 = clock%get_elapsed_time()
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
          ! The density restricted to the same subset. Gathered per block, which
@@ -1678,26 +1670,26 @@ contains
             end do
          end do
 
-         t2 = wall_seconds()
+         t2 = clock%get_elapsed_time()
          if (ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
-            t3 = wall_seconds()
+            t3 = clock%get_elapsed_time()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad, tau=tau)
          else if (ctx%any_gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
-            t3 = wall_seconds()
+            t3 = clock%get_elapsed_time()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
                           rho_grad=rho_grad)
          else
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
-            t3 = wall_seconds()
+            t3 = clock%get_elapsed_time()
             call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
          end if
          if (local_error%has_error()) then
@@ -1710,7 +1702,7 @@ contains
             cycle
          end if
 
-         t4 = wall_seconds()
+         t4 = clock%get_elapsed_time()
          if (allocated(exc)) deallocate (exc, vrho, exc_i, vrho_i)
          allocate (exc(nb), vrho(nb), exc_i(nb), vrho_i(nb))
          exc = 0.0_dp
@@ -1753,7 +1745,7 @@ contains
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
 
-         t5 = wall_seconds()
+         t5 = clock%get_elapsed_time()
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*rho)
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*rho*exc)
 
@@ -1786,7 +1778,7 @@ contains
                   v_local(ao_list(ia), ao_list(ja)) + v_sig(ia, ja)
             end do
          end do
-         t6 = wall_seconds()
+         t6 = clock%get_elapsed_time()
          t_acc = t_acc + [(t1 - t0) + (t3 - t2), (t2 - t1) + (t4 - t3), t5 - t4, t6 - t5]
       end do
       !$omp end do
@@ -2015,6 +2007,8 @@ contains
       logical :: failed
       integer :: g0, g1, nb, i, ig, id
       real(dp) :: t0, t1, t2, t3, t4, t5, t6
+      type(timer_type) :: clock
+         !! One per thread, started once; the phases are read off it
       real(dp) :: t_acc(4)
 
       v_alpha = 0.0_dp
@@ -2056,7 +2050,7 @@ contains
       !$omp    private(va_local, vb_local, e_local, n_local) &
       !$omp    private(va_sig, vb_sig, da_sig, db_sig, shell_mask, ao_list, &
       !$omp            ao_offset, n_sig, ia, ja) &
-      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc) &
+      !$omp    private(t0, t1, t2, t3, t4, t5, t6, t_acc, clock) &
       !$omp    firstprivate(local_error)
       allocate (va_local(size(v_alpha, 1), size(v_alpha, 2)))
       allocate (vb_local(size(v_beta, 1), size(v_beta, 2)))
@@ -2071,6 +2065,7 @@ contains
       e_local = 0.0_dp
       n_local = 0.0_dp
       t_acc = 0.0_dp
+      call clock%start()
 
       !$omp do schedule(dynamic)
       do g0 = 1, ctx%grid%n_points, ctx%point_block
@@ -2086,10 +2081,10 @@ contains
          ! the test is on the basis and the geometry, and knows nothing about
          ! which density is being contracted -- so one screen serves both, and
          ! the two spin matrices stay on the same index set as each other.
-         t0 = wall_seconds()
+         t0 = clock%get_elapsed_time()
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
                                     shell_mask, ao_list, ao_offset, n_sig)
-         t1 = wall_seconds()
+         t1 = clock%get_elapsed_time()
          if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
          do ja = 1, n_sig
@@ -2106,7 +2101,7 @@ contains
          ! checked once, before anything reads `ao`. That ordering is load-bearing:
          ! `eval_ao_block` returns without allocating `ao` on its error paths, so
          ! calling `eval_rho` first would hand it an unallocated array.
-         t2 = wall_seconds()
+         t2 = clock%get_elapsed_time()
          if (ctx%any_gga .or. ctx%any_mgga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, shell_mask=shell_mask, &
@@ -2116,7 +2111,7 @@ contains
                                shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
          end if
-         t3 = wall_seconds()
+         t3 = clock%get_elapsed_time()
          if (local_error%has_error()) then
             !$omp critical (xc_uks_failure)
             if (.not. failed) then
@@ -2142,7 +2137,7 @@ contains
             call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), rho_b)
          end if
 
-         t4 = wall_seconds()
+         t4 = clock%get_elapsed_time()
          if (allocated(rho)) deallocate (rho, exc, vrho, exc_i, vrho_i, vrho_s)
          allocate (rho(2*nb), exc(nb), vrho(2*nb), exc_i(nb), vrho_i(2*nb), vrho_s(nb))
          exc = 0.0_dp
@@ -2196,7 +2191,7 @@ contains
 
          ! exc is per particle, so the energy density is the *total* density times
          ! it -- one of the two places a polarised functional is silently halved.
-         t5 = wall_seconds()
+         t5 = clock%get_elapsed_time()
          n_local = n_local + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b))
          e_local = e_local + sum(ctx%grid%weights(g0:g1)*(rho_a + rho_b)*exc)
 
@@ -2262,7 +2257,7 @@ contains
                   vb_local(ao_list(ia), ao_list(ja)) + vb_sig(ia, ja)
             end do
          end do
-         t6 = wall_seconds()
+         t6 = clock%get_elapsed_time()
          t_acc = t_acc + [(t1 - t0) + (t3 - t2), (t2 - t1) + (t4 - t3), t5 - t4, t6 - t5]
       end do
       !$omp end do
