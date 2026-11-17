@@ -507,6 +507,10 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_rcc_lambda)
   target_link_libraries(test_mqc_czt_rcc_lambda PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The one-particle density built from the two sets of amplitudes.
+  addtest(mqc_czt_rcc_density)
+  target_link_libraries(test_mqc_czt_rcc_density PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_czt_mp2)
