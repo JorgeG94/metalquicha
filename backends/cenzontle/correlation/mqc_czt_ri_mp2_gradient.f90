@@ -49,6 +49,36 @@ module mqc_czt_ri_mp2_gradient
    private
 
    public :: czt_ri_mp2_gradient
+   public :: relaxation_input_t
+   public :: relaxed_fitted_gradient
+
+   type :: relaxation_input_t
+      !! What a fitted correlation method hands to `relaxed_fitted_gradient`
+      real(dp), allocatable :: dm1mo(:, :)
+         !! (n_mo, n_mo) unrelaxed spin-summed correlation density, molecular
+         !! orbitals, symmetric. Its occupied-virtual block is zero on entry:
+         !! the relaxation determines that block whole.
+      real(dp), allocatable :: imat(:, :)
+         !! (n_mo, n_mo) minus the two-particle density against the fitted
+         !! integrals, `-sum_qrs (tq|rs) Gamma(p,q,r,s)` at `(t, p)`. Columns of
+         !! frozen orbitals are zero.
+      real(dp), allocatable :: gamma_ao(:, :, :)
+         !! (n_ao, n_ao, n_aux) a quarter of the two-particle density
+         !! contracted with the fit coefficients, in atomic orbitals
+      real(dp), allocatable :: gamma_pq(:, :)
+         !! (n_aux, n_aux) a quarter of the same contracted twice
+      real(dp), allocatable :: three_ao(:, :)   !! ((mu nu), P) raw three-centre integrals
+      real(dp), allocatable :: jm12(:, :)       !! Inverse square root of the metric
+      real(dp), allocatable :: bref(:, :)
+         !! `three_ao` times `jm12`. Needed when the reference or the response
+         !! is fitted.
+      integer :: frozen = 0                     !! Core orbitals left out of the correlation
+      logical :: fitted_reference = .false.     !! The SCF fitted its own J and K
+      logical :: fit_response = .true.          !! Build the Z-vector's operator from the fit
+      logical :: dense = .false.                !! Hold the four-centre integrals in memory
+      real(dp) :: pt2_scale = 1.0_dp            !! A double hybrid's PT2 coefficient
+      logical :: fixed_grid = .false.           !! Leave the quadrature grid where it is
+   end type relaxation_input_t
 
 contains
 
@@ -146,6 +176,7 @@ contains
       integer :: i, j, a, b, p, q, iatom, comp, p0, p1
       real(dp) :: denom, kf, cscale
       logical :: dense, fitted, dh, fit_z
+      type(relaxation_input_t), target :: inp
 
       if (ecp_refuses_derivatives(mol%core_electrons, "RI-MP2 gradient", error)) return
 
@@ -393,6 +424,88 @@ contains
       imat(:, frozen + 1:n_o) = -transpose(lag_o)
       imat(:, n_o + 1:n_mo) = -transpose(lag_v)
 
+      ! Everything from here on is shared with any other fitted correlation
+      ! method: it needs the four intermediates above and nothing of how they
+      ! were made.
+      call build_gamma_ao(gamma, c_act, c_vir, n_ao, n_oa, n_v, n_aux, inp%gamma_ao)
+      call move_alloc(dm1mo, inp%dm1mo)
+      call move_alloc(imat, inp%imat)
+      call move_alloc(gamma_pq, inp%gamma_pq)
+      call move_alloc(three_ao, inp%three_ao)
+      call move_alloc(jm12, inp%jm12)
+      if (allocated(bref)) call move_alloc(bref, inp%bref)
+      inp%frozen = frozen
+      inp%fitted_reference = fitted
+      inp%fit_response = fit_z
+      inp%dense = dense
+      inp%pt2_scale = cscale
+      if (present(fixed_grid)) inp%fixed_grid = fixed_grid
+      call relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
+                                   gradient, error, xc, scf_density)
+
+   end subroutine czt_ri_mp2_gradient
+
+   subroutine relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
+                                      gradient, error, xc, scf_density)
+      !! Orbital relaxation and assembly for a fitted correlation energy
+      !!
+      !! Takes the unrelaxed one-particle density, the Lagrangian and the two
+      !! fitted densities, and returns the gradient: the occupied-frozen and
+      !! occupied-virtual blocks of the relaxed density, the energy-weighted
+      !! density, and every derivative-integral contraction. Nothing here knows
+      !! which correlation method made its inputs.
+      type(czt_molecule_t), intent(in) :: mol
+      type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      type(relaxation_input_t), intent(inout), target :: inp
+         !! The densities are completed in place: `dm1mo` gains its relaxed
+         !! blocks and `imat` its virtual-occupied one
+      real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, n_atoms), hartree/bohr
+      type(error_t), intent(inout) :: error
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Present for a double hybrid's perturbative term; see
+         !! `czt_ri_mp2_gradient`
+      real(dp), intent(in), optional :: scf_density(:, :)
+
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
+      real(dp), allocatable :: hf_density(:, :), dm1(:, :), dm1_total(:, :), dm1p(:, :)
+      real(dp), allocatable :: veff(:, :), xvo(:, :, :), zvec(:, :, :), zeta(:, :)
+      real(dp), allocatable :: im1(:, :), im1_t(:, :)
+      real(dp), allocatable :: work(:, :), work_t(:, :), p_occ(:, :), vhf_s1occ(:, :)
+      real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :), zero_h(:, :)
+      real(dp), allocatable :: vrinv(:, :, :), hcore_a(:, :, :)
+      real(dp), allocatable :: de2(:, :), vhf1(:, :, :, :)
+      real(dp), allocatable, target :: eri(:, :, :, :)
+      real(dp), allocatable :: bounds(:, :), gamma_null(:, :, :, :), ref_grad(:, :)
+      real(dp), pointer :: bref_arg(:, :)
+      real(dp), pointer :: eri_arg(:, :, :, :)
+      integer, allocatable :: offsets(:), counts(:)
+      integer :: n_ao, n_mo, n_o, n_v, frozen
+      integer :: i, a, p, q, iatom, comp, p0, p1
+      real(dp) :: kf, cscale
+      logical :: dense, fitted, dh, fit_z
+
+      n_ao = mol%nao
+      n_mo = size(coeff, 2)
+      n_o = n_occ
+      n_v = n_mo - n_occ
+      frozen = inp%frozen
+      fitted = inp%fitted_reference
+      fit_z = inp%fit_response
+      dense = inp%dense
+      dh = present(xc)
+      kf = 1.0_dp
+      cscale = 1.0_dp
+      if (dh) then
+         kf = xc%exx_fraction
+         cscale = inp%pt2_scale
+      end if
+      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
+      c_occ = coeff(:, 1:n_o)
+      c_vir = coeff(:, n_o + 1:n_mo)
+
       ! The occupied-frozen block of the relaxed density. The amplitudes never
       ! touch a frozen orbital, but the Lagrangian does, and dividing its
       ! occupied-frozen elements by the orbital-energy gap is that rotation's
@@ -403,8 +516,8 @@ contains
       ! block included.
       do i = frozen + 1, n_o
          do p = 1, frozen
-            dm1mo(p, i) = imat(p, i)/(orbital_energies(p) - orbital_energies(i))
-            dm1mo(i, p) = dm1mo(p, i)
+            inp%dm1mo(p, i) = inp%imat(p, i)/(orbital_energies(p) - orbital_energies(i))
+            inp%dm1mo(i, p) = inp%dm1mo(p, i)
          end do
       end do
 
@@ -424,8 +537,8 @@ contains
       zero_h = 0.0_dp
 
       allocate (dm1(n_ao, n_ao))
-      dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
-      call reference_response(fit_z, bref, dense, mol, eri, bounds, zero_h, dm1, &
+      dm1 = matmul(coeff, matmul(inp%dm1mo, transpose(coeff)))
+      call reference_response(fit_z, inp%bref, dense, mol, eri, bounds, zero_h, dm1, &
                               veff, error, kf, dh, xc, scf_density)
       if (error%has_error()) return
       veff = 2.0_dp*veff
@@ -434,7 +547,7 @@ contains
       xvo(:, :, 1) = matmul(transpose(c_vir), matmul(veff, c_occ))
       do i = 1, n_o
          do a = 1, n_v
-            xvo(a, i, 1) = xvo(a, i, 1) + imat(i, n_o + a) - imat(n_o + a, i)
+            xvo(a, i, 1) = xvo(a, i, 1) + inp%imat(i, n_o + a) - inp%imat(n_o + a, i)
          end do
       end do
 
@@ -446,7 +559,7 @@ contains
       ! `eri`. `xc` makes it the Kohn-Sham operator rather than the
       ! Hartree-Fock one.
       bref_arg => null()
-      if (fit_z) bref_arg => bref
+      if (fit_z) bref_arg => inp%bref
       eri_arg => null()
       if (dense .and. .not. fit_z) eri_arg => eri
       if (dh) then
@@ -460,12 +573,12 @@ contains
       end if
       if (error%has_error()) return
 
-      dm1mo(n_o + 1:n_mo, 1:n_o) = dm1mo(n_o + 1:n_mo, 1:n_o) + zvec(:, :, 1)
-      dm1mo(1:n_o, n_o + 1:n_mo) = dm1mo(1:n_o, n_o + 1:n_mo) + transpose(zvec(:, :, 1))
+      inp%dm1mo(n_o + 1:n_mo, 1:n_o) = inp%dm1mo(n_o + 1:n_mo, 1:n_o) + zvec(:, :, 1)
+      inp%dm1mo(1:n_o, n_o + 1:n_mo) = inp%dm1mo(1:n_o, n_o + 1:n_mo) + transpose(zvec(:, :, 1))
 
-      imat(n_o + 1:n_mo, 1:n_o) = transpose(imat(1:n_o, n_o + 1:n_mo))
+      inp%imat(n_o + 1:n_mo, 1:n_o) = transpose(inp%imat(1:n_o, n_o + 1:n_mo))
       allocate (im1(n_ao, n_ao))
-      im1 = matmul(coeff, matmul(imat, transpose(coeff)))
+      im1 = matmul(coeff, matmul(inp%imat, transpose(coeff)))
 
       ! ---- the energy-weighted density -------------------------------------
       allocate (zeta(n_mo, n_mo))
@@ -480,15 +593,15 @@ contains
             zeta(i, n_o + a) = orbital_energies(i)
          end do
       end do
-      zeta = zeta*dm1mo
+      zeta = zeta*inp%dm1mo
       allocate (work(n_ao, n_ao))
       work = matmul(coeff, matmul(zeta, transpose(coeff)))
       deallocate (zeta)
 
-      dm1 = matmul(coeff, matmul(dm1mo, transpose(coeff)))
+      dm1 = matmul(coeff, matmul(inp%dm1mo, transpose(coeff)))
       allocate (p_occ(n_ao, n_ao))
       p_occ = matmul(c_occ, transpose(c_occ))
-      call reference_response(fit_z, bref, dense, mol, eri, bounds, zero_h, &
+      call reference_response(fit_z, inp%bref, dense, mol, eri, bounds, zero_h, &
                               dm1 + transpose(dm1), veff, error, kf, dh, xc, &
                               scf_density)
       if (error%has_error()) return
@@ -534,7 +647,7 @@ contains
       ! assembly, whose reference operator is entirely two-electron.
       if (dh) then
          call xc_potential_gradient(xc, mol, scf_density, dm1, gradient, error, &
-                                    fixed_grid=fixed_grid)
+                                    fixed_grid=inp%fixed_grid)
          if (error%has_error()) return
       end if
 
@@ -550,7 +663,7 @@ contains
          ! integral's symmetry supply the rest.
          allocate (ref_grad(3, mol%natm))
          ref_grad = 0.0_dp
-         call fitted_reference_gradient(mol, aux, three_ao, jm12, hf_density, &
+         call fitted_reference_gradient(mol, aux, inp%three_ao, inp%jm12, hf_density, &
                                         dm1p, ref_grad, error, k_scale=kf)
          if (error%has_error()) return
          gradient = gradient + 0.5_dp*ref_grad
@@ -561,8 +674,7 @@ contains
                                      with_gamma=.false., k_scale=kf)
       end if
 
-      call build_gamma_ao(gamma, c_act, c_vir, n_ao, n_oa, n_v, n_aux, gamma_ao)
-      call fitted_two_particle_gradient(mol, aux, gamma_ao, gamma_pq, gradient)
+      call fitted_two_particle_gradient(mol, aux, inp%gamma_ao, inp%gamma_pq, gradient)
 
       call one_electron_deriv(mol, s1, DERIV_OVLP)
       s1 = -s1
@@ -610,7 +722,7 @@ contains
       ! error that is invisible at a coefficient of one.
       if (dh) gradient = cscale*gradient
 
-   end subroutine czt_ri_mp2_gradient
+   end subroutine relaxed_fitted_gradient
 
    subroutine reference_response(fitted, b, dense, mol, eri, bounds, zero_h, &
                                  density, veff, error, k_scale, dh, xc, ref_density)
