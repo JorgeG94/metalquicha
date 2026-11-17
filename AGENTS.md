@@ -272,16 +272,23 @@ only in libfint:
   agree to machine precision, so that flag chooses how a number is computed and
   not which number. Spatial is the default because it is roughly sixteen times
   smaller and several times faster.
-  **Analytic gradient: RI-CCSD only**, closed shell over an exact reference,
-  frozen core allowed (`mqc_czt_ri_ccsd_gradient`). The Lambda equations
+  **Analytic gradient: RI-CCSD and RI-CCSD(T) only**, closed shell over an
+  exact reference, frozen core allowed (`mqc_czt_ri_ccsd_gradient`). The Lambda equations
   (`mqc_czt_rcc_lambda`) and the densities (`mqc_czt_rcc_density`) are PySCF's
   term for term, written with `contract` from `mqc_tensor_contract` so each
   line carries the reference's index string -- correct first, and not yet
   fast. The relaxation and assembly are `relaxed_fitted_gradient`, shared with
   the RI-MP2 gradient. PySCF has no fitted CCSD gradient, so the reference is
   `tools/cpu_validation/ri_ccsd_gradient.py`, itself held to finite
-  differences. Conventional integrals, (T), open shells and a fitted reference
-  are refused by name.
+  differences. Conventional integrals, open shells and a fitted reference are
+  refused by name. (T) enters as three sets of terms from
+  `mqc_czt_rcc_triples_terms` -- sources in the Lambda equations, a diagonal
+  on the one-particle density, additions to the two-particle density -- and
+  holds two `n_occ^3 n_vir^3` arrays whole. **(T) is not invariant to a
+  rotation among the occupied orbitals or among the virtuals**, so the
+  gradient takes the off-diagonal relaxed density in those blocks from the
+  Lagrangian, divided by the orbital-energy gap, and skips degenerate pairs;
+  using the amplitudes' value there is right for CCSD and wrong for (T).
 
 An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
 intent is recovered in the reader by `method_wants_density_fitting` while the
