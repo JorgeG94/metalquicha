@@ -405,7 +405,7 @@ module mqc_czt_xc
    end type xc_reference_t
 
    real(dp), save :: profile_seconds(4) = 0.0_dp
-      !! Thread-seconds `xc_add_potential` and `xc_add_potential_uks` have spent in
+      !! Seconds `xc_add_potential` and `xc_add_potential_uks` have spent in
       !! basis evaluation, density, functional and potential assembly since the
       !! last `xc_profile_take`
 
@@ -1527,10 +1527,11 @@ contains
    end subroutine xc_grid_kernel_quantities
 
    subroutine xc_profile_take(seconds)
-      !! Thread-seconds of the quadrature by phase, then reset
+      !! Seconds of the quadrature by phase, then reset
       !!
-      !! Order: basis evaluation, density, functional, potential assembly. Summed
-      !! over threads, so the total is up to the thread count times the wall time.
+      !! Order: basis evaluation, density, functional, potential assembly. Each
+      !! is the mean over the threads that ran, so the four add up to the wall
+      !! time of the threaded loop.
       real(dp), intent(out) :: seconds(4)
 
       seconds = profile_seconds
@@ -1576,6 +1577,8 @@ contains
       type(timer_type) :: clock
          !! One per thread, started once; the phases are read off it
       real(dp) :: t_acc(4)
+      real(dp) :: t_sum(4)   !! `t_acc` summed over the threads that ran
+      integer :: n_ran       !! Threads that entered the region
 
       v_xc = 0.0_dp
       e_xc = 0.0_dp
@@ -1621,8 +1624,10 @@ contains
       call shell_extents(mol, ctx%screen_tol, extents)
       call xc_log_block_stats(ctx, mol, extents)
 
+      t_sum = 0.0_dp
+      n_ran = 0
       !$omp parallel default(none) &
-      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents, profile_seconds) &
+      !$omp    shared(ctx, mol, density, v_xc, e_xc, n_elec, error, failed, extents, t_sum, n_ran) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, rho, exc, vrho, exc_i, vrho_i, &
       !$omp            grad_coeff, ao_grad, rho_grad, sigma, vsigma, vsigma_i, &
       !$omp            tau, vtau, vtau_i, lapl, vlapl) &
@@ -1788,11 +1793,13 @@ contains
       ! contending for the shared one a hundred times each.
       !$omp critical (xc_reduce)
       v_xc = v_xc + v_local
-      profile_seconds = profile_seconds + t_acc
+      t_sum = t_sum + t_acc
+      n_ran = n_ran + 1
       e_xc = e_xc + e_local
       n_elec = n_elec + n_local
       !$omp end critical (xc_reduce)
       !$omp end parallel
+      profile_seconds = profile_seconds + t_sum/real(max(1, n_ran), dp)
 
       ! VV10 last, on its own grid, adding into the same matrix and the same
       ! energy. Outside the parallel region because it runs its own two sweeps
@@ -2010,6 +2017,8 @@ contains
       type(timer_type) :: clock
          !! One per thread, started once; the phases are read off it
       real(dp) :: t_acc(4)
+      real(dp) :: t_sum(4)   !! `t_acc` summed over the threads that ran
+      integer :: n_ran       !! Threads that entered the region
 
       v_alpha = 0.0_dp
       v_beta = 0.0_dp
@@ -2040,9 +2049,11 @@ contains
       call shell_extents(mol, ctx%screen_tol, extents)
       call xc_log_block_stats(ctx, mol, extents)
 
+      t_sum = 0.0_dp
+      n_ran = 0
       !$omp parallel default(none) &
       !$omp    shared(ctx, mol, d_alpha, d_beta, v_alpha, v_beta, e_xc, n_elec, &
-      !$omp           error, failed, extents, profile_seconds) &
+      !$omp           error, failed, extents, t_sum, n_ran) &
       !$omp    private(g0, g1, nb, i, ig, id, ao, ao_grad, rho_a, rho_b, grad_a, &
       !$omp            grad_b, tau_a, tau_b, rho, sigma, tau, lapl, exc, vrho, &
       !$omp            vsigma, vtau, exc_i, vrho_i, vsigma_i, vtau_i, vlapl, &
@@ -2267,12 +2278,14 @@ contains
       ! shared pair on every block.
       !$omp critical (xc_uks_reduce)
       v_alpha = v_alpha + va_local
-      profile_seconds = profile_seconds + t_acc
+      t_sum = t_sum + t_acc
+      n_ran = n_ran + 1
       v_beta = v_beta + vb_local
       e_xc = e_xc + e_local
       n_elec = n_elec + n_local
       !$omp end critical (xc_uks_reduce)
       !$omp end parallel
+      profile_seconds = profile_seconds + t_sum/real(max(1, n_ran), dp)
 
       ! VV10 sees only the total density, so one evaluation serves both spins and
       ! its contribution is identical in each: the kernel is built from rho and

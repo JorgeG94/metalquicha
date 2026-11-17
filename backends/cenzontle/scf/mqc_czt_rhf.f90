@@ -350,11 +350,11 @@ module mqc_czt_rhf
 contains
 
    subroutine xc_breakdown_summary(verbose)
-      !! Where the XC quadrature spent its thread time, at `verbose`
+      !! Where the XC quadrature spent its time, at `verbose`
       !!
-      !! Summed over threads, so the total is up to the thread count times the
-      !! `XC quadrature` wall row above. Empty, and reset, when there was no
-      !! quadrature.
+      !! Wall seconds, averaged over the threads, so the total is the threaded
+      !! part of the `XC quadrature` row above. Empty, and reset, when there
+      !! was no quadrature.
       logical, intent(in) :: verbose
 
       character(len=*), parameter :: LABEL(4) = [character(len=20) :: "basis evaluation", "density", &
@@ -369,7 +369,7 @@ contains
       if (.not. verbose .or. total <= 0.0_dp) return
 
       call logger%verbose("")
-      call logger%verbose("  XC quadrature breakdown (thread-seconds)")
+      call logger%verbose("  XC quadrature breakdown")
       do i = 1, 4
          write (line, "(4x,a,f10.2,a,f7.1,a)") LABEL(i), sec(i), " s", 100.0_dp*sec(i)/total, " %"
          call logger%verbose(trim(line))
