@@ -1152,6 +1152,8 @@ contains
                            "potential would be made from an all-electron calculation "// &
                            "without saying so. Refused rather than silently dropped.")
             return
+         case default
+            ! Every other driver runs the method named, which was judged above.
          end select
       end if
 
@@ -1166,6 +1168,8 @@ contains
                            "all-electron without saying so. Refused rather than "// &
                            "silently dropped. A many-body expansion (MBE, GMBE) does "// &
                            "carry it.")
+         case default
+            ! A many-body expansion's fragments go through the ordinary builder.
          end select
       end if
    end subroutine check_ecp_supported
