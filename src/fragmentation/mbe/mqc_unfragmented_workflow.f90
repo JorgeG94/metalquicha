@@ -12,6 +12,7 @@ contains
                                           compute_vibrational_analysis, print_vibrational_analysis
       use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
       use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED
+      use mqc_program_limits, only: MAX_PRINTED_HESSIAN_DIM
       type(system_geometry_t), intent(in) :: sys_geom
       type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
       type(calculation_result_t), intent(out), optional :: result_out
@@ -146,9 +147,14 @@ contains
             write (result_line, "(a,f25.15)") "  Hessian Frobenius norm: ", hess_norm
             call logger%info(trim(result_line))
 
-            ! Print full Hessian if verbose and system is small
+            ! Print the Hessian if verbose and it is small enough to read
             call logger%configuration(level=current_log_level)
-            if (current_log_level >= verbose_level .and. total_atoms < 20) then
+            if (current_log_level >= verbose_level .and. 3*total_atoms > MAX_PRINTED_HESSIAN_DIM) then
+               call logger%info("  Hessian is "//to_char(3*total_atoms)//" x "//to_char(3*total_atoms)// &
+                                "; not printed beyond "//to_char(MAX_PRINTED_HESSIAN_DIM)// &
+                                " x "//to_char(MAX_PRINTED_HESSIAN_DIM)//", see the JSON output")
+            end if
+            if (current_log_level >= verbose_level .and. 3*total_atoms <= MAX_PRINTED_HESSIAN_DIM) then
                call logger%info(" ")
                call logger%info("Hessian matrix (Hartree/Bohr^2):")
                do i = 1, 3*total_atoms
@@ -171,8 +177,8 @@ contains
                                                     coordinates=sys_geom%coordinates, project_trans_rot=.true., &
                                                     projected_hessian_out=projected_hessian)
 
-               ! Print projected mass-weighted Hessian if verbose and small system
-               if (current_log_level >= verbose_level .and. total_atoms < 20) then
+               ! Print projected mass-weighted Hessian if verbose and small enough to read
+               if (current_log_level >= verbose_level .and. 3*total_atoms <= MAX_PRINTED_HESSIAN_DIM) then
                   if (allocated(projected_hessian)) then
                      call logger%info(" ")
                      call logger%info("Mass-weighted Hessian after trans/rot projection (a.u.):")
