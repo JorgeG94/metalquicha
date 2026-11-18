@@ -199,11 +199,8 @@ option(MQC_ENABLE_TERCO "Link to terco for a device-resident SCF (HF/DFT)" OFF)
 set(MQC_LIBFINT_REPOSITORY
     "https://github.com/JorgeG94/libfint.git"
     CACHE STRING "Where to fetch libfint from")
-# A commit rather than a release: the first-derivative ECP integrals, and the
-# radial grid built once per thread on `perf/ecp-radial-grid`, are in no tag
-# yet. Becomes the release that carries them once there is one.
 set(MQC_LIBFINT_TAG
-    "c161f54bcde510318e36f7d5416981b7cda5c937"
+    "v0.8.0"
     CACHE STRING "libfint revision to build against")
 
 set(MQC_CREST_REPOSITORY

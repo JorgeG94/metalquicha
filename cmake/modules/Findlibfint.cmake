@@ -5,7 +5,7 @@
 # a signal indistinguishable from a real break. A tag can be moved and a SHA
 # cannot, so the SHA is written below to make a moved tag detectable.
 #
-# v0.7.0 is a86c9e48dbf7bd557e3cb414ed26f8f483425c7f today. It is the first
+# v0.8.0 is a88fab5b9b898bd763f2ca44e1b04d8837b403d3 today. It is the first
 # release whose `libcint_fortran` carries everything `backends/cenzontle/` calls
 # directly: the multipoles, the point-charge field, the grid integral, the one-
 # and two-electron second derivatives, `int1e_irp`, the scalar ECP
