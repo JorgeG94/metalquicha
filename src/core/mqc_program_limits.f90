@@ -14,6 +14,10 @@ module mqc_program_limits
    !! Maximum MBE truncation order (1-body, 2-body, ..., N-body)
    !! Higher orders require factorial growth in fragment combinations
 
+   integer, parameter, public :: MAX_PRINTED_HESSIAN_DIM = 10
+   !! Largest Hessian (rows = columns = 3 * atoms) written to the log at verbose
+   !! level: three atoms. A bigger one is only in the JSON output.
+
    integer, parameter, public :: N_EFP_TERMS = 6
    !! Terms in an EFP2 interaction energy: electrostatics, polarization,
    !! exchange repulsion, dispersion, charge transfer, and their total.
