@@ -37,14 +37,13 @@ module mqc_czt_ri_mp2_gradient
    use mqc_czt_cphf, only: cphf_solve, fitted_potential_general, IN_CORE_LIMIT
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply
    use mqc_czt_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
-                               iprinv_deriv_at, three_centre_deriv, &
+                               nuclear_attraction_deriv_at, three_centre_deriv, &
                                two_centre_deriv, fitted_reference_gradient, &
                                xc_potential_gradient, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_mp2_gradient, only: gamma1_intermediates, two_electron_potential, &
                                    two_electron_mp2_terms
-   use mqc_czt_ecp, only: ecp_refuses_derivatives
    implicit none
    private
 
@@ -192,8 +191,6 @@ contains
       real(dp) :: denom, kf, cscale
       logical :: dense, fitted, dh, fit_z
       type(relaxation_input_t), target :: inp
-
-      if (ecp_refuses_derivatives(mol%core_electrons, "RI-MP2 gradient", error)) return
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -709,8 +706,7 @@ contains
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
 
-         call iprinv_deriv_at(mol, iatom, vrinv)
-         vrinv = -mol%charges(iatom)*vrinv
+         call nuclear_attraction_deriv_at(mol, iatom, vrinv)
          if (counts(iatom) > 0) then
             vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) + h1(p0:p1, :, :)
          end if

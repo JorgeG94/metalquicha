@@ -2434,6 +2434,7 @@ contains
       ! Asked before the reference Hessian is built, so a declined metric costs
       ! one two-centre build rather than a whole coupled-perturbed solve.
       if (do_hessian .and. dh_analytic .and. settings%aux_basis_named &
+          .and. mol%necpbas == 0 &
           .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
          call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
          if (error%has_error()) then
@@ -2446,7 +2447,7 @@ contains
          if (allocated(hessian_fallback)) dh_analytic = .false.
       end if
       if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
-          .and. .not. unrestricted &
+          .and. .not. unrestricted .and. mol%necpbas == 0 &
           .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
@@ -2715,7 +2716,7 @@ contains
             ! derivative of that same energy -- the two agree to that and
             ! not to the last digit.
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
-                .and. settings%corr_density_fitting) then
+                .and. settings%corr_density_fitting .and. mol%necpbas == 0) then
                call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
                if (error%has_error()) then
                   call result%error%set(ERROR_VALIDATION, "MP2 Hessian: "// &
@@ -2728,7 +2729,7 @@ contains
             end if
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
                 .and. .not. allocated(hessian_fallback) &
-                .and. .not. unrestricted &
+                .and. .not. unrestricted .and. mol%necpbas == 0 &
                 .and. .not. settings%density_fitting &
                 .and. .not. settings%pcm%enabled .and. fragment%n_caps == 0 &
                 .and. settings%scs_ss == 1.0_dp .and. settings%scs_os == 1.0_dp) then
@@ -3305,7 +3306,8 @@ contains
             else
                call logger%warning("no analytic Hessian for this run: "// &
                                    hessian_decline_reason(settings, unrestricted, kohn_sham, &
-                                                          xc, fragment%n_caps))
+                                                          xc, fragment%n_caps, &
+                                                          mol%necpbas > 0))
             end if
             call logger%warning("  taking it by central differences of the analytic gradient instead")
          end if
@@ -3373,7 +3375,8 @@ contains
       end if
    end function cosx_decline_reason
 
-   function hessian_decline_reason(settings, unrestricted, kohn_sham, xc, n_caps) result(reason)
+   function hessian_decline_reason(settings, unrestricted, kohn_sham, xc, n_caps, &
+                                   has_ecp) result(reason)
       !! Why `run_czt_hf` left a requested Hessian uncomputed, in a few words
       !!
       !! Mirrors the two gates in `run_czt_hf` -- the reference's and the MP2
@@ -3384,6 +3387,7 @@ contains
       logical, intent(in) :: kohn_sham
       type(xc_context_t), intent(in) :: xc
       integer, intent(in) :: n_caps
+      logical, intent(in) :: has_ecp   !! The molecule carries an effective core potential
       character(len=:), allocatable :: reason
 
       logical :: double_hybrid
@@ -3391,6 +3395,8 @@ contains
       double_hybrid = kohn_sham .and. xc%pt2_fraction /= 0.0_dp
       if (unrestricted) then
          reason = "unrestricted reference"
+      else if (has_ecp) then
+         reason = "effective core potential, whose second derivatives are not implemented"
       else if (settings%run_cc) then
          reason = "coupled cluster"
       else if (settings%density_fitting) then

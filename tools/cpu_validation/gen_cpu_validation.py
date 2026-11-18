@@ -197,6 +197,16 @@ MOLECULES = {
     "auh": _mol("AuH", "Au", diatomic("Au", "H", 1.5237)),
     "hgcl2": _mol("HgCl2", "Hg", linear_ah2("Hg", "Cl", 2.2520)),
     "pbh4": _mol("PbH4", "Pb", tetrahedral_ah4("Pb", "H", 1.7500)),
+    # Methyl iodide with the iodine written LAST, which is what it is for: the
+    # heavy atom is first in every other molecule above, and a lookup that
+    # found the potential only on the first three atoms passed all of them.
+    # Off its threefold axis slightly, so no component of the iodine's force
+    # vanishes by symmetry.
+    "ch3i": _mol("CH3I", "I", [("C", 0.0, 0.0, 0.0),
+                               ("H", 1.0300, 0.0, -0.3600),
+                               ("H", -0.5150, 0.8920, -0.3600),
+                               ("H", -0.5150, -0.8920, -0.3600),
+                               ("I", 0.1500, -0.1000, 2.1390)]),
     # The iodine atom, for the unrestricted case. Twenty-five electrons once the
     # potential has taken twenty-eight, so it is a doublet by the electron count
     # rather than by the keyword -- which is how the CPU backend decides too.
@@ -208,7 +218,7 @@ MOLECULES = {
 #: def2-SVP on iodine describes twenty-five electrons, and running it
 #: all-electron is not a harder calculation but a meaningless one.
 ECP_MOLECULES = ["rbh", "agh", "snh4", "teh2", "hi", "i2", "sr", "csh",
-                 "auh", "hgcl2", "pbh4", "iatom"]
+                 "auh", "hgcl2", "pbh4", "iatom", "ch3i"]
 
 ALL = [m for m in MOLECULES
        if m not in ("oh", "o2", "ch3", "w2dimer", "hcn", "h3op")
@@ -997,6 +1007,46 @@ GRADIENT_RI_CCSD_T_CASES = [
 # that operator, which moves the answer by the fitting error and no more. The
 # exact operator is held to 5e-10 by `test_mqc_czt_ri_ccsd_gradient`.
 GRADIENT_RI_CCSD_TOLERANCE = 1.0e-5
+
+#: Gradients over an effective core potential, as
+#: (molecule, basis, method, functional, aux, frozen orbitals).
+#:
+#: The potential moves with its atom and with the basis functions it is
+#: integrated against, so its derivative enters twice: in the core Hamiltonian's
+#: basis-function derivative and in the Hellmann-Feynman term. Every method
+#: below takes both from the same two routines, so what the list varies is the
+#: density they are contracted with -- the SCF's, a fitted SCF's, a
+#: functional's, and three relaxed correlated ones.
+#:
+#: * TeH2 is bent, so no Cartesian component of the tellurium's force vanishes
+#:   for a reason unrelated to the integrals.
+#: * I2 has a potential on both centres, which is the only way the one-atom
+#:   integral is asked for an atom whose rows are not the first.
+#: * CH3I is written with the iodine fifth. Which atoms carry a potential is
+#:   looked up per atom, and the first version of that lookup was right only
+#:   for the first three; every other molecule here has its heavy atom first.
+#:   Once at Hartree-Fock and once at MP2, whose relaxed density reaches the
+#:   same lookup through a different routine.
+#: * The correlated cases freeze four orbitals, as their energy-only twins in
+#:   `ECP_CORRELATED_CASES` do and for the reason given there.
+#:
+#: The fitted correlated cases take their reference from `ri_mp2_gradient.py`
+#: and `ri_ccsd_gradient.py`, whose core Hamiltonian derivative is PySCF's and
+#: includes the potential once the molecule carries one.
+GRADIENT_ECP_CASES = [
+    ("hi", "def2-svp", "hf", "", "", 0),
+    ("teh2", "def2-svp", "hf", "", "", 0),
+    ("i2", "def2-svp", "hf", "", "", 0),
+    ("ch3i", "def2-svp", "hf", "", "", 0),
+    ("ch3i", "def2-svp", "mp2", "", "", 4),
+    ("hi", "def2-svp", "hf", "", "def2-sv(p)-jkfit", 0),   # fitted reference
+    ("hi", "def2-svp", "dft", "pbe", "", 0),
+    ("hi", "def2-svp", "dft", "b3lyp", "", 0),
+    ("hi", "def2-svp", "mp2", "", "", 4),
+    ("hi", "def2-svp", "ri-mp2", "", "def2-svp-rifit", 4),
+    ("hi", "def2-svp", "ri-ccsd", "", "def2-svp-rifit", 4),
+    ("hi", "def2-svp", "ri-ccsd(t)", "", "def2-svp-rifit", 4),
+]
 
 # One RI-MP2 gradient pinned to this program's *own* output, as (molecule,
 # basis, aux, frozen, energy, gradient). The only case in the suite whose
@@ -2336,7 +2386,7 @@ def dense_zvector(fvind, mo_energy, mo_occ, h1, s1=None, max_cycle=50, tol=1e-9,
     return numpy.linalg.solve(operator, -h1.ravel()).reshape(h1.shape), None
 
 
-def pyscf_mp2_gradient(atoms, basis, frozen=0):
+def pyscf_mp2_gradient(atoms, basis, frozen=0, ecp=""):
     """Reference MP2 energy and analytic nuclear gradient, in Hartree/Bohr."""
     from pyscf import gto, mp, scf
     from pyscf.grad import mp2 as mp2_grad
@@ -2348,6 +2398,9 @@ def pyscf_mp2_gradient(atoms, basis, frozen=0):
     mol.unit = "Angstrom"
     symbols = {a[0] for a in atoms}
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    table = ecp_for(ecp, symbols)
+    if table:
+        mol.ecp = table
     mol.charge = 0
     mol.spin = 0
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
@@ -2364,7 +2417,7 @@ def pyscf_mp2_gradient(atoms, basis, frozen=0):
     return float(mf.e_tot + pt.e_corr), pt.Gradients().kernel().tolist(), mol.nao
 
 
-def mqc_ri_mp2_gradient(atoms, basis, aux, frozen=0):
+def mqc_ri_mp2_gradient(atoms, basis, aux, frozen=0, ecp=""):
     """Reference RI-MP2 energy and analytic gradient, from `ri_mp2_gradient.py`.
 
     The one reference in this file that is not a third party's, because there
@@ -2373,13 +2426,13 @@ def mqc_ri_mp2_gradient(atoms, basis, aux, frozen=0):
     """
     from ri_mp2_gradient import build, ri_mp2_energy, ri_mp2_gradient
 
-    mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
+    mol, auxmol = build(atoms, basis, aux, unit="Angstrom", ecp=ecp)
     energy, mf = ri_mp2_energy(mol, auxmol, frozen=frozen)
     gradient = ri_mp2_gradient(mol, auxmol, mf, frozen=frozen)
     return float(energy), gradient.tolist(), mol.nao
 
 
-def mqc_ri_ccsd_gradient(atoms, basis, aux, frozen=0, triples=False):
+def mqc_ri_ccsd_gradient(atoms, basis, aux, frozen=0, triples=False, ecp=""):
     """Reference RI-CCSD energy and analytic gradient, from `ri_ccsd_gradient.py`.
 
     Not a third party's, because there is none to ask -- see
@@ -2388,7 +2441,7 @@ def mqc_ri_ccsd_gradient(atoms, basis, aux, frozen=0, triples=False):
     from ri_mp2_gradient import build
     from ri_ccsd_gradient import ri_ccsd_energy, ri_ccsd_gradient
 
-    mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
+    mol, auxmol = build(atoms, basis, aux, unit="Angstrom", ecp=ecp)
     energy = ri_ccsd_energy(mol, auxmol._basis, frozen, triples)
     gradient = ri_ccsd_gradient(mol, auxmol._basis, frozen, triples=triples)
     return float(energy), gradient.tolist(), mol.nao
@@ -2433,6 +2486,84 @@ def ri_ccsd_gradient_entries(written, dry_run):
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {label:10s} grad |g|={norm:.10f} "
               f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
+def ecp_gradient_entries(written, dry_run):
+    """Write the gradient decks over an ECP and return their manifest entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    for name, basis, method, functional, aux, frozen in GRADIENT_ECP_CASES:
+        mol = MOLECULES[name]
+        correlation = None
+        aux_only = False
+        if method in ("hf", "dft"):
+            energy, gradient, nao = pyscf_gradient(mol.atoms, basis, aux=aux,
+                                                   functional=functional, ecp=ECP_SET,
+                                                   tight=True)
+            tolerance = _gradient_tolerance(functional, aux)
+            theory = functional.upper() if functional else "RHF"
+        else:
+            correlation = {"freeze_core": frozen > 0, "n_frozen_core": frozen}
+            if method == "mp2":
+                energy, gradient, nao = pyscf_mp2_gradient(mol.atoms, basis, frozen,
+                                                           ecp=ECP_SET)
+                tolerance = GRADIENT_TOLERANCE
+            elif method == "ri-mp2":
+                energy, gradient, nao = mqc_ri_mp2_gradient(mol.atoms, basis, aux,
+                                                            frozen, ecp=ECP_SET)
+                tolerance = GRADIENT_RI_MP2_TOLERANCE
+                aux_only = True
+            else:
+                energy, gradient, nao = mqc_ri_ccsd_gradient(
+                    mol.atoms, basis, aux, frozen, triples=method.endswith("(t)"),
+                    ecp=ECP_SET)
+                tolerance = GRADIENT_RI_CCSD_TOLERANCE
+                aux_only = True
+            theory = method.upper()
+        tag = normalize_basis_name(basis) + "_ecp"
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        elif method != "hf":
+            tag += "_" + method.replace("-", "").replace("(t)", "t")
+        if aux and not aux_only:
+            tag += "_df"
+        if frozen:
+            tag += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/gradient", f"cpu_{name}_{tag}_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method=method,
+                          correlation=correlation, aux_only=aux_only, ecp=ECP_SET)
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        label = f"{theory} gradient {mol.label} {basis} with {ECP_SET}"
+        if aux:
+            label += f" / {aux}"
+        if frozen:
+            label += f" frozen {frozen}"
+        entries.append({
+            "name": label + " (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": tolerance,
+            "check_translation": True,
+            "type": "unfragmented",
+            # A functional needs libxc as well, as the energy-only Kohn-Sham
+            # cases over a potential say. Named with "ecp" alone, these two ran
+            # on a build without it and failed for want of the library.
+            "requires": ["ecp", "libxc"] if functional else "ecp",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {theory:10s} ECP grad |g|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
     return entries
 
 
@@ -3036,7 +3167,7 @@ def mqc_ri_mp2_hessian(atoms, basis, aux, frozen=0):
 
 
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
-                   level=GRADIENT_GRID_LEVEL):
+                   level=GRADIENT_GRID_LEVEL, ecp="", tight=False):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
 
     Two things here are not defaults and both matter. The gradient modules have
@@ -3048,6 +3179,12 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     either side. That term is also the one that hides best -- translational
     invariance is blind to it, because a rigid translation leaves the Becke
     partition unchanged.
+
+    `tight` converges the reference's orbital gradient to 1e-9 as well as its
+    energy. PySCF derives the gradient threshold from the energy one, about
+    1e-6 here, and a gradient is first order in what that leaves: methyl iodide
+    in def2-SVP moved by 2e-8 between the two settings, twice the bound it is
+    held to. Off by default so the references already committed do not move.
     """
     from pyscf import df, dft, gto, scf
     from pyscf.grad import rhf as _rhf_grad, rks as _rks_grad  # noqa: F401
@@ -3058,6 +3195,9 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     mol.unit = "Angstrom"
     symbols = {a[0] for a in atoms}
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    table = ecp_for(ecp, symbols)
+    if table:
+        mol.ecp = table
     mol.charge = 0
     mol.spin = multiplicity - 1
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
@@ -3074,6 +3214,9 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     if aux:
         mf = df.density_fit(mf, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
     mf.conv_tol = 1e-12
+    if tight:
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-9
     energy = mf.kernel()
     if not mf.converged:
         raise SystemExit(f"PySCF did not converge for {basis} {functional}")
@@ -3912,6 +4055,10 @@ def main():
                     help="write only the RI-CCSD gradient decks and splice "
                          "their entries into the existing manifest, leaving "
                          "every other entry and deck untouched")
+    ap.add_argument("--only-ecp-gradient", action="store_true",
+                    help="write only the gradient decks over an ECP and splice "
+                         "their entries into the existing manifest, leaving "
+                         "every other entry and deck untouched")
     ap.add_argument("--only-ri-hessian", action="store_true",
                     help="write only the fitted-correlation Hessian decks and "
                          "splice their entries into the existing manifest, "
@@ -3977,6 +4124,28 @@ def main():
             else:
                 mol.xyz = f"sample_inputs/{name}.xyz"
         entries = ri_ccsd_gradient_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_ecp_gradient:
+        for name in {c[0] for c in GRADIENT_ECP_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+                # A molecule added with these cases has no file from an
+                # earlier full run to rely on.
+                if not args.dry_run and not (INPUTS / mol.xyz).exists():
+                    write_xyz(INPUTS / mol.xyz, mol)
+        entries = ecp_gradient_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -5150,6 +5319,7 @@ def main():
     tests.extend(ri_hessian_entries(written, args.dry_run))
     tests.extend(cosx_entries(written, args.dry_run))
     tests.extend(ri_ccsd_gradient_entries(written, args.dry_run))
+    tests.extend(ecp_gradient_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

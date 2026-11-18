@@ -25,7 +25,7 @@ module mqc_czt_gradient
    use pic_types, only: dp
    use mqc_nuclear_repulsion, only: add_nuclear_repulsion_gradient
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_ecp, only: ecp_refuses_derivatives
+   use mqc_czt_ecp, only: ecp_deriv_matrix, ecp_on_atom
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim, max_block, atom_ao_blocks, &
                                 build_df_shell_table, three_centre, two_centre, &
                                 metric_inverse_sqrt, eri_shell_table_t, &
@@ -76,6 +76,7 @@ module mqc_czt_gradient
    ! NOT public: nothing outside this module calls either, and both are steps of
    ! `czt_scf_gradient` rather than pieces a caller assembles for itself.
    public :: iprinv_deriv_at
+   public :: nuclear_attraction_deriv_at
    public :: xc_potential_gradient
    public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
    public :: fitted_reference_gradient
@@ -159,8 +160,6 @@ contains
       integer :: nao, iatom, comp, p0, p1
       logical :: unrestricted
       logical :: fitted
-
-      if (ecp_refuses_derivatives(mol%core_electrons, "nuclear gradient", error)) return
 
       unrestricted = present(density_beta)
       nao = mol%nao
@@ -1675,7 +1674,44 @@ contains
       !$omp end do
       deallocate (buf)
       !$omp end parallel
+
+      ! The potential the electrons move in is the nuclei's and the effective
+      ! core potentials' together, as it is in the core Hamiltonian.
+      if (which == DERIV_NUC .and. mol%necpbas > 0) then
+         block
+            real(dp), allocatable :: ecp(:, :, :)
+            allocate (ecp(mol%nao, mol%nao, 3))
+            call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+                                  mol%bas_with_ecp, mol%env, mol%shell_offset, &
+                                  mol%necpbas, 0, ecp)
+            matrix = matrix + ecp
+         end block
+      end if
    end subroutine one_electron_deriv
+
+   subroutine nuclear_attraction_deriv_at(mol, iatom, matrix)
+      !! `<nabla mu| V_A |nu>` for the potential atom `iatom` exerts, (nao, nao, 3)
+      !!
+      !! `V_A` is `-Z_A/|r - R_A|` plus the atom's effective core potential when
+      !! it has one, with `Z_A` the charge the ECP leaves. Summed over atoms it
+      !! is `one_electron_deriv` with `DERIV_NUC`.
+      type(czt_molecule_t), intent(in) :: mol
+      integer, intent(in) :: iatom
+      real(dp), intent(out) :: matrix(:, :, :)
+
+      real(dp), allocatable :: ecp(:, :, :)
+
+      call iprinv_deriv_at(mol, iatom, matrix)
+      matrix = -mol%charges(iatom)*matrix
+      if (mol%necpbas <= 0) return
+      if (.not. ecp_on_atom(mol%nbas, mol%necpbas, mol%bas_with_ecp, iatom)) return
+
+      allocate (ecp(mol%nao, mol%nao, 3))
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+                            mol%bas_with_ecp, mol%env, mol%shell_offset, &
+                            mol%necpbas, iatom, ecp)
+      matrix = matrix + ecp
+   end subroutine nuclear_attraction_deriv_at
 
    subroutine iprinv_deriv_at(mol, iatom, matrix)
       !! The 1/|r-R| derivative with the operator origin on atom `iatom`
@@ -1800,6 +1836,26 @@ contains
       !$omp end critical
       deallocate (buf, env, g_local)
       !$omp end parallel
+
+      ! An effective core potential moves with its atom as the point charge
+      ! does, and its term has the same shape with the opposite sign: the
+      ! charge enters as `-Z/r`, the potential as itself.
+      if (mol%necpbas > 0) then
+         block
+            real(dp), allocatable :: ecp(:, :, :)
+            allocate (ecp(mol%nao, mol%nao, 3))
+            do iatom = 1, mol%natm
+               if (.not. ecp_on_atom(mol%nbas, mol%necpbas, mol%bas_with_ecp, iatom)) cycle
+               call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+                                     mol%bas_with_ecp, mol%env, mol%shell_offset, &
+                                     mol%necpbas, iatom, ecp)
+               do comp = 1, 3
+                  gradient(comp, iatom) = gradient(comp, iatom) &
+                                          + 2.0_dp*sum(ecp(:, :, comp)*density)
+               end do
+            end do
+         end block
+      end if
    end subroutine hellmann_feynman_gradient
 
    subroutine two_electron_deriv(mol, density, vhf, error, exchange_density, exx_fraction, &

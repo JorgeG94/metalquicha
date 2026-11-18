@@ -141,7 +141,8 @@ is GAMESS. The work is threaded with OpenMP throughout.
   through the lowest eigenvalue of the real singlet orbital Hessian. See
   :doc:`scf_convergence`.
 - **Effective core potentials**: ``model.ecp``, given in a file separate from
-  the basis. ECPs are energies only (see the gradient table below).
+  the basis. Energies and analytic gradients; a Hessian is taken by
+  differences of the gradient.
 - **MP2**: conventional and density-fitted (RI-MP2), with SCS and SOS scaling.
   The same- and opposite-spin components are kept separately. The reference
   must be restricted. ``freeze_core`` is on by default. Unrestricted MP2 is
@@ -357,9 +358,12 @@ What has a gradient on the CPU backend, at a glance:
        yet run against the library
    * - Effective core potentials
      - no
-     - ``model.ecp``, a separate file from the basis. Energies only: every
-       nuclear derivative is refused, as are MCSCF, xTB and the GPU backend,
-       and an automatically counted frozen core
+     - ``model.ecp``, a separate file from the basis. Energies and analytic
+       gradients, for every method that has a gradient without one. There
+       are no analytic second derivatives, so a Hessian is differenced from
+       gradients. MCSCF, SAPT, EFP, MakeFP, FMO, EFMO, xTB and the GPU
+       backend refuse a potential, as does an automatically counted frozen
+       core
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second
@@ -935,7 +939,7 @@ does not apply.
    available and is a real one: a set fitted to a relativistic reference
    carries much of the effect for the valence, which is why ECPs are used on
    heavy elements as much for that as for the cost. It is not a relativistic
-   Hamiltonian and does not become one. ECPs are energies only
+   Hamiltonian and does not become one
 2. **Open-shell correlation**: MP2 and the double-hybrid derivatives need a
    restricted reference. Coupled cluster does not, but density-fitted coupled
    cluster does. Unrestricted density fitting is refused for the SCF itself,
@@ -950,7 +954,7 @@ does not apply.
    method names parse and are then refused
 5. **Derivatives that do not exist**: there are no nuclear gradients for
    coupled cluster beyond closed-shell RI-CCSD(T), spin-scaled MP2, excited states,
-   NEO or anything with an ECP. There is also no CASSCF Hessian, single-state
+   or NEO. There is also no CASSCF Hessian, single-state
    or averaged. The gradient table above gives the full list. An excited-state
    ``Gradient`` deck is refused by the reader
 6. **Analytic second derivatives**: restricted references only, and within

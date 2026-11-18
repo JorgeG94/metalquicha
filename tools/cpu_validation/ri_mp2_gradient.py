@@ -372,7 +372,7 @@ def finite_difference(atoms, basis, auxbasis, step=2.5e-3, frozen=0):
     return de
 
 
-def build(atoms, basis, auxbasis, unit="Bohr"):
+def build(atoms, basis, auxbasis, unit="Bohr", ecp=""):
     """The two molecules, both bases read out of ``basis_sets/``.
 
     Not PySCF's own tables. They and this repository's JSON differ around the
@@ -381,8 +381,12 @@ def build(atoms, basis, auxbasis, unit="Bohr"):
     gradients, so a comparison built on PySCF's tables cannot tell a real
     discrepancy from a basis one. Reading the same file both codes read removes
     the question.
+
+    ``ecp`` names an effective core potential set, read the same way. PySCF's
+    ``hcore_generator`` then carries its derivative, so every gradient built on
+    these molecules includes it with nothing further asked.
     """
-    from gen_cpu_validation import CARTESIAN, bse_to_pyscf, molecule_form
+    from gen_cpu_validation import CARTESIAN, bse_to_pyscf, ecp_for, molecule_form
 
     symbols = {a[0] for a in atoms}
 
@@ -404,6 +408,9 @@ def build(atoms, basis, auxbasis, unit="Bohr"):
     mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
     mol.unit = unit
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    table = ecp_for(ecp, symbols)
+    if table:
+        mol.ecp = table
     mol.cart = orbital_form == CARTESIAN
     mol.verbose = 0
     mol.build()

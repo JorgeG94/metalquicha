@@ -42,6 +42,7 @@ module mqc_czt_mp2_hessian
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_czt_ecp, only: ecp_refuses_derivatives
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
    use mqc_czt_hess_ints, only: hess_1e_block, hess_rinv_block, &
                                 hess_2e_skeleton_contract, eri_ip1_block, &
@@ -1850,6 +1851,7 @@ contains
       integer :: p, q, r, s
 
       if (error%has_error()) return
+      if (ecp_refuses_derivatives(mol%core_electrons, "MP2 Hessian", error)) return
       use_tol = 1.0e-13_dp
       if (present(tol)) use_tol = tol
 

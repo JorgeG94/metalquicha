@@ -30,12 +30,17 @@ module mqc_czt_ecp
    ! rather than a hand-written `bind(C)` interface. The marshalling -- the env
    ! extent, the `bas` extent past `nbas`, the dims -- lives once in the shim
    ! instead of once per caller.
-   use libcint_fortran, only: libcint_ecp_sph, libcint_ecp_cart
+   use libcint_fortran, only: libcint_ecp_sph, libcint_ecp_cart, &
+                              libcint_ecp_ipnuc_sph, libcint_ecp_ipnuc_cart, &
+                              libcint_ecp_iprinv_sph, libcint_ecp_iprinv_cart, &
+                              LIBCINT_AS_RINV_ORIG_ATOM, LIBCINT_ATOM_OF
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
    public :: ecp_matrix
+   public :: ecp_deriv_matrix
+   public :: ecp_on_atom
    public :: ecp_refuses_derivatives
    public :: ecp_refuses_auto_frozen_core
 
@@ -70,20 +75,20 @@ contains
    end function ecp_refuses_auto_frozen_core
 
    function ecp_refuses_derivatives(core_electrons, what, error) result(refused)
-      !! Refuse a nuclear derivative when an ECP is present
+      !! Refuse an analytic second derivative when an ECP is present
       !!
-      !! The potential depends on the nuclear positions through |r - R| and
-      !! through the projectors on both sides, and none of that is
-      !! differentiated anywhere in this program -- libfint carries the energy
-      !! integrals only, not PySCF's `nr_ecp_deriv.c`.
+      !! First derivatives of the potential are implemented (`ecp_deriv_matrix`)
+      !! and every analytic gradient carries them. Second derivatives are not:
+      !! libfint has the energy and gradient integrals and not PySCF's
+      !! `ipipnuc` and `ipnucip` forms, so an analytic Hessian would be missing
+      !! a term.
       !!
       !! **Why refuse rather than omit.** Every check a user can make passes: the
-      !! SCF converges, the energy agrees with PySCF to 1e-12, and the forces are
-      !! missing a term. An optimisation on those walks to a geometry that is not
-      !! a stationary point of the energy it reports, and a frequency built from
-      !! them looks like a physical result.
+      !! SCF converges, the energy and the gradient agree with PySCF, and the
+      !! Hessian is missing a term, so a frequency built from it looks like a
+      !! physical result.
       integer, allocatable, intent(in) :: core_electrons(:)
-      character(len=*), intent(in) :: what   !! Named in the message, e.g. "MP2 gradient"
+      character(len=*), intent(in) :: what   !! Named in the message, e.g. "nuclear Hessian"
       type(error_t), intent(inout) :: error
       logical :: refused
 
@@ -95,8 +100,8 @@ contains
       call error%set(ERROR_VALIDATION, "this calculation uses an effective core "// &
                      "potential, whose contribution to the "//what//" is not "// &
                      "implemented. Refused rather than returning a derivative "// &
-                     "missing it -- energies are unaffected, so a single point is "// &
-                     "still correct.")
+                     "missing it. Energies and gradients are unaffected, and a "// &
+                     "Hessian by differences of the gradient carries it in full.")
    end function ecp_refuses_derivatives
 
    subroutine ecp_matrix(nao, nbas, natm, cartesian, atm, bas, env, &
@@ -168,5 +173,101 @@ contains
          end do
       end do
    end subroutine ecp_matrix
+
+   pure function ecp_on_atom(nbas, necpbas, bas, atom) result(present_here)
+      !! Whether `atom` (1-based) carries any of the ECP rows
+      integer, intent(in) :: nbas, necpbas
+      integer, intent(in) :: bas(:, :)     !! (BAS_SLOTS, nbas + necpbas)
+      integer, intent(in) :: atom
+      logical :: present_here
+      integer :: row
+
+      present_here = .false.
+      do row = nbas + 1, nbas + necpbas
+         ! `LIBCINT_ATOM_OF` is the row of `bas` itself, one-based, unlike the
+         ! `env` slots; the atom it holds is zero-based.
+         if (bas(LIBCINT_ATOM_OF, row) == atom - 1) present_here = .true.
+      end do
+   end function ecp_on_atom
+
+   subroutine ecp_deriv_matrix(nbas, natm, cartesian, atm, bas, env, &
+                               shell_offset, necpbas, atom, matrix)
+      !! `<nabla mu| U |nu>`, the ECP's first-derivative integrals, (nao, nao, 3)
+      !!
+      !! `atom` zero takes `U` over every ECP centre; a 1-based atom takes that
+      !! atom's potential alone, which is zero for an atom without one. The
+      !! nabla acts on the electron, as in libcint's `ip` integrals, so the
+      !! derivative with respect to the centre of `mu` is minus this.
+      !!
+      !! Arguments are `ecp_matrix`'s without `nao`, which `matrix` already
+      !! carries, and plain arrays for its reason.
+      integer, intent(in) :: nbas, natm
+      logical, intent(in) :: cartesian
+      integer, intent(in) :: atm(:, :)
+      integer, intent(in) :: bas(:, :)     !! (BAS_SLOTS, nbas + necpbas)
+      real(dp), intent(in) :: env(:)
+      integer, intent(in) :: shell_offset(:)  !! (nbas + 1), first AO per shell
+      integer, intent(in) :: necpbas
+      integer, intent(in) :: atom
+      real(dp), intent(out) :: matrix(:, :, :)
+
+      real(dp), allocatable :: buf(:), env_at(:)
+      integer :: shls(2)
+      integer :: ish, jsh, di, dj, i, j, comp, io, jo, ret, nmax
+
+      matrix = 0.0_dp
+      if (necpbas <= 0) return
+      if (atom > 0) then
+         if (.not. ecp_on_atom(nbas, necpbas, bas, atom)) return
+      end if
+
+      ! A copy, because the atom a one-atom integral refers to lives in `env`
+      ! and the molecule's is shared.
+      allocate (env_at(size(env)), source=env)
+      if (atom > 0) env_at(LIBCINT_AS_RINV_ORIG_ATOM + 1) = real(atom - 1, dp)
+
+      nmax = 0
+      do ish = 1, nbas
+         nmax = max(nmax, shell_offset(ish + 1) - shell_offset(ish))
+      end do
+
+      ! Threaded over the bra shell: each block lands in its own rows.
+      !$omp parallel default(none) &
+      !$omp    shared(matrix, nbas, natm, cartesian, atm, bas, env_at, shell_offset, atom, nmax) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, ret, shls, buf)
+      allocate (buf(3*nmax*nmax))
+      !$omp do schedule(dynamic)
+      do ish = 1, nbas
+         di = shell_offset(ish + 1) - shell_offset(ish)
+         io = shell_offset(ish)
+         do jsh = 1, nbas
+            dj = shell_offset(jsh + 1) - shell_offset(jsh)
+            jo = shell_offset(jsh)
+            shls = [ish - 1, jsh - 1]
+
+            if (atom > 0 .and. cartesian) then
+               ret = libcint_ecp_iprinv_cart(buf, shls, atm, natm, bas, nbas, env_at)
+            else if (atom > 0) then
+               ret = libcint_ecp_iprinv_sph(buf, shls, atm, natm, bas, nbas, env_at)
+            else if (cartesian) then
+               ret = libcint_ecp_ipnuc_cart(buf, shls, atm, natm, bas, nbas, env_at)
+            else
+               ret = libcint_ecp_ipnuc_sph(buf, shls, atm, natm, bas, nbas, env_at)
+            end if
+            if (ret == 0) cycle
+
+            do comp = 1, 3
+               do j = 1, dj
+                  do i = 1, di
+                     matrix(io + i, jo + j, comp) = buf(i + di*(j - 1 + dj*(comp - 1)))
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
+   end subroutine ecp_deriv_matrix
 
 end module mqc_czt_ecp

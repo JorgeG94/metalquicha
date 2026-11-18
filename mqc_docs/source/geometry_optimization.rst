@@ -71,10 +71,9 @@ which backends have gradients, not about the optimizer:
      - Refused: the coupled cluster gradient is implemented for fitted
        integrals only
    * - anything with ``model.ecp``
-     - **no**
-     - Refused whatever the method: the potential's contribution to the
-       derivative is not implemented. Energies are unaffected, so a single
-       point is still correct. See :doc:`input_files`
+     - yes
+     - Wherever the method has a gradient without the potential: the
+       gradient carries the potential's derivative. See :doc:`input_files`
    * - cuEST (GPU ``hf``, ``dft``)
      - yes
      - Expected to work; needs an sm_80 card

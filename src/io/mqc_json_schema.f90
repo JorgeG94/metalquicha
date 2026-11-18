@@ -1084,7 +1084,10 @@ contains
       !! `ecp_set` is threaded into the Hartree-Fock and DFT builders and
       !! nowhere else, so a CASSCF or xTB deck naming a potential would run
       !! all-electron and report a number with nothing to say it ignored half
-      !! the request.
+      !! the request. The same holds for the paths that build their own
+      !! molecules: SAPT, EFP, the `MakeFP` driver, and the FMO and EFMO
+      !! fragmentations. A many-body expansion is not among them, since its
+      !! fragments go through the ordinary builder.
       !!
       !! Correlated methods built on Hartree-Fock -- MP2, RI-MP2, coupled
       !! cluster, the double hybrids -- are not listed: they take their
@@ -1095,7 +1098,7 @@ contains
       type(error_t), intent(inout) :: error
 
       type(json_value), pointer :: model, entry
-      character(len=:), allocatable :: ecp, method
+      character(len=:), allocatable :: ecp, method, driver, frag_method
       logical :: found
 
       if (error%has_error()) return
@@ -1122,11 +1125,53 @@ contains
                         "ignored and the calculation would run all-electron without "// &
                         "saying so. Refused rather than silently dropped. Hartree-Fock "// &
                         "and DFT, and the correlated methods built on them, do carry it.")
+      case ("sapt0", "sapt", "sapt2")
+         call error%set(ERROR_VALIDATION, "model.ecp is set, but SAPT does not carry "// &
+                        "an effective core potential: it builds its monomers itself, "// &
+                        "and they would run all-electron without saying so. Refused "// &
+                        "rather than silently dropped.")
+      case ("efp", "efp2")
+         call error%set(ERROR_VALIDATION, "model.ecp is set, but an EFP calculation "// &
+                        "has no electrons of its own for a potential to act on: the "// &
+                        "fragments are the potentials read from file. Remove model.ecp.")
       case default
          ! Everything else carries the potential, or is refused nearer the
          ! calculation: the GPU backend refuses it in its own driver, since
          ! which backend runs is not a `model` key and cannot be seen here.
       end select
+      if (error%has_error()) return
+
+      ! Two requests that are not method names and build their own molecules.
+      call core%get(root, "driver", entry, found)
+      if (found .and. associated(entry)) then
+         call core%get(root, "driver", driver)
+         select case (lowered(trim(adjustl(driver))))
+         case ("makefp", "makeefp")
+            call error%set(ERROR_VALIDATION, "model.ecp is set, but the MakeFP driver "// &
+                           "does not carry an effective core potential: the fragment "// &
+                           "potential would be made from an all-electron calculation "// &
+                           "without saying so. Refused rather than silently dropped.")
+            return
+         case default
+            ! Every other driver runs the method named, which was judged above.
+         end select
+      end if
+
+      call core%get(root, "keywords.fragmentation.method", entry, found)
+      if (found .and. associated(entry)) then
+         call core%get(root, "keywords.fragmentation.method", frag_method)
+         select case (lowered(trim(adjustl(frag_method))))
+         case ("fmo", "efmo")
+            call error%set(ERROR_VALIDATION, "model.ecp is set, but fragmentation "// &
+                           "method '"//trim(frag_method)//"' does not carry an "// &
+                           "effective core potential: its fragments would run "// &
+                           "all-electron without saying so. Refused rather than "// &
+                           "silently dropped. A many-body expansion (MBE, GMBE) does "// &
+                           "carry it.")
+         case default
+            ! A many-body expansion's fragments go through the ordinary builder.
+         end select
+      end if
    end subroutine check_ecp_supported
 
    subroutine check_bond_orders(core, root, error)
