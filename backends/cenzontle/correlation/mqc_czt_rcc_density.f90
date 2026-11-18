@@ -20,7 +20,8 @@ module mqc_czt_rcc_density
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_tensor_contract, only: contract, transposed
+   use mqc_tensor_contract, only: contract, transposed, add_transposed
+   use mqc_czt_gemm_threads, only: gemm_over_columns
    use mqc_czt_rcc, only: rcc_state_t
    use mqc_czt_rcc_lambda, only: rcc_lambda_t
    use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
@@ -141,7 +142,8 @@ contains
       type(rcc_triples_terms_t), intent(in), optional :: triples
          !! Present, the density of CCSD(T)
 
-      real(dp), allocatable :: t(:, :, :), tp(:, :, :)
+      real(dp), allocatable :: s(:, :, :)
+      ! Both contractions of every block, summed; see below.
       real(dp), allocatable :: dovov(:, :, :, :), doooo(:, :, :, :), doovv(:, :, :, :)
       real(dp), allocatable :: dovvo(:, :, :, :), dovvv(:, :, :, :), dooov(:, :, :, :)
       real(dp), allocatable :: work(:, :, :, :)
@@ -163,7 +165,7 @@ contains
          return
       end if
       n_aux = size(b, 3)
-      allocate (t(n, n, n_aux), tp(n, n, n_aux), source=0.0_dp)
+      allocate (s(n, n, n_aux), source=0.0_dp)
 
       call gamma2_blocks(state, lambda, dovov, doooo, doovv, dovvo, dovvv, dooov)
       if (present(triples)) then
@@ -172,28 +174,26 @@ contains
          dooov = dooov + triples%dooov
       end if
 
-      ! Each block of the density, and each of the blocks its symmetry makes of
-      ! it, contracted with the fit on its second pair and on its first.
+      ! Each block of the density is contracted with the fit on its second
+      ! pair and on its first, and both go into one array. The blocks the
+      ! density's symmetry makes of a block -- its pairs exchanged, or each
+      ! pair transposed -- contribute what that block does or its transpose,
+      ! so only one of each family is contracted, with the number of times it
+      ! counts, and the symmetrisation at the end supplies the rest. The
+      ! result is half of `s` plus its transpose.
       work = dovov + transposed(dovov, [3, 4, 1, 2])
-      call accumulate(work, 0, no, 0, no)
-      call accumulate(transposed(work, [2, 1, 4, 3]), no, 0, no, 0)
+      call accumulate(work, no, nv, no, nv, 0, no, 0, no, 1.0_dp)
       work = doovv + transposed(doovv, [2, 1, 4, 3])
-      call accumulate(work, 0, 0, no, no)
-      call accumulate(transposed(work, [3, 4, 1, 2]), no, no, 0, 0)
+      call accumulate(work, no, no, nv, nv, 0, 0, no, no, 1.0_dp)
       work = dovvo + transposed(dovvo, [4, 3, 2, 1])
-      call accumulate(work, 0, no, no, 0)
-      call accumulate(transposed(work, [2, 1, 4, 3]), no, 0, 0, no)
-      work = 2.0_dp*(doooo + transposed(doooo, [2, 1, 4, 3]))
-      call accumulate(work, 0, 0, 0, 0)
-      call accumulate(dovvv, 0, no, no, no)
-      call accumulate(transposed(dovvv, [3, 4, 1, 2]), no, no, 0, no)
-      call accumulate(transposed(dovvv, [4, 3, 2, 1]), no, no, no, 0)
-      call accumulate(transposed(dovvv, [2, 1, 4, 3]), no, 0, no, no)
-      call accumulate(dooov, 0, 0, 0, no)
-      call accumulate(transposed(dooov, [3, 4, 1, 2]), 0, no, 0, 0)
-      call accumulate(transposed(dooov, [2, 1, 4, 3]), 0, 0, no, 0)
-      call accumulate(transposed(dooov, [4, 3, 2, 1]), no, 0, 0, 0)
-      deallocate (work, dovov, doooo, doovv, dovvo, dovvv, dooov)
+      call accumulate(work, no, nv, nv, no, 0, no, no, 0, 1.0_dp)
+      work = doooo + transposed(doooo, [2, 1, 4, 3])
+      call accumulate(work, no, no, no, no, 0, 0, 0, 0, 1.0_dp)
+      deallocate (work, dovov, doooo, doovv, dovvo)
+      call accumulate(dovvv, no, nv, nv, nv, 0, no, no, no, 2.0_dp)
+      deallocate (dovvv)
+      call accumulate(dooov, no, no, no, nv, 0, 0, 0, no, 2.0_dp)
+      deallocate (dooov)
 
       ! The all-virtual block. With g(a,b,c,d) = sum_ij l2(i,j,a,b) tau(i,j,c,d)
       ! the block is 2 (d + d transposed in both pairs) for
@@ -236,49 +236,43 @@ contains
       deallocate (l2ij, theta, e)
       !$omp end parallel
       do k = 1, n_aux
-         t(no + 1:n, no + 1:n, k) = t(no + 1:n, no + 1:n, k) &
-                                    + 2.0_dp*(y(:, k, :) + transpose(y(:, k, :)))
-         tp(no + 1:n, no + 1:n, k) = tp(no + 1:n, no + 1:n, k) &
-                                     + 2.0_dp*(y(:, k, :) + transpose(y(:, k, :)))
+         s(no + 1:n, no + 1:n, k) = s(no + 1:n, no + 1:n, k) + 4.0_dp*y(:, k, :)
       end do
       deallocate (bvv, y)
 
       allocate (g3(n, n, n_aux))
       do k = 1, n_aux
-         g3(:, :, k) = 0.25_dp*(t(:, :, k) + tp(:, :, k) &
-                                + transpose(t(:, :, k)) + transpose(tp(:, :, k)))
+         g3(:, :, k) = 0.5_dp*(s(:, :, k) + transpose(s(:, :, k)))
       end do
 
    contains
 
-      subroutine accumulate(d, w0, x0, y0, z0)
-         !! Add one block `d(w,x,y,z)` of the density to both contractions
-         real(dp), intent(in) :: d(:, :, :, :)
+      subroutine accumulate(d, nw, nx, ny, nz, w0, x0, y0, z0, weight)
+         !! Add both contractions of one block `d(w,x,y,z)` of the density,
+         !! `weight` times
+         integer, intent(in) :: nw, nx, ny, nz
+         real(dp), intent(in) :: d(nw*nx, ny*nz)
+            !! The block as a matrix between its two pairs, which is how it
+            !! lies in memory
          integer, intent(in) :: w0, x0, y0, z0
             !! Where each index starts among the active orbitals, less one:
             !! zero for an occupied index and `no` for a virtual one
+         real(dp), intent(in) :: weight
 
-         real(dp), allocatable :: dm(:, :), bs(:, :), out(:, :)
-         integer :: nw, nx, ny, nz
-
-         nw = size(d, 1)
-         nx = size(d, 2)
-         ny = size(d, 3)
-         nz = size(d, 4)
-         dm = reshape(d, [nw*nx, ny*nz])
+         real(dp), allocatable :: bs(:, :), out(:, :)
 
          bs = reshape(b(y0 + 1:y0 + ny, z0 + 1:z0 + nz, :), [ny*nz, n_aux])
          allocate (out(nw*nx, n_aux))
-         call pic_gemm(dm, bs, out)
-         t(w0 + 1:w0 + nw, x0 + 1:x0 + nx, :) = t(w0 + 1:w0 + nw, x0 + 1:x0 + nx, :) &
-                                                + reshape(out, [nw, nx, n_aux])
+         call gemm_over_columns(d, bs, out)
+         s(w0 + 1:w0 + nw, x0 + 1:x0 + nx, :) = s(w0 + 1:w0 + nw, x0 + 1:x0 + nx, :) &
+                                                + weight*reshape(out, [nw, nx, n_aux])
          deallocate (out)
 
          bs = reshape(b(w0 + 1:w0 + nw, x0 + 1:x0 + nx, :), [nw*nx, n_aux])
          allocate (out(ny*nz, n_aux))
-         call pic_gemm(dm, bs, out, transa="T")
-         tp(y0 + 1:y0 + ny, z0 + 1:z0 + nz, :) = tp(y0 + 1:y0 + ny, z0 + 1:z0 + nz, :) &
-                                                 + reshape(out, [ny, nz, n_aux])
+         call gemm_over_columns(d, bs, out, transa="T")
+         s(y0 + 1:y0 + ny, z0 + 1:z0 + nz, :) = s(y0 + 1:y0 + ny, z0 + 1:z0 + nz, :) &
+                                                + weight*reshape(out, [ny, nz, n_aux])
       end subroutine accumulate
 
    end subroutine rccsd_fitted_two_particle_density
@@ -428,7 +422,11 @@ contains
          call contract("ab,ic->aibc", tmp_vv, t1, gvovv, 1.0_dp)
          call contract("ba,ic->aibc", mvv, t1, gvovv, 0.5_dp)
          call contract("ja,jibc->aibc", t1, l2, gvovv, 1.0_dp)
-         dovvv = 2.0_dp*transposed(gvovv, [2, 4, 1, 3]) - transposed(gvovv, [2, 3, 1, 4])
+         ! In place, because these two are the largest arrays here.
+         allocate (dovvv(no, nv, nv, nv), source=0.0_dp)
+         call add_transposed(gvovv, [2, 4, 1, 3], 2.0_dp, dovvv)
+         call add_transposed(gvovv, [2, 3, 1, 4], -1.0_dp, dovvv)
+         deallocate (gvovv)
       end associate
    end subroutine gamma2_blocks
 

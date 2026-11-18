@@ -12,7 +12,7 @@ module test_mqc_tensor_contract
    !! the mixed-rank forms.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
-   use mqc_tensor_contract, only: contract
+   use mqc_tensor_contract, only: contract, transposed, add_transposed
    implicit none
    private
    public :: collect_mqc_tensor_contract_tests
@@ -34,7 +34,8 @@ contains
                   new_unittest("rank_four_to_rank_two", test_to_matrix), &
                   new_unittest("matrix_with_rank_four", test_matrix_first), &
                   new_unittest("adds_and_scales", test_accumulates), &
-                  new_unittest("large_enough_to_be_threaded", test_large) &
+                  new_unittest("large_enough_to_be_threaded", test_large), &
+                  new_unittest("transposed_and_add_transposed_agree", test_transposed) &
                   ]
    end subroutine collect_mqc_tensor_contract_tests
 
@@ -318,6 +319,41 @@ contains
       call check(error, maxval(abs(got - want)) < 1.0e-10_dp, &
                  "a contraction large enough to thread is wrong")
    end subroutine test_large
+
+   subroutine test_transposed(error)
+      !! `transposed` against the definition, and `add_transposed` against it
+      !!
+      !! Index `k` of the result is index `order(k)` of the operand. An order
+      !! that is not its own inverse is used, so applying it backwards would
+      !! show.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: ORDER(4) = [2, 4, 1, 3]
+      real(dp) :: x(NI, NA, NJ, NB), want(NA, NB, NI, NJ), acc(NA, NB, NI, NJ)
+      real(dp), allocatable :: y(:, :, :, :)
+      integer :: i, j, a, b
+
+      call fill4(x, 3.1_dp)
+      do j = 1, NJ
+         do i = 1, NI
+            do b = 1, NB
+               do a = 1, NA
+                  want(a, b, i, j) = x(i, a, j, b)
+               end do
+            end do
+         end do
+      end do
+      y = transposed(x, ORDER)
+      call check(error, all(shape(y) == shape(want)), "the reordered array has the wrong shape")
+      if (allocated(error)) return
+      call check(error, maxval(abs(y - want)) < TOL, "the reordered array is wrong")
+      if (allocated(error)) return
+
+      acc = 1.0_dp
+      call add_transposed(x, ORDER, -2.0_dp, acc)
+      call check(error, maxval(abs(acc - (1.0_dp - 2.0_dp*want))) < TOL, &
+                 "adding a reordered array in place disagrees with reordering it first")
+   end subroutine test_transposed
 
 end module test_mqc_tensor_contract
 

@@ -24,6 +24,7 @@ module mqc_tensor_contract
 
    public :: contract
    public :: transposed
+   public :: add_transposed
 
    integer, parameter :: MAX_RANK = 4
       !! Highest rank of an operand or a result
@@ -45,11 +46,8 @@ contains
       real(dp), intent(inout) :: c(:, :, :, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_44_4
 
    subroutine contract_44_2(spec, a, b, c, scale)
@@ -59,11 +57,8 @@ contains
       real(dp), intent(inout) :: c(:, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_44_2
 
    subroutine contract_42_4(spec, a, b, c, scale)
@@ -73,11 +68,8 @@ contains
       real(dp), intent(inout) :: c(:, :, :, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_42_4
 
    subroutine contract_24_4(spec, a, b, c, scale)
@@ -87,11 +79,8 @@ contains
       real(dp), intent(inout) :: c(:, :, :, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_24_4
 
    subroutine contract_42_2(spec, a, b, c, scale)
@@ -101,11 +90,8 @@ contains
       real(dp), intent(inout) :: c(:, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_42_2
 
    subroutine contract_24_2(spec, a, b, c, scale)
@@ -115,11 +101,8 @@ contains
       real(dp), intent(inout) :: c(:, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_24_2
 
    subroutine contract_22_2(spec, a, b, c, scale)
@@ -129,11 +112,8 @@ contains
       real(dp), intent(inout) :: c(:, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_22_2
 
    subroutine contract_22_4(spec, a, b, c, scale)
@@ -143,11 +123,8 @@ contains
       real(dp), intent(inout) :: c(:, :, :, :)
       real(dp), intent(in) :: scale
 
-      real(dp), allocatable :: r(:)
-
-      call contract_flat(spec, reshape(a, [size(a)]), shape(a), &
-                         reshape(b, [size(b)]), shape(b), shape(c), r)
-      c = c + scale*reshape(r, shape(c))
+      call contract_flat(spec, a, size(a), shape(a), b, size(b), shape(b), &
+                         c, size(c), shape(c), scale)
    end subroutine contract_22_4
 
    function transposed(x, order) result(y)
@@ -157,21 +134,69 @@ contains
       integer, intent(in) :: order(4)   !! A permutation of 1 to 4
       real(dp), allocatable :: y(:, :, :, :)
 
-      real(dp), allocatable :: flat(:)
       integer :: extents(4)
 
       extents = shape(x)
-      call permute(reshape(x, [size(x)]), extents, order, flat)
-      y = reshape(flat, [extents(order(1)), extents(order(2)), extents(order(3)), &
-                         extents(order(4))])
+      allocate (y(extents(order(1)), extents(order(2)), extents(order(3)), extents(order(4))))
+      call permute_into(x, size(x), extents, order, y)
    end function transposed
 
-   subroutine contract_flat(spec, a, shape_a, b, shape_b, shape_c, r)
-      !! The contraction over flattened operands, in the result's index order
+   subroutine add_transposed(x, order, scale, y)
+      !! `y = y + scale` times `x` with its indices reordered as `transposed`
+      !! reorders them, without the copy `transposed` returns
+      real(dp), intent(in) :: x(:, :, :, :)
+      integer, intent(in) :: order(4)   !! A permutation of 1 to 4
+      real(dp), intent(in) :: scale
+      real(dp), intent(inout) :: y(:, :, :, :)
+
+      integer :: j1, j2, j3, j4
+      integer :: at(4)
+
+      if (any(shape(y) /= [size(x, order(1)), size(x, order(2)), size(x, order(3)), &
+                           size(x, order(4))])) then
+         error stop "add_transposed: the result is not the shape of the reordered operand"
+      end if
+      !$omp parallel do default(none) if (real(size(x), dp) > THREAD_ABOVE) &
+      !$omp    shared(x, y, order, scale) private(j1, j2, j3, j4, at) schedule(static)
+      do j4 = 1, size(y, 4)
+         do j3 = 1, size(y, 3)
+            do j2 = 1, size(y, 2)
+               do j1 = 1, size(y, 1)
+                  at(order(1)) = j1
+                  at(order(2)) = j2
+                  at(order(3)) = j3
+                  at(order(4)) = j4
+                  y(j1, j2, j3, j4) = y(j1, j2, j3, j4) + scale*x(at(1), at(2), at(3), at(4))
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine add_transposed
+
+   subroutine permute_into(src, n, extents, perm, dst)
+      !! `permute`, between two arrays that arrive by sequence association
+      integer, intent(in) :: n
+      real(dp), intent(in) :: src(n)
+      integer, intent(in) :: extents(:), perm(:)
+      real(dp), intent(out) :: dst(n)
+
+      call permute_core(src, extents, perm, dst)
+   end subroutine permute_into
+
+   subroutine contract_flat(spec, a, n_a, shape_a, b, n_b, shape_b, c, n_c, shape_c, scale)
+      !! The contraction over flattened operands, added into the flattened result
+      !!
+      !! The operands and the result arrive by sequence association, so nothing
+      !! is copied to flatten them. An operand already in the order the product
+      !! needs is multiplied where it lies, and a product already in the
+      !! result's order is accumulated straight into it.
       character(len=*), intent(in) :: spec
-      real(dp), intent(in) :: a(:), b(:)
+      integer, intent(in) :: n_a, n_b, n_c
+      real(dp), intent(in) :: a(n_a), b(n_b)
       integer, intent(in) :: shape_a(:), shape_b(:), shape_c(:)
-      real(dp), allocatable, intent(out) :: r(:)   !! (product of `shape_c`)
+      real(dp), intent(inout) :: c(n_c)
+      real(dp), intent(in) :: scale
 
       character(len=MAX_RANK) :: la, lb, lc
       integer :: na, nb, nc
@@ -182,6 +207,7 @@ contains
       integer :: rows, cols, inner
       integer :: k, at, where_b
       real(dp), allocatable :: am(:), bm(:), rm(:)
+      logical :: a_in_place, b_in_place, c_in_place
 
       call split_spec(spec, la, na, lb, nb, lc, nc)
       if (na /= size(shape_a) .or. nb /= size(shape_b) .or. nc /= size(shape_c)) then
@@ -252,39 +278,98 @@ contains
          end if
       end do
 
-      call permute(a, shape_a, perm_a(1:na), am)
-      call permute(b, shape_b, perm_b(1:nb), bm)
+      a_in_place = in_order(perm_a(1:na))
+      b_in_place = in_order(perm_b(1:nb))
+      c_in_place = in_order(perm_r(1:nc))
+      if (.not. a_in_place) call permute(a, shape_a, perm_a(1:na), am)
+      if (.not. b_in_place) call permute(b, shape_b, perm_b(1:nb), bm)
+      if (c_in_place) then
+         if (a_in_place .and. b_in_place) then
+            call multiply(a, b, rows, inner, cols, c, scale, 1.0_dp)
+         else if (a_in_place) then
+            call multiply(a, bm, rows, inner, cols, c, scale, 1.0_dp)
+         else if (b_in_place) then
+            call multiply(am, b, rows, inner, cols, c, scale, 1.0_dp)
+         else
+            call multiply(am, bm, rows, inner, cols, c, scale, 1.0_dp)
+         end if
+         return
+      end if
       allocate (rm(rows*cols))
-      call multiply(am, bm, rows, inner, cols, rm)
-      call permute(rm, shape_r(1:nc), perm_r(1:nc), r)
+      if (a_in_place .and. b_in_place) then
+         call multiply(a, b, rows, inner, cols, rm, 1.0_dp, 0.0_dp)
+      else if (a_in_place) then
+         call multiply(a, bm, rows, inner, cols, rm, 1.0_dp, 0.0_dp)
+      else if (b_in_place) then
+         call multiply(am, b, rows, inner, cols, rm, 1.0_dp, 0.0_dp)
+      else
+         call multiply(am, bm, rows, inner, cols, rm, 1.0_dp, 0.0_dp)
+      end if
+      if (allocated(am)) deallocate (am)
+      if (allocated(bm)) deallocate (bm)
+      call permute(rm, shape_r(1:nc), perm_r(1:nc), am)
+      call add_scaled(am, scale, c)
    end subroutine contract_flat
 
-   subroutine multiply(am, bm, rows, inner, cols, rm)
-      !! `rm(rows, cols) = am(rows, inner) bm(inner, cols)` over flat storage
+   pure function in_order(perm) result(yes)
+      !! Whether a permutation leaves every index where it was
+      integer, intent(in) :: perm(:)
+      logical :: yes
+
+      integer :: k
+
+      yes = .true.
+      do k = 1, size(perm)
+         if (perm(k) /= k) yes = .false.
+      end do
+   end function in_order
+
+   subroutine add_scaled(x, scale, y)
+      !! `y = y + scale x`
+      real(dp), intent(in) :: x(:)
+      real(dp), intent(in) :: scale
+      real(dp), intent(inout) :: y(:)
+
+      integer :: k
+
+      !$omp parallel do default(none) if (real(size(x), dp) > THREAD_ABOVE) &
+      !$omp    shared(x, y, scale) private(k) schedule(static)
+      do k = 1, size(x)
+         y(k) = y(k) + scale*x(k)
+      end do
+      !$omp end parallel do
+   end subroutine add_scaled
+
+   subroutine multiply(am, bm, rows, inner, cols, rm, alpha, beta)
+      !! `rm = alpha am bm + beta rm`, for `am(rows, inner)` and `bm(inner, cols)`
       !!
       !! The BLAS this is built against is sequential, so a product worth
       !! threading is split by hand into one block of columns for each thread.
       integer, intent(in) :: rows, inner, cols
       real(dp), intent(in) :: am(rows, inner), bm(inner, cols)
-      real(dp), intent(out) :: rm(rows, cols)
+      real(dp), intent(inout) :: rm(rows, cols)
+      real(dp), intent(in) :: alpha, beta
 
       integer :: n_blocks, block, first, last
 
-      if (rows == 0 .or. cols == 0 .or. inner == 0) then
-         rm = 0.0_dp
+      if (rows == 0 .or. cols == 0) return
+      if (inner == 0) then
+         rm = beta*rm
          return
       end if
       n_blocks = min(omp_get_max_threads(), cols)
       if (n_blocks < 2 .or. real(rows, dp)*real(inner, dp)*real(cols, dp) < THREAD_ABOVE) then
-         call pic_gemm(am, bm, rm)
+         call pic_gemm(am, bm, rm, alpha=alpha, beta=beta)
          return
       end if
-      !$omp parallel do default(none) shared(am, bm, rm, n_blocks, cols) &
+      !$omp parallel do default(none) shared(am, bm, rm, n_blocks, cols, alpha, beta) &
       !$omp    private(block, first, last) schedule(static)
       do block = 1, n_blocks
          first = (block - 1)*cols/n_blocks + 1
          last = block*cols/n_blocks
-         if (last >= first) call pic_gemm(am, bm(:, first:last), rm(:, first:last))
+         if (last >= first) then
+            call pic_gemm(am, bm(:, first:last), rm(:, first:last), alpha=alpha, beta=beta)
+         end if
       end do
       !$omp end parallel do
    end subroutine multiply
@@ -333,11 +418,21 @@ contains
       integer, intent(in) :: perm(:)
       real(dp), allocatable, intent(out) :: dst(:)
 
+      allocate (dst(size(src)))
+      call permute_core(src, extents, perm, dst)
+   end subroutine permute
+
+   subroutine permute_core(src, extents, perm, dst)
+      !! The reordering itself, into storage the caller holds
+      real(dp), intent(in) :: src(:)
+      integer, intent(in) :: extents(:)   !! Shape of `src`
+      integer, intent(in) :: perm(:)
+      real(dp), intent(out) :: dst(:)
+
       integer :: n, k, at, first, step, offset, slab, outer, n_outer
       integer :: stride(MAX_RANK), jump(MAX_RANK), top(MAX_RANK), counter(MAX_RANK)
 
       n = size(extents)
-      allocate (dst(size(src)))
       if (size(src) == 0) return
 
       ! `jump(k)` is how far `src` moves when the result's k-th index advances.
@@ -389,6 +484,6 @@ contains
          end do
       end do
       !$omp end parallel do
-   end subroutine permute
+   end subroutine permute_core
 
 end module mqc_tensor_contract

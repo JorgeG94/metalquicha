@@ -27,7 +27,7 @@ module mqc_czt_rcc_lambda
    use mqc_diis, only: diis_state_t
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_convergence_report, only: convergence_header, convergence_footer
-   use mqc_tensor_contract, only: contract, transposed
+   use mqc_tensor_contract, only: contract, transposed, add_transposed
    use mqc_czt_rcc, only: rcc_state_t, rcc_ladder
    use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
    implicit none
@@ -50,13 +50,13 @@ module mqc_czt_rcc_lambda
    end type rcc_lambda_t
 
    type :: lambda_integrals_t
-      !! The integral blocks in the reference's layout
-      real(dp), allocatable :: oooo(:, :, :, :)   !! (ij|kl)
+      !! The two integral blocks the reference lays out differently
+      !!
+      !! `(ij|kl)`, `(ij|ab)`, `(ia|jb)` and `(ia|bc)` are read where the
+      !! amplitude calculation left them, which is already the reference's
+      !! layout.
       real(dp), allocatable :: ovoo(:, :, :, :)   !! (ia|jk)
-      real(dp), allocatable :: oovv(:, :, :, :)   !! (ij|ab)
-      real(dp), allocatable :: ovov(:, :, :, :)   !! (ia|jb)
       real(dp), allocatable :: ovvo(:, :, :, :)   !! (ia|bj)
-      real(dp), allocatable :: ovvv(:, :, :, :)   !! (ia|bc)
    end type lambda_integrals_t
 
    type :: lambda_intermediates_t
@@ -178,10 +178,6 @@ contains
       type(rcc_state_t), intent(in) :: state
       type(lambda_integrals_t), intent(out) :: ints
 
-      ints%oooo = state%eris%oooo
-      ints%oovv = state%eris%oovv
-      ints%ovov = state%eris%ovov
-      ints%ovvv = state%eris%ovvv
       ! (ia|jk) from (jk|ia), and (ia|bj) from (ia|jb).
       ints%ovoo = transposed(state%eris%ooov, [3, 4, 1, 2])
       ints%ovvo = transposed(state%eris%ovov, [1, 2, 4, 3])
@@ -201,8 +197,8 @@ contains
 
       no = state%no
       nv = state%nv
-      associate (t1 => state%t1, t2 => state%t2, ovov => ints%ovov, ovoo => ints%ovoo, &
-                 ovvv => ints%ovvv)
+      associate (t1 => state%t1, t2 => state%t2, ovov => state%eris%ovov, &
+                 ovoo => ints%ovoo, ovvv => state%eris%ovvv)
 
          allocate (imds%tau(no, no, nv, nv))
          do b = 1, nv
@@ -236,7 +232,7 @@ contains
          call contract("cb,jc->bj", tmp_vv, t1, v5, 1.0_dp)
          call contract("lckj,klbc->bj", ovoo1, t2, v5, -1.0_dp)
 
-         imds%woooo = ints%oooo
+         imds%woooo = state%eris%oooo
          call contract("icjl,kc->ikjl", ovoo, t1, imds%woooo, 1.0_dp)
          call contract("jcil,kc->iljk", ovoo, t1, imds%woooo, 1.0_dp)
          call contract("icjd,klcd->ikjl", ovov, imds%tau, imds%woooo, 1.0_dp)
@@ -245,7 +241,7 @@ contains
          w_direct = ints%ovvo
          call contract("ldjb,klcd->jbck", ovov1, t2, w_direct, 1.0_dp)
          call contract("ldjb,kldc->jbck", ovov, t2, w_direct, -1.0_dp)
-         w_exchange = -transposed(ints%oovv, [1, 4, 3, 2])
+         w_exchange = -transposed(state%eris%oovv, [1, 4, 3, 2])
          call contract("jdlb,kldc->jbck", ovov, t2, w_exchange, 1.0_dp)
          w_both = 2.0_dp*w_direct + w_exchange
          w_diff = w_direct - w_exchange
@@ -263,9 +259,13 @@ contains
          call contract("lcik,jlbc->ijbk", ovoo1, t2, imds%woovo, -1.0_dp)
          call contract("iclk,ljbc->ijbk", ovoo1, t2, imds%woovo, -1.0_dp)
 
+         ! The arrays of this size are the largest the gradient holds, so
+         ! each is combined in place rather than through an expression that
+         ! would hold two or three more of them at once.
          allocate (tmp(nv, nv, nv, no), source=0.0_dp)
          call contract("jack,jb->back", w_both, t1, tmp, 1.0_dp)
-         imds%wvvvo = tmp - transposed(tmp, [3, 2, 1, 4])
+         imds%wvvvo = tmp
+         call add_transposed(tmp, [3, 2, 1, 4], -1.0_dp, imds%wvvvo)
          deallocate (tmp)
          call contract("jack,jb->cabk", w_diff, t1, imds%wvvvo, 1.0_dp)
          call contract("lajk,jlbc->cabk", ovoo1, imds%tau, imds%wvvvo, -1.0_dp)
@@ -287,15 +287,19 @@ contains
          call contract("jbcd,kd->jbck", ovvv, t1, w_direct, 1.0_dp)
          call contract("jdcb,kd->jbck", ovvv, t1, w_exchange, -1.0_dp)
 
-         ovvv1 = 2.0_dp*ovvv - transposed(ovvv, [1, 4, 3, 2])
+         allocate (ovvv1(no, nv, nv, nv))
+         ovvv1 = 2.0_dp*ovvv
+         call add_transposed(ovvv, [1, 4, 3, 2], -1.0_dp, ovvv1)
          call contract("jcba,jc->ba", ovvv1, t1, imds%v1, 1.0_dp)
          call contract("kdbc,jkcd->bj", ovvv1, t2, v5, 1.0_dp)
          call contract("idcb,jkdb->ijck", ovvv1, imds%tau, imds%woovo, 1.0_dp)
 
          allocate (tmp(nv, nv, nv, no), source=0.0_dp)
          call contract("kdca,jkbd->cabj", ovvv1, imds%theta, tmp, 1.0_dp)
-         imds%wvvvo = imds%wvvvo - tmp + 0.5_dp*transposed(tmp, [3, 2, 1, 4]) &
-                      - transposed(ovvv1, [4, 3, 2, 1])
+         call add_transposed(ovvv1, [4, 3, 2, 1], -1.0_dp, imds%wvvvo)
+         deallocate (ovvv1)
+         call add_transposed(tmp, [1, 2, 3, 4], -1.0_dp, imds%wvvvo)
+         call add_transposed(tmp, [3, 2, 1, 4], 0.5_dp, imds%wvvvo)
          deallocate (tmp)
 
          imds%w3 = imds%w3 + v5
@@ -323,7 +327,8 @@ contains
 
       no = state%no
       nv = state%nv
-      associate (t1 => state%t1, ovov => ints%ovov, ovoo => ints%ovoo, ovvv => ints%ovvv)
+      associate (t1 => state%t1, ovov => state%eris%ovov, ovoo => ints%ovoo, &
+                 ovvv => state%eris%ovvv)
 
          l1n = 0.0_dp
          allocate (mvv(nv, nv), moo(no, no), source=0.0_dp)
@@ -392,7 +397,7 @@ contains
          call contract("ib,ba->ia", l1, imds%v1, l1n, 1.0_dp)
          call contract("ja,ij->ia", l1, imds%v2, l1n, -1.0_dp)
          call contract("jb,iabj->ia", l1, ints%ovvo, l1n, 2.0_dp)
-         call contract("jb,ijba->ia", l1, ints%oovv, l1n, -1.0_dp)
+         call contract("jb,ijba->ia", l1, state%eris%oovv, l1n, -1.0_dp)
          call contract("ijbc,bacj->ia", l2, imds%wvvvo, l1n, -1.0_dp)
          call contract("kjca,ijck->ia", l2, imds%woovo, l1n, -1.0_dp)
          call contract("ijab,bj->ia", l2, imds%w3, l1n, 2.0_dp)

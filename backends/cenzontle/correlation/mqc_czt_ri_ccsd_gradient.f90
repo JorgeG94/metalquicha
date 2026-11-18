@@ -73,7 +73,7 @@ contains
       type(relaxation_input_t), target :: inp
       real(dp), allocatable :: metric(:, :), b_all(:, :, :), g3(:, :, :), gamma(:, :)
       real(dp), allocatable :: block(:, :), c_act(:, :), g_ao(:, :), overlap_lm(:, :)
-      real(dp), allocatable :: half(:, :), gflat(:, :), bflat(:, :)
+      real(dp), allocatable :: half(:, :), bflat(:, :)
       integer :: n_ao, n_mo, n_act, n_aux, n_occ, frozen, no, nv, k, p, q
       real(dp) :: gap
       type(timing_report_t) :: clk
@@ -124,6 +124,9 @@ contains
       n_aux = size(inp%jm12, 2)
       allocate (inp%bref(n_ao*n_ao, n_aux))
       call gemm_over_columns(inp%three_ao, inp%jm12, inp%bref)
+      ! The unfitted integrals are for a fitted reference's own derivative
+      ! term, and the reference here is exact.
+      deallocate (inp%three_ao)
 
       allocate (b_all(n_mo, n_mo, n_aux), block(n_ao, n_ao))
       do k = 1, n_aux
@@ -189,16 +192,15 @@ contains
       ! A quarter of the density contracted twice with the fit, and once and
       ! carried to the atomic orbitals. Both leave the factor's own index for
       ! the auxiliary function's.
-      allocate (gflat(n_act*n_act, n_aux), bflat(n_act*n_act, n_aux))
-      gflat = reshape(g3, [n_act*n_act, n_aux])
+      allocate (bflat(n_act*n_act, n_aux))
       bflat = reshape(b_all(frozen + 1:n_mo, frozen + 1:n_mo, :), [n_act*n_act, n_aux])
       deallocate (b_all)
       allocate (overlap_lm(n_aux, n_aux), half(n_aux, n_aux), inp%gamma_pq(n_aux, n_aux))
-      call pic_gemm(gflat, bflat, overlap_lm, transa="T")
+      call pair_overlap(g3, bflat, n_act*n_act, n_aux, overlap_lm)
       call pic_gemm(inp%jm12, overlap_lm, half)
       call pic_gemm(half, inp%jm12, inp%gamma_pq, transb="T")
       inp%gamma_pq = 0.25_dp*inp%gamma_pq
-      deallocate (gflat, bflat, overlap_lm, half)
+      deallocate (bflat, overlap_lm, half)
 
       allocate (c_act(n_ao, n_act), g_ao(n_ao*n_ao, n_aux), block(n_ao, n_ao))
       c_act = coeff(:, frozen + 1:n_mo)
@@ -207,12 +209,9 @@ contains
          g_ao(:, k) = reshape(block, [n_ao*n_ao])
       end do
       deallocate (g3, block, c_act)
-      allocate (half(n_ao*n_ao, n_aux))
-      call gemm_over_columns(g_ao, inp%jm12, half, transb="T")
-      deallocate (g_ao)
       allocate (inp%gamma_ao(n_ao, n_ao, n_aux))
-      inp%gamma_ao = 0.25_dp*reshape(half, [n_ao, n_ao, n_aux])
-      deallocate (half)
+      call to_auxiliary(g_ao, inp%jm12, n_ao*n_ao, n_aux, inp%gamma_ao)
+      deallocate (g_ao)
 
       call clk%lap()
       call clk%begin("relaxation and assembly")
@@ -223,5 +222,24 @@ contains
       call clk%finish()
       call clk%report("RI-CCSD gradient")
    end subroutine czt_ri_ccsd_gradient
+
+   subroutine pair_overlap(g, b, n_pair, n_aux, out)
+      !! `out(L, M) = sum_pq g(pq, L) b(pq, M)`
+      integer, intent(in) :: n_pair, n_aux
+      real(dp), intent(in) :: g(n_pair, n_aux), b(n_pair, n_aux)
+      real(dp), intent(out) :: out(n_aux, n_aux)
+
+      call pic_gemm(g, b, out, transa="T")
+   end subroutine pair_overlap
+
+   subroutine to_auxiliary(g, factor, n_pair, n_aux, out)
+      !! A quarter of `g` carried from the factor's index to the auxiliary
+      !! function's: `out(pq, P) = sum_L g(pq, L) factor(P, L) / 4`
+      integer, intent(in) :: n_pair, n_aux
+      real(dp), intent(in) :: g(n_pair, n_aux), factor(n_aux, n_aux)
+      real(dp), intent(out) :: out(n_pair, n_aux)
+
+      call gemm_over_columns(g, factor, out, transb="T", alpha=0.25_dp)
+   end subroutine to_auxiliary
 
 end module mqc_czt_ri_ccsd_gradient
