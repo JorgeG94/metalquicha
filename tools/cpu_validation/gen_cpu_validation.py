@@ -2556,7 +2556,10 @@ def ecp_gradient_entries(written, dry_run):
             "gradient_tolerance": tolerance,
             "check_translation": True,
             "type": "unfragmented",
-            "requires": "ecp",
+            # A functional needs libxc as well, as the energy-only Kohn-Sham
+            # cases over a potential say. Named with "ecp" alone, these two ran
+            # on a build without it and failed for want of the library.
+            "requires": ["ecp", "libxc"] if functional else "ecp",
         })
         norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
         print(f"{mol.label:6s} {basis:12s} {theory:10s} ECP grad |g|={norm:.10f} "
