@@ -14,6 +14,7 @@ module mqc_czt_bridge
    use pic_types, only: dp
    use mqc_physical_constants, only: HARTREE_TO_EV
    use pic_timer, only: timer_type
+   use mqc_timing, only: timing_report_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
                                scf_not_converged_message
@@ -1199,6 +1200,8 @@ contains
       integer :: iref
       logical :: kohn_sham
       type(timer_type) :: grad_clock
+      type(timing_report_t) :: cc_grad_phases
+         !! The coupled cluster gradient's three phases, for one table
       real(dp), allocatable :: scf_b_ao(:, :)
          !! The SCF's fitted tensor, taken over rather than freed when a fitted
          !! correlated step follows. See `reuse_scf_fit` for when that is.
@@ -2993,35 +2996,35 @@ contains
             ! reaches here: fitted, spin-adapted CCSD or CCSD(T) over an exact
             ! closed shell.
             if (do_gradient) then
-               call logger%info("  energy converged, solving the Lambda equations")
+               call logger%info("  energy converged, computing the gradient")
                call grad_clock%start()
+               call cc_grad_phases%start()
                if (settings%cc_triples) then
                   ! The correction's derivative with respect to the amplitudes
                   ! drives the Lambda equations, and its derivatives with
                   ! respect to the orbital energies and the integrals join the
                   ! densities. All three come from one pass.
+                  call cc_grad_phases%begin("triples' terms")
                   allocate (cc_triples_terms)
                   call rccsd_triples_terms(cc_state, cc_triples_terms)
-                  write (line, "(a,f10.2,a)") "  triples terms in  ", &
-                     grad_clock%get_elapsed_time(), " s"
-                  call logger%info(trim(line))
+                  call cc_grad_phases%lap()
                end if
+               call cc_grad_phases%begin("Lambda equations")
                call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
                                          settings%verbose, cc_lambda, error, &
                                          diis_vectors=settings%cc_diis_size, &
                                          triples=cc_triples_terms)
-               write (line, "(a,f10.2,a)") "  Lambda done at    ", &
-                  grad_clock%get_elapsed_time(), " s"
-               call logger%info(trim(line))
+               call cc_grad_phases%lap()
                if (.not. error%has_error()) then
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                end if
                if (.not. error%has_error()) then
-                  call logger%info("  computing the gradient")
+                  call cc_grad_phases%begin("densities and assembly")
                   call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
                                             scf%orbital_energies, cc_state, cc_lambda, &
                                             result%gradient, error, &
                                             triples=cc_triples_terms)
+                  call cc_grad_phases%lap()
                   call corr_aux%destroy()
                end if
                if (error%has_error()) then
@@ -3034,6 +3037,10 @@ contains
                call cc_state%destroy()
                call cc_lambda%destroy()
                result%has_gradient = .true.
+               ! Each phase beside the others, since each also prints a table
+               ! of its own and none of those says what the whole cost.
+               call cc_grad_phases%finish()
+               call cc_grad_phases%report("coupled cluster gradient")
                write (line, "(a,f10.2,a)") "  gradient done in ", &
                   grad_clock%get_elapsed_time(), " s"
                call logger%info(trim(line))

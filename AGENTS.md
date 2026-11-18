@@ -288,8 +288,9 @@ only in libfint:
   refused by name. (T) enters as three sets of terms from
   `mqc_czt_rcc_triples_terms` -- sources in the Lambda equations, a diagonal
   on the one-particle density, additions to the two-particle density -- built
-  one set of three virtuals at a time, as the energy is, at about two and a
-  half times the energy's cost. **(T) is not invariant to a
+  one set of three virtuals at a time, as the energy is, at two and a half
+  to four and a half times the energy's cost (a water tetramer and adenine,
+  both in cc-pVDZ). **(T) is not invariant to a
   rotation among the occupied orbitals or among the virtuals**, so the
   gradient takes the off-diagonal relaxed density in those blocks from the
   Lagrangian, divided by the orbital-energy gap, and skips degenerate pairs;
