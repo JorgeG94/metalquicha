@@ -3,7 +3,11 @@ target_sources(
   PRIVATE mqc_czt_mp2.f90
           mqc_czt_cc.f90
           mqc_czt_rcc.f90
+          mqc_czt_rcc_triples_terms.f90
+          mqc_czt_rcc_lambda.f90
+          mqc_czt_rcc_density.f90
           mqc_czt_mp2_gradient.f90
           mqc_czt_mp2_hessian.f90
           mqc_czt_ri_mp2_hessian.f90
-          mqc_czt_ri_mp2_gradient.f90)
+          mqc_czt_ri_mp2_gradient.f90
+          mqc_czt_ri_ccsd_gradient.f90)

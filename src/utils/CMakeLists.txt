@@ -7,4 +7,5 @@ target_sources(
           mqc_timing.f90
           mqc_convergence_report.f90
           mqc_verbosity.f90
-          mqc_memory.f90)
+          mqc_memory.f90
+          mqc_tensor_contract.f90)

@@ -960,6 +960,44 @@ GRADIENT_RI_MP2_CASES = [
 # the derivative terms and the fitted case below is the exact pin.
 GRADIENT_RI_MP2_TOLERANCE = 1.0e-5
 
+# RI-CCSD gradients, as (molecule, basis, aux, frozen). PySCF has a conventional
+# CCSD gradient and a fitted CCSD energy and no gradient for the second, so the
+# reference is `ri_ccsd_gradient.py` next door, on the terms the RI-MP2 cases
+# above state for theirs: an independent implementation of the same equations,
+# held to finite differences of its own energy, and not a third party's. Its
+# amplitudes, Lambda amplitudes and densities are PySCF's, which the Fortran
+# shares nothing with; what it shares is the formulation of everything after
+# them.
+#
+# An exact reference under a fitted correlation energy, which is what an
+# `ri-ccsd` deck computes and the only combination the gradient is implemented
+# for. HCl is there for a second-row atom and a frozen core of more than one
+# orbital, whose rotations into the active occupied space the relaxation has to
+# supply.
+GRADIENT_RI_CCSD_CASES = [
+    ("water", "sto-3g", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+    ("nh3", "def2-svp", "def2-svp-rifit", 1),
+    ("hcl", "def2-svp", "def2-svp-rifit", 5),
+]
+
+# The same with the perturbative triples, as (molecule, basis, aux, frozen).
+# Ammonia is there for its degenerate pair of orbitals: (T) is not invariant
+# to a rotation among the occupied orbitals, so the gradient relaxes each such
+# rotation by its orbital-energy gap, and a degenerate pair has none.
+GRADIENT_RI_CCSD_T_CASES = [
+    ("water", "sto-3g", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+    ("nh3", "def2-svp", "def2-svp-rifit", 1),
+    ("hcl", "def2-svp", "def2-svp-rifit", 5),
+]
+
+# The RI-MP2 gradient's bound, for the RI-MP2 gradient's reason: the reference
+# solves its relaxation with the exact orbital Hessian and the program fits
+# that operator, which moves the answer by the fitting error and no more. The
+# exact operator is held to 5e-10 by `test_mqc_czt_ri_ccsd_gradient`.
+GRADIENT_RI_CCSD_TOLERANCE = 1.0e-5
+
 # One RI-MP2 gradient pinned to this program's *own* output, as (molecule,
 # basis, aux, frozen, energy, gradient). The only case in the suite whose
 # reference is not independent, and it exists because nothing independent
@@ -2339,6 +2377,63 @@ def mqc_ri_mp2_gradient(atoms, basis, aux, frozen=0):
     energy, mf = ri_mp2_energy(mol, auxmol, frozen=frozen)
     gradient = ri_mp2_gradient(mol, auxmol, mf, frozen=frozen)
     return float(energy), gradient.tolist(), mol.nao
+
+
+def mqc_ri_ccsd_gradient(atoms, basis, aux, frozen=0, triples=False):
+    """Reference RI-CCSD energy and analytic gradient, from `ri_ccsd_gradient.py`.
+
+    Not a third party's, because there is none to ask -- see
+    `GRADIENT_RI_CCSD_CASES`. `triples` makes both those of RI-CCSD(T).
+    """
+    from ri_mp2_gradient import build
+    from ri_ccsd_gradient import ri_ccsd_energy, ri_ccsd_gradient
+
+    mol, auxmol = build(atoms, basis, aux, unit="Angstrom")
+    energy = ri_ccsd_energy(mol, auxmol._basis, frozen, triples)
+    gradient = ri_ccsd_gradient(mol, auxmol._basis, frozen, triples=triples)
+    return float(energy), gradient.tolist(), mol.nao
+
+
+def ri_ccsd_gradient_entries(written, dry_run):
+    """Write the RI-CCSD gradient decks and return their manifest entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    cases = [(c, False) for c in GRADIENT_RI_CCSD_CASES]
+    cases += [(c, True) for c in GRADIENT_RI_CCSD_T_CASES]
+    for (name, basis, aux, frozen), triples in cases:
+        mol = MOLECULES[name]
+        energy, gradient, nao = mqc_ri_ccsd_gradient(mol.atoms, basis, aux, frozen, triples)
+        method = "ri-ccsd(t)" if triples else "ri-ccsd"
+        label = "RI-CCSD(T)" if triples else "RI-CCSD"
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_riccsd" + ("t" if triples else "")
+        if frozen:
+            stem += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/gradient", stem + "_grad")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            # `aux_only`, as for RI-MP2: the auxiliary fits the correlation and
+            # not the SCF.
+            d = deck_json(xyz_for(mol), basis, aux=aux, method=method,
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen}, aux_only=True)
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"{label} gradient {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 12) for c in atom] for atom in gradient],
+            "gradient_tolerance": GRADIENT_RI_CCSD_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for atom in gradient for c in atom))
+        print(f"{mol.label:6s} {basis:12s} {label:10s} grad |g|={norm:.10f} "
+              f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
 
 
 def _gradient_tolerance(functional, aux):
@@ -3813,6 +3908,10 @@ def main():
                     help="write only the RIJCOSX decks and splice their "
                          "entries into the existing manifest, leaving every "
                          "other entry and deck untouched")
+    ap.add_argument("--only-ri-ccsd-gradient", action="store_true",
+                    help="write only the RI-CCSD gradient decks and splice "
+                         "their entries into the existing manifest, leaving "
+                         "every other entry and deck untouched")
     ap.add_argument("--only-ri-hessian", action="store_true",
                     help="write only the fitted-correlation Hessian decks and "
                          "splice their entries into the existing manifest, "
@@ -3860,6 +3959,24 @@ def main():
             else:
                 mol.xyz = f"sample_inputs/{name}.xyz"
         entries = cosx_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_ri_ccsd_gradient:
+        for name in {c[0] for c in GRADIENT_RI_CCSD_CASES + GRADIENT_RI_CCSD_T_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = ri_ccsd_gradient_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -5032,6 +5149,7 @@ def main():
     tests.extend(counterpoise_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
     tests.extend(cosx_entries(written, args.dry_run))
+    tests.extend(ri_ccsd_gradient_entries(written, args.dry_run))
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

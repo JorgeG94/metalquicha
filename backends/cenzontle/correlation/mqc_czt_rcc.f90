@@ -55,6 +55,8 @@ module mqc_czt_rcc
    public :: build_rcc_eris_conventional
    public :: rccsd_correlation_energy  !! Exported for the MP2 identity test
    public :: ri_ladder_prefers_direct  !! Exported so a test can assert which ladder ran
+   public :: rcc_state_t
+   public :: rcc_ladder
 
    integer, parameter :: LADDER_BATCH = 256
       !! Columns of the compound (cd) index assembled per pass of the ladder.
@@ -88,6 +90,8 @@ module mqc_czt_rcc
       real(dp), allocatable :: ovvv(:, :, :, :)   !! (ia|bc)
       real(dp), allocatable :: vvvv(:, :, :, :)   !! (ab|cd), conventional only
       real(dp), allocatable :: b_vv(:, :)         !! (ab, P), fitted only
+      real(dp), allocatable :: b_oo(:, :)         !! (ij, P), fitted only
+      real(dp), allocatable :: b_ov(:, :)         !! (ia, P), fitted only
    end type rcc_eris_t
 
    type :: rcc_scratch_t
@@ -115,6 +119,23 @@ module mqc_czt_rcc
       real(dp), allocatable :: taut(:, :)      !! tau with the virtual pair leading
    end type rcc_scratch_t
 
+   type :: rcc_state_t
+      !! A converged calculation's integrals and amplitudes, for what follows it
+      !!
+      !! Over the active orbitals only: `no` occupied after the frozen core is
+      !! taken out, `nv` virtual.
+      integer :: no = 0
+      integer :: nv = 0
+      integer :: frozen = 0   !! Core orbitals below the active occupied ones
+      type(rcc_eris_t) :: eris
+      real(dp), allocatable :: eps_o(:)          !! (no) orbital energies, hartree
+      real(dp), allocatable :: eps_v(:)          !! (nv)
+      real(dp), allocatable :: t1(:, :)          !! (no, nv)
+      real(dp), allocatable :: t2(:, :, :, :)    !! (no, no, nv, nv), as `(i, j, a, b)`
+   contains
+      procedure :: destroy => rcc_state_destroy
+   end type rcc_state_t
+
    type :: rcc_result_t
       !! What a converged spin-adapted coupled cluster calculation leaves behind
       real(dp) :: e_singles = 0.0_dp
@@ -130,6 +151,28 @@ module mqc_czt_rcc
    end type rcc_result_t
 
 contains
+
+   pure subroutine rcc_state_destroy(this)
+      !! Release the integrals and the amplitudes
+      class(rcc_state_t), intent(inout) :: this
+
+      if (allocated(this%eris%oooo)) deallocate (this%eris%oooo)
+      if (allocated(this%eris%ooov)) deallocate (this%eris%ooov)
+      if (allocated(this%eris%oovv)) deallocate (this%eris%oovv)
+      if (allocated(this%eris%ovov)) deallocate (this%eris%ovov)
+      if (allocated(this%eris%ovvv)) deallocate (this%eris%ovvv)
+      if (allocated(this%eris%vvvv)) deallocate (this%eris%vvvv)
+      if (allocated(this%eris%b_vv)) deallocate (this%eris%b_vv)
+      if (allocated(this%eris%b_oo)) deallocate (this%eris%b_oo)
+      if (allocated(this%eris%b_ov)) deallocate (this%eris%b_ov)
+      if (allocated(this%eps_o)) deallocate (this%eps_o)
+      if (allocated(this%eps_v)) deallocate (this%eps_v)
+      if (allocated(this%t1)) deallocate (this%t1)
+      if (allocated(this%t2)) deallocate (this%t2)
+      this%no = 0
+      this%nv = 0
+      this%frozen = 0
+   end subroutine rcc_state_destroy
 
    pure function rcc_megabytes(no, nv, conventional) result(mb)
       !! What the integral blocks cost, in MB
@@ -190,6 +233,8 @@ contains
 
       real(dp), allocatable :: b_oo(:, :), b_ov(:, :), b_vv_pq(:, :)
       integer :: no, nv
+      ! All three are indexed by a compound pair with its first index running
+      ! fastest, then the auxiliary function.
 
       no = size(c_occ, 2)
       nv = size(c_vir, 2)
@@ -212,7 +257,10 @@ contains
       call df_block_gemm(b_ov, b_ov, no*nv, no*nv, eris%ovov)
       call df_block_gemm(b_ov, b_vv_pq, no*nv, nv*nv, eris%ovvv)
 
-      deallocate (b_oo, b_ov)
+      ! The occupied blocks are kept for the densities, which contract with
+      ! the fit rather than with the integrals assembled from it.
+      call move_alloc(b_oo, eris%b_oo)
+      call move_alloc(b_ov, eris%b_ov)
 
       ! Kept as (ab, P): the ladder slices it by compound virtual pair, which is
       ! the leading dimension here and so contiguous.
@@ -1547,7 +1595,7 @@ contains
       call move_alloc(taut, scratch%taut)
    end subroutine ladder_t1_dressing
 
-   subroutine particle_ladder(eris, t1, tau, no, nv, t2n, scratch)
+   subroutine particle_ladder(eris, t1, tau, no, nv, t2n, scratch, dressed)
       !! t2new(i,j,a,b) += sum_cd Wvvvv(a,b,c,d) tau(i,j,c,d), never holding Wvvvv
       !!
       !!     Wvvvv(a,b,c,d) = (ac|bd) - sum_k ovvv(k,d,a,c) t1(k,b)
@@ -1572,7 +1620,7 @@ contains
       !! virtuals at all.
       type(rcc_eris_t), intent(in) :: eris
       integer, intent(in) :: no, nv
-      real(dp), intent(in) :: t1(no, nv)
+      real(dp), intent(in) :: t1(no, nv)   !! Not read when `dressed` is false
       ! Explicit shape, not assumed: the accumulation below hands a column range
       ! of `tau` and the whole of `t2n` to a rank-two dummy by sequence
       ! association, and only an explicit-shape or allocatable actual may be
@@ -1580,14 +1628,19 @@ contains
       real(dp), intent(in) :: tau(no, no, nv, nv)
       real(dp), intent(inout) :: t2n(no, no, nv, nv)
       type(rcc_scratch_t), intent(inout) :: scratch  !! Work arrays kept between iterations
+      logical, intent(in), optional :: dressed
+         !! False leaves the two t1 terms out, so only `(ac|bd)` is contracted.
+         !! Absent is true.
 
       ! TODO(mqc): `i`, `j`, `k` and `acc` are declared and never used here --
       ! left behind when the loop nest became a batched gemm.
       real(dp), allocatable :: wblk(:, :, :), gvv(:, :)
       integer :: nv2, cd0, cd1, nb, col, cd, a, b, c, d, i, j, k, naux
-      logical :: fitted
+      logical :: fitted, with_t1
       real(dp) :: acc
 
+      with_t1 = .true.
+      if (present(dressed)) with_t1 = dressed
       nv2 = nv*nv
       fitted = allocated(eris%b_vv)
       if (fitted) then
@@ -1595,7 +1648,7 @@ contains
          ! Which way round to do the fitted ladder. See `ri_ladder_prefers_direct`.
          if (ri_ladder_prefers_direct(no, nv, naux)) then
             call ri_ladder_direct(eris, tau, no, nv, naux, t2n)
-            call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
+            if (with_t1) call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
             return
          end if
       end if
@@ -1661,8 +1714,22 @@ contains
 
       call move_alloc(wblk, scratch%wblk)
 
-      call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
+      if (with_t1) call ladder_t1_dressing(eris, t1, tau, no, nv, t2n, scratch)
    end subroutine particle_ladder
+
+   subroutine rcc_ladder(eris, x, no, nv, y)
+      !! `y(i,j,a,b) += sum_cd (ac|bd) x(i,j,c,d)`, never holding `(ac|bd)`
+      type(rcc_eris_t), intent(in) :: eris
+      integer, intent(in) :: no, nv
+      real(dp), intent(in) :: x(no, no, nv, nv)
+      real(dp), intent(inout) :: y(no, no, nv, nv)
+
+      type(rcc_scratch_t) :: scratch
+      real(dp), allocatable :: unused(:, :)
+
+      allocate (unused(no, nv), source=0.0_dp)
+      call particle_ladder(eris, unused, x, no, nv, y, scratch, dressed=.false.)
+   end subroutine rcc_ladder
 
    !===========================================================================
    ! Driver
@@ -1670,7 +1737,7 @@ contains
 
    subroutine run_czt_rccsd(mol, coeff, orbital_energies, n_occ, frozen, &
                             max_iter, energy_tol, want_triples, verbose, &
-                            result, error, diis_vectors, aux)
+                            result, error, diis_vectors, aux, state)
       !! Drive spin-adapted CCSD to convergence
       !!
       !! Signature identical to `run_czt_ccsd`, so the bridge can choose
@@ -1689,6 +1756,8 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
       type(czt_molecule_t), intent(in), optional :: aux
+      type(rcc_state_t), intent(out), optional :: state
+         !! The integrals and converged amplitudes, moved out and not copied
 
       type(rcc_eris_t) :: eris
       type(rcc_scratch_t) :: scratch  !! The iteration's work arrays, kept across iterations
@@ -1841,6 +1910,25 @@ contains
       ! laid side by side.
       call clk%finish()
       call clk%report("RCCSD")
+
+      if (present(state)) then
+         state%no = no
+         state%nv = nv
+         state%frozen = frozen
+         call move_alloc(eris%oooo, state%eris%oooo)
+         call move_alloc(eris%ooov, state%eris%ooov)
+         call move_alloc(eris%oovv, state%eris%oovv)
+         call move_alloc(eris%ovov, state%eris%ovov)
+         call move_alloc(eris%ovvv, state%eris%ovvv)
+         if (allocated(eris%vvvv)) call move_alloc(eris%vvvv, state%eris%vvvv)
+         if (allocated(eris%b_vv)) call move_alloc(eris%b_vv, state%eris%b_vv)
+         if (allocated(eris%b_oo)) call move_alloc(eris%b_oo, state%eris%b_oo)
+         if (allocated(eris%b_ov)) call move_alloc(eris%b_ov, state%eris%b_ov)
+         call move_alloc(eps_o, state%eps_o)
+         call move_alloc(eps_v, state%eps_v)
+         call move_alloc(t1, state%t1)
+         call move_alloc(t2, state%t2)
+      end if
    end subroutine run_czt_rccsd
 
    pure function int_text(n) result(text)

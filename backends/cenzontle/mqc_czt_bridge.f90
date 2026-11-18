@@ -14,6 +14,7 @@ module mqc_czt_bridge
    use pic_types, only: dp
    use mqc_physical_constants, only: HARTREE_TO_EV
    use pic_timer, only: timer_type
+   use mqc_timing, only: timing_report_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
                                scf_not_converged_message
@@ -58,7 +59,10 @@ module mqc_czt_bridge
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
    use mqc_czt_cc, only: cc_result_t, run_czt_ccsd
-   use mqc_czt_rcc, only: rcc_result_t, run_czt_rccsd
+   use mqc_czt_rcc, only: rcc_result_t, rcc_state_t, run_czt_rccsd
+   use mqc_czt_rcc_lambda, only: rcc_lambda_t, run_czt_rccsd_lambda
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t, rccsd_triples_terms
+   use mqc_czt_ri_ccsd_gradient, only: czt_ri_ccsd_gradient
    use mqc_cube_config, only: cube_config_t
    use mqc_io_helpers, only: get_basename
    use mqc_czt_bonding, only: valence_wavefunction_t, &
@@ -98,6 +102,11 @@ module mqc_czt_bridge
 
    real(dp), parameter :: CI_TOLERANCE = 1.0e-11_dp
       !! Residual the CASCI Davidson is driven to on the CASCI-only path.
+   real(dp), parameter :: CC_GRADIENT_ENERGY_TOL = 1.0e-10_dp
+      !! The loosest change in the correlation energy a coupled cluster
+      !! calculation may stop at when a gradient follows it, hartree
+   real(dp), parameter :: CC_LAMBDA_TOL = 1.0e-8_dp
+      !! Norm of the change in the Lambda amplitudes the gradient's solve stops at
       !!
       !! The same number `mqc_czt_mcscf` pins its own inner CASCI at, and
       !! deliberately not a keyword: a CASCI *is* its CI energy, so there is
@@ -1191,6 +1200,8 @@ contains
       integer :: iref
       logical :: kohn_sham
       type(timer_type) :: grad_clock
+      type(timing_report_t) :: cc_grad_phases
+         !! The coupled cluster gradient's three phases, for one table
       real(dp), allocatable :: scf_b_ao(:, :)
          !! The SCF's fitted tensor, taken over rather than freed when a fitted
          !! correlated step follows. See `reuse_scf_fit` for when that is.
@@ -1203,18 +1214,8 @@ contains
       do_hessian = .false.
       if (present(want_hessian)) do_hessian = want_hessian
 
-      ! Coupled cluster stops here: its gradient needs the Lambda equations,
-      ! which do not exist on this side at all. MP2's does exist, and is taken
-      ! below -- but only where the reference underneath it is one the relaxed
-      ! density was written for, which is the refusals after this.
-      if (do_gradient .and. settings%run_cc) then
-         call result%error%set(ERROR_VALIDATION, "a coupled cluster gradient needs the "// &
-                               "Lambda amplitudes, which are not implemented. Run the "// &
-                               "gradient at the Hartree-Fock or MP2 level, or coupled "// &
-                               "cluster as an energy.")
-         result%has_error = .true.
-         return
-      end if
+      ! A coupled cluster gradient exists for one combination, and the rest
+      ! are refused once the reference is known, a few lines down.
       ! An MP2 gradient is never refused here, frozen core or not. Four
       ! combinations of what is fitted, each a different energy with a
       ! different gradient, and all four implemented: exact reference with
@@ -1229,6 +1230,21 @@ contains
       ! keyword says.
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
+
+      if (do_gradient .and. settings%run_cc) then
+         block
+            character(len=:), allocatable :: why
+            why = cc_gradient_decline_reason(settings, unrestricted)
+            if (len(why) > 0) then
+               call result%error%set(ERROR_VALIDATION, "the coupled cluster gradient is "// &
+                                     "implemented for RI-CCSD and RI-CCSD(T) over a closed-shell "// &
+                                     "reference with exact integrals, and not for "// &
+                                     why//". Run that as an energy.")
+               result%has_error = .true.
+               return
+            end if
+         end block
+      end if
 
       ! Continuum solvation on this backend is an *energy*: the surface charges
       ! enter every SCF iteration and the total, but their derivative does not
@@ -2242,7 +2258,7 @@ contains
       ! auxiliary basis handed over is the one the SCF fitted with rather than
       ! whatever the deck names: a fitted energy differentiated as an exact one
       ! is a gradient of a function nobody computed.
-      if (do_gradient .and. .not. settings%run_mp2) then
+      if (do_gradient .and. .not. settings%run_mp2 .and. .not. settings%run_cc) then
          ! A double hybrid's energy is the Kohn-Sham part plus a scaled PT2
          ! correlation, and the call below differentiates only the first. The
          ! second is added afterwards, once the reference gradient exists --
@@ -2821,6 +2837,12 @@ contains
          block
             type(cc_result_t) :: cc
             type(rcc_result_t) :: rcc
+            type(rcc_state_t) :: cc_state
+            type(rcc_lambda_t) :: cc_lambda
+            type(rcc_triples_terms_t), allocatable :: cc_triples_terms
+            ! Allocated only for (T). Unallocated, it is an absent optional
+            ! argument to everything it is passed to below.
+            real(dp) :: cc_tol
             integer :: frozen, cc_iterations
             logical :: cc_converged, spin_adapted
             integer :: n_alpha, n_beta
@@ -2863,7 +2885,18 @@ contains
                   call mol%destroy()
                   return
                end if
-               if (spin_adapted) then
+               if (spin_adapted .and. do_gradient) then
+                  ! The energy's error is second order in the amplitudes' and
+                  ! the gradient's is first, so a tolerance that is ample for
+                  ! one leaves the other visibly short.
+                  cc_tol = min(settings%cc_tolerance, CC_GRADIENT_ENERGY_TOL)
+                  call run_czt_rccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                     nelec/2, frozen, settings%cc_max_iter, &
+                                     cc_tol, settings%cc_triples, &
+                                     settings%verbose, rcc, error, &
+                                     diis_vectors=settings%cc_diis_size, aux=corr_aux, &
+                                     state=cc_state)
+               else if (spin_adapted) then
                   call run_czt_rccsd(mol, scf%orbitals, scf%orbital_energies, &
                                      nelec/2, frozen, settings%cc_max_iter, &
                                      settings%cc_tolerance, settings%cc_triples, &
@@ -2956,6 +2989,65 @@ contains
                call logger%info(trim(line))
                write (line, "(a,f20.12)") "  E total        ", result%energy%total()
                call logger%info(trim(line))
+            end if
+
+            ! ---- dE/dR, analytically --------------------------------------
+            ! Only the combination `cc_gradient_decline_reason` let through
+            ! reaches here: fitted, spin-adapted CCSD or CCSD(T) over an exact
+            ! closed shell.
+            if (do_gradient) then
+               call logger%info("  energy converged, computing the gradient")
+               call grad_clock%start()
+               call cc_grad_phases%start()
+               if (settings%cc_triples) then
+                  ! The correction's derivative with respect to the amplitudes
+                  ! drives the Lambda equations, and its derivatives with
+                  ! respect to the orbital energies and the integrals join the
+                  ! densities. All three come from one pass.
+                  call cc_grad_phases%begin("triples' terms")
+                  allocate (cc_triples_terms)
+                  call rccsd_triples_terms(cc_state, cc_triples_terms)
+                  call cc_grad_phases%lap()
+               end if
+               call cc_grad_phases%begin("Lambda equations")
+               call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
+                                         settings%verbose, cc_lambda, error, &
+                                         diis_vectors=settings%cc_diis_size, &
+                                         triples=cc_triples_terms)
+               call cc_grad_phases%lap()
+               if (.not. error%has_error()) then
+                  call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+               end if
+               if (.not. error%has_error()) then
+                  call cc_grad_phases%begin("densities and assembly")
+                  call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
+                                            scf%orbital_energies, cc_state, cc_lambda, &
+                                            result%gradient, error, &
+                                            triples=cc_triples_terms)
+                  call cc_grad_phases%lap()
+                  call corr_aux%destroy()
+               end if
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, "CCSD gradient: "// &
+                                        error%get_message())
+                  result%has_error = .true.
+                  call mol%destroy()
+                  return
+               end if
+               call cc_state%destroy()
+               call cc_lambda%destroy()
+               result%has_gradient = .true.
+               ! Each phase beside the others, since each also prints a table
+               ! of its own and none of those says what the whole cost.
+               call cc_grad_phases%finish()
+               call cc_grad_phases%report("coupled cluster gradient")
+               write (line, "(a,f10.2,a)") "  gradient done in ", &
+                  grad_clock%get_elapsed_time(), " s"
+               call logger%info(trim(line))
+               if (settings%verbose) then
+                  write (line, "(a,f20.12)") "  |gradient|     ", sqrt(sum(result%gradient**2))
+                  call logger%info(trim(line))
+               end if
             end if
          end block
       end if
@@ -3222,6 +3314,25 @@ contains
       if (kohn_sham) call xc%destroy()
       call mol%destroy()
    end subroutine run_czt_hf
+
+   function cc_gradient_decline_reason(settings, unrestricted) result(reason)
+      !! What stops a coupled cluster gradient, or an empty string
+      type(cuest_scf_settings_t), intent(in) :: settings
+      logical, intent(in) :: unrestricted
+      character(len=:), allocatable :: reason
+
+      if (.not. settings%corr_density_fitting) then
+         reason = "conventional integrals (ask for ri-ccsd, with model.aux_basis)"
+      else if (unrestricted) then
+         reason = "an open shell"
+      else if (.not. settings%cc_spin_adapted) then
+         reason = "the spin-orbital formulation (keywords.cc.spin_adapted false)"
+      else if (settings%density_fitting) then
+         reason = "a density-fitted reference (keywords.scf.density_fitting)"
+      else
+         reason = ""
+      end if
+   end function cc_gradient_decline_reason
 
    function cosx_decline_reason(settings, unrestricted, do_gradient, do_hessian) result(reason)
       !! What a chain-of-spheres run was asked for that it cannot do, or empty

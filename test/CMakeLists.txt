@@ -82,6 +82,7 @@ endmacro(ADDTESTPP)
 message(STATUS "Adding individual test executables for ${project_name}...")
 
 # Non-MPI tests
+addtest(mqc_tensor_contract)
 addtest(mqc_xyz_reader)
 addtest(mqc_xyz_reader_detailed)
 addtest(mqc_config_roundtrip)
@@ -500,6 +501,20 @@ if(MQC_ENABLE_CZT)
   # mode worth designing against.
   addtest(mqc_czt_rcc)
   target_link_libraries(test_mqc_czt_rcc PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The Lambda amplitudes, by what does not depend on the sign of an orbital:
+  # their norms and their overlaps with the amplitudes, against PySCF's.
+  addtest(mqc_czt_rcc_lambda)
+  target_link_libraries(test_mqc_czt_rcc_lambda PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The one-particle density built from the two sets of amplitudes.
+  addtest(mqc_czt_rcc_density)
+  target_link_libraries(test_mqc_czt_rcc_density PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # The RI-CCSD gradient, against the numpy reference in tools/cpu_validation.
+  addtest(mqc_czt_ri_ccsd_gradient)
+  target_link_libraries(test_mqc_czt_ri_ccsd_gradient
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).

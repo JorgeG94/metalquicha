@@ -1,0 +1,245 @@
+!! The RI-CCSD nuclear gradient over a closed-shell reference
+module mqc_czt_ri_ccsd_gradient
+   !! An exact-ERI restricted Hartree-Fock reference with a *fitted* CCSD
+   !! correlation energy, which is what an `ri-ccsd` deck computes: the
+   !! auxiliary basis names the correlation fit and not the SCF.
+   !!
+   !! The correlation energy is
+   !!
+   !!     E = sum_pq gamma(p,q) f(p,q) + 1/2 sum_pqrs Gamma(p,q,r,s) (pq|rs)_fit
+   !!
+   !! with the densities `mqc_czt_rcc_density` builds from the amplitudes and
+   !! the Lambda amplitudes. Its gradient needs, of the two-particle density,
+   !! only the contraction with the fit, `g3`; this module turns that and
+   !! `gamma` into the four intermediates `relaxed_fitted_gradient` takes, and
+   !! the relaxation and assembly are the RI-MP2 gradient's own.
+   !!
+   !! `tools/cpu_validation/ri_ccsd_gradient.py` is the same gradient in numpy,
+   !! checked against finite differences of the energy, and is what the test
+   !! holds this one to.
+   use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
+   use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_timing, only: timing_report_t
+   use mqc_czt_integrals, only: czt_molecule_t, three_centre, two_centre, &
+                                metric_inverse_sqrt
+   use mqc_czt_cphf, only: IN_CORE_LIMIT
+   use mqc_czt_gemm_threads, only: gemm_over_columns
+   use mqc_czt_ecp, only: ecp_refuses_derivatives
+   use mqc_czt_rcc, only: rcc_state_t
+   use mqc_czt_rcc_lambda, only: rcc_lambda_t
+   use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
+   use mqc_czt_rcc_density, only: rccsd_one_particle_density, &
+                                  rccsd_fitted_two_particle_density
+   use mqc_czt_ri_mp2_gradient, only: relaxation_input_t, relaxed_fitted_gradient
+   implicit none
+   private
+
+   public :: czt_ri_ccsd_gradient
+
+   real(dp), parameter :: SAME_PLACE = 1.0e-10_dp
+      !! Two atoms closer than this, in bohr, are the same atom
+   real(dp), parameter :: DEGENERATE = 1.0e-7_dp
+      !! Two orbital energies closer than this, in hartree, are one level: a
+      !! rotation between the orbitals changes nothing, and is not solved for
+
+contains
+
+   subroutine czt_ri_ccsd_gradient(mol, aux, coeff, orbital_energies, state, lambda, &
+                                   gradient, error, fit_response, triples)
+      !! dE(RI-CCSD)/dR for a closed-shell reference, in Hartree/Bohr
+      !!
+      !! The total gradient: the reference's and the correlation's together.
+      type(czt_molecule_t), intent(in) :: mol
+      type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
+      real(dp), intent(in) :: coeff(:, :)       !! Every molecular orbital, frozen ones included
+      real(dp), intent(in) :: orbital_energies(:)
+      type(rcc_state_t), intent(in) :: state
+         !! The converged amplitudes, and with them the split of the orbitals
+         !! into frozen, active occupied and virtual
+      type(rcc_lambda_t), intent(in) :: lambda
+      real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: fit_response
+         !! Build the Z-vector's operator and the reference potentials from the
+         !! fit. Absent is `.true.`, as in the RI-MP2 gradient and for its
+         !! reason; `.false.` is the exact operator, which is what this energy's
+         !! derivative strictly is.
+
+      type(rcc_triples_terms_t), intent(in), optional :: triples
+         !! Present, the gradient of RI-CCSD(T). `lambda` must then have been
+         !! solved with the same terms.
+
+      type(relaxation_input_t), target :: inp
+      real(dp), allocatable :: metric(:, :), b_all(:, :, :), g3(:, :, :), gamma(:, :)
+      real(dp), allocatable :: block(:, :), c_act(:, :), g_ao(:, :), overlap_lm(:, :)
+      real(dp), allocatable :: half(:, :), bflat(:, :)
+      integer :: n_ao, n_mo, n_act, n_aux, n_occ, frozen, no, nv, k, p, q
+      real(dp) :: gap
+      type(timing_report_t) :: clk
+
+      if (ecp_refuses_derivatives(mol%core_electrons, "RI-CCSD gradient", error)) return
+
+      n_ao = mol%nao
+      n_mo = size(coeff, 2)
+      no = state%no
+      nv = state%nv
+      frozen = state%frozen
+      n_occ = frozen + no
+      n_act = no + nv
+      if (frozen + n_act /= n_mo) then
+         call error%set(ERROR_VALIDATION, "the RI-CCSD gradient was handed amplitudes "// &
+                        "over a different orbital space from its orbitals")
+         return
+      end if
+      if (aux%natm /= mol%natm) then
+         call error%set(ERROR_VALIDATION, "the RI-CCSD gradient's auxiliary basis is "// &
+                        "on a different set of atoms from the orbital basis")
+         return
+      end if
+      if (any(abs(aux%coords - mol%coords) > SAME_PLACE)) then
+         call error%set(ERROR_VALIDATION, "the RI-CCSD gradient's auxiliary basis is "// &
+                        "not on the orbital basis's atoms, in their order")
+         return
+      end if
+
+      inp%frozen = frozen
+      inp%fitted_reference = .false.
+      inp%fit_response = .true.
+      if (present(fit_response)) inp%fit_response = fit_response
+      inp%dense = real(n_ao, dp)**4*8.0_dp <= IN_CORE_LIMIT .and. .not. inp%fit_response
+
+      ! ---- the fit, over every molecular orbital ---------------------------
+      ! Built here, with the symmetric factor, rather than taken from the
+      ! energy calculation: that one used whichever factor was cheapest, and
+      ! the densities below have to be in the factorisation the derivative
+      ! integrals are contracted in.
+      call clk%start()
+      call clk%begin("fit over every orbital")
+      call three_centre(mol, aux, inp%three_ao)
+      call two_centre(aux, metric)
+      call metric_inverse_sqrt(metric, inp%jm12, error)
+      if (error%has_error()) return
+      deallocate (metric)
+      n_aux = size(inp%jm12, 2)
+      allocate (inp%bref(n_ao*n_ao, n_aux))
+      call gemm_over_columns(inp%three_ao, inp%jm12, inp%bref)
+      ! The unfitted integrals are for a fitted reference's own derivative
+      ! term, and the reference here is exact.
+      deallocate (inp%three_ao)
+
+      allocate (b_all(n_mo, n_mo, n_aux), block(n_ao, n_ao))
+      do k = 1, n_aux
+         block = reshape(inp%bref(:, k), [n_ao, n_ao])
+         b_all(:, :, k) = matmul(transpose(coeff), matmul(block, coeff))
+      end do
+      deallocate (block)
+
+      call clk%lap()
+
+      ! ---- the densities ---------------------------------------------------
+      call clk%begin("one-particle density")
+      call rccsd_one_particle_density(state, lambda, gamma, triples)
+      call clk%lap()
+      call clk%begin("two-particle density")
+      call rccsd_fitted_two_particle_density(state, lambda, &
+                                             b_all(frozen + 1:n_mo, frozen + 1:n_mo, :), &
+                                             g3, error, triples)
+      if (error%has_error()) return
+      call clk%lap()
+      call clk%begin("Lagrangian and fitted densities")
+
+      ! The unrelaxed density, without its occupied-virtual block: the
+      ! relaxation solves for the whole of that block, so whatever the
+      ! amplitudes put there would be counted twice.
+      allocate (inp%dm1mo(n_mo, n_mo), source=0.0_dp)
+      inp%dm1mo(frozen + 1:n_occ, frozen + 1:n_occ) = gamma(1:no, 1:no)
+      inp%dm1mo(n_occ + 1:n_mo, n_occ + 1:n_mo) = gamma(no + 1:n_act, no + 1:n_act)
+
+      ! imat(t, p) = -sum_q sum_P b(t, q, P) g3(p, q, P), `t` over every
+      ! orbital and `p`, `q` over the active ones.
+      allocate (inp%imat(n_mo, n_mo), source=0.0_dp)
+      do k = 1, n_aux
+         call pic_gemm(b_all(:, frozen + 1:n_mo, k), g3(:, :, k), &
+                       inp%imat(:, frozen + 1:n_mo), transb="T", alpha=-1.0_dp, beta=1.0_dp)
+      end do
+
+      ! The correlation energy is written for canonical orbitals, so the Fock
+      ! matrix is held diagonal within the active occupied and within the
+      ! virtual space, and the multipliers that hold it are the off-diagonal
+      ! elements of the relaxed density there. They follow from the
+      ! Lagrangian alone, as the occupied-frozen ones do. For CCSD this gives
+      ! back what the amplitudes gave, because CCSD is invariant to such a
+      ! rotation; for (T), whose denominators single out the canonical
+      ! orbitals, it does not. A degenerate pair keeps the amplitudes' value.
+      do q = frozen + 1, n_occ
+         do p = q + 1, n_occ
+            gap = orbital_energies(p) - orbital_energies(q)
+            if (abs(gap) <= DEGENERATE) cycle
+            inp%dm1mo(p, q) = (inp%imat(p, q) - inp%imat(q, p))/gap
+            inp%dm1mo(q, p) = inp%dm1mo(p, q)
+         end do
+      end do
+      do q = n_occ + 1, n_mo
+         do p = q + 1, n_mo
+            gap = orbital_energies(p) - orbital_energies(q)
+            if (abs(gap) <= DEGENERATE) cycle
+            inp%dm1mo(p, q) = (inp%imat(p, q) - inp%imat(q, p))/gap
+            inp%dm1mo(q, p) = inp%dm1mo(p, q)
+         end do
+      end do
+
+      ! A quarter of the density contracted twice with the fit, and once and
+      ! carried to the atomic orbitals. Both leave the factor's own index for
+      ! the auxiliary function's.
+      allocate (bflat(n_act*n_act, n_aux))
+      bflat = reshape(b_all(frozen + 1:n_mo, frozen + 1:n_mo, :), [n_act*n_act, n_aux])
+      deallocate (b_all)
+      allocate (overlap_lm(n_aux, n_aux), half(n_aux, n_aux), inp%gamma_pq(n_aux, n_aux))
+      call pair_overlap(g3, bflat, n_act*n_act, n_aux, overlap_lm)
+      call pic_gemm(inp%jm12, overlap_lm, half)
+      call pic_gemm(half, inp%jm12, inp%gamma_pq, transb="T")
+      inp%gamma_pq = 0.25_dp*inp%gamma_pq
+      deallocate (bflat, overlap_lm, half)
+
+      allocate (c_act(n_ao, n_act), g_ao(n_ao*n_ao, n_aux), block(n_ao, n_ao))
+      c_act = coeff(:, frozen + 1:n_mo)
+      do k = 1, n_aux
+         block = matmul(c_act, matmul(g3(:, :, k), transpose(c_act)))
+         g_ao(:, k) = reshape(block, [n_ao*n_ao])
+      end do
+      deallocate (g3, block, c_act)
+      allocate (inp%gamma_ao(n_ao, n_ao, n_aux))
+      call to_auxiliary(g_ao, inp%jm12, n_ao*n_ao, n_aux, inp%gamma_ao)
+      deallocate (g_ao)
+
+      call clk%lap()
+      call clk%begin("relaxation and assembly")
+      call relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
+                                   gradient, error)
+      call inp%destroy()
+      call clk%lap()
+      call clk%finish()
+      call clk%report("RI-CCSD gradient")
+   end subroutine czt_ri_ccsd_gradient
+
+   subroutine pair_overlap(g, b, n_pair, n_aux, out)
+      !! `out(L, M) = sum_pq g(pq, L) b(pq, M)`
+      integer, intent(in) :: n_pair, n_aux
+      real(dp), intent(in) :: g(n_pair, n_aux), b(n_pair, n_aux)
+      real(dp), intent(out) :: out(n_aux, n_aux)
+
+      call pic_gemm(g, b, out, transa="T")
+   end subroutine pair_overlap
+
+   subroutine to_auxiliary(g, factor, n_pair, n_aux, out)
+      !! A quarter of `g` carried from the factor's index to the auxiliary
+      !! function's: `out(pq, P) = sum_L g(pq, L) factor(P, L) / 4`
+      integer, intent(in) :: n_pair, n_aux
+      real(dp), intent(in) :: g(n_pair, n_aux), factor(n_aux, n_aux)
+      real(dp), intent(out) :: out(n_pair, n_aux)
+
+      call gemm_over_columns(g, factor, out, transb="T", alpha=0.25_dp)
+   end subroutine to_auxiliary
+
+end module mqc_czt_ri_ccsd_gradient
