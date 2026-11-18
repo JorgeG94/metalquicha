@@ -27,6 +27,7 @@ module mqc_czt_rcc_lambda
    use mqc_diis, only: diis_state_t
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_convergence_report, only: convergence_header, convergence_footer
+   use mqc_timing, only: timing_report_t
    use mqc_tensor_contract, only: contract, transposed, add_transposed
    use mqc_czt_rcc, only: rcc_state_t, rcc_ladder
    use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
@@ -38,6 +39,8 @@ module mqc_czt_rcc_lambda
 
    integer, parameter :: DEFAULT_DIIS = 8
       !! Vectors the extrapolation keeps when the caller names no number
+   character(len=*), parameter :: STAGE_ITER = "Lambda iterations"
+      !! The loop's stage in the timing report, accumulated one lap per pass
 
    type :: rcc_lambda_t
       !! Converged Lambda amplitudes
@@ -105,8 +108,10 @@ contains
       type(lambda_integrals_t) :: ints
       type(lambda_intermediates_t) :: imds
       type(diis_state_t) :: diis
+      type(timing_report_t) :: clk
       real(dp), allocatable :: l1(:, :), l2(:, :, :, :), l1n(:, :), l2n(:, :, :, :)
       real(dp), allocatable :: flat(:), step(:)
+      real(dp) :: t_iter
       character(len=MAX_LINE_LENGTH) :: line
       logical :: extrapolated
       integer :: no, nv, iter, diis_size, n1, n2
@@ -122,8 +127,11 @@ contains
       diis_size = DEFAULT_DIIS
       if (present(diis_vectors)) diis_size = diis_vectors
 
+      call clk%start()
+      call clk%begin("intermediates")
       call reference_layout(state, ints)
       call make_intermediates(state, ints, imds)
+      call clk%lap()
 
       n1 = no*nv
       n2 = no*no*nv*nv
@@ -134,8 +142,9 @@ contains
       call diis%init(diis_size, size(flat), size(step))
 
       call convergence_header(verbose, "RCCSD Lambda iterations", &
-                              "    iter        |change|   diis", 34)
+                              "    iter        |change|   diis       time", 45)
       do iter = 1, max_iter
+         t_iter = clk%seconds_of(STAGE_ITER)
          call update_lambda(state, ints, imds, l1, l2, l1n, l2n)
          if (present(triples)) then
             l1n = l1n + triples%l1_source
@@ -152,8 +161,12 @@ contains
          l1 = reshape(flat(1:n1), [no, nv])
          l2 = reshape(flat(n1 + 1:), [no, no, nv, nv])
 
+         ! The whole pass, the extrapolation included, so the column sums to
+         ! the stage in the report below.
+         call clk%lap(STAGE_ITER)
+         t_iter = clk%seconds_of(STAGE_ITER) - t_iter
          if (verbose) then
-            write (line, "(i8,es16.3,i7)") iter, change, diis%count()
+            write (line, "(i8,es16.3,i7,f9.2,a)") iter, change, diis%count(), t_iter, " s"
             call logger%info(trim(line))
          end if
          lambda%iterations = iter
@@ -163,7 +176,9 @@ contains
          end if
       end do
       call diis%destroy()
-      call convergence_footer(verbose, lambda%converged, lambda%iterations, "iterations", 34)
+      call convergence_footer(verbose, lambda%converged, lambda%iterations, "iterations", 45)
+      call clk%finish()
+      call clk%report("RCCSD Lambda")
 
       if (.not. lambda%converged) then
          call error%set(ERROR_VALIDATION, "the RCCSD Lambda equations did not converge")
