@@ -361,8 +361,9 @@ What has a gradient on the CPU backend, at a glance:
      - ``model.ecp``, a separate file from the basis. Energies and analytic
        gradients, for every method that has a gradient without one. There
        are no analytic second derivatives, so a Hessian is differenced from
-       gradients. MCSCF, xTB and the GPU backend refuse a potential, as does
-       an automatically counted frozen core
+       gradients. MCSCF, SAPT, EFP, MakeFP, FMO, EFMO, xTB and the GPU
+       backend refuse a potential, as does an automatically counted frozen
+       core
    * - Kohn-Sham: range-separated hybrid
      - yes
      - **Needs an auxiliary basis.** The exact-ERI path builds no second

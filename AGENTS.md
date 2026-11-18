@@ -261,7 +261,10 @@ further; one that calls `iprinv_deriv_at` directly does not, which is right
 only for a Hessian. Second derivatives are not in libfint, so every analytic
 Hessian is skipped when `mol%necpbas > 0` and the semi-numerical path
 differences the gradient instead; `ecp_refuses_derivatives` is the backstop
-inside each Hessian routine. MCSCF refuses a potential in the reader.
+inside each Hessian routine. MCSCF, SAPT, EFP, MakeFP, FMO and EFMO refuse a
+potential in the schema (`check_ecp_supported`): only `run_czt_hf` passes one
+to the molecule builder, and a new entry point that builds its own molecules
+belongs on that list until it does too.
 **Test with the heavy atom late in the atom list**: `LIBCINT_ATOM_OF` indexes a
 `bas` row directly while the `env` slots want `+ 1`, and confusing the two made
 `ecp_on_atom` right for the first three atoms only, which every molecule with

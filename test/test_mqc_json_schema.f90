@@ -42,6 +42,11 @@ contains
                   new_unittest("ecp_is_an_allowed_model_key", test_ecp_allowed), &
                   new_unittest("ecp_refused_for_xtb", test_ecp_xtb), &
                   new_unittest("ecp_refused_for_mcscf", test_ecp_mcscf), &
+                  new_unittest("ecp_refused_for_sapt", test_ecp_sapt), &
+                  new_unittest("ecp_refused_for_efp", test_ecp_efp), &
+                  new_unittest("ecp_refused_for_makefp", test_ecp_makefp), &
+                  new_unittest("ecp_refused_for_fmo_and_efmo", test_ecp_fmo), &
+                  new_unittest("ecp_allowed_for_a_many_body_expansion", test_ecp_mbe), &
                   new_unittest("empty_ecp_is_not_a_request", test_ecp_empty), &
                   new_unittest("retired_fragmentation_keys_are_refused", test_retired_frag_keys), &
                   new_unittest("unrestricted moved to model", test_unrestricted_moved), &
@@ -338,6 +343,87 @@ contains
                        '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
       call expect_rejected(error, "MCSCF", "an ECP on a CASSCF deck")
    end subroutine test_ecp_mcscf
+
+   subroutine test_ecp_sapt(error)
+      !! SAPT builds its two monomers itself and never hands them a potential.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "sapt0", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_rejected(error, "SAPT", "an ECP on a SAPT deck")
+   end subroutine test_ecp_sapt
+
+   subroutine test_ecp_efp(error)
+      !! An EFP run has no electrons of its own for a potential to act on.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "efp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_rejected(error, "EFP", "an ECP on an EFP deck")
+   end subroutine test_ecp_efp
+
+   subroutine test_ecp_makefp(error)
+      !! The driver, not the method, is what selects this path: the method is
+      !! Hartree-Fock, which on any other driver carries the potential.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "MakeFP",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+      call expect_rejected(error, "MakeFP", "an ECP on a MakeFP deck")
+   end subroutine test_ecp_makefp
+
+   subroutine test_ecp_fmo(error)
+      !! FMO and EFMO build their fragments' molecules themselves. Selected by
+      !! the fragmentation method, under a method that otherwise carries it.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}],', &
+                       '"keywords": {"fragmentation": {"method": "fmo", "level": 2}}'])
+      call expect_rejected(error, "fmo", "an ECP on an FMO deck")
+      if (allocated(error)) return
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}],', &
+                       '"keywords": {"fragmentation": {"method": "EFMO", "level": 2}}'])
+      call expect_rejected(error, "EFMO", "an ECP on an EFMO deck")
+   end subroutine test_ecp_fmo
+
+   subroutine test_ecp_mbe(error)
+      !! A many-body expansion runs each fragment through the ordinary builder,
+      !! which carries the potential, so it must not be caught by the refusal
+      !! its two neighbours get.
+      type(error_type), allocatable, intent(out) :: error
+
+      call write_deck([character(len=200) :: &
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "hf", "basis": "def2-svp", "ecp": "def2-ecp"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["I", "H"], "geometry": [0,0,0, 0,0,1.609],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}],', &
+                       '"keywords": {"fragmentation": {"method": "MBE", "level": 2}}'])
+      call expect_accepted(error, "an ECP on a many-body expansion")
+   end subroutine test_ecp_mbe
 
    subroutine test_ecp_empty(error)
       !! An empty string is not a request for a potential, so it must not

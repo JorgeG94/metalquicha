@@ -346,6 +346,13 @@ the output to notice.
    * - CASSCF, CASCI or ORMAS
      - Refused. The MCSCF path does not carry a potential yet and would run
        all-electron without saying so.
+   * - SAPT, the ``MakeFP`` driver, or an ``fmo`` or ``efmo`` fragmentation
+     - Refused, for the same reason: each builds its own molecules and none
+       hands them the potential. A many-body expansion (``MBE``, ``GMBE``)
+       does carry it, since its fragments are ordinary calculations.
+   * - an EFP calculation
+     - Refused. The fragments are potentials read from file, so there are no
+       electrons for an ECP to act on.
    * - GFN1, GFN2 or any xTB method
      - Refused. A semiempirical method has its own parameterised core and no
        all-electron basis for a potential to replace, so naming one means the
