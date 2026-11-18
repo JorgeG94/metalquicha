@@ -2431,6 +2431,7 @@ contains
       ! Asked before the reference Hessian is built, so a declined metric costs
       ! one two-centre build rather than a whole coupled-perturbed solve.
       if (do_hessian .and. dh_analytic .and. settings%aux_basis_named &
+          .and. mol%necpbas == 0 &
           .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
          call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
          if (error%has_error()) then
@@ -2712,7 +2713,7 @@ contains
             ! derivative of that same energy -- the two agree to that and
             ! not to the last digit.
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
-                .and. settings%corr_density_fitting) then
+                .and. settings%corr_density_fitting .and. mol%necpbas == 0) then
                call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
                if (error%has_error()) then
                   call result%error%set(ERROR_VALIDATION, "MP2 Hessian: "// &

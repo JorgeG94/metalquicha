@@ -187,8 +187,11 @@ shell and half a minute per energy. That one moved to
 same PySCF reference in 0.9 s. Neither the manifest nor CI is the right place
 for a 36-second case when a one-electron integral answers the question.
 
-**What is not here.** Nuclear derivatives, because they are refused -- libfint
-carries the energy integrals only, not libcint's `nr_ecp_deriv.c` -- along with
+**Gradients over a potential** are `GRADIENT_ECP_CASES`, written into
+`gradient/` beside the all-electron ones.
+
+**What is not here.** Analytic Hessians, because they are declined -- libfint
+carries the energy and first-derivative integrals, not the second -- along with
 MCSCF, xTB and the GPU backend. Those refusals are unit tests
 (`test/test_mqc_json_schema.f90` and `test/test_mqc_ecp_refusals.f90`) rather
 than manifest entries, because `run_validation.py` compares energies and has no

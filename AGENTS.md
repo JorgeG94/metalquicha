@@ -251,16 +251,21 @@ value, so this repository does not build against libcint. ECP integrals exist
 only in libfint.
 
 **An ECP has an analytic gradient and no analytic Hessian.** Its first
-derivative enters every gradient through two routines in `mqc_czt_gradient`
-and nowhere else: `one_electron_deriv` with `DERIV_NUC` adds
-`<nabla mu|U|nu>` over every centre, and `nuclear_attraction_deriv_at` adds
-one atom's potential to that atom's `-Z/r`. A gradient that builds its
+derivative enters every gradient through `mqc_czt_gradient` and nowhere
+else: `one_electron_deriv` with `DERIV_NUC` adds `<nabla mu|U|nu>` over every
+centre, and `nuclear_attraction_deriv_at` adds one atom's potential to that
+atom's `-Z/r` (`hellmann_feynman_gradient` does the same for the SCF, without
+storing the matrix). A gradient that builds its
 core-Hamiltonian derivative from those two carries the potential with nothing
 further; one that calls `iprinv_deriv_at` directly does not, which is right
 only for a Hessian. Second derivatives are not in libfint, so every analytic
 Hessian is skipped when `mol%necpbas > 0` and the semi-numerical path
 differences the gradient instead; `ecp_refuses_derivatives` is the backstop
 inside each Hessian routine. MCSCF refuses a potential in the reader.
+**Test with the heavy atom late in the atom list**: `LIBCINT_ATOM_OF` indexes a
+`bas` row directly while the `env` slots want `+ 1`, and confusing the two made
+`ecp_on_atom` right for the first three atoms only, which every molecule with
+its heavy atom first passes.
 
 The methods:
 

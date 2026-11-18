@@ -203,7 +203,7 @@ set(MQC_LIBFINT_REPOSITORY
 # libfint's `feat/ecp-deriv` and in no tag yet. Becomes the release that carries
 # them once there is one.
 set(MQC_LIBFINT_TAG
-    "0c870ee3fd4777f2128da859f94c9584ad5fa9ef"
+    "d3650b2f5c3760fa51e70eb8bf1ff1f03ecfd933"
     CACHE STRING "libfint revision to build against")
 
 set(MQC_CREST_REPOSITORY

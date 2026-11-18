@@ -1681,7 +1681,7 @@ contains
          block
             real(dp), allocatable :: ecp(:, :, :)
             allocate (ecp(mol%nao, mol%nao, 3))
-            call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+            call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                                   mol%bas_with_ecp, mol%env, mol%shell_offset, &
                                   mol%necpbas, 0, ecp)
             matrix = matrix + ecp
@@ -1707,7 +1707,7 @@ contains
       if (.not. ecp_on_atom(mol%nbas, mol%necpbas, mol%bas_with_ecp, iatom)) return
 
       allocate (ecp(mol%nao, mol%nao, 3))
-      call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                             mol%bas_with_ecp, mol%env, mol%shell_offset, &
                             mol%necpbas, iatom, ecp)
       matrix = matrix + ecp
@@ -1846,7 +1846,7 @@ contains
             allocate (ecp(mol%nao, mol%nao, 3))
             do iatom = 1, mol%natm
                if (.not. ecp_on_atom(mol%nbas, mol%necpbas, mol%bas_with_ecp, iatom)) cycle
-               call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+               call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                                      mol%bas_with_ecp, mol%env, mol%shell_offset, &
                                      mol%necpbas, iatom, ecp)
                do comp = 1, 3

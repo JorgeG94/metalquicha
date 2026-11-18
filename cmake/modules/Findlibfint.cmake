@@ -19,8 +19,9 @@
 # Overridable through MQC_LIBFINT_REPOSITORY and MQC_LIBFINT_TAG, which is the
 # point of doing it that way rather than editing the literal:
 # `-DMQC_LIBFINT_TAG=<tag>` builds against another release, so a bisect over an
-# unrelated failure has a way back. Anything older than the pin above lacks
-# procedures this backend calls and will not link.
+# unrelated failure has a way back. Anything older than the pin lacks procedures
+# this backend calls and will not link: the ECP derivatives are in no release up
+# to v0.7.0.
 include("${CMAKE_CURRENT_LIST_DIR}/MqcFetch.cmake")
 
 mqc_fetch(

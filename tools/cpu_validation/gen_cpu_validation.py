@@ -197,6 +197,16 @@ MOLECULES = {
     "auh": _mol("AuH", "Au", diatomic("Au", "H", 1.5237)),
     "hgcl2": _mol("HgCl2", "Hg", linear_ah2("Hg", "Cl", 2.2520)),
     "pbh4": _mol("PbH4", "Pb", tetrahedral_ah4("Pb", "H", 1.7500)),
+    # Methyl iodide with the iodine written LAST, which is what it is for: the
+    # heavy atom is first in every other molecule above, and a lookup that
+    # found the potential only on the first three atoms passed all of them.
+    # Off its threefold axis slightly, so no component of the iodine's force
+    # vanishes by symmetry.
+    "ch3i": _mol("CH3I", "I", [("C", 0.0, 0.0, 0.0),
+                               ("H", 1.0300, 0.0, -0.3600),
+                               ("H", -0.5150, 0.8920, -0.3600),
+                               ("H", -0.5150, -0.8920, -0.3600),
+                               ("I", 0.1500, -0.1000, 2.1390)]),
     # The iodine atom, for the unrestricted case. Twenty-five electrons once the
     # potential has taken twenty-eight, so it is a doublet by the electron count
     # rather than by the keyword -- which is how the CPU backend decides too.
@@ -208,7 +218,7 @@ MOLECULES = {
 #: def2-SVP on iodine describes twenty-five electrons, and running it
 #: all-electron is not a harder calculation but a meaningless one.
 ECP_MOLECULES = ["rbh", "agh", "snh4", "teh2", "hi", "i2", "sr", "csh",
-                 "auh", "hgcl2", "pbh4", "iatom"]
+                 "auh", "hgcl2", "pbh4", "iatom", "ch3i"]
 
 ALL = [m for m in MOLECULES
        if m not in ("oh", "o2", "ch3", "w2dimer", "hcn", "h3op")
@@ -1012,6 +1022,11 @@ GRADIENT_RI_CCSD_TOLERANCE = 1.0e-5
 #:   for a reason unrelated to the integrals.
 #: * I2 has a potential on both centres, which is the only way the one-atom
 #:   integral is asked for an atom whose rows are not the first.
+#: * CH3I is written with the iodine fifth. Which atoms carry a potential is
+#:   looked up per atom, and the first version of that lookup was right only
+#:   for the first three; every other molecule here has its heavy atom first.
+#:   Once at Hartree-Fock and once at MP2, whose relaxed density reaches the
+#:   same lookup through a different routine.
 #: * The correlated cases freeze four orbitals, as their energy-only twins in
 #:   `ECP_CORRELATED_CASES` do and for the reason given there.
 #:
@@ -1022,6 +1037,8 @@ GRADIENT_ECP_CASES = [
     ("hi", "def2-svp", "hf", "", "", 0),
     ("teh2", "def2-svp", "hf", "", "", 0),
     ("i2", "def2-svp", "hf", "", "", 0),
+    ("ch3i", "def2-svp", "hf", "", "", 0),
+    ("ch3i", "def2-svp", "mp2", "", "", 4),
     ("hi", "def2-svp", "hf", "", "def2-sv(p)-jkfit", 0),   # fitted reference
     ("hi", "def2-svp", "dft", "pbe", "", 0),
     ("hi", "def2-svp", "dft", "b3lyp", "", 0),
@@ -2485,7 +2502,8 @@ def ecp_gradient_entries(written, dry_run):
         aux_only = False
         if method in ("hf", "dft"):
             energy, gradient, nao = pyscf_gradient(mol.atoms, basis, aux=aux,
-                                                   functional=functional, ecp=ECP_SET)
+                                                   functional=functional, ecp=ECP_SET,
+                                                   tight=True)
             tolerance = _gradient_tolerance(functional, aux)
             theory = functional.upper() if functional else "RHF"
         else:
@@ -3146,7 +3164,7 @@ def mqc_ri_mp2_hessian(atoms, basis, aux, frozen=0):
 
 
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
-                   level=GRADIENT_GRID_LEVEL, ecp=""):
+                   level=GRADIENT_GRID_LEVEL, ecp="", tight=False):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
 
     Two things here are not defaults and both matter. The gradient modules have
@@ -3158,6 +3176,12 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     either side. That term is also the one that hides best -- translational
     invariance is blind to it, because a rigid translation leaves the Becke
     partition unchanged.
+
+    `tight` converges the reference's orbital gradient to 1e-9 as well as its
+    energy. PySCF derives the gradient threshold from the energy one, about
+    1e-6 here, and a gradient is first order in what that leaves: methyl iodide
+    in def2-SVP moved by 2e-8 between the two settings, twice the bound it is
+    held to. Off by default so the references already committed do not move.
     """
     from pyscf import df, dft, gto, scf
     from pyscf.grad import rhf as _rhf_grad, rks as _rks_grad  # noqa: F401
@@ -3187,6 +3211,9 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     if aux:
         mf = df.density_fit(mf, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
     mf.conv_tol = 1e-12
+    if tight:
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-9
     energy = mf.kernel()
     if not mf.converged:
         raise SystemExit(f"PySCF did not converge for {basis} {functional}")
@@ -4111,6 +4138,10 @@ def main():
                 mol.atoms = read_xyz(INPUTS / mol.xyz)
             else:
                 mol.xyz = f"sample_inputs/{name}.xyz"
+                # A molecule added with these cases has no file from an
+                # earlier full run to rely on.
+                if not args.dry_run and not (INPUTS / mol.xyz).exists():
+                    write_xyz(INPUTS / mol.xyz, mol)
         entries = ecp_gradient_entries(set(), args.dry_run)
         if args.dry_run:
             return 0

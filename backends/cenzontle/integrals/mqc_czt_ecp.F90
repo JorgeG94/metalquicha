@@ -184,11 +184,13 @@ contains
 
       present_here = .false.
       do row = nbas + 1, nbas + necpbas
-         if (bas(LIBCINT_ATOM_OF + 1, row) == atom - 1) present_here = .true.
+         ! `LIBCINT_ATOM_OF` is the row of `bas` itself, one-based, unlike the
+         ! `env` slots; the atom it holds is zero-based.
+         if (bas(LIBCINT_ATOM_OF, row) == atom - 1) present_here = .true.
       end do
    end function ecp_on_atom
 
-   subroutine ecp_deriv_matrix(nao, nbas, natm, cartesian, atm, bas, env, &
+   subroutine ecp_deriv_matrix(nbas, natm, cartesian, atm, bas, env, &
                                shell_offset, necpbas, atom, matrix)
       !! `<nabla mu| U |nu>`, the ECP's first-derivative integrals, (nao, nao, 3)
       !!
@@ -197,8 +199,9 @@ contains
       !! nabla acts on the electron, as in libcint's `ip` integrals, so the
       !! derivative with respect to the centre of `mu` is minus this.
       !!
-      !! Arguments are `ecp_matrix`'s, and plain arrays for its reason.
-      integer, intent(in) :: nao, nbas, natm
+      !! Arguments are `ecp_matrix`'s without `nao`, which `matrix` already
+      !! carries, and plain arrays for its reason.
+      integer, intent(in) :: nbas, natm
       logical, intent(in) :: cartesian
       integer, intent(in) :: atm(:, :)
       integer, intent(in) :: bas(:, :)     !! (BAS_SLOTS, nbas + necpbas)
@@ -213,7 +216,7 @@ contains
       integer :: ish, jsh, di, dj, i, j, comp, io, jo, ret, nmax
 
       matrix = 0.0_dp
-      if (necpbas <= 0 .or. nao <= 0) return
+      if (necpbas <= 0) return
       if (atom > 0) then
          if (.not. ecp_on_atom(nbas, necpbas, bas, atom)) return
       end if

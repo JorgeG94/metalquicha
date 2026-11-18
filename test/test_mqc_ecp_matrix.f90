@@ -26,7 +26,7 @@ module test_mqc_ecp_matrix
    use mqc_error, only: error_t
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_json_ecp_reader, only: build_molecular_ecp_json
-   use mqc_czt_ecp, only: ecp_matrix, ecp_deriv_matrix
+   use mqc_czt_ecp, only: ecp_matrix, ecp_deriv_matrix, ecp_on_atom
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
    use pic_types, only: dp
    implicit none
@@ -61,7 +61,8 @@ contains
                   new_unittest("lanthanide_ecp_matrix_matches_pyscf", test_matrix), &
                   new_unittest("lanthanide_ecp_matrix_is_symmetric", test_symmetric), &
                   new_unittest("ecp_derivative_matches_differences", test_derivative), &
-                  new_unittest("ecp_derivative_splits_by_atom", test_derivative_by_atom) &
+                  new_unittest("ecp_derivative_splits_by_atom", test_derivative_by_atom), &
+                  new_unittest("ecp_is_found_on_a_late_atom", test_late_atom) &
                   ]
    end subroutine collect_mqc_ecp_matrix_tests
 
@@ -263,7 +264,7 @@ contains
       allocate (analytic(mol%nao, mol%nao))
       allocate (offsets(mol%natm), counts(mol%natm))
       call atom_ao_blocks(mol, offsets, counts)
-      call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                             mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
                             0, whole)
       scale = maxval(abs(whole))
@@ -274,7 +275,7 @@ contains
       do iatom = 1, mol%natm
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
-         call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+         call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                                mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
                                iatom, one)
          do comp = 1, 3
@@ -323,22 +324,90 @@ contains
       if (allocated(error)) return
 
       allocate (whole(mol%nao, mol%nao, 3), one(mol%nao, mol%nao, 3))
-      call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                             mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
                             0, whole)
-      call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                             mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
                             1, one)
       call check(error, maxval(abs(one - whole)) < 1.0e-12_dp*maxval(abs(whole)), &
                  "iodine carries the only potential, and its share is not the whole")
       if (allocated(error)) return
 
-      call ecp_deriv_matrix(mol%nao, mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
                             mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
                             2, one)
       call check(error, all(one == 0.0_dp), &
                  "hydrogen has no potential and was given a derivative of one")
    end subroutine test_derivative_by_atom
+
+   subroutine test_late_atom(error)
+      !! The potential is found on the atom that has it, wherever it sits.
+      !!
+      !! Iodine is last of five here, and that is the point. The lookup once
+      !! read the angular momentum of each ECP row where it meant the atom, so
+      !! it answered "yes" for atoms one to three -- one per projector -- and
+      !! "no" for any atom after that. Every molecule the gradient was first
+      !! checked on had its heavy atom first, where the two readings agree; a
+      !! methyl iodide written C, H, H, H, I lost the iodine's own term and
+      !! came back with a force of 0.3 hartree/bohr on it.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      type(molecular_basis_type) :: basis
+      type(molecular_ecp_type) :: ecp
+      type(czt_molecule_t) :: mol
+      character(len=:), allocatable :: basis_file, ecp_file
+      integer, parameter :: N_ATOMS = 5
+      character(len=8) :: symbols(N_ATOMS)
+      real(dp) :: coordinates(3, N_ATOMS)
+      real(dp), allocatable :: whole(:, :, :), one(:, :, :)
+      integer :: iatom
+
+      symbols = ["C ", "H ", "H ", "H ", "I "]
+      coordinates = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                             1.95_dp, 0.0_dp, -0.68_dp, &
+                             -0.97_dp, 1.69_dp, -0.68_dp, &
+                             -0.97_dp, -1.69_dp, -0.68_dp, &
+                             0.3_dp, -0.2_dp, 4.04_dp], [3, N_ATOMS])
+
+      call find_basis_file("def2-svp", basis_file, err)
+      call check(error,.not. err%has_error(), "def2-svp not found")
+      if (allocated(error)) return
+      call find_basis_file("def2-ecp", ecp_file, err)
+      call check(error,.not. err%has_error(), "def2-ecp not found")
+      if (allocated(error)) return
+      call build_molecular_basis_json(basis_file, symbols, basis, err)
+      call check(error,.not. err%has_error(), "could not read def2-svp")
+      if (allocated(error)) return
+      call build_molecular_ecp_json(ecp_file, symbols, ecp, err)
+      call check(error,.not. err%has_error(), "could not read def2-ecp")
+      if (allocated(error)) return
+      call mol%build([6, 1, 1, 1, 53], coordinates, basis, err, ecp=ecp)
+      call check(error,.not. err%has_error(), "could not build the molecule")
+      if (allocated(error)) return
+
+      do iatom = 1, N_ATOMS - 1
+         call check(error,.not. ecp_on_atom(mol%nbas, mol%necpbas, mol%bas_with_ecp, iatom), &
+                    "an atom with no potential was reported to carry one")
+         if (allocated(error)) return
+      end do
+      call check(error, ecp_on_atom(mol%nbas, mol%necpbas, mol%bas_with_ecp, N_ATOMS), &
+                 "the iodine's potential was not found on the fifth atom")
+      if (allocated(error)) return
+
+      allocate (whole(mol%nao, mol%nao, 3), one(mol%nao, mol%nao, 3))
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+                            mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
+                            0, whole)
+      call ecp_deriv_matrix(mol%nbas, mol%natm, mol%cartesian, mol%atm, &
+                            mol%bas_with_ecp, mol%env, mol%shell_offset, mol%necpbas, &
+                            N_ATOMS, one)
+      call check(error, maxval(abs(whole)) > 1.0_dp, &
+                 "the derivative integrals are suspiciously small")
+      if (allocated(error)) return
+      call check(error, maxval(abs(one - whole)) < 1.0e-12_dp*maxval(abs(whole)), &
+                 "iodine carries the only potential, and its share is not the whole")
+   end subroutine test_late_atom
 
 end module test_mqc_ecp_matrix
 
