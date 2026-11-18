@@ -178,7 +178,7 @@ contains
       if (allocated(error)) return
 
       call partial_hessian(mol, dens, weight, hess, err)
-      call nuclear_repulsion_hessian(WATER_Z, WATER, nn, err)
+      call nuclear_repulsion_hessian(real(WATER_Z, dp), WATER, nn, err)
       call check(error,.not. err%has_error(), "the partial Hessian did not build")
       if (allocated(error)) then
          call mol%destroy()
@@ -260,7 +260,7 @@ contains
       if (allocated(error)) return
 
       call partial_hessian(mol, dens, weight, hess, err)
-      call nuclear_repulsion_hessian(WATER_Z, WATER, nn, err)
+      call nuclear_repulsion_hessian(real(WATER_Z, dp), WATER, nn, err)
       call check(error,.not. err%has_error(), "the partial Hessian did not build")
       if (allocated(error)) then
          call mol%destroy()
@@ -586,7 +586,7 @@ contains
       call check(error,.not. err%has_error(), "the reference did not converge")
       if (allocated(error)) return
 
-      call rhf_hessian(mol, WATER_Z, scf%density, scf%orbitals, &
+      call rhf_hessian(mol, scf%density, scf%orbitals, &
                        scf%orbital_energies, nocc, hess, err)
       call check(error,.not. err%has_error(), "the Hessian did not build")
       if (allocated(error)) then
@@ -1454,7 +1454,7 @@ contains
       real(dp), parameter :: H = 1.0e-4_dp
       integer :: a, b, i, j
 
-      call nuclear_repulsion_hessian(WATER_Z, WATER, hess, err)
+      call nuclear_repulsion_hessian(real(WATER_Z, dp), WATER, hess, err)
       call check(error,.not. err%has_error(), "the nuclear Hessian failed")
       if (allocated(error)) return
 

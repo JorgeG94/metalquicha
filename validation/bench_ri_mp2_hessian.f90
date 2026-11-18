@@ -96,7 +96,7 @@ program bench_ri_mp2_hessian
    case ("rhf")
       ! The reference Hessian alone: what the two-electron second-derivative
       ! sweep costs, for comparing builds of that kernel.
-      call rhf_hessian(mol, numbers, scf%density, scf%orbitals, scf%orbital_energies, &
+      call rhf_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                        nelec/2, hess, error)
    case ("partial")
       ! The fixed-density second derivatives only, no response: the sweep over

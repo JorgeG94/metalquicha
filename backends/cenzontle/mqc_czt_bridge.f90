@@ -2461,13 +2461,13 @@ contains
             call logger%info("  computing the analytic Hessian")
             call hess_clock%start()
             if (kohn_sham) then
-               call ks_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
+               call ks_hessian(mol, scf%density, scf%orbitals, &
                                scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
                                hess4, error, max_iter=settings%hessian_response_max_iter, &
                                tol=settings%hessian_response_tol, &
                                batch=settings%hessian_response_batch, dipole_derivatives=ddip)
             else
-               call rhf_hessian(mol, fragment%element_numbers, scf%density, scf%orbitals, &
+               call rhf_hessian(mol, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
                                 max_iter=settings%hessian_response_max_iter, &
                                 tol=settings%hessian_response_tol, &
@@ -2744,7 +2744,7 @@ contains
                      ! `href` is the whole reference -- skeleton, response and
                      ! nuclear repulsion -- and `hcorr` the correlation block,
                      ! as in the exact branch below.
-                     call rhf_hessian(mol, fragment%element_numbers, scf%density, &
+                     call rhf_hessian(mol, scf%density, &
                                       scf%orbitals, scf%orbital_energies, scf%n_occupied, &
                                       href, error, &
                                       max_iter=settings%hessian_response_max_iter, &
@@ -2782,7 +2782,7 @@ contains
                                                   scf%orbital_energies, scf%density, &
                                                   scf%n_occupied, frozen, hcorr, href, error)
                      if (.not. error%has_error()) then
-                        call nuclear_repulsion_hessian(fragment%element_numbers, &
+                        call nuclear_repulsion_hessian(mol%charges, &
                                                        mol%coords, hnuc, error)
                      end if
                      if (.not. error%has_error()) then

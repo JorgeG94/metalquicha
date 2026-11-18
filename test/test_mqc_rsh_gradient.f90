@@ -197,7 +197,7 @@ contains
       end if
       call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, xc=ctx)
       if (.not. err%has_error()) then
-         call ks_hessian(mol, WATER_Z, scf%density, scf%orbitals, scf%orbital_energies, &
+         call ks_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                          5, ctx, ctx%exx_fraction, hess, err)
       end if
       call mol%destroy()

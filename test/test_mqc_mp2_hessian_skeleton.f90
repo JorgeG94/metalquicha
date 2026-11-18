@@ -135,10 +135,10 @@ contains
          return
       end if
 
-      call nuclear_repulsion_hessian(WATER_Z, mol%coords, nuc, err)
+      call nuclear_repulsion_hessian(real(WATER_Z, dp), mol%coords, nuc, err)
       call response_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, &
                             WATER_NELEC/2, resp, err)
-      call rhf_hessian(mol, WATER_Z, scf%density, scf%orbitals, &
+      call rhf_hessian(mol, scf%density, scf%orbitals, &
                        scf%orbital_energies, WATER_NELEC/2, full, err)
       call omp_set_num_threads(threads)
       call check(error,.not. err%has_error(), &

@@ -18,7 +18,7 @@ module mqc_czt_hessian
    use mqc_timing, only: timing_report_t
    use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
-   use mqc_czt_gradient, only: one_electron_deriv, iprinv_deriv_at, &
+   use mqc_czt_gradient, only: one_electron_deriv, nuclear_attraction_deriv_at, &
                                DERIV_KIN, DERIV_NUC, DERIV_OVLP
    use mqc_czt_hess_ints, only: hess_1e_block, hess_rinv_contract, &
                                 hess_2e_contract, h1_contract, &
@@ -212,7 +212,7 @@ contains
 
       real(dp), allocatable :: kin(:, :, :), nuc(:, :, :), vrinv(:, :, :)
       integer, allocatable :: offsets(:), counts(:)
-      integer :: nao, comp, p0, p1
+      integer :: nao
 
       if (error%has_error()) return
       if (iatom < 1 .or. iatom > mol%natm) then
@@ -227,23 +227,48 @@ contains
 
       call one_electron_deriv(mol, kin, DERIV_KIN)
       call one_electron_deriv(mol, nuc, DERIV_NUC)
+      kin = kin + nuc
       allocate (vrinv(nao, nao, 3), hcore_a(nao, nao, 3))
-
-      call iprinv_deriv_at(mol, iatom, vrinv)
-      vrinv = -mol%charges(iatom)*vrinv
-
-      p0 = offsets(iatom) + 1
-      p1 = offsets(iatom) + counts(iatom)
-      if (counts(iatom) > 0) then
-         vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) - (kin(p0:p1, :, :) + nuc(p0:p1, :, :))
-      end if
-
-      do comp = 1, 3
-         hcore_a(:, :, comp) = vrinv(:, :, comp) + transpose(vrinv(:, :, comp))
-      end do
+      hcore_a = 0.0_dp
+      call add_hcore_deriv(mol, iatom, kin, offsets, counts, vrinv, hcore_a)
 
       deallocate (kin, nuc, vrinv, offsets, counts)
    end subroutine hcore_deriv_atom
+
+   subroutine add_hcore_deriv(mol, iatom, basis_part, offsets, counts, vrinv, hcore_a)
+      !! Add `dH_core/dR_A` for atom `iatom` into `hcore_a`, `(n_ao, n_ao, 3)`
+      !!
+      !! `basis_part` is the kinetic plus nuclear-attraction `ip` matrix,
+      !! `one_electron_deriv` with `DERIV_KIN` and `DERIV_NUC` summed. It does
+      !! not depend on the atom, so a caller looping over atoms builds it once.
+      !! `vrinv` is workspace of the same shape, overwritten.
+      type(czt_molecule_t), intent(in) :: mol
+      integer, intent(in) :: iatom
+      real(dp), intent(in) :: basis_part(:, :, :)
+      integer, intent(in) :: offsets(:), counts(:)   !! From `atom_ao_blocks`
+      real(dp), intent(inout) :: vrinv(:, :, :)
+      real(dp), intent(inout) :: hcore_a(:, :, :)
+
+      integer :: comp, p0, p1
+
+      ! The potential the atom itself exerts, wherever the orbitals sit: its
+      ! nucleus, and its effective core potential when it has one.
+      call nuclear_attraction_deriv_at(mol, iatom, vrinv)
+
+      ! The basis functions on the atom, which move with it. The sign is the
+      ! library's: its `ip` integrals put the nabla on the electron.
+      p0 = offsets(iatom) + 1
+      p1 = offsets(iatom) + counts(iatom)
+      if (counts(iatom) > 0) then
+         vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) - basis_part(p0:p1, :, :)
+      end if
+
+      ! The library differentiates the bra; the ket's half is its transpose.
+      do comp = 1, 3
+         hcore_a(:, :, comp) = hcore_a(:, :, comp) + vrinv(:, :, comp) &
+                               + transpose(vrinv(:, :, comp))
+      end do
+   end subroutine add_hcore_deriv
 
    subroutine make_h1_atom(mol, density, eri_ip1, iatom, h1, error, k_scale)
       !! The perturbation that drives the coupled-perturbed equations
@@ -662,7 +687,7 @@ contains
       deallocate (h1mo, s1mo, base, work, rhs)
    end subroutine solve_mo1_atom
 
-   subroutine nuclear_repulsion_hessian(atomic_numbers, coordinates, hess, error)
+   subroutine nuclear_repulsion_hessian(charges, coordinates, hess, error)
       !! Second derivatives of the nuclear repulsion
       !!
       !!     E_nn = sum_{A<B} Z_A Z_B / R_AB
@@ -677,7 +702,10 @@ contains
       !!
       !! `(3, 3, n_atoms, n_atoms)` with the Cartesian pair innermost, the
       !! layout the electronic part adds into.
-      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: charges(:)
+         !! The charge each nucleus presents, as `czt_molecule_t%charges` holds
+         !! it: the atomic number, less the core an ECP replaced, and zero for
+         !! a ghost.
       real(dp), intent(in) :: coordinates(:, :)      !! (3, n_atoms), Bohr
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)
       type(error_t), intent(inout) :: error
@@ -688,9 +716,9 @@ contains
 
       if (error%has_error()) return
 
-      natm = size(atomic_numbers)
+      natm = size(charges)
       if (size(coordinates, 2) /= natm) then
-         call error%set(ERROR_VALIDATION, "the coordinates and the atomic numbers "// &
+         call error%set(ERROR_VALIDATION, "the coordinates and the nuclear charges "// &
                         "describe different numbers of atoms.")
          return
       end if
@@ -709,7 +737,7 @@ contains
                deallocate (hess)
                return
             end if
-            zz = real(atomic_numbers(a), dp)*real(atomic_numbers(b), dp)
+            zz = charges(a)*charges(b)
             do j = 1, 3
                do i = 1, 3
                   block(i, j) = -3.0_dp*zz*r(i)*r(j)/dist**5
@@ -1051,11 +1079,10 @@ contains
       allocate (half(nao, n_occ), tmp(nao, nao), work(nao, nao))
       allocate (f1(nao, nao), outer(nao, nao), middle(nao, nao))
 
-      ! The core Hamiltonian and overlap derivatives per atom, as
-      ! `hcore_deriv_atom` and `overlap_deriv_atom` build them, with the parts
+      ! The core Hamiltonian and overlap derivatives per atom, with the parts
       ! that do not depend on the atom -- the kinetic, nuclear and overlap
       ! derivative matrices -- computed once rather than once per atom. Only
-      ! the `1/|r-R_A|` term is genuinely per atom.
+      ! the atom's own potential is genuinely per atom.
       call one_electron_deriv(mol, kin, DERIV_KIN)
       call one_electron_deriv(mol, nuc, DERIV_NUC)
       kin = kin + nuc
@@ -1066,21 +1093,15 @@ contains
       call atom_ao_blocks(mol, offsets, counts)
       s1 = 0.0_dp
       do ia = 1, natm
-         call iprinv_deriv_at(mol, ia, vrinv)
-         vrinv = -mol%charges(ia)*vrinv
+         call add_hcore_deriv(mol, ia, kin, offsets, counts, vrinv, h1(:, :, :, ia))
          p0 = offsets(ia) + 1
          p1 = offsets(ia) + counts(ia)
          if (counts(ia) > 0) then
-            vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) - kin(p0:p1, :, :)
             do comp = 1, 3
                s1(p0:p1, :, comp, ia) = s1(p0:p1, :, comp, ia) + ds(p0:p1, :, comp)
                s1(:, p0:p1, comp, ia) = s1(:, p0:p1, comp, ia) + transpose(ds(p0:p1, :, comp))
             end do
          end if
-         do comp = 1, 3
-            h1(:, :, comp, ia) = h1(:, :, comp, ia) + vrinv(:, :, comp) &
-                                 + transpose(vrinv(:, :, comp))
-         end do
       end do
       deallocate (kin, ds, vrinv, offsets, counts)
       call lap(clk, STAGE_1E_ATOM)
@@ -1177,7 +1198,7 @@ contains
       call lap(clk, STAGE_ASSEMBLY)
    end subroutine response_hessian
 
-   subroutine rhf_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
+   subroutine rhf_hessian(mol, density, orbitals, energies, n_occ, &
                           hess, error, max_iter, tol, dipole_derivatives, batch)
       !! The analytic Hessian of a converged restricted Hartree-Fock energy
       !!
@@ -1188,7 +1209,6 @@ contains
       !! Returned as `(3, 3, n_atoms, n_atoms)`. A vibrational analysis wants
       !! `(3*n_atoms, 3*n_atoms)`, which `hessian_to_matrix` produces.
       type(czt_molecule_t), intent(in), target :: mol
-      integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
@@ -1216,7 +1236,7 @@ contains
       call clk%start()
       call energy_weighted_density(orbitals, energies, n_occ, weighted)
 
-      call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
+      call nuclear_repulsion_hessian(mol%charges, mol%coords, hess, error)
       call clk%lap(STAGE_NUCLEAR)
       call partial_hessian(mol, density, weighted, part, error, clk=clk)
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
@@ -1230,7 +1250,7 @@ contains
       call clk%report("analytic Hessian")
    end subroutine rhf_hessian
 
-   subroutine ks_hessian(mol, atomic_numbers, density, orbitals, energies, n_occ, &
+   subroutine ks_hessian(mol, density, orbitals, energies, n_occ, &
                          xc, k_scale, hess, error, max_iter, tol, dipole_derivatives, batch)
       !! The analytic Hessian of a converged Kohn-Sham energy
       !!
@@ -1254,7 +1274,6 @@ contains
       !! and functionals carrying VV10 non-local correlation.
       use mqc_czt_xc_hessian, only: xc_hessian, vv10_hessian
       type(czt_molecule_t), intent(in), target :: mol
-      integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: density(:, :)
       real(dp), intent(in) :: orbitals(:, :)
       real(dp), intent(in) :: energies(:)
@@ -1299,7 +1318,7 @@ contains
       call clk%start()
       call energy_weighted_density(orbitals, energies, n_occ, weighted)
 
-      call nuclear_repulsion_hessian(atomic_numbers, mol%coords, hess, error)
+      call nuclear_repulsion_hessian(mol%charges, mol%coords, hess, error)
       call clk%lap(STAGE_NUCLEAR)
       call partial_hessian(mol, density, weighted, part, error, k_scale=k_scale, &
                            rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, clk=clk)

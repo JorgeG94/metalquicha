@@ -303,7 +303,7 @@ contains
                                       hess4, err, n_frozen=nfrozen, tol=1.0e-13_dp)
       call check(error,.not. err%has_error(), "the Hessian must run: "//err%get_full_trace())
       if (allocated(error)) return
-      call rhf_hessian(mol, [8, 1, 1], scf%density, scf%orbitals, scf%orbital_energies, 5, &
+      call rhf_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, 5, &
                        rhf4, err, tol=1.0e-13_dp)
       call check(error,.not. err%has_error(), "the RHF Hessian must run")
       if (allocated(error)) return
