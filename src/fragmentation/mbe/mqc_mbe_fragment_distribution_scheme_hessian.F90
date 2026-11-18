@@ -397,6 +397,7 @@ contains
                                           compute_vibrational_analysis, print_vibrational_analysis
       use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
       use mqc_json_output_types, only: json_output_data_t
+      use mqc_program_limits, only: MAX_PRINTED_HESSIAN_DIM
 
       type(system_geometry_t), intent(in) :: sys_geom
       type(driver_config_t), intent(in) :: config  !! Driver configuration
@@ -436,7 +437,12 @@ contains
          write (result_line, "(a,f25.15)") "  Hessian Frobenius norm: ", hess_norm
          call logger%info(trim(result_line))
 
-         if (is_verbose .and. n_atoms < 20) then
+         if (is_verbose .and. 3*n_atoms > MAX_PRINTED_HESSIAN_DIM) then
+            call logger%info("  Hessian is "//to_char(3*n_atoms)//" x "//to_char(3*n_atoms)// &
+                             "; not printed beyond "//to_char(MAX_PRINTED_HESSIAN_DIM)// &
+                             " x "//to_char(MAX_PRINTED_HESSIAN_DIM)//", see the JSON output")
+         end if
+         if (is_verbose .and. 3*n_atoms <= MAX_PRINTED_HESSIAN_DIM) then
             call logger%info(" ")
             call logger%info("Hessian matrix (Hartree/Bohr^2):")
             do i = 1, 3*n_atoms
