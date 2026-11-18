@@ -6017,7 +6017,10 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "requires": "ecp"
+            "requires": [
+                "ecp",
+                "libxc"
+            ]
         },
         {
             "name": "B3LYP gradient HI def2-svp with def2-ecp (CPU)",
@@ -6038,7 +6041,10 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "type": "unfragmented",
-            "requires": "ecp"
+            "requires": [
+                "ecp",
+                "libxc"
+            ]
         },
         {
             "name": "MP2 gradient HI def2-svp with def2-ecp frozen 4 (CPU)",
