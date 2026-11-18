@@ -704,8 +704,8 @@ contains
       !! layout the electronic part adds into.
       real(dp), intent(in) :: charges(:)
          !! The charge each nucleus presents, as `czt_molecule_t%charges` holds
-         !! it: the atomic number, less the core an ECP replaced, and zero for
-         !! a ghost.
+         !! it: the atomic number, less the core an ECP replaced, zero for a
+         !! ghost, and whatever a caller set explicitly for a split nucleus.
       real(dp), intent(in) :: coordinates(:, :)      !! (3, n_atoms), Bohr
       real(dp), allocatable, intent(out) :: hess(:, :, :, :)
       type(error_t), intent(inout) :: error
