@@ -27,6 +27,10 @@ module test_mqc_czt_rcc_density
 
    real(dp), parameter :: ANG = 1.8897261254578281_dp
    real(dp), parameter :: TOL = 2.0e-8_dp
+   integer, parameter :: N_TRIPLES_TERMS = 10
+      !! Numbers the triples' terms are compared by
+   integer, parameter :: N_TRIPLES_REFERENCES = N_TRIPLES_TERMS + 1
+      !! Those, and the correction itself
 
 contains
 
@@ -281,7 +285,7 @@ contains
       !! to the one-particle density must also have no trace.
       character(len=*), intent(in) :: basis
       integer, intent(in) :: frozen
-      real(dp), intent(in) :: reference(11)
+      real(dp), intent(in) :: reference(N_TRIPLES_REFERENCES)
          !! Sums of squares of the `l1` and `l2` sources; their overlaps with
          !! `t1` and `t2`; the sum of the occupied diagonal, negated; the sums
          !! of squares of the occupied and virtual diagonals; and the sums of
@@ -297,11 +301,12 @@ contains
       type(rcc_triples_terms_t) :: terms
       type(error_t) :: err
       real(dp), allocatable :: gamma(:, :), g3(:, :, :), b(:, :, :)
-      real(dp) :: got(10), e_one, e_two
-      character(len=*), parameter :: NAMES(10) = [character(len=24) :: &
+      real(dp) :: got(N_TRIPLES_TERMS)
+      real(dp) :: e_one, e_two
+      character(len=*), parameter :: NAMES(N_TRIPLES_TERMS) = [character(len=24) :: &
                                            "l1 source norm", "l2 source norm", "l1 source with t1", "l2 source with t2", &
                                              "occupied diagonal sum", "occupied diagonal norm", "virtual diagonal norm", &
-                                                  "dovov addition", "dooov addition", "dovvv addition"]
+                                                               "dovov addition", "dooov addition", "dovvv addition"]
       integer :: k, p
 
       call water(mol, err, basis)
@@ -315,7 +320,7 @@ contains
                          1.0e-12_dp, .true., .false., cc, err, aux=aux, state=state)
       call check(error,.not. err%has_error() .and. cc%converged, "CCSD(T) should converge")
       if (allocated(error)) return
-      call check(error, abs(cc%e_triples - reference(11)) < TOL, &
+      call check(error, abs(cc%e_triples - reference(N_TRIPLES_REFERENCES)) < TOL, &
                  "the triples correction itself differs from PySCF's in "//basis)
       if (allocated(error)) return
 
@@ -330,7 +335,7 @@ contains
       got(8) = sum(terms%dovov**2)
       got(9) = sum(terms%dooov**2)
       got(10) = sum(terms%dovvv**2)
-      do k = 1, 10
+      do k = 1, N_TRIPLES_TERMS
          call check(error, abs(got(k) - reference(k)) < TOL*max(1.0_dp, abs(reference(k))) &
                     .and. abs(got(k) - reference(k)) < 1.0e-6_dp*abs(reference(k)), &
                     trim(NAMES(k))//" differs from PySCF's by "// &

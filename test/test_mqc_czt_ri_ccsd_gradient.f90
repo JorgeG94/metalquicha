@@ -91,7 +91,8 @@ contains
       type(rcc_result_t) :: cc
       type(rcc_state_t) :: state
       type(rcc_lambda_t) :: lambda
-      type(rcc_triples_terms_t) :: terms
+      type(rcc_triples_terms_t), allocatable :: terms
+      ! Allocated only for (T); unallocated, an absent optional argument.
       type(error_t) :: err
       logical :: triples
 
@@ -109,24 +110,16 @@ contains
       call check(error,.not. err%has_error() .and. cc%converged, "CCSD should converge")
       if (allocated(error)) return
       if (triples) then
+         allocate (terms)
          call rccsd_triples_terms(state, terms)
-         call run_czt_rccsd_lambda(state, 200, 1.0e-11_dp, .false., lambda, err, &
-                                   triples=terms)
-      else
-         call run_czt_rccsd_lambda(state, 100, 1.0e-11_dp, .false., lambda, err)
       end if
+      call run_czt_rccsd_lambda(state, 200, 1.0e-11_dp, .false., lambda, err, triples=terms)
       call check(error,.not. err%has_error() .and. lambda%converged, &
                  "the Lambda equations should converge")
       if (allocated(error)) return
-      if (triples) then
-         call czt_ri_ccsd_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
-                                   frozen, state, lambda, gradient, err, &
-                                   fit_response=fit_response, triples=terms)
-      else
-         call czt_ri_ccsd_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
-                                   frozen, state, lambda, gradient, err, &
-                                   fit_response=fit_response)
-      end if
+      call czt_ri_ccsd_gradient(mol, aux, scf%orbitals, scf%orbital_energies, state, &
+                                lambda, gradient, err, fit_response=fit_response, &
+                                triples=terms)
       call check(error,.not. err%has_error(), "the gradient failed: "//err%get_message())
       call mol%destroy()
       call aux%destroy()

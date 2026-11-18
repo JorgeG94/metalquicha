@@ -78,9 +78,24 @@ module mqc_czt_ri_mp2_gradient
       logical :: dense = .false.                !! Hold the four-centre integrals in memory
       real(dp) :: pt2_scale = 1.0_dp            !! A double hybrid's PT2 coefficient
       logical :: fixed_grid = .false.           !! Leave the quadrature grid where it is
+   contains
+      procedure :: destroy => relaxation_input_destroy
    end type relaxation_input_t
 
 contains
+
+   pure subroutine relaxation_input_destroy(this)
+      !! Release the densities and the fit
+      class(relaxation_input_t), intent(inout) :: this
+
+      if (allocated(this%dm1mo)) deallocate (this%dm1mo)
+      if (allocated(this%imat)) deallocate (this%imat)
+      if (allocated(this%gamma_ao)) deallocate (this%gamma_ao)
+      if (allocated(this%gamma_pq)) deallocate (this%gamma_pq)
+      if (allocated(this%three_ao)) deallocate (this%three_ao)
+      if (allocated(this%jm12)) deallocate (this%jm12)
+      if (allocated(this%bref)) deallocate (this%bref)
+   end subroutine relaxation_input_destroy
 
    subroutine czt_ri_mp2_gradient(mol, aux, coeff, orbital_energies, n_occ, &
                                   gradient, error, n_frozen, force_direct, &

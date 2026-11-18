@@ -45,6 +45,8 @@ module mqc_czt_rcc_lambda
       real(dp), allocatable :: l2(:, :, :, :)    !! (no, no, nv, nv), as `(i, j, a, b)`
       integer :: iterations = 0
       logical :: converged = .false.
+   contains
+      procedure :: destroy => rcc_lambda_destroy
    end type rcc_lambda_t
 
    type :: lambda_integrals_t
@@ -67,12 +69,22 @@ module mqc_czt_rcc_lambda
       real(dp), allocatable :: w3(:, :)            !! (nv, no)
       real(dp), allocatable :: woooo(:, :, :, :)
       real(dp), allocatable :: wovvo(:, :, :, :)   !! (no, nv, nv, no)
-      real(dp), allocatable :: wovvo_x(:, :, :, :) !! The reference's `woVVo`
+      real(dp), allocatable :: wovvo_x(:, :, :, :)   !! The reference's `woVVo`
       real(dp), allocatable :: woovo(:, :, :, :)   !! (no, no, nv, no)
       real(dp), allocatable :: wvvvo(:, :, :, :)   !! (nv, nv, nv, no)
    end type lambda_intermediates_t
 
 contains
+
+   pure subroutine rcc_lambda_destroy(this)
+      !! Release the amplitudes
+      class(rcc_lambda_t), intent(inout) :: this
+
+      if (allocated(this%l1)) deallocate (this%l1)
+      if (allocated(this%l2)) deallocate (this%l2)
+      this%iterations = 0
+      this%converged = .false.
+   end subroutine rcc_lambda_destroy
 
    subroutine run_czt_rccsd_lambda(state, max_iter, tolerance, verbose, lambda, error, &
                                    diis_vectors, triples)

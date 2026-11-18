@@ -2836,7 +2836,9 @@ contains
             type(rcc_result_t) :: rcc
             type(rcc_state_t) :: cc_state
             type(rcc_lambda_t) :: cc_lambda
-            type(rcc_triples_terms_t) :: cc_triples_terms
+            type(rcc_triples_terms_t), allocatable :: cc_triples_terms
+            ! Allocated only for (T). Unallocated, it is an absent optional
+            ! argument to everything it is passed to below.
             real(dp) :: cc_tol
             integer :: frozen, cc_iterations
             logical :: cc_converged, spin_adapted
@@ -2998,19 +3000,16 @@ contains
                   ! drives the Lambda equations, and its derivatives with
                   ! respect to the orbital energies and the integrals join the
                   ! densities. All three come from one pass.
+                  allocate (cc_triples_terms)
                   call rccsd_triples_terms(cc_state, cc_triples_terms)
                   write (line, "(a,f10.2,a)") "  triples terms in  ", &
                      grad_clock%get_elapsed_time(), " s"
                   call logger%info(trim(line))
-                  call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
-                                            settings%verbose, cc_lambda, error, &
-                                            diis_vectors=settings%cc_diis_size, &
-                                            triples=cc_triples_terms)
-               else
-                  call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
-                                            settings%verbose, cc_lambda, error, &
-                                            diis_vectors=settings%cc_diis_size)
                end if
+               call run_czt_rccsd_lambda(cc_state, settings%cc_max_iter, CC_LAMBDA_TOL, &
+                                         settings%verbose, cc_lambda, error, &
+                                         diis_vectors=settings%cc_diis_size, &
+                                         triples=cc_triples_terms)
                write (line, "(a,f10.2,a)") "  Lambda done at    ", &
                   grad_clock%get_elapsed_time(), " s"
                call logger%info(trim(line))
@@ -3019,16 +3018,10 @@ contains
                end if
                if (.not. error%has_error()) then
                   call logger%info("  computing the gradient")
-                  if (settings%cc_triples) then
-                     call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
-                                               scf%orbital_energies, nelec/2, frozen, &
-                                               cc_state, cc_lambda, result%gradient, &
-                                               error, triples=cc_triples_terms)
-                  else
-                     call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
-                                               scf%orbital_energies, nelec/2, frozen, &
-                                               cc_state, cc_lambda, result%gradient, error)
-                  end if
+                  call czt_ri_ccsd_gradient(mol, corr_aux, scf%orbitals, &
+                                            scf%orbital_energies, cc_state, cc_lambda, &
+                                            result%gradient, error, &
+                                            triples=cc_triples_terms)
                   call corr_aux%destroy()
                end if
                if (error%has_error()) then
@@ -3038,6 +3031,8 @@ contains
                   call mol%destroy()
                   return
                end if
+               call cc_state%destroy()
+               call cc_lambda%destroy()
                result%has_gradient = .true.
                write (line, "(a,f10.2,a)") "  gradient done in ", &
                   grad_clock%get_elapsed_time(), " s"

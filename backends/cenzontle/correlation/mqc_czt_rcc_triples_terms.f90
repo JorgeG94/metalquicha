@@ -48,9 +48,24 @@ module mqc_czt_rcc_triples_terms
       real(dp), allocatable :: dovov(:, :, :, :)        !! Added to the block of that name
       real(dp), allocatable :: dooov(:, :, :, :)
       real(dp), allocatable :: dovvv(:, :, :, :)
+   contains
+      procedure :: destroy => rcc_triples_terms_destroy
    end type rcc_triples_terms_t
 
 contains
+
+   pure subroutine rcc_triples_terms_destroy(this)
+      !! Release every term
+      class(rcc_triples_terms_t), intent(inout) :: this
+
+      if (allocated(this%l1_source)) deallocate (this%l1_source)
+      if (allocated(this%l2_source)) deallocate (this%l2_source)
+      if (allocated(this%gamma_occ)) deallocate (this%gamma_occ)
+      if (allocated(this%gamma_vir)) deallocate (this%gamma_vir)
+      if (allocated(this%dovov)) deallocate (this%dovov)
+      if (allocated(this%dooov)) deallocate (this%dooov)
+      if (allocated(this%dovvv)) deallocate (this%dovvv)
+   end subroutine rcc_triples_terms_destroy
 
    subroutine rccsd_triples_terms(state, terms)
       !! Everything (T) adds, from converged CCSD amplitudes
@@ -64,7 +79,8 @@ contains
       real(dp), allocatable :: out_ov(:, :), out_oo(:, :), out_ooo(:, :, :)
       real(dp), allocatable :: j_add(:, :, :), dov_add(:, :), l1_add(:), gamma_occ(:)
       integer(omp_lock_kind), allocatable :: locks(:)
-      integer :: no, nv, i, j, k, a, b, c, p, q, virt(3), now(3), inverse(3)
+      integer :: no, nv, i, j, k, a, b, c, p, q
+      integer :: virt(3), now(3), inverse(3)
       real(dp) :: acc, d3, gv_add
       logical :: seen
 
@@ -337,7 +353,8 @@ contains
       integer, intent(in) :: order(3)
       real(dp), intent(inout) :: acc(:, :, :)
 
-      integer :: idx(3), i, j, k, no
+      integer :: idx(3)
+      integer :: i, j, k, no
 
       no = size(blk, 1)
       do k = 1, no

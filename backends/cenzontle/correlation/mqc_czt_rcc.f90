@@ -126,11 +126,14 @@ module mqc_czt_rcc
       !! taken out, `nv` virtual.
       integer :: no = 0
       integer :: nv = 0
+      integer :: frozen = 0   !! Core orbitals below the active occupied ones
       type(rcc_eris_t) :: eris
       real(dp), allocatable :: eps_o(:)          !! (no) orbital energies, hartree
       real(dp), allocatable :: eps_v(:)          !! (nv)
       real(dp), allocatable :: t1(:, :)          !! (no, nv)
       real(dp), allocatable :: t2(:, :, :, :)    !! (no, no, nv, nv), as `(i, j, a, b)`
+   contains
+      procedure :: destroy => rcc_state_destroy
    end type rcc_state_t
 
    type :: rcc_result_t
@@ -148,6 +151,28 @@ module mqc_czt_rcc
    end type rcc_result_t
 
 contains
+
+   pure subroutine rcc_state_destroy(this)
+      !! Release the integrals and the amplitudes
+      class(rcc_state_t), intent(inout) :: this
+
+      if (allocated(this%eris%oooo)) deallocate (this%eris%oooo)
+      if (allocated(this%eris%ooov)) deallocate (this%eris%ooov)
+      if (allocated(this%eris%oovv)) deallocate (this%eris%oovv)
+      if (allocated(this%eris%ovov)) deallocate (this%eris%ovov)
+      if (allocated(this%eris%ovvv)) deallocate (this%eris%ovvv)
+      if (allocated(this%eris%vvvv)) deallocate (this%eris%vvvv)
+      if (allocated(this%eris%b_vv)) deallocate (this%eris%b_vv)
+      if (allocated(this%eris%b_oo)) deallocate (this%eris%b_oo)
+      if (allocated(this%eris%b_ov)) deallocate (this%eris%b_ov)
+      if (allocated(this%eps_o)) deallocate (this%eps_o)
+      if (allocated(this%eps_v)) deallocate (this%eps_v)
+      if (allocated(this%t1)) deallocate (this%t1)
+      if (allocated(this%t2)) deallocate (this%t2)
+      this%no = 0
+      this%nv = 0
+      this%frozen = 0
+   end subroutine rcc_state_destroy
 
    pure function rcc_megabytes(no, nv, conventional) result(mb)
       !! What the integral blocks cost, in MB
@@ -1889,6 +1914,7 @@ contains
       if (present(state)) then
          state%no = no
          state%nv = nv
+         state%frozen = frozen
          call move_alloc(eris%oooo, state%eris%oooo)
          call move_alloc(eris%ooov, state%eris%ooov)
          call move_alloc(eris%oovv, state%eris%oovv)

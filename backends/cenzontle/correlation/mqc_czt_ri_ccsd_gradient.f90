@@ -37,14 +37,16 @@ module mqc_czt_ri_ccsd_gradient
 
    public :: czt_ri_ccsd_gradient
 
+   real(dp), parameter :: SAME_PLACE = 1.0e-10_dp
+      !! Two atoms closer than this, in bohr, are the same atom
    real(dp), parameter :: DEGENERATE = 1.0e-7_dp
       !! Two orbital energies closer than this, in hartree, are one level: a
       !! rotation between the orbitals changes nothing, and is not solved for
 
 contains
 
-   subroutine czt_ri_ccsd_gradient(mol, aux, coeff, orbital_energies, n_occ, frozen, &
-                                   state, lambda, gradient, error, fit_response, triples)
+   subroutine czt_ri_ccsd_gradient(mol, aux, coeff, orbital_energies, state, lambda, &
+                                   gradient, error, fit_response, triples)
       !! dE(RI-CCSD)/dR for a closed-shell reference, in Hartree/Bohr
       !!
       !! The total gradient: the reference's and the correlation's together.
@@ -52,9 +54,9 @@ contains
       type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
       real(dp), intent(in) :: coeff(:, :)       !! Every molecular orbital, frozen ones included
       real(dp), intent(in) :: orbital_energies(:)
-      integer, intent(in) :: n_occ
-      integer, intent(in) :: frozen             !! Core orbitals left out of the correlation
-      type(rcc_state_t), intent(in) :: state    !! The converged amplitudes
+      type(rcc_state_t), intent(in) :: state
+         !! The converged amplitudes, and with them the split of the orbitals
+         !! into frozen, active occupied and virtual
       type(rcc_lambda_t), intent(in) :: lambda
       real(dp), allocatable, intent(out) :: gradient(:, :)   !! (3, n_atoms)
       type(error_t), intent(inout) :: error
@@ -72,7 +74,7 @@ contains
       real(dp), allocatable :: metric(:, :), b_all(:, :, :), g3(:, :, :), gamma(:, :)
       real(dp), allocatable :: block(:, :), c_act(:, :), g_ao(:, :), overlap_lm(:, :)
       real(dp), allocatable :: half(:, :), gflat(:, :), bflat(:, :)
-      integer :: n_ao, n_mo, n_act, n_aux, no, nv, k, p, q
+      integer :: n_ao, n_mo, n_act, n_aux, n_occ, frozen, no, nv, k, p, q
       real(dp) :: gap
       type(timing_report_t) :: clk
 
@@ -82,8 +84,10 @@ contains
       n_mo = size(coeff, 2)
       no = state%no
       nv = state%nv
+      frozen = state%frozen
+      n_occ = frozen + no
       n_act = no + nv
-      if (frozen + no /= n_occ .or. frozen + n_act /= n_mo) then
+      if (frozen + n_act /= n_mo) then
          call error%set(ERROR_VALIDATION, "the RI-CCSD gradient was handed amplitudes "// &
                         "over a different orbital space from its orbitals")
          return
@@ -93,7 +97,7 @@ contains
                         "on a different set of atoms from the orbital basis")
          return
       end if
-      if (any(abs(aux%coords - mol%coords) > 1.0e-10_dp)) then
+      if (any(abs(aux%coords - mol%coords) > SAME_PLACE)) then
          call error%set(ERROR_VALIDATION, "the RI-CCSD gradient's auxiliary basis is "// &
                         "not on the orbital basis's atoms, in their order")
          return
@@ -214,6 +218,7 @@ contains
       call clk%begin("relaxation and assembly")
       call relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
                                    gradient, error)
+      call inp%destroy()
       call clk%lap()
       call clk%finish()
       call clk%report("RI-CCSD gradient")
