@@ -395,8 +395,8 @@ What has a gradient on the CPU backend, at a glance:
        relaxation is the RI-MP2 gradient's own. The amplitudes are converged
        to 1e-10 hartree in the energy when a gradient follows, whatever the
        deck's tolerance. The gradient costs about as much again as the energy
-       for CCSD, and the triples' part about two and a half times the triples'
-       energy
+       for CCSD, and the triples' part two and a half to four and a half times
+       the triples' energy
    * - Any other coupled cluster
      - no
      - Conventional integrals, an open shell, the spin-orbital formulation
