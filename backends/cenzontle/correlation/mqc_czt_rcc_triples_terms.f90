@@ -21,8 +21,7 @@ module mqc_czt_rcc_triples_terms
    !! threaded.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
-   use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, &
-                      omp_destroy_lock
+!$ use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
    use mqc_tensor_contract, only: transposed
    use mqc_czt_rcc, only: rcc_state_t
    implicit none
@@ -78,7 +77,7 @@ contains
       real(dp), allocatable :: rw(:, :, :), x(:, :, :), m(:, :, :), blk(:, :, :)
       real(dp), allocatable :: out_ov(:, :), out_oo(:, :), out_ooo(:, :, :)
       real(dp), allocatable :: j_add(:, :, :), dov_add(:, :), l1_add(:), gamma_occ(:)
-      integer(omp_lock_kind), allocatable :: locks(:)
+!$    integer(omp_lock_kind), allocatable :: locks(:)
       integer :: no, nv, i, j, k, a, b, c, p, q
       integer :: virt(3), now(3), inverse(3)
       real(dp) :: acc, d3, gv_add
@@ -99,10 +98,10 @@ contains
       allocate (terms%dovov(no, nv, no, nv), terms%dooov(no, no, no, nv), source=0.0_dp)
       allocate (terms%dovvv(no, nv, nv, nv), joovv(no, no, nv, nv), source=0.0_dp)
       allocate (gamma_occ(no), source=0.0_dp)
-      allocate (locks(nv))
-      do a = 1, nv
-         call omp_init_lock(locks(a))
-      end do
+!$    allocate (locks(nv))
+!$    do a = 1, nv
+!$       call omp_init_lock(locks(a))
+!$    end do
 
       ! One set of three virtuals at a time. The symmetrised intermediate is
       ! built once for the set, at six products, and each ordering of the set
@@ -229,7 +228,7 @@ contains
                   call pic_gemm(reshape(rw, [no, no*no]), &
                                 reshape(tjk(:, :, :, now(3)), [no*no, nv]), out_ov)
 
-                  call omp_set_lock(locks(now(1)))
+!$                call omp_set_lock(locks(now(1)))
                   terms%l1_source(:, now(1)) = terms%l1_source(:, now(1)) + l1_add
                   terms%dovov(:, now(1), :, now(2)) = terms%dovov(:, now(1), :, now(2)) + dov_add
                   terms%gamma_vir(now(1)) = terms%gamma_vir(now(1)) + gv_add
@@ -244,7 +243,7 @@ contains
                      end do
                   end do
                   terms%dovvv(:, now(1), :, now(2)) = terms%dovvv(:, now(1), :, now(2)) + out_ov
-                  call omp_unset_lock(locks(now(1)))
+!$                call omp_unset_lock(locks(now(1)))
                end do
             end do
          end do
@@ -253,9 +252,9 @@ contains
       deallocate (w, v, wp, vp, rw, x, m, blk, out_ov, out_oo, out_ooo, j_add, dov_add, l1_add)
       !$omp end parallel
       call move_alloc(gamma_occ, terms%gamma_occ)
-      do a = 1, nv
-         call omp_destroy_lock(locks(a))
-      end do
+!$    do a = 1, nv
+!$       call omp_destroy_lock(locks(a))
+!$    end do
 
       do a = 1, nv
          do i = 1, no
