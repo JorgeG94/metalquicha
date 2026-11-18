@@ -25,7 +25,6 @@ module mqc_czt_ri_ccsd_gradient
                                 metric_inverse_sqrt
    use mqc_czt_cphf, only: IN_CORE_LIMIT
    use mqc_czt_gemm_threads, only: gemm_over_columns
-   use mqc_czt_ecp, only: ecp_refuses_derivatives
    use mqc_czt_rcc, only: rcc_state_t
    use mqc_czt_rcc_lambda, only: rcc_lambda_t
    use mqc_czt_rcc_triples_terms, only: rcc_triples_terms_t
@@ -77,8 +76,6 @@ contains
       integer :: n_ao, n_mo, n_act, n_aux, n_occ, frozen, no, nv, k, p, q
       real(dp) :: gap
       type(timing_report_t) :: clk
-
-      if (ecp_refuses_derivatives(mol%core_electrons, "RI-CCSD gradient", error)) return
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)

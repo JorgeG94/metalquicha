@@ -2,7 +2,7 @@ module test_mqc_ecp_refusals
    !! Tests the two guards that keep an ECP out of code that cannot carry it.
    !!
    !! Neither guard protects against a crash. Both protect against a number: a
-   !! nuclear derivative missing the potential's contribution, and a frozen core
+   !! nuclear Hessian missing the potential's second derivative, and a frozen core
    !! counted as though the potential had not already removed one. In each case
    !! the calculation converges, the output looks ordinary, and the answer is
    !! wrong -- so what is being tested here is that the refusal happens at all,
@@ -25,49 +25,50 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
-                  new_unittest("all_electron_gradient_is_allowed", test_grad_all_electron), &
-                  new_unittest("ecp_gradient_is_refused", test_grad_refused), &
-                  new_unittest("one_heavy_atom_is_enough", test_grad_mixed), &
-                  new_unittest("gradient_message_names_the_derivative", test_grad_names_what), &
-                  new_unittest("unallocated_count_is_all_electron", test_grad_unallocated), &
+                  new_unittest("all_electron_hessian_is_allowed", test_hess_all_electron), &
+                  new_unittest("ecp_hessian_is_refused", test_hess_refused), &
+                  new_unittest("one_heavy_atom_is_enough", test_hess_mixed), &
+                  new_unittest("hessian_message_names_the_derivative", test_hess_names_what), &
+                  new_unittest("unallocated_count_is_all_electron", test_hess_unallocated), &
                   new_unittest("all_electron_frozen_core_is_allowed", test_frozen_all_electron), &
                   new_unittest("ecp_auto_frozen_core_is_refused", test_frozen_refused), &
                   new_unittest("frozen_core_message_offers_the_way_out", test_frozen_message) &
                   ]
    end subroutine collect_mqc_ecp_refusals_tests
 
-   ! ---- nuclear derivatives -------------------------------------------------
+   ! ---- nuclear Hessians ----------------------------------------------------
 
-   subroutine test_grad_all_electron(error)
+   subroutine test_hess_all_electron(error)
       !! An all-electron system must pass through untouched. A guard that
-      !! refused everything would be caught by the whole gradient suite, but
+      !! refused everything would be caught by the whole Hessian suite, but
       !! only after it had been built -- this states it directly.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       integer, allocatable :: core(:)
 
       core = [0, 0, 0]
-      call check(error,.not. ecp_refuses_derivatives(core, "nuclear gradient", err), &
-                 "an all-electron gradient should not be refused")
+      call check(error,.not. ecp_refuses_derivatives(core, "nuclear Hessian", err), &
+                 "an all-electron Hessian should not be refused")
       if (allocated(error)) return
       call check(error,.not. err%has_error(), &
-                 "an all-electron gradient should not set an error")
-   end subroutine test_grad_all_electron
+                 "an all-electron Hessian should not set an error")
+   end subroutine test_hess_all_electron
 
-   subroutine test_grad_refused(error)
-      !! Iodine's def2-ECP: 28 electrons replaced, so the derivative is refused.
+   subroutine test_hess_refused(error)
+      !! Iodine's def2-ECP: 28 electrons replaced, so the analytic Hessian is
+      !! refused. The gradient is not: it carries the potential's derivative.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       integer, allocatable :: core(:)
 
       core = [28, 0]
-      call check(error, ecp_refuses_derivatives(core, "nuclear gradient", err), &
-                 "a gradient over an ECP should be refused")
+      call check(error, ecp_refuses_derivatives(core, "nuclear Hessian", err), &
+                 "an analytic Hessian over an ECP should be refused")
       if (allocated(error)) return
       call check(error, err%has_error(), "the refusal should set an error")
-   end subroutine test_grad_refused
+   end subroutine test_hess_refused
 
-   subroutine test_grad_mixed(error)
+   subroutine test_hess_mixed(error)
       !! The count is per atom, and one heavy atom among light ones is the
       !! ordinary case -- HgCl2 has a potential on one centre of three. Testing
       !! `any` rather than `all` matters: the opposite would let every mixed
@@ -77,14 +78,13 @@ contains
       integer, allocatable :: core(:)
 
       core = [0, 0, 60, 0, 0]
-      call check(error, ecp_refuses_derivatives(core, "nuclear gradient", err), &
-                 "one atom carrying a potential should refuse the whole gradient")
-   end subroutine test_grad_mixed
+      call check(error, ecp_refuses_derivatives(core, "nuclear Hessian", err), &
+                 "one atom carrying a potential should refuse the whole Hessian")
+   end subroutine test_hess_mixed
 
-   subroutine test_grad_names_what(error)
-      !! Four derivative paths share this function, so the message has to say
-      !! which one refused or the user cannot tell an MP2 gradient from a
-      !! Hessian in a log.
+   subroutine test_hess_names_what(error)
+      !! Several Hessian paths share this function, so the message has to say
+      !! which one refused.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       integer, allocatable :: core(:)
@@ -92,24 +92,24 @@ contains
       logical :: refused
 
       core = [28]
-      refused = ecp_refuses_derivatives(core, "MP2 gradient", err)
+      refused = ecp_refuses_derivatives(core, "MP2 Hessian", err)
       call check(error, refused, "should be refused")
       if (allocated(error)) return
       message = err%get_message()
-      call check(error, index(message, "MP2 gradient") > 0, &
+      call check(error, index(message, "MP2 Hessian") > 0, &
                  "the message should name the derivative but said: "//message)
-   end subroutine test_grad_names_what
+   end subroutine test_hess_names_what
 
-   subroutine test_grad_unallocated(error)
+   subroutine test_hess_unallocated(error)
       !! An unallocated count is an all-electron run rather than a bug: the
       !! array is only filled in when a potential was read.
       type(error_type), allocatable, intent(out) :: error
       type(error_t) :: err
       integer, allocatable :: core(:)
 
-      call check(error,.not. ecp_refuses_derivatives(core, "nuclear gradient", err), &
+      call check(error,.not. ecp_refuses_derivatives(core, "nuclear Hessian", err), &
                  "an unallocated core count should not refuse")
-   end subroutine test_grad_unallocated
+   end subroutine test_hess_unallocated
 
    ! ---- automatically counted frozen cores ----------------------------------
 

@@ -43,7 +43,7 @@ module mqc_czt_sa_gradient
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks, shell_dim
-   use mqc_czt_gradient, only: one_electron_deriv, iprinv_deriv_at, two_electron_deriv_many, &
+   use mqc_czt_gradient, only: one_electron_deriv, nuclear_attraction_deriv_at, two_electron_deriv_many, &
                                nuclear_repulsion_gradient, DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_mcscf, only: mcscf_fock_t, generalized_fock, orbital_gradient, one_index_fock
    use mqc_czt_mcscf_gradient, only: czt_mcscf_gradient, active_two_electron_gradient, &
@@ -1094,8 +1094,7 @@ contains
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
 
-         call iprinv_deriv_at(mol, iatom, vrinv)
-         vrinv = -mol%charges(iatom)*vrinv
+         call nuclear_attraction_deriv_at(mol, iatom, vrinv)
          if (counts(iatom) > 0) then
             vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) + h1(p0:p1, :, :)
          end if

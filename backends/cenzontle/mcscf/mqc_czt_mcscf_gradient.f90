@@ -42,7 +42,7 @@ module mqc_czt_mcscf_gradient
                                 eri_grad_dispatch_t, build_eri_grad_dispatch, &
                                 two_electron_ip1_block
    use mqc_czt_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
-                               iprinv_deriv_at, two_electron_deriv, &
+                               nuclear_attraction_deriv_at, two_electron_deriv, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_mp2_gradient, only: two_electron_mp2_terms
    use mqc_czt_mcscf, only: generalized_fock, mcscf_fock_t
@@ -188,8 +188,7 @@ contains
          ! Moving an atom moves the basis functions centred on it and moves the
          ! nucleus every electron is attracted to. The first is the `h1` block,
          ! the second is Hellmann-Feynman and involves no basis derivative.
-         call iprinv_deriv_at(mol, iatom, vrinv)
-         vrinv = -mol%charges(iatom)*vrinv
+         call nuclear_attraction_deriv_at(mol, iatom, vrinv)
          if (counts(iatom) > 0) then
             vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) + h1(p0:p1, :, :)
          end if

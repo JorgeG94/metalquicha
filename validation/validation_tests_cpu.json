@@ -5836,6 +5836,221 @@
             "gradient_tolerance": 1e-05,
             "check_translation": true,
             "type": "unfragmented"
+        },
+        {
+            "name": "RHF gradient HI def2-svp with def2-ecp (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_grad.json",
+            "expected_energy": -297.23153166336,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    -0.00304330063
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    0.00304330063
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "RHF gradient TeH2 def2-svp with def2-ecp (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_teh2_def2-svp_ecp_grad.json",
+            "expected_energy": -268.140201610883,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    0.0,
+                    -0.007574973134
+                ],
+                [
+                    0.001292712158,
+                    0.0,
+                    0.003787486567
+                ],
+                [
+                    -0.001292712158,
+                    -0.0,
+                    0.003787486567
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "RHF gradient I2 def2-svp with def2-ecp (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_i2_def2-svp_ecp_grad.json",
+            "expected_energy": -593.316185118823,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    0.0,
+                    0.005675372113
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    -0.005675372113
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "RHF gradient HI def2-svp with def2-ecp / def2-sv(p)-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_df_grad.json",
+            "expected_energy": -297.231517984688,
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    -0.003016730563
+                ],
+                [
+                    -0.0,
+                    0.0,
+                    0.003016730563
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "PBE gradient HI def2-svp with def2-ecp (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_pbe_grad.json",
+            "expected_energy": -298.278875556201,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.009096139384
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    -0.009096139384
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "B3LYP gradient HI def2-svp with def2-ecp (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_b3lyp_grad.json",
+            "expected_energy": -298.392681495465,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.006145019246
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    -0.006145019246
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "MP2 gradient HI def2-svp with def2-ecp frozen 4 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_mp2_f4_grad.json",
+            "expected_energy": -297.360082905628,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    -0.002091038344
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    0.002091038344
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "RI-MP2 gradient HI def2-svp with def2-ecp / def2-svp-rifit frozen 4 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_rimp2_f4_grad.json",
+            "expected_energy": -297.360069729503,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    -0.002108274304
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    0.002108274304
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "RI-CCSD gradient HI def2-svp with def2-ecp / def2-svp-rifit frozen 4 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_riccsd_f4_grad.json",
+            "expected_energy": -297.373510786937,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.000717532997
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    -0.000717532997
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
+        },
+        {
+            "name": "RI-CCSD(T) gradient HI def2-svp with def2-ecp / def2-svp-rifit frozen 4 (CPU)",
+            "input": "inputs/cpu/mqc/gradient/cpu_hi_def2-svp_ecp_riccsdt_f4_grad.json",
+            "expected_energy": -297.375944872255,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.001236591709
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    -0.001236591709
+                ]
+            ],
+            "gradient_tolerance": 1e-05,
+            "check_translation": true,
+            "type": "unfragmented",
+            "requires": "ecp"
         }
     ]
 }

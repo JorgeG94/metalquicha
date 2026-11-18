@@ -325,7 +325,7 @@ def2-SVP with def2-ECP solves for 26 rather than 54.
 The integrals come from libfint, which translated them from PySCF; libcint has
 no ECP code at all.
 
-**Where it is refused.** Every one of these is a refusal rather than a silent
+**What it supports, and where it is refused.** Each refusal below is a refusal rather than a silent
 omission, and for one reason: an ECP that is quietly dropped produces a calculation that converges,
 looks entirely normal, and is wrong by hundreds of Hartree. There is nothing in
 the output to notice.
@@ -336,13 +336,13 @@ the output to notice.
 
    * - Asking for
      - What happens
-   * - a nuclear gradient, Hessian, or geometry optimisation
-     - Refused. The potential's contribution to the derivative is not
-       implemented -- the energy integrals were ported and
-       ``nr_ecp_deriv.c`` was not. The energy is unaffected, so a single
-       point is still correct.
-   * - MP2 or RI-MP2 gradients
-     - Refused, separately: they do not share code with the SCF gradient.
+   * - a nuclear gradient or a geometry optimisation
+     - Supported, for Hartree-Fock, Kohn-Sham, MP2, RI-MP2, RI-CCSD and
+       RI-CCSD(T): the gradient carries the potential's first derivative.
+   * - a Hessian
+     - Taken by central differences of the analytic gradient, with a
+       warning that says so. The potential's second derivatives are not
+       implemented, so every analytic Hessian declines.
    * - CASSCF, CASCI or ORMAS
      - Refused. The MCSCF path does not carry a potential yet and would run
        all-electron without saying so.

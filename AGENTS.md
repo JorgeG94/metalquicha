@@ -248,7 +248,21 @@ under libcint's own spelling, and sources under `backends/cenzontle/` `use` it
 directly. Those spellings are libfint's export names and are left alone; only our
 own names are `czt`. libfint's own test suite checks it against libcint value for
 value, so this repository does not build against libcint. ECP integrals exist
-only in libfint:
+only in libfint.
+
+**An ECP has an analytic gradient and no analytic Hessian.** Its first
+derivative enters every gradient through two routines in `mqc_czt_gradient`
+and nowhere else: `one_electron_deriv` with `DERIV_NUC` adds
+`<nabla mu|U|nu>` over every centre, and `nuclear_attraction_deriv_at` adds
+one atom's potential to that atom's `-Z/r`. A gradient that builds its
+core-Hamiltonian derivative from those two carries the potential with nothing
+further; one that calls `iprinv_deriv_at` directly does not, which is right
+only for a Hessian. Second derivatives are not in libfint, so every analytic
+Hessian is skipped when `mol%necpbas > 0` and the semi-numerical path
+differences the gradient instead; `ecp_refuses_derivatives` is the backstop
+inside each Hessian routine. MCSCF refuses a potential in the reader.
+
+The methods:
 
 - `HF` - restricted and unrestricted; direct, in-core, or density-fitted
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through

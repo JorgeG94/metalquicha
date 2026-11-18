@@ -1252,9 +1252,6 @@ contains
       !!
       !! Covers LDA, GGA, meta-GGA, hybrids of each, range-separated hybrids,
       !! and functionals carrying VV10 non-local correlation.
-      ! TODO(mqc): no `ecp_refuses_derivatives` guard, where `rhf_hessian` has
-      ! one, so a Kohn-Sham Hessian on a molecule with an effective core
-      ! potential returns wrong derivatives instead of refusing.
       use mqc_czt_xc_hessian, only: xc_hessian, vv10_hessian
       type(czt_molecule_t), intent(in), target :: mol
       integer, intent(in) :: atomic_numbers(:)

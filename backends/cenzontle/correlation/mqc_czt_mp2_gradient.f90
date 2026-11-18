@@ -28,14 +28,13 @@ module mqc_czt_mp2_gradient
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_gemm_threads, only: gemm_over_inner
    use mqc_czt_gradient, only: nuclear_repulsion_gradient, one_electron_deriv, &
-                               iprinv_deriv_at, xc_potential_gradient, &
+                               nuclear_attraction_deriv_at, xc_potential_gradient, &
                                fitted_reference_gradient, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_xc, only: xc_context_t, xc_kernel_apply
    use libcint_fortran, only: libcint_2e_ip1_sph_optimizer, libcint_2e_ip1_cart_optimizer, &
                               libcint_del_optimizer
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
-   use mqc_czt_ecp, only: ecp_refuses_derivatives
    implicit none
    private
 
@@ -157,8 +156,6 @@ contains
       real(dp), allocatable :: bounds(:, :)
       logical :: dh
       real(dp) :: kf, cscale
-
-      if (ecp_refuses_derivatives(mol%core_electrons, "MP2 gradient", error)) return
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -512,8 +509,7 @@ contains
          p0 = offsets(iatom) + 1
          p1 = offsets(iatom) + counts(iatom)
 
-         call iprinv_deriv_at(mol, iatom, vrinv)
-         vrinv = -mol%charges(iatom)*vrinv
+         call nuclear_attraction_deriv_at(mol, iatom, vrinv)
          if (counts(iatom) > 0) then
             vrinv(p0:p1, :, :) = vrinv(p0:p1, :, :) + h1(p0:p1, :, :)
          end if

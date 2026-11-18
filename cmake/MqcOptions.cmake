@@ -199,8 +199,11 @@ option(MQC_ENABLE_TERCO "Link to terco for a device-resident SCF (HF/DFT)" OFF)
 set(MQC_LIBFINT_REPOSITORY
     "https://github.com/JorgeG94/libfint.git"
     CACHE STRING "Where to fetch libfint from")
+# A commit rather than a release: the first-derivative ECP integrals are on
+# libfint's `feat/ecp-deriv` and in no tag yet. Becomes the release that carries
+# them once there is one.
 set(MQC_LIBFINT_TAG
-    "v0.7.0"
+    "0c870ee3fd4777f2128da859f94c9584ad5fa9ef"
     CACHE STRING "libfint revision to build against")
 
 set(MQC_CREST_REPOSITORY
