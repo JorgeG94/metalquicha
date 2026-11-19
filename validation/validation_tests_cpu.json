@@ -7962,6 +7962,72 @@
             "gradient_tolerance": 1e-07,
             "check_translation": true,
             "requires": "libxc"
+        },
+        {
+            "name": "MP2 over UHF OH cc-pvdz multiplicity 2 frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_oh_cc-pvdz_mp2_f0_m2.json",
+            "expected_energy": -75.544845082627,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 over UHF OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_oh_cc-pvdz_mp2_f1_m2.json",
+            "expected_energy": -75.542821964246,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 over UHF CH3 cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_ch3_cc-pvdz_mp2_f1_m2.json",
+            "expected_energy": -39.690405538191,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 over UHF O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_o2_cc-pvdz_mp2_f2_m3.json",
+            "expected_energy": -149.97247295603,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SCS-MP2 over UHF OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/scs-mp2/cpu_oh_cc-pvdz_scsmp2_f1_m2.json",
+            "expected_energy": -75.541279320512,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SOS-MP2 over UHF OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/sos-mp2/cpu_oh_cc-pvdz_sosmp2_f1_m2.json",
+            "expected_energy": -75.540507998645,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit OH cc-pvdz multiplicity 2 frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_oh_cc-pvdz_rimp2_f0_m2.json",
+            "expected_energy": -75.544839306223,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit CH3 cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_ch3_cc-pvdz_rimp2_f1_m2.json",
+            "expected_energy": -39.690372710832,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_o2_cc-pvdz_rimp2_f2_m3.json",
+            "expected_energy": -149.972597962165,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit, fitted reference OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_oh_cc-pvdz_rimp2_f1_m2_dfref.json",
+            "expected_energy": -75.543902446269,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit, fitted reference O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_o2_cc-pvdz_rimp2_f2_m3_dfref.json",
+            "expected_energy": -149.974251074308,
+            "type": "unfragmented"
         }
     ]
 }

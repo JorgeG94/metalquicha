@@ -4208,7 +4208,8 @@ def pyscf_ump2(atoms, basis, method, frozen, multiplicity, aux="", fitted_refere
     if not mf.converged:
         raise SystemExit(f"PySCF UHF did not converge for {basis}")
     if method == "ri-mp2":
-        pt = dfump2.DFUMP2(mf, frozen=frozen, auxbasis=auxbasis)
+        pt = dfump2.DFUMP2(mf, frozen=frozen)
+        pt.with_df = pt.with_df.__class__(mol, auxbasis=auxbasis)
         pt.kernel()
         ecorr = pt.e_corr
     else:

@@ -285,7 +285,9 @@ The methods:
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
-- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
+- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - restricted, or unrestricted as an
+  energy only (`run_czt_ump2`, `run_czt_uri_mp2`, exact or fitted reference;
+  frozen orbitals are counted per spin). Gradients and Hessians are RHF only.
   Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
   allowed), and a double hybrid's perturbative term, fitted when
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
