@@ -30,7 +30,8 @@ module test_mqc_czt_df_hessian
    use mqc_czt_hessian, only: df_rhf_hessian, rhf_hessian, response_controls_t
    use mqc_czt_df_hessian, only: df_metric_dropped, df_hessian_terms_t, &
                                  df_two_electron_derivatives, df_fit_to_mo, &
-                                 df_response_mo
+                                 df_response_mo, df_operator_t, df_operator_setup, &
+                                 df_potential_derivative, df_cross_second_derivative
    use mqc_czt_cphf, only: fitted_potential_general
    implicit none
    private
@@ -62,6 +63,18 @@ module test_mqc_czt_df_hessian
    !! Exact exchange kept by Hartree-Fock, by a typical hybrid, and by a pure
    !! functional.
    real(dp), parameter :: EXCHANGE_FRACTIONS(3) = [1.0_dp, 0.25_dp, 0.0_dp]
+   !! A four-point stencil's weights over `SHIFT` steps, divided by `12 STEP`.
+   real(dp), parameter :: SHIFT(4) = [2.0_dp, 1.0_dp, -1.0_dp, -2.0_dp]
+   real(dp), parameter :: WEIGHT(4) = [-1.0_dp, 8.0_dp, -8.0_dp, 1.0_dp]
+   !! The stencil against an analytic derivative of integrals alone: no SCF
+   !! stands between the two, so it is the stencil's own h^4 and nothing else.
+   real(dp), parameter :: TOL_STENCIL = 1.0e-8_dp
+   !! Relative, for a stencil of a trace over noise densities. The trace sums
+   !! `nao^2` elements each carrying the rounding of an inverse square root of
+   !! the metric, and the stencil divides that by its step: measured at 8e-9
+   !! with `cc-pvdz-rifit` and 5e-7 with the worse-conditioned
+   !! `def2-universal-jkfit`. A missing term is 1e-3 or more.
+   real(dp), parameter :: TOL_CROSS = 1.0e-6_dp
    !! `three_centre_deriv`'s selector for `(nabla mu nu|P)`
    integer, parameter :: DERIV_ORBITAL = 1
    !! and for `(mu nu|nabla P)`
@@ -83,7 +96,11 @@ contains
                   new_unittest("df_hessian_is_not_the_exact_one", differs_from_exact), &
                   new_unittest("df_hessian_metric_keeps_every_mode", metric_is_whole), &
                   new_unittest("df_hessian_terms_match_the_dense_form", matches_dense), &
-                  new_unittest("df_response_in_the_mo_basis", response_matches_general) &
+                  new_unittest("df_response_in_the_mo_basis", response_matches_general), &
+                  new_unittest("df_operator_derivative_of_any_density", &
+                               operator_derivative_any_density), &
+                  new_unittest("df_operator_second_derivative_of_two_densities", &
+                               cross_second_derivative) &
                   ]
    end subroutine collect_mqc_czt_df_hessian_tests
 
@@ -448,6 +465,211 @@ contains
          end do
       end do
    end subroutine dense_two_electron_derivatives
+
+   subroutine operators_at(geo, mol, aux, ops, err)
+      !! The two basis sets at `geo` and the fitted operator's derivative integrals
+      real(dp), intent(in) :: geo(:, :)
+      type(czt_molecule_t), intent(out) :: mol, aux
+      type(df_operator_t), intent(out) :: ops
+      type(error_t), intent(inout) :: err
+
+      call build_czt_molecule(NUMBERS, SYM, geo, "6-31g", mol, err)
+      if (err%has_error()) return
+      call build_czt_molecule(NUMBERS, SYM, geo, "cc-pvdz-rifit", aux, err)
+      if (err%has_error()) return
+      call df_operator_setup(mol, aux, ops, err)
+   end subroutine operators_at
+
+   subroutine fitted_potential_at(geo, dens, k_scale, g, err)
+      !! `(J - k K/2)[dens]` from the fit at `geo`, `dens` taken as given
+      real(dp), intent(in) :: geo(:, :)
+      real(dp), intent(in) :: dens(:, :)
+      real(dp), intent(in) :: k_scale
+      real(dp), intent(out) :: g(:, :)
+      type(error_t), intent(inout) :: err
+
+      type(czt_molecule_t) :: mol, aux
+      real(dp), allocatable :: v(:, :), metric(:, :), mih(:, :), b(:, :)
+
+      call build_czt_molecule(NUMBERS, SYM, geo, "6-31g", mol, err)
+      if (err%has_error()) return
+      call build_czt_molecule(NUMBERS, SYM, geo, "cc-pvdz-rifit", aux, err)
+      if (err%has_error()) return
+      call three_centre(mol, aux, v)
+      call two_centre(aux, metric)
+      call metric_inverse_sqrt(metric, mih, err)
+      if (err%has_error()) return
+      allocate (b(size(v, 1), size(v, 2)))
+      call pic_gemm(v, mih, b)
+      call fitted_potential_general(b, dens, g, k_scale=k_scale)
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine fitted_potential_at
+
+   subroutine symmetric_noise(n, a)
+      !! A symmetric matrix of order-one elements with no other structure
+      integer, intent(in) :: n
+      real(dp), allocatable, intent(out) :: a(:, :)
+
+      allocate (a(n, n))
+      call random_number(a)
+      a = a - 0.5_dp
+      a = a + transpose(a)
+   end subroutine symmetric_noise
+
+   subroutine operator_derivative_any_density(error)
+      !! `df_potential_derivative` against a stencil of the fitted operator itself
+      !!
+      !! The density is a fixed matrix of noise in the atomic basis: symmetric
+      !! and nothing else, not idempotent, not a projector, with no orbitals to
+      !! factor it through. The fitted `J - k K/2` of that same matrix is
+      !! rebuilt at displaced geometries and differenced. No SCF is involved on
+      !! either side, so this is the derivative of the integrals and the fit
+      !! and of nothing else, and it holds for any exchange fraction.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(df_operator_t) :: ops
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), h1(:, :, :, :), g(:, :), fd(:, :)
+      real(dp) :: geo(3, N_ATOMS), dev
+      integer :: nao, k, atom, comp, s
+
+      call operators_at(WATER, mol, aux, ops, err)
+      call check(error,.not. err%has_error(), "the operator must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      nao = mol%nao
+      call symmetric_noise(nao, dens)
+      allocate (h1(nao, nao, 3, N_ATOMS), g(nao, nao), fd(nao, nao))
+
+      do k = 1, size(EXCHANGE_FRACTIONS)
+         call df_potential_derivative(ops, dens, h1, k_scale=EXCHANGE_FRACTIONS(k))
+         dev = 0.0_dp
+         do atom = 1, N_ATOMS
+            do comp = 1, 3
+               fd = 0.0_dp
+               do s = 1, 4
+                  geo = WATER
+                  geo(comp, atom) = geo(comp, atom) + SHIFT(s)*STEP
+                  call fitted_potential_at(geo, dens, EXCHANGE_FRACTIONS(k), g, err)
+                  call check(error,.not. err%has_error(), "a displaced build failed")
+                  if (allocated(error)) return
+                  fd = fd + WEIGHT(s)*g
+               end do
+               fd = fd/(12.0_dp*STEP)
+               dev = max(dev, maxval(abs(fd - h1(:, :, comp, atom))))
+            end do
+         end do
+         write (*, "(a,f5.2,a,es10.2)") "    k = ", EXCHANGE_FRACTIONS(k), &
+            ", operator derivative - stencil: ", dev
+         call check(error, dev < TOL_STENCIL, &
+                    "the fitted operator's derivative is not the stencil's")
+         if (allocated(error)) return
+      end do
+      call ops%destroy()
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine operator_derivative_any_density
+
+   subroutine cross_second_derivative(error)
+      !! `df_cross_second_derivative` against a stencil of the first derivative
+      !!
+      !! `d/dy Tr[A dG[B]/dx]` with both densities held as fixed matrices: `A`
+      !! is symmetric noise and `B = 2 C C^T` for a fixed block of coefficients,
+      !! which is the shape the routine takes its second density in. The first
+      !! derivative is the routine the previous test holds to the operator, so
+      !! the two tests chain: operator, first derivative, second.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(df_operator_t) :: ops
+      type(error_t) :: err
+      real(dp), allocatable :: dens_a(:, :), dens_b(:, :), c_occ(:, :), h1(:, :, :, :)
+      real(dp), allocatable :: hess(:, :, :, :)
+      real(dp) :: geo(3, N_ATOMS), fd(N_COORD, N_COORD), analytic(N_COORD, N_COORD), dev
+      real(dp) :: worst
+      integer :: nao, k, atom, comp, s, y, ia, x
+
+      call operators_at(WATER, mol, aux, ops, err)
+      call check(error,.not. err%has_error(), "the operator must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      nao = mol%nao
+      call symmetric_noise(nao, dens_a)
+      allocate (c_occ(nao, N_OCC), dens_b(nao, nao), h1(nao, nao, 3, N_ATOMS))
+      call random_number(c_occ)
+      c_occ = c_occ - 0.5_dp
+      dens_b = 2.0_dp*matmul(c_occ, transpose(c_occ))
+
+      ! First the one case with an independent answer: `A = B`, where this is
+      ! twice the second derivative `df_two_electron_derivatives` returns.
+      block
+         type(df_hessian_terms_t) :: terms
+         allocate (hess(3, 3, N_ATOMS, N_ATOMS))
+         hess = 0.0_dp
+         call df_cross_second_derivative(ops, mol, aux, dens_b, c_occ, hess, err)
+         call df_two_electron_derivatives(mol, aux, dens_b, c_occ, terms, err)
+         call check(error,.not. err%has_error(), "both must run: "//err%get_full_trace())
+         if (allocated(error)) return
+         dev = maxval(abs(hess - 2.0_dp*terms%hess))
+         write (*, "(a,es10.2,a,es10.2)") "    A = B: cross - twice the one-density form: ", &
+            dev, " of ", maxval(abs(hess))
+         call check(error, dev < TOL_SAME*maxval(abs(hess)), &
+                    "with equal densities the cross form is not twice the one-density one")
+         if (allocated(error)) return
+         deallocate (hess)
+         call terms%destroy()
+      end block
+
+      worst = 0.0_dp
+      do k = 1, size(EXCHANGE_FRACTIONS)
+         allocate (hess(3, 3, N_ATOMS, N_ATOMS))
+         hess = 0.0_dp
+         call df_cross_second_derivative(ops, mol, aux, dens_a, c_occ, hess, err, &
+                                         k_scale=EXCHANGE_FRACTIONS(k))
+         call check(error,.not. err%has_error(), "it must run: "//err%get_full_trace())
+         if (allocated(error)) return
+         call to_matrix(hess, analytic)
+         deallocate (hess)
+
+         fd = 0.0_dp
+         do atom = 1, N_ATOMS
+            do comp = 1, 3
+               y = 3*(atom - 1) + comp
+               do s = 1, 4
+                  geo = WATER
+                  geo(comp, atom) = geo(comp, atom) + SHIFT(s)*STEP
+                  call ops%destroy()
+                  call mol%destroy()
+                  call aux%destroy()
+                  call operators_at(geo, mol, aux, ops, err)
+                  call check(error,.not. err%has_error(), "a displaced build failed")
+                  if (allocated(error)) return
+                  call df_potential_derivative(ops, dens_b, h1, k_scale=EXCHANGE_FRACTIONS(k))
+                  do ia = 1, N_ATOMS
+                     do x = 1, 3
+                        fd(3*(ia - 1) + x, y) = fd(3*(ia - 1) + x, y) &
+                                                + WEIGHT(s)*sum(dens_a*h1(:, :, x, ia))
+                     end do
+                  end do
+               end do
+            end do
+         end do
+         fd = fd/(12.0_dp*STEP)
+         dev = maxval(abs(fd - analytic))
+         write (*, "(a,f5.2,a,es10.2,a,es10.2)") "    k = ", EXCHANGE_FRACTIONS(k), &
+            ", cross second derivative - stencil: ", dev, " of ", maxval(abs(analytic))
+         worst = max(worst, dev/maxval(abs(analytic)))
+         call ops%destroy()
+         call mol%destroy()
+         call aux%destroy()
+         call operators_at(WATER, mol, aux, ops, err)
+      end do
+      call check(error, worst < TOL_CROSS, &
+                 "the two-density second derivative is not the stencil's")
+      call ops%destroy()
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine cross_second_derivative
 
    subroutine matches_dense(error)
       !! The routine the Hessian calls against the dense one it restates
