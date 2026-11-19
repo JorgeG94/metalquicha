@@ -494,11 +494,19 @@ Things to know before touching any of it:
 - **DIIS first, always.** A Newton step from an initial guess diverges. The
   handover is at `keywords.scf.soscf_start` on the commutator, defaulting to
   1e-2, and the iteration it happened at is reported.
-- **Refused, not approximated**: unrestricted (open-shell rotation space),
-  a continuum solvent (no surface-charge response in the Hessian), and a Fock
-  projector (forbidden rotations are not excluded from the parameter space).
-  Restricted Kohn-Sham *is* supported, through the same kernel the analytic
-  Hessian's coupled-perturbed solve uses.
+- **Refused, not approximated**: a continuum solvent (no surface-charge
+  response in the Hessian), and a Fock projector (forbidden rotations are not
+  excluded from the parameter space). Restricted Kohn-Sham *is* supported,
+  through the same kernel the analytic Hessian's coupled-perturbed solve uses.
+- **Unrestricted is `run_soscf_phase_uhf`**, over one vector of alpha's
+  rotations and then beta's. Its Hessian is `uhf_rotation_hessian_t` in
+  `mqc_czt_soscf`: twice `response_product_uhf`'s spin-blocked `(A+B)`, with
+  the gradient `2 F_ai` per spin, both fixed by finite differences in
+  `test_mqc_czt_soscf`. Direct builds only: a fitted or stored-integral
+  unrestricted SCF is refused. It searches the spin-symmetry-breaking
+  rotations, so a singlet run unrestricted can leave the restricted solution:
+  the stretched N2 below goes to -108.7504, 0.179 below the restricted
+  minimum. `keywords.scf.stability` is still closed-shell only.
 
 ### Geometric direct minimisation
 

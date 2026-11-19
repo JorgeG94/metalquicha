@@ -401,6 +401,9 @@ HAND_MAINTAINED = {
     "cpu/mqc/gdm/oh_cc-pvdz_uhf_gdm.json",
     "cpu/mqc/gdm/ch3_cc-pvdz_b3lyp_gdm.json",
     "cpu/mqc/gdm/o2_cc-pvdz_pbe_df_gdm.json",
+    "cpu/mqc/soscf/oh_cc-pvdz_uhf_second_order.json",
+    "cpu/mqc/soscf/ch3_cc-pvdz_b3lyp_second_order.json",
+    "cpu/mqc/soscf/n2_stretched_unrestricted_second_order.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -3777,6 +3780,31 @@ PRESERVED_TESTS = [
         "requires": "libxc",
         "type": "unfragmented",
         "reference_note": "the reference is the fitted UKS PBE triplet O2 case's, PySCF's. A triplet, so the two spins' rotation spaces differ in size, and fitted, so every trial's Fock matrices come from the fitted unrestricted build.",
+    },
+    {
+        "name": "UHF OH cc-pvdz converged by the second-order SCF (CPU)",
+        "input": "inputs/cpu/mqc/soscf/oh_cc-pvdz_uhf_second_order.json",
+        "expected_energy": -75.393846033475,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "the reference is the one UHF OH cc-pvdz is held to, PySCF's: the unrestricted Newton phase has to reach the minimum DIIS does. OH is also the case with an exact zero mode, the rotation between the degenerate pi orbitals of which one holds the unpaired electron, so the Hessian's lowest curvature here is zero to rounding and the one-sided saddle test must not read that as a saddle.",
+    },
+    {
+        "name": "UKS B3LYP CH3 cc-pvdz grid 3 converged by the second-order SCF (CPU)",
+        "input": "inputs/cpu/mqc/soscf/ch3_cc-pvdz_b3lyp_second_order.json",
+        "expected_energy": -39.838786859584,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is UKS B3LYP CH3 cc-pvdz grid 3's, PySCF's. Kohn-Sham with exact exchange: the Hessian-vector products carry the spin-polarised kernel and a fraction of each spin's exchange, and a wrong one of either still converges, slowly, so test_mqc_czt_soscf's finite differences are what fix them; this deck is the path from a deck.",
+    },
+    {
+        "name": "UHF N2 6-31G at 1.6 A, the second-order SCF leaves the restricted solution (CPU)",
+        "input": "inputs/cpu/mqc/soscf/n2_stretched_unrestricted_second_order.json",
+        "expected_energy": -108.750383884639,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "n2_stretched_second_order run unrestricted. The closed-shell Newton phase reaches the restricted minimum at -108.5718; the unrestricted one searches the spin-symmetry-breaking rotations too, finds that minimum is a saddle among them, and follows the negative curvature to the broken-symmetry solution 0.179 hartree lower, with <S^2> = 2.018. The reference is PySCF's UHF after repeated stability analysis and re-optimisation until it reports a stable solution. Unrestricted DIIS from the same guess never leaves the restricted saddle at -108.5516, because the rotation that breaks the symmetry has no gradient.",
     },
     {
         "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",

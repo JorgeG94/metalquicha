@@ -1026,7 +1026,7 @@ SCF Options
 - ``stability_tolerance``: Root-mean-square residual at which that analysis
   accepts its lowest eigenpair (default: 1e-6).
 - ``stability_maxiter``: Davidson iterations it may take (default: 100).
-- ``second_order``: converge the closed-shell SCF by trust-region Newton on the
+- ``second_order``: converge the SCF, restricted or unrestricted, by trust-region Newton on the
   orbital rotations once DIIS has brought it close (default: false).
   ``accelerator: "soscf"`` is the same request under the other keyword; either
   one turns it on and neither can turn the other off. See

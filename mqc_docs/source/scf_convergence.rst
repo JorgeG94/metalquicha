@@ -502,14 +502,39 @@ and where the answer has to be a minimum rather than merely a stationary point.
 mechanics -- semicanonicalisation, the Krylov solve, the trust-region
 backtracking -- and the full measurement table.
 
+An unrestricted reference
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An open shell takes the same Newton phase over both spins' rotations at once:
+the gradient is :math:`2 F_{ai}` in each spin, the Hessian twice the
+spin-blocked :math:`(A+B)`, and one Newton solve covers both because the
+Coulomb field couples them. Hartree-Fock and Kohn-Sham through a
+range-separated hybrid.
+
+The space it searches includes the rotations that break spin symmetry, which
+the closed-shell phase cannot reach. N\ :sub:`2` at 1.6 A in 6-31G is the
+example. Restricted, ``second_order`` reaches -108.5718 hartree, a minimum
+among closed-shell determinants. Run with ``model.unrestricted`` it finds that
+point is a saddle, follows the negative curvature out, and converges on the
+broken-symmetry solution at -108.7504 hartree with
+:math:`\langle S^2 \rangle = 2.018` -- 0.179 hartree lower, and the energy
+PySCF reaches by repeated stability analysis. Unrestricted DIIS from the same
+guess stays at -108.5516: the rotation that breaks the symmetry has no
+gradient, so nothing first-order ever takes it.
+
+An exact zero of the curvature is not a saddle. OH has one, the rotation
+between its two degenerate :math:`\pi` orbitals, and converges normally.
+
 What it will not do
 ^^^^^^^^^^^^^^^^^^^
 
 Each of these is refused by name, before the SCF runs, rather than approximated
 or silently demoted to DIIS.
 
-- **An unrestricted reference.** The rotations parametrised here are the
-  closed-shell ones; the open-shell space is larger and is not implemented.
+- **A density-fitted or stored-integral unrestricted reference.** An
+  unrestricted reference itself is supported -- see below -- but its
+  Hessian-vector products come from the direct build, and over a fitted SCF
+  they would be the curvature of a different energy.
 - **A continuum solvent.** The orbital-rotation Hessian carries no response of
   the surface charges, so the step would be taken on the curvature of a
   different energy than the one being minimised. See

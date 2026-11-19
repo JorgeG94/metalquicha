@@ -978,9 +978,10 @@ does not apply.
    real singlet (RHF to RHF) instability. Triplet (RHF to UHF) and complex
    instabilities are not looked for
 8. **SCF convergence aids**: there is no damping and no Fermi smearing (xTB has
-   its own electronic temperature). The second-order SCF is closed-shell
-   restricted only, and refuses a continuum solvent or a frozen-orbital
-   projector rather than approximating either. All the aids are CPU-path: the
+   its own electronic temperature). The second-order SCF runs restricted and
+   unrestricted (the latter over the direct build only), and refuses a
+   continuum solvent or a frozen-orbital projector rather than approximating
+   either. All the aids are CPU-path: the
    cuEST backend refuses every accelerator but ``diis``, and refuses
    ``level_shift``, by name. See :doc:`scf_convergence`
 9. **Embedded fragment methods** (FMO, EE-MBE, EFMO): energies only and closed

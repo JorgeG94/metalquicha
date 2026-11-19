@@ -38,11 +38,14 @@ module test_mqc_czt_soscf
    use mqc_scf_common, only: build_density_closed_shell
    use mqc_scf_convergence, only: scf_convergence_t, CONV_METRIC_COMMUTATOR
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, build_fock
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf, build_fock, &
+                          assemble_fock_uhf
+   use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_hessian, only: nuclear_response_t
    use mqc_czt_ov_hessian, only: ov_hessian_t, build_scf_ov_hessian
    use mqc_czt_soscf, only: soscf_gradient, soscf_semicanonicalize, &
-                            soscf_newton_step, HESSIAN_SCALE
+                            soscf_newton_step, HESSIAN_SCALE, &
+                            uhf_rotation_hessian_t, SPIN_HESSIAN_SCALE
    use mqc_orbital_rotation, only: rotation_matrix, MAX_ROTATION
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS, ACCEL_EDIIS
    use mqc_scf_types, only: scf_numerics_t
@@ -80,7 +83,13 @@ contains
                                test_accelerator_route), &
                   new_unittest("the_accelerator_name_needs_a_caller_that_can_run_it", &
                                test_accelerator_name), &
-                  new_unittest("soscf_refuses_a_continuum_solvent", test_refuses_pcm) &
+                  new_unittest("soscf_refuses_a_continuum_solvent", test_refuses_pcm), &
+                  new_unittest("unrestricted_soscf_derivatives_are_the_energy's", &
+                               test_unrestricted_derivatives), &
+                  new_unittest("unrestricted_soscf_lands_where_diis_lands", &
+                               test_unrestricted_same_energy), &
+                  new_unittest("unrestricted_soscf_refuses_stored_integrals", &
+                               test_unrestricted_refuses_in_core) &
                   ]
    end subroutine collect_mqc_czt_soscf_tests
 
@@ -187,6 +196,261 @@ contains
    end subroutine direction
 
    ! ---- the cases ---------------------------------------------------------
+
+   subroutine water_cation(mol, scf, err, second_order, in_core)
+      !! Water's cation in 6-31G through the unrestricted driver, tightly, and
+      !! on the commutator alone
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: second_order, in_core
+
+      type(scf_convergence_t) :: conv
+      real(dp) :: c(3, 3)
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+      if (err%has_error()) return
+      conv%metric = CONV_METRIC_COMMUTATOR
+      conv%tolerance = 1.0e-9_dp
+      call run_czt_uhf(mol, 9, 2, 300, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, &
+                       convergence=conv, second_order=second_order, in_core=in_core)
+   end subroutine water_cation
+
+   subroutine test_unrestricted_derivatives(error)
+      !! `2 F_ai` and twice the spin-blocked `(A+B)`, against the energy itself
+      !!
+      !! The two factors and the sign are fixed here the way the closed-shell
+      !! ones are above, by differencing the energy along a rotation of both
+      !! spins at once. The first derivative is taken at orbitals rotated away
+      !! from convergence, where it is not zero; the second at the converged
+      !! point, where `(A+B)` is the whole Hessian.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t), target :: mol
+      type(rhf_result_t), target :: scf
+      type(error_t) :: err
+      type(uhf_rotation_hessian_t) :: hessian
+      real(dp), allocatable, target :: bounds(:, :)
+      real(dp), allocatable :: h(:, :), no_eri(:, :, :, :)
+      real(dp), allocatable, target :: ca(:, :), cb(:, :)
+      real(dp), allocatable :: v(:), hv(:), g(:), fa(:, :), fb(:, :)
+      real(dp), allocatable :: ka(:, :), kb(:, :), ca0(:, :), cb0(:, :), fmo(:, :), half(:, :)
+      real(dp) :: e0, ep, em, numeric, analytic
+      integer :: n_ao, n_mo, na, nb, nva, nvb, n_rot_a, n_rot, i, a
+
+      call water_cation(mol, scf, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "the cation did not converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      n_ao = mol%nao
+      n_mo = size(scf%orbitals, 2)
+      na = scf%n_occupied
+      nb = scf%n_occupied_beta
+      nva = n_mo - na
+      nvb = n_mo - nb
+      n_rot_a = na*nva
+      n_rot = n_rot_a + nb*nvb
+      call mol%core_hamiltonian(h)
+      call schwarz_bounds(mol, bounds, err)
+      allocate (fa(n_ao, n_ao), fb(n_ao, n_ao), ka(n_mo, n_mo), kb(n_mo, n_mo))
+      allocate (v(n_rot), hv(n_rot), g(n_rot), fmo(n_mo, n_mo), half(n_ao, n_mo))
+
+      ! A fixed, structureless direction over both spins.
+      do i = 1, n_rot
+         v(i) = sin(1.7_dp*real(i, dp)) + 0.3_dp*cos(0.4_dp*real(i*i, dp))
+      end do
+      v = v/sqrt(sum(v**2))
+      call kappa_of(v(1:n_rot_a), na, ka)
+      call kappa_of(v(n_rot_a + 1:n_rot), nb, kb)
+
+      ! ---- the second derivative, at the converged orbitals ----------------
+      ca = scf%orbitals
+      cb = scf%orbitals_beta
+      call energy_of(ca, cb, 0.0_dp, e0)
+      call energy_of(ca, cb, STEP, ep)
+      call energy_of(ca, cb, -STEP, em)
+      if (allocated(error)) return
+      numeric = (ep - 2.0_dp*e0 + em)/STEP**2
+
+      hessian%mol => mol
+      hessian%bounds => bounds
+      hessian%c_a => ca
+      hessian%c_b => cb
+      hessian%n_occ_a = na
+      hessian%n_occ_b = nb
+      hessian%n_mo = n_mo
+      allocate (hessian%zero_h(n_ao, n_ao), hessian%gaps_a(nva, na), hessian%gaps_b(nvb, nb))
+      hessian%zero_h = 0.0_dp
+      do i = 1, na
+         do a = 1, nva
+            hessian%gaps_a(a, i) = scf%orbital_energies(na + a) - scf%orbital_energies(i)
+         end do
+      end do
+      do i = 1, nb
+         do a = 1, nvb
+            hessian%gaps_b(a, i) = scf%orbital_energies_beta(nb + a) &
+                                   - scf%orbital_energies_beta(i)
+         end do
+      end do
+      call hessian%apply(v, hv, err)
+      call check(error,.not. err%has_error(), "the product failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      analytic = dot_product(v, hv)
+      write (*, "(a,f14.8,a,f14.8)") "    v.H.v  numeric ", numeric, "  analytic ", analytic
+      call check(error, abs(numeric - analytic) < 1.0e-5_dp*max(1.0_dp, abs(analytic)), &
+                 "the unrestricted Hessian is not the energy's second derivative")
+      if (allocated(error)) return
+
+      ! ---- the first derivative, away from convergence ----------------------
+      ca0 = scf%orbitals
+      cb0 = scf%orbitals_beta
+      call moved(ca0, ka, 0.05_dp, ca)
+      call moved(cb0, kb, -0.03_dp, cb)
+      call energy_of(ca, cb, STEP, ep)
+      call energy_of(ca, cb, -STEP, em)
+      call energy_of(ca, cb, 0.0_dp, e0, fock_a=fa, fock_b=fb)
+      if (allocated(error)) return
+      numeric = (ep - em)/(2.0_dp*STEP)
+      call spin_gradient(fa, ca, na, g(1:n_rot_a))
+      call spin_gradient(fb, cb, nb, g(n_rot_a + 1:n_rot))
+      analytic = dot_product(g, v)
+      write (*, "(a,f14.8,a,f14.8)") "    g.v    numeric ", numeric, "  analytic ", analytic
+      call check(error, abs(analytic) > 1.0e-3_dp, &
+                 "the displaced point has no gradient along the test direction")
+      if (allocated(error)) return
+      call check(error, abs(numeric - analytic) < 1.0e-6_dp, &
+                 "the unrestricted gradient is not the energy's first derivative")
+      call mol%destroy()
+
+   contains
+
+      subroutine kappa_of(d, n_occ, kappa)
+         !! The antisymmetric generator of one spin's rectangle, virtual fastest
+         real(dp), intent(in) :: d(:)
+         integer, intent(in) :: n_occ
+         real(dp), intent(out) :: kappa(:, :)
+
+         integer :: p, q, n_vir
+
+         n_vir = n_mo - n_occ
+         kappa = 0.0_dp
+         do p = 1, n_occ
+            do q = 1, n_vir
+               kappa(n_occ + q, p) = d(q + (p - 1)*n_vir)
+               kappa(p, n_occ + q) = -kappa(n_occ + q, p)
+            end do
+         end do
+      end subroutine kappa_of
+
+      subroutine moved(coeff, kappa, scale, coeff_new)
+         !! `coeff exp(scale kappa)`
+         real(dp), intent(in) :: coeff(:, :), kappa(:, :), scale
+         real(dp), allocatable, intent(inout) :: coeff_new(:, :)
+
+         real(dp), allocatable :: rotation(:, :), work(:, :)
+
+         call rotation_matrix(scale*kappa, rotation)
+         allocate (work(size(coeff, 1), size(coeff, 2)))
+         call pic_gemm(coeff, rotation, work, beta=0.0_dp)
+         coeff_new = work
+      end subroutine moved
+
+      subroutine energy_of(coeff_a, coeff_b, scale, energy, fock_a, fock_b)
+         !! The electronic energy with both spins rotated by `scale` along `v`
+         real(dp), intent(in) :: coeff_a(:, :), coeff_b(:, :), scale
+         real(dp), intent(out) :: energy
+         real(dp), intent(out), optional :: fock_a(:, :), fock_b(:, :)
+
+         real(dp), allocatable :: ta(:, :), tb(:, :), da(:, :), db(:, :)
+         real(dp), allocatable :: wa(:, :), wb(:, :)
+
+         call moved(coeff_a, ka, scale, ta)
+         call moved(coeff_b, kb, scale, tb)
+         da = matmul(ta(:, 1:na), transpose(ta(:, 1:na)))
+         db = matmul(tb(:, 1:nb), transpose(tb(:, 1:nb)))
+         allocate (wa(n_ao, n_ao), wb(n_ao, n_ao))
+         call assemble_fock_uhf(mol, h, da, db, no_eri, bounds, fock_a=wa, fock_b=wb, &
+                                e_elec=energy, error=err)
+         call check(error,.not. err%has_error(), "a Fock build failed: "//err%get_full_trace())
+         if (present(fock_a)) fock_a = wa
+         if (present(fock_b)) fock_b = wb
+      end subroutine energy_of
+
+      subroutine spin_gradient(fock_ao, coeff, n_occ, gradient)
+         !! `2 F_ai` in the frame of `coeff`, virtual fastest
+         real(dp), intent(in) :: fock_ao(:, :), coeff(:, :)
+         integer, intent(in) :: n_occ
+         real(dp), intent(out) :: gradient(:)
+
+         integer :: p, q, n_vir
+
+         n_vir = n_mo - n_occ
+         call pic_gemm(fock_ao, coeff, half, beta=0.0_dp)
+         call pic_gemm(coeff, half, fmo, transa="T", beta=0.0_dp)
+         do p = 1, n_occ
+            do q = 1, n_vir
+               gradient(q + (p - 1)*n_vir) = SPIN_HESSIAN_SCALE*fmo(n_occ + q, p)
+            end do
+         end do
+      end subroutine spin_gradient
+   end subroutine test_unrestricted_derivatives
+
+   subroutine test_unrestricted_same_energy(error)
+      !! The cation by Newton steps: the minimum DIIS reaches
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol_diis, mol_newton
+      type(rhf_result_t) :: diis, newton
+      type(error_t) :: err
+
+      call water_cation(mol_diis, diis, err)
+      call check(error,.not. err%has_error() .and. diis%converged, "DIIS did not converge")
+      if (allocated(error)) return
+      call water_cation(mol_newton, newton, err, second_order=.true.)
+      call check(error,.not. err%has_error(), "the run failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, newton%converged, "the second-order phase did not converge")
+      if (allocated(error)) return
+      call check(error, newton%second_order_started_at > 0, "the Newton phase never took over")
+      if (allocated(error)) return
+      call check(error, newton%second_order_iterations > 0, "the Newton phase took no step")
+      if (allocated(error)) return
+      call check(error,.not. newton%second_order_stalled, "the Newton phase reported a stall")
+      if (allocated(error)) return
+      write (*, "(a,i0,a,i0,a,es10.2,a,es10.2)") "    ", newton%second_order_iterations, &
+         " Newton steps, ", newton%second_order_hessian_products, &
+         " products; E - E(diis) = ", newton%energy - diis%energy, &
+         "; curvature ", newton%second_order_curvature
+      call check(error, abs(newton%energy - diis%energy) < 1.0e-10_dp, &
+                 "the second-order phase and DIIS reached different energies")
+      if (allocated(error)) return
+      call check(error, newton%second_order_curvature > 0.0_dp, &
+                 "a minimum was reported with negative curvature")
+      if (allocated(error)) return
+      call check(error, maxval(abs(newton%orbital_energies_beta &
+                                   - diis%orbital_energies_beta)) < 1.0e-6_dp, &
+                 "the beta orbital energies are not the canonical ones")
+      call mol_diis%destroy()
+      call mol_newton%destroy()
+   end subroutine test_unrestricted_same_energy
+
+   subroutine test_unrestricted_refuses_in_core(error)
+      !! The Hessian products are direct, so a stored-integral SCF is refused
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+
+      call water_cation(mol, scf, err, second_order=.true., in_core=.true.)
+      call check(error, err%has_error(), &
+                 "second order over stored integrals must be refused unrestricted")
+      call mol%destroy()
+   end subroutine test_unrestricted_refuses_in_core
 
    subroutine test_gradient_by_finite_difference(error)
       !! `dot(g, v)` against `dE/dt` along `C exp(t v)`

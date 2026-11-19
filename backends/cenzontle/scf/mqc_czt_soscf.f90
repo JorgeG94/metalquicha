@@ -76,6 +76,9 @@ module mqc_czt_soscf
    use pic_io, only: to_char
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_ov_hessian, only: ov_hessian_t
+   use mqc_czt_integrals, only: czt_molecule_t
+   use mqc_czt_xc, only: xc_context_t
+   use mqc_czt_response_product, only: response_product_uhf
    use mqc_orbital_rotation, only: rotation_hessian_t, subspace_newton_step
    implicit none
    private
@@ -83,12 +86,19 @@ module mqc_czt_soscf
    public :: soscf_gradient
    public :: soscf_semicanonicalize
    public :: soscf_newton_step
+   public :: uhf_rotation_hessian_t
+   public :: soscf_newton_step_uhf
+   public :: SPIN_HESSIAN_SCALE
    public :: HESSIAN_SCALE
    public :: DEFAULT_SOSCF_SUBSPACE
 
    real(dp), parameter :: HESSIAN_SCALE = 4.0_dp
       !! `(A+B)` to the second derivative of the energy. The module header
       !! derives it; it multiplies the gradient by the same amount.
+   real(dp), parameter :: SPIN_HESSIAN_SCALE = 2.0_dp
+      !! The same factor for one spin of an unrestricted reference: the
+      !! gradient is `2 F_ai` per spin and the Hessian twice the spin-blocked
+      !! `(A+B)`. The closed shell's four is this two, twice over.
    integer, parameter :: DEFAULT_SOSCF_SUBSPACE = 20
       !! Krylov vectors the Newton equations are solved in, at most.
       !!
@@ -115,7 +125,141 @@ module mqc_czt_soscf
       procedure :: apply => scaled_ov_apply
    end type scaled_ov_hessian_t
 
+   type, extends(rotation_hessian_t) :: uhf_rotation_hessian_t
+      !! The unrestricted orbital-rotation Hessian, in true energy units
+      !!
+      !! `SPIN_HESSIAN_SCALE` times the spin-blocked `(A+B)` of
+      !! `response_product_uhf`, over one vector: alpha's virtual-occupied
+      !! rectangle and then beta's, virtual fastest in each. Valid at
+      !! semicanonical orbitals of each spin, for the reason the module header
+      !! gives. Everything is viewed, not owned; the targets must outlive it.
+      type(czt_molecule_t), pointer :: mol => null()
+      type(xc_context_t), pointer :: xc => null()
+         !! Null for Hartree-Fock
+      real(dp), pointer :: c_a(:, :) => null(), c_b(:, :) => null()
+         !! (n_ao, n_mo) per spin, occupied first
+      real(dp), pointer :: d_a(:, :) => null(), d_b(:, :) => null()
+         !! The reference spin densities, read only under a functional
+      real(dp), pointer :: bounds(:, :) => null()   !! From `schwarz_bounds`
+      real(dp), allocatable :: gaps_a(:, :), gaps_b(:, :)
+         !! `eps_a - eps_i` per spin, `(n_vir_s, n_occ_s)`
+      real(dp), allocatable :: zero_h(:, :)
+      integer :: n_occ_a = 0, n_occ_b = 0, n_mo = 0
+   contains
+      procedure :: apply => uhf_rotation_apply
+      procedure :: diagonal => uhf_rotation_diagonal
+   end type uhf_rotation_hessian_t
+
 contains
+
+   function uhf_rotation_diagonal(this) result(diag)
+      !! The orbital-energy part of the Hessian's diagonal, alpha then beta
+      class(uhf_rotation_hessian_t), intent(in) :: this
+      real(dp), allocatable :: diag(:)
+
+      diag = SPIN_HESSIAN_SCALE*[reshape(this%gaps_a, [size(this%gaps_a)]), &
+                                 reshape(this%gaps_b, [size(this%gaps_b)])]
+   end function uhf_rotation_diagonal
+
+   subroutine uhf_rotation_apply(this, x, hx, error)
+      !! `H x`: one unrestricted two-electron build
+      class(uhf_rotation_hessian_t), intent(inout) :: this
+      real(dp), intent(in) :: x(:)
+      real(dp), intent(out) :: hx(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: ua(:, :, :), ub(:, :, :), ha(:, :, :), hb(:, :, :)
+      integer :: na, nb, nva, nvb
+      logical :: kohn_sham
+
+      hx = 0.0_dp
+      if (error%has_error()) return
+      nva = this%n_mo - this%n_occ_a
+      nvb = this%n_mo - this%n_occ_b
+      na = nva*this%n_occ_a
+      nb = nvb*this%n_occ_b
+      allocate (ua(nva, this%n_occ_a, 1), ub(nvb, this%n_occ_b, 1))
+      allocate (ha(nva, this%n_occ_a, 1), hb(nvb, this%n_occ_b, 1))
+      ua(:, :, 1) = reshape(x(1:na), [nva, this%n_occ_a])
+      ub(:, :, 1) = reshape(x(na + 1:na + nb), [nvb, this%n_occ_b])
+      ha = 0.0_dp
+      hb = 0.0_dp
+
+      kohn_sham = .false.
+      if (associated(this%xc)) kohn_sham = this%xc%active
+      if (kohn_sham) then
+         if (this%xc%range_separated) then
+            call response_product_uhf(this%mol, this%c_a(:, 1:this%n_occ_a), &
+                                      this%c_a(:, this%n_occ_a + 1:this%n_mo), &
+                                      this%c_b(:, 1:this%n_occ_b), &
+                                      this%c_b(:, this%n_occ_b + 1:this%n_mo), &
+                                      this%gaps_a, this%gaps_b, this%zero_h, this%bounds, &
+                                      ua, ub, .false., ha, hb, error, &
+                                      k_scale=this%xc%exx_fraction, xc=this%xc, &
+                                      ref_a=this%d_a, ref_b=this%d_b, &
+                                      rs_k_lr=this%xc%rs_k_lr, rs_omega=this%xc%rs_omega)
+         else
+            call response_product_uhf(this%mol, this%c_a(:, 1:this%n_occ_a), &
+                                      this%c_a(:, this%n_occ_a + 1:this%n_mo), &
+                                      this%c_b(:, 1:this%n_occ_b), &
+                                      this%c_b(:, this%n_occ_b + 1:this%n_mo), &
+                                      this%gaps_a, this%gaps_b, this%zero_h, this%bounds, &
+                                      ua, ub, .false., ha, hb, error, &
+                                      k_scale=this%xc%exx_fraction, xc=this%xc, &
+                                      ref_a=this%d_a, ref_b=this%d_b)
+         end if
+      else
+         call response_product_uhf(this%mol, this%c_a(:, 1:this%n_occ_a), &
+                                   this%c_a(:, this%n_occ_a + 1:this%n_mo), &
+                                   this%c_b(:, 1:this%n_occ_b), &
+                                   this%c_b(:, this%n_occ_b + 1:this%n_mo), &
+                                   this%gaps_a, this%gaps_b, this%zero_h, this%bounds, &
+                                   ua, ub, .false., ha, hb, error)
+      end if
+      if (error%has_error()) then
+         call error%add_context("applying the unrestricted electronic Hessian for "// &
+                                "the second-order SCF step")
+         return
+      end if
+      hx(1:na) = SPIN_HESSIAN_SCALE*reshape(ha(:, :, 1), [na])
+      hx(na + 1:na + nb) = SPIN_HESSIAN_SCALE*reshape(hb(:, :, 1), [nb])
+   end subroutine uhf_rotation_apply
+
+   subroutine soscf_newton_step_uhf(hessian, gradient, escape, step, lowest, predicted, &
+                                    products, error, max_subspace)
+      !! The trust-region Newton step for an unrestricted reference
+      !!
+      !! `soscf_newton_step` over the two-spin vector. The step comes back
+      !! flat, alpha's rectangle then beta's, for the caller to lay out as one
+      !! `kappa` per spin.
+      type(uhf_rotation_hessian_t), intent(inout) :: hessian
+      real(dp), intent(in) :: gradient(:)
+         !! `2 F_ai` per spin, alpha then beta, virtual fastest
+      real(dp), intent(in) :: escape
+      real(dp), allocatable, intent(out) :: step(:)
+      real(dp), intent(out) :: lowest
+         !! An **upper bound** on the smallest curvature
+      real(dp), intent(out) :: predicted
+      integer, intent(out) :: products
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: max_subspace
+
+      integer :: nmax
+
+      lowest = 0.0_dp
+      predicted = 0.0_dp
+      products = 0
+      allocate (step(size(gradient)))
+      step = 0.0_dp
+      if (error%has_error()) return
+      if (size(gradient) < 1) return
+      nmax = DEFAULT_SOSCF_SUBSPACE
+      if (present(max_subspace)) nmax = max_subspace
+      deallocate (step)
+      call subspace_newton_step(hessian, hessian%diagonal(), gradient, escape, step, &
+                                lowest, predicted, products, error, max_subspace=nmax, &
+                                tolerance=SUBSPACE_TOLERANCE)
+   end subroutine soscf_newton_step_uhf
 
    subroutine soscf_gradient(fock_mo, n_occ, gradient)
       !! `dE/d kappa_ai = 4 F_ai`, flattened virtual fastest

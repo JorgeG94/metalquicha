@@ -1434,12 +1434,13 @@ contains
       ! Refused before the SCF, for the reason the stability refusals above are:
       ! a deck should not discover at the end of a converged calculation that
       ! the thing it asked for was never possible.
-      if (use_second_order .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "the second-order SCF "// &
-                               "parametrises the closed-shell orbital rotations, and "// &
-                               "this reference is unrestricted; the open-shell "// &
-                               "rotation space is larger and is not implemented. "// &
-                               "Converge this one by DIIS.")
+      if (use_second_order .and. unrestricted .and. settings%density_fitting) then
+         call result%error%set(ERROR_VALIDATION, "the second-order SCF over an "// &
+                               "unrestricted reference takes its Hessian-vector "// &
+                               "products from the direct build, which over a fitted "// &
+                               "SCF would be the curvature of a different energy. "// &
+                               "Run without keywords.scf.density_fitting, or "// &
+                               "converge this one by DIIS or keywords.scf.gdm.")
          result%has_error = .true.
          call mol%destroy()
          return
@@ -1770,7 +1771,9 @@ contains
                              incremental_fock=settings%incremental_fock, &
                              grad_tol=settings%grad_tol, convergence=scf_conv, aux=aux, &
                              gdm=use_gdm, gdm_start=settings%gdm_start, &
-                             gdm_max_rotation=settings%gdm_max_rotation)
+                             gdm_max_rotation=settings%gdm_max_rotation, &
+                             second_order=use_second_order, &
+                             soscf_start=settings%soscf_start)
          else if (keep_fit) then
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
@@ -1815,7 +1818,9 @@ contains
                           incremental_fock=settings%incremental_fock, &
                           grad_tol=settings%grad_tol, convergence=scf_conv, &
                           gdm=use_gdm, gdm_start=settings%gdm_start, &
-                          gdm_max_rotation=settings%gdm_max_rotation)
+                          gdm_max_rotation=settings%gdm_max_rotation, &
+                          second_order=use_second_order, &
+                          soscf_start=settings%soscf_start)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration. The threshold is memory alone: the stored
