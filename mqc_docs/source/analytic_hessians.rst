@@ -393,6 +393,14 @@ operator. A four-point stencil of that gradient agrees to 1e-8. Over an exact
 reference the same comparison stops near 1e-5, because there the gradient's
 fitted Z-vector operator is an approximation to the exact one.
 
+It is also the faster of the two. On a cyclic water trimer in cc-pVDZ with
+cc-pVDZ-RIFIT and a frozen core, on four threads, the whole calculation takes
+5.2 s over a fitted reference against 29 s over an exact one. Every stage that
+called a four-index Fock build -- the two coupled-perturbed solves, the Fock
+responses of the rotations, and the operator derivatives inside the perturbed
+ladder -- drops by a factor of four to twenty, and what is left is the
+correlation ladder itself.
+
 **Conventional MP2 and double hybrids over a fitted reference.** Still
 excluded. The conventional block contracts four-index integrals throughout,
 and a double hybrid's kernel terms have not been checked against a fitted
