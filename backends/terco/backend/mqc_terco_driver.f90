@@ -54,7 +54,7 @@ module mqc_terco_driver
                                trc_functional_list, trc_nmo, trc_mo_occupations, trc_message, &
                                trc_select_device, trc_set_gdm, &
                                trc_set_rccsd, trc_set_rccsd_convergence, trc_run_rccsd, &
-                               trc_rccsd_energy, &
+                               trc_rccsd_energy, trc_rccsd_energy_parts, &
                                TRC_ABI_MAJOR, TRC_ABI_MINOR, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
                                TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD, TRC_GUESS_GIVEN, &
@@ -121,6 +121,8 @@ module mqc_terco_driver
          !! RI-MP2 correlation energy of the coupled-cluster run's first
          !! iteration, zero unless the session ran RI-CCSD.
       real(dp) :: e_ccsd = 0.0_dp      !! RI-CCSD correlation energy, hartree
+      real(dp) :: e_cc_singles = 0.0_dp   !! Its `t1 t1` part
+      real(dp) :: e_cc_doubles = 0.0_dp   !! and what `t2` alone gives
       real(dp) :: e_triples = 0.0_dp   !! The (T) correction, zero unless it ran
       real(dp) :: t1_diagnostic = 0.0_dp
       integer :: cc_iterations = 0
@@ -180,13 +182,16 @@ contains
       result%scf_status = merge(SCF_CONVERGED, SCF_NOT_CONVERGED, state%converged)
       result%energy%scf = state%energy_scf
       if (settings%run_cc) then
-         ! terco reports one RI-CCSD correlation energy and does not split it
-         ! into the singles and doubles parts the CPU backend does, so it goes
-         ! in `doubles` whole and `singles` stays zero. The total is the same.
-         result%energy%cc%singles = 0.0_dp
-         result%energy%cc%doubles = state%e_ccsd
+         ! The two parts of the energy functional, split as the CPU backend
+         ! splits them, so the record reads the same from either.
+         result%energy%cc%singles = state%e_cc_singles
+         result%energy%cc%doubles = state%e_cc_doubles
          result%energy%cc%triples = state%e_triples
          write (line, "(a,f18.12)") "    E(RI-MP2 corr)   ", state%e_cc_mp2
+         call logger%info(trim(line))
+         write (line, "(a,f18.12)") "    E(singles)       ", state%e_cc_singles
+         call logger%info(trim(line))
+         write (line, "(a,f18.12)") "    E(doubles)       ", state%e_cc_doubles
          call logger%info(trim(line))
          write (line, "(a,f18.12,a,i0,a)") "    E(RI-CCSD corr)  ", state%e_ccsd, &
             "   (", state%cc_iterations, " iterations)"
@@ -1004,7 +1009,7 @@ contains
       type(terco_state_t), intent(inout) :: state
       type(error_t), intent(inout) :: error
 
-      real(c_double) :: e_mp2_c, e_ccsd_c, e_t_c, t1_c, total_c
+      real(c_double) :: e_mp2_c, e_ccsd_c, e_t_c, t1_c, total_c, e_singles_c, e_doubles_c
       integer(c_int) :: rc, read_rc, iterations_c, converged_c, has_triples_c
       character(len=64) :: number
 
@@ -1028,6 +1033,23 @@ contains
                         ". Raise keywords.cc.max_iter.")
          return
       end if
+      read_rc = trc_rccsd_energy_parts(session%handle, e_singles_c, e_doubles_c)
+      if (read_rc /= TRC_OK) then
+         call set_terco_error(session, read_rc, "the parts of the RI-CCSD energy could "// &
+                              "not be read", error)
+         return
+      end if
+      ! Stored separately and summed again by `energy_t`, so they have to be
+      ! the same number terco calls the CCSD energy.
+      if (abs(real(e_singles_c + e_doubles_c - e_ccsd_c, dp)) &
+          > 1.0e-12_dp*max(1.0_dp, abs(real(e_ccsd_c, dp)))) then
+         call error%set(ERROR_VALIDATION, "terco's singles and doubles parts do not add "// &
+                        "up to the RI-CCSD correlation energy it reported. That is a "// &
+                        "bug in the adapter, not in the deck.")
+         return
+      end if
+      state%e_cc_singles = real(e_singles_c, dp)
+      state%e_cc_doubles = real(e_doubles_c, dp)
       state%e_cc_mp2 = real(e_mp2_c, dp)
       state%e_ccsd = real(e_ccsd_c, dp)
       state%e_triples = real(e_t_c, dp)

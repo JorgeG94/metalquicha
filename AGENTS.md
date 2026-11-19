@@ -336,10 +336,10 @@ The methods:
 
 **The terco backend runs RI-CCSD and RI-CCSD(T) too** (`trc_run_rccsd`,
 through `run_coupled_cluster` in `mqc_terco_driver`): closed shell over
-Hartree-Fock, energies only. terco reports one CCSD correlation energy and
-does not split it, so it goes into `energy%cc%doubles` whole with `singles`
-zero; the total is unaffected and a reader comparing the two backends'
-components has to know. Conventional coupled cluster on that backend is
+Hartree-Fock, energies only. The correlation energy comes back as the CPU
+backend's two parts, `t1 t1` and `t2`, through `trc_rccsd_energy_parts`
+(terco ABI 1.29), so `energy%cc` reads the same from either backend.
+Conventional coupled cluster on that backend is
 refused by name. **The terco bridge is not built in CI or in a default
 build**: compile it with `-DMQC_ENABLE_TERCO=ON -DTERCO_ROOT=<checkout>`; with
 `-DTERCO_LIBRARY` pointed at any file the library target compiles without a
