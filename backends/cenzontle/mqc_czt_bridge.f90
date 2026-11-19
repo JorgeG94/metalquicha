@@ -2467,7 +2467,8 @@ contains
                             "the response equations assume none were"
       end if
       df_analytic = .false.
-      if (do_hessian .and. settings%density_fitting .and. .not. kohn_sham .and. full_rank &
+      if (do_hessian .and. settings%density_fitting .and. full_rank &
+          .and. .not. (kohn_sham .and. (xc%range_separated .or. xc%pt2_fraction /= 0.0_dp)) &
           .and. .not. unrestricted .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. mol%necpbas == 0 &
           .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
@@ -2509,12 +2510,14 @@ contains
             declined = .false.
             call logger%info("  computing the analytic Hessian")
             call hess_clock%start()
-            if (kohn_sham) then
-               call ks_hessian(mol, scf%density, scf%orbitals, &
-                               scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
-                               hess4, error, max_iter=settings%hessian_response_max_iter, &
-                               tol=settings%hessian_response_tol, &
-                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+            if (df_analytic .and. kohn_sham) then
+               call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
+                                   scf%orbital_energies, scf%n_occupied, hess4, error, &
+                                   controls=response_controls_t( &
+                                   max_iter=settings%hessian_response_max_iter, &
+                                   tol=settings%hessian_response_tol, &
+                                   batch=settings%hessian_response_batch), &
+                                   dipole_derivatives=ddip, xc=xc)
             else if (df_analytic) then
                call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
                                    scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -2523,6 +2526,12 @@ contains
                                    tol=settings%hessian_response_tol, &
                                    batch=settings%hessian_response_batch), &
                                    dipole_derivatives=ddip)
+            else if (kohn_sham) then
+               call ks_hessian(mol, scf%density, scf%orbitals, &
+                               scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
+                               hess4, error, max_iter=settings%hessian_response_max_iter, &
+                               tol=settings%hessian_response_tol, &
+                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
             else
                call rhf_hessian(mol, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -3454,8 +3463,10 @@ contains
          reason = "effective core potential, whose second derivatives are not implemented"
       else if (settings%run_cc) then
          reason = "coupled cluster"
-      else if (settings%density_fitting .and. (kohn_sham .or. settings%run_mp2)) then
-         reason = "density-fitted reference"
+      else if (settings%density_fitting .and. kohn_sham .and. xc%range_separated) then
+         reason = "range-separated functional over a density-fitted reference"
+      else if (settings%density_fitting .and. (double_hybrid .or. settings%run_mp2)) then
+         reason = "correlation over a density-fitted reference"
       else if (settings%pcm%enabled) then
          reason = "continuum solvation"
       else if (n_caps > 0) then

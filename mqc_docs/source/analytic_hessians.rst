@@ -72,13 +72,19 @@ What is covered
    * - Unrestricted (UKS)
      - **no**
      - any open shell
-   * - Density-fitted Hartree-Fock
+   * - Density-fitted Hartree-Fock and Kohn-Sham
      - yes
-     - ``hf`` with ``keywords.scf.density_fitting``, provided the auxiliary
-       metric inverts without dropping a mode
-   * - Density-fitted Kohn-Sham, MP2 or double hybrid
+     - ``hf`` or ``dft`` with ``keywords.scf.density_fitting``, provided the
+       auxiliary metric inverts without dropping a mode. LDA, GGA, meta-GGA,
+       global hybrids and VV10
+   * - Density-fitted range-separated hybrid
      - **no**
-     - ``keywords.scf.density_fitting`` with anything but ``hf``
+     - ``wb97x``, ``cam-b3lyp`` and the like with
+       ``keywords.scf.density_fitting``
+   * - MP2 or a double hybrid over a density-fitted reference
+     - **no**
+     - ``keywords.scf.density_fitting`` with ``mp2``, ``ri-mp2`` or a double
+       hybrid
 
 Anything not covered falls back to the semi-numerical path rather than
 failing, so a deck that asks for a Hessian gets one either way. The difference
@@ -329,7 +335,7 @@ carries the auxiliary basis's response only to first order is still symmetric
 and still translationally invariant, and on water is 1e-4 of an element away
 from the derivative of the fitted gradient.
 
-Hartree-Fock takes this route. Nothing in it is built per perturbation at the
+Hartree-Fock and Kohn-Sham take this route. Nothing in it is built per perturbation at the
 size of the three-index integrals: the exchange-type contractions go through
 the occupied orbitals, each atom touches only the derivative integrals whose
 differentiated function it owns, and the product term is accumulated a batch
@@ -345,9 +351,29 @@ It declines when the auxiliary metric drops a mode, because
 :math:`-M^{-1} M^x M^{-1}` is the derivative of the inverse only when none is
 dropped.
 
-**Kohn-Sham, MP2 and RI-MP2 over a fitted reference.** Still excluded. The
-correlation block assumes an exact reference operator, and the fitted
-response operator here carries no exchange-correlation kernel.
+Under a functional the fitted terms carry its exact-exchange fraction -- none
+for a pure functional, the mixing fraction for a hybrid -- and the
+exchange-correlation second derivatives, potential derivative and kernel go
+exactly where the unfitted Kohn-Sham Hessian puts them; none of the three
+knows how Coulomb and exchange were built. The kernel is the one part of the
+response operator that needs the trial densities on the grid, so they are
+built for it alone. That grid work is most of a Kohn-Sham Hessian either way:
+on the same water tetramer a fitted PBE Hessian takes 25 s against 36 s
+unfitted, of which the kernel inside the response solve is 16 s and 22 s.
+
+The reference is PySCF's fitted Kohn-Sham Hessian with
+``auxbasis_response = 2`` and agrees to 1e-8 or better, on bases with d
+functions too -- tighter than the unfitted comparison, where PySCF's own
+same-atom blocks limit it to 1e-5. VV10 has no such reference, because PySCF
+carries the non-local grid's response and this code holds that grid fixed; the
+fitted Hessian sits the same 4.7e-4 from PySCF's as the unfitted one does, and
+the two offsets agree to 2e-8.
+
+**Range-separated hybrids over a fitted reference.** Declined. The long-range
+exchange has its own attenuated fit in the SCF and no derivative of it here.
+
+**MP2 and double hybrids over a fitted reference.** Still excluded. The
+correlation block assumes an exact reference operator.
 
 **Double hybrids that are not GGA-based, all-electron and unscreened.** Read
 this entry against the table above rather than instead of it: a meta-GGA, a

@@ -284,11 +284,17 @@ The methods:
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
   SCS/SOS, a fitted reference and a frozen-core double hybrid take the
   semi-numerical path. See `mqc_docs/source/analytic_hessians.rst`.
-  **Density-fitted Hartree-Fock has its own analytic Hessian**
-  (`df_rhf_hessian`, with the fitted terms in `mqc_czt_df_hessian`): it
-  differentiates the fitted energy as written, shares `rhf_hessian`'s
-  one-electron terms and assembly, and reaches the response solver through one
-  optional argument, `fit`. The reference is PySCF's
+  **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic
+  Hessian** (`df_rhf_hessian`, which takes an optional `xc`, with the fitted
+  terms in `mqc_czt_df_hessian`): it differentiates the fitted energy as
+  written, shares `rhf_hessian`'s one-electron terms and assembly, and reaches
+  the response solver through one optional argument, `fit`. Under a functional
+  the fitted terms take its exchange fraction and the kernel is added by
+  `response_xc_kernel`, the same routine the unfitted operator calls; a
+  range-separated hybrid is declined. **Do not check a Kohn-Sham Hessian
+  against differenced gradients**: the gradient carries the grid's response
+  and the Hessian holds the grid fixed, which is 4e-4 on water and looks like
+  a bug. The reference is PySCF's
   `df.hessian` with `auxbasis_response = 2`; at 1 the fit's second-order
   response is missing and it is 1e-4 off. The fitted terms are written
   twice: `df_two_electron_derivatives` in the module is what runs, and

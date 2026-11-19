@@ -49,6 +49,7 @@ module mqc_czt_response_product
    private
 
    public :: response_mean_field
+   public :: response_xc_kernel
    public :: response_product
    public :: response_mean_field_uhf
    public :: response_product_uhf
@@ -267,44 +268,9 @@ contains
       ! Leaving it out does not fail; it converges to the wrong orbital
       ! response. One grid pass serves the whole batch.
       if (present(xc) .and. .not. anti) then
-         if (use_cache) then
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache, &
-                                      triplet=spin_flip)
-         else
-            call xc_kernel_apply_many(xc, mol, reference, dens, g, error, &
-                                      triplet=spin_flip)
-         end if
+         call response_xc_kernel(xc, mol, reference, dens, g, error, cache=cache, &
+                                 triplet=spin_flip)
          if (error%has_error()) return
-         ! The non-local kernel, once for the batch rather than per set:
-         ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
-         ! trial density or a dozen. It accumulates, hence the zeroed buffer.
-         !
-         ! Not for a triplet. VV10 is a functional of the total density alone,
-         ! and a triplet transition density changes that by nothing, so its
-         ! response is identically zero rather than merely small; applying it
-         ! would contract a spin density against a kernel with no spin channel.
-         !
-         ! TODO(mqc): this one is not cached, so on a VV10 reference the kernel
-         ! cache removes the smaller of the two grid costs an application pays
-         ! and leaves the larger. What is reusable is the reference half --
-         ! `vv10_nlc`'s U..C pair sums and the omega and kappa derivatives,
-         ! plus `rho`, `sigma` and `rho_grad` -- thirteen more grid-sized
-         ! arrays over the NLC grid, which is not the grid `xc_kernel_cache_t`
-         ! is filled over, so it would be a second cache with its own budget
-         ! rather than four more components on that one. The trial half,
-         ! `vv10_hessian_kernel`, cannot be cached at all: it is
-         ! O(npts^2 n_set) and moves with the densities. So the saving is one
-         ! pair sweep out of two at `n_set = 1` and one out of `n_set + 1` as
-         ! the batch widens -- most to a coupled-perturbed solve, least to the
-         ! Hessian's wide batches.
-         if ((xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) .and. .not. spin_flip) then
-            allocate (vnl(n_ao, n_ao, n_set))
-            vnl = 0.0_dp
-            call vv10_kernel_apply(xc, mol, reference, dens, vnl, error)
-            if (error%has_error()) return
-            g = g + vnl
-            deallocate (vnl)
-         end if
       end if
 
       do p = 1, n_set
@@ -313,6 +279,72 @@ contains
 
       deallocate (scale)
    end subroutine response_mean_field
+
+   subroutine response_xc_kernel(xc, mol, reference, dens, g, error, cache, triplet)
+      !! Add the exchange-correlation kernel's response to `g`, semilocal and VV10
+      !!
+      !! What a Kohn-Sham response operator carries beyond Coulomb and exact
+      !! exchange, for a batch of symmetric trial densities. Accumulates, so
+      !! `g` holds whatever two-electron build came first -- four-index or
+      !! fitted. A cache that is absent or unfilled is ignored.
+      type(xc_context_t), intent(inout) :: xc
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: reference(:, :)   !! The density the kernel is evaluated at
+      real(dp), intent(in) :: dens(:, :, :)     !! (n_ao, n_ao, n_set)
+      real(dp), intent(inout) :: g(:, :, :)
+      type(error_t), intent(inout) :: error
+      type(xc_kernel_cache_t), intent(in), optional :: cache
+      logical, intent(in), optional :: triplet
+         !! A triplet response: the spin kernel, and no VV10. False when absent.
+
+      real(dp), allocatable :: vnl(:, :, :)
+      logical :: use_cache, spin_flip
+
+      if (error%has_error()) return
+      use_cache = .false.
+      if (present(cache)) use_cache = cache%filled
+      spin_flip = .false.
+      if (present(triplet)) spin_flip = triplet
+
+      if (use_cache) then
+         call xc_kernel_apply_many(xc, mol, reference, dens, g, error, cache=cache, &
+                                   triplet=spin_flip)
+      else
+         call xc_kernel_apply_many(xc, mol, reference, dens, g, error, &
+                                   triplet=spin_flip)
+      end if
+      if (error%has_error()) return
+      ! The non-local kernel, once for the batch rather than per set:
+      ! `vv10_kernel_apply`'s pair sweep is O(npts^2) whether it carries one
+      ! trial density or a dozen. It accumulates, hence the zeroed buffer.
+      !
+      ! Not for a triplet. VV10 is a functional of the total density alone,
+      ! and a triplet transition density changes that by nothing, so its
+      ! response is identically zero rather than merely small; applying it
+      ! would contract a spin density against a kernel with no spin channel.
+      !
+      ! TODO(mqc): this one is not cached, so on a VV10 reference the kernel
+      ! cache removes the smaller of the two grid costs an application pays
+      ! and leaves the larger. What is reusable is the reference half --
+      ! `vv10_nlc`'s U..C pair sums and the omega and kappa derivatives,
+      ! plus `rho`, `sigma` and `rho_grad` -- thirteen more grid-sized
+      ! arrays over the NLC grid, which is not the grid `xc_kernel_cache_t`
+      ! is filled over, so it would be a second cache with its own budget
+      ! rather than four more components on that one. The trial half,
+      ! `vv10_hessian_kernel`, cannot be cached at all: it is
+      ! O(npts^2 n_set) and moves with the densities. So the saving is one
+      ! pair sweep out of two at `n_set = 1` and one out of `n_set + 1` as
+      ! the batch widens -- most to a coupled-perturbed solve, least to the
+      ! Hessian's wide batches.
+      if ((xc%nlc_b /= 0.0_dp .or. xc%nlc_c /= 0.0_dp) .and. .not. spin_flip) then
+         allocate (vnl(size(g, 1), size(g, 2), size(g, 3)))
+         vnl = 0.0_dp
+         call vv10_kernel_apply(xc, mol, reference, dens, vnl, error)
+         if (error%has_error()) return
+         g = g + vnl
+         deallocate (vnl)
+      end if
+   end subroutine response_xc_kernel
 
    pure function j_fraction(triplet) result(jf)
       !! One for the ordinary response, zero for a triplet

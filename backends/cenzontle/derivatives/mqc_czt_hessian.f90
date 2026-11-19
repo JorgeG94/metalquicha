@@ -30,7 +30,7 @@ module mqc_czt_hessian
    use mqc_czt_xc_hessian, only: xc_potential_deriv, vv10_potential_deriv
    use mqc_czt_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use mqc_czt_response, only: response_operator_t, solve_response
-   use mqc_czt_response_product, only: response_mean_field
+   use mqc_czt_response_product, only: response_mean_field, response_xc_kernel
    use mqc_czt_cphf, only: fitted_potential_general
    use mqc_czt_df_hessian, only: df_hessian_terms_t, df_two_electron_derivatives, &
                                  df_fit_to_mo, df_response_mo
@@ -540,7 +540,7 @@ contains
 
       if (error%has_error()) return
       if (associated(this%fit_mo)) then
-         call fitted_nuclear_apply(this, vector, image)
+         call fitted_nuclear_apply(this, vector, image, error)
          return
       end if
 
@@ -623,18 +623,21 @@ contains
       deallocate (mo1, half, dens, g, work, gmo)
    end subroutine nuclear_apply
 
-   subroutine fitted_nuclear_apply(this, vector, image)
-      !! `nuclear_apply` for a fitted reference, in the molecular basis throughout
+   subroutine fitted_nuclear_apply(this, vector, image, error)
+      !! `nuclear_apply` for a fitted reference
       !!
-      !! Same image, without the trial densities or the back-transformation:
+      !! Same image. Coulomb and exchange stay in the molecular basis:
       !! `df_response_mo` takes the vector as it is and returns the block this
-      !! divides by the gaps.
+      !! divides by the gaps. Only a Kohn-Sham reference's kernel needs the
+      !! trial densities, and they are built for it alone.
       class(nuclear_response_t), intent(inout) :: this
       real(dp), intent(in) :: vector(:)
       real(dp), intent(out) :: image(:)
+      type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: mo1(:, :, :), gmo(:, :, :)
-      integer :: i, a, p
+      real(dp), allocatable :: dens(:, :, :), gxc(:, :, :), half(:, :), back(:, :)
+      integer :: n_ao, i, a, p
 
       if (.not. any(vector /= 0.0_dp)) then
          image = 0.0_dp
@@ -644,6 +647,26 @@ contains
                 gmo(this%n_mo, this%n_occ, this%n_pert))
       mo1 = reshape(vector, [this%n_mo, this%n_occ, this%n_pert])
       call df_response_mo(this%fit_mo, mo1, gmo, k_scale=this%k_scale)
+      if (associated(this%xc)) then
+         n_ao = size(this%orbitals, 1)
+         allocate (dens(n_ao, n_ao, this%n_pert), gxc(n_ao, n_ao, this%n_pert), &
+                   half(n_ao, this%n_occ), back(this%n_mo, this%n_occ))
+         do p = 1, this%n_pert
+            call pic_gemm(this%orbitals, mo1(:, :, p), half, alpha=2.0_dp, beta=0.0_dp)
+            call pic_gemm(half, this%c_occ, dens(:, :, p), transb="T")
+            dens(:, :, p) = dens(:, :, p) + transpose(dens(:, :, p))
+         end do
+         gxc = 0.0_dp
+         call response_xc_kernel(this%xc, this%mol, this%reference, dens, gxc, error, &
+                                 cache=this%kernel_cache)
+         if (error%has_error()) return
+         do p = 1, this%n_pert
+            call pic_gemm(gxc(:, :, p), this%c_occ, half)
+            call pic_gemm(this%orbitals, half, back, transa="T")
+            gmo(:, :, p) = gmo(:, :, p) + back
+         end do
+         deallocate (dens, gxc, half, back)
+      end if
       do p = 1, this%n_pert
          do i = 1, this%n_occ
             gmo(1:this%n_occ, i, p) = 0.0_dp
@@ -1225,6 +1248,14 @@ contains
       if (present(fit)) then
          allocate (g1mo(size(orbitals, 2), n_occ, 3*natm))
          call df_response_mo(fit%b_mo, reshape(mo1, shape(g1mo)), g1mo, k_scale=k_scale)
+         ! The kernel is the one part of a fitted Kohn-Sham mean field that
+         ! does need the densities; it goes in through `g1all`, alone.
+         if (present(xc)) then
+            call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
+                                  xc=xc, reference=reference, batch=width, &
+                                  kernel_only=.true.)
+            if (error%has_error()) return
+         end if
       else
          call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
                                xc=xc, reference=reference, k_scale=k_scale, &
@@ -1346,15 +1377,23 @@ contains
    end subroutine rhf_hessian
 
    subroutine df_rhf_hessian(mol, aux, density, orbitals, energies, n_occ, hess, error, &
-                             controls, dipole_derivatives)
-      !! The analytic Hessian of a density-fitted restricted Hartree-Fock energy
+                             controls, dipole_derivatives, xc)
+      !! The analytic Hessian of a density-fitted closed-shell SCF energy
       !!
       !! `rhf_hessian` with every two-electron term taken from the fit: the
       !! second-derivative integrals, the Fock derivative on the right of the
       !! coupled-perturbed equations, and the operator on their left. The
       !! nuclear repulsion, the one-electron terms and the assembly are shared.
       !!
+      !! With `xc` it is the Kohn-Sham Hessian: exact exchange at the
+      !! functional's fraction in every fitted term, and the
+      !! exchange-correlation second derivatives, potential derivative and
+      !! kernel exactly where `ks_hessian` puts them. A range-separated
+      !! functional is refused: its long-range exchange has no fitted
+      !! derivative here.
+      !!
       !! Returned as `(3, 3, n_atoms, n_atoms)`.
+      use mqc_czt_xc_hessian, only: xc_hessian, vv10_hessian
       type(czt_molecule_t), intent(in), target :: mol
       type(czt_molecule_t), intent(in) :: aux   !! The basis the reference was fitted in
       real(dp), intent(in) :: density(:, :)     !! Closed shell, carrying its factor of two
@@ -1367,15 +1406,28 @@ contains
          !! The solve's limits; the program defaults when absent.
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! `d mu_a / dR_(X,b)`, (3, 3*natm), for infrared intensities
+      type(xc_context_t), intent(inout), optional :: xc
+         !! The functional of a Kohn-Sham reference; Hartree-Fock when absent.
 
       type(response_controls_t) :: ctl
       type(df_hessian_terms_t) :: fit
       real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
       type(timing_report_t) :: clk
+      real(dp) :: kf
 
       if (error%has_error()) return
       if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
       if (present(controls)) ctl = controls
+      kf = 1.0_dp
+      if (present(xc)) then
+         if (xc%range_separated) then
+            call error%set(ERROR_VALIDATION, "a range-separated functional has no "// &
+                           "fitted analytic Hessian: its long-range exchange has no "// &
+                           "fitted derivative.")
+            return
+         end if
+         kf = xc%exx_fraction
+      end if
 
       call clk%start()
       call energy_weighted_density(orbitals, energies, n_occ, weighted)
@@ -1384,16 +1436,29 @@ contains
       call clk%lap(STAGE_NUCLEAR)
 
       call clk%begin("fitted two-electron derivatives")
-      call df_two_electron_derivatives(mol, aux, density, orbitals(:, 1:n_occ), fit, error)
+      call df_two_electron_derivatives(mol, aux, density, orbitals(:, 1:n_occ), fit, error, &
+                                       k_scale=kf)
       call clk%lap()
       if (error%has_error()) return
       call df_fit_to_mo(fit, orbitals)
 
       call partial_hessian(mol, density, weighted, part, error, clk=clk, &
                            two_electron=.false.)
-      call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
-                            max_iter=ctl%max_iter, tol=ctl%tol, batch=ctl%batch, &
-                            dipole_derivatives=dipole_derivatives, clk=clk, fit=fit)
+      if (error%has_error()) return
+      if (present(xc)) then
+         call xc_hessian(xc, mol, density, part, error)
+         call vv10_hessian(xc, mol, density, part, error)
+         if (error%has_error()) return
+         call clk%lap(STAGE_XC_SECOND)
+         call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
+                               xc=xc, reference=density, k_scale=kf, &
+                               max_iter=ctl%max_iter, tol=ctl%tol, batch=ctl%batch, &
+                               dipole_derivatives=dipole_derivatives, clk=clk, fit=fit)
+      else
+         call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
+                               max_iter=ctl%max_iter, tol=ctl%tol, batch=ctl%batch, &
+                               dipole_derivatives=dipole_derivatives, clk=clk, fit=fit)
+      end if
       if (error%has_error()) return
 
       hess = hess + part + fit%hess + resp
@@ -1912,7 +1977,7 @@ contains
    end subroutine solve_zvector_batch
 
    subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, &
-                               k_scale, rs_k_lr, rs_omega, batch)
+                               k_scale, rs_k_lr, rs_omega, batch, kernel_only)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands it
@@ -1939,8 +2004,13 @@ contains
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
       integer, intent(in), optional :: batch
          !! Most densities per pass; `DEFAULT_RESPONSE_BATCH` when absent.
+      logical, intent(in), optional :: kernel_only
+         !! Return the exchange-correlation kernel's part alone, with no Coulomb
+         !! or exchange: what a fitted reference, which builds those two
+         !! elsewhere, still needs from here. Needs `xc`. False when absent.
 
       integer :: max_batch
+      logical :: only_kernel
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
       integer :: nao, natm, n_pert, first, last, wide, p, q, ia, a
       integer :: n_chunks, per_chunk
@@ -1955,6 +2025,14 @@ contains
          call error%set(ERROR_VALIDATION, "the relaxed mean field was given an "// &
                         "exchange-correlation context without the reference density its "// &
                         "kernel is evaluated at, or the reverse; it needs both or neither")
+         return
+      end if
+
+      only_kernel = .false.
+      if (present(kernel_only)) only_kernel = kernel_only
+      if (only_kernel .and. .not. present(xc)) then
+         call error%set(ERROR_VALIDATION, "the relaxed mean field was asked for the "// &
+                        "exchange-correlation kernel alone and given no functional")
          return
       end if
 
@@ -1993,11 +2071,18 @@ contains
          ! The same two-electron build and the same kernel the response
          ! operator applies, for the reason `k_scale` above gives -- literally
          ! the same routine, so the two cannot drift apart again.
-         call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
-                                  bounds=bounds, k_scale=k_scale, &
-                                  xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
-                                  rs_omega=rs_omega, cache=kernel_cache, &
-                                  density_screen=.true.)
+         if (only_kernel) then
+            allocate (out(nao, nao, wide))
+            out = 0.0_dp
+            call response_xc_kernel(xc, mol, reference, chunk, out, error, &
+                                    cache=kernel_cache)
+         else
+            call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
+                                     bounds=bounds, k_scale=k_scale, &
+                                     xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
+                                     rs_omega=rs_omega, cache=kernel_cache, &
+                                     density_screen=.true.)
+         end if
          if (error%has_error()) return
          g1(:, :, first:last) = out
          deallocate (chunk, out)

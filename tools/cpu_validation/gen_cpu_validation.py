@@ -2601,7 +2601,7 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL, aux="")
     """
     from pyscf import dft, gto, scf
     from pyscf.hessian import rhf as _rhf_hess, rks as _rks_hess  # noqa: F401
-    from pyscf.df.hessian import rhf as _df_rhf_hess  # noqa: F401
+    from pyscf.df.hessian import rhf as _df_rhf_hess, rks as _df_rks_hess  # noqa: F401
 
     mol = gto.Mole()
     mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
@@ -3141,15 +3141,29 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
 #: Two auxiliary families, a basis with d functions and one without, and H2S for
 #: a second-row atom, whose fitting set reaches higher angular momentum than
 #: any first-row one.
+#:
+#: Then Kohn-Sham over the same fit, one functional from each rung the fitted
+#: route treats differently: a pure one has no fitted exchange at all, a hybrid
+#: scales it, and a meta-GGA's kernel carries the kinetic-energy density. A
+#: basis with d functions is included on purpose. Unfitted, PySCF's Kohn-Sham
+#: Hessian is 1e-5 off on those (`HESSIAN_DFT_D_TOLERANCE`); fitted, it agrees
+#: to 1e-9, so these are the tighter check on the d-function assembly.
 HESSIAN_DF_CASES = [
-    ("water", "sto-3g", "cc-pvtz-jkfit"),
-    ("water", "cc-pvdz", "cc-pvtz-jkfit"),
-    ("nh3", "def2-svp", "def2-universal-jkfit"),
-    ("h2s", "def2-svp", "def2-universal-jkfit"),
+    ("water", "sto-3g", "cc-pvtz-jkfit", ""),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit", ""),
+    ("nh3", "def2-svp", "def2-universal-jkfit", ""),
+    ("h2s", "def2-svp", "def2-universal-jkfit", ""),
+    ("water", "sto-3g", "cc-pvtz-jkfit", "svwn"),
+    ("water", "sto-3g", "cc-pvtz-jkfit", "tpss"),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit", "pbe"),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit", "b3lyp"),
+    ("nh3", "def2-svp", "def2-universal-jkfit", "pbe0"),
+    ("h2s", "def2-svp", "def2-universal-jkfit", "pbe"),
 ]
 
-#: Measured agreement is 4e-9 or better on all four; the bound leaves the room
-#: the unfitted Hessians' does.
+#: Measured agreement is 4e-9 or better on the Hartree-Fock four and 1e-8 or
+#: better on the Kohn-Sham six; the bound leaves the room the unfitted
+#: Hessians' does.
 HESSIAN_DF_TOLERANCE = 1.0e-7
 
 HESSIAN_RI_MP2_CASES = [
@@ -4021,26 +4035,37 @@ def df_hessian_entries(written, dry_run):
     cases into an existing manifest without regenerating the rest.
     """
     entries = []
-    for name, basis, aux in HESSIAN_DF_CASES:
+    for name, basis, aux, functional in HESSIAN_DF_CASES:
         mol = MOLECULES[name]
-        energy, hessian, nao = pyscf_hessian(mol.atoms, basis, aux=aux)
-        deck = deck_for(f"{CPU_MQC}/hessian",
-                        f"cpu_{name}_{normalize_basis_name(basis)}_df_hess")
+        energy, hessian, nao = pyscf_hessian(mol.atoms, basis, functional=functional,
+                                             aux=aux)
+        tag = normalize_basis_name(basis)
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian", f"cpu_{name}_{tag}_df_hess")
         written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not dry_run:
-            d = deck_json(xyz_for(mol), basis, aux=aux, method="hf")
+            d = deck_json(xyz_for(mol), basis, aux=aux,
+                          method="dft" if functional else "hf")
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
             d["driver"] = "Hessian"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
-        entries.append({
-            "name": f"RHF Hessian {mol.label} {basis} density fitted with {aux} (CPU)",
+        theory = functional.upper() if functional else "RHF"
+        entry = {
+            "name": f"{theory} Hessian {mol.label} {basis} density fitted with {aux} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
             "hessian_tolerance": HESSIAN_DF_TOLERANCE,
             "type": "unfragmented",
-        })
+        }
+        if functional:
+            entry["requires"] = "libxc"
+        entries.append(entry)
         norm = math.sqrt(sum(c*c for row in hessian for c in row))
-        print(f"{mol.label:6s} {basis:12s} DF-RHF   hess |H|={norm:.10f} "
+        print(f"{mol.label:6s} {basis:12s} DF-{theory:6s} hess |H|={norm:.10f} "
               f"nao={nao:4d} E={energy:.12f}", flush=True)
     return entries
 

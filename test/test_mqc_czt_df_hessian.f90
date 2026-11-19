@@ -59,6 +59,9 @@ module test_mqc_czt_df_hessian
    !! On the SCF's commutator, so the density and not only the energy is
    !! converged.
    real(dp), parameter :: SCF_GRAD_TOL = 1.0e-10_dp
+   !! Exact exchange kept by Hartree-Fock, by a typical hybrid, and by a pure
+   !! functional.
+   real(dp), parameter :: EXCHANGE_FRACTIONS(3) = [1.0_dp, 0.25_dp, 0.0_dp]
    !! `three_centre_deriv`'s selector for `(nabla mu nu|P)`
    integer, parameter :: DERIV_ORBITAL = 1
    !! and for `(mu nu|nabla P)`
@@ -461,30 +464,40 @@ contains
       type(rhf_result_t) :: scf
       type(error_t) :: err
       type(df_hessian_terms_t) :: lean, dense
+      integer :: k
 
       call converge(WATER, "cc-pvdz", "cc-pvdz-rifit", mol, aux, scf, err)
       call check(error,.not. err%has_error(), "the SCF must converge: "//err%get_full_trace())
       if (allocated(error)) return
-      call df_two_electron_derivatives(mol, aux, scf%density, scf%orbitals(:, 1:N_OCC), &
-                                       lean, err)
-      call dense_two_electron_derivatives(mol, aux, scf%density, &
-                                          scf%orbitals(:, 1:N_OCC), dense, err)
-      call check(error,.not. err%has_error(), "both must run: "//err%get_full_trace())
-      if (allocated(error)) return
+      ! Hartree-Fock, a hybrid's fraction, and a pure functional's none: the
+      ! exchange terms enter the two forms through different intermediates, so
+      ! a fraction applied to one and not the other shows at 0.25 and a term
+      ! that ignores it shows at zero.
+      do k = 1, size(EXCHANGE_FRACTIONS)
+         call df_two_electron_derivatives(mol, aux, scf%density, scf%orbitals(:, 1:N_OCC), &
+                                          lean, err, k_scale=EXCHANGE_FRACTIONS(k))
+         call dense_two_electron_derivatives(mol, aux, scf%density, &
+                                             scf%orbitals(:, 1:N_OCC), dense, err, &
+                                             k_scale=EXCHANGE_FRACTIONS(k))
+         call check(error,.not. err%has_error(), "both must run: "//err%get_full_trace())
+         if (allocated(error)) return
 
-      write (*, "(a,3es10.2)") "    lean - dense, max |b|, |h1|, |hess|: ", &
-         maxval(abs(lean%b - dense%b)), maxval(abs(lean%h1 - dense%h1)), &
-         maxval(abs(lean%hess - dense%hess))
-      call check(error, maxval(abs(lean%b - dense%b)) < TOL_SAME, &
-                 "the fitted tensor differs between the two forms")
-      if (allocated(error)) return
-      call check(error, maxval(abs(lean%h1 - dense%h1)) < TOL_SAME, &
-                 "the Fock derivative differs between the two forms")
-      if (allocated(error)) return
-      call check(error, maxval(abs(lean%hess - dense%hess)) < TOL_SAME, &
-                 "the fixed-density second derivative differs between the two forms")
-      call lean%destroy()
-      call dense%destroy()
+         write (*, "(a,f5.2,a,3es10.2)") "    k = ", EXCHANGE_FRACTIONS(k), &
+            ", lean - dense, max |b|, |h1|, |hess|: ", &
+            maxval(abs(lean%b - dense%b)), maxval(abs(lean%h1 - dense%h1)), &
+            maxval(abs(lean%hess - dense%hess))
+         call check(error, maxval(abs(lean%b - dense%b)) < TOL_SAME, &
+                    "the fitted tensor differs between the two forms")
+         if (allocated(error)) return
+         call check(error, maxval(abs(lean%h1 - dense%h1)) < TOL_SAME, &
+                    "the Fock derivative differs between the two forms")
+         if (allocated(error)) return
+         call check(error, maxval(abs(lean%hess - dense%hess)) < TOL_SAME, &
+                    "the fixed-density second derivative differs between the two forms")
+         if (allocated(error)) return
+         call lean%destroy()
+         call dense%destroy()
+      end do
       call mol%destroy()
       call aux%destroy()
    end subroutine matches_dense
@@ -507,7 +520,7 @@ contains
       real(dp), allocatable :: mo1(:, :, :), gmo(:, :, :), dens(:, :), g(:, :)
       real(dp), allocatable :: half(:, :), ref(:, :)
       real(dp) :: dev
-      integer :: n_ao, n_mo, m
+      integer :: n_ao, n_mo, m, k
 
       call converge(WATER, "6-31g", "cc-pvtz-jkfit", mol, aux, scf, err)
       call check(error,.not. err%has_error(), "the SCF must converge: "//err%get_full_trace())
@@ -524,16 +537,17 @@ contains
                 g(n_ao, n_ao), half(n_ao, N_OCC), ref(n_mo, N_OCC))
       call random_number(mo1)
       mo1 = mo1 - 0.5_dp
-      call df_response_mo(terms%b_mo, mo1, gmo)
-
       dev = 0.0_dp
-      do m = 1, N_VEC
-         half = 2.0_dp*matmul(scf%orbitals, mo1(:, :, m))
-         dens = matmul(half, transpose(scf%orbitals(:, 1:N_OCC)))
-         dens = dens + transpose(dens)
-         call fitted_potential_general(terms%b, dens, g)
-         ref = matmul(transpose(scf%orbitals), matmul(g, scf%orbitals(:, 1:N_OCC)))
-         dev = max(dev, maxval(abs(gmo(:, :, m) - ref)))
+      do k = 1, size(EXCHANGE_FRACTIONS)
+         call df_response_mo(terms%b_mo, mo1, gmo, k_scale=EXCHANGE_FRACTIONS(k))
+         do m = 1, N_VEC
+            half = 2.0_dp*matmul(scf%orbitals, mo1(:, :, m))
+            dens = matmul(half, transpose(scf%orbitals(:, 1:N_OCC)))
+            dens = dens + transpose(dens)
+            call fitted_potential_general(terms%b, dens, g, k_scale=EXCHANGE_FRACTIONS(k))
+            ref = matmul(transpose(scf%orbitals), matmul(g, scf%orbitals(:, 1:N_OCC)))
+            dev = max(dev, maxval(abs(gmo(:, :, m) - ref)))
+         end do
       end do
       write (*, "(a,es10.2)") "    MO response - general density: ", dev
       call check(error, dev < TOL_SAME, "the MO-basis response differs from the general build")
