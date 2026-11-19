@@ -487,9 +487,9 @@ step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
 - **It is a minimiser, not a saddle escape.** On the stretched N2 below it
   lands on DIIS's saddle, and `gdm/n2_stretched_gdm` pins that on purpose.
 - Refused by name: with `second_order`, unrestricted, COSX (the energy is not
-  variational, so the Fock matrix is not its gradient), PCM, a Fock projector,
-  cuEST, and terco -- which has GDM of its own that the bridge does not
-  forward to yet (`TODO(mqc)` in `mqc_terco_driver`).
+  variational, so the Fock matrix is not its gradient), PCM, a Fock projector
+  and cuEST. On the terco backend the request is forwarded to terco's own GDM
+  (`trc_set_gdm`), which also takes an unrestricted reference.
 
 **A real case where DIIS is not enough**, worth keeping in mind as the thing
 these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the

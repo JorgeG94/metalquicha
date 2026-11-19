@@ -52,7 +52,7 @@ module mqc_terco_driver
                                trc_set_charge, trc_set_unrestricted, trc_set_level_shift, &
                                trc_set_pcm_radii, trc_abi_version, trc_functional_info, &
                                trc_functional_list, trc_nmo, trc_mo_occupations, trc_message, &
-                               trc_select_device, &
+                               trc_select_device, trc_set_gdm, &
                                TRC_ABI_MAJOR, TRC_ABI_MINOR, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
                                TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD, TRC_GUESS_GIVEN, &
@@ -376,6 +376,13 @@ contains
       ! path, not the converged state.
       if (rc == TRC_OK) rc = trc_set_level_shift(session%handle, &
                                                  real(settings%level_shift, c_double))
+      ! terco's own geometric direct minimisation, with this program's two
+      ! thresholds, whose defaults are terco's. It runs restricted and
+      ! unrestricted alike there, which the CPU backend's does not.
+      if (rc == TRC_OK .and. asks_for_gdm(settings)) then
+         rc = trc_set_gdm(session%handle, 1_c_int, real(settings%gdm_start, c_double), &
+                          real(settings%gdm_max_rotation, c_double))
+      end if
       if (rc /= TRC_OK) then
          call set_terco_error(session, rc, "a setting was refused", error)
          return
@@ -587,6 +594,23 @@ contains
                         " runs on device "//int_text(int(device)))
    end subroutine select_device
 
+   pure function asks_for_gdm(settings) result(asked)
+      !! Whether the deck asked for geometric direct minimisation, by either
+      !! spelling: `keywords.scf.gdm` or `keywords.scf.accelerator: "gdm"`
+      type(cuest_scf_settings_t), intent(in) :: settings
+      logical :: asked
+
+      character(len=len(settings%accelerator)) :: name
+      integer :: i, c
+
+      name = adjustl(settings%accelerator)
+      do i = 1, len_trim(name)
+         c = iachar(name(i:i))
+         if (c >= iachar("A") .and. c <= iachar("Z")) name(i:i) = achar(c + 32)
+      end do
+      asked = settings%gdm .or. trim(name) == "gdm"
+   end function asks_for_gdm
+
    subroutine refuse_unsupported(settings, error)
       !! What the deck asked for that terco has no counterpart for
       !!
@@ -609,19 +633,14 @@ contains
       else if (settings%stability) then
          call error%set(ERROR_VALIDATION, "keywords.scf.stability has no terco "// &
                         "implementation. Ask for backend 'libcint', or drop it.")
-      else if (settings%gdm) then
-         ! TODO(mqc): terco has geometric direct minimisation of its own and
-         ! this bridge does not forward the request to it yet, so a deck that
-         ! asks for it on this backend is refused where it could be served.
-         call error%set(ERROR_VALIDATION, "keywords.scf.gdm is not forwarded to "// &
-                        "terco by this bridge yet. Ask for backend 'libcint', or "// &
-                        "drop it.")
       else if (settings%second_order) then
          call error%set(ERROR_VALIDATION, "the second-order SCF has no terco "// &
                         "implementation; terco converges by DIIS. Ask for backend "// &
                         "'libcint', or drop it.")
-      else if (.not. settings%use_diis .or. trim(settings%accelerator) /= "diis") then
-         call error%set(ERROR_VALIDATION, "terco converges by DIIS and nothing else, so "// &
+      else if (.not. settings%use_diis .or. .not. (trim(settings%accelerator) == "diis" &
+                                                   .or. asks_for_gdm(settings))) then
+         call error%set(ERROR_VALIDATION, "terco converges by DIIS, or by DIIS and then "// &
+                        "geometric direct minimisation ('gdm'), and nothing else, so "// &
                         "keywords.scf.accelerator '"//trim(settings%accelerator)// &
                         "' has no terco counterpart. Ask for backend 'libcint'.")
       else if (settings%linear_dependence > 0.0_dp) then

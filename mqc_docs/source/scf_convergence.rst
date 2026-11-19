@@ -750,5 +750,8 @@ highest occupied one. That is checked at the end and warned about; lower
 - a continuum solvent: the phase rebuilds the Fock matrix itself, and its
   builds do not carry the reaction field;
 - a Fock projector: the rotations it forbids are not excluded from the step;
-- the cuEST and terco backends. terco has GDM of its own; this program's
-  bridge does not forward the request to it yet.
+- the cuEST backend.
+
+On the terco backend the request is forwarded to terco's own implementation,
+with the same two thresholds. That one also runs unrestricted references, and
+has refusals of its own -- symmetry among them -- which it reports itself.
