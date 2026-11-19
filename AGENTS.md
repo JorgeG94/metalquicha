@@ -334,6 +334,17 @@ The methods:
   Lagrangian, divided by the orbital-energy gap, and skips degenerate pairs;
   using the amplitudes' value there is right for CCSD and wrong for (T).
 
+**The terco backend runs RI-CCSD and RI-CCSD(T) too** (`trc_run_rccsd`,
+through `run_coupled_cluster` in `mqc_terco_driver`): closed shell over
+Hartree-Fock, energies only. The correlation energy comes back as the CPU
+backend's two parts, `t1 t1` and `t2`, through `trc_rccsd_energy_parts`
+(terco ABI 1.29), so `energy%cc` reads the same from either backend.
+Conventional coupled cluster on that backend is
+refused by name. **The terco bridge is not built in CI or in a default
+build**: compile it with `-DMQC_ENABLE_TERCO=ON -DTERCO_ROOT=<checkout>`; with
+`-DTERCO_LIBRARY` pointed at any file the library target compiles without a
+terco build, which checks the interface and nothing else.
+
 An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
 intent is recovered in the reader by `method_wants_density_fitting` while the
 spelling still exists. `ccsd` and `ccsd(t)` are separate method types, so the

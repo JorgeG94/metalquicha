@@ -53,6 +53,8 @@ module mqc_terco_driver
                                trc_set_pcm_radii, trc_abi_version, trc_functional_info, &
                                trc_functional_list, trc_nmo, trc_mo_occupations, trc_message, &
                                trc_select_device, trc_set_gdm, &
+                               trc_set_rccsd, trc_set_rccsd_convergence, trc_run_rccsd, &
+                               trc_rccsd_energy, trc_rccsd_energy_parts, &
                                TRC_ABI_MAJOR, TRC_ABI_MINOR, &
                                TRC_OK, TRC_ERR_NOCONV, TRC_ERR_UNSUPPORTED, &
                                TRC_GUESS_CORE, TRC_GUESS_GWH, TRC_GUESS_SAD, TRC_GUESS_GIVEN, &
@@ -63,6 +65,9 @@ module mqc_terco_driver
    public :: run_terco_scf
 
    integer, parameter :: MSG_LEN = 512   !! terco's message buffer
+   integer, parameter :: AUX_BLOCK = 256
+      !! Auxiliary functions per three-index block while terco builds the
+      !! correlation integrals. The energy does not depend on it.
 
    real(dp), parameter :: DH_WEIGHT_AGREEMENT = 1.0e-12_dp
       !! How far terco's double-hybrid PT2 weights may sit from mqc's own
@@ -95,6 +100,10 @@ module mqc_terco_driver
          !! Every state runs unrestricted, the closed shells included.
       logical :: needs_rimp2 = .false.
          !! RI-MP2 runs after every SCF: method `ri-mp2`, or a double hybrid.
+      logical :: needs_rccsd = .false.
+         !! RI-CCSD runs after the SCF, with (T) when the method asked for it.
+      logical :: wants_triples = .false.
+         !! The method was `ri-ccsd(t)`: a result without (T) is a failure.
    contains
       procedure :: close => session_close
       procedure :: message => session_message
@@ -110,6 +119,15 @@ module mqc_terco_driver
          !! Unscaled same-spin RI-MP2, zero unless the session needs it.
       real(dp) :: c_os = 0.0_dp   !! The double hybrid's weight on `e_os`, zero otherwise
       real(dp) :: c_ss = 0.0_dp   !! The double hybrid's weight on `e_ss`, zero otherwise
+      real(dp) :: e_cc_mp2 = 0.0_dp
+         !! RI-MP2 correlation energy of the coupled-cluster run's first
+         !! iteration, zero unless the session ran RI-CCSD.
+      real(dp) :: e_ccsd = 0.0_dp      !! RI-CCSD correlation energy, hartree
+      real(dp) :: e_cc_singles = 0.0_dp   !! Its `t1 t1` part
+      real(dp) :: e_cc_doubles = 0.0_dp   !! and what `t2` alone gives
+      real(dp) :: e_triples = 0.0_dp   !! The (T) correction, zero unless it ran
+      real(dp) :: t1_diagnostic = 0.0_dp
+      integer :: cc_iterations = 0
       real(dp) :: e_diel = 0.0_dp      !! The continuum's dielectric energy
       real(dp) :: q_surface = 0.0_dp   !! Total surface charge of the continuum
       integer :: iterations = 0
@@ -165,7 +183,28 @@ contains
       ! allow_crap_scf run kept unconverged.
       result%scf_status = merge(SCF_CONVERGED, SCF_NOT_CONVERGED, state%converged)
       result%energy%scf = state%energy_scf
-      if (settings%run_mp2) then
+      if (settings%run_cc) then
+         ! The two parts of the energy functional, split as the CPU backend
+         ! splits them, so the record reads the same from either.
+         result%energy%cc%singles = state%e_cc_singles
+         result%energy%cc%doubles = state%e_cc_doubles
+         result%energy%cc%triples = state%e_triples
+         write (line, "(a,f18.12)") "    E(RI-MP2 corr)   ", state%e_cc_mp2
+         call logger%info(trim(line))
+         write (line, "(a,f18.12)") "    E(singles)       ", state%e_cc_singles
+         call logger%info(trim(line))
+         write (line, "(a,f18.12)") "    E(doubles)       ", state%e_cc_doubles
+         call logger%info(trim(line))
+         write (line, "(a,f18.12,a,i0,a)") "    E(RI-CCSD corr)  ", state%e_ccsd, &
+            "   (", state%cc_iterations, " iterations)"
+         call logger%info(trim(line))
+         if (settings%cc_triples) then
+            write (line, "(a,f18.12)") "    E(T)             ", state%e_triples
+            call logger%info(trim(line))
+         end if
+         write (line, "(a,f10.6)") "    T1 diagnostic    ", state%t1_diagnostic
+         call logger%info(trim(line))
+      else if (settings%run_mp2) then
          result%energy%mp2%ss = state%e_ss
          result%energy%mp2%os = state%e_os
          result%energy%mp2%ss_scale = settings%scs_ss
@@ -266,6 +305,8 @@ contains
       ! A double hybrid's perturbative term is RI-MP2 on top of the SCF, so it
       ! needs the auxiliary basis a plain RI-MP2 does.
       session%needs_rimp2 = settings%run_mp2 .or. session%double_hybrid
+      session%needs_rccsd = settings%run_cc
+      session%wants_triples = settings%run_cc .and. settings%cc_triples
       if (session%double_hybrid .and. .not. settings%aux_basis_named) then
          call error%set(ERROR_VALIDATION, "'"//functional_name//"' is a double hybrid, "// &
                         "and terco evaluates its perturbative term by RI-MP2 only. Name "// &
@@ -401,7 +442,9 @@ contains
          if (error%has_error()) return
       end if
 
-      if (session%needs_rimp2) call set_correlation_basis(settings, fragment, session, error)
+      if (session%needs_rimp2 .or. session%needs_rccsd) then
+         call set_correlation_basis(settings, fragment, session, error)
+      end if
    end subroutine open_session
 
    subroutine set_fitting_basis(settings, fragment, session, error)
@@ -537,7 +580,11 @@ contains
       type(terco_session_t), intent(in) :: session
       type(error_t), intent(inout) :: error
 
-      if (session%needs_rimp2) then
+      if (session%needs_rccsd) then
+         call error%set(ERROR_VALIDATION, "a gradient was asked for with RI-CCSD, and "// &
+                        "terco has no correlation gradient. Ask for backend 'libcint', "// &
+                        "or request an energy.")
+      else if (session%needs_rimp2) then
          call error%set(ERROR_VALIDATION, "a gradient was asked for with RI-MP2 or a "// &
                         "double hybrid, and terco has no correlation gradient. Ask for "// &
                         "backend 'libcint', or request an energy.")
@@ -619,9 +666,14 @@ contains
       type(cuest_scf_settings_t), intent(in) :: settings
       type(error_t), intent(inout) :: error
 
-      if (settings%run_cc) then
-         call error%set(ERROR_VALIDATION, "coupled cluster has no terco implementation; "// &
-                        "it runs through the CPU backend. Ask for 'auto', or drop it.")
+      if (settings%run_cc .and. .not. settings%corr_density_fitting) then
+         call error%set(ERROR_VALIDATION, "terco carries RI-CCSD and RI-CCSD(T) only: "// &
+                        "ask for method 'ri-ccsd' or 'ri-ccsd(t)' with model.aux_basis, "// &
+                        "or for backend 'auto' to run the conventional one on the CPU.")
+      else if (settings%run_cc .and. allocated(settings%fukui_population)) then
+         call error%set(ERROR_VALIDATION, "Fukui functions with coupled cluster have no "// &
+                        "terco counterpart: the ions are open shells, and terco's "// &
+                        "RI-CCSD is closed-shell. Ask for backend 'libcint'.")
       else if (settings%run_mp2 .and. .not. settings%corr_density_fitting) then
          call error%set(ERROR_VALIDATION, "terco carries RI-MP2 only: ask for method "// &
                         "'ri-mp2' with model.aux_basis, or for backend 'auto' to run "// &
@@ -674,8 +726,8 @@ contains
 
       aux_name = trim(settings%aux_basis_set)
       if (len_trim(aux_name) == 0) then
-         call error%set(ERROR_VALIDATION, "RI-MP2 needs an auxiliary basis: set "// &
-                        "model.aux_basis")
+         call error%set(ERROR_VALIDATION, "a fitted correlation method needs an "// &
+                        "auxiliary basis: set model.aux_basis")
          return
       end if
       if (index(aux_name, "rifit") == 0 .and. index(aux_name, "-ri") == 0) then
@@ -700,7 +752,23 @@ contains
       frozen = settings%n_frozen_core
       if (frozen < 0) frozen = core_orbital_count(fragment%real_element_numbers())
       if (.not. settings%freeze_core) frozen = 0
-      rc = trc_set_rimp2(session%handle, int(frozen, c_int), 256_c_int)
+      if (session%needs_rccsd) then
+         ! The amplitude threshold and anything the deck does not state are
+         ! left at terco's defaults, which a zero asks for.
+         rc = trc_set_rccsd(session%handle, int(merge(1, 0, settings%cc_triples), c_int), &
+                            int(frozen, c_int), int(AUX_BLOCK, c_int))
+         if (rc == TRC_OK) then
+            rc = trc_set_rccsd_convergence(session%handle, &
+                                           real(settings%cc_tolerance, c_double), &
+                                           0.0_c_double, int(settings%cc_max_iter, c_int), &
+                                           int(settings%cc_diis_size, c_int))
+         end if
+         if (rc /= TRC_OK) then
+            call set_terco_error(session, rc, "the RI-CCSD settings were refused", error)
+         end if
+         return
+      end if
+      rc = trc_set_rimp2(session%handle, int(frozen, c_int), int(AUX_BLOCK, c_int))
       if (rc /= TRC_OK) then
          call set_terco_error(session, rc, "the RI-MP2 settings were refused", error)
       end if
@@ -899,6 +967,10 @@ contains
          return
       end if
 
+      if (session%needs_rccsd) then
+         call run_coupled_cluster(session, state, error)
+         return
+      end if
       if (.not. session%needs_rimp2) return
 
       rc = trc_run_rimp2(session%handle)
@@ -928,6 +1000,86 @@ contains
          end if
       end if
    end subroutine run_state
+
+   subroutine run_coupled_cluster(session, state, error)
+      !! RI-CCSD, and (T) when it was asked for, on the SCF just converged
+      !!
+      !! terco refuses what it cannot do -- an open shell, a Kohn-Sham
+      !! reference, an effective core potential -- with its own message, which
+      !! is passed on. An iteration that does not converge is an error here, as
+      !! it is on the CPU backend, with the last correlation energy named.
+      type(terco_session_t), intent(inout) :: session
+      type(terco_state_t), intent(inout) :: state
+      type(error_t), intent(inout) :: error
+
+      real(c_double) :: e_mp2_c, e_ccsd_c, e_t_c, t1_c, total_c, e_singles_c, e_doubles_c
+      integer(c_int) :: rc, read_rc, iterations_c, converged_c, has_triples_c
+      character(len=64) :: number
+
+      rc = trc_run_rccsd(session%handle)
+      if (rc /= TRC_OK .and. rc /= TRC_ERR_NOCONV) then
+         call set_terco_error(session, rc, "RI-CCSD failed", error)
+         return
+      end if
+      read_rc = trc_rccsd_energy(session%handle, e_mp2_c, e_ccsd_c, e_t_c, t1_c, &
+                                 iterations_c, converged_c, has_triples_c)
+      if (read_rc /= TRC_OK) then
+         call set_terco_error(session, read_rc, "the RI-CCSD energies could not be read", &
+                              error)
+         return
+      end if
+      if (rc == TRC_ERR_NOCONV .or. converged_c == 0) then
+         write (number, "(f18.12)") real(e_ccsd_c, dp)
+         call error%set(ERROR_VALIDATION, "RI-CCSD did not converge in "// &
+                        int_text(int(iterations_c))//" iterations; the last "// &
+                        "correlation energy was "//trim(adjustl(number))// &
+                        ". Raise keywords.cc.max_iter.")
+         return
+      end if
+      ! A run that was asked for (T) and came back without it would be stored
+      ! as a CCSD energy under a CCSD(T) method name.
+      if (session%wants_triples .and. has_triples_c == 0) then
+         call error%set(ERROR_VALIDATION, "RI-CCSD converged but terco did not run the "// &
+                        "(T) correction that was asked for: "//session%message())
+         return
+      end if
+      read_rc = trc_rccsd_energy_parts(session%handle, e_singles_c, e_doubles_c)
+      if (read_rc /= TRC_OK) then
+         call set_terco_error(session, read_rc, "the parts of the RI-CCSD energy could "// &
+                              "not be read", error)
+         return
+      end if
+      ! Stored separately and summed again by `energy_t`, so they have to be
+      ! the same number terco calls the CCSD energy.
+      if (abs(real(e_singles_c + e_doubles_c - e_ccsd_c, dp)) &
+          > 1.0e-12_dp*max(1.0_dp, abs(real(e_ccsd_c, dp)))) then
+         call error%set(ERROR_VALIDATION, "terco's singles and doubles parts do not add "// &
+                        "up to the RI-CCSD correlation energy it reported. That is a "// &
+                        "bug in the adapter, not in the deck.")
+         return
+      end if
+      state%e_cc_singles = real(e_singles_c, dp)
+      state%e_cc_doubles = real(e_doubles_c, dp)
+      state%e_cc_mp2 = real(e_mp2_c, dp)
+      state%e_ccsd = real(e_ccsd_c, dp)
+      state%e_triples = real(e_t_c, dp)
+      state%t1_diagnostic = real(t1_c, dp)
+      state%cc_iterations = int(iterations_c)
+
+      ! terco's own total has to be the SCF plus the parts it reported, or the
+      ! energy this hands back is not the one terco computed.
+      if (trc_energy(session%handle, total_c) /= TRC_OK) then
+         call error%set(ERROR_VALIDATION, "terco ran RI-CCSD and would not report "// &
+                        "its total")
+         return
+      end if
+      if (abs(real(total_c, dp) - (state%energy_scf + state%e_ccsd + state%e_triples)) &
+          > 1.0e-10_dp*max(1.0_dp, abs(real(total_c, dp)))) then
+         call error%set(ERROR_VALIDATION, "terco's coupled-cluster total is not its SCF "// &
+                        "energy plus the correlation energies it reported. That is a "// &
+                        "bug in the adapter, not in the deck.")
+      end if
+   end subroutine run_coupled_cluster
 
    subroutine report_frontier(state, result)
       !! HOMO and LUMO from the orbital energies and occupations terco returned
