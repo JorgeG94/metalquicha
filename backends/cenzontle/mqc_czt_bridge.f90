@@ -1339,17 +1339,14 @@ contains
          return
       end if
 
-      ! And MP2 for the same reason. The transform takes one set of orbitals
-      ! and an occupied count, so an unrestricted reference would give it the
-      ! alpha orbitals and `nelec/2`, which for an odd electron count
-      ! truncates and returns a converged energy over the wrong occupation.
-      if (settings%run_mp2 .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "MP2 on the CPU backend needs a "// &
-                               "restricted reference: the four-index transform takes one "// &
-                               "set of orbitals with an occupied count, and an "// &
-                               "unrestricted reference needs separate alpha and beta "// &
-                               "transforms. Run a closed-shell system, or use density "// &
-                               "functional theory, which is unrestricted here.")
+      ! Unrestricted MP2 is an energy. Its gradient needs an unrestricted
+      ! relaxed density and a spin-resolved response, neither of which is
+      ! built, and the semi-numerical Hessian differences that gradient.
+      if (settings%run_mp2 .and. unrestricted .and. (do_gradient .or. do_hessian)) then
+         call result%error%set(ERROR_VALIDATION, "MP2 over an unrestricted reference "// &
+                               "is implemented as an energy only: its gradient needs "// &
+                               "an unrestricted relaxed density and a spin-resolved "// &
+                               "response, which are not built. Set driver to 'Energy'.")
          result%has_error = .true.
          return
       end if
@@ -2710,7 +2707,14 @@ contains
                   call mol%destroy()
                   return
                end if
-               if (allocated(scf_b_ao)) then
+               if (unrestricted) then
+                  ! The SCF's own per-spin counts: `nelec/2` is not an occupied
+                  ! count for an open shell.
+                  call run_czt_uri_mp2(mol, corr_aux, scf%orbitals, scf%orbitals_beta, &
+                                       scf%orbital_energies, scf%orbital_energies_beta, &
+                                       scf%n_occupied, scf%n_occupied_beta, &
+                                       scf%energy, mp2, error, n_frozen=frozen)
+               else if (allocated(scf_b_ao)) then
                   call run_czt_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
                                       nelec/2, scf%energy, mp2, error, &
                                       n_frozen=frozen, b_ao_in=scf_b_ao)
@@ -2723,6 +2727,11 @@ contains
                ! and the gradient below builds its own.
                if (allocated(scf_b_ao)) deallocate (scf_b_ao)
                call corr_aux%destroy()
+            else if (unrestricted) then
+               call run_czt_ump2(mol, scf%orbitals, scf%orbitals_beta, &
+                                 scf%orbital_energies, scf%orbital_energies_beta, &
+                                 scf%n_occupied, scf%n_occupied_beta, &
+                                 scf%energy, mp2, error, n_frozen=frozen)
             else
                call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, &
                                 nelec/2, scf%energy, mp2, error, &
