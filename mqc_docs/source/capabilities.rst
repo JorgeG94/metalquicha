@@ -1013,10 +1013,11 @@ Planned Features
      does not
    - F12 variants: these parse but have no implementation
 
-2. **Second derivatives beyond a restricted, exact reference**: unrestricted
-   and density-fitted Hessians. The Kohn-Sham, MP2 and double-hybrid ones are
-   built and wired to ``driver: Hessian``; what remains is an open shell and a
-   fitted one. See :doc:`analytic_hessians` for the table and for the four
+2. **Second derivatives beyond a restricted reference**: unrestricted
+   Hessians, and density-fitted ones other than Hartree-Fock. The Kohn-Sham,
+   MP2 and double-hybrid ones are built and wired to ``driver: Hessian``, as
+   is fitted Hartree-Fock; what remains is an open shell, and a fitted
+   reference under a functional or a correlated method. See :doc:`analytic_hessians` for the table and for the four
    double-hybrid cases that still fall back
 
 3. **Fragment methods**: gradients and open-shell fragments under FMO, EE-MBE

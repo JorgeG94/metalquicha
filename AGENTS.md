@@ -284,6 +284,20 @@ The methods:
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
   SCS/SOS, a fitted reference and a frozen-core double hybrid take the
   semi-numerical path. See `mqc_docs/source/analytic_hessians.rst`.
+  **Density-fitted Hartree-Fock has its own analytic Hessian**
+  (`df_rhf_hessian`, with the fitted terms in `mqc_czt_df_hessian`): it
+  differentiates the fitted energy as written, shares `rhf_hessian`'s
+  one-electron terms and assembly, and reaches the response solver through one
+  optional argument, `fit`. The reference is PySCF's
+  `df.hessian` with `auxbasis_response = 2`; at 1 the fit's second-order
+  response is missing and it is 1e-4 off. The fitted terms are written
+  twice: `df_two_electron_derivatives` in the module is what runs, and
+  `dense_two_electron_derivatives` in `test_mqc_czt_df_hessian` is the
+  formulas as written, one full array per perturbation. **Change the dense
+  one first and make the other agree** -- the test holds them to 1e-9, which
+  is every sign and index convention at once. The solver's operator is `df_response_mo`, in the MO
+  basis, and only the virtual-occupied block of what it returns is read by
+  the solve and only the occupied-occupied block by the assembly.
 - `NEO-HF` - nuclear-electronic orbital Hartree-Fock: `keywords.neo` with
   `quantum_nuclei` (0-based indices or symbols) and `nuclear_basis` (default
   `pb4-d`, from `basis_sets/neo/`) gives the named protons orbitals of their

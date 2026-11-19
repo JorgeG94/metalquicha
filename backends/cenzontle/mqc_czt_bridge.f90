@@ -47,7 +47,9 @@ module mqc_czt_bridge
    use mqc_czt_gradient, only: czt_scf_gradient
    use mqc_czt_multipole, only: multipole_matrices
    use mqc_czt_hessian, only: rhf_hessian, ks_hessian, hessian_to_matrix, &
-                              nuclear_repulsion_hessian, response_hessian
+                              nuclear_repulsion_hessian, response_hessian, &
+                              df_rhf_hessian, response_controls_t
+   use mqc_czt_df_hessian, only: df_metric_dropped
    use mqc_czt_tddft, only: response_excitations, response_excitations_uhf, &
                             excitation_spectrum_t
    use mqc_czt_tddft_properties, only: excited_properties_t, excited_properties, &
@@ -1185,6 +1187,9 @@ contains
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
+      logical :: df_analytic
+      logical :: full_rank
+         !! A fitted reference whose Hessian has an analytic route
       character(len=:), allocatable :: hessian_fallback
          !! Set when a covered analytic Hessian could not be built and the
          !! semi-numerical path takes over; the reason, for the one warning
@@ -2446,9 +2451,50 @@ contains
          end if
          if (allocated(hessian_fallback)) dh_analytic = .false.
       end if
+      ! A fitted reference has an analytic Hessian when it is Hartree-Fock and
+      ! its metric inverts without dropping a mode. Asked here, like the fitted
+      ! correlation block above, so a declined metric costs one two-centre
+      ! build.
+      ! Every analytic Hessian here takes the orbitals to span the basis. Where
+      ! the overlap's near-null space was projected out they do not, and the
+      ! matrix that comes back is converged, symmetric and wrong: 0.13
+      ! hartree/bohr^2 on HCN in cc-pVDZ with four functions removed.
+      full_rank = .true.
+      if (allocated(scf%orbitals)) full_rank = size(scf%orbitals, 2) == mol%nao
+      if (do_hessian .and. .not. full_rank .and. .not. allocated(hessian_fallback) &
+          .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
+         hessian_fallback = "linear dependence removed orbitals from the basis, and "// &
+                            "the response equations assume none were"
+      end if
+      df_analytic = .false.
+      if (do_hessian .and. settings%density_fitting .and. .not. kohn_sham .and. full_rank &
+          .and. .not. unrestricted .and. .not. settings%run_mp2 &
+          .and. .not. settings%run_cc .and. mol%necpbas == 0 &
+          .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
+         block
+            integer :: n_dropped
+            character(len=16) :: count_text
+            call df_metric_dropped(aux, n_dropped, error)
+            if (error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
+               result%has_error = .true.
+               call aux%destroy()
+               call mol%destroy()
+               return
+            end if
+            df_analytic = n_dropped == 0
+            if (.not. df_analytic) then
+               write (count_text, "(i0)") n_dropped
+               hessian_fallback = "the fitted reference: the auxiliary metric drops "// &
+                                  trim(count_text)//" mode(s), and -M^-1 dM M^-1 is "// &
+                                  "exact only when it drops none"
+            end if
+         end block
+      end if
       if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
-          .and. .not. unrestricted .and. mol%necpbas == 0 &
-          .and. .not. settings%density_fitting .and. .not. settings%run_mp2 &
+          .and. .not. unrestricted .and. mol%necpbas == 0 .and. full_rank &
+          .and. (.not. settings%density_fitting .or. df_analytic) &
+          .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
           .and. fragment%n_caps == 0 &
           .and. (dh_analytic .or. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp))) then
@@ -2469,6 +2515,14 @@ contains
                                hess4, error, max_iter=settings%hessian_response_max_iter, &
                                tol=settings%hessian_response_tol, &
                                batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+            else if (df_analytic) then
+               call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
+                                   scf%orbital_energies, scf%n_occupied, hess4, error, &
+                                   controls=response_controls_t( &
+                                   max_iter=settings%hessian_response_max_iter, &
+                                   tol=settings%hessian_response_tol, &
+                                   batch=settings%hessian_response_batch), &
+                                   dipole_derivatives=ddip)
             else
                call rhf_hessian(mol, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -2716,6 +2770,7 @@ contains
             ! derivative of that same energy -- the two agree to that and
             ! not to the last digit.
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+                .and. full_rank &
                 .and. settings%corr_density_fitting .and. mol%necpbas == 0) then
                call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
                if (error%has_error()) then
@@ -3399,7 +3454,7 @@ contains
          reason = "effective core potential, whose second derivatives are not implemented"
       else if (settings%run_cc) then
          reason = "coupled cluster"
-      else if (settings%density_fitting) then
+      else if (settings%density_fitting .and. (kohn_sham .or. settings%run_mp2)) then
          reason = "density-fitted reference"
       else if (settings%pcm%enabled) then
          reason = "continuum solvation"

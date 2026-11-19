@@ -16,7 +16,8 @@ module mqc_czt_hessian
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_program_limits, only: MAX_LINE_LENGTH
    use mqc_timing, only: timing_report_t
-   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL
+   use mqc_calculation_defaults, only: DEFAULT_RESPONSE_BATCH, DEFAULT_RESPONSE_TOL, &
+                                       DEFAULT_RESPONSE_MAX_ITER
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
    use mqc_czt_gradient, only: one_electron_deriv, nuclear_attraction_deriv_at, &
                                DERIV_KIN, DERIV_NUC, DERIV_OVLP
@@ -30,6 +31,9 @@ module mqc_czt_hessian
    use mqc_czt_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    use mqc_czt_response, only: response_operator_t, solve_response
    use mqc_czt_response_product, only: response_mean_field
+   use mqc_czt_cphf, only: fitted_potential_general
+   use mqc_czt_df_hessian, only: df_hessian_terms_t, df_two_electron_derivatives, &
+                                 df_fit_to_mo, df_response_mo
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_ecp, only: ecp_refuses_derivatives
    implicit none
@@ -52,6 +56,8 @@ module mqc_czt_hessian
    public :: partial_hessian
    public :: response_hessian
    public :: rhf_hessian
+   public :: df_rhf_hessian
+   public :: response_controls_t
    public :: ks_hessian
    public :: hessian_to_matrix
 
@@ -70,6 +76,13 @@ module mqc_czt_hessian
    character(len=*), parameter :: STAGE_D1 = "first-order densities"
    character(len=*), parameter :: STAGE_G1 = "relaxed mean field"
    character(len=*), parameter :: STAGE_ASSEMBLY = "dW/dR and assembly"
+
+   type :: response_controls_t
+      !! How the coupled-perturbed solve inside a Hessian is run
+      integer :: max_iter = DEFAULT_RESPONSE_MAX_ITER   !! Cycles before giving up
+      real(dp) :: tol = DEFAULT_RESPONSE_TOL            !! On the residual
+      integer :: batch = DEFAULT_RESPONSE_BATCH         !! Perturbations per chunk
+   end type response_controls_t
 
    type, extends(response_operator_t) :: nuclear_response_t
       !! The electronic Hessian, applied to a response that has occupied rows
@@ -105,6 +118,11 @@ module mqc_czt_hessian
          !! the same libxc pass repeated once per conjugate-gradient step.
          !! Unfilled is the ordinary case and costs nothing; `solve_mo1_batch`
          !! fills it before the solve, and `solve_mo1_atom` does not.
+      real(dp), pointer :: fit_mo(:, :, :) => null()
+         !! The fitted tensor in the molecular basis, (n_mo, n_mo, naux), when
+         !! the reference was density fitted, null otherwise. Associated, the
+         !! Coulomb and exchange of a trial vector are built from it and no
+         !! four-index integral is.
       real(dp) :: k_scale = 1.0_dp
          !! Exact exchange in the response operator. One for Hartree-Fock, zero
          !! for a pure functional, the mixing fraction for a hybrid.
@@ -521,6 +539,10 @@ contains
       integer :: n_ao, i, a, p
 
       if (error%has_error()) return
+      if (associated(this%fit_mo)) then
+         call fitted_nuclear_apply(this, vector, image)
+         return
+      end if
 
       ! A zero trial vector has a zero image and costs no integral pass. The
       ! solver asks for exactly that when the occupied block it fixes is empty,
@@ -600,6 +622,39 @@ contains
       image = reshape(mo1, [this%n_mo*this%n_occ*this%n_pert])
       deallocate (mo1, half, dens, g, work, gmo)
    end subroutine nuclear_apply
+
+   subroutine fitted_nuclear_apply(this, vector, image)
+      !! `nuclear_apply` for a fitted reference, in the molecular basis throughout
+      !!
+      !! Same image, without the trial densities or the back-transformation:
+      !! `df_response_mo` takes the vector as it is and returns the block this
+      !! divides by the gaps.
+      class(nuclear_response_t), intent(inout) :: this
+      real(dp), intent(in) :: vector(:)
+      real(dp), intent(out) :: image(:)
+
+      real(dp), allocatable :: mo1(:, :, :), gmo(:, :, :)
+      integer :: i, a, p
+
+      if (.not. any(vector /= 0.0_dp)) then
+         image = 0.0_dp
+         return
+      end if
+      allocate (mo1(this%n_mo, this%n_occ, this%n_pert), &
+                gmo(this%n_mo, this%n_occ, this%n_pert))
+      mo1 = reshape(vector, [this%n_mo, this%n_occ, this%n_pert])
+      call df_response_mo(this%fit_mo, mo1, gmo, k_scale=this%k_scale)
+      do p = 1, this%n_pert
+         do i = 1, this%n_occ
+            gmo(1:this%n_occ, i, p) = 0.0_dp
+            do a = this%n_occ + 1, this%n_mo
+               gmo(a, i, p) = gmo(a, i, p)/(this%energies(i) - this%energies(a))
+            end do
+         end do
+      end do
+      this%n_apply = this%n_apply + 1
+      image = reshape(gmo, [this%n_mo*this%n_occ*this%n_pert])
+   end subroutine fitted_nuclear_apply
 
    subroutine solve_mo1_atom(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                              max_iter, tol)
@@ -753,7 +808,7 @@ contains
    end subroutine nuclear_repulsion_hessian
 
    subroutine partial_hessian(mol, density, weighted, hess, error, k_scale, &
-                              rs_k_lr, rs_omega, clk)
+                              rs_k_lr, rs_omega, clk, two_electron)
       !! The Hessian of the energy expression with the orbitals held fixed
       !!
       !! Everything in `d2E/dRdR` that survives when the density is not allowed
@@ -779,6 +834,10 @@ contains
       type(error_t), intent(inout) :: error
       type(timing_report_t), intent(inout), optional :: clk
          !! Lapped after each of the three stages here, when supplied.
+      logical, intent(in), optional :: two_electron
+         !! False leaves the two-electron integrals' second derivatives out, for
+         !! a caller that supplies them itself: a fitted reference's are not
+         !! these. True when absent.
 
       type(direct_stats_t) :: stats, stats_lr
       real(dp), allocatable :: bounds(:, :)
@@ -897,6 +956,12 @@ contains
       !
       ! Driven from shells and contracted on the spot: the three arrays this
       ! would otherwise form are `nao^4` times nine each.
+      if (present(two_electron)) then
+         if (.not. two_electron) then
+            deallocate (owner, offsets, counts)
+            return
+         end if
+      end if
       call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
       call hess_2e_contract(mol, density, hess, error, k_scale=k_scale, stats=stats, &
@@ -922,7 +987,7 @@ contains
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
                                xc, reference, k_scale, rs_k_lr, rs_omega, &
-                               max_iter, tol, dipole_derivatives, clk, batch)
+                               max_iter, tol, dipole_derivatives, clk, batch, fit)
       !! What the Hessian gains from letting the density relax
       !!
       !! The gradient needs no density derivative -- that is what makes the
@@ -972,6 +1037,9 @@ contains
       integer, intent(in), optional :: batch
          !! Perturbations per chunk of the coupled-perturbed solve and of the
          !! relaxed mean field; `DEFAULT_RESPONSE_BATCH` when absent.
+      type(df_hessian_terms_t), intent(in), optional, target :: fit
+         !! The fitted reference's terms. Present, every two-electron quantity
+         !! here comes from the fit and none from four-index integrals.
 
       type(direct_stats_t) :: h1_stats, h1_stats_lr
       integer :: width
@@ -988,6 +1056,7 @@ contains
       real(dp), allocatable :: h1_lr(:, :, :, :)
       real(dp) :: e_xc_ref, n_xc_ref
       real(dp), allocatable :: g1all(:, :, :), f1(:, :), half(:, :), c_occ(:, :)
+      real(dp), allocatable :: g1mo(:, :, :)
       real(dp), allocatable :: tmp(:, :), work(:, :)
       real(dp), allocatable :: outer(:, :), middle(:, :)
       type(direct_stats_t) :: stats
@@ -1003,8 +1072,12 @@ contains
       c_occ = orbitals(:, 1:n_occ)
 
       call mol%core_hamiltonian(hcore)
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
+      if (present(fit)) then
+         allocate (bounds(0, 0))
+      else
+         call schwarz_bounds(mol, bounds, error)
+         if (error%has_error()) return
+      end if
       allocate (fock(nao, nao), zero_h(nao, nao))
       zero_h = 0.0_dp
       ! The converged Fock, and for a Kohn-Sham reference that means *its* Fock:
@@ -1012,8 +1085,14 @@ contains
       ! potential added on. `W = D F D / 2` is built from this, so a
       ! Hartree-Fock matrix here spreads a smooth, symmetric error across every
       ! atom pair.
-      call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
-                             density_screen=.false., k_scale=k_scale)
+      if (present(fit)) then
+         ! The fitted reference's own Fock: the one whose orbitals these are.
+         call fitted_potential_general(fit%b, density, fock, k_scale=k_scale)
+         fock = fock + hcore
+      else
+         call build_fock_direct(mol, hcore, density, bounds, fock, stats, error, &
+                                density_screen=.false., k_scale=k_scale)
+      end if
       if (error%has_error()) return
       if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
@@ -1039,8 +1118,12 @@ contains
       ! Every atom's two-electron perturbation in one pass over the shell
       ! quartets. The core Hamiltonian derivative is per-atom either way and is
       ! added below.
-      call h1_contract(mol, density, h1, error, k_scale=k_scale, stats=h1_stats, &
-                       bounds=bounds)
+      if (present(fit)) then
+         h1 = fit%h1
+      else
+         call h1_contract(mol, density, h1, error, k_scale=k_scale, stats=h1_stats, &
+                          bounds=bounds)
+      end if
       if (error%has_error()) return
       if (present(rs_omega)) then
          if (rs_omega > 0.0_dp) then
@@ -1061,7 +1144,7 @@ contains
          end if
       end if
       if (error%has_error()) return
-      call screening_line(STAGE_H1, h1_stats)
+      if (.not. present(fit)) call screening_line(STAGE_H1, h1_stats)
       ! For a Kohn-Sham reference the Fock derivative also carries the
       ! exchange-correlation potential's own, which `h1_contract` does not
       ! produce. Both of these accumulate into `h1`, and `vv10_potential_deriv`
@@ -1111,7 +1194,8 @@ contains
       call solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                            xc=xc, reference=reference, k_scale=k_scale, &
                            rs_k_lr=rs_k_lr, rs_omega=rs_omega, &
-                           max_iter=max_iter, tol=tol, batch=width, bounds=bounds)
+                           max_iter=max_iter, tol=tol, batch=width, bounds=bounds, &
+                           fit=fit)
       if (error%has_error()) return
       call lap(clk, STAGE_CPHF)
 
@@ -1134,11 +1218,19 @@ contains
       end if
       call lap(clk, STAGE_D1)
 
-      ! Their mean fields in one batch, chunked as the solve above is.
-      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
-                            xc=xc, reference=reference, k_scale=k_scale, &
-                            rs_k_lr=rs_k_lr, rs_omega=rs_omega, batch=width)
-      if (error%has_error()) return
+      ! Their mean fields in one batch, chunked as the solve above is. Only
+      ! the occupied block of each is read below, and for a fitted reference
+      ! that is all that is built: the solver's own product, from the
+      ! first-order orbitals rather than the densities they imply.
+      if (present(fit)) then
+         allocate (g1mo(size(orbitals, 2), n_occ, 3*natm))
+         call df_response_mo(fit%b_mo, reshape(mo1, shape(g1mo)), g1mo, k_scale=k_scale)
+      else
+         call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
+                               xc=xc, reference=reference, k_scale=k_scale, &
+                               rs_k_lr=rs_k_lr, rs_omega=rs_omega, batch=width)
+         if (error%has_error()) return
+      end if
       call lap(clk, STAGE_G1)
 
       ! `F D` once: it is the same matrix in every perturbation's outer term.
@@ -1149,7 +1241,8 @@ contains
             tmp = d1(:, :, a, ia)
             ! `dF/dR` in full: the skeleton derivative plus the mean field of
             ! the relaxed density.
-            f1 = h1(:, :, a, ia) + g1all(:, :, 3*(ia - 1) + a)
+            f1 = h1(:, :, a, ia)
+            if (allocated(g1all)) f1 = f1 + g1all(:, :, 3*(ia - 1) + a)
 
             ! W = D F D / 2, differentiated by the product rule: three terms,
             ! all of which get the half. The first and last are transposes of
@@ -1163,6 +1256,7 @@ contains
             ! `nao^3`.
             call pic_gemm(f1, c_occ, fc)
             call pic_gemm(c_occ, fc, cfc, transa="T")
+            if (allocated(g1mo)) cfc = cfc + g1mo(1:n_occ, :, 3*(ia - 1) + a)
             call pic_gemm(c_occ, cfc, fc, alpha=4.0_dp, beta=0.0_dp)
             call pic_gemm(fc, c_occ, middle, transb="T")
             w1(:, :, a, ia) = 0.5_dp*(outer + transpose(outer) + middle)
@@ -1194,7 +1288,8 @@ contains
       deallocate (hess_flat)
 
       deallocate (h1, s1, d1, w1, hcore, fock, bounds, zero_h)
-      deallocate (g1all, f1, half, c_occ, tmp, work, outer, middle)
+      if (allocated(g1all)) deallocate (g1all)
+      deallocate (f1, half, c_occ, tmp, work, outer, middle)
       call lap(clk, STAGE_ASSEMBLY)
    end subroutine response_hessian
 
@@ -1249,6 +1344,64 @@ contains
       call clk%finish()
       call clk%report("analytic Hessian")
    end subroutine rhf_hessian
+
+   subroutine df_rhf_hessian(mol, aux, density, orbitals, energies, n_occ, hess, error, &
+                             controls, dipole_derivatives)
+      !! The analytic Hessian of a density-fitted restricted Hartree-Fock energy
+      !!
+      !! `rhf_hessian` with every two-electron term taken from the fit: the
+      !! second-derivative integrals, the Fock derivative on the right of the
+      !! coupled-perturbed equations, and the operator on their left. The
+      !! nuclear repulsion, the one-electron terms and the assembly are shared.
+      !!
+      !! Returned as `(3, 3, n_atoms, n_atoms)`.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(czt_molecule_t), intent(in) :: aux   !! The basis the reference was fitted in
+      real(dp), intent(in) :: density(:, :)     !! Closed shell, carrying its factor of two
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: hess(:, :, :, :)
+      type(error_t), intent(inout) :: error
+      type(response_controls_t), intent(in), optional :: controls
+         !! The solve's limits; the program defaults when absent.
+      real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
+         !! `d mu_a / dR_(X,b)`, (3, 3*natm), for infrared intensities
+
+      type(response_controls_t) :: ctl
+      type(df_hessian_terms_t) :: fit
+      real(dp), allocatable :: weighted(:, :), part(:, :, :, :), resp(:, :, :, :)
+      type(timing_report_t) :: clk
+
+      if (error%has_error()) return
+      if (ecp_refuses_derivatives(mol%core_electrons, "nuclear Hessian", error)) return
+      if (present(controls)) ctl = controls
+
+      call clk%start()
+      call energy_weighted_density(orbitals, energies, n_occ, weighted)
+
+      call nuclear_repulsion_hessian(mol%charges, mol%coords, hess, error)
+      call clk%lap(STAGE_NUCLEAR)
+
+      call clk%begin("fitted two-electron derivatives")
+      call df_two_electron_derivatives(mol, aux, density, orbitals(:, 1:n_occ), fit, error)
+      call clk%lap()
+      if (error%has_error()) return
+      call df_fit_to_mo(fit, orbitals)
+
+      call partial_hessian(mol, density, weighted, part, error, clk=clk, &
+                           two_electron=.false.)
+      call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
+                            max_iter=ctl%max_iter, tol=ctl%tol, batch=ctl%batch, &
+                            dipole_derivatives=dipole_derivatives, clk=clk, fit=fit)
+      if (error%has_error()) return
+
+      hess = hess + part + fit%hess + resp
+      deallocate (weighted, part, resp)
+      call fit%destroy()
+      call clk%finish()
+      call clk%report("analytic Hessian")
+   end subroutine df_rhf_hessian
 
    subroutine ks_hessian(mol, density, orbitals, energies, n_occ, &
                          xc, k_scale, hess, error, max_iter, tol, dipole_derivatives, batch)
@@ -1394,7 +1547,7 @@ contains
 
    subroutine solve_mo1_batch(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                               xc, reference, k_scale, rs_k_lr, rs_omega, &
-                              max_iter, tol, batch, bounds)
+                              max_iter, tol, batch, bounds, fit)
       !! The first-order orbitals for every atom, a dozen perturbations at a time
       !!
       !! Same equations `solve_mo1_atom` solves and the same right-hand side;
@@ -1430,6 +1583,9 @@ contains
          !! Most perturbations per chunk; `DEFAULT_RESPONSE_BATCH` when absent.
       real(dp), intent(in), optional :: bounds(:, :)
          !! From `schwarz_bounds`, when the caller already has them.
+      type(df_hessian_terms_t), intent(in), optional, target :: fit
+         !! The fitted reference's terms. Present, every two-electron quantity
+         !! here comes from the fit and none from four-index integrals.
 
       integer :: max_batch
       type(nuclear_response_t) :: operator
@@ -1450,7 +1606,7 @@ contains
 
       call build_nuclear_operator(operator, mol, orbitals, energies, n_occ, error, xc=xc, &
                                   reference=reference, k_scale=k_scale, rs_k_lr=rs_k_lr, &
-                                  rs_omega=rs_omega, bounds=bounds)
+                                  rs_omega=rs_omega, bounds=bounds, fit=fit)
       if (error%has_error()) return
 
       allocate (mo1(n_mo, n_occ, 3, natm))
@@ -1514,8 +1670,13 @@ contains
          first = last + 1
       end do
 
-      write (line, "(a,i0,a,i14,a)") "  response solve: ", operator%n_apply, &
-         " integral passes, ", operator%total_computed, " quartets computed in all"
+      if (present(fit)) then
+         write (line, "(a,i0,a)") "  response solve: ", operator%n_apply, &
+            " applications of the fitted operator"
+      else
+         write (line, "(a,i0,a,i14,a)") "  response solve: ", operator%n_apply, &
+            " integral passes, ", operator%total_computed, " quartets computed in all"
+      end if
       call logger%large_info(trim(line))
 
       deallocate (h1mo, s1mo, work, rhs)
@@ -1535,7 +1696,8 @@ contains
    end subroutine balanced_chunks
 
    subroutine build_nuclear_operator(operator, mol, orbitals, energies, n_occ, error, &
-                                     xc, reference, k_scale, rs_k_lr, rs_omega, bounds)
+                                     xc, reference, k_scale, rs_k_lr, rs_omega, bounds, &
+                                     fit)
       !! The response operator of a reference, with its kernel's coefficients filled
       !!
       !! What every batched solve against `nuclear_response_t` starts from: the
@@ -1554,6 +1716,9 @@ contains
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
       real(dp), intent(in), optional :: bounds(:, :)
          !! From `schwarz_bounds`, when the caller already has them.
+      type(df_hessian_terms_t), intent(in), optional, target :: fit
+         !! The fitted reference's terms. Present, every two-electron quantity
+         !! here comes from the fit and none from four-index integrals.
 
       integer :: n_ao, n_mo
 
@@ -1585,8 +1750,12 @@ contains
       if (present(k_scale)) operator%k_scale = k_scale
       if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
       if (present(rs_omega)) operator%rs_omega = rs_omega
+      if (present(fit)) operator%fit_mo => fit%b_mo
       if (present(bounds)) then
          operator%bounds = bounds
+      else if (present(fit)) then
+         ! A fitted operator screens nothing: it never forms a shell quartet.
+         allocate (operator%bounds(0, 0))
       else
          call schwarz_bounds(mol, operator%bounds, error)
          if (error%has_error()) return
