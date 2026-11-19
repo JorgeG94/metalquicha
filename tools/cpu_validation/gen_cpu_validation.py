@@ -3251,8 +3251,9 @@ HESSIAN_DH_RI_CASES = [
 #: deck's default response tolerance of 1e-9, which is what sets them.
 HESSIAN_RI_MP2_TOLERANCE = 5.0e-7
 
-#: Held against second differences of PySCF's energy, which is what sets it.
-HESSIAN_DF_RI_MP2_TOLERANCE = 5.0e-6
+#: Held against Richardson-extrapolated second differences of PySCF's energy.
+#: Measured worst element 3.6e-8 (6-31G) and 2.6e-8 (frozen-core cc-pVDZ).
+HESSIAN_DF_RI_MP2_TOLERANCE = 5.0e-7
 
 #: Held against second differences of a fitted double hybrid on a grid pinned
 #: at the reference geometry. Set by that reference and not by the fitted block:
