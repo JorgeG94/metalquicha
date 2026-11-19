@@ -1189,6 +1189,7 @@ contains
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
       logical :: df_analytic
       logical :: full_rank
+      logical :: mp2_df_reference
          !! A fitted reference whose Hessian has an analytic route
       character(len=:), allocatable :: hessian_fallback
          !! Set when a covered analytic Hessian could not be built and the
@@ -2467,7 +2468,9 @@ contains
                             "the response equations assume none were"
       end if
       df_analytic = .false.
-      if (do_hessian .and. settings%density_fitting .and. .not. kohn_sham .and. full_rank &
+      if (do_hessian .and. settings%density_fitting .and. full_rank &
+          .and. .not. (kohn_sham .and. xc%range_separated) &
+          .and. (dh_analytic .or. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp)) &
           .and. .not. unrestricted .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. mol%necpbas == 0 &
           .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
@@ -2509,12 +2512,14 @@ contains
             declined = .false.
             call logger%info("  computing the analytic Hessian")
             call hess_clock%start()
-            if (kohn_sham) then
-               call ks_hessian(mol, scf%density, scf%orbitals, &
-                               scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
-                               hess4, error, max_iter=settings%hessian_response_max_iter, &
-                               tol=settings%hessian_response_tol, &
-                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+            if (df_analytic .and. kohn_sham) then
+               call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
+                                   scf%orbital_energies, scf%n_occupied, hess4, error, &
+                                   controls=response_controls_t( &
+                                   max_iter=settings%hessian_response_max_iter, &
+                                   tol=settings%hessian_response_tol, &
+                                   batch=settings%hessian_response_batch), &
+                                   dipole_derivatives=ddip, xc=xc)
             else if (df_analytic) then
                call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
                                    scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -2523,6 +2528,12 @@ contains
                                    tol=settings%hessian_response_tol, &
                                    batch=settings%hessian_response_batch), &
                                    dipole_derivatives=ddip)
+            else if (kohn_sham) then
+               call ks_hessian(mol, scf%density, scf%orbitals, &
+                               scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
+                               hess4, error, max_iter=settings%hessian_response_max_iter, &
+                               tol=settings%hessian_response_tol, &
+                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
             else
                call rhf_hessian(mol, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -2549,7 +2560,18 @@ contains
                   ! block's: the same auxiliary basis, an exact reference, and
                   ! the PT2 coefficient applied once inside.
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
-                  if (.not. error%has_error()) then
+                  if (.not. error%has_error() .and. df_analytic) then
+                     ! Over a fitted Kohn-Sham reference the block takes the
+                     ! reference's operator from that fit too.
+                     call ri_mp2_correlation_hessian( &
+                        mol, corr_aux, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                        hess_pt2, error, tol=settings%hessian_response_tol, &
+                        max_iter=settings%hessian_response_max_iter, &
+                        batch=settings%hessian_response_batch, xc=xc, &
+                        scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
+                        dipole_derivatives=ddip_pt2, declined=declined, ref_aux=aux)
+                     call corr_aux%destroy()
+                  else if (.not. error%has_error()) then
                      call ri_mp2_correlation_hessian( &
                         mol, corr_aux, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
                         hess_pt2, error, tol=settings%hessian_response_tol, &
@@ -2611,7 +2633,11 @@ contains
          end block
       end if
 
-      call aux%destroy()
+      ! Kept through the MP2 block when a fitted reference's Hessian may want
+      ! it there; released after that block either way.
+      if (.not. (settings%run_mp2 .and. do_hessian .and. settings%density_fitting)) then
+         call aux%destroy()
+      end if
 
       if (settings%run_mp2) then
          block
@@ -2782,10 +2808,36 @@ contains
                   return
                end if
             end if
+            ! A fitted reference is taken under a fitted correlation, where the
+            ! block has the fitted operator's derivatives to use, and only
+            ! when the reference's own metric inverts whole.
+            mp2_df_reference = .false.
+            if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+                .and. .not. allocated(hessian_fallback) .and. full_rank &
+                .and. settings%density_fitting .and. settings%corr_density_fitting &
+                .and. .not. unrestricted .and. mol%necpbas == 0) then
+               block
+                  integer :: n_dropped
+                  call df_metric_dropped(aux, n_dropped, error)
+                  if (error%has_error()) then
+                     call result%error%set(ERROR_VALIDATION, "MP2 Hessian: "// &
+                                           error%get_message())
+                     result%has_error = .true.
+                     call aux%destroy()
+                     call mol%destroy()
+                     return
+                  end if
+                  mp2_df_reference = n_dropped == 0
+                  if (.not. mp2_df_reference) then
+                     hessian_fallback = "the fitted reference: its auxiliary metric "// &
+                                        "drops a mode"
+                  end if
+               end block
+            end if
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
                 .and. .not. allocated(hessian_fallback) &
                 .and. .not. unrestricted .and. mol%necpbas == 0 &
-                .and. .not. settings%density_fitting &
+                .and. (.not. settings%density_fitting .or. mp2_df_reference) &
                 .and. .not. settings%pcm%enabled .and. fragment%n_caps == 0 &
                 .and. settings%scs_ss == 1.0_dp .and. settings%scs_os == 1.0_dp) then
                block
@@ -2802,16 +2854,34 @@ contains
                      ! `href` is the whole reference -- skeleton, response and
                      ! nuclear repulsion -- and `hcorr` the correlation block,
                      ! as in the exact branch below.
-                     call rhf_hessian(mol, scf%density, &
-                                      scf%orbitals, scf%orbital_energies, scf%n_occupied, &
-                                      href, error, &
-                                      max_iter=settings%hessian_response_max_iter, &
-                                      tol=settings%hessian_response_tol, &
-                                      batch=settings%hessian_response_batch)
+                     if (mp2_df_reference) then
+                        call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
+                                            scf%orbital_energies, scf%n_occupied, href, error, &
+                                            controls=response_controls_t( &
+                                            max_iter=settings%hessian_response_max_iter, &
+                                            tol=settings%hessian_response_tol, &
+                                            batch=settings%hessian_response_batch))
+                     else
+                        call rhf_hessian(mol, scf%density, &
+                                         scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                                         href, error, &
+                                         max_iter=settings%hessian_response_max_iter, &
+                                         tol=settings%hessian_response_tol, &
+                                         batch=settings%hessian_response_batch)
+                     end if
                      if (.not. error%has_error()) then
                         call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                      end if
-                     if (.not. error%has_error()) then
+                     if (.not. error%has_error() .and. mp2_df_reference) then
+                        call ri_mp2_correlation_hessian( &
+                           mol, corr_aux, scf%orbitals, scf%orbital_energies, &
+                           scf%n_occupied, hcorr, error, n_frozen=frozen, &
+                           tol=settings%hessian_response_tol, &
+                           max_iter=settings%hessian_response_max_iter, &
+                           batch=settings%hessian_response_batch, declined=declined, &
+                           ref_aux=aux)
+                        call corr_aux%destroy()
+                     else if (.not. error%has_error()) then
                         call ri_mp2_correlation_hessian( &
                            mol, corr_aux, scf%orbitals, scf%orbital_energies, &
                            scf%n_occupied, hcorr, error, n_frozen=frozen, &
@@ -2888,6 +2958,7 @@ contains
             end if
          end block
       end if
+      call aux%destroy()
 
       if (settings%run_cc) then
          block
@@ -3454,8 +3525,11 @@ contains
          reason = "effective core potential, whose second derivatives are not implemented"
       else if (settings%run_cc) then
          reason = "coupled cluster"
-      else if (settings%density_fitting .and. (kohn_sham .or. settings%run_mp2)) then
-         reason = "density-fitted reference"
+      else if (settings%density_fitting .and. kohn_sham .and. xc%range_separated) then
+         reason = "range-separated functional over a density-fitted reference"
+      else if (settings%density_fitting .and. settings%run_mp2 &
+               .and. .not. settings%corr_density_fitting) then
+         reason = "conventional MP2 over a density-fitted reference; ri-mp2 has one"
       else if (settings%pcm%enabled) then
          reason = "continuum solvation"
       else if (n_caps > 0) then

@@ -2601,7 +2601,7 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL, aux="")
     """
     from pyscf import dft, gto, scf
     from pyscf.hessian import rhf as _rhf_hess, rks as _rks_hess  # noqa: F401
-    from pyscf.df.hessian import rhf as _df_rhf_hess  # noqa: F401
+    from pyscf.df.hessian import rhf as _df_rhf_hess, rks as _df_rks_hess  # noqa: F401
 
     mol = gto.Mole()
     mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
@@ -3016,8 +3016,91 @@ HESSIAN_DH_TOLERANCE = 5.0e-7
 HESSIAN_DH_LOOSE = {"mpw2plyp": 5.0e-6}
 
 
+def richardson_hessian(energy, geom, step):
+    """Second differences of `energy(coords)` at `step` and `step/2`, extrapolated.
+
+    `geom` and `step` are in Angstrom; the Hessian comes back in Hartree/Bohr^2
+    with the energy at `geom`. The second difference is `O(h^2)`, so
+    `(4 D(h/2) - D(h)) / 3` removes its leading error. Costs
+    `2 * (2n + 4 * n(n-1)/2 + 1)` energies for `n` coordinates.
+    """
+    import numpy as np
+
+    def second_differences(h):
+        n = geom.size
+        hess = np.zeros((n, n))
+        e0 = energy(geom)
+
+        def shifted(*moves):
+            c = geom.copy()
+            for i, a, d in moves:
+                c[i, a] += d
+            return energy(c)
+
+        for i in range(n):
+            ai, xi = divmod(i, 3)
+            hess[i, i] = shifted((ai, xi, h)) - 2.0 * e0 + shifted((ai, xi, -h))
+            for j in range(i + 1, n):
+                aj, xj = divmod(j, 3)
+                mixed = (shifted((ai, xi, h), (aj, xj, h))
+                         - shifted((ai, xi, h), (aj, xj, -h))
+                         - shifted((ai, xi, -h), (aj, xj, h))
+                         + shifted((ai, xi, -h), (aj, xj, -h)))
+                hess[i, j] = hess[j, i] = mixed / 4.0
+        return e0, hess / (h / ANGSTROM_PER_BOHR) ** 2
+
+    e0, coarse = second_differences(step)
+    _, fine = second_differences(step / 2.0)
+    return e0, (4.0 * fine - coarse) / 3.0
+
+
+def pyscf_df_ri_mp2_hessian(atoms, basis, aux, frozen=0, step=0.008):
+    """Reference RI-MP2 Hessian over a density-fitted reference, from PySCF energies.
+
+    Nothing has this Hessian analytically: PySCF has no MP2 Hessian of any kind,
+    and `ri_mp2_hessian.py`, the prototype the exact-reference cases are held
+    to, keeps the reference's integrals exact. What PySCF does have is the
+    *energy* -- a fitted Hartree-Fock with `DFMP2` on top, both in `aux` -- and
+    it agrees with ours to 1e-11. `richardson_hessian` differences that twice,
+    so the reference owes nothing to our derivative code at either order.
+
+    One auxiliary basis for both fits, because `model.aux_basis` is the only
+    place a deck names one.
+    """
+    import numpy as np
+    from pyscf import gto, mp, scf
+
+    symbols = {a[0] for a in atoms}
+    auxbasis = {s: bse_to_pyscf(aux, s) for s in symbols}
+    geom = np.array([[x, y, z] for _, x, y, z in atoms])
+
+    def build(coords):
+        mol = gto.Mole()
+        mol.atom = [(atoms[i][0], tuple(coords[i])) for i in range(len(atoms))]
+        mol.unit = "Angstrom"
+        mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+        mol.charge, mol.spin, mol.verbose = 0, 0, 0
+        mol.cart = molecule_form(basis, symbols) == CARTESIAN
+        mol.build()
+        return mol
+
+    def energy(coords):
+        mf = scf.RHF(build(coords)).density_fit(auxbasis=auxbasis)
+        mf.conv_tol, mf.conv_tol_grad = 1e-13, 1e-9
+        e_hf = mf.kernel()
+        if not mf.converged:
+            raise RuntimeError("the reference SCF did not converge")
+        pt2 = mp.dfmp2.DFMP2(mf)
+        pt2.with_df = pt2.with_df.__class__(mf.mol, auxbasis=auxbasis)
+        pt2.frozen = frozen
+        return float(e_hf + pt2.kernel()[0])
+
+    e0, hess = richardson_hessian(energy, geom, step)
+    return e0, hess.tolist(), build(geom).nao
+
+
 def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
-                     step=0.008, aux=""):
+                     step=0.008, aux="", fitted_reference=False):
     """Reference double-hybrid Hessian, by second differences of the energy.
 
     **Why a difference, and why twice.** No open-source code has an analytic
@@ -3051,6 +3134,10 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
     exact Kohn-Sham reference, which is the energy a double hybrid with a named
     `model.aux_basis` reports; the PT2 is then PySCF's own `DFMP2`, so the
     difference still owes nothing to our fitted Hessian.
+
+    `fitted_reference` fits the Kohn-Sham reference's own Coulomb and exchange
+    in `aux` as well, which is what a deck with both `model.aux_basis` and
+    `keywords.scf.density_fitting` runs.
     """
     import numpy as np
     from pyscf import dft, gto, mp
@@ -3075,6 +3162,8 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
 
     def energy(coords):
         mf = dft.RKS(build(coords))
+        if fitted_reference:
+            mf = mf.density_fit(auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
         mf.xc = xc
         mf.conv_tol, mf.conv_tol_grad = 1e-13, 1e-9
         mf.grids.coords = ref_grid.coords.copy()
@@ -3091,32 +3180,7 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
         pt2.frozen = 0
         return float(e_ks + c_pt2 * pt2.kernel()[0])
 
-    def second_differences(h):
-        n = 3 * len(atoms)
-        hess = np.zeros((n, n))
-        e0 = energy(geom)
-
-        def shifted(*moves):
-            c = geom.copy()
-            for i, a, d in moves:
-                c[i, a] += d
-            return energy(c)
-
-        for i in range(n):
-            ai, xi = divmod(i, 3)
-            hess[i, i] = shifted((ai, xi, h)) - 2.0 * e0 + shifted((ai, xi, -h))
-            for j in range(i + 1, n):
-                aj, xj = divmod(j, 3)
-                mixed = (shifted((ai, xi, h), (aj, xj, h))
-                         - shifted((ai, xi, h), (aj, xj, -h))
-                         - shifted((ai, xi, -h), (aj, xj, h))
-                         + shifted((ai, xi, -h), (aj, xj, -h)))
-                hess[i, j] = hess[j, i] = mixed / 4.0
-        return e0, hess / (h / ANGSTROM_PER_BOHR) ** 2
-
-    e0, coarse = second_differences(step)
-    _, fine = second_differences(step / 2.0)
-    richardson = (4.0 * fine - coarse) / 3.0
+    e0, richardson = richardson_hessian(energy, geom, step)
     return e0, richardson.tolist(), build(geom).nao
 
 
@@ -3141,21 +3205,62 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
 #: Two auxiliary families, a basis with d functions and one without, and H2S for
 #: a second-row atom, whose fitting set reaches higher angular momentum than
 #: any first-row one.
+#:
+#: Then Kohn-Sham over the same fit, one functional from each rung the fitted
+#: route treats differently: a pure one has no fitted exchange at all, a hybrid
+#: scales it, and a meta-GGA's kernel carries the kinetic-energy density. A
+#: basis with d functions is included on purpose. Unfitted, PySCF's Kohn-Sham
+#: Hessian is 1e-5 off on those (`HESSIAN_DFT_D_TOLERANCE`); fitted, it agrees
+#: to 1e-9, so these are the tighter check on the d-function assembly.
 HESSIAN_DF_CASES = [
-    ("water", "sto-3g", "cc-pvtz-jkfit"),
-    ("water", "cc-pvdz", "cc-pvtz-jkfit"),
-    ("nh3", "def2-svp", "def2-universal-jkfit"),
-    ("h2s", "def2-svp", "def2-universal-jkfit"),
+    ("water", "sto-3g", "cc-pvtz-jkfit", ""),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit", ""),
+    ("nh3", "def2-svp", "def2-universal-jkfit", ""),
+    ("h2s", "def2-svp", "def2-universal-jkfit", ""),
+    ("water", "sto-3g", "cc-pvtz-jkfit", "svwn"),
+    ("water", "sto-3g", "cc-pvtz-jkfit", "tpss"),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit", "pbe"),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit", "b3lyp"),
+    ("nh3", "def2-svp", "def2-universal-jkfit", "pbe0"),
+    ("h2s", "def2-svp", "def2-universal-jkfit", "pbe"),
 ]
 
-#: Measured agreement is 4e-9 or better on all four; the bound leaves the room
-#: the unfitted Hessians' does.
+#: Measured agreement is 4e-9 or better on the Hartree-Fock four and 1e-8 or
+#: better on the Kohn-Sham six; the bound leaves the room the unfitted
+#: Hessians' does.
 HESSIAN_DF_TOLERANCE = 1.0e-7
 
 HESSIAN_RI_MP2_CASES = [
     ("water", "6-31g", "cc-pvdz-rifit", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
 ]
+
+#: The same two over a density-fitted reference, fitted in the same set. The
+#: reference is `pyscf_df_ri_mp2_hessian`: second differences of PySCF's
+#: energy, since no code has this Hessian and the prototype keeps the
+#: reference exact.
+HESSIAN_DF_RI_MP2_CASES = [
+    ("water", "6-31g", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+]
+
+#: A double hybrid with both of its halves fitted: the Kohn-Sham reference and
+#: the perturbative term, in one set, as (molecule, basis, functional, aux).
+#: `pyscf_dh_hessian` with `fitted_reference`, on its pinned grid.
+#:
+#: The split-valence case is held to the bound the exact-reference fitted
+#: double hybrid is, for its reason: it reads 4.99e-5, the same two codes'
+#: fixed grids differing under a split-valence oxygen that
+#: `HESSIAN_DH_RI_TOLERANCE` describes, to three figures. The minimal-basis
+#: case has no such limit and reads 5.7e-8, so it is the one that would notice
+#: a wrong term.
+HESSIAN_DF_DH_RI_CASES = [
+    ("water", "sto-3g", "b2plyp", "cc-pvdz-rifit"),
+    ("water", "6-31g", "b2plyp", "cc-pvdz-rifit"),
+]
+
+#: Bounds for the cases above whose reference is not grid-limited, by basis.
+HESSIAN_DF_DH_RI_TIGHT = {"sto-3g": 5.0e-7}
 
 # Double hybrids with a named auxiliary basis, as (molecule, basis, functional,
 # aux). The reference is `pyscf_dh_hessian` with its perturbative term fitted:
@@ -3169,6 +3274,10 @@ HESSIAN_DH_RI_CASES = [
 #: Measured worst element 7.7e-9 (6-31G) and 3.7e-8 (frozen-core cc-pVDZ) at the
 #: deck's default response tolerance of 1e-9, which is what sets them.
 HESSIAN_RI_MP2_TOLERANCE = 5.0e-7
+
+#: Held against Richardson-extrapolated second differences of PySCF's energy.
+#: Measured worst element 3.6e-8 (6-31G) and 2.6e-8 (frozen-core cc-pVDZ).
+HESSIAN_DF_RI_MP2_TOLERANCE = 5.0e-7
 
 #: Held against second differences of a fitted double hybrid on a grid pinned
 #: at the reference geometry. Set by that reference and not by the fitted block:
@@ -4021,27 +4130,104 @@ def df_hessian_entries(written, dry_run):
     cases into an existing manifest without regenerating the rest.
     """
     entries = []
-    for name, basis, aux in HESSIAN_DF_CASES:
+    for name, basis, aux, functional in HESSIAN_DF_CASES:
         mol = MOLECULES[name]
-        energy, hessian, nao = pyscf_hessian(mol.atoms, basis, aux=aux)
-        deck = deck_for(f"{CPU_MQC}/hessian",
-                        f"cpu_{name}_{normalize_basis_name(basis)}_df_hess")
+        energy, hessian, nao = pyscf_hessian(mol.atoms, basis, functional=functional,
+                                             aux=aux)
+        tag = normalize_basis_name(basis)
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian", f"cpu_{name}_{tag}_df_hess")
         written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not dry_run:
-            d = deck_json(xyz_for(mol), basis, aux=aux, method="hf")
+            d = deck_json(xyz_for(mol), basis, aux=aux,
+                          method="dft" if functional else "hf")
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
             d["driver"] = "Hessian"
             _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
-        entries.append({
-            "name": f"RHF Hessian {mol.label} {basis} density fitted with {aux} (CPU)",
+        theory = functional.upper() if functional else "RHF"
+        entry = {
+            "name": f"{theory} Hessian {mol.label} {basis} density fitted with {aux} (CPU)",
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
             "hessian_tolerance": HESSIAN_DF_TOLERANCE,
             "type": "unfragmented",
+        }
+        if functional:
+            entry["requires"] = "libxc"
+        entries.append(entry)
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} DF-{theory:6s} hess |H|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
+def df_ri_hessian_entries(written, dry_run):
+    """Write the RI-MP2-over-a-fitted-reference Hessian decks; return their entries.
+
+    A function for the reason `cosx_entries` is: `--only-df-ri-hessian` splices
+    these in without regenerating the rest.
+    """
+    entries = []
+    for name, basis, aux, frozen in HESSIAN_DF_RI_MP2_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_df_ri_mp2_hessian(mol.atoms, basis, aux, frozen)
+        stem = f"cpu_{name}_{normalize_basis_name(basis)}_df_rimp2"
+        if frozen:
+            stem += f"_f{frozen}"
+        deck = deck_for(f"{CPU_MQC}/hessian", stem + "_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="ri-mp2",
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen})
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"RI-MP2 Hessian {mol.label} {basis} over a reference density "
+                    f"fitted with {aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_DF_RI_MP2_TOLERANCE,
+            "type": "unfragmented",
         })
         norm = math.sqrt(sum(c*c for row in hessian for c in row))
-        print(f"{mol.label:6s} {basis:12s} DF-RHF   hess |H|={norm:.10f} "
-              f"nao={nao:4d} E={energy:.12f}", flush=True)
+        print(f"{mol.label:6s} {basis:12s} DF/RI-MP2 hess |H|={norm:.10f} "
+              f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, aux in HESSIAN_DF_DH_RI_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_dh_hessian(mol.atoms, basis, functional, aux=aux,
+                                                fitted_reference=True)
+        tag = normalize_basis_name(basis) + "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian",
+                        f"cpu_{name}_{tag}_{normalize_basis_name(aux)}_df_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="dft",
+                          correlation={"freeze_core": False})
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"{functional.upper()} Hessian {mol.label} {basis}/{aux} over a "
+                    f"density-fitted reference (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_DF_DH_RI_TIGHT.get(
+                basis, HESSIAN_DH_RI_TOLERANCE),
+            "requires": "libxc",
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} DF {functional.upper():8s} "
+              f"hess |H|={norm:.10f} nao={nao:4d} E={energy:.12f}", flush=True)
     return entries
 
 
@@ -4131,6 +4317,10 @@ def main():
                     help="write only the fitted-reference Hessian decks and "
                          "splice their entries into the existing manifest, "
                          "leaving every other entry and deck untouched")
+    ap.add_argument("--only-df-ri-hessian", action="store_true",
+                    help="write only the RI-MP2 Hessian decks over a fitted "
+                         "reference and splice their entries into the existing "
+                         "manifest, leaving every other entry and deck untouched")
     ap.add_argument("--only-ri-hessian", action="store_true",
                     help="write only the fitted-correlation Hessian decks and "
                          "splice their entries into the existing manifest, "
@@ -4236,6 +4426,20 @@ def main():
             else:
                 mol.xyz = f"sample_inputs/{name}.xyz"
         entries = df_hessian_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_df_ri_hessian:
+        for name in {c[0] for c in HESSIAN_DF_RI_MP2_CASES + HESSIAN_DF_DH_RI_CASES}:
+            MOLECULES[name].atoms = read_xyz(INPUTS / MOLECULES[name].xyz)
+        entries = df_ri_hessian_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -5408,6 +5612,7 @@ def main():
     tests.extend(counterpoise_entries(written, args.dry_run))
     tests.extend(df_hessian_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
+    tests.extend(df_ri_hessian_entries(written, args.dry_run))
     tests.extend(cosx_entries(written, args.dry_run))
     tests.extend(ri_ccsd_gradient_entries(written, args.dry_run))
     tests.extend(ecp_gradient_entries(written, args.dry_run))

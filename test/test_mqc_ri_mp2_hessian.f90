@@ -28,7 +28,8 @@ module test_mqc_ri_mp2_hessian
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_parts_t, &
                                      inverse_metric
-   use mqc_czt_hessian, only: rhf_hessian, solve_zvector_batch
+   use mqc_czt_hessian, only: rhf_hessian, df_rhf_hessian, solve_zvector_batch, &
+                              response_controls_t
    use mqc_czt_cphf, only: cphf_solve
    implicit none
    private
@@ -63,6 +64,10 @@ contains
                   new_unittest("against_gradient_differences", against_gradient_differences), &
                   new_unittest("frozen_core_against_gradient_differences", &
                                frozen_against_gradient_differences), &
+                  new_unittest("fitted_reference_against_gradient_differences", &
+                               fitted_reference_differences), &
+                  new_unittest("fitted_reference_frozen_core_against_gradient_differences", &
+                               fitted_reference_frozen_differences), &
                   new_unittest("batching_changes_nothing", batching_changes_nothing), &
                   new_unittest("batched_zvectors_match_cphf_solve", batched_zvectors), &
                   new_unittest("batched_zvector_hessian_matches_per_rhs", batched_hessian), &
@@ -132,13 +137,15 @@ contains
       end do
    end subroutine to_matrix
 
-   subroutine converge(geo, symbols, basis, aux_basis, mol, aux, scf, err)
+   subroutine converge(geo, symbols, basis, aux_basis, mol, aux, scf, err, fitted)
       real(dp), intent(in) :: geo(:, :)
       character(len=2), intent(in) :: symbols(:)
       character(len=*), intent(in) :: basis, aux_basis
       type(czt_molecule_t), intent(out) :: mol, aux
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: fitted
+         !! Fit the reference's own Coulomb and exchange in `aux_basis` too
 
       integer, allocatable :: z(:)
       integer :: i
@@ -151,6 +158,16 @@ contains
       if (err%has_error()) return
       call build_czt_molecule(z, symbols, geo, aux_basis, aux, err)
       if (err%has_error()) return
+      if (present(fitted)) then
+         if (fitted) then
+            ! The commutator is named because the density is what a differenced
+            ! gradient reads: left to follow the energy tolerance it stops near
+            ! 1e-7, which the stencil then divides by its step.
+            call run_czt_rhf(mol, sum(z), 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err, &
+                             aux=aux, grad_tol=1.0e-10_dp)
+            return
+         end if
+      end if
       call run_czt_rhf(mol, sum(z), 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err)
    end subroutine converge
 
@@ -251,7 +268,7 @@ contains
       call one_reference(error, 3)
    end subroutine reference_d_shells
 
-   subroutine total_gradient(geo, symbols, basis, aux_basis, nfrozen, grad, err)
+   subroutine total_gradient(geo, symbols, basis, aux_basis, nfrozen, grad, err, fitted)
       !! The RI-MP2 gradient (reference included) at one geometry, flattened
       real(dp), intent(in) :: geo(:, :)
       character(len=2), intent(in) :: symbols(:)
@@ -259,28 +276,48 @@ contains
       integer, intent(in) :: nfrozen
       real(dp), intent(out) :: grad(:)
       type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: fitted
+         !! Over a fitted reference, differentiated as fitted
 
       type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       real(dp), allocatable :: g(:, :)
       integer :: i, n_occ
 
-      call converge(geo, symbols, basis, aux_basis, mol, aux, scf, err)
+      logical :: fit_ref
+
+      fit_ref = .false.
+      if (present(fitted)) fit_ref = fitted
+      call converge(geo, symbols, basis, aux_basis, mol, aux, scf, err, fitted=fit_ref)
       if (err%has_error()) return
       n_occ = sum([(atomic_number(symbols(i)), i=1, size(symbols))])/2
-      call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, n_occ, g, err, &
-                               n_frozen=nfrozen, fit_response=.false.)
+      if (fit_ref) then
+         call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, n_occ, g, &
+                                  err, n_frozen=nfrozen, fitted_reference=.true.)
+      else
+         call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, n_occ, g, &
+                                  err, n_frozen=nfrozen, fit_response=.false.)
+      end if
       if (err%has_error()) return
       grad = reshape(g, [size(grad)])
       call mol%destroy()
       call aux%destroy()
    end subroutine total_gradient
 
-   subroutine differences_case(error, basis, aux_basis, nfrozen)
+   subroutine differences_case(error, basis, aux_basis, nfrozen, fitted)
       !! RHF Hessian plus this block, against a five-point stencil of the gradient
+      !!
+      !! With `fitted` the reference is density fitted in the same auxiliary
+      !! basis, the reference Hessian is `df_rhf_hessian`, and the block is
+      !! told so through `ref_aux`. The gradient differenced is then the one
+      !! with `fitted_reference`, whose Z-vector operator and potentials are
+      !! the fitted reference's own -- so, unlike the exact-reference case, no
+      !! operator has to be switched off for the two to be the same energy's
+      !! derivatives.
       type(error_type), allocatable, intent(out) :: error
       character(len=*), intent(in) :: basis, aux_basis
       integer, intent(in) :: nfrozen
+      logical, intent(in), optional :: fitted
 
       real(dp), parameter :: WATER(3, 3) = reshape( &
                              [0.05_dp, 0.02_dp, -0.03_dp, &
@@ -295,16 +332,30 @@ contains
       real(dp), allocatable :: hess4(:, :, :, :), corr(:, :), rhf4(:, :, :, :), rhf(:, :)
       real(dp) :: geo(3, 3), g(9, 4), fd(9, 9), dev
       integer :: y, k, atom, comp
+      logical :: fit_ref
 
-      call converge(WATER, SYM, basis, aux_basis, mol, aux, scf, err)
+      fit_ref = .false.
+      if (present(fitted)) fit_ref = fitted
+      call converge(WATER, SYM, basis, aux_basis, mol, aux, scf, err, fitted=fit_ref)
       call check(error,.not. err%has_error(), "the SCF must converge: "//err%get_full_trace())
       if (allocated(error)) return
-      call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
-                                      hess4, err, n_frozen=nfrozen, tol=1.0e-13_dp)
+      if (fit_ref) then
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                         hess4, err, n_frozen=nfrozen, tol=1.0e-13_dp, &
+                                         ref_aux=aux)
+      else
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                         hess4, err, n_frozen=nfrozen, tol=1.0e-13_dp)
+      end if
       call check(error,.not. err%has_error(), "the Hessian must run: "//err%get_full_trace())
       if (allocated(error)) return
-      call rhf_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, 5, &
-                       rhf4, err, tol=1.0e-13_dp)
+      if (fit_ref) then
+         call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, scf%orbital_energies, 5, &
+                             rhf4, err, controls=response_controls_t(tol=1.0e-13_dp))
+      else
+         call rhf_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, 5, &
+                          rhf4, err, tol=1.0e-13_dp)
+      end if
       call check(error,.not. err%has_error(), "the RHF Hessian must run")
       if (allocated(error)) return
       call to_matrix(hess4, corr)
@@ -316,7 +367,8 @@ contains
          do k = 1, 4
             geo = WATER
             geo(comp, atom) = geo(comp, atom) + SHIFT(k)*STEP
-            call total_gradient(geo, SYM, basis, aux_basis, nfrozen, g(:, k), err)
+            call total_gradient(geo, SYM, basis, aux_basis, nfrozen, g(:, k), err, &
+                                fitted=fit_ref)
             call check(error,.not. err%has_error(), "the displaced gradient failed")
             if (allocated(error)) return
          end do
@@ -325,6 +377,8 @@ contains
       end do
       fd = 0.5_dp*(fd + transpose(fd))
       dev = maxval(abs(corr + rhf - fd))
+      if (fit_ref) write (*, "(a,i0,a,es10.2)") "    fitted reference, ", nfrozen, &
+         " frozen: Hessian - stencil of the gradient: ", dev
       call check(error, dev < TOL_FD, "RHF Hessian plus the correlation block is not the "// &
                  "derivative of the RI-MP2 gradient")
       if (allocated(error)) write (*, "(a,es10.3)") "largest deviation ", dev
@@ -343,6 +397,18 @@ contains
 
       call differences_case(error, "6-31g", "cc-pvdz-rifit", 1)
    end subroutine frozen_against_gradient_differences
+
+   subroutine fitted_reference_differences(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call differences_case(error, "6-31g", "cc-pvdz-rifit", 0, fitted=.true.)
+   end subroutine fitted_reference_differences
+
+   subroutine fitted_reference_frozen_differences(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call differences_case(error, "6-31g", "cc-pvdz-rifit", 1, fitted=.true.)
+   end subroutine fitted_reference_frozen_differences
 
    subroutine batching_changes_nothing(error)
       !! Atoms per three-index batch and perturbations per Fock pass are

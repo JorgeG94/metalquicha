@@ -381,8 +381,9 @@ What has a gradient on the CPU backend, at a glance:
    * - Double hybrids (``b2plyp``, ``b2gp-plyp``, ``mpw2plyp``)
      - yes
      - Restricted, all-electron, GGA-based; exact or fitted reference. The
-       *Hessian* is analytic under the same conditions less the fitted
-       reference -- see :doc:`analytic_hessians`
+       *Hessian* is analytic under the same conditions; over a fitted
+       reference it needs the perturbative term fitted too -- see
+       :doc:`analytic_hessians`
    * - CASSCF and ORMAS-SCF
      - yes
      - No Z-vector: a converged MCSCF is stationary with respect to both the
@@ -1014,10 +1015,13 @@ Planned Features
    - F12 variants: these parse but have no implementation
 
 2. **Second derivatives beyond a restricted reference**: unrestricted
-   Hessians, and density-fitted ones other than Hartree-Fock. The Kohn-Sham,
-   MP2 and double-hybrid ones are built and wired to ``driver: Hessian``, as
-   is fitted Hartree-Fock; what remains is an open shell, and a fitted
-   reference under a functional or a correlated method. See :doc:`analytic_hessians` for the table and for the four
+   Hessians, and correlated ones over a density-fitted reference. The
+   Kohn-Sham, MP2 and double-hybrid ones are built and wired to
+   ``driver: Hessian``, as are fitted Hartree-Fock and fitted Kohn-Sham; what
+   remains is an open shell, a fitted range-separated hybrid, and a fitted
+   reference under conventional MP2 or coupled cluster. RI-MP2 and a double
+   hybrid with a fitted perturbative term are analytic over a fitted
+   reference. See :doc:`analytic_hessians` for the table and for the four
    double-hybrid cases that still fall back
 
 3. **Fragment methods**: gradients and open-shell fragments under FMO, EE-MBE

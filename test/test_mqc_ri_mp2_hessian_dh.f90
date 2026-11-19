@@ -55,6 +55,8 @@ contains
 
       testsuite = [ &
                   new_unittest("b2plyp_against_the_fitted_gradient", against_gradient), &
+                  new_unittest("b2plyp_over_a_fitted_reference_against_its_gradient", &
+                               against_gradient_fitted_reference), &
                   new_unittest("b2plyp_6_31g_against_the_conventional_block", &
                                against_conventional_631g), &
                   new_unittest("b2plyp_cc_pvdz_against_the_conventional_block", &
@@ -65,18 +67,29 @@ contains
                   ]
    end subroutine collect_mqc_ri_mp2_hessian_dh_tests
 
-   subroutine setup_case(basis, aux_basis, geo, mol, aux, ctx, scf, err)
+   subroutine setup_case(basis, aux_basis, geo, mol, aux, ctx, scf, err, fitted)
       character(len=*), intent(in) :: basis, aux_basis
       real(dp), intent(in) :: geo(3, 3)
       type(czt_molecule_t), intent(out) :: mol, aux
       type(xc_context_t), intent(inout) :: ctx
       type(rhf_result_t), intent(out) :: scf
       type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: fitted
+         !! Fit the Kohn-Sham reference's own Coulomb and exchange in `aux_basis`
 
       call build_czt_molecule(Z, SYM, geo, basis, mol, err)
       if (err%has_error()) return
       call build_czt_molecule(Z, SYM, geo, aux_basis, aux, err)
       if (err%has_error()) return
+      if (present(fitted)) then
+         if (fitted) then
+            ! The commutator is named because a differenced gradient reads the
+            ! density, not the energy.
+            call run_czt_rhf(mol, 10, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err, &
+                             xc=ctx, aux=aux, grad_tol=1.0e-10_dp)
+            return
+         end if
+      end if
       call run_czt_rhf(mol, 10, 300, 1.0e-14_dp, 1.0e-12_dp, .false., scf, err, xc=ctx)
    end subroutine setup_case
 
@@ -93,29 +106,59 @@ contains
       call mol%destroy()
    end subroutine make_context
 
-   subroutine fitted_pt2_gradient(ctx, basis, aux_basis, coords, gradient, err)
+   subroutine fitted_pt2_gradient(ctx, basis, aux_basis, coords, gradient, err, fitted)
       type(xc_context_t), intent(inout) :: ctx
       character(len=*), intent(in) :: basis, aux_basis
       real(dp), intent(in) :: coords(3, 3)
       real(dp), allocatable, intent(out) :: gradient(:, :)
       type(error_t), intent(inout) :: err
+      logical, intent(in), optional :: fitted
+         !! Over a fitted reference, differentiated as fitted
 
       type(czt_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
+      logical :: fit_ref
 
-      call setup_case(basis, aux_basis, coords, mol, aux, ctx, scf, err)
+      fit_ref = .false.
+      if (present(fitted)) fit_ref = fitted
+      call setup_case(basis, aux_basis, coords, mol, aux, ctx, scf, err, fitted=fit_ref)
       if (err%has_error()) return
-      call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, gradient, err, &
-                               xc=ctx, scf_density=scf%density, pt2_scale=ctx%pt2_fraction, &
-                               fit_response=.false., fixed_grid=.true.)
+      if (fit_ref) then
+         call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, gradient, &
+                                  err, xc=ctx, scf_density=scf%density, &
+                                  pt2_scale=ctx%pt2_fraction, fitted_reference=.true., &
+                                  fixed_grid=.true.)
+      else
+         call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, gradient, &
+                                  err, xc=ctx, scf_density=scf%density, &
+                                  pt2_scale=ctx%pt2_fraction, fit_response=.false., &
+                                  fixed_grid=.true.)
+      end if
       call mol%destroy()
       call aux%destroy()
    end subroutine fitted_pt2_gradient
 
    subroutine against_gradient(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call gradient_case(error, .false.)
+   end subroutine against_gradient
+
+   subroutine against_gradient_fitted_reference(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call gradient_case(error, .true.)
+   end subroutine against_gradient_fitted_reference
+
+   subroutine gradient_case(error, fitted)
       !! One column of the block, `d(gradient)/d(atom 1, z)`, by the seven-point
       !! stencil
+      !!
+      !! With `fitted` the Kohn-Sham reference is density fitted in the same
+      !! auxiliary basis: the block is told so through `ref_aux`, and the
+      !! gradient differenced is the one with `fitted_reference`.
       type(error_type), allocatable, intent(out) :: error
+      logical, intent(in) :: fitted
 
       real(dp), parameter :: WEIGHT(6) = [-1.0_dp, 9.0_dp, -45.0_dp, 45.0_dp, -9.0_dp, 1.0_dp]
       integer, parameter :: OFFSET(6) = [-3, -2, -1, 1, 2, 3]
@@ -140,7 +183,8 @@ contains
       do point = 1, 6
          coords = WATER
          coords(PERT_CART, PERT_ATOM) = coords(PERT_CART, PERT_ATOM) + real(OFFSET(point), dp)*STEP
-         call fitted_pt2_gradient(ctx, "6-31g", "cc-pvdz-rifit", coords, gradient, err)
+         call fitted_pt2_gradient(ctx, "6-31g", "cc-pvdz-rifit", coords, gradient, err, &
+                                  fitted=fitted)
          call check(error,.not. err%has_error(), "a displaced gradient failed: "// &
                     err%get_full_trace())
          if (allocated(error)) then
@@ -151,11 +195,16 @@ contains
       end do
       fd = reshape(acc/(60.0_dp*STEP), [9])
 
-      call setup_case("6-31g", "cc-pvdz-rifit", WATER, mol, aux, ctx, scf, err)
-      if (.not. err%has_error()) &
+      call setup_case("6-31g", "cc-pvdz-rifit", WATER, mol, aux, ctx, scf, err, fitted=fitted)
+      if (.not. err%has_error() .and. fitted) then
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, hess, &
+                                         err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
+                                         pt2_scale=ctx%pt2_fraction, ref_aux=aux)
+      else if (.not. err%has_error()) then
          call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, hess, &
                                          err, tol=1.0e-13_dp, xc=ctx, scf_density=scf%density, &
                                          pt2_scale=ctx%pt2_fraction)
+      end if
       call omp_set_num_threads(threads)
       call check(error,.not. err%has_error(), "the Hessian must run: "//err%get_full_trace())
       if (allocated(error)) return
@@ -169,7 +218,7 @@ contains
                  "the fitted double-hybrid Hessian does not difference its own gradient")
       call mol%destroy()
       call aux%destroy()
-   end subroutine against_gradient
+   end subroutine gradient_case
 
    subroutine conventional_case(basis, aux_basis, error)
       type(error_type), allocatable, intent(out) :: error

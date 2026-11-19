@@ -282,13 +282,27 @@ The methods:
   Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
   allowed), and a double hybrid's perturbative term, fitted when
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
-  SCS/SOS, a fitted reference and a frozen-core double hybrid take the
-  semi-numerical path. See `mqc_docs/source/analytic_hessians.rst`.
-  **Density-fitted Hartree-Fock has its own analytic Hessian**
-  (`df_rhf_hessian`, with the fitted terms in `mqc_czt_df_hessian`): it
-  differentiates the fitted energy as written, shares `rhf_hessian`'s
-  one-electron terms and assembly, and reaches the response solver through one
-  optional argument, `fit`. The reference is PySCF's
+  RI-MP2 also over a density-fitted reference (`ref_aux` to
+  `ri_mp2_correlation_hessian`, added to `df_rhf_hessian`): the block reaches
+  the reference's operator in five places -- `t1_batch`, `t1x_stack`,
+  `skeleton_matrices`, `solve_response` and `pass1_reference_share` -- and
+  each has a fitted branch through `df_operator_t`. **A sixth use of the
+  reference's integrals needs a fitted branch too**, or the Hessian is that of
+  no energy. A double hybrid over a fitted Kohn-Sham reference takes the
+  same branches with `xc`. SCS/SOS, conventional MP2 over a fitted reference,
+  and a frozen-core double hybrid take the semi-numerical path. See
+  `mqc_docs/source/analytic_hessians.rst`.
+  **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic
+  Hessian** (`df_rhf_hessian`, which takes an optional `xc`, with the fitted
+  terms in `mqc_czt_df_hessian`): it differentiates the fitted energy as
+  written, shares `rhf_hessian`'s one-electron terms and assembly, and reaches
+  the response solver through one optional argument, `fit`. Under a functional
+  the fitted terms take its exchange fraction and the kernel is added by
+  `response_xc_kernel`, the same routine the unfitted operator calls; a
+  range-separated hybrid is declined. **Do not check a Kohn-Sham Hessian
+  against differenced gradients**: the gradient carries the grid's response
+  and the Hessian holds the grid fixed, which is 4e-4 on water and looks like
+  a bug. The reference is PySCF's
   `df.hessian` with `auxbasis_response = 2`; at 1 the fit's second-order
   response is missing and it is 1e-4 off. The fitted terms are written
   twice: `df_two_electron_derivatives` in the module is what runs, and
