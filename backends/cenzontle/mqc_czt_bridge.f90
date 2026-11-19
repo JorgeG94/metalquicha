@@ -1183,6 +1183,7 @@ contains
       integer :: iatom, diis_size, guess_kind, accel_kind
       integer :: nelec        !! Valence electrons: fragment%nelec less any ECP core
       logical :: accel_ok, accel_second_order, use_second_order
+      logical :: accel_gdm, use_gdm
       type(scf_convergence_t) :: scf_conv
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
@@ -1404,8 +1405,9 @@ contains
       ! name itself is refused further down, where every other misspelled
       ! keyword is, so the order the messages come out in does not move.
       call parse_accelerator_name(settings%accelerator, accel_kind, accel_ok, &
-                                  accel_second_order)
+                                  accel_second_order, accel_gdm)
       use_second_order = settings%second_order .or. accel_second_order
+      use_gdm = settings%gdm .or. accel_gdm
 
       ! ---- can this reference answer the stability question? ----------------
       !
@@ -1438,6 +1440,15 @@ contains
                                "this reference is unrestricted; the open-shell "// &
                                "rotation space is larger and is not implemented. "// &
                                "Converge this one by DIIS.")
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
+      if (use_gdm .and. unrestricted) then
+         call result%error%set(ERROR_VALIDATION, "geometric direct minimisation is "// &
+                               "implemented here for a closed shell, and this "// &
+                               "reference is unrestricted. Converge this one by DIIS.")
          result%has_error = .true.
          call mol%destroy()
          return
@@ -1608,6 +1619,10 @@ contains
          call logger%info("    SCF accelerator: SOSCF -- DIIS opens, then "// &
                           "trust-region Newton on the orbital rotations")
       end if
+      if (accel_gdm) then
+         call logger%info("    SCF accelerator: GDM -- DIIS opens, then "// &
+                          "geometric direct minimisation")
+      end if
 
       call parse_guess_name(settings%guess, guess_kind, error)
       if (error%has_error()) then
@@ -1754,7 +1769,9 @@ contains
                              soscf_start=settings%soscf_start, &
                              cosx=settings%cosx, cosx_grid_level=settings%cosx_grid, &
                              cosx_final_grid=settings%cosx_final_grid, &
-                             b_ao_out=scf_b_ao)
+                             b_ao_out=scf_b_ao, gdm=use_gdm, &
+                             gdm_start=settings%gdm_start, &
+                             gdm_max_rotation=settings%gdm_max_rotation)
          else
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
@@ -1767,7 +1784,9 @@ contains
                              second_order=use_second_order, &
                              soscf_start=settings%soscf_start, cosx=settings%cosx, &
                              cosx_grid_level=settings%cosx_grid, &
-                             cosx_final_grid=settings%cosx_final_grid)
+                             cosx_final_grid=settings%cosx_final_grid, gdm=use_gdm, &
+                             gdm_start=settings%gdm_start, &
+                             gdm_max_rotation=settings%gdm_max_rotation)
          end if
          ! Kept alive: the gradient below has to be told the same auxiliary
          ! basis this SCF fitted with. Released once past it.
@@ -1799,7 +1818,9 @@ contains
                           incremental_fock=settings%incremental_fock, &
                           grad_tol=settings%grad_tol, convergence=scf_conv, &
                           second_order=use_second_order, &
-                          soscf_start=settings%soscf_start)
+                          soscf_start=settings%soscf_start, gdm=use_gdm, &
+                          gdm_start=settings%gdm_start, &
+                          gdm_max_rotation=settings%gdm_max_rotation)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -3490,6 +3511,8 @@ contains
          reason = "excited states"
       else if (settings%stability) then
          reason = "the stability analysis"
+      else if (settings%gdm) then
+         reason = "geometric direct minimisation"
       else if (settings%second_order) then
          reason = "the second-order SCF"
       else if (allocated(settings%fukui_population)) then

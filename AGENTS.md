@@ -348,6 +348,17 @@ The methods:
   Lagrangian, divided by the orbital-energy gap, and skips degenerate pairs;
   using the amplitudes' value there is right for CCSD and wrong for (T).
 
+**The terco backend runs RI-CCSD and RI-CCSD(T) too** (`trc_run_rccsd`,
+through `run_coupled_cluster` in `mqc_terco_driver`): closed shell over
+Hartree-Fock, energies only. The correlation energy comes back as the CPU
+backend's two parts, `t1 t1` and `t2`, through `trc_rccsd_energy_parts`
+(terco ABI 1.29), so `energy%cc` reads the same from either backend.
+Conventional coupled cluster on that backend is
+refused by name. **The terco bridge is not built in CI or in a default
+build**: compile it with `-DMQC_ENABLE_TERCO=ON -DTERCO_ROOT=<checkout>`; with
+`-DTERCO_LIBRARY` pointed at any file the library target compiles without a
+terco build, which checks the interface and nothing else.
+
 An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
 intent is recovered in the reader by `method_wants_density_fitting` while the
 spelling still exists. `ccsd` and `ccsd(t)` are separate method types, so the
@@ -479,6 +490,31 @@ Things to know before touching any of it:
   projector (forbidden rotations are not excluded from the parameter space).
   Restricted Kohn-Sham *is* supported, through the same kernel the analytic
   Hessian's coupled-perturbed solve uses.
+
+### Geometric direct minimisation
+
+`keywords.scf.gdm` (or `accelerator: "gdm"`) is the third way to finish a
+closed-shell SCF: DIIS opens, and below `gdm_start` (1e-1) an L-BFGS
+minimisation over the orbital rotations takes over, one Fock build per step, a
+step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
+
+- `src/methods/scf/mqc_scf_gdm` is the numerics -- history, preconditioner,
+  accept rule, step cap -- and is **terco's `trc_scf_gdm`, name for name**. A
+  fix to one belongs in the other; their tests are the same fourteen.
+- `run_gdm_phase`, private in `mqc_czt_rhf` beside `run_soscf_phase` and
+  shaped like it, is the loop. Every Fock build in it is a full one, because
+  the accept rule compares energies to 1e-10.
+- **The orbitals are not semicanonicalised between steps**, unlike the
+  second-order phase. The L-BFGS history compares gradients across successive
+  orbital frames with no transport, which holds only while the frames differ
+  by one small rotation; mixing within the occupied or virtual block would
+  make the history meaningless. Once, at the end.
+- **It is a minimiser, not a saddle escape.** On the stretched N2 below it
+  lands on DIIS's saddle, and `gdm/n2_stretched_gdm` pins that on purpose.
+- Refused by name: with `second_order`, unrestricted, COSX (the energy is not
+  variational, so the Fock matrix is not its gradient), PCM, a Fock projector
+  and cuEST. On the terco backend the request is forwarded to terco's own GDM
+  (`trc_set_gdm`), which also takes an unrestricted reference.
 
 **A real case where DIIS is not enough**, worth keeping in mind as the thing
 these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the
@@ -692,7 +728,7 @@ with `../../../`. The CPU suite is **generated** - edit
 under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
-df-dft df-hf dft dh ecp efmo efp fmo fukui gradient hessian interaction_energy
+df-dft df-hf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice

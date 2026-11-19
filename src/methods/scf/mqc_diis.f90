@@ -282,7 +282,7 @@ contains
       deallocate (df_age, e_age)
    end subroutine diis_extrapolate_with
 
-   subroutine parse_accelerator_name(name, scheme, ok, second_order)
+   subroutine parse_accelerator_name(name, scheme, ok, second_order, gdm)
       !! `keywords.scf.accelerator` to one of the ACCEL_* parameters
       !!
       !! Unknown names are refused rather than defaulted: `scheme` still comes
@@ -306,6 +306,12 @@ contains
          !! fallback. The second-order SCF *is* a DIIS SCF for its opening
          !! phase; see `run_soscf_phase`, which cannot be started from a guess.
 
+      logical, intent(out), optional :: gdm
+         !! Whether the name asked for geometric direct minimisation, on the
+         !! terms `second_order` has: `gdm` is accepted only from a caller that
+         !! passes this, and `scheme` comes back `ACCEL_DIIS` for the opening
+         !! phase.
+
       character(len=len(name)) :: lower
       integer :: i, c
 
@@ -317,6 +323,7 @@ contains
 
       ok = .true.
       if (present(second_order)) second_order = .false.
+      if (present(gdm)) gdm = .false.
       select case (trim(adjustl(lower)))
       case ("", "diis")
          scheme = ACCEL_DIIS
@@ -330,6 +337,13 @@ contains
          scheme = ACCEL_DIIS
          if (present(second_order)) then
             second_order = .true.
+         else
+            ok = .false.
+         end if
+      case ("gdm")
+         scheme = ACCEL_DIIS
+         if (present(gdm)) then
+            gdm = .true.
          else
             ok = .false.
          end if

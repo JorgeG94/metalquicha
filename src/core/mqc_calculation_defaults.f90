@@ -93,6 +93,19 @@ module mqc_calculation_defaults
    !! deck does not say. Here and not in the backend so the deck reader, which
    !! is built without it, and the exchange kernel share one value.
 
+   real(dp), parameter, public :: DEFAULT_GDM_START = 1.0e-1_dp
+   !! Commutator below which geometric direct minimisation takes over from
+   !! DIIS, as `max|FDS - SDF|` in the orthogonal basis. Ten times looser than
+   !! the second-order SCF's: the stalls this is for sit between 1e-2 and 1e-1,
+   !! and a quasi-Newton step that only ever accepts a decrease tolerates a
+   !! worse starting point than a Newton step does. terco's default, so a deck
+   !! behaves the same on either backend.
+
+   real(dp), parameter, public :: DEFAULT_GDM_MAX_ROTATION = 0.2_dp
+   !! Largest element of the orbital rotation of one direct-minimisation step,
+   !! radians. A step that overshoots is rejected and retried at half the
+   !! scale, so this bounds the first attempt and not the method.
+
    real(dp), parameter, public :: DEFAULT_SOSCF_START = 1.0e-2_dp
    !! Commutator below which a second-order SCF stops extrapolating and starts
    !! taking Newton steps, as `max|FDS - SDF|` in the orthogonal basis.

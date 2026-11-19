@@ -20,7 +20,8 @@ module test_mqc_json_reader
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
-                                       DEFAULT_COSX_GRID, &
+                                       DEFAULT_COSX_GRID, DEFAULT_GDM_START, &
+                                       DEFAULT_GDM_MAX_ROTATION, &
                                        HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
                                        HESSIAN_METHOD_NUMERICAL, &
                                        DEFAULT_FRAG_LEVEL, &
@@ -129,6 +130,7 @@ contains
                   new_unittest("optimization_target", test_opt_target), &
                   new_unittest("scf_diis_controls", test_diis_keywords), &
                   new_unittest("scf_stability_controls", test_stability_keywords), &
+                  new_unittest("scf_gdm_controls", test_gdm_keywords), &
                   new_unittest("scf_second_order_controls", test_second_order_keywords), &
                   new_unittest("scf_exchange_cosx", test_scf_exchange), &
                   new_unittest("incremental_fock keyword", test_incremental_fock_keyword), &
@@ -3458,6 +3460,53 @@ contains
       call check(error, parse_error%has_error(), &
                  "a misspelled setting inside the avas block should be refused")
    end subroutine test_avas_keywords
+
+   subroutine test_gdm_keywords(error)
+      !! `keywords.scf.gdm` and its two knobs
+      !!
+      !! Off by default, and the defaults of the two thresholds are the shared
+      !! constants rather than a second copy in the reader: a deck that names
+      !! only `gdm` has to hand over where terco's does.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"gdm": true, "gdm_start": 5.0e-2, '// &
+                      '"gdm_max_rotation": 0.1}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%scf_gdm, "the request should be read")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_gdm_start, 5.0e-2_dp), &
+                 "the handover threshold should be read")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_gdm_max_rotation, 0.1_dp), &
+                 "the rotation cap should be read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"maxiter": 50}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%scf_gdm, "direct minimisation defaults off")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_gdm_start, DEFAULT_GDM_START), &
+                 "the handover defaults to the shared constant")
+      if (allocated(error)) return
+      call check(error, close_enough(config%scf_gdm_max_rotation, &
+                                     DEFAULT_GDM_MAX_ROTATION), &
+                 "the rotation cap defaults to the shared constant")
+      if (allocated(error)) return
+
+      ! A misspelling is refused by the schema rather than read as absent.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", &
+                      '"scf": {"gdm_begin": 0.1}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown gdm key should be refused")
+   end subroutine test_gdm_keywords
 
    subroutine test_stability_keywords(error)
       !! `keywords.scf.stability` and the two knobs on the eigensolve

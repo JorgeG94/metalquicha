@@ -241,9 +241,11 @@ Two GPU backends, both optional and both narrower than the CPU path:
   charges are all refused.
 - **terco** (``"backend": "terco"``, ``-DMQC_ENABLE_TERCO``). It runs a
   whole Hartree-Fock or Kohn-Sham SCF, restricted or unrestricted, on the
-  device, exact or density-fitted, with RI-MP2, double hybrids and C-PCM or
-  IEF-PCM. Analytic gradients run on one rank, except through RI-MP2, a double
-  hybrid or the continuum. It takes Cartesian or spherical shells up to the
+  device, exact or density-fitted, with RI-MP2, double hybrids, closed-shell
+  RI-CCSD and RI-CCSD(T) over Hartree-Fock, and C-PCM or IEF-PCM. Analytic
+  gradients run on one rank, except through RI-MP2, a double hybrid, coupled
+  cluster or the continuum. ``keywords.scf.gdm`` is forwarded to terco's own
+  geometric direct minimisation. It takes Cartesian or spherical shells up to the
   linked build's angular momentum ceiling, and has no ECPs. See
   :doc:`installation`.
 
@@ -984,8 +986,9 @@ does not apply.
    MP2 only. PIEDA is FMO only. See :doc:`fmo` and :doc:`efmo`
 10. **GPU backends**: cuEST covers Hartree-Fock and Kohn-Sham energies and
     gradients. terco covers Hartree-Fock and Kohn-Sham energies and gradients,
-    density fitting, RI-MP2 and double-hybrid energies, continuum solvation and
-    Fukui indices. Exact MP2, coupled cluster, excited states and ECPs are CPU
+    density fitting, RI-MP2, double-hybrid, RI-CCSD and RI-CCSD(T) energies,
+    continuum solvation and Fukui indices. Exact MP2, conventional coupled
+    cluster, every correlated gradient, excited states and ECPs are CPU
     only. See `Ab Initio (GPU)`_ above
 11. **EFP**: an EFP run covers systems made entirely of effective fragments. A
     mixed quantum/EFP system is refused, and there is no EFP gradient

@@ -300,6 +300,9 @@ contains
       driver_config%method_config%stability_max_iter = mqc_config%scf_stability_maxiter
       driver_config%method_config%second_order = mqc_config%scf_second_order
       driver_config%method_config%soscf_start = mqc_config%scf_soscf_start
+      driver_config%method_config%gdm = mqc_config%scf_gdm
+      driver_config%method_config%gdm_start = mqc_config%scf_gdm_start
+      driver_config%method_config%gdm_max_rotation = mqc_config%scf_gdm_max_rotation
       driver_config%hessian%temperature = mqc_config%hessian_temperature
       driver_config%hessian%pressure = mqc_config%hessian_pressure
 

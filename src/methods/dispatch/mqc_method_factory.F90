@@ -189,6 +189,9 @@ contains
       options%stability_max_iter = config%stability_max_iter
       options%second_order = config%second_order
       options%soscf_start = config%soscf_start
+      options%gdm = config%gdm
+      options%gdm_start = config%gdm_start
+      options%gdm_max_rotation = config%gdm_max_rotation
       options%device_rank = config%device_rank
       options%backend = config%backend
       options%freeze_core = config%corr%freeze_core
