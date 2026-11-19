@@ -288,8 +288,9 @@ The methods:
   `skeleton_matrices`, `solve_response` and `pass1_reference_share` -- and
   each has a fitted branch through `df_operator_t`. **A sixth use of the
   reference's integrals needs a fitted branch too**, or the Hessian is that of
-  no energy. SCS/SOS, conventional MP2 or a double hybrid over a fitted
-  reference, and a frozen-core double hybrid take the semi-numerical path. See
+  no energy. A double hybrid over a fitted Kohn-Sham reference takes the
+  same branches with `xc`. SCS/SOS, conventional MP2 over a fitted reference,
+  and a frozen-core double hybrid take the semi-numerical path. See
   `mqc_docs/source/analytic_hessians.rst`.
   **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic
   Hessian** (`df_rhf_hessian`, which takes an optional `xc`, with the fitted

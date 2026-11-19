@@ -218,7 +218,7 @@ contains
          !! The basis a density-fitted reference was fitted in. Present, the
          !! reference's operator, its derivatives and its response all come
          !! from that fit, and the block is to be added to `df_rhf_hessian`
-         !! rather than `rhf_hessian`. Hartree-Fock only.
+         !! rather than `rhf_hessian`. With `xc`, a fitted Kohn-Sham reference.
 
       type(ri_state_t), target :: st
       type(timer_type) :: clock
@@ -279,7 +279,11 @@ contains
       call skeleton_matrices(st, h1, s1, fx, sx, error)
       if (error%has_error()) return
       call stage_done(clock, "skeleton matrices")
-      if (st%fitted) then
+      if (st%fitted .and. st%dh) then
+         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
+                              reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
+                              tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
+      else if (st%fitted) then
          call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
                               tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
       else if (st%dh) then
@@ -442,12 +446,6 @@ contains
       st%zero_h = 0.0_dp
 
       if (present(ref_aux)) then
-         if (present(xc)) then
-            call error%set(ERROR_VALIDATION, "the RI-MP2 Hessian over a fitted reference "// &
-                           "is Hartree-Fock only: a double hybrid's kernel terms have "// &
-                           "not been checked against a fitted operator.")
-            return
-         end if
          st%fitted = .true.
          st%ref_aux => ref_aux
          ! A metric that drops a mode leaves `st%fit%b` unallocated, which is
@@ -911,9 +909,14 @@ contains
       real(dp), intent(in) :: tol
       type(error_t), intent(inout) :: error
 
-      if (st%fitted) then
+      if (st%fitted .and. st%dh) then
          ! Always through the batched solver: it is the one that takes the
          ! fitted operator.
+         call solve_zvector_batch(st%mol, st%c, st%eps, st%no, rhs, response, error, &
+                                  xc=st%xc, reference=st%scf_density, k_scale=st%kf, &
+                                  max_iter=st%max_iter, tol=tol, batch=st%batch, &
+                                  bounds=st%bounds, fit=st%fit)
+      else if (st%fitted) then
          call solve_zvector_batch(st%mol, st%c, st%eps, st%no, rhs, response, error, &
                                   max_iter=st%max_iter, tol=tol, batch=st%batch, &
                                   bounds=st%bounds, fit=st%fit)

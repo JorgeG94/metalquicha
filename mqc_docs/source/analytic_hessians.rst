@@ -84,9 +84,14 @@ What is covered
    * - RI-MP2 over a density-fitted reference
      - yes
      - ``ri-mp2`` with ``keywords.scf.density_fitting``, frozen core allowed
-   * - Conventional MP2 or a double hybrid over a density-fitted reference
+   * - Double hybrid with both halves fitted
+     - yes
+     - ``b2plyp`` and the like with ``model.aux_basis`` and
+       ``keywords.scf.density_fitting``, under the conditions the unfitted
+       double hybrid has
+   * - Conventional MP2 over a density-fitted reference
      - **no**
-     - ``keywords.scf.density_fitting`` with ``mp2`` or a double hybrid
+     - ``mp2`` with ``keywords.scf.density_fitting``
 
 Anything not covered falls back to the semi-numerical path rather than
 failing, so a deck that asks for a Hessian gets one either way. The difference
@@ -401,10 +406,17 @@ responses of the rotations, and the operator derivatives inside the perturbed
 ladder -- drops by a factor of four to twenty, and what is left is the
 correlation ladder itself.
 
-**Conventional MP2 and double hybrids over a fitted reference.** Still
-excluded. The conventional block contracts four-index integrals throughout,
-and a double hybrid's kernel terms have not been checked against a fitted
-operator.
+**A double hybrid over a fitted reference.** The same five branches with the
+functional's exchange fraction, and the kernel terms where they were: the
+kernel's share of the fold, its skeleton derivative and the potential's second
+derivative are all evaluated on the grid and none of them reads a two-electron
+integral. The coupled-perturbed solves take the fitted operator and the kernel
+together, as the fitted Kohn-Sham Hessian's do. The reference Hessian under
+the block is the fitted Kohn-Sham one. A seven-point stencil of the fitted
+gradient on a fixed grid agrees with the block to 8e-10.
+
+**Conventional MP2 over a fitted reference.** Still excluded. The conventional
+block contracts four-index integrals throughout.
 
 **Double hybrids that are not GGA-based, all-electron and unscreened.** Read
 this entry against the table above rather than instead of it: a meta-GGA, a

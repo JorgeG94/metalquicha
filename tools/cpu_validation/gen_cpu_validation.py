@@ -3100,7 +3100,7 @@ def pyscf_df_ri_mp2_hessian(atoms, basis, aux, frozen=0, step=0.008):
 
 
 def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
-                     step=0.008, aux=""):
+                     step=0.008, aux="", fitted_reference=False):
     """Reference double-hybrid Hessian, by second differences of the energy.
 
     **Why a difference, and why twice.** No open-source code has an analytic
@@ -3134,6 +3134,10 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
     exact Kohn-Sham reference, which is the energy a double hybrid with a named
     `model.aux_basis` reports; the PT2 is then PySCF's own `DFMP2`, so the
     difference still owes nothing to our fitted Hessian.
+
+    `fitted_reference` fits the Kohn-Sham reference's own Coulomb and exchange
+    in `aux` as well, which is what a deck with both `model.aux_basis` and
+    `keywords.scf.density_fitting` runs.
     """
     import numpy as np
     from pyscf import dft, gto, mp
@@ -3158,6 +3162,8 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
 
     def energy(coords):
         mf = dft.RKS(build(coords))
+        if fitted_reference:
+            mf = mf.density_fit(auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
         mf.xc = xc
         mf.conv_tol, mf.conv_tol_grad = 1e-13, 1e-9
         mf.grids.coords = ref_grid.coords.copy()
@@ -3236,6 +3242,14 @@ HESSIAN_RI_MP2_CASES = [
 HESSIAN_DF_RI_MP2_CASES = [
     ("water", "6-31g", "cc-pvdz-rifit", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+]
+
+#: A double hybrid with both of its halves fitted: the Kohn-Sham reference and
+#: the perturbative term, in one set, as (molecule, basis, functional, aux).
+#: `pyscf_dh_hessian` with `fitted_reference`, on its pinned grid, and held to
+#: the bound the exact-reference fitted double hybrid is, for its reason.
+HESSIAN_DF_DH_RI_CASES = [
+    ("water", "6-31g", "b2plyp", "cc-pvdz-rifit"),
 ]
 
 # Double hybrids with a named auxiliary basis, as (molecule, basis, functional,
@@ -4174,6 +4188,35 @@ def df_ri_hessian_entries(written, dry_run):
         norm = math.sqrt(sum(c*c for row in hessian for c in row))
         print(f"{mol.label:6s} {basis:12s} DF/RI-MP2 hess |H|={norm:.10f} "
               f"frozen={frozen} nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, aux in HESSIAN_DF_DH_RI_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_dh_hessian(mol.atoms, basis, functional, aux=aux,
+                                                fitted_reference=True)
+        tag = normalize_basis_name(basis) + "_" + functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/hessian",
+                        f"cpu_{name}_{tag}_{normalize_basis_name(aux)}_df_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="dft",
+                          correlation={"freeze_core": False})
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": HESSIAN_GRID_LEVEL}
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"{functional.upper()} Hessian {mol.label} {basis}/{aux} over a "
+                    f"density-fitted reference (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_DH_RI_TOLERANCE,
+            "requires": "libxc",
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} DF {functional.upper():8s} "
+              f"hess |H|={norm:.10f} nao={nao:4d} E={energy:.12f}", flush=True)
     return entries
 
 
@@ -4383,7 +4426,7 @@ def main():
         return 0
 
     if args.only_df_ri_hessian:
-        for name in {c[0] for c in HESSIAN_DF_RI_MP2_CASES}:
+        for name in {c[0] for c in HESSIAN_DF_RI_MP2_CASES + HESSIAN_DF_DH_RI_CASES}:
             MOLECULES[name].atoms = read_xyz(INPUTS / MOLECULES[name].xyz)
         entries = df_ri_hessian_entries(set(), args.dry_run)
         if args.dry_run:

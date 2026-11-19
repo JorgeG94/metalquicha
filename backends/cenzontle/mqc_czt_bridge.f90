@@ -2469,7 +2469,8 @@ contains
       end if
       df_analytic = .false.
       if (do_hessian .and. settings%density_fitting .and. full_rank &
-          .and. .not. (kohn_sham .and. (xc%range_separated .or. xc%pt2_fraction /= 0.0_dp)) &
+          .and. .not. (kohn_sham .and. xc%range_separated) &
+          .and. (dh_analytic .or. .not. (kohn_sham .and. xc%pt2_fraction /= 0.0_dp)) &
           .and. .not. unrestricted .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. mol%necpbas == 0 &
           .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
@@ -2559,7 +2560,18 @@ contains
                   ! block's: the same auxiliary basis, an exact reference, and
                   ! the PT2 coefficient applied once inside.
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
-                  if (.not. error%has_error()) then
+                  if (.not. error%has_error() .and. df_analytic) then
+                     ! Over a fitted Kohn-Sham reference the block takes the
+                     ! reference's operator from that fit too.
+                     call ri_mp2_correlation_hessian( &
+                        mol, corr_aux, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                        hess_pt2, error, tol=settings%hessian_response_tol, &
+                        max_iter=settings%hessian_response_max_iter, &
+                        batch=settings%hessian_response_batch, xc=xc, &
+                        scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
+                        dipole_derivatives=ddip_pt2, declined=declined, ref_aux=aux)
+                     call corr_aux%destroy()
+                  else if (.not. error%has_error()) then
                      call ri_mp2_correlation_hessian( &
                         mol, corr_aux, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
                         hess_pt2, error, tol=settings%hessian_response_tol, &
@@ -3518,8 +3530,6 @@ contains
       else if (settings%density_fitting .and. settings%run_mp2 &
                .and. .not. settings%corr_density_fitting) then
          reason = "conventional MP2 over a density-fitted reference; ri-mp2 has one"
-      else if (settings%density_fitting .and. double_hybrid) then
-         reason = "double hybrid over a density-fitted reference"
       else if (settings%pcm%enabled) then
          reason = "continuum solvation"
       else if (n_caps > 0) then
