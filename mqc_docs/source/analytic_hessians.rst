@@ -81,10 +81,12 @@ What is covered
      - **no**
      - ``wb97x``, ``cam-b3lyp`` and the like with
        ``keywords.scf.density_fitting``
-   * - MP2 or a double hybrid over a density-fitted reference
+   * - RI-MP2 over a density-fitted reference
+     - yes
+     - ``ri-mp2`` with ``keywords.scf.density_fitting``, frozen core allowed
+   * - Conventional MP2 or a double hybrid over a density-fitted reference
      - **no**
-     - ``keywords.scf.density_fitting`` with ``mp2``, ``ri-mp2`` or a double
-       hybrid
+     - ``keywords.scf.density_fitting`` with ``mp2`` or a double hybrid
 
 Anything not covered falls back to the semi-numerical path rather than
 failing, so a deck that asks for a Hessian gets one either way. The difference
@@ -372,8 +374,29 @@ the two offsets agree to 2e-8.
 **Range-separated hybrids over a fitted reference.** Declined. The long-range
 exchange has its own attenuated fit in the SCF and no derivative of it here.
 
-**MP2 and double hybrids over a fitted reference.** Still excluded. The
-correlation block assumes an exact reference operator.
+**RI-MP2 over a fitted reference.** The fitted correlation block uses the
+reference's operator in five places: the operator itself on a general density,
+its first derivative at fixed orbitals, the two coupled-perturbed solves, and
+the second derivative of the relaxed correlation density against the
+reference's. Over an exact reference each is a pass over four-index
+integrals. Over a fitted one each comes from the fit instead -- the same
+three-index machinery as the fitted Hartree-Fock Hessian, generalised from the
+reference's own density to any symmetric one -- and the block is added to the
+fitted Hartree-Fock Hessian rather than the exact one. One auxiliary basis
+serves both fits, because ``model.aux_basis`` is the only place a deck names
+one.
+
+This is the case where the analytic Hessian and the differenced gradient are
+derivatives of exactly the same energy, with no operator standing in for
+another: the gradient's Z-vector is solved against the fitted reference's own
+operator. A four-point stencil of that gradient agrees to 1e-8. Over an exact
+reference the same comparison stops near 1e-5, because there the gradient's
+fitted Z-vector operator is an approximation to the exact one.
+
+**Conventional MP2 and double hybrids over a fitted reference.** Still
+excluded. The conventional block contracts four-index integrals throughout,
+and a double hybrid's kernel terms have not been checked against a fitted
+operator.
 
 **Double hybrids that are not GGA-based, all-electron and unscreened.** Read
 this entry against the table above rather than instead of it: a meta-GGA, a

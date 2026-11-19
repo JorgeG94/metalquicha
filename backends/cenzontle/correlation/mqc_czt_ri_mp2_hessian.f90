@@ -37,8 +37,19 @@ module mqc_czt_ri_mp2_hessian
    !! refused if the figure exceeds `memory_budget`; the batch of atoms is sized
    !! from what is left.
    !!
+   !! **A fitted reference** (`ref_aux`) changes neither the ladder nor the
+   !! correlation functional, only where the reference operator comes from:
+   !! `T1(D)` from the reference's fitted tensor, its first derivative from
+   !! `df_potential_derivative`, the coupled-perturbed solves from the fitted
+   !! operator, and the reference share of pass 1 from
+   !! `df_cross_second_derivative`. The block is then added to
+   !! `df_rhf_hessian`. `resident_bytes` does not count the reference's
+   !! three-index arrays.
+   !!
    !! The fitted energy differentiated is the one `czt_ri_mp2_gradient` reports
    !! with `fit_response = .false.`: an exact reference, a fitted correlation.
+   !! With `ref_aux` it is the one that gradient reports with
+   !! `fitted_reference`.
    !! The inverse metric is the pseudo-inverse that gradient uses (eigenvalues
    !! below `FIT_METRIC_THRESHOLD` dropped); the derivative `-J^-1 dJ J^-1` is exact
    !! only when none is, so a metric that drops a mode is refused.
@@ -55,7 +66,10 @@ module mqc_czt_ri_mp2_hessian
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_gemm_threads, only: gemm_over_columns, gemm_over_inner
    use mqc_czt_ecp, only: ecp_refuses_derivatives
-   use mqc_czt_cphf, only: cphf_solve
+   use mqc_czt_cphf, only: cphf_solve, fitted_potential_general
+   use mqc_czt_df_hessian, only: df_hessian_terms_t, df_operator_t, df_operator_setup, &
+                                 df_potential_derivative, df_cross_second_derivative, &
+                                 df_fit_to_mo
    use mqc_czt_response_product, only: response_mean_field
    use mqc_czt_gradient, only: two_centre_deriv
    use mqc_czt_xc, only: xc_context_t
@@ -115,6 +129,13 @@ module mqc_czt_ri_mp2_hessian
       integer :: n_dropped = 0
          !! Metric modes the pseudo-inverse dropped; nonzero is a refusal
       type(xc_context_t), pointer :: xc => null()
+      logical :: fitted = .false.
+         !! The reference was density fitted, and every use of its operator
+         !! below goes through `ops` and `fit` instead of four-index integrals
+      type(czt_molecule_t), pointer :: ref_aux => null()
+         !! The basis the reference was fitted in
+      type(df_operator_t) :: ops
+      type(df_hessian_terms_t) :: fit
       real(dp), allocatable :: scf_density(:, :)
       real(dp), allocatable :: c(:, :), eps(:)
       real(dp), allocatable :: bounds(:, :), zero_h(:, :)
@@ -138,7 +159,8 @@ contains
    subroutine ri_mp2_correlation_hessian(mol, aux, coeff, orbital_energies, n_occ, &
                                          hess_corr, error, n_frozen, tol, batch, &
                                          atom_batch, parts, xc, scf_density, pt2_scale, &
-                                         dipole_derivatives, max_iter, declined, zvector_batched)
+                                         dipole_derivatives, max_iter, declined, &
+                                         zvector_batched, ref_aux)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -192,8 +214,13 @@ contains
          !! them (`solve_zvector_batch`). `.false.` takes one conjugate-gradient
          !! solve per right-hand side, `cphf_solve`'s own, which is the path this
          !! routine had before and is kept for comparison; `.true.` by default
+      type(czt_molecule_t), intent(in), optional, target :: ref_aux
+         !! The basis a density-fitted reference was fitted in. Present, the
+         !! reference's operator, its derivatives and its response all come
+         !! from that fit, and the block is to be added to `df_rhf_hessian`
+         !! rather than `rhf_hessian`. Hartree-Fock only.
 
-      type(ri_state_t) :: st
+      type(ri_state_t), target :: st
       type(timer_type) :: clock
       real(dp) :: cscale
       real(dp), allocatable :: ddip(:, :)
@@ -224,8 +251,11 @@ contains
       end if
       call clock%start()
       call setup_state(st, mol, aux, coeff, orbital_energies, n_occ, n_frozen, use_batch, &
-                       error, xc=xc, scf_density=scf_density)
-      if (error%has_error()) return
+                       error, xc=xc, scf_density=scf_density, ref_aux=ref_aux)
+      if (error%has_error()) then
+         if (present(declined)) declined = st%fitted .and. .not. allocated(st%fit%b)
+         return
+      end if
       if (present(zvector_batched)) st%batched_zvector = zvector_batched
       call check_memory(st, error)
       if (error%has_error()) return
@@ -249,7 +279,10 @@ contains
       call skeleton_matrices(st, h1, s1, fx, sx, error)
       if (error%has_error()) return
       call stage_done(clock, "skeleton matrices")
-      if (st%dh) then
+      if (st%fitted) then
+         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
+                              tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
+      else if (st%dh) then
          call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
                               reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
                               tol=use_tol, batch=use_batch, bounds=st%bounds)
@@ -331,8 +364,8 @@ contains
    ! ==========================================================================
 
    subroutine setup_state(st, mol, aux, coeff, eps, n_occ, n_frozen, batch, error, xc, &
-                          scf_density)
-      type(ri_state_t), intent(out) :: st
+                          scf_density, ref_aux)
+      type(ri_state_t), intent(out), target :: st
       type(czt_molecule_t), intent(in), target :: mol, aux
       real(dp), intent(in) :: coeff(:, :), eps(:)
       integer, intent(in) :: n_occ, batch
@@ -340,6 +373,7 @@ contains
       type(error_t), intent(inout) :: error
       type(xc_context_t), intent(inout), optional, target :: xc
       real(dp), intent(in), optional :: scf_density(:, :)
+      type(czt_molecule_t), intent(in), optional, target :: ref_aux
 
       st%mol => mol
       st%aux => aux
@@ -406,6 +440,22 @@ contains
       if (error%has_error()) return
       allocate (st%zero_h(st%nao, st%nao))
       st%zero_h = 0.0_dp
+
+      if (present(ref_aux)) then
+         if (present(xc)) then
+            call error%set(ERROR_VALIDATION, "the RI-MP2 Hessian over a fitted reference "// &
+                           "is Hartree-Fock only: a double hybrid's kernel terms have "// &
+                           "not been checked against a fitted operator.")
+            return
+         end if
+         st%fitted = .true.
+         st%ref_aux => ref_aux
+         ! A metric that drops a mode leaves `st%fit%b` unallocated, which is
+         ! how the caller tells a decline from a fault.
+         call df_operator_setup(mol, ref_aux, st%ops, error, b=st%fit%b)
+         if (error%has_error()) return
+         call df_fit_to_mo(st%fit, st%c)
+      end if
    end subroutine setup_state
 
    function atom_batch_bytes(st) result(bytes)
@@ -684,8 +734,16 @@ contains
             call pic_gemm(st%c, dmo(:, :, first + q - 1), half)
             call pic_gemm(half, st%c, dens(:, :, q), transb="T")
          end do
-         call response_mean_field(st%mol, dens, st%zero_h, g, error, direct=.true., &
-                                  bounds=st%bounds, k_scale=st%kf)
+         if (st%fitted) then
+            allocate (g(st%nao, st%nao, wide))
+            do q = 1, wide
+               call fitted_potential_general(st%fit%b, dens(:, :, q), g(:, :, q), &
+                                             k_scale=st%kf)
+            end do
+         else
+            call response_mean_field(st%mol, dens, st%zero_h, g, error, direct=.true., &
+                                     bounds=st%bounds, k_scale=st%kf)
+         end if
          if (error%has_error()) return
          do q = 1, wide
             call pic_gemm(g(:, :, q), st%c, half)
@@ -723,7 +781,12 @@ contains
       allocate (dao(st%nao, st%nao), half(st%nao, st%n))
       call pic_gemm(st%c, dmo, half)
       call pic_gemm(half, st%c, dao, transb="T")
-      call h1_contract(st%mol, dao, h1, error, k_scale=st%kf, bounds=st%bounds)
+      if (st%fitted) then
+         allocate (h1(st%nao, st%nao, 3, st%natm))
+         call df_potential_derivative(st%ops, dao, h1, k_scale=st%kf)
+      else
+         call h1_contract(st%mol, dao, h1, error, k_scale=st%kf, bounds=st%bounds)
+      end if
       if (error%has_error()) return
       do a = 1, st%natm
          do k = 1, 3
@@ -848,7 +911,13 @@ contains
       real(dp), intent(in) :: tol
       type(error_t), intent(inout) :: error
 
-      if (st%batched_zvector .and. size(rhs, 3) > 1) then
+      if (st%fitted) then
+         ! Always through the batched solver: it is the one that takes the
+         ! fitted operator.
+         call solve_zvector_batch(st%mol, st%c, st%eps, st%no, rhs, response, error, &
+                                  max_iter=st%max_iter, tol=tol, batch=st%batch, &
+                                  bounds=st%bounds, fit=st%fit)
+      else if (st%batched_zvector .and. size(rhs, 3) > 1) then
          if (st%dh) then
             call solve_zvector_batch(st%mol, st%c, st%eps, st%no, rhs, response, error, &
                                      xc=st%xc, reference=st%scf_density, k_scale=st%kf, &
@@ -1064,7 +1133,12 @@ contains
 
       allocate (dhf(st%nao, st%nao), half(st%nao, st%no))
       call pic_gemm(st%c(:, 1:st%no), st%c(:, 1:st%no), dhf, transb="T", alpha=2.0_dp)
-      call h1_contract(st%mol, dhf, h1, error, k_scale=st%kf, bounds=st%bounds)
+      if (st%fitted) then
+         allocate (h1(st%nao, st%nao, 3, st%natm))
+         call df_potential_derivative(st%ops, dhf, h1, k_scale=st%kf)
+      else
+         call h1_contract(st%mol, dhf, h1, error, k_scale=st%kf, bounds=st%bounds)
+      end if
       if (error%has_error()) return
       ! The Kohn-Sham mean field also keeps part of itself on the quadrature grid;
       ! `h1_contract` differentiates integrals only.
@@ -2135,8 +2209,13 @@ contains
       end do
       deallocate (cross_c)
 
-      call hess_2e_contract(st%mol, drel_ao, hess, error, k_scale=st%kf, density2=dhf, &
-                            bounds=st%bounds)
+      if (st%fitted) then
+         call df_cross_second_derivative(st%ops, st%mol, st%ref_aux, drel_ao, &
+                                         st%c(:, 1:st%no), hess, error, k_scale=st%kf)
+      else
+         call hess_2e_contract(st%mol, drel_ao, hess, error, k_scale=st%kf, density2=dhf, &
+                               bounds=st%bounds)
+      end if
       if (error%has_error()) return
       ! The reference operator's second derivative contains the exchange-
       ! correlation potential's, contracted against the relaxed correlation

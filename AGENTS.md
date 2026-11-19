@@ -282,8 +282,15 @@ The methods:
   Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
   allowed), and a double hybrid's perturbative term, fitted when
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
-  SCS/SOS, a fitted reference and a frozen-core double hybrid take the
-  semi-numerical path. See `mqc_docs/source/analytic_hessians.rst`.
+  RI-MP2 also over a density-fitted reference (`ref_aux` to
+  `ri_mp2_correlation_hessian`, added to `df_rhf_hessian`): the block reaches
+  the reference's operator in five places -- `t1_batch`, `t1x_stack`,
+  `skeleton_matrices`, `solve_response` and `pass1_reference_share` -- and
+  each has a fitted branch through `df_operator_t`. **A sixth use of the
+  reference's integrals needs a fitted branch too**, or the Hessian is that of
+  no energy. SCS/SOS, conventional MP2 or a double hybrid over a fitted
+  reference, and a frozen-core double hybrid take the semi-numerical path. See
+  `mqc_docs/source/analytic_hessians.rst`.
   **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic
   Hessian** (`df_rhf_hessian`, which takes an optional `xc`, with the fitted
   terms in `mqc_czt_df_hessian`): it differentiates the fitted energy as

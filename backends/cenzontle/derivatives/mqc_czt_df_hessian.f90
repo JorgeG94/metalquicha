@@ -405,7 +405,7 @@ contains
       if (allocated(this%aux_first)) deallocate (this%aux_first, this%aux_count)
    end subroutine df_operator_destroy
 
-   subroutine df_operator_setup(orb, aux, ops, error)
+   subroutine df_operator_setup(orb, aux, ops, error, b)
       !! Fill `ops` for the pair of basis sets
       !!
       !! Refuses an auxiliary basis whose metric drops a mode; see
@@ -413,6 +413,8 @@ contains
       type(czt_molecule_t), intent(in) :: orb, aux
       type(df_operator_t), intent(out) :: ops
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: b(:, :)
+         !! The fitted tensor `V M^-1/2`, (nao^2, naux), for the operator itself
 
       real(dp), allocatable :: v(:, :), metric(:, :), minv(:, :)
       real(dp), allocatable, target :: c2(:, :)
@@ -441,6 +443,10 @@ contains
       allocate (minv(ops%naux, ops%naux), c2(ops%nao*ops%nao, ops%naux))
       call pic_gemm(ops%mih, ops%mih, minv)
       call gemm_over_columns(v, minv, c2)
+      if (present(b)) then
+         allocate (b(ops%nao*ops%nao, ops%naux))
+         call gemm_over_columns(v, ops%mih, b)
+      end if
       deallocate (v, metric, minv)
       c3(1:ops%nao, 1:ops%nao, 1:ops%naux) => c2
       ops%c = c3

@@ -1842,7 +1842,7 @@ contains
 
    subroutine solve_zvector_batch(mol, orbitals, energies, n_occ, mo_rhs, response, error, &
                                   xc, reference, k_scale, rs_k_lr, rs_omega, &
-                                  max_iter, tol, batch, bounds)
+                                  max_iter, tol, batch, bounds, fit)
       !! `(A+B) U = -rhs` for many right-hand sides in the occupied-virtual block,
       !! a dozen at a time through the nuclear solver
       !!
@@ -1879,6 +1879,8 @@ contains
       integer, intent(in), optional :: batch
          !! Most right-hand sides per chunk; `DEFAULT_RESPONSE_BATCH` when absent.
       real(dp), intent(in), optional :: bounds(:, :)
+      type(df_hessian_terms_t), intent(in), optional, target :: fit
+         !! A fitted reference's terms. Present, the operator is the fitted one.
 
       type(nuclear_response_t) :: operator
       real(dp), allocatable :: rhs(:), answer(:), base(:, :, :), a3(:, :, :), norms(:)
@@ -1925,7 +1927,7 @@ contains
 
       call build_nuclear_operator(operator, mol, orbitals, energies, n_occ, error, xc=xc, &
                                   reference=reference, k_scale=k_scale, rs_k_lr=rs_k_lr, &
-                                  rs_omega=rs_omega, bounds=bounds)
+                                  rs_omega=rs_omega, bounds=bounds, fit=fit)
       if (error%has_error()) return
 
       call balanced_chunks(n_pert, max_batch, n_chunks, per_chunk)

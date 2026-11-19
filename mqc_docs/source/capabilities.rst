@@ -1018,7 +1018,8 @@ Planned Features
    Kohn-Sham, MP2 and double-hybrid ones are built and wired to
    ``driver: Hessian``, as are fitted Hartree-Fock and fitted Kohn-Sham; what
    remains is an open shell, a fitted range-separated hybrid, and a fitted
-   reference under a correlated method. See :doc:`analytic_hessians` for the table and for the four
+   reference under conventional MP2, a double hybrid or coupled cluster.
+   RI-MP2 over a fitted reference is analytic. See :doc:`analytic_hessians` for the table and for the four
    double-hybrid cases that still fall back
 
 3. **Fragment methods**: gradients and open-shell fragments under FMO, EE-MBE
