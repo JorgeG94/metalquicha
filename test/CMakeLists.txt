@@ -811,6 +811,9 @@ addtest(mqc_split_lines)
 addtest(mqc_result_types)
 addtest(mqc_finite_differences)
 addtest(mqc_diis)
+# The numerics of geometric direct minimisation, against dense linear algebra:
+# no SCF, no integrals, so it runs on every build.
+addtest(mqc_scf_gdm)
 addtest(mqc_fock_projector)
 addtest(mqc_aambs)
 addtest(mqc_determinants)

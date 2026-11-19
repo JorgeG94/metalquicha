@@ -10,4 +10,5 @@ target_sources(
           mqc_fock_projector.f90
           mqc_diis.f90
           mqc_ediis.f90
-          mqc_orbital_rotation.f90)
+          mqc_orbital_rotation.f90
+          mqc_scf_gdm.f90)
