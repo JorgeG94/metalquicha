@@ -398,6 +398,9 @@ HAND_MAINTAINED = {
     "cpu/mqc/gdm/water_cc-pvdz_gdm.json",
     "cpu/mqc/gdm/water_cc-pvdz_pbe_gdm.json",
     "cpu/mqc/gdm/n2_stretched_gdm.json",
+    "cpu/mqc/gdm/oh_cc-pvdz_uhf_gdm.json",
+    "cpu/mqc/gdm/ch3_cc-pvdz_b3lyp_gdm.json",
+    "cpu/mqc/gdm/o2_cc-pvdz_pbe_df_gdm.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -3748,6 +3751,32 @@ PRESERVED_TESTS = [
         "tolerance": 1e-08,
         "type": "unfragmented",
         "reference_note": "n2_stretched_saddle with keywords.scf.gdm added, and deliberately the same reference energy: the saddle's. Direct minimisation is a minimiser along directions whose gradient is not zero, and the mode that leaves this saddle has a zero gradient by symmetry, so it converges where DIIS does. keywords.scf.second_order is what escapes (n2_stretched_second_order, 0.020 hartree lower). If this deck ever lands on the minimum, the phase has started taking steps it has no gradient for.",
+    },
+    {
+        "name": "UHF OH cc-pvdz converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/oh_cc-pvdz_uhf_gdm.json",
+        "expected_energy": -75.393846033475,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "the reference is the one UHF OH cc-pvdz is held to, PySCF's: keywords.scf.gdm on an open shell minimises over both spins' rotations at once, with one history, and has to reach the minimum DIIS does. test_mqc_czt_gdm reads the phase's counters; this deck is the path from a deck through the bridge, which used to refuse the request for an unrestricted reference.",
+    },
+    {
+        "name": "UKS B3LYP CH3 cc-pvdz grid 3 converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/ch3_cc-pvdz_b3lyp_gdm.json",
+        "expected_energy": -39.838786859584,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is UKS B3LYP CH3 cc-pvdz grid 3's, PySCF's. Unrestricted Kohn-Sham with exact exchange: the energy the accept rule judges carries E_xc and a fraction of each spin's exchange, so a step judged on the mean-field trace alone would show here.",
+    },
+    {
+        "name": "UKS PBE O2 cc-pvdz density fitted, converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/o2_cc-pvdz_pbe_df_gdm.json",
+        "expected_energy": -150.193299653418,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is the fitted UKS PBE triplet O2 case's, PySCF's. A triplet, so the two spins' rotation spaces differ in size, and fitted, so every trial's Fock matrices come from the fitted unrestricted build.",
     },
     {
         "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",

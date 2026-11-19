@@ -502,8 +502,8 @@ Things to know before touching any of it:
 
 ### Geometric direct minimisation
 
-`keywords.scf.gdm` (or `accelerator: "gdm"`) is the third way to finish a
-closed-shell SCF: DIIS opens, and below `gdm_start` (1e-1) an L-BFGS
+`keywords.scf.gdm` (or `accelerator: "gdm"`) is the third way to finish an
+SCF, restricted or unrestricted: DIIS opens, and below `gdm_start` (1e-1) an L-BFGS
 minimisation over the orbital rotations takes over, one Fock build per step, a
 step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
 
@@ -520,10 +520,14 @@ step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
   make the history meaningless. Once, at the end.
 - **It is a minimiser, not a saddle escape.** On the stretched N2 below it
   lands on DIIS's saddle, and `gdm/n2_stretched_gdm` pins that on purpose.
-- Refused by name: with `second_order`, unrestricted, COSX (the energy is not
+- `run_gdm_phase_uhf` is the same loop over two spins: one vector, alpha's
+  rotations then beta's, one history, gradient `2 F_ai` per spin with the
+  preconditioner's factor two to match. **A change to one phase's accept or
+  restart logic belongs in the other.**
+- Refused by name: with `second_order`, COSX (the energy is not
   variational, so the Fock matrix is not its gradient), PCM, a Fock projector
   and cuEST. On the terco backend the request is forwarded to terco's own GDM
-  (`trc_set_gdm`), which also takes an unrestricted reference.
+  (`trc_set_gdm`).
 
 **A real case where DIIS is not enough**, worth keeping in mind as the thing
 these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the

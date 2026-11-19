@@ -1034,7 +1034,7 @@ SCF Options
 - ``soscf_start``: the commutator :math:`\max|FDS - SDF|` at which that
   handover happens (default: 1e-2). It governs both routes -- naming ``soscf``
   as the accelerator does not skip the DIIS opening, because nothing can.
-- ``gdm``: finish the closed-shell SCF by geometric direct minimisation --
+- ``gdm``: finish the SCF, restricted or unrestricted, by geometric direct minimisation --
   L-BFGS on the orbital rotations, one Fock build a step, a step kept only if
   the energy did not rise -- once DIIS has brought it close (default: false).
   ``accelerator: "gdm"`` is the same request. Refused together with

@@ -744,7 +744,6 @@ highest occupied one. That is checked at the end and warned about; lower
 **Refused, by name:**
 
 - together with ``second_order``: each finishes the SCF, and only one can;
-- an unrestricted reference: the phase is written for a closed shell;
 - chain-of-spheres exchange: that energy is not variational in the orbitals,
   so its Fock matrix is not the gradient of the energy a step is judged on;
 - a continuum solvent: the phase rebuilds the Fock matrix itself, and its
@@ -752,6 +751,23 @@ highest occupied one. That is checked at the end and warned about; lower
 - a Fock projector: the rotations it forbids are not excluded from the step;
 - the cuEST backend.
 
+An unrestricted reference
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An open shell is minimised over both spins' rotations at once. One vector
+holds alpha's occupied-virtual pairs and then beta's, and there is one history
+and one accept rule over it, because there is one energy. The gradient is
+:math:`2 F_{ai}` in each spin where the closed shell's is :math:`4 F_{ai}`, and
+the preconditioner follows it. Everything above holds unchanged, the two
+warnings included: the occupation check is made per spin.
+
+OH, triplet O\ :sub:`2` and CH\ :sub:`3` in cc-pVDZ -- Hartree-Fock, B3LYP,
+:math:`\omega`\ B97X, and PBE over a density-fitted reference -- each reach
+DIIS's energy within :math:`10^{-12}` hartree. OH from the core guess with the
+minimisation started after one iteration is the cautionary case: it converges,
+0.92 hartree too high, on the occupation that first diagonalisation chose, and
+the warning above is what says so.
+
 On the terco backend the request is forwarded to terco's own implementation,
-with the same two thresholds. That one also runs unrestricted references, and
-has refusals of its own -- symmetry among them -- which it reports itself.
+with the same two thresholds. That one has refusals of its own -- symmetry
+among them -- which it reports itself.
