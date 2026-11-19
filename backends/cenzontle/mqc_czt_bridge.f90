@@ -1314,11 +1314,14 @@ contains
          end block
       end if
 
-      if (unrestricted .and. settings%density_fitting) then
-         call result%error%set(ERROR_VALIDATION, "unrestricted density fitting is not "// &
-                               "implemented on the CPU backend: the fitted J and K are "// &
-                               "written for one density. Run unrestricted without "// &
-                               "density_fitting, or restricted with it.")
+      ! A fitted unrestricted reference is an SCF and its gradient. Nothing
+      ! correlated has been run over one, so those are refused by name rather
+      ! than handed orbitals whose Fock matrix they would rebuild from exact
+      ! integrals.
+      if (unrestricted .and. settings%density_fitting .and. settings%run_cc) then
+         call result%error%set(ERROR_VALIDATION, "coupled cluster over a density-fitted "// &
+                               "unrestricted reference is not implemented. Run the "// &
+                               "reference without keywords.scf.density_fitting.")
          result%has_error = .true.
          return
       end if
@@ -1519,6 +1522,18 @@ contains
                                   "with a double hybrid: the perturbative term would "// &
                                   "run on a reference converged with a different "// &
                                   "exchange. Set keywords.scf.exchange to 'exact'.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
+         ! Nothing in the perturbative term reads the fit, so this would run;
+         ! it is refused because no number from it has been checked.
+         if (unrestricted .and. settings%density_fitting .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "a double hybrid over a "// &
+                                  "density-fitted unrestricted reference has not been "// &
+                                  "validated and is refused. Run the reference without "// &
+                                  "keywords.scf.density_fitting.")
             result%has_error = .true.
             if (kohn_sham) call xc%destroy()
             call mol%destroy()
@@ -1756,7 +1771,17 @@ contains
          ! a full copy of the tensor to keep, so it is asked for only when
          ! something downstream will transform them.
          keep_fit = reuse_scf_fit(settings)
-         if (keep_fit) then
+         if (unrestricted) then
+            call run_czt_uhf(mol, nelec, fragment%multiplicity, settings%max_iter, &
+                             settings%energy_tol, settings%density_tol, settings%verbose, &
+                             scf, error, diis_vectors=diis_size, guess=guess_kind, &
+                             guess_density_alpha=guess_a, guess_density_beta=guess_b, &
+                             xc=xc, pcm=pcm_ctx, level_shift=settings%level_shift, &
+                             accelerator=accel_kind, &
+                             linear_dependence=settings%linear_dependence, &
+                             incremental_fock=settings%incremental_fock, &
+                             grad_tol=settings%grad_tol, convergence=scf_conv, aux=aux)
+         else if (keep_fit) then
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
                              aux=aux, diis_vectors=diis_size, guess=guess_kind, &

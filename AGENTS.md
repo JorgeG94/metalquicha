@@ -275,6 +275,13 @@ its heavy atom first passes.
 The methods:
 
 - `HF` - restricted and unrestricted; direct, in-core, or density-fitted
+  The unrestricted fitted build is `build_fock_df_uhf`: the restricted
+  `build_fock_df` called once for J on the total density and once per spin
+  for K, with each spin density's eigenvectors standing in for orbitals, so
+  it is right for a guess or a mixed density too. Always the dense tensor.
+  Coupled cluster and a double hybrid over a fitted unrestricted reference
+  are refused by name; a range-separated open-shell gradient is refused
+  fitted or not.
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
@@ -728,7 +735,7 @@ with `../../../`. The CPU suite is **generated** - edit
 under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
-df-dft df-hf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
+df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice

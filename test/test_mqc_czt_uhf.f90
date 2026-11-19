@@ -19,9 +19,9 @@ module test_mqc_czt_uhf
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_cgto, only: molecular_basis_type
-   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, build_df_tensor
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf, &
-                          SCF_GUESS_CORE
+                          assemble_fock_uhf, SCF_GUESS_CORE
    implicit none
    private
    public :: collect_mqc_czt_uhf_tests
@@ -41,7 +41,12 @@ contains
                   new_unittest("uhf_spin_squared_is_exact_for_one_electron", test_s2), &
                   new_unittest("uhf_rejects_impossible_multiplicity", test_bad_multiplicity), &
                   new_unittest("uhf_odd_electron_count_is_allowed", test_odd_allowed), &
-                  new_unittest("uhf_diis_delay_finds_the_ground_state", test_diis_delay) &
+                  new_unittest("uhf_diis_delay_finds_the_ground_state", test_diis_delay), &
+                  new_unittest("fitted_uhf_closed_shell_reproduces_fitted_rhf", &
+                               test_fitted_closed_shell), &
+                  new_unittest("fitted_uhf_build_matches_the_fitted_integrals", &
+                               test_fitted_build), &
+                  new_unittest("fitted_uhf_refuses_in_core", test_fitted_refuses_in_core) &
                   ]
    end subroutine collect_mqc_czt_uhf_tests
 
@@ -64,6 +69,148 @@ contains
                    0.0_dp, 0.0_dp, 0.7414_dp*ANG], [3, 2])
       call build_czt_molecule([1, 1], ["H ", "H "], c, "cc-pvdz", mol, err)
    end subroutine dihydrogen
+
+   subroutine dihydrogen_aux(aux, err)
+      !! The fitting basis for `dihydrogen`, on the same two centres
+      type(czt_molecule_t), intent(out) :: aux
+      type(error_t), intent(inout) :: err
+      real(dp) :: c(3, 2)
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.7414_dp*ANG], [3, 2])
+      call build_czt_molecule([1, 1], ["H ", "H "], c, "cc-pvdz-rifit", aux, err)
+   end subroutine dihydrogen_aux
+
+   subroutine test_fitted_closed_shell(error)
+      !! H2 as a singlet, both fitted: unrestricted must land on restricted
+      !!
+      !! The fitted unrestricted build is the restricted one called three times
+      !! with its factors rearranged, so the factor of two between a spin
+      !! density and the total has one more place to go wrong than on the
+      !! exact path. Equal spin densities are where that shows.
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol, aux
+      type(error_t) :: err
+      type(rhf_result_t) :: r, u, exact
+
+      call dihydrogen(mol, err)
+      call dihydrogen_aux(aux, err)
+      call check(error,.not. err%has_error(), "H2 must build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call run_czt_rhf(mol, 2, 100, E_TOL, D_TOL, .false., r, err, aux=aux)
+      call check(error, r%converged, "fitted RHF must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call run_czt_uhf(mol, 2, 1, 100, E_TOL, D_TOL, .false., u, err, aux=aux)
+      call check(error, u%converged, "fitted UHF must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, abs(u%energy - r%energy) < 1.0e-11_dp, &
+                 "a closed-shell fitted UHF must reproduce the fitted RHF energy")
+      if (allocated(error)) return
+
+      ! And the fit must have been used at all: the exact energy is a
+      ! different number, by far more than either SCF's tolerance.
+      call run_czt_uhf(mol, 2, 1, 100, E_TOL, D_TOL, .false., exact, err)
+      call check(error, abs(u%energy - exact%energy) > 1.0e-8_dp, &
+                 "the fitted energy must differ from the exact one")
+   end subroutine test_fitted_closed_shell
+
+   subroutine test_fitted_build(error)
+      !! The fitted build against the stored-integral build fed `B B^T`
+      !!
+      !! With `(mu nu|la si)` replaced by `sum_P B(mu nu,P) B(la si,P)` the
+      !! in-core build computes exactly what the fitted one claims to, by a
+      !! four-index loop that knows nothing of pseudo-orbitals or of which
+      !! spin's exchange went where. The densities are a triplet's, so the two
+      !! spins differ and beta is not alpha scaled.
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol, aux
+      type(error_t) :: err
+      type(rhf_result_t) :: u
+      real(dp), allocatable :: b(:, :), eri(:, :, :, :), no_eri(:, :, :, :), no_b(:, :)
+      real(dp), allocatable :: bounds(:, :), h(:, :)
+      real(dp), allocatable :: fa(:, :), fb(:, :), ga(:, :), gb(:, :)
+      real(dp) :: e_fit, e_ref
+      integer :: n, mu, nu, la, si
+
+      call dihydrogen(mol, err)
+      call dihydrogen_aux(aux, err)
+      call check(error,.not. err%has_error(), "H2 must build: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      ! The triplet supplies alpha's density, two electrons in two orbitals.
+      ! Its own beta density is empty, so beta's is made by hand below.
+      call run_czt_uhf(mol, 2, 3, 100, E_TOL, D_TOL, .false., u, err)
+      call check(error, u%converged, "triplet H2 must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      n = mol%nao
+      call build_df_tensor(mol, aux, b, err)
+      call check(error,.not. err%has_error(), "the fit must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call mol%core_hamiltonian(h)
+
+      allocate (eri(n, n, n, n))
+      do si = 1, n
+         do la = 1, n
+            do nu = 1, n
+               do mu = 1, n
+                  eri(mu, nu, la, si) = dot_product(b(mu + (nu - 1)*n, :), b(la + (si - 1)*n, :))
+               end do
+            end do
+         end do
+      end do
+
+      allocate (fa(n, n), fb(n, n), ga(n, n), gb(n, n))
+      ! Beta is the bonding orbital alone -- a different density from alpha's
+      ! two, and not a multiple of it.
+      block
+         real(dp), allocatable :: d_a(:, :), d_b(:, :)
+         allocate (d_a(n, n), d_b(n, n))
+         d_a = u%density
+         d_b = matmul(u%orbitals(:, 1:1), transpose(u%orbitals(:, 1:1)))
+
+         call assemble_fock_uhf(mol, h, d_a, d_b, no_eri, bounds, fock_a=fa, fock_b=fb, &
+                                e_elec=e_fit, error=err, bmat=b)
+         call check(error,.not. err%has_error(), "fitted build: "//err%get_full_trace())
+         if (allocated(error)) return
+         call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, fock_a=ga, fock_b=gb, &
+                                e_elec=e_ref, error=err, bmat=no_b)
+         call check(error,.not. err%has_error(), "stored build: "//err%get_full_trace())
+         if (allocated(error)) return
+      end block
+
+      call check(error, maxval(abs(fa - ga)) < 1.0e-11_dp, &
+                 "the fitted alpha Fock matrix must match the stored-integral one")
+      if (allocated(error)) return
+      call check(error, maxval(abs(fb - gb)) < 1.0e-11_dp, &
+                 "the fitted beta Fock matrix must match the stored-integral one")
+      if (allocated(error)) return
+      call check(error, abs(e_fit - e_ref) < 1.0e-11_dp, &
+                 "the two builds must give one energy")
+      if (allocated(error)) return
+      ! The spins must actually differ, or the check above could not tell
+      ! alpha's exchange from beta's.
+      call check(error, maxval(abs(fa - fb)) > 1.0e-3_dp, &
+                 "the two spin Fock matrices must differ for this test to mean anything")
+   end subroutine test_fitted_build
+
+   subroutine test_fitted_refuses_in_core(error)
+      !! Stored integrals and a fit are two answers to one question
+      type(error_type), allocatable, intent(out) :: error
+      type(czt_molecule_t) :: mol, aux
+      type(error_t) :: err, build_err
+      type(rhf_result_t) :: u
+
+      call dihydrogen(mol, build_err)
+      call dihydrogen_aux(aux, build_err)
+      call check(error,.not. build_err%has_error(), "H2 must build")
+      if (allocated(error)) return
+
+      call run_czt_uhf(mol, 2, 3, 100, E_TOL, D_TOL, .false., u, err, in_core=.true., aux=aux)
+      call check(error, err%has_error(), "in_core beside a fit must be refused")
+   end subroutine test_fitted_refuses_in_core
 
    subroutine test_closed_shell(error)
       !! H2 as a singlet: unrestricted must land exactly on restricted

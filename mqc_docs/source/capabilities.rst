@@ -529,10 +529,11 @@ number computed from a formula that does not apply:
      - The second exchange derivative at the screened omega comes from fitting
        a second tensor against ``erf(omega r)/r``; the exact-ERI path has no
        equivalent second pass. Give an auxiliary basis
-   * - Unrestricted density fitting, Hartree-Fock or Kohn-Sham
-     - The fitted J and K are written for one density, so this is refused for
-       the energy and therefore for the gradient. The fitted *gradient* does
-       carry both spin channels already -- it is the SCF that is missing
+   * - Correlation over a density-fitted unrestricted reference
+     - The fitted unrestricted SCF and its gradient are implemented,
+       Hartree-Fock and Kohn-Sham through a range-separated hybrid. Coupled
+       cluster and a double hybrid over one are refused: neither has been
+       validated there
    * - Spin-scaled MP2 (SCS, SOS)
      - The amplitudes enter the response equations, where the two spin cases
        are no longer separable, so the scaled gradient is not the unscaled one
@@ -945,9 +946,9 @@ does not apply.
    Hamiltonian and does not become one
 2. **Open-shell correlation**: MP2 and the double-hybrid derivatives need a
    restricted reference. Coupled cluster does not, but density-fitted coupled
-   cluster does. Unrestricted density fitting is refused for the SCF itself,
-   Hartree-Fock or Kohn-Sham. An open-shell double hybrid has an energy and no
-   gradient
+   cluster does. An unrestricted SCF can be density-fitted, Hartree-Fock or
+   Kohn-Sham, energy and gradient; nothing correlated runs over that fitted
+   reference. An open-shell double hybrid has an energy and no gradient
 3. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
    reference, and there is no NEVPT2, CASPT2 or MRCI on top of it. The
    multiconfigurational path also needs an even electron count, because it

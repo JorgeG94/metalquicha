@@ -7812,6 +7812,156 @@
             "hessian_tolerance": 0.00015,
             "requires": "libxc",
             "type": "unfragmented"
+        },
+        {
+            "name": "UHF OH cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_oh_cc-pvdz_m2.json",
+            "expected_energy": -75.393822270088,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UHF O2 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_o2_cc-pvdz_m3.json",
+            "expected_energy": -149.627612072091,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UKS SVWN CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_svwn.json",
+            "expected_energy": -39.421155603672,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS PBE CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_pbe.json",
+            "expected_energy": -39.769172368326,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS B3LYP CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_b3lyp.json",
+            "expected_energy": -39.838814020412,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS WB97X CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_wb97x.json",
+            "expected_energy": -39.820550598085,
+            "type": "unfragmented",
+            "requires": "libxc",
+            "tolerance": 1e-08
+        },
+        {
+            "name": "UKS PBE O2 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_o2_cc-pvdz_m3_pbe.json",
+            "expected_energy": -150.193299653418,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UHF gradient OH cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_oh_cc-pvdz_m2_grad.json",
+            "expected_energy": -75.393822270088,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    0.0,
+                    -0.0,
+                    -0.012387295411
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.012387295411
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "UHF gradient O2 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_o2_cc-pvdz_m3_grad.json",
+            "expected_energy": -149.627612072091,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    -0.093153458148
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.093153458148
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "UKS PBE gradient CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_pbe_grad.json",
+            "expected_energy": -39.769172368326,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -1.25204e-07,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    -0.013299971736,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.00665004847,
+                    -0.011517821404,
+                    -0.0
+                ],
+                [
+                    0.00665004847,
+                    0.011517821404,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS B3LYP gradient CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_b3lyp_grad.json",
+            "expected_energy": -39.838814020412,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -6.40785e-07,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    -0.00845246313,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.004226551957,
+                    -0.007319568371,
+                    -0.0
+                ],
+                [
+                    0.004226551957,
+                    0.007319568371,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "requires": "libxc"
         }
     ]
 }

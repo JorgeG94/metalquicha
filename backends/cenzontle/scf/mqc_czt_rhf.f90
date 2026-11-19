@@ -336,6 +336,8 @@ module mqc_czt_rhf
       real(dp), allocatable :: dens_flat(:)  !! Both spins' D, for the energy-based schemes
       real(dp), allocatable :: sd(:, :), sds(:, :)  !! The level shift's projector; on first use
       real(dp), allocatable :: v_pcm(:, :)   !! Continuum operator, allocated only with PCM
+      real(dp), allocatable :: bmat(:, :)     !! Fitted B(mu nu, P); unallocated if not fitted
+      real(dp), allocatable :: bmat_lr(:, :)  !! The same against erf(omega r)/r
       real(dp) :: e_elec = 0.0_dp
       real(dp) :: e_old = 0.0_dp             !! Previous iteration's, for dE
       real(dp) :: drms_prev = huge(1.0_dp)   !! Drives the level-shift taper
@@ -1557,12 +1559,13 @@ contains
       ! turns incremental building off by withholding it.
       if (want_incremental) then
          call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
-                                st%e_elec, error, clk=clk, incr=st%incr)
+                                st%e_elec, error, clk=clk, incr=st%incr, bmat=st%bmat, &
+                                bmat_lr=st%bmat_lr)
       else
          ! No `st%incr` to record into, and every build here is a full one.
          st%incr%full_builds = st%incr%full_builds + 1
          call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
-                                st%e_elec, error, clk=clk)
+                                st%e_elec, error, clk=clk, bmat=st%bmat, bmat_lr=st%bmat_lr)
       end if
       if (error%has_error()) return
       ! The continuum sees one density -- the total -- and both spins feel
@@ -2296,17 +2299,17 @@ contains
                           verbose, result, error, diis_vectors, in_core, diis_start, &
                           guess, guess_density_alpha, guess_density_beta, xc, pcm, &
                           level_shift, linear_dependence, accelerator, grad_tol, &
-                          incremental_fock, convergence, scf)
+                          incremental_fock, convergence, scf, aux)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
       !! - K(D_sigma). They are diagonalised separately and extrapolated
       !! together, one DIIS over the pair.
-      !!
-      !! **No density fitting on this path.** The fitted J and K are written for
-      !! one density; asking for both is refused rather than silently run
-      !! restricted.
       type(czt_molecule_t), intent(in) :: mol
+      type(czt_molecule_t), intent(in), optional :: aux
+         !! Auxiliary basis. Present fits both J and K, as on the restricted
+         !! path, and excludes `in_core`. Always the dense tensor: the
+         !! Coulomb-only fit a pure functional takes there is not used here.
       integer, intent(in) :: nelec
       integer, intent(in) :: multiplicity   !! 2S+1
       integer, intent(in) :: max_iter
@@ -2485,7 +2488,22 @@ contains
       call xc_profile_take(xc_discard)   ! as in run_czt_rhf
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
-      if (use_in_core) then
+      if (present(aux)) then
+         if (use_in_core) then
+            call error%set(ERROR_VALIDATION, "UHF: in_core and density fitting were both "// &
+                           "asked for; the fitted build never forms the four-index "// &
+                           "integrals, so choose one")
+            return
+         end if
+         call build_df_tensor(mol, aux, st%bmat, error)
+         if (error%has_error()) return
+         if (present(xc)) then
+            if (xc%range_separated) then
+               call build_df_tensor(mol, aux, st%bmat_lr, error, omega=xc%rs_omega)
+               if (error%has_error()) return
+            end if
+         end if
+      else if (use_in_core) then
          call mol%eris(eri)
       else
          call schwarz_bounds(mol, bounds, error)
@@ -2556,7 +2574,7 @@ contains
          st%d_a = guess_density_alpha
          st%d_b = guess_density_beta
          call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
-                                st%e_elec, error)
+                                st%e_elec, error, bmat=st%bmat, bmat_lr=st%bmat_lr)
          if (error%has_error()) return
       case default
          call error%set(ERROR_VALIDATION, "UHF: unknown initial guess")
@@ -2652,7 +2670,7 @@ contains
       ! Rebuilt from the density that passed the test, as the restricted path
       ! does, so the reported energy belongs to the reported orbitals.
       call assemble_fock_uhf(mol, h, st%d_a, st%d_b, eri, bounds, xc, st%fock_a, st%fock_b, &
-                             result%electronic, error)
+                             result%electronic, error, bmat=st%bmat, bmat_lr=st%bmat_lr)
       if (error%has_error()) return
       if (use_pcm) then
          call pcm%operator_matrix(mol, st%d_a + st%d_b, st%v_pcm, e_pcm, error)
@@ -3045,7 +3063,7 @@ contains
    end subroutine density_energy
 
    subroutine assemble_fock_uhf(mol, h, d_alpha, d_beta, eri, bounds, xc, &
-                                fock_a, fock_b, e_elec, error, clk, incr)
+                                fock_a, fock_b, e_elec, error, clk, incr, bmat, bmat_lr)
       !! Both spin Fock matrices for this pair of densities, and their energy
       !!
       !! The unrestricted twin of `assemble_fock`. The energy comes back with the
@@ -3073,8 +3091,15 @@ contains
          !! Two spin channels and, for a range-separated functional, two kernels
          !! in each: four accumulated G in the worst case, all keyed to one
          !! `since_reset` so a rebuild re-syncs them together.
+      real(dp), allocatable, intent(in), optional :: bmat(:, :)
+         !! Fitted B(mu nu, P). Present and allocated builds J and K from the
+         !! fit instead of the integrals; every such build is a full one.
+      real(dp), allocatable, intent(in), optional :: bmat_lr(:, :)
+         !! The same against the attenuated kernel, required beside `bmat`
+         !! under a range-separated functional.
 
       type(direct_stats_t) :: stats
+      logical :: fitted
       real(dp), allocatable :: v_a(:, :), v_b(:, :)
       real(dp), allocatable :: ga_delta(:, :), gb_delta(:, :)
       real(dp), allocatable :: da_delta(:, :), db_delta(:, :), h_zero(:, :)
@@ -3107,12 +3132,36 @@ contains
          end if
       end if
 
+      fitted = .false.
+      if (present(bmat)) fitted = allocated(bmat)
+      if (fitted .and. want_lr) then
+         ! Nested, because Fortran does not short-circuit and `bmat_lr` may be
+         ! absent.
+         full_build = .false.
+         if (present(bmat_lr)) full_build = allocated(bmat_lr)
+         if (.not. full_build) then
+            call error%set(ERROR_VALIDATION, "a range-separated functional over a "// &
+                           "fitted unrestricted build needs the tensor fitted against "// &
+                           "the attenuated kernel, and none was passed")
+            return
+         end if
+      end if
+
       ! Incremental building is for the direct path only, as on the restricted
       ! side.
       use_incremental = .false.
-      if (present(incr) .and. .not. allocated(eri)) use_incremental = .true.
+      if (present(incr) .and. .not. allocated(eri) .and. .not. fitted) use_incremental = .true.
 
-      if (allocated(eri)) then
+      if (fitted) then
+         if (want_lr) then
+            call build_fock_df_uhf(h, bmat, d_alpha, d_beta, fock_a, fock_b, error, &
+                                   k_scale=k_scale, b_lr=bmat_lr, k_lr_scale=xc%rs_k_lr)
+         else
+            call build_fock_df_uhf(h, bmat, d_alpha, d_beta, fock_a, fock_b, error, &
+                                   k_scale=k_scale)
+         end if
+         if (error%has_error()) return
+      else if (allocated(eri)) then
          call build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale=k_scale)
       else if (use_incremental) then
          full_build = .not. incr%active .or. incr%since_reset >= INCREMENTAL_RESET &
@@ -3585,6 +3634,78 @@ contains
       ! rather than n_aux times here.
       call pic_syrk(w, k_local, uplo="L", alpha=2.0_dp, beta=1.0_dp)
    end subroutine df_exchange_slice
+
+   subroutine build_fock_df_uhf(h, b, d_alpha, d_beta, fock_a, fock_b, error, &
+                                k_scale, b_lr, k_lr_scale)
+      !! F_sigma = H + J(D_alpha + D_beta) - k K(D_sigma) from the fitted tensor
+      !!
+      !! Three calls to `build_fock_df`: the Coulomb matrix once, on the total
+      !! density, then each spin's exchange alone. That routine takes its
+      !! exchange from columns `c` with `D = 2 sum_i c_i c_i^T` and subtracts
+      !! `k K(D)/2`, so a spin density is handed over with twice the fraction.
+      !!
+      !! The columns are the eigenvectors of each spin density rather than its
+      !! orbitals, so this is right for any positive semi-definite density --
+      !! an atomic guess, or one an accelerator has mixed -- at the cost of one
+      !! diagonalisation per spin per build.
+      real(dp), intent(in) :: h(:, :), d_alpha(:, :), d_beta(:, :)
+      real(dp), intent(in) :: b(:, :)   !! (nao*nao, naux)
+      contiguous :: b
+      real(dp), intent(out) :: fock_a(:, :), fock_b(:, :)
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
+      real(dp), intent(in), optional :: b_lr(:, :)
+         !! The tensor fitted against `erf(omega r)/r`; present adds
+         !! `- k_lr_scale K_lr(D_sigma)`
+      contiguous :: b_lr
+      real(dp), intent(in), optional :: k_lr_scale
+
+      real(dp), allocatable :: zero(:, :), k_spin(:, :), pseudo(:, :), no_coeff(:, :)
+      real(dp) :: kf
+      integer :: n, n_modes
+
+      n = size(h, 1)
+      kf = 1.0_dp
+      if (present(k_scale)) kf = k_scale
+
+      ! Coulomb only; no orbitals are read when the exchange is scaled away.
+      allocate (no_coeff(n, 0))
+      call build_fock_df(h, b, d_alpha + d_beta, no_coeff, 0, fock_a, k_scale=0.0_dp)
+      fock_b = fock_a
+      if (kf == 0.0_dp .and. .not. present(b_lr)) return
+
+      allocate (zero(n, n), k_spin(n, n))
+      zero = 0.0_dp
+      call spin_exchange(d_alpha, fock_a)
+      if (error%has_error()) return
+      call spin_exchange(d_beta, fock_b)
+
+   contains
+
+      subroutine spin_exchange(d_spin, fock)
+         !! Subtract one spin's fitted exchange from its Fock matrix
+         real(dp), intent(in) :: d_spin(:, :)
+         real(dp), intent(inout) :: fock(:, :)
+
+         ! An empty spin channel has no exchange, and no density to
+         ! diagonalise.
+         if (maxval(abs(d_spin)) == 0.0_dp) return
+         call density_pseudo_orbitals(d_spin, pseudo, n_modes, error)
+         if (error%has_error()) return
+         if (kf /= 0.0_dp) then
+            ! Returns `-kf K(D_sigma)`: no core Hamiltonian, no Coulomb.
+            call build_fock_df(zero, b, d_spin, pseudo, n_modes, k_spin, &
+                               k_scale=2.0_dp*kf, j_scale=0.0_dp)
+            fock = fock + k_spin
+         end if
+         if (present(b_lr)) then
+            call build_fock_df(zero, b_lr, d_spin, pseudo, n_modes, k_spin, &
+                               k_scale=2.0_dp*k_lr_scale, j_scale=0.0_dp)
+            fock = fock + k_spin
+         end if
+         deallocate (pseudo)
+      end subroutine spin_exchange
+   end subroutine build_fock_df_uhf
 
    pure subroutine build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale)
       !! F_sigma = H + J(D_alpha + D_beta) - K(D_sigma), straight from the ERIs
