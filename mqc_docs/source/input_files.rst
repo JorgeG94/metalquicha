@@ -929,11 +929,13 @@ SCF Options
   See :doc:`scf_guess` for what each one is for and when to reach for it.
 
 - ``accelerator``: Which convergence scheme the SCF uses (default: ``diis``).
-  One of ``diis``, ``ediis``, ``adiis`` or ``soscf``. The energy-based pair run
+  One of ``diis``, ``ediis``, ``adiis``, ``soscf`` or ``gdm``. The energy-based pair run
   only while the error is large and hand over to DIIS for the endgame, so naming
   one asks for a different opening and not a different endgame. ``soscf`` is the
   other way round -- DIIS opens and trust-region Newton finishes -- and is the
-  same request as ``second_order: true``; see :ref:`second-order-scf`. An
+  same request as ``second_order: true``; see :ref:`second-order-scf`. ``gdm``
+  likewise leaves the opening to DIIS and finishes by geometric direct
+  minimisation; see :ref:`gdm-convergence`. An
   unrecognised name is refused rather than run as DIIS. See :ref:`accelerators`
   for when the energy-based pair are worth doing and how to tell it happened.
 - ``eri_path``: Which four-centre integral path the CPU backend takes
@@ -1032,6 +1034,15 @@ SCF Options
 - ``soscf_start``: the commutator :math:`\max|FDS - SDF|` at which that
   handover happens (default: 1e-2). It governs both routes -- naming ``soscf``
   as the accelerator does not skip the DIIS opening, because nothing can.
+- ``gdm``: finish the closed-shell SCF by geometric direct minimisation --
+  L-BFGS on the orbital rotations, one Fock build a step, a step kept only if
+  the energy did not rise -- once DIIS has brought it close (default: false).
+  ``accelerator: "gdm"`` is the same request. Refused together with
+  ``second_order``. See :ref:`gdm-convergence`.
+- ``gdm_start``: the commutator :math:`\max|FDS - SDF|` at which that handover
+  happens (default: 1e-1).
+- ``gdm_max_rotation``: the largest element of one step's orbital rotation, in
+  radians (default: 0.2).
 
 .. _scf-stability:
 

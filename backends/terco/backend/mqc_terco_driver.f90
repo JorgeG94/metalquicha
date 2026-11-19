@@ -609,6 +609,13 @@ contains
       else if (settings%stability) then
          call error%set(ERROR_VALIDATION, "keywords.scf.stability has no terco "// &
                         "implementation. Ask for backend 'libcint', or drop it.")
+      else if (settings%gdm) then
+         ! TODO(mqc): terco has geometric direct minimisation of its own and
+         ! this bridge does not forward the request to it yet, so a deck that
+         ! asks for it on this backend is refused where it could be served.
+         call error%set(ERROR_VALIDATION, "keywords.scf.gdm is not forwarded to "// &
+                        "terco by this bridge yet. Ask for backend 'libcint', or "// &
+                        "drop it.")
       else if (settings%second_order) then
          call error%set(ERROR_VALIDATION, "the second-order SCF has no terco "// &
                         "implementation; terco converges by DIIS. Ask for backend "// &
@@ -1087,7 +1094,7 @@ contains
       ! numerics: each would otherwise be dropped on the way to the device.
       if (.not. settings%fukui_scf%use_diis .or. &
           trim(settings%fukui_scf%accelerator) /= "diis" .or. &
-          settings%fukui_scf%second_order) then
+          settings%fukui_scf%second_order .or. settings%fukui_scf%gdm) then
          call error%set(ERROR_VALIDATION, "terco converges the ions by DIIS and "// &
                         "nothing else; properties.fukui.scf asks for something else. "// &
                         "Run on backend 'libcint'.")

@@ -18,7 +18,8 @@ module mqc_method_config
                                        DEFAULT_EXCITED_TOL, &
                                        DEFAULT_EXCITED_MAX_ITER, &
                                        DEFAULT_EXCITED_BATCH, &
-                                       DEFAULT_SOSCF_START, DEFAULT_COSX_GRID
+                                       DEFAULT_SOSCF_START, DEFAULT_COSX_GRID, &
+                                       DEFAULT_GDM_START, DEFAULT_GDM_MAX_ROTATION
    implicit none
    private
 
@@ -693,6 +694,13 @@ module mqc_method_config
          !! once DIIS has brought the commutator below `soscf_start`.
       real(dp) :: soscf_start = DEFAULT_SOSCF_START
          !! Where that switch happens, as a commutator.
+      logical :: gdm = .false.
+         !! Finish the SCF by geometric direct minimisation once DIIS has
+         !! brought the commutator below `gdm_start`.
+      real(dp) :: gdm_start = DEFAULT_GDM_START
+         !! Where that switch happens, as a commutator.
+      real(dp) :: gdm_max_rotation = DEFAULT_GDM_MAX_ROTATION
+         !! Largest element of one step's rotation, radians.
       character(len=32) :: basis_set = "sto-3g"
          !! Basis set name (HF, DFT, MCSCF)
       character(len=32) :: ecp_set = ""
@@ -835,6 +843,9 @@ contains
       this%stability_max_iter = DEFAULT_STABILITY_MAX_ITER
       this%second_order = .false.
       this%soscf_start = DEFAULT_SOSCF_START
+      this%gdm = .false.
+      this%gdm_start = DEFAULT_GDM_START
+      this%gdm_max_rotation = DEFAULT_GDM_MAX_ROTATION
       this%basis_set = "sto-3g"
       this%use_spherical = .true.
 

@@ -18,6 +18,7 @@ module mqc_config_types
                                        DEFAULT_STABILITY_TOL, &
                                        DEFAULT_STABILITY_MAX_ITER, &
                                        DEFAULT_SOSCF_START, DEFAULT_COSX_GRID, &
+                                       DEFAULT_GDM_START, DEFAULT_GDM_MAX_ROTATION, &
                                        DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_SCF_DENSITY_CONV, DEFAULT_VDW_SCALE, &
@@ -477,6 +478,16 @@ module mqc_config_types
       real(dp) :: scf_soscf_start = DEFAULT_SOSCF_START
          !! `keywords.scf.soscf_start`, the commutator at which the switch from
          !! DIIS to Newton happens. See `DEFAULT_SOSCF_START`.
+      logical :: scf_gdm = .false.
+         !! `keywords.scf.gdm`. Finish the closed-shell SCF by geometric direct
+         !! minimisation: L-BFGS on the orbital rotations, one Fock build per
+         !! step, a step kept only if the energy did not rise.
+         !! `keywords.scf.accelerator: 'gdm'` is the same request.
+      real(dp) :: scf_gdm_start = DEFAULT_GDM_START
+         !! `keywords.scf.gdm_start`, the commutator at which DIIS hands over.
+      real(dp) :: scf_gdm_max_rotation = DEFAULT_GDM_MAX_ROTATION
+         !! `keywords.scf.gdm_max_rotation`, the largest element of one step's
+         !! rotation, radians.
       integer :: scf_diis_size = 8
          !! `keywords.scf.diis_size`, the subspace the extrapolation is drawn
          !! from. Widening it to 12-20 is the first thing to try on an

@@ -560,6 +560,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_soscf)
   target_link_libraries(test_mqc_czt_soscf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Geometric direct minimisation as the SCF's second phase: the energy DIIS
+  # reaches is the reference, and each case also checks the phase ran.
+  addtest(mqc_czt_gdm)
+  target_link_libraries(test_mqc_czt_gdm PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The Coulomb-only density fit, against the dense fitted tensor it replaces
   # for a functional with no exact exchange: the same J with and without the
   # screen removing pairs, and the same RKS energy.

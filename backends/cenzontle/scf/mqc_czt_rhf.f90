@@ -35,7 +35,10 @@ module mqc_czt_rhf
    use mqc_scf_convergence, only: scf_convergence_t, parse_convergence_metric
    use mqc_scf_types, only: scf_numerics_t
    use mqc_diis, only: parse_accelerator_name
-   use mqc_calculation_defaults, only: DEFAULT_SOSCF_START
+   use mqc_calculation_defaults, only: DEFAULT_SOSCF_START, DEFAULT_GDM_START, &
+                                       DEFAULT_GDM_MAX_ROTATION
+   use mqc_scf_gdm, only: scf_gdm_history_t, scf_gdm_preconditioner_build, &
+                          scf_gdm_step_judge, scf_gdm_step_limit, scf_gdm_is_descent
    use mqc_czt_hessian, only: nuclear_response_t
    use mqc_czt_ov_hessian, only: ov_hessian_t, build_scf_ov_hessian
    use mqc_czt_soscf, only: soscf_gradient, soscf_semicanonicalize, soscf_newton_step
@@ -179,6 +182,23 @@ module mqc_czt_rhf
       logical :: second_order_stalled = .false.
          !! No step downhill was found. The energy reported is the last one
          !! that descended, and `converged` is false.
+      ! The direct-minimisation phase, when `keywords.scf.gdm` asked for one.
+      integer :: gdm_started_at = 0
+         !! The DIIS iteration after which direct minimisation took over; zero
+         !! if it never did.
+      integer :: gdm_iterations = 0
+         !! Trial steps taken, rejected ones included: one Fock build each.
+      integer :: gdm_rejected = 0
+         !! How many of those raised the energy and were taken back.
+      logical :: gdm_stalled = .false.
+         !! No step downhill was found along the quasi-Newton or the
+         !! steepest-descent direction. The energy reported is the last one
+         !! accepted, and `converged` is false.
+      integer :: gdm_off_aufbau = 0
+         !! Virtual orbitals that ended below the highest occupied one. A
+         !! rotation never changes which orbitals are occupied, so a
+         !! minimisation started too early can end on such a state; nonzero is
+         !! warned about.
       logical :: converged = .false.
       real(dp) :: commutator = huge(1.0_dp)
          !! `max|FDS - SDF|` at the last iteration, in the orthogonal basis.
@@ -262,6 +282,10 @@ module mqc_czt_rhf
       real(dp) :: taper = 0.0_dp        !! Below this dD(rms) the shift is dropped
       logical :: second_order = .false.  !! Hand over to Newton once close enough
       real(dp) :: soscf_start = 0.0_dp  !! The commutator at which that happens
+      logical :: gdm = .false.          !! Hand over to direct minimisation instead
+      real(dp) :: gdm_start = 0.0_dp    !! The commutator at which that happens
+      real(dp) :: gdm_max_rotation = 0.0_dp
+         !! Largest element of one step's rotation, radians
       type(scf_convergence_t) :: conv   !! What stopping is measured against
    end type rhf_controls_t
 
@@ -346,6 +370,22 @@ module mqc_czt_rhf
    character(len=*), parameter :: STAGE_XC = "XC quadrature"
    character(len=*), parameter :: STAGE_PCM = "continuum operator"
    character(len=*), parameter :: STAGE_SOSCF = "second-order step"
+   character(len=*), parameter :: STAGE_GDM = "direct-minimisation step"
+
+   integer, parameter :: GDM_HISTORY = 12
+      !! L-BFGS pairs the direct minimisation keeps
+   real(dp), parameter :: GDM_HESSIAN_FLOOR = 0.1_dp
+      !! The smallest Hessian estimate `4 (e_a - e_i)` its preconditioner
+      !! divides by, hartree per radian squared: a gap of 25 millihartree.
+      !! Below it a near-degenerate pair would dominate the direction and the
+      !! rotation cap would shrink every other component with it.
+   real(dp), parameter :: GDM_SLACK = 1.0e-10_dp
+      !! The rise in energy, hartree, a trial may show and still be accepted.
+      !! Every energy it compares comes from a full Fock build, so this is the
+      !! rounding of one and not a noise allowance.
+   real(dp), parameter :: GDM_AUFBAU_TOL = 1.0e-6_dp
+      !! A virtual orbital counts as below the highest occupied one only when
+      !! it is lower by more than this, hartree.
 
 contains
 
@@ -566,7 +606,8 @@ contains
                           guess, guess_density, xc, h_extra, pcm, projector, &
                           level_shift, linear_dependence, b_ao_out, accelerator, grad_tol, &
                           incremental_fock, convergence, scf, second_order, soscf_start, &
-                          cosx, cosx_grid_level, cosx_final_grid)
+                          cosx, cosx_grid_level, cosx_final_grid, gdm, gdm_start, &
+                          gdm_max_rotation)
       !! Drive a closed-shell SCF to convergence
       type(czt_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -686,6 +727,17 @@ contains
          !! The commutator at which that switch happens, as
          !! `max|FDS - SDF|` in the orthogonal basis. Absent or non-positive
          !! takes `DEFAULT_SOSCF_START`.
+      logical, intent(in), optional :: gdm
+         !! `keywords.scf.gdm`. Hand over from DIIS to geometric direct
+         !! minimisation once the commutator falls below `gdm_start`; see
+         !! `run_gdm_phase`. Default false, and refused together with
+         !! `second_order`.
+      real(dp), intent(in), optional :: gdm_start
+         !! The commutator at which that switch happens. Absent or
+         !! non-positive takes `DEFAULT_GDM_START`.
+      real(dp), intent(in), optional :: gdm_max_rotation
+         !! Largest element of one step's rotation, radians. Absent or
+         !! non-positive takes `DEFAULT_GDM_MAX_ROTATION`.
       type(fock_projector_t), intent(in), optional :: projector
          !! A constraint on the Fock matrix, applied after every build.
          !!
@@ -716,11 +768,12 @@ contains
       type(rhf_state_t) :: st
       real(dp) :: e_pcm
       real(dp) :: gtol
-      logical :: accel_ok_grp, accel_second_order
+      logical :: accel_ok_grp, accel_second_order, accel_gdm
       integer :: metric_kind
       logical :: metric_ok
       integer :: iter
       integer :: soscf_switch   !! DIIS iteration the Newton phase took over after
+      integer :: gdm_switch     !! and the one direct minimisation took over after
       type(timing_report_t) :: clk
       real(dp) :: xc_discard(4)
       real(dp) :: s_min, s_kept   !! overlap conditioning, reported before iteration 1
@@ -917,8 +970,10 @@ contains
       ! took that decision on an undefined value.
       ctrl%accel = ACCEL_DIIS
       accel_second_order = .false.
+      accel_gdm = .false.
       if (present(scf)) call parse_accelerator_name(scf%accelerator, ctrl%accel, &
-                                                    accel_ok_grp, accel_second_order)
+                                                    accel_ok_grp, accel_second_order, &
+                                                    accel_gdm)
       if (present(accelerator)) ctrl%accel = accelerator
       call st%diis%init(diis_size, ops%n_ao*ops%n_ao, ops%n_mo*ops%n_mo, &
                         energy_based=(ctrl%accel /= ACCEL_DIIS))
@@ -1094,6 +1149,54 @@ contains
          end if
       end if
 
+      ! Geometric direct minimisation, the other way to finish what DIIS
+      ! started. `accelerator: gdm` and `gdm: true` are the same request.
+      ctrl%gdm = accel_gdm
+      if (present(scf)) ctrl%gdm = ctrl%gdm .or. scf%gdm
+      if (present(gdm)) ctrl%gdm = gdm .or. accel_gdm
+      ctrl%gdm_start = DEFAULT_GDM_START
+      ctrl%gdm_max_rotation = DEFAULT_GDM_MAX_ROTATION
+      if (present(scf)) then
+         if (scf%gdm_start > 0.0_dp) ctrl%gdm_start = scf%gdm_start
+         if (scf%gdm_max_rotation > 0.0_dp) ctrl%gdm_max_rotation = scf%gdm_max_rotation
+      end if
+      if (present(gdm_start)) then
+         if (gdm_start > 0.0_dp) ctrl%gdm_start = gdm_start
+      end if
+      if (present(gdm_max_rotation)) then
+         if (gdm_max_rotation > 0.0_dp) ctrl%gdm_max_rotation = gdm_max_rotation
+      end if
+      if (ctrl%gdm) then
+         if (ctrl%second_order) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.gdm together with "// &
+                           "keywords.scf.second_order: each finishes the SCF that "// &
+                           "DIIS started, and only one of them can. Choose one.")
+            return
+         end if
+         if (ops%cosx%active()) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.gdm with chain-of-spheres "// &
+                           "exchange: that energy is not variational in the orbitals, "// &
+                           "so its Fock matrix is not the gradient of the energy a "// &
+                           "step is accepted or rejected on. Converge this one by "// &
+                           "DIIS.")
+            return
+         end if
+         if (ctrl%use_pcm) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.gdm with a continuum "// &
+                           "solvent: the minimisation rebuilds the Fock matrix "// &
+                           "itself, and its builds do not carry the reaction field. "// &
+                           "Converge this one by DIIS.")
+            return
+         end if
+         if (present(projector)) then
+            call error%set(ERROR_VALIDATION, "keywords.scf.gdm with a Fock projector: "// &
+                           "the rotations the projector forbids are not excluded "// &
+                           "from the step, which would break the constraint. "// &
+                           "Converge this one by DIIS.")
+            return
+         end if
+      end if
+
       ! One call per iteration, and the three views above are what makes that
       ! readable: the alternative was a forty-one argument call.
       !
@@ -1102,6 +1205,7 @@ contains
       ! error check is the caller's, exactly as it is after every other call
       ! in this routine.
       soscf_switch = 0
+      gdm_switch = 0
       do iter = 1, max_iter
          call do_rhf_iteration(iter, mol, ops, ctrl, st, clk, xc, pcm, projector, &
                                result, error)
@@ -1115,11 +1219,21 @@ contains
             soscf_switch = iter
             exit
          end if
+         if (ctrl%gdm .and. iter < max_iter .and. &
+             result%commutator < ctrl%gdm_start) then
+            gdm_switch = iter
+            exit
+         end if
       end do
 
       if (soscf_switch > 0) then
          call run_soscf_phase(mol, ops, ctrl, st, clk, xc, soscf_switch, &
                               max_iter - soscf_switch, result, error)
+         if (error%has_error()) return
+      end if
+      if (gdm_switch > 0) then
+         call run_gdm_phase(mol, ops, ctrl, st, clk, xc, gdm_switch, &
+                            max_iter - gdm_switch, result, error)
          if (error%has_error()) return
       end if
 
@@ -1195,6 +1309,13 @@ contains
       ! the incremental bookkeeping saw, which on the in-core and fitted paths
       ! is nothing, so it would read as a much cheaper run than the timing row
       ! says.
+      if (result%gdm_started_at > 0 .and. verbose) then
+         write (line, "(a,i0,a,i0,a,i0,a)") &
+            "  direct minimisation: handed over after DIIS iteration ", &
+            result%gdm_started_at, ", ", result%gdm_iterations, &
+            " steps of one Fock build each, ", result%gdm_rejected, " rejected"
+         call logger%info(trim(line))
+      end if
       if (result%second_order_started_at > 0 .and. verbose) then
          write (line, "(a,i0,a,i0,a,i0,a)") &
             "  second order: handed over after DIIS iteration ", &
@@ -1827,6 +1948,288 @@ contains
 
       deallocate (fock_cur, fock_try, coeff_try, density_try, step_matrix)
    end subroutine run_soscf_phase
+
+   subroutine run_gdm_phase(mol, ops, ctrl, st, clk, xc, switch_iter, max_steps, &
+                            result, error)
+      !! Converge a closed-shell SCF by geometric direct minimisation, from where
+      !! DIIS left it
+      !!
+      !! Van Voorhis and Head-Gordon, Mol. Phys. 100, 1713 (2002). The energy is
+      !! minimised over the occupied-virtual rotations, `C <- C exp(kappa)`,
+      !! along a limited-memory BFGS direction, and a step is kept only if the
+      !! energy did not rise. One Fock build per trial and none besides, which
+      !! is what separates it from the second-order phase: no Hessian-vector
+      !! products, so an iteration costs what a DIIS one does.
+      !!
+      !! One trial per iteration:
+      !!
+      !! 1. Rotate the accepted orbitals by `scale * d`, rebuild the density,
+      !!    the Fock matrix and the energy.
+      !! 2. Accept if the energy is no higher than the accepted one, to
+      !!    `GDM_SLACK`. Otherwise halve the scale and try the same direction
+      !!    again from the accepted orbitals. Eleven halvings in a row drop the
+      !!    history and restart along preconditioned steepest descent; if that
+      !!    direction breaks down too, stop.
+      !! 3. On acceptance the gradient `4 F_ai` is formed in the new orbitals'
+      !!    frame, the pair (step taken, gradient change) joins the history, and
+      !!    the next direction is `-H g`, replaced by steepest descent if it
+      !!    does not point downhill and capped at `gdm_max_rotation` always.
+      !!
+      !! The gradient and the history live in the frame of the point they were
+      !! formed at and are compared across successive frames without transport;
+      !! the frames differ by one small rotation and the history's curvature
+      !! test drops a pair the approximation spoils. For the same reason the
+      !! orbitals are **not** semicanonicalised between steps -- that would
+      !! mix them arbitrarily within each block and make the history
+      !! meaningless -- only once, at the end.
+      !!
+      !! Convergence is the rule the DIIS phase used, `scf_convergence_t` on
+      !! the energy change, the density change and the same commutator, tested
+      !! at accepted points only.
+      !!
+      !! **It is a minimiser and not a saddle escape.** It keeps the occupation
+      !! the handover diagonalisation gave it and cannot see negative curvature
+      !! along a direction whose gradient is zero. `keywords.scf.second_order`
+      !! is what leaves a saddle; `keywords.scf.stability` is what finds one.
+      type(czt_molecule_t), intent(in), target :: mol
+      type(rhf_operators_t), intent(in), target :: ops
+      type(rhf_controls_t), intent(in) :: ctrl
+      type(rhf_state_t), intent(inout) :: st
+      type(timing_report_t), intent(inout) :: clk
+      type(xc_context_t), intent(inout), optional, target :: xc
+      integer, intent(in) :: switch_iter
+         !! The DIIS iteration this took over after. Reported, not used.
+      integer, intent(in) :: max_steps
+         !! Trial steps allowed: whatever is left of `max_iter`.
+      type(rhf_result_t), intent(inout) :: result
+      type(error_t), intent(inout) :: error
+
+      type(scf_gdm_history_t) :: history
+      real(dp), allocatable :: fock_acc(:, :), fock_try(:, :), fock_mo(:, :), half(:, :)
+      real(dp), allocatable :: coeff_try(:, :), density_try(:, :)
+      real(dp), allocatable :: kappa(:, :), rotation(:, :), energies(:)
+      real(dp), allocatable :: g_acc(:), g_new(:), h0_inv(:), direction(:)
+      real(dp), allocatable :: step(:), change(:), diag(:)
+      real(dp) :: e_acc, e_try, de, drms, gnorm, scale, scale_used, factor
+      integer :: iteration, n_ao, n_mo, n_occ, n_vir, n_rot, i, a
+      logical :: accepted, broken, restarted, pushed, valid
+
+      if (error%has_error()) return
+      n_ao = ops%n_ao
+      n_mo = ops%n_mo
+      n_occ = ops%n_occ
+      n_vir = n_mo - n_occ
+      n_rot = n_occ*n_vir
+      result%gdm_started_at = switch_iter
+      ! Nothing to rotate: the handover's orbitals are already the answer.
+      if (max_steps < 1 .or. n_rot < 1) return
+
+      allocate (fock_acc(n_ao, n_ao), fock_try(n_ao, n_ao), fock_mo(n_mo, n_mo))
+      allocate (half(n_ao, n_mo), coeff_try(n_ao, n_mo), density_try(n_ao, n_ao))
+      allocate (kappa(n_mo, n_mo), diag(n_mo))
+      allocate (g_acc(n_rot), g_new(n_rot), h0_inv(n_rot), direction(n_rot))
+      allocate (step(n_rot), change(n_rot))
+      call history%init(n_rot, GDM_HISTORY, error)
+      if (error%has_error()) return
+
+      ! The point the minimisation starts from, built in full, for the reason
+      ! the second-order phase gives: the DIIS loop's Fock matrix is
+      ! extrapolated and its energy belongs to the previous density.
+      call assemble_fock(mol, ops%h, st%density, st%coeff, n_occ, ops%bmat, &
+                         ops%eri, ops%bounds, xc, fock_acc, e_acc, error, clk=clk, &
+                         bmat_lr=ops%bmat_lr, jfit=ops%jfit)
+      if (error%has_error()) return
+      st%incr%full_builds = st%incr%full_builds + 1
+      call gdm_gradient(fock_acc, st%coeff, g_acc)
+      call gdm_steepest(g_acc, direction)
+      restarted = .true.
+      scale = 1.0_dp
+      call gdm_table_header(ctrl%verbose)
+
+      do iteration = 1, max_steps
+         ! ---- converged at the accepted point? -----------------------------
+         call commutator(fock_acc, st%density, ops%s, ops%x, st%err)
+         gnorm = maxval(abs(st%err))
+         result%commutator = gnorm
+         de = abs(e_acc - st%e_old)
+         drms = sqrt(sum((st%density - st%density_old)**2)/real(n_ao*n_ao, dp))
+         if (ctrl%conv%is_converged(de, drms, gnorm)) then
+            result%converged = .true.
+            exit
+         end if
+
+         ! ---- one trial along the current direction -------------------------
+         scale_used = scale
+         kappa = 0.0_dp
+         do i = 1, n_occ
+            do a = 1, n_vir
+               kappa(n_occ + a, i) = scale_used*direction(a + (i - 1)*n_vir)
+               kappa(i, n_occ + a) = -kappa(n_occ + a, i)
+            end do
+         end do
+         if (allocated(rotation)) deallocate (rotation)
+         call rotation_matrix(kappa, rotation)
+         call pic_gemm(st%coeff, rotation, coeff_try, beta=0.0_dp)
+         call build_density_closed_shell(coeff_try, n_occ, density_try)
+         ! In full, never incrementally: a rejected trial's density is one
+         ! nothing comes back to, and the accept rule compares energies to
+         ! 1e-10, below what an accumulated increment carries.
+         call assemble_fock(mol, ops%h, density_try, coeff_try, n_occ, ops%bmat, &
+                            ops%eri, ops%bounds, xc, fock_try, e_try, error, clk=clk, &
+                            screening=st%screening, bmat_lr=ops%bmat_lr, jfit=ops%jfit)
+         if (error%has_error()) return
+         st%incr%full_builds = st%incr%full_builds + 1
+         result%gdm_iterations = iteration
+         result%iterations = switch_iter + iteration
+
+         call scf_gdm_step_judge(e_acc, e_try, GDM_SLACK, scale, accepted, broken)
+         call gdm_table_row(ctrl%verbose, iteration, e_try + mol%nuclear_repulsion(), &
+                            e_try - e_acc, gnorm, scale_used, history%npairs(), accepted)
+         if (accepted) then
+            call gdm_gradient(fock_try, coeff_try, g_new)
+            step = scale_used*direction
+            change = g_new - g_acc
+            call history%push(step, change, pushed, error)
+            if (error%has_error()) return
+            st%density_old = st%density
+            st%density = density_try
+            st%coeff = coeff_try
+            fock_acc = fock_try
+            st%e_old = e_acc
+            e_acc = e_try
+            g_acc = g_new
+            call history%direction(g_acc, h0_inv, direction, error)
+            if (error%has_error()) return
+            restarted = history%npairs() == 0
+            if (.not. scf_gdm_is_descent(g_acc, direction)) then
+               call history%reset()
+               call gdm_steepest(g_acc, direction)
+               restarted = .true.
+            else
+               call gdm_cap(direction)
+            end if
+         else
+            result%gdm_rejected = result%gdm_rejected + 1
+            if (broken) then
+               if (restarted) then
+                  ! Steepest descent itself found nothing downhill. Not an
+                  ! error: the energy and density in hand are the last ones
+                  ! accepted, and `converged` is false.
+                  result%gdm_stalled = .true.
+                  call logger%warning("    direct minimisation found no step downhill; "// &
+                                      "stopping. The reported energy is the last one "// &
+                                      "accepted.")
+                  exit
+               end if
+               call history%reset()
+               call gdm_steepest(g_acc, direction)
+               restarted = .true.
+            end if
+         end if
+         call clk%lap(STAGE_GDM)
+      end do
+
+      ! Semicanonical orbitals of the last accepted point, as the second-order
+      ! phase leaves them, and for its reason: the occupied-virtual block has
+      ! vanished, so these are canonical at convergence. The density is left
+      ! alone -- this rotation does not change it.
+      call soscf_semicanonicalize(fock_acc, st%coeff, n_occ, fock_mo, energies, error)
+      if (error%has_error()) return
+      st%eigenvalues = energies
+      result%gdm_off_aufbau = count(energies(n_occ + 1:n_mo) &
+                                    < maxval(energies(1:n_occ)) - GDM_AUFBAU_TOL)
+      if (result%gdm_off_aufbau > 0) then
+         call logger%warning("    direct minimisation ended with a virtual orbital "// &
+                             "below the highest occupied one: it keeps the occupation "// &
+                             "it was handed and may have been started too early. "// &
+                             "Lower keywords.scf.gdm_start.")
+      end if
+      result%full_fock_builds = st%incr%full_builds
+      result%incremental_settled_at = st%incr%settled_at
+      result%incremental_updates = st%incr%updates
+      call history%release()
+
+   contains
+
+      subroutine gdm_gradient(fock_ao, coeff, gradient)
+         !! `4 F_ai` in the frame of `coeff`, virtual fastest, and the
+         !! preconditioner from the diagonal of the same matrix
+         real(dp), intent(in) :: fock_ao(:, :), coeff(:, :)
+         real(dp), intent(out) :: gradient(:)
+
+         integer :: p
+
+         call pic_gemm(fock_ao, coeff, half, beta=0.0_dp)
+         call pic_gemm(coeff, half, fock_mo, transa="T", beta=0.0_dp)
+         do i = 1, n_occ
+            do a = 1, n_vir
+               gradient(a + (i - 1)*n_vir) = 4.0_dp*fock_mo(n_occ + a, i)
+            end do
+         end do
+         do p = 1, n_mo
+            diag(p) = fock_mo(p, p)
+         end do
+         call scf_gdm_preconditioner_build(diag(1:n_occ), diag(n_occ + 1:n_mo), 4.0_dp, &
+                                           GDM_HESSIAN_FLOOR, h0_inv, error)
+      end subroutine gdm_gradient
+
+      subroutine gdm_steepest(gradient, d)
+         !! Preconditioned steepest descent, capped
+         real(dp), intent(in) :: gradient(:)
+         real(dp), intent(out) :: d(:)
+
+         d = -h0_inv*gradient
+         call gdm_cap(d)
+      end subroutine gdm_steepest
+
+      subroutine gdm_cap(d)
+         !! Scale `d` so no rotation exceeds `gdm_max_rotation`
+         real(dp), intent(inout) :: d(:)
+
+         call scf_gdm_step_limit(d, ctrl%gdm_max_rotation, factor, valid)
+         ! A direction that is not finite is replaced, not scaled.
+         if (.not. valid) then
+            call history%reset()
+            d = -h0_inv*g_acc
+            call scf_gdm_step_limit(d, ctrl%gdm_max_rotation, factor, valid)
+         end if
+         d = factor*d
+      end subroutine gdm_cap
+   end subroutine run_gdm_phase
+
+   subroutine gdm_table_header(verbose)
+      !! Column headings for the direct-minimisation phase
+      logical, intent(in) :: verbose
+
+      if (.not. verbose) return
+      call logger%info("  direct minimisation: L-BFGS on the orbital rotations, "// &
+                       "one Fock build per step")
+      call logger%info("    iter                 energy          dE     |FDS-SDF|"// &
+                       "       scale  pairs")
+   end subroutine gdm_table_header
+
+   subroutine gdm_table_row(verbose, iter, energy, de, gnorm, scale, pairs, accepted)
+      !! One line of the direct-minimisation phase
+      !!
+      !! `energy` and `dE` are the trial's, against the accepted point it
+      !! started from; `|FDS-SDF|` is that accepted point's. A rejected trial
+      !! is marked, and the next line retries the same direction at half the
+      !! scale.
+      logical, intent(in) :: verbose, accepted
+      integer, intent(in) :: iter, pairs
+      real(dp), intent(in) :: energy, de, gnorm, scale
+
+      character(len=LINE_LEN) :: line
+
+      if (.not. verbose) return
+      if (accepted) then
+         write (line, "(i8,f22.12,3es12.3,i7)") iter, energy, de, gnorm, scale, pairs
+      else
+         write (line, "(i8,f22.12,3es12.3,i7,a)") iter, energy, de, gnorm, scale, pairs, &
+            "  rejected"
+      end if
+      call logger%info(trim(line))
+   end subroutine gdm_table_row
 
    subroutine build_soscf_hessian(mol, ops, ctrl, st, energies, response, hessian, &
                                   xc, error)

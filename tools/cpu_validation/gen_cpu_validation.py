@@ -391,6 +391,13 @@ HAND_MAINTAINED = {
     "cpu/mqc/soscf/n2_stretched_saddle.json",
     "cpu/mqc/soscf/n2_stretched_second_order.json",
     "cpu/mqc/soscf/n2_stretched_soscf_accelerator.json",
+    # Geometric direct minimisation. Hand-maintained for the reason the three
+    # above are: the request changes how an SCF converges and not which
+    # molecule or basis it runs, which the sweep has no column for. See
+    # PRESERVED_TESTS.
+    "cpu/mqc/gdm/water_cc-pvdz_gdm.json",
+    "cpu/mqc/gdm/water_cc-pvdz_pbe_gdm.json",
+    "cpu/mqc/gdm/n2_stretched_gdm.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -3607,6 +3614,31 @@ PRESERVED_TESTS = [
         "tolerance": 1.0e-8,
         "type": "unfragmented",
         "reference_note": "the same deck as n2_stretched_second_order with keywords.scf.second_order replaced by keywords.scf.accelerator 'soscf'. The two spellings are one request, so the reference is deliberately the other case's number rather than a separately recorded one: this run reproduces it to 6e-13, and any drift between them is the two routes diverging, which is the thing being guarded.",
+    },
+    {
+        "name": "RHF H2O cc-pvdz converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/water_cc-pvdz_gdm.json",
+        "expected_energy": -76.026435906898,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "the reference is the one RHF H2O cc-pvdz is held to, PySCF's, because this is the same minimum reached by a different route: keywords.scf.gdm hands over from DIIS and finishes by L-BFGS on the orbital rotations. A request that silently ran as DIIS would pass this too, which is why test_mqc_czt_gdm reads the phase's own counters; what this deck adds is the path from a deck through the reader and the bridge.",
+    },
+    {
+        "name": "KS PBE H2O cc-pvdz grid 3 converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/water_cc-pvdz_pbe_gdm.json",
+        "expected_energy": -76.333065668911,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is KS PBE H2O cc-pvdz grid 3's, PySCF's, and the request is spelled keywords.scf.accelerator 'gdm' rather than keywords.scf.gdm so both spellings are run from a deck. Kohn-Sham is the case where the energy handed to the accept rule is not half a trace against the Fock matrix, so a step judged on the wrong energy would show here and not in the Hartree-Fock deck.",
+    },
+    {
+        "name": "RHF N2 6-31G at 1.6 A, geometric direct minimisation stays on the saddle (CPU)",
+        "input": "inputs/cpu/mqc/gdm/n2_stretched_gdm.json",
+        "expected_energy": -108.551570996439,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "n2_stretched_saddle with keywords.scf.gdm added, and deliberately the same reference energy: the saddle's. Direct minimisation is a minimiser along directions whose gradient is not zero, and the mode that leaves this saddle has a zero gradient by symmetry, so it converges where DIIS does. keywords.scf.second_order is what escapes (n2_stretched_second_order, 0.020 hartree lower). If this deck ever lands on the minimum, the phase has started taking steps it has no gradient for.",
     },
     {
         "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",

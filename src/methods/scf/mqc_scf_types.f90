@@ -84,6 +84,17 @@ module mqc_scf_types
          !! The commutator at which that handover happens. Zero means the
          !! backend's own default, as `grad_tol` and `linear_dependence` do
          !! above.
+      logical :: gdm = .false.
+         !! `keywords.scf.gdm`. Finish the closed-shell SCF by geometric direct
+         !! minimisation once DIIS has brought the commutator below
+         !! `gdm_start`: L-BFGS on the orbital rotations, one Fock build a
+         !! step, a step kept only if the energy did not rise.
+      real(dp) :: gdm_start = 0.0_dp
+         !! The commutator at which that handover happens; zero is the
+         !! backend's default.
+      real(dp) :: gdm_max_rotation = 0.0_dp
+         !! Largest element of one step's rotation, radians; zero is the
+         !! backend's default.
       logical :: allow_crap_scf = .false.
          !! Keep a non-converged SCF instead of failing
       character(len=32) :: guess = "auto"
@@ -176,6 +187,17 @@ contains
          else
             write (line, "(a)") &
                "    second_order on, handing over from DIIS at the backend default"
+         end if
+         call logger%info(trim(line))
+      end if
+      if (scf%gdm) then
+         if (scf%gdm_start > 0.0_dp) then
+            write (line, "(a,es9.2,a)") &
+               "    gdm on, handing over from DIIS below |FDS-SDF| ", &
+               scf%gdm_start, "  (stated)"
+         else
+            write (line, "(a)") &
+               "    gdm on, handing over from DIIS at the backend default"
          end if
          call logger%info(trim(line))
       end if

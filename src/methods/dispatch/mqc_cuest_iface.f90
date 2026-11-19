@@ -152,6 +152,15 @@ module mqc_cuest_iface
          !! driver refuses it by name rather than ignoring it.
       real(dp) :: soscf_start = 1.0e-2_dp
          !! The commutator at which that switch happens.
+      logical :: gdm = .false.
+         !! Finish the closed-shell SCF by geometric direct minimisation once
+         !! DIIS has got it close. Set by `keywords.scf.gdm` or by
+         !! `keywords.scf.accelerator: gdm`. Only the cenzontle backend acts
+         !! on it here; the others refuse it by name.
+      real(dp) :: gdm_start = 1.0e-1_dp
+         !! The commutator at which that switch happens.
+      real(dp) :: gdm_max_rotation = 0.2_dp
+         !! Largest element of one step's rotation, radians.
       real(dp) :: hessian_response_tol = 1.0e-9_dp
       integer :: hessian_response_max_iter = 50
       integer :: hessian_response_batch = 12
@@ -287,6 +296,9 @@ contains
       settings%stability_max_iter = options%stability_max_iter
       settings%second_order = options%second_order
       settings%soscf_start = options%soscf_start
+      settings%gdm = options%gdm
+      settings%gdm_start = options%gdm_start
+      settings%gdm_max_rotation = options%gdm_max_rotation
       settings%hessian_response_tol = options%hessian_response_tol
       settings%hessian_response_max_iter = options%hessian_response_max_iter
       settings%hessian_response_batch = options%hessian_response_batch

@@ -298,13 +298,14 @@ Accelerators
 ------------
 
 ``keywords.scf.accelerator`` chooses the SCF's convergence scheme: ``diis``
-(the default), ``ediis``, ``adiis`` or ``soscf``. A name outside those four is
-refused rather than ignored.
+(the default), ``ediis``, ``adiis``, ``soscf`` or ``gdm``. A name outside those
+five is refused rather than ignored.
 
-The first three are the subject of this section. ``soscf`` is a different kind
-of thing and has its own section below -- where ``ediis`` and ``adiis`` change
-how the SCF *opens* and hand back to DIIS, ``soscf`` leaves the opening to DIIS
-and changes how it *finishes*. See :ref:`second-order-convergence`.
+The first three are the subject of this section. ``soscf`` and ``gdm`` are a
+different kind of thing and have sections of their own below -- where
+``ediis`` and ``adiis`` change how the SCF *opens* and hand back to DIIS, those
+two leave the opening to DIIS and change how it *finishes*. See
+:ref:`second-order-convergence` and :ref:`gdm-convergence`.
 
 DIIS extrapolates from the error vectors of previous iterations, and it is very
 good once those iterations are near enough to the answer to be informative. Far
@@ -634,3 +635,120 @@ fragmented run this is often the only way to finish at all -- a handful of
 fragments out of millions will not converge, and stopping on the first wastes
 the other million. The fragments that failed are named in the output, so the run
 can be followed up rather than trusted.
+
+.. _gdm-convergence:
+
+Geometric direct minimisation
+-----------------------------
+
+The other way to finish an SCF that DIIS started. Where DIIS extrapolates a
+Fock matrix and diagonalises it, geometric direct minimisation (GDM; Van
+Voorhis and Head-Gordon, *Mol. Phys.* **100**, 1713 (2002)) minimises the
+energy directly over the occupied-virtual orbital rotations,
+:math:`C \leftarrow C\,e^{\kappa}`, along a limited-memory BFGS direction, and
+keeps a step only if the energy did not rise.
+
+That last clause is what it is for. A DIIS extrapolation has no notion of
+whether it made things better, which is why it oscillates; a minimiser that
+refuses every uphill step cannot. So this is the tool for an SCF that stalls
+with a commutator between :math:`10^{-2}` and :math:`10^{-1}` and will not
+settle.
+
+Asking for it
+^^^^^^^^^^^^^
+
+.. code-block:: json
+
+   "keywords": { "scf": { "gdm": true } }
+
+.. code-block:: json
+
+   "keywords": { "scf": { "accelerator": "gdm" } }
+
+The two are one request.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 12 54
+
+   * - Key
+     - Default
+     - What it does
+   * - ``keywords.scf.gdm``
+     - ``false``
+     - Hand over from DIIS to direct minimisation
+   * - ``keywords.scf.accelerator``
+     - ``diis``
+     - ``gdm`` is the same request
+   * - ``keywords.scf.gdm_start``
+     - ``1e-1``
+     - The commutator :math:`\max|FDS - SDF|` at which DIIS hands over
+   * - ``keywords.scf.gdm_max_rotation``
+     - ``0.2``
+     - Largest element of one step's rotation, radians
+
+What one step is
+^^^^^^^^^^^^^^^^
+
+One Fock build, as a DIIS iteration is, and nothing else -- no Hessian-vector
+products, which is the difference from the second-order SCF. The orbitals are
+rotated along the current direction, the energy is rebuilt, and:
+
+- if it did not rise, the step is accepted, the gradient :math:`4F_{ai}` at
+  the new orbitals joins the L-BFGS history, and a new direction is formed,
+  preconditioned by the orbital-energy gaps and capped at
+  ``gdm_max_rotation``;
+- if it rose, the step is taken back and the same direction is retried at half
+  the scale. Eleven halvings in a row drop the history and restart along
+  preconditioned steepest descent; if that fails too the run stops, not
+  converged, and says so.
+
+A rejected step costs its Fock build and is counted: the iteration table marks
+it, and the summary line reads, for instance, ``handed over after DIIS
+iteration 3, 6 steps of one Fock build each, 0 rejected``.
+
+Convergence is the test the DIIS phase used, on the same commutator, checked at
+accepted points only. The orbitals that come out are canonical: the phase never
+diagonalises a Fock matrix on the way, and diagonalises its occupied and
+virtual blocks once at the end.
+
+What it costs, and when to use it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On a well-behaved molecule, about what DIIS costs: water, HCN and a water
+trimer in cc-pVDZ each converge in the same number of Fock builds, give or
+take one, to the same energy within :math:`10^{-12}` hartree. There is nothing
+to gain there, which is why it is not the default.
+
+Started from a poor density it is slow but sure. Water from the core guess
+with ``gdm_start`` set so high that the minimisation starts after the first
+diagonalisation takes 46 Fock builds against DIIS's 11, and arrives. That is
+not a recommendation -- let DIIS open -- but it is what the accept rule buys:
+the energy goes down at every accepted step, whatever the starting point.
+
+What it will not do
+^^^^^^^^^^^^^^^^^^^
+
+**It will not leave a saddle point.** It follows the gradient, and the
+direction that leaves a symmetric saddle has none. On N\ :sub:`2` at 1.6 A in
+6-31G it converges to the same saddle DIIS does, 0.020 hartree above the
+minimum that ``second_order`` reaches. ``keywords.scf.stability`` is what tells
+you; ``second_order`` is what escapes.
+
+**It keeps the occupation it was handed.** A rotation never changes how many
+orbitals are occupied or which ones the handover diagonalisation chose. Started
+too early, it can therefore end on a state with a virtual orbital below the
+highest occupied one. That is checked at the end and warned about; lower
+``gdm_start`` if you see it.
+
+**Refused, by name:**
+
+- together with ``second_order``: each finishes the SCF, and only one can;
+- an unrestricted reference: the phase is written for a closed shell;
+- chain-of-spheres exchange: that energy is not variational in the orbitals,
+  so its Fock matrix is not the gradient of the energy a step is judged on;
+- a continuum solvent: the phase rebuilds the Fock matrix itself, and its
+  builds do not carry the reaction field;
+- a Fock projector: the rotations it forbids are not excluded from the step;
+- the cuEST and terco backends. terco has GDM of its own; this program's
+  bridge does not forward the request to it yet.

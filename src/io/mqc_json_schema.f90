@@ -434,6 +434,11 @@ contains
       ! Newton on the orbital rotations.
       call allow(keys, "second_order")
       call allow(keys, "soscf_start")
+      ! Or by DIIS until the commutator falls below `gdm_start` and then by
+      ! geometric direct minimisation.
+      call allow(keys, "gdm")
+      call allow(keys, "gdm_start")
+      call allow(keys, "gdm_max_rotation")
    end function scf_keys
 
    function efp_keys() result(keys)
