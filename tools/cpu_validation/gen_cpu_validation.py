@@ -3246,11 +3246,21 @@ HESSIAN_DF_RI_MP2_CASES = [
 
 #: A double hybrid with both of its halves fitted: the Kohn-Sham reference and
 #: the perturbative term, in one set, as (molecule, basis, functional, aux).
-#: `pyscf_dh_hessian` with `fitted_reference`, on its pinned grid, and held to
-#: the bound the exact-reference fitted double hybrid is, for its reason.
+#: `pyscf_dh_hessian` with `fitted_reference`, on its pinned grid.
+#:
+#: The split-valence case is held to the bound the exact-reference fitted
+#: double hybrid is, for its reason: it reads 4.99e-5, the same two codes'
+#: fixed grids differing under a split-valence oxygen that
+#: `HESSIAN_DH_RI_TOLERANCE` describes, to three figures. The minimal-basis
+#: case has no such limit and reads 5.7e-8, so it is the one that would notice
+#: a wrong term.
 HESSIAN_DF_DH_RI_CASES = [
+    ("water", "sto-3g", "b2plyp", "cc-pvdz-rifit"),
     ("water", "6-31g", "b2plyp", "cc-pvdz-rifit"),
 ]
+
+#: Bounds for the cases above whose reference is not grid-limited, by basis.
+HESSIAN_DF_DH_RI_TIGHT = {"sto-3g": 5.0e-7}
 
 # Double hybrids with a named auxiliary basis, as (molecule, basis, functional,
 # aux). The reference is `pyscf_dh_hessian` with its perturbative term fitted:
@@ -4210,7 +4220,8 @@ def df_ri_hessian_entries(written, dry_run):
             "input": deck,
             "expected_energy": round(energy, 12),
             "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
-            "hessian_tolerance": HESSIAN_DH_RI_TOLERANCE,
+            "hessian_tolerance": HESSIAN_DF_DH_RI_TIGHT.get(
+                basis, HESSIAN_DH_RI_TOLERANCE),
             "requires": "libxc",
             "type": "unfragmented",
         })
