@@ -498,7 +498,7 @@ contains
       end do
    end subroutine fit_response_vectors
 
-   subroutine df_potential_derivative(ops, dens, h1, k_scale)
+   subroutine df_potential_derivative(ops, dens, dg, k_scale)
       !! `d(J - k K/2)[D]/dR` for every nuclear coordinate, at fixed `D`
       !!
       !! `D` is any symmetric matrix in the atomic basis: a relaxed or a
@@ -506,7 +506,7 @@ contains
       !! `nao^3 naux` products, threaded.
       type(df_operator_t), intent(in), target :: ops
       real(dp), intent(in) :: dens(:, :)
-      real(dp), intent(out), contiguous, target :: h1(:, :, :, :)
+      real(dp), intent(out), contiguous, target :: dg(:, :, :, :)
          !! (nao, nao, 3, natm)
       real(dp), intent(in), optional :: k_scale
          !! Exact-exchange fraction; one when absent.
@@ -526,7 +526,7 @@ contains
       call fit_response_vectors(ops, dens, d, ubar)
 
       ! ---- Coulomb: J^x = V^x d + c (U^x : D) --------------------------------
-      h1 = 0.0_dp
+      dg = 0.0_dp
       allocate (i1d(nao, nao))
       do x = 1, 3
          !$omp parallel do default(none) shared(ops, d, i1d, x, nao, naux) private(nu, p) &
@@ -541,15 +541,15 @@ contains
          do ia = 1, natm
             m0 = ops%orb_first(ia) + 1
             m1a = ops%orb_first(ia) + ops%orb_count(ia)
-            h1(m0:m1a, :, x, ia) = h1(m0:m1a, :, x, ia) - i1d(m0:m1a, :)
-            h1(:, m0:m1a, x, ia) = h1(:, m0:m1a, x, ia) - transpose(i1d(m0:m1a, :))
+            dg(m0:m1a, :, x, ia) = dg(m0:m1a, :, x, ia) - i1d(m0:m1a, :)
+            dg(:, m0:m1a, x, ia) = dg(:, m0:m1a, x, ia) - transpose(i1d(m0:m1a, :))
             do p = ops%aux_first(ia) + 1, ops%aux_first(ia) + ops%aux_count(ia)
-               h1(:, :, x, ia) = h1(:, :, x, ia) - d(p)*ops%ip2(:, :, p, x)
+               dg(:, :, x, ia) = dg(:, :, x, ia) - d(p)*ops%ip2(:, :, p, x)
             end do
          end do
       end do
       p2(1:nao*nao, 1:naux) => ops%c
-      q2(1:nao*nao, 1:3*natm) => h1
+      q2(1:nao*nao, 1:3*natm) => dg
       call gemm_over_columns(p2, ubar, q2, alpha=1.0_dp, beta=1.0_dp)
       deallocate (i1d, ubar, d)
       if (kf == 0.0_dp) return
@@ -589,7 +589,7 @@ contains
                call slab_products(ops%c, de, a0, a1, bx)
                kx = kx + bx
             end if
-            h1(:, :, x, ia) = h1(:, :, x, ia) - 0.5_dp*kf*(kx + transpose(kx))
+            dg(:, :, x, ia) = dg(:, :, x, ia) - 0.5_dp*kf*(kx + transpose(kx))
          end do
       end do
    end subroutine df_potential_derivative
@@ -758,7 +758,7 @@ contains
       end do
    end subroutine df_cross_second_derivative
 
-   subroutine cross_exchange_product(ops, dens, c_occ, cc, f, pm, gram)
+   subroutine cross_exchange_product(ops, dens, c_occ, cmo, fmo, pm, gram)
       !! `gram(x, y) = sum_{i, R} Xt^x(., i, R)^T A Xt^y(., i, R)`
       !!
       !! `Xt^x(mu, i, R) = sum_P (U^x_P C)(mu, i) M^-1/2(P, R)`, built a batch
@@ -766,14 +766,14 @@ contains
       !!
       !!     Xt^x = - sum_{lambda in A} t(lambda, mu, R) C(lambda, i)
       !!            - [mu in A] sum_lambda t(mu, lambda, R) C(lambda, i)
-      !!            + sum_{P in A} [f(mu, i, P) mih(P, R) + cc(mu, i, P) pm(P, R)]
+      !!            + sum_{P in A} [fmo(mu, i, P) mih(P, R) + cmo(mu, i, P) pm(P, R)]
       !!
       !! with `t = (nabla . .|P) M^-1/2`.
       type(df_operator_t), intent(in), target :: ops
       real(dp), intent(in) :: dens(:, :)                !! `A`
       real(dp), intent(in) :: c_occ(:, :)
-      real(dp), intent(in), contiguous, target :: cc(:, :, :)     !! (nao, n_occ, naux)
-      real(dp), intent(in), contiguous, target :: f(:, :, :, :)   !! (nao, n_occ, naux, 3)
+      real(dp), intent(in), contiguous, target :: cmo(:, :, :)     !! (nao, n_occ, naux)
+      real(dp), intent(in), contiguous, target :: fmo(:, :, :, :)   !! (nao, n_occ, naux, 3)
       real(dp), intent(in) :: pm(:, :, :)               !! (naux, naux, 3)
       real(dp), intent(out) :: gram(:, :)               !! (3 natm, 3 natm)
 
@@ -806,7 +806,7 @@ contains
             q2(1:nao*nao, 1:w) => t
             call gemm_over_columns(p2, mcol, q2)
             !$omp parallel default(none) &
-            !$omp    shared(ops, c_occ, cc, f, pm, xt, t, nao, n_occ, natm, r0, r1, w, x) &
+            !$omp    shared(ops, c_occ, cmo, fmo, pm, xt, t, nao, n_occ, natm, r0, r1, w, x) &
             !$omp    private(ia, ip, r, m0, na, a0, xa, ca, sa, right, p2, y2)
             !$omp do schedule(dynamic)
             do ia = 1, natm
@@ -832,10 +832,10 @@ contains
                   allocate (right(xa, w))
                   y2(1:nao*n_occ, 1:w) => xt(:, :, :, ip)
                   right = ops%mih(a0:a0 + xa - 1, r0:r1)
-                  p2(1:nao*n_occ, 1:xa) => f(:, :, a0:a0 + xa - 1, x)
+                  p2(1:nao*n_occ, 1:xa) => fmo(:, :, a0:a0 + xa - 1, x)
                   call pic_gemm(p2, right, y2, alpha=1.0_dp, beta=1.0_dp)
                   right = pm(a0:a0 + xa - 1, r0:r1, x)
-                  p2(1:nao*n_occ, 1:xa) => cc(:, :, a0:a0 + xa - 1)
+                  p2(1:nao*n_occ, 1:xa) => cmo(:, :, a0:a0 + xa - 1)
                   call pic_gemm(p2, right, y2, alpha=1.0_dp, beta=1.0_dp)
                   deallocate (right)
                end if

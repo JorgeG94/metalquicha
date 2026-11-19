@@ -532,7 +532,8 @@ contains
       type(df_operator_t) :: ops
       type(error_t) :: err
       real(dp), allocatable :: dens(:, :), h1(:, :, :, :), g(:, :), fd(:, :)
-      real(dp) :: geo(3, N_ATOMS), dev
+      real(dp) :: geo(3, N_ATOMS)
+      real(dp) :: dev
       integer :: nao, k, atom, comp, s
 
       call operators_at(WATER, mol, aux, ops, err)
@@ -586,7 +587,8 @@ contains
       type(error_t) :: err
       real(dp), allocatable :: dens_a(:, :), dens_b(:, :), c_occ(:, :), h1(:, :, :, :)
       real(dp), allocatable :: hess(:, :, :, :)
-      real(dp) :: geo(3, N_ATOMS), fd(N_COORD, N_COORD), analytic(N_COORD, N_COORD), dev
+      real(dp) :: geo(3, N_ATOMS), fd(N_COORD, N_COORD), analytic(N_COORD, N_COORD)
+      real(dp) :: dev
       real(dp) :: worst
       integer :: nao, k, atom, comp, s, y, ia, x
 
