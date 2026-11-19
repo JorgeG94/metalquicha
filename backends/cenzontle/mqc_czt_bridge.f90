@@ -1445,15 +1445,6 @@ contains
          return
       end if
 
-      if (use_gdm .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "geometric direct minimisation is "// &
-                               "implemented here for a closed shell, and this "// &
-                               "reference is unrestricted. Converge this one by DIIS.")
-         result%has_error = .true.
-         call mol%destroy()
-         return
-      end if
-
       ! ---- Kohn-Sham or Hartree-Fock? ---------------------------------------
       !
       ! A named functional is the whole difference: the SCF takes the context as
@@ -1777,7 +1768,9 @@ contains
                              accelerator=accel_kind, &
                              linear_dependence=settings%linear_dependence, &
                              incremental_fock=settings%incremental_fock, &
-                             grad_tol=settings%grad_tol, convergence=scf_conv, aux=aux)
+                             grad_tol=settings%grad_tol, convergence=scf_conv, aux=aux, &
+                             gdm=use_gdm, gdm_start=settings%gdm_start, &
+                             gdm_max_rotation=settings%gdm_max_rotation)
          else if (keep_fit) then
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
@@ -1820,7 +1813,9 @@ contains
                           pcm=pcm_ctx, level_shift=settings%level_shift, accelerator=accel_kind, &
                           linear_dependence=settings%linear_dependence, &
                           incremental_fock=settings%incremental_fock, &
-                          grad_tol=settings%grad_tol, convergence=scf_conv)
+                          grad_tol=settings%grad_tol, convergence=scf_conv, &
+                          gdm=use_gdm, gdm_start=settings%gdm_start, &
+                          gdm_max_rotation=settings%gdm_max_rotation)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration. The threshold is memory alone: the stored
