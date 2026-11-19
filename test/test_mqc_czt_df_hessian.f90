@@ -25,7 +25,11 @@ module test_mqc_czt_df_hessian
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_gradient, only: czt_scf_gradient
    use mqc_czt_hessian, only: df_rhf_hessian, rhf_hessian, response_controls_t
-   use mqc_czt_df_hessian, only: df_metric_dropped
+   use mqc_czt_df_hessian, only: df_metric_dropped, df_hessian_terms_t, &
+                                 df_two_electron_derivatives, &
+                                 df_two_electron_derivatives_dense, df_fit_to_mo, &
+                                 df_response_mo
+   use mqc_czt_cphf, only: fitted_potential_general
    implicit none
    private
 
@@ -53,6 +57,9 @@ module test_mqc_czt_df_hessian
    !! On the SCF's commutator, so the density and not only the energy is
    !! converged.
    real(dp), parameter :: SCF_GRAD_TOL = 1.0e-10_dp
+   !! Two orderings of the same sums over the same integrals: rounding only,
+   !! through an inverse square root of the metric. Measured at 6e-11.
+   real(dp), parameter :: TOL_SAME = 1.0e-9_dp
 
 contains
 
@@ -65,7 +72,9 @@ contains
                   new_unittest("df_hessian_with_d_functions", &
                                against_gradient_differences_polarised), &
                   new_unittest("df_hessian_is_not_the_exact_one", differs_from_exact), &
-                  new_unittest("df_hessian_metric_keeps_every_mode", metric_is_whole) &
+                  new_unittest("df_hessian_metric_keeps_every_mode", metric_is_whole), &
+                  new_unittest("df_hessian_terms_match_the_dense_form", matches_dense), &
+                  new_unittest("df_response_in_the_mo_basis", response_matches_general) &
                   ]
    end subroutine collect_mqc_czt_df_hessian_tests
 
@@ -243,6 +252,102 @@ contains
       call check(error, n_dropped == 0, "cc-pvtz-jkfit on water should drop no mode")
       call aux%destroy()
    end subroutine metric_is_whole
+
+   subroutine matches_dense(error)
+      !! The routine the Hessian calls against the dense one it restates
+      !!
+      !! The dense form builds `V^x`, `M^x` and `U^x` whole for each
+      !! perturbation and contracts them as the formulas read. The other never
+      !! forms any of the three. They share the integrals and nothing else, so
+      !! agreement here is every index convention and every sign of the
+      !! rearrangement at once: the Fock derivative for each of nine
+      !! perturbations, and all eighty-one second derivatives.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(df_hessian_terms_t) :: lean, dense
+
+      call converge(WATER, "cc-pvdz", "cc-pvdz-rifit", mol, aux, scf, err)
+      call check(error,.not. err%has_error(), "the SCF must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call df_two_electron_derivatives(mol, aux, scf%density, scf%orbitals(:, 1:N_OCC), &
+                                       lean, err)
+      call df_two_electron_derivatives_dense(mol, aux, scf%density, &
+                                             scf%orbitals(:, 1:N_OCC), dense, err)
+      call check(error,.not. err%has_error(), "both must run: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      write (*, "(a,3es10.2)") "    lean - dense, max |b|, |h1|, |hess|: ", &
+         maxval(abs(lean%b - dense%b)), maxval(abs(lean%h1 - dense%h1)), &
+         maxval(abs(lean%hess - dense%hess))
+      call check(error, maxval(abs(lean%b - dense%b)) < TOL_SAME, &
+                 "the fitted tensor differs between the two forms")
+      if (allocated(error)) return
+      call check(error, maxval(abs(lean%h1 - dense%h1)) < TOL_SAME, &
+                 "the Fock derivative differs between the two forms")
+      if (allocated(error)) return
+      call check(error, maxval(abs(lean%hess - dense%hess)) < TOL_SAME, &
+                 "the fixed-density second derivative differs between the two forms")
+      call lean%destroy()
+      call dense%destroy()
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine matches_dense
+
+   subroutine response_matches_general(error)
+      !! The response operator's fitted build against the general-density one
+      !!
+      !! `df_response_mo` never forms a density. The reference does: it builds
+      !! `D1 = 2 C (mo1 E^T + E mo1^T) C^T` in the atomic basis, hands it to
+      !! `fitted_potential_general`, which assumes nothing about it, and
+      !! transforms the result back. The trial vectors fill occupied and
+      !! virtual rows alike, because the solver's do.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: N_VEC = 2
+      type(czt_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(df_hessian_terms_t) :: terms
+      real(dp), allocatable :: mo1(:, :, :), gmo(:, :, :), dens(:, :), g(:, :)
+      real(dp), allocatable :: half(:, :), ref(:, :)
+      real(dp) :: dev
+      integer :: n_ao, n_mo, m
+
+      call converge(WATER, "6-31g", "cc-pvtz-jkfit", mol, aux, scf, err)
+      call check(error,.not. err%has_error(), "the SCF must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call df_two_electron_derivatives(mol, aux, scf%density, scf%orbitals(:, 1:N_OCC), &
+                                       terms, err)
+      call check(error,.not. err%has_error(), "the terms must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call df_fit_to_mo(terms, scf%orbitals)
+
+      n_ao = size(scf%orbitals, 1)
+      n_mo = size(scf%orbitals, 2)
+      allocate (mo1(n_mo, N_OCC, N_VEC), gmo(n_mo, N_OCC, N_VEC), dens(n_ao, n_ao), &
+                g(n_ao, n_ao), half(n_ao, N_OCC), ref(n_mo, N_OCC))
+      call random_number(mo1)
+      mo1 = mo1 - 0.5_dp
+      call df_response_mo(terms%b_mo, mo1, gmo)
+
+      dev = 0.0_dp
+      do m = 1, N_VEC
+         half = 2.0_dp*matmul(scf%orbitals, mo1(:, :, m))
+         dens = matmul(half, transpose(scf%orbitals(:, 1:N_OCC)))
+         dens = dens + transpose(dens)
+         call fitted_potential_general(terms%b, dens, g)
+         ref = matmul(transpose(scf%orbitals), matmul(g, scf%orbitals(:, 1:N_OCC)))
+         dev = max(dev, maxval(abs(gmo(:, :, m) - ref)))
+      end do
+      write (*, "(a,es10.2)") "    MO response - general density: ", dev
+      call check(error, dev < TOL_SAME, "the MO-basis response differs from the general build")
+      call terms%destroy()
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine response_matches_general
 
 end module test_mqc_czt_df_hessian
 

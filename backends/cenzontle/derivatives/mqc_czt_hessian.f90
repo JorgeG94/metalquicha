@@ -32,7 +32,8 @@ module mqc_czt_hessian
    use mqc_czt_response, only: response_operator_t, solve_response
    use mqc_czt_response_product, only: response_mean_field
    use mqc_czt_cphf, only: fitted_potential_general
-   use mqc_czt_df_hessian, only: df_hessian_terms_t, df_two_electron_derivatives
+   use mqc_czt_df_hessian, only: df_hessian_terms_t, df_two_electron_derivatives, &
+                                 df_fit_to_mo, df_response_mo
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_ecp, only: ecp_refuses_derivatives
    implicit none
@@ -117,10 +118,11 @@ module mqc_czt_hessian
          !! the same libxc pass repeated once per conjugate-gradient step.
          !! Unfilled is the ordinary case and costs nothing; `solve_mo1_batch`
          !! fills it before the solve, and `solve_mo1_atom` does not.
-      real(dp), pointer :: fit_b(:, :) => null()
-         !! The fitted tensor `B(mu nu, P)` when the reference was density
-         !! fitted, null otherwise. Associated, the Coulomb and exchange of a
-         !! trial density are built from it and no four-index integral is.
+      real(dp), pointer :: fit_mo(:, :, :) => null()
+         !! The fitted tensor in the molecular basis, (n_mo, n_mo, naux), when
+         !! the reference was density fitted, null otherwise. Associated, the
+         !! Coulomb and exchange of a trial vector are built from it and no
+         !! four-index integral is.
       real(dp) :: k_scale = 1.0_dp
          !! Exact exchange in the response operator. One for Hartree-Fock, zero
          !! for a pure functional, the mixing fraction for a hybrid.
@@ -537,6 +539,10 @@ contains
       integer :: n_ao, i, a, p
 
       if (error%has_error()) return
+      if (associated(this%fit_mo)) then
+         call fitted_nuclear_apply(this, vector, image)
+         return
+      end if
 
       ! A zero trial vector has a zero image and costs no integral pass. The
       ! solver asks for exactly that when the occupied block it fixes is empty,
@@ -583,21 +589,13 @@ contains
       ! before the solve, it spares every one of these hundreds of calls the
       ! libxc pass over the grid. Unfilled -- which is what a Hartree-Fock
       ! operator carries -- it is ignored, so it passes unconditionally too.
-      if (associated(this%fit_b)) then
-         allocate (g(n_ao, n_ao, this%n_pert))
-         do p = 1, this%n_pert
-            call fitted_potential_general(this%fit_b, dens(:, :, p), g(:, :, p), &
-                                          k_scale=this%k_scale)
-         end do
-      else
-         call response_mean_field(this%mol, dens, this%zero_h, g, error, &
-                                  direct=.true., bounds=this%bounds, &
-                                  k_scale=this%k_scale, xc=this%xc, &
-                                  reference=this%reference, rs_k_lr=this%rs_k_lr, &
-                                  rs_omega=this%rs_omega, cache=this%kernel_cache, &
-                                  density_screen=.true., &
-                                  screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
-      end if
+      call response_mean_field(this%mol, dens, this%zero_h, g, error, &
+                               direct=.true., bounds=this%bounds, &
+                               k_scale=this%k_scale, xc=this%xc, &
+                               reference=this%reference, rs_k_lr=this%rs_k_lr, &
+                               rs_omega=this%rs_omega, cache=this%kernel_cache, &
+                               density_screen=.true., &
+                               screen_floor=RESPONSE_SCREEN_FLOOR, stats=stats)
       if (error%has_error()) return
       this%last_computed = stats%quartets_computed
       this%last_screened = stats%quartets_screened
@@ -624,6 +622,39 @@ contains
       image = reshape(mo1, [this%n_mo*this%n_occ*this%n_pert])
       deallocate (mo1, half, dens, g, work, gmo)
    end subroutine nuclear_apply
+
+   subroutine fitted_nuclear_apply(this, vector, image)
+      !! `nuclear_apply` for a fitted reference, in the molecular basis throughout
+      !!
+      !! Same image, without the trial densities or the back-transformation:
+      !! `df_response_mo` takes the vector as it is and returns the block this
+      !! divides by the gaps.
+      class(nuclear_response_t), intent(inout) :: this
+      real(dp), intent(in) :: vector(:)
+      real(dp), intent(out) :: image(:)
+
+      real(dp), allocatable :: mo1(:, :, :), gmo(:, :, :)
+      integer :: i, a, p
+
+      if (.not. any(vector /= 0.0_dp)) then
+         image = 0.0_dp
+         return
+      end if
+      allocate (mo1(this%n_mo, this%n_occ, this%n_pert), &
+                gmo(this%n_mo, this%n_occ, this%n_pert))
+      mo1 = reshape(vector, [this%n_mo, this%n_occ, this%n_pert])
+      call df_response_mo(this%fit_mo, mo1, gmo, k_scale=this%k_scale)
+      do p = 1, this%n_pert
+         do i = 1, this%n_occ
+            gmo(1:this%n_occ, i, p) = 0.0_dp
+            do a = this%n_occ + 1, this%n_mo
+               gmo(a, i, p) = gmo(a, i, p)/(this%energies(i) - this%energies(a))
+            end do
+         end do
+      end do
+      this%n_apply = this%n_apply + 1
+      image = reshape(gmo, [this%n_mo*this%n_occ*this%n_pert])
+   end subroutine fitted_nuclear_apply
 
    subroutine solve_mo1_atom(mol, orbitals, energies, n_occ, h1, s1, mo1, error, &
                              max_iter, tol)
@@ -1025,6 +1056,7 @@ contains
       real(dp), allocatable :: h1_lr(:, :, :, :)
       real(dp) :: e_xc_ref, n_xc_ref
       real(dp), allocatable :: g1all(:, :, :), f1(:, :), half(:, :), c_occ(:, :)
+      real(dp), allocatable :: g1mo(:, :, :)
       real(dp), allocatable :: tmp(:, :), work(:, :)
       real(dp), allocatable :: outer(:, :), middle(:, :)
       type(direct_stats_t) :: stats
@@ -1186,11 +1218,19 @@ contains
       end if
       call lap(clk, STAGE_D1)
 
-      ! Their mean fields in one batch, chunked as the solve above is.
-      call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
-                            xc=xc, reference=reference, k_scale=k_scale, &
-                            rs_k_lr=rs_k_lr, rs_omega=rs_omega, batch=width, fit=fit)
-      if (error%has_error()) return
+      ! Their mean fields in one batch, chunked as the solve above is. Only
+      ! the occupied block of each is read below, and for a fitted reference
+      ! that is all that is built: the solver's own product, from the
+      ! first-order orbitals rather than the densities they imply.
+      if (present(fit)) then
+         allocate (g1mo(size(orbitals, 2), n_occ, 3*natm))
+         call df_response_mo(fit%b_mo, reshape(mo1, shape(g1mo)), g1mo, k_scale=k_scale)
+      else
+         call mean_field_batch(mol, d1, bounds, zero_h, g1all, error, &
+                               xc=xc, reference=reference, k_scale=k_scale, &
+                               rs_k_lr=rs_k_lr, rs_omega=rs_omega, batch=width)
+         if (error%has_error()) return
+      end if
       call lap(clk, STAGE_G1)
 
       ! `F D` once: it is the same matrix in every perturbation's outer term.
@@ -1201,7 +1241,8 @@ contains
             tmp = d1(:, :, a, ia)
             ! `dF/dR` in full: the skeleton derivative plus the mean field of
             ! the relaxed density.
-            f1 = h1(:, :, a, ia) + g1all(:, :, 3*(ia - 1) + a)
+            f1 = h1(:, :, a, ia)
+            if (allocated(g1all)) f1 = f1 + g1all(:, :, 3*(ia - 1) + a)
 
             ! W = D F D / 2, differentiated by the product rule: three terms,
             ! all of which get the half. The first and last are transposes of
@@ -1215,6 +1256,7 @@ contains
             ! `nao^3`.
             call pic_gemm(f1, c_occ, fc)
             call pic_gemm(c_occ, fc, cfc, transa="T")
+            if (allocated(g1mo)) cfc = cfc + g1mo(1:n_occ, :, 3*(ia - 1) + a)
             call pic_gemm(c_occ, cfc, fc, alpha=4.0_dp, beta=0.0_dp)
             call pic_gemm(fc, c_occ, middle, transb="T")
             w1(:, :, a, ia) = 0.5_dp*(outer + transpose(outer) + middle)
@@ -1246,7 +1288,8 @@ contains
       deallocate (hess_flat)
 
       deallocate (h1, s1, d1, w1, hcore, fock, bounds, zero_h)
-      deallocate (g1all, f1, half, c_occ, tmp, work, outer, middle)
+      if (allocated(g1all)) deallocate (g1all)
+      deallocate (f1, half, c_occ, tmp, work, outer, middle)
       call lap(clk, STAGE_ASSEMBLY)
    end subroutine response_hessian
 
@@ -1342,6 +1385,7 @@ contains
 
       call clk%begin("fitted two-electron derivatives")
       call df_two_electron_derivatives(mol, aux, density, orbitals(:, 1:n_occ), fit, error)
+      call df_fit_to_mo(fit, orbitals)
       call clk%lap()
       if (error%has_error()) return
 
@@ -1701,7 +1745,7 @@ contains
       if (present(k_scale)) operator%k_scale = k_scale
       if (present(rs_k_lr)) operator%rs_k_lr = rs_k_lr
       if (present(rs_omega)) operator%rs_omega = rs_omega
-      if (present(fit)) operator%fit_b => fit%b
+      if (present(fit)) operator%fit_mo => fit%b_mo
       if (present(bounds)) then
          operator%bounds = bounds
       else if (present(fit)) then
@@ -1863,7 +1907,7 @@ contains
    end subroutine solve_zvector_batch
 
    subroutine mean_field_batch(mol, d1, bounds, zero_h, g1, error, xc, reference, &
-                               k_scale, rs_k_lr, rs_omega, batch, fit)
+                               k_scale, rs_k_lr, rs_omega, batch)
       !! `G(D')` for every first-order density, a chunk at a time
       !!
       !! Flattens `(n_ao, n_ao, 3, natm)` to `(n_ao, n_ao, 3*natm)` and hands it
@@ -1890,9 +1934,6 @@ contains
       real(dp), intent(in), optional :: rs_k_lr, rs_omega
       integer, intent(in), optional :: batch
          !! Most densities per pass; `DEFAULT_RESPONSE_BATCH` when absent.
-      type(df_hessian_terms_t), intent(in), optional, target :: fit
-         !! The fitted reference's terms. Present, every two-electron quantity
-         !! here comes from the fit and none from four-index integrals.
 
       integer :: max_batch
       real(dp), allocatable :: chunk(:, :, :), out(:, :, :)
@@ -1947,19 +1988,11 @@ contains
          ! The same two-electron build and the same kernel the response
          ! operator applies, for the reason `k_scale` above gives -- literally
          ! the same routine, so the two cannot drift apart again.
-         if (present(fit)) then
-            allocate (out(nao, nao, wide))
-            do q = 1, wide
-               call fitted_potential_general(fit%b, chunk(:, :, q), out(:, :, q), &
-                                             k_scale=k_scale)
-            end do
-         else
-            call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
-                                     bounds=bounds, k_scale=k_scale, &
-                                     xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
-                                     rs_omega=rs_omega, cache=kernel_cache, &
-                                     density_screen=.true.)
-         end if
+         call response_mean_field(mol, chunk, zero_h, out, error, direct=.true., &
+                                  bounds=bounds, k_scale=k_scale, &
+                                  xc=xc, reference=reference, rs_k_lr=rs_k_lr, &
+                                  rs_omega=rs_omega, cache=kernel_cache, &
+                                  density_screen=.true.)
          if (error%has_error()) return
          g1(:, :, first:last) = out
          deallocate (chunk, out)

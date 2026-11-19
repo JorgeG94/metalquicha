@@ -331,11 +331,21 @@ carries the auxiliary basis's response only to first order is still symmetric
 and still translationally invariant, and on water is 1e-4 of an element away
 from the derivative of the fitted gradient.
 
-Hartree-Fock takes this route. The implementation is the dense one: a full
-three-index array per perturbation and an exchange step of
-:math:`N_{aux} N^3` each, so it is exact and not yet fast. It declines when
-the auxiliary metric drops a mode, because :math:`-M^{-1} M^x M^{-1}` is the
-derivative of the inverse only when none is dropped.
+Hartree-Fock takes this route. Nothing in it is built per perturbation at the
+size of the three-index integrals: the exchange-type contractions go through
+the occupied orbitals, each atom touches only the derivative integrals whose
+differentiated function it owns, and the product term is accumulated a batch
+of auxiliary functions at a time. The response solver applies its operator in
+the molecular basis, :math:`N^2 N_{occ} N_{aux}` per trial vector, and the
+relaxed mean field is one more application of it. On a water tetramer in
+cc-pVDZ with cc-pVTZ-JKFIT, on four threads, the whole calculation takes 3.4 s
+against 13.8 s for the exact analytic Hessian and about a minute for differencing the
+fitted gradient. The integrals are still held whole, about four arrays of
+:math:`N^2 N_{aux}` at the peak.
+
+It declines when the auxiliary metric drops a mode, because
+:math:`-M^{-1} M^x M^{-1}` is the derivative of the inverse only when none is
+dropped.
 
 **Kohn-Sham, MP2 and RI-MP2 over a fitted reference.** Still excluded. The
 correlation block assumes an exact reference operator, and the fitted
