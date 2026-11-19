@@ -102,6 +102,8 @@ module mqc_terco_driver
          !! RI-MP2 runs after every SCF: method `ri-mp2`, or a double hybrid.
       logical :: needs_rccsd = .false.
          !! RI-CCSD runs after the SCF, with (T) when the method asked for it.
+      logical :: wants_triples = .false.
+         !! The method was `ri-ccsd(t)`: a result without (T) is a failure.
    contains
       procedure :: close => session_close
       procedure :: message => session_message
@@ -304,6 +306,7 @@ contains
       ! needs the auxiliary basis a plain RI-MP2 does.
       session%needs_rimp2 = settings%run_mp2 .or. session%double_hybrid
       session%needs_rccsd = settings%run_cc
+      session%wants_triples = settings%run_cc .and. settings%cc_triples
       if (session%double_hybrid .and. .not. settings%aux_basis_named) then
          call error%set(ERROR_VALIDATION, "'"//functional_name//"' is a double hybrid, "// &
                         "and terco evaluates its perturbative term by RI-MP2 only. Name "// &
@@ -1031,6 +1034,13 @@ contains
                         int_text(int(iterations_c))//" iterations; the last "// &
                         "correlation energy was "//trim(adjustl(number))// &
                         ". Raise keywords.cc.max_iter.")
+         return
+      end if
+      ! A run that was asked for (T) and came back without it would be stored
+      ! as a CCSD energy under a CCSD(T) method name.
+      if (session%wants_triples .and. has_triples_c == 0) then
+         call error%set(ERROR_VALIDATION, "RI-CCSD converged but terco did not run the "// &
+                        "(T) correction that was asked for: "//session%message())
          return
       end if
       read_rc = trc_rccsd_energy_parts(session%handle, e_singles_c, e_doubles_c)
