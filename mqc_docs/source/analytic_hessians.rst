@@ -303,14 +303,12 @@ plausible.
 open-shell Kohn-Sham Hessian needs both spin channels through every term and a
 spin-resolved kernel. Mechanical rather than deep, and not done.
 
-**Density fitting.** The Hessian has no fitted path at all, so everything is
-conventional four-index. This one is blocked on integrals rather than algebra:
-only the first derivatives ``int3c2e_ip1`` and ``int3c2e_ip2`` exist, and a
-fitted Hessian wants ``int3c2e_ipip1``, ``ipvip1``, ``ip1ip2`` and
-``int2c2e_ipip1``, none of which are among the procedures the integral library
-exposes. Doing it conventionally first is the right order anyway: fitting
-trades accuracy for speed, and without an exact Hessian to difference against
-there is no way to say whether a fitted one is converged or merely fast.
+**Orbitals removed for linear dependence.** The response equations take the
+orbitals to span the basis. Where ``linear_dependence_threshold`` projected
+functions out they do not, and every analytic Hessian here then returns a
+converged, symmetric matrix that is wrong: 0.13 hartree/bohr\ :sup:`2` on HCN
+in cc-pVDZ with four functions removed. Such a run is declined and its
+gradient differenced instead.
 
 **PCM.** A continuum's contribution to a second derivative is not implemented,
 and its interaction with the response terms has not been worked out.

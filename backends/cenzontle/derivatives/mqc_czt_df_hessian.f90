@@ -651,9 +651,11 @@ contains
       naux = size(mih, 1)
       natm = size(orb_first)
       npert = 3*natm
-      width = int(memory_budget(PRODUCT_BLIND_BYTES, PRODUCT_SHARE) &
-                  /(8.0_dp*real(n_occ, dp)**2*real(npert, dp)))
-      width = max(1, min(naux, width))
+      ! Clamped as a real: a small molecule on a large machine gives a figure
+      ! no default integer holds.
+      width = int(min(real(naux, dp), &
+                      max(1.0_dp, memory_budget(PRODUCT_BLIND_BYTES, PRODUCT_SHARE) &
+                          /(8.0_dp*real(n_occ, dp)**2*real(npert, dp)))))
 
       gram = 0.0_dp
       allocate (part(npert, npert))

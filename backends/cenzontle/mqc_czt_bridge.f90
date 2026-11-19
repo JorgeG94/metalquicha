@@ -1188,6 +1188,7 @@ contains
       logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
       logical :: df_analytic
+      logical :: full_rank
          !! A fitted reference whose Hessian has an analytic route
       character(len=:), allocatable :: hessian_fallback
          !! Set when a covered analytic Hessian could not be built and the
@@ -2454,8 +2455,19 @@ contains
       ! its metric inverts without dropping a mode. Asked here, like the fitted
       ! correlation block above, so a declined metric costs one two-centre
       ! build.
+      ! Every analytic Hessian here takes the orbitals to span the basis. Where
+      ! the overlap's near-null space was projected out they do not, and the
+      ! matrix that comes back is converged, symmetric and wrong: 0.13
+      ! hartree/bohr^2 on HCN in cc-pVDZ with four functions removed.
+      full_rank = .true.
+      if (allocated(scf%orbitals)) full_rank = size(scf%orbitals, 2) == mol%nao
+      if (do_hessian .and. .not. full_rank .and. .not. allocated(hessian_fallback) &
+          .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
+         hessian_fallback = "linear dependence removed orbitals from the basis, and "// &
+                            "the response equations assume none were"
+      end if
       df_analytic = .false.
-      if (do_hessian .and. settings%density_fitting .and. .not. kohn_sham &
+      if (do_hessian .and. settings%density_fitting .and. .not. kohn_sham .and. full_rank &
           .and. .not. unrestricted .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. mol%necpbas == 0 &
           .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC) then
@@ -2474,13 +2486,13 @@ contains
             if (.not. df_analytic) then
                write (count_text, "(i0)") n_dropped
                hessian_fallback = "the fitted reference: the auxiliary metric drops "// &
-                                  trim(count_text)//" mode(s), and -J^-1 dJ J^-1 is "// &
+                                  trim(count_text)//" mode(s), and -M^-1 dM M^-1 is "// &
                                   "exact only when it drops none"
             end if
          end block
       end if
       if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
-          .and. .not. unrestricted .and. mol%necpbas == 0 &
+          .and. .not. unrestricted .and. mol%necpbas == 0 .and. full_rank &
           .and. (.not. settings%density_fitting .or. df_analytic) &
           .and. .not. settings%run_mp2 &
           .and. .not. settings%run_cc .and. .not. settings%pcm%enabled &
@@ -2758,6 +2770,7 @@ contains
             ! derivative of that same energy -- the two agree to that and
             ! not to the last digit.
             if (do_hessian .and. settings%hessian_method == HESSIAN_METHOD_ANALYTIC &
+                .and. full_rank &
                 .and. settings%corr_density_fitting .and. mol%necpbas == 0) then
                call fitted_hessian_declined(settings, fragment, symbols, hessian_fallback, error)
                if (error%has_error()) then

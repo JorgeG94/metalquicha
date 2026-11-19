@@ -1385,9 +1385,9 @@ contains
 
       call clk%begin("fitted two-electron derivatives")
       call df_two_electron_derivatives(mol, aux, density, orbitals(:, 1:n_occ), fit, error)
-      call df_fit_to_mo(fit, orbitals)
       call clk%lap()
       if (error%has_error()) return
+      call df_fit_to_mo(fit, orbitals)
 
       call partial_hessian(mol, density, weighted, part, error, clk=clk, &
                            two_electron=.false.)
@@ -1670,8 +1670,13 @@ contains
          first = last + 1
       end do
 
-      write (line, "(a,i0,a,i14,a)") "  response solve: ", operator%n_apply, &
-         " integral passes, ", operator%total_computed, " quartets computed in all"
+      if (present(fit)) then
+         write (line, "(a,i0,a)") "  response solve: ", operator%n_apply, &
+            " applications of the fitted operator"
+      else
+         write (line, "(a,i0,a,i14,a)") "  response solve: ", operator%n_apply, &
+            " integral passes, ", operator%total_computed, " quartets computed in all"
+      end if
       call logger%large_info(trim(line))
 
       deallocate (h1mo, s1mo, work, rhs)
