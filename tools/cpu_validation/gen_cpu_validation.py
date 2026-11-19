@@ -2576,7 +2576,7 @@ def _gradient_tolerance(functional, aux):
     return GRADIENT_DFT_TOLERANCE
 
 
-def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
+def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL, aux=""):
     """Reference energy and analytic nuclear Hessian, in Hartree/Bohr^2.
 
     Returned as `(3N, 3N)` -- the shape the vibrational analysis reads and the
@@ -2590,9 +2590,18 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
     As with the gradients, the Hessian modules have to be imported by name --
     `mf.Hessian()` raises NotImplementedError otherwise, which reads like the
     method having no Hessian rather than a missing import.
+
+    `aux` fits the reference, and the Hessian is then that of the fitted
+    energy, with the auxiliary basis's own response carried to second order
+    (`auxbasis_response = 2`). At first order PySCF leaves out the second
+    derivative of the fit with respect to the auxiliary centres, which is
+    1e-4 of a Hessian element on water and is not what a differenced fitted
+    gradient gives. The SCF is converged in its orbital gradient too: a
+    Hessian's response is first order in what a loose one leaves.
     """
     from pyscf import dft, gto, scf
     from pyscf.hessian import rhf as _rhf_hess, rks as _rks_hess  # noqa: F401
+    from pyscf.df.hessian import rhf as _df_rhf_hess  # noqa: F401
 
     mol = gto.Mole()
     mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
@@ -2612,11 +2621,17 @@ def pyscf_hessian(atoms, basis, functional="", level=HESSIAN_GRID_LEVEL):
     else:
         mf = scf.RHF(mol)
     mf.conv_tol = 1e-12
+    if aux:
+        mf = mf.density_fit(auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-9
     energy = mf.kernel()
 
     hobj = mf.Hessian()
     if functional:
         hobj.grid_response = False
+    if aux:
+        hobj.auxbasis_response = 2
     hess = hobj.kernel()
     n = mol.natm * 3
     hess = hess.transpose(0, 2, 1, 3).reshape(n, n)
@@ -3115,6 +3130,28 @@ def pyscf_dh_hessian(atoms, basis, functional, level=HESSIAN_GRID_LEVEL,
 # pinned separately, by `test_mqc_ri_mp2_hessian`, which differences the fitted
 # gradient and reads about 1e-9. Water in a split-valence and in a
 # double-zeta basis, the latter with d functions and a frozen oxygen core.
+#: A density-fitted Hartree-Fock reference, as (molecule, basis, aux).
+#:
+#: The Hessian of the fitted energy, which is not the exact one with fitted
+#: integrals put in: the fit's own response to a moved auxiliary basis enters at
+#: second order, and is the term a wrong implementation loses first. PySCF has
+#: this Hessian, so unlike the fitted correlation block below the reference is
+#: a third party's.
+#:
+#: Two auxiliary families, a basis with d functions and one without, and H2S for
+#: a second-row atom, whose fitting set reaches higher angular momentum than
+#: any first-row one.
+HESSIAN_DF_CASES = [
+    ("water", "sto-3g", "cc-pvtz-jkfit"),
+    ("water", "cc-pvdz", "cc-pvtz-jkfit"),
+    ("nh3", "def2-svp", "def2-universal-jkfit"),
+    ("h2s", "def2-svp", "def2-universal-jkfit"),
+]
+
+#: Measured agreement is 4e-9 or better on all four; the bound leaves the room
+#: the unfitted Hessians' does.
+HESSIAN_DF_TOLERANCE = 1.0e-7
+
 HESSIAN_RI_MP2_CASES = [
     ("water", "6-31g", "cc-pvdz-rifit", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
@@ -3977,6 +4014,37 @@ def counterpoise_entries(written, dry_run):
     return entries
 
 
+def df_hessian_entries(written, dry_run):
+    """Write the fitted-reference Hessian decks and return their manifest entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    for name, basis, aux in HESSIAN_DF_CASES:
+        mol = MOLECULES[name]
+        energy, hessian, nao = pyscf_hessian(mol.atoms, basis, aux=aux)
+        deck = deck_for(f"{CPU_MQC}/hessian",
+                        f"cpu_{name}_{normalize_basis_name(basis)}_df_hess")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, method="hf")
+            d["driver"] = "Hessian"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"RHF Hessian {mol.label} {basis} density fitted with {aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_hessian": [[round(c, 12) for c in row] for row in hessian],
+            "hessian_tolerance": HESSIAN_DF_TOLERANCE,
+            "type": "unfragmented",
+        })
+        norm = math.sqrt(sum(c*c for row in hessian for c in row))
+        print(f"{mol.label:6s} {basis:12s} DF-RHF   hess |H|={norm:.10f} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
 def ri_hessian_entries(written, dry_run):
     """Write the fitted-correlation Hessian decks and return their entries.
 
@@ -4059,6 +4127,10 @@ def main():
                     help="write only the gradient decks over an ECP and splice "
                          "their entries into the existing manifest, leaving "
                          "every other entry and deck untouched")
+    ap.add_argument("--only-df-hessian", action="store_true",
+                    help="write only the fitted-reference Hessian decks and "
+                         "splice their entries into the existing manifest, "
+                         "leaving every other entry and deck untouched")
     ap.add_argument("--only-ri-hessian", action="store_true",
                     help="write only the fitted-correlation Hessian decks and "
                          "splice their entries into the existing manifest, "
@@ -4146,6 +4218,24 @@ def main():
                 if not args.dry_run and not (INPUTS / mol.xyz).exists():
                     write_xyz(INPUTS / mol.xyz, mol)
         entries = ecp_gradient_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_df_hessian:
+        for name in {c[0] for c in HESSIAN_DF_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = df_hessian_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -5316,6 +5406,7 @@ def main():
     # read and a manifest nobody can check.
     tests.extend(excited_entries(written, args.dry_run))
     tests.extend(counterpoise_entries(written, args.dry_run))
+    tests.extend(df_hessian_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
     tests.extend(cosx_entries(written, args.dry_run))
     tests.extend(ri_ccsd_gradient_entries(written, args.dry_run))

@@ -72,9 +72,13 @@ What is covered
    * - Unrestricted (UKS)
      - **no**
      - any open shell
-   * - Density fitted
+   * - Density-fitted Hartree-Fock
+     - yes
+     - ``hf`` with ``keywords.scf.density_fitting``, provided the auxiliary
+       metric inverts without dropping a mode
+   * - Density-fitted Kohn-Sham, MP2 or double hybrid
      - **no**
-     - ``keywords.scf.density_fitting``
+     - ``keywords.scf.density_fitting`` with anything but ``hf``
 
 Anything not covered falls back to the semi-numerical path rather than
 failing, so a deck that asks for a Hessian gets one either way. The difference
@@ -315,9 +319,27 @@ and its interaction with the response terms has not been worked out.
 a different energy, and its derivatives are not the unscaled ones rescaled --
 the amplitudes enter the relaxed density and the response equations unscaled.
 
-**RI-MP2 over a fitted reference.** ``keywords.scf.density_fitting`` is
-excluded for the same reason as everywhere else in this table; the correlation
-block assumes an exact reference operator.
+**A fitted reference.** A fitted energy is not the exact one with fitted
+integrals put in, and its Hessian is the derivative of the expression the SCF
+minimised. With :math:`V = (\mu\nu|P)`, :math:`M = (P|Q)` and
+:math:`c = M^{-1}V`, every perturbation contributes
+:math:`U^x = V^x - M^x c`, and the fixed-density second derivative is the
+second-derivative integrals against two fixed densities plus a product of
+first derivatives, :math:`\sum \Gamma\, U^x M^{-1} U^y`. That product is
+where the fit's own response to a moved auxiliary basis lives. A Hessian that
+carries the auxiliary basis's response only to first order is still symmetric
+and still translationally invariant, and on water is 1e-4 of an element away
+from the derivative of the fitted gradient.
+
+Hartree-Fock takes this route. The implementation is the dense one: a full
+three-index array per perturbation and an exchange step of
+:math:`N_{aux} N^3` each, so it is exact and not yet fast. It declines when
+the auxiliary metric drops a mode, because :math:`-M^{-1} M^x M^{-1}` is the
+derivative of the inverse only when none is dropped.
+
+**Kohn-Sham, MP2 and RI-MP2 over a fitted reference.** Still excluded. The
+correlation block assumes an exact reference operator, and the fitted
+response operator here carries no exchange-correlation kernel.
 
 **Double hybrids that are not GGA-based, all-electron and unscreened.** Read
 this entry against the table above rather than instead of it: a meta-GGA, a

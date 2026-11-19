@@ -157,6 +157,10 @@ if(MQC_ENABLE_CZT)
   # included.
   addtest(mqc_ri_mp2_hessian)
   target_link_libraries(test_mqc_ri_mp2_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
+  # A density-fitted Hartree-Fock reference's Hessian, against differences of
+  # the fitted gradient.
+  addtest(mqc_czt_df_hessian)
+  target_link_libraries(test_mqc_czt_df_hessian PRIVATE ${MQC_INTEGRALS_LIBS})
   # The same for a double hybrid's perturbative term; skips itself without
   # libxc.
   addtest(mqc_ri_mp2_hessian_dh)
