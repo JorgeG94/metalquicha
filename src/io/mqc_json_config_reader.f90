@@ -225,6 +225,14 @@ contains
       ! config and travels into the report and the JSON beside the numbers.
       ! The object is the request, as for `charges`; it has no settings yet.
       call json%info("properties.natural_orbitals", found=config%natural_orbitals)
+      call json%info("properties.intrinsic_orbitals", found=config%intrinsic_orbitals)
+      call optional_int(json, "properties.intrinsic_orbitals.exponent", &
+                        config%intrinsic_exponent)
+      if (config%intrinsic_exponent /= 2 .and. config%intrinsic_exponent /= 4) then
+         call error%set(ERROR_VALIDATION, "properties.intrinsic_orbitals.exponent must "// &
+                        "be 2 (Pipek-Mezey) or 4 (the default)")
+         return
+      end if
       block
          character(len=:), allocatable :: density_text
          logical :: density_named

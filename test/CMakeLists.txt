@@ -623,6 +623,13 @@ if(MQC_ENABLE_CZT)
   target_link_libraries(test_mqc_czt_natural_orbitals
                         PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Intrinsic atomic and bond orbitals. Charges, the localisation functional and
+  # the bond orbitals' atomic shares are pinned to pyscf.lo.iao and
+  # pyscf.lo.ibo; beside them, that the IAOs are orthonormal and span the
+  # occupied space, and that localising leaves the density alone.
+  addtest(mqc_czt_iao)
+  target_link_libraries(test_mqc_czt_iao PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The multipole matrices every distributed multipole and every localization
   # centroid is built from. Origin shifts, symmetry, and the redundancy in the
   # full Cartesian tensor -- the three things a transposed component breaks

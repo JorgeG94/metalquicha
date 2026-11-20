@@ -1161,6 +1161,8 @@ contains
       use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
                                      mayer_valences, print_mayer_report, &
                                      wiberg_bond_orders, wiberg_bond_orders_open_shell
+      use mqc_czt_iao, only: build_iao, iao_charges, ibo_localize, ibo_populations, &
+                             print_ibo_report
       use mqc_czt_natural_orbitals, only: natural_occupation_summary_t, &
                                           density_natural_orbitals, &
                                           summarize_natural_occupations, &
@@ -1255,6 +1257,19 @@ contains
       ! relaxed density, and only closed-shell RI-MP2 builds one here; the
       ! rest are refused rather than handed the reference's numbers under a
       ! correlated heading.
+      ! Intrinsic orbitals are built from one set of doubly occupied orbitals.
+      if (settings%intrinsic_orbitals) then
+         if (unrestricted .or. settings%run_mp2 .or. settings%run_cc) then
+            call result%error%set(ERROR_VALIDATION, "properties.intrinsic_orbitals is "// &
+                                  "implemented for a closed-shell Hartree-Fock or "// &
+                                  "Kohn-Sham reference: the intrinsic atomic orbitals "// &
+                                  "are built from its occupied orbitals, and an "// &
+                                  "unrestricted or correlated wave function has no "// &
+                                  "single such set.")
+            result%has_error = .true.
+            return
+         end if
+      end if
       relaxed_analysis = trim(settings%properties_density) == "relaxed" &
                          .and. (allocated(settings%charges_scheme) &
                                 .or. allocated(settings%bond_order_scheme))
@@ -2370,6 +2385,8 @@ contains
       ! the branch below is on the *reference*, not on the multiplicity: an
       ! unrestricted singlet takes the open-shell entry and gets the same
       ! answer, which is the point.
+      if (settings%intrinsic_orbitals) call report_intrinsic_orbitals()
+
       if (settings%natural_orbitals .and. .not. settings%run_mp2) then
          if (allocated(scf%density_beta)) then
             call report_natural_orbitals(scf%density + scf%density_beta, "unrestricted scf")
@@ -3690,6 +3707,33 @@ contains
       call mol%destroy()
 
    contains
+
+      subroutine report_intrinsic_orbitals()
+         !! IAO charges and intrinsic bond orbitals of the closed-shell reference
+         !!
+         !! A failure is a warning, as for every analysis here.
+         real(dp), allocatable :: iao(:, :), q(:), localized(:, :), pops(:, :)
+         integer, allocatable :: owner(:)
+         type(error_t) :: iao_error
+         integer :: sweeps, n_occ
+
+         n_occ = scf%n_occupied
+         call build_iao(mol, scf%orbitals(:, 1:n_occ), iao, owner, iao_error)
+         call iao_charges(mol, scf%density, iao, owner, q, iao_error)
+         call ibo_localize(mol, scf%orbitals(:, 1:n_occ), iao, owner, localized, &
+                           iao_error, exponent=settings%intrinsic_exponent, sweeps=sweeps)
+         call ibo_populations(mol, localized, iao, owner, pops, iao_error)
+         if (iao_error%has_error()) then
+            call logger%warning("  intrinsic orbitals could not be computed: "// &
+                                iao_error%get_message())
+            return
+         end if
+         call print_ibo_report(pops, q, symbols, settings%intrinsic_exponent, sweeps)
+         call move_alloc(q, result%iao_charges)
+         call move_alloc(pops, result%ibo_populations)
+         result%ibo_exponent = settings%intrinsic_exponent
+         result%has_intrinsic_orbitals = .true.
+      end subroutine report_intrinsic_orbitals
 
       subroutine report_relaxed_bond_orders(total_density)
          !! Mayer bond orders of a closed-shell correlated density

@@ -673,6 +673,11 @@ four.
   Hirshfeld or MBIS spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
   because that scheme fits the electrostatic potential and the total density
   alone determines it. ``properties.charges``.
+- **Intrinsic atomic and bond orbitals** (Knizia's IAO/IBO): basis-set
+  insensitive atomic charges, and the occupied orbitals localised into cores,
+  lone pairs and bonds with each one's share per atom. Closed-shell
+  Hartree-Fock or Kohn-Sham. ``properties.intrinsic_orbitals``; see
+  :doc:`intrinsic_orbitals`.
 - **Natural orbitals**: the occupations of the orbitals that diagonalise the
   most complete one-particle density the method has -- the spin-summed density
   of an unrestricted reference, or the relaxed density of closed-shell

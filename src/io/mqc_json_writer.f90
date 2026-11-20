@@ -197,6 +197,7 @@ contains
       call write_charges_section(json, main_obj, data)
       call write_bond_orders_section(json, main_obj, data)
       call write_natural_orbitals_section(json, main_obj, data)
+      call write_intrinsic_orbitals_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
@@ -655,6 +656,39 @@ contains
          end if
       end do
    end subroutine write_charges_section
+
+   subroutine write_intrinsic_orbitals_section(json, parent, data)
+      !! Intrinsic atomic orbital charges and the bond orbitals' atomic shares
+      !!
+      !! One row per bond orbital, one entry per atom, each row summing to one.
+      !! The whole matrix is written: which shares count as a bond is the
+      !! reader's threshold to set.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, arr, row
+      integer :: i, iatom
+
+      if (.not. data%has_intrinsic_orbitals) return
+      if (.not. allocated(data%iao_charges)) return
+
+      call json%create_object(section, "intrinsic_orbitals")
+      call json%add(parent, section)
+      call json%add(section, "minimal_basis", "minao")
+      call json%add(section, "charges", data%iao_charges)
+      call json%add(section, "exponent", data%ibo_exponent)
+      if (.not. allocated(data%ibo_populations)) return
+      call json%create_array(arr, "bond_orbital_populations")
+      call json%add(section, arr)
+      do i = 1, size(data%ibo_populations, 2)
+         call json%create_array(row, "")
+         call json%add(arr, row)
+         do iatom = 1, size(data%ibo_populations, 1)
+            call json%add(row, "", data%ibo_populations(iatom, i))
+         end do
+      end do
+   end subroutine write_intrinsic_orbitals_section
 
    subroutine write_natural_orbitals_section(json, parent, data)
       !! Natural occupations, and the counts read off them

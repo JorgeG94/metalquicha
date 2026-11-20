@@ -261,6 +261,11 @@ module mqc_json_output_types
       real(dp), allocatable :: bond_order_valences(:)
       character(len=16) :: bond_order_scheme = ""
       logical :: has_bond_orders = .false.
+      ! Intrinsic atomic orbital charges and bond orbital populations.
+      real(dp), allocatable :: iao_charges(:)
+      real(dp), allocatable :: ibo_populations(:, :)
+      integer :: ibo_exponent = 0
+      logical :: has_intrinsic_orbitals = .false.
       ! Natural occupations, with the name of the density they belong to.
       real(dp), allocatable :: natural_occupations(:)
       character(len=32) :: natural_orbital_density = ""
@@ -629,6 +634,7 @@ contains
       this%has_fukui = .false.
       this%has_bond_orders = .false.
       this%has_natural_orbitals = .false.
+      this%has_intrinsic_orbitals = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.

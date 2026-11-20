@@ -461,6 +461,12 @@ contains
                json_data%analysis_density = result%analysis_density
                json_data%has_bond_orders = .true.
             end if
+            if (result%has_intrinsic_orbitals) then
+               json_data%iao_charges = result%iao_charges
+               json_data%ibo_populations = result%ibo_populations
+               json_data%ibo_exponent = result%ibo_exponent
+               json_data%has_intrinsic_orbitals = .true.
+            end if
             if (result%has_natural_orbitals) then
                json_data%natural_occupations = result%natural_occupations
                json_data%natural_orbital_density = result%natural_orbital_density

@@ -137,6 +137,12 @@ module mqc_config_types
          !! `properties.density`: which one-particle density the charges and
          !! bond orders partition, "scf" or "relaxed". See
          !! `properties_config_t`.
+      logical :: intrinsic_orbitals = .false.
+         !! `properties.intrinsic_orbitals` is present: intrinsic atomic
+         !! orbital charges and intrinsic bond orbitals.
+      integer :: intrinsic_exponent = 4
+         !! `properties.intrinsic_orbitals.exponent`, the power in the bond
+         !! orbitals' localisation functional: 2 or 4.
       logical :: natural_orbitals = .false.
          !! `properties.natural_orbitals` is present: report the natural
          !! occupations of the most complete one-particle density the method

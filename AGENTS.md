@@ -592,6 +592,17 @@ report says when one strays. Conventional, spin-scaled and unrestricted MP2,
 coupled cluster, and MP2 under PCM `pte` are refused by name. CASSCF reports
 its own active-space occupations and does not go through this.
 
+`properties.intrinsic_orbitals` is Knizia's IAO/IBO (`mqc_czt_iao`): IAO
+charges and the occupied orbitals localised by Jacobi rotations on
+`sum_i sum_A (Q_A^i)^p`, `p` 4 or 2, closed-shell HF or KS only. Its formulas
+are `pyscf.lo.iao` and `pyscf.lo.ibo`'s and its tests are pinned to them.
+**Its minimal basis is `basis_sets/minao/iao.json` (Knizia's MINAO, cc-pVTZ
+contractions), not `minao/minao.json`** (ANO-RCC, the initial guess's): two
+bases share the name upstream and give intrinsic charges 0.03 apart on water.
+**Two orbitals on one atom are indistinguishable to the functional**, so the
+sweep skips a pair whose `A^2 + B^2` vanishes and converges on the gradient;
+converging on the rotation angle never terminates.
+
 Charge schemes are `mulliken`, `lowdin`, `chelpg`, `hirshfeld`, `mbis`; bond
 order schemes are `mayer` and `wiberg`. **Lowdin and Wiberg are Mulliken and
 Mayer in the symmetrically orthogonalised basis**: `lowdin_density` in

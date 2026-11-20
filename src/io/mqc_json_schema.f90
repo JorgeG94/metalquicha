@@ -96,6 +96,8 @@ contains
                                    bond_orders_keys(), error)
       call check_grandchild_object(core, root, "properties", "natural_orbitals", &
                                    natural_orbitals_keys(), error)
+      call check_grandchild_object(core, root, "properties", "intrinsic_orbitals", &
+                                   intrinsic_orbitals_keys(), error)
       call check_bond_orders(core, root, error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
@@ -259,6 +261,7 @@ contains
       call allow(keys, "charges")
       call allow(keys, "bond_orders")
       call allow(keys, "natural_orbitals")
+      call allow(keys, "intrinsic_orbitals")
       call allow(keys, "density")
    end function properties_keys
 
@@ -327,6 +330,12 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "scheme")
    end function charges_keys
+
+   function intrinsic_orbitals_keys() result(keys)
+      !! `properties.intrinsic_orbitals`: the object is the request
+      type(key_set_t) :: keys
+      call allow(keys, "exponent")
+   end function intrinsic_orbitals_keys
 
    function natural_orbitals_keys() result(keys)
       !! `properties.natural_orbitals`: the object is the request and takes no

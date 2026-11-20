@@ -134,6 +134,15 @@ module mqc_result_types
       character(len=16) :: bond_order_scheme = ""
          !! Which definition produced them: "mayer" or "xtb". Empty means
          !! nothing has.
+      real(dp), allocatable :: iao_charges(:)
+         !! (natoms) intrinsic atomic orbital charges, when
+         !! `properties.intrinsic_orbitals` asked
+      real(dp), allocatable :: ibo_populations(:, :)
+         !! (natoms, n_occ) the share of each intrinsic bond orbital on each
+         !! atom; a column sums to one
+      integer :: ibo_exponent = 0
+         !! The localisation exponent those orbitals were found with
+      logical :: has_intrinsic_orbitals = .false.
       real(dp), allocatable :: natural_occupations(:)
          !! Occupations of the natural orbitals, descending, when
          !! `properties.natural_orbitals` asked. One per retained orbital, both

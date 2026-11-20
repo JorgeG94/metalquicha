@@ -433,6 +433,10 @@ contains
             mqc_config%bond_order_scheme
       end if
       driver_config%method_config%properties%natural_orbitals = mqc_config%natural_orbitals
+      driver_config%method_config%properties%intrinsic_orbitals = &
+         mqc_config%intrinsic_orbitals
+      driver_config%method_config%properties%intrinsic_exponent = &
+         mqc_config%intrinsic_exponent
       driver_config%method_config%properties%density = mqc_config%properties_density
       if (allocated(mqc_config%bonding_analysis)) then
          driver_config%method_config%properties%bonding_analysis = &

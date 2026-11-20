@@ -115,6 +115,7 @@ contains
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("pcm_correlation_scheme", test_pcm_correlation), &
                   new_unittest("natural_orbitals_property", test_natural_orbitals), &
+                  new_unittest("intrinsic_orbitals_property", test_intrinsic_orbitals), &
                   new_unittest("terco_keeps_pcm", test_terco_keeps_pcm), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("dft_dispersion", test_dft_dispersion), &
@@ -1650,6 +1651,44 @@ contains
       call check(error,.not. config%pcm_enabled, &
                  "without the block the calculation must stay in the gas phase")
    end subroutine test_pcm_keywords
+
+   subroutine test_intrinsic_orbitals(error)
+      !! properties.intrinsic_orbitals: the object is the request, the
+      !! exponent defaults to four, and only two and four are functionals
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"intrinsic_orbitals": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%intrinsic_orbitals, "naming the object must request them")
+      if (allocated(error)) return
+      call check(error, config%intrinsic_exponent, 4)
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"intrinsic_orbitals": {"exponent": 2}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%intrinsic_exponent, 2)
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"intrinsic_orbitals": {"exponent": 3}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an exponent of three must be refused")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%intrinsic_orbitals, "absent, it must stay off")
+   end subroutine test_intrinsic_orbitals
 
    subroutine test_natural_orbitals(error)
       !! properties.natural_orbitals: the object is the request

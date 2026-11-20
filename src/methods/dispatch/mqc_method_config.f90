@@ -379,6 +379,10 @@ module mqc_method_config
          !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: natural_orbitals = .false.
          !! `properties.natural_orbitals` asked for natural occupations
+      logical :: intrinsic_orbitals = .false.
+         !! `properties.intrinsic_orbitals` asked for IAO charges and IBOs
+      integer :: intrinsic_exponent = 4
+         !! The localisation exponent for the bond orbitals, 2 or 4
       character(len=16) :: density = "scf"
          !! Which density `charges` and `bond_orders` partition. "scf" is the
          !! reference's, whatever method runs on top of it. "relaxed" is the
