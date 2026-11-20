@@ -335,6 +335,163 @@ def test_nmr_reference_spread_is_reported_and_bad_input_refused():
             raise AssertionError("accepted what it should have refused: " + needle)
 
 
+# -- NMR multiplets ---------------------------------------------------------
+
+
+def coupling_output(elements, pairs):
+    """A `spin_spin_coupling` section with the given J in Hz; atoms from one."""
+    n = len(elements)
+    j = [[0.0] * n for _ in range(n)]
+    for (a, b), value in pairs.items():
+        j[a - 1][b - 1] = j[b - 1][a - 1] = value
+    atoms = [{"atom": k + 1, "element": e, "isotope": "", "g_factor": 1.0} for k, e in enumerate(elements)]
+    return {"x": {"spin_spin_coupling": {"terms": ["fermi_contact"], "atoms": atoms, "j_hz": j}}}
+
+
+def has_numpy():
+    try:
+        import numpy  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def test_two_spins_follow_the_ab_formula():
+    """Two coupled nuclei have a closed form at any separation.
+
+    With shifts d apart in hertz and coupling J, C = sqrt(d^2 + J^2): the
+    four lines sit at centre +- (C +- J)/2, the inner pair with intensity
+    1 + J/C and the outer with 1 - J/C, for two nuclei in all. Far apart that
+    is two doublets; close together the inner lines grow at the outer ones'
+    expense, which first-order splitting cannot show.
+    """
+    if not has_numpy():
+        print("    (numpy missing: the exact simulation is not tested)")
+        return
+    shieldings = nmr_output([("H", 30.0), ("H", 29.95)])  # 0.05 ppm apart
+    couplings = coupling_output(["H", "H"], {(1, 2): 10.0})
+    frequency = 100.0  # so 0.05 ppm is 5 Hz, half the coupling: strongly coupled
+    result = spectra.nmr(
+        shieldings, "H", reference=32.0, couplings=couplings, frequency_mhz=frequency
+    )
+    d, j = 5.0, 10.0
+    c = math.sqrt(d * d + j * j)
+    centre = 0.5 * (2.0 + 2.05) * frequency
+    expected = sorted(
+        [
+            (centre - 0.5 * (c + j), 0.5 * (1.0 - j / c)),
+            (centre - 0.5 * (c - j), 0.5 * (1.0 + j / c)),
+            (centre + 0.5 * (c - j), 0.5 * (1.0 + j / c)),
+            (centre + 0.5 * (c + j), 0.5 * (1.0 - j / c)),
+        ]
+    )
+    got = sorted((p * frequency, w) for p, w in result.sticks)
+    assert len(got) == 4, got
+    for (f_got, w_got), (f_want, w_want) in zip(got, expected):
+        assert close(f_got, f_want, abs_tol=1.0e-9), (f_got, f_want)
+        assert close(w_got, w_want, rel=1.0e-9), (w_got, w_want)
+    assert close(sum(w for _, w in got), 2.0, rel=1.0e-12)
+    assert "400" not in result.x_label and "100 MHz" in result.x_label
+
+    # First order misses it and says so.
+    plain = spectra.nmr(
+        shieldings, "H", reference=32.0, couplings=couplings, frequency_mhz=frequency,
+        method="first_order",
+    )
+    assert [round(w, 12) for _, w in plain.sticks] == [0.5, 0.5, 0.5, 0.5]
+    assert any("lean" in w for w in plain.warnings)
+
+
+def ethyl():
+    """CH3 at 1 ppm, CH2 at 4 ppm, every vicinal coupling 7 Hz, geminal ones large."""
+    shieldings = nmr_output([("C", 0.0), ("H", 31.0), ("H", 31.0), ("H", 31.0), ("H", 28.0), ("H", 28.0)])
+    pairs = {(a, b): 7.0 for a in (2, 3, 4) for b in (5, 6)}
+    pairs.update({(2, 3): -12.0, (2, 4): -12.0, (3, 4): -12.0, (5, 6): -11.0})
+    return shieldings, coupling_output(["C", "H", "H", "H", "H", "H"], pairs)
+
+
+def test_an_ethyl_group_is_a_triplet_and_a_quartet():
+    shieldings, couplings = ethyl()
+    kw = dict(reference=32.0, groups=[[2, 3, 4], [5, 6]], couplings=couplings, frequency_mhz=400.0)
+    plain = spectra.nmr(shieldings, "H", method="first_order", **kw)
+    methyl = [(p * 400.0, w) for p, w in plain.sticks if p < 2.0]
+    methylene = [(p * 400.0, w) for p, w in plain.sticks if p > 2.0]
+    # Three hydrogens split by two: 1:2:1, 7 Hz apart, three nuclei in all.
+    assert [round(f - 400.0, 9) for f, _ in methyl] == [-7.0, 0.0, 7.0]
+    assert [round(w, 12) for _, w in methyl] == [0.75, 1.5, 0.75]
+    # Two hydrogens split by three: 1:3:3:1.
+    assert [round(f - 1600.0, 9) for f, _ in methylene] == [-10.5, -3.5, 3.5, 10.5]
+    assert [round(w, 12) for _, w in methylene] == [0.25, 0.75, 0.75, 0.25]
+    assert not any("lean" in w for w in plain.warnings)
+    assert any("13C" in w for w in plain.warnings)
+
+    if not has_numpy():
+        return
+    # 1200 Hz apart against 7 Hz: the exact spectrum is the same picture, the
+    # geminal couplings inside each set leaving no trace, with the inner
+    # lines a per cent or so taller.
+    exact = spectra.nmr(shieldings, "H", fwhm_hz=1.0, **kw)
+    assert close(area(exact.x, exact.y), 5.0, rel=2.0e-2)
+    tops = sorted(exact.peaks()[:7])
+    wanted = sorted([f for f, _ in methyl] + [f for f, _ in methylene])
+    for (position, _), frequency in zip(tops, wanted):
+        assert close(position * 400.0, frequency, abs_tol=0.1), (position * 400.0, frequency)
+    heights = {round(p * 400.0): h for p, h in exact.peaks()[:7]}
+    assert heights[400] > heights[407] > heights[393] > 0.0  # leaning towards the CH2
+    assert close(heights[400] / (heights[407] + heights[393]), 1.0, rel=2.0e-2)
+
+
+def test_equivalent_nuclei_do_not_split_each_other():
+    shieldings = nmr_output([("H", 30.0), ("H", 30.0)])
+    couplings = coupling_output(["H", "H"], {(1, 2): 280.0})
+    for method in ("first_order",) + (("exact",) if has_numpy() else ()):
+        result = spectra.nmr(
+            shieldings, "H", reference=32.0, groups=[[1, 2]], couplings=couplings, method=method
+        )
+        assert len(result.sticks) == 1, (method, result.sticks)
+        assert close(result.sticks[0][0], 2.0) and close(result.sticks[0][1], 2.0)
+
+
+def test_another_element_splits_to_first_order_and_carbon_does_not():
+    shieldings = nmr_output([("C", 100.0), ("F", 200.0), ("H", 30.0)])
+    couplings = coupling_output(["C", "F", "H"], {(2, 3): 50.0, (1, 3): 140.0})
+    alone = spectra.nmr(shieldings, "H", reference=32.0, couplings=couplings, method="first_order")
+    assert len(alone.sticks) == 1  # neither carbon nor an element not asked for
+    for method in ("first_order",) + (("exact",) if has_numpy() else ()):
+        split = spectra.nmr(
+            shieldings, "H", reference=32.0, couplings=couplings, hetero=["F"], method=method
+        )
+        assert [round(p * 400.0 - 800.0, 6) for p, _ in split.sticks] == [-25.0, 25.0], method
+        assert [round(w, 9) for _, w in split.sticks] == [0.5, 0.5]
+    try:
+        spectra.nmr(shieldings, "H", reference=32.0, couplings=couplings, hetero=["C"])
+    except spectra.SpectrumError as problem:
+        assert "spin-one-half" in str(problem)
+    else:
+        raise AssertionError("13C was accepted as a nucleus that splits every line")
+
+
+def test_couplings_must_belong_to_the_molecule():
+    shieldings = nmr_output([("H", 30.0), ("H", 29.0)])
+    for couplings, needle in (
+        (vibrational_output(), "spin_spin_coupling"),
+        (coupling_output(["C", "H"], {}), "same molecule"),
+    ):
+        try:
+            spectra.nmr(shieldings, "H", reference=32.0, couplings=couplings)
+        except spectra.SpectrumError as problem:
+            assert needle in str(problem), problem
+        else:
+            raise AssertionError("accepted couplings it should have refused: " + needle)
+    many = nmr_output([("H", 30.0 - 0.1 * k) for k in range(13)])
+    try:
+        spectra.nmr(many, "H", reference=32.0, couplings=coupling_output(["H"] * 13, {}))
+    except spectra.SpectrumError as problem:
+        assert "first_order" in str(problem)
+    else:
+        raise AssertionError("thirteen spins were diagonalised")
+
+
 # -- files ------------------------------------------------------------------
 
 

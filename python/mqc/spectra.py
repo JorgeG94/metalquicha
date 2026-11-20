@@ -641,13 +641,18 @@ def nmr(
     nucleus="H",
     reference=None,
     groups=None,
+    couplings=None,
+    frequency_mhz=400.0,
+    hetero=None,
+    method="exact",
     fwhm=0.02,
+    fwhm_hz=None,
     lineshape="lorentzian",
     xmin=None,
     xmax=None,
-    points=4000,
+    points=None,
 ):
-    """The NMR spectrum of one element, as chemical shifts without couplings.
+    """The NMR spectrum of one element: shifts, and multiplets when given couplings.
 
     A calculation gives shieldings; a spectrum is drawn in shifts,
 
@@ -666,17 +671,37 @@ def nmr(
     line: the calculation is of one frozen geometry and gives them three
     shifts, the experiment sees their average. Atoms in no group stand alone.
 
-    **There are no spin-spin couplings**, so every line is a singlet: the
-    positions and the areas are a spectrum's, its multiplets are not. `fwhm`
-    is in ppm.
+    Without `couplings` every line is a singlet: the positions and the
+    areas are a spectrum's, its multiplets are not. `fwhm` is in ppm.
+
+    `couplings` is the output of a run with `properties.spin_spin_coupling`
+    on the same molecule with the same atom order -- it may be the same file
+    as `source`, or one from another method, which is usual since couplings
+    want a functional. The lines are then split. A splitting is in hertz and
+    a shift in ppm, so the picture depends on the spectrometer:
+    `frequency_mhz` is the frequency of the observed nucleus, 400 for
+    hydrogen on a "400 MHz" instrument and 100.6 for carbon on the same one.
+    The line width becomes `fwhm_hz`, one hertz unless given.
+
+    `method="exact"` diagonalises the spin Hamiltonian of the observed
+    nuclei, which gives the leaning of multiplets towards each other and
+    every other second-order effect, needs numpy, and is limited to
+    `MAX_EXACT_SPINS` nuclei. `method="first_order"` splits each line by its
+    neighbours' counts, needs nothing, and is right only where shifts are far
+    apart compared with the couplings. Either way a set in `groups` is
+    treated as equivalent nuclei: one shift, and one coupling, the average,
+    to each nucleus outside it.
+
+    `hetero` lists other elements whose nuclei also split the lines, such as
+    ``["F"]``. Only hydrogen, fluorine and phosphorus qualify: spin one half
+    and the whole of their element. Couplings to carbon are left out, as 13C
+    is one carbon in ninety.
     """
     if reference is None:
         raise SpectrumError(
             "nmr needs a reference: the reference compound's shielding in ppm, "
             "or the output of an NMR run on it at the same method and basis."
         )
-    if points < 2:
-        raise SpectrumError("points must be at least 2, got %r" % (points,))
     shieldings = _shieldings(source, nucleus)
     if not shieldings:
         raise SpectrumError("the output has no %s nucleus" % nucleus)
@@ -697,9 +722,9 @@ def nmr(
             )
 
     by_atom = dict(shieldings)
-    lines = []  # (shift, number of nuclei)
+    group_of = {}  # atom -> index of the set it is averaged with
     grouped = set()
-    for group in groups or []:
+    for index, group in enumerate(groups or []):
         missing = [atom for atom in group if atom not in by_atom]
         if missing or not group:
             raise SpectrumError(
@@ -710,17 +735,39 @@ def nmr(
             raise SpectrumError("an atom is in more than one group: %r" % (list(group),))
         grouped.update(group)
         mean = sum(by_atom[atom] for atom in group) / len(group)
-        lines.append((sigma_ref - mean, float(len(group))))
-    for atom, value in shieldings:
-        if atom not in grouped:
-            lines.append((sigma_ref - value, 1.0))
+        for atom in group:
+            by_atom[atom] = mean
+            group_of[atom] = index
+    for atom, _ in shieldings:
+        group_of.setdefault(atom, len(group_of) + len(groups or []) + atom)
+    atoms = [atom for atom, _ in shieldings]
+    shifts = {atom: sigma_ref - by_atom[atom] for atom in atoms}
 
-    # Nuclei whose shifts agree to well inside a line width are one line, so
-    # the sticks read as the spectrum does.
+    if couplings is None:
+        lines = [(shifts[atom], 1.0) for atom in atoms]
+        if fwhm_hz is not None:
+            fwhm = fwhm_hz / _positive(frequency_mhz, "frequency_mhz")
+        warnings.append(
+            "no spin-spin couplings: every line is a singlet, and nuclei that "
+            "exchange are separate lines unless grouped."
+        )
+        x_label = "%s chemical shift / ppm" % nucleus
+    else:
+        _positive(frequency_mhz, "frequency_mhz")
+        if fwhm_hz is None:
+            fwhm_hz = 1.0
+        fwhm = fwhm_hz / frequency_mhz
+        lines = _coupled_lines(
+            atoms, shifts, group_of, couplings, nucleus, hetero, frequency_mhz, method, warnings
+        )
+        x_label = "%s chemical shift / ppm, at %g MHz" % (nucleus, frequency_mhz)
+
+    # Lines that agree to well inside a line width are one line, so the
+    # sticks read as the spectrum does.
     lines.sort()
     merged = []
     for shift, count in lines:
-        if merged and abs(shift - merged[-1][0]) < 1.0e-4:
+        if merged and abs(shift - merged[-1][0]) < 0.02 * fwhm:
             total = merged[-1][1] + count
             merged[-1] = ((merged[-1][0] * merged[-1][1] + shift * count) / total, total)
         else:
@@ -733,22 +780,229 @@ def nmr(
     hi = max(positions) + pad if xmax is None else xmax
     if not hi > lo:
         raise SpectrumError("the range is empty: %r to %r" % (lo, hi))
+    if points is None:
+        # Enough to draw the narrowest line: eight points across its width.
+        points = min(max(4000, int(8.0 * (hi - lo) / fwhm) + 1), 400000)
+    if points < 2:
+        raise SpectrumError("points must be at least 2, got %r" % (points,))
     grid = [lo + k * (hi - lo) / (points - 1) for k in range(points)]
     curve = _broaden(positions, counts, grid, fwhm, lineshape)
-    warnings.append(
-        "no spin-spin couplings: every line is a singlet, and nuclei that "
-        "exchange are separate lines unless grouped."
-    )
     return Spectrum(
         "nmr",
         grid,
         curve,
         list(zip(positions, counts)),
-        "%s chemical shift / ppm" % nucleus,
+        x_label,
         "nuclei per ppm",
         "nuclei",
         warnings,
     )
+
+
+def _positive(value, name):
+    if not value > 0.0:
+        raise SpectrumError("%s must be positive, got %r" % (name, value))
+    return value
+
+
+#: Elements whose observed isotope has spin one half and is all, or nearly
+#: all, of the element: the ones that split a neighbour's line in an ordinary
+#: spectrum. Carbon is absent because 13C is one nucleus in ninety.
+SPIN_HALF_ABUNDANT = ("H", "F", "P")
+MAX_EXACT_SPINS = 12
+MAX_HETERO_PARTNERS = 8
+
+
+def _coupling_matrix(couplings):
+    """`{(atom, atom): J in Hz}` and `{atom: element}` from an output."""
+    block = _find(load(couplings), "spin_spin_coupling")
+    if block is None or "j_hz" not in block:
+        raise SpectrumError(
+            'the couplings output has no "spin_spin_coupling" section. Ask for it '
+            'with "properties": {"spin_spin_coupling": {}} on the run.'
+        )
+    numbers = [entry["atom"] for entry in block["atoms"]]
+    elements = {entry["atom"]: entry["element"].strip() for entry in block["atoms"]}
+    table = {}
+    for a, row in zip(numbers, block["j_hz"]):
+        for b, value in zip(numbers, row):
+            table[(a, b)] = value
+    return table, elements
+
+
+def _coupled_lines(atoms, shifts, group_of, couplings, nucleus, hetero, frequency, method, warnings):
+    """`(shift in ppm, intensity)` of the coupled spectrum of `atoms`."""
+    table, elements = _coupling_matrix(couplings)
+    missing = [atom for atom in atoms if atom not in elements]
+    if missing or any(elements[a].lower() != nucleus.strip().lower() for a in atoms):
+        raise SpectrumError(
+            "the couplings output does not describe the same molecule: its atoms "
+            "and their elements differ from the shieldings'."
+        )
+    if method not in ("exact", "first_order"):
+        raise SpectrumError("method is %r; accepted: exact, first_order" % (method,))
+
+    # Nuclei averaged together are magnetically equivalent by assumption: one
+    # shift, and one coupling to each nucleus outside the set. The couplings
+    # inside the set then do not show and are left out.
+    members = {}
+    for atom in atoms:
+        members.setdefault(group_of[atom], []).append(atom)
+
+    def mean_j(set_a, set_b):
+        return sum(table[(a, b)] for a in set_a for b in set_b) / (len(set_a) * len(set_b))
+
+    sets = list(members.values())
+    j_sets = [
+        [0.0 if i == k else mean_j(sets[i], sets[k]) for k in range(len(sets))]
+        for i in range(len(sets))
+    ]
+    shift_sets = [shifts[group[0]] for group in sets]
+
+    # Nuclei of another element that are all spin one half. Their own
+    # frequencies are megahertz away, so each only adds or subtracts half its
+    # coupling to a nucleus's frequency, with equal odds.
+    partners = []
+    for element in hetero or []:
+        name = element.strip().capitalize()
+        if name.lower() == nucleus.strip().lower():
+            continue
+        if name not in SPIN_HALF_ABUNDANT:
+            raise SpectrumError(
+                "hetero element %r: only spin-one-half nuclei that make up their "
+                "element are handled (%s)." % (element, ", ".join(SPIN_HALF_ABUNDANT))
+            )
+        partners += [atom for atom, e in elements.items() if e.capitalize() == name]
+    j_hetero = [[mean_j(group, [partner]) for partner in partners] for group in sets]
+
+    lines = []
+    if method == "exact":
+        if len(atoms) > MAX_EXACT_SPINS:
+            raise SpectrumError(
+                "%d coupled %s nuclei is %d spin states, too many to diagonalise "
+                'here (the limit is %d nuclei). Use method="first_order".'
+                % (len(atoms), nucleus, 2 ** len(atoms), MAX_EXACT_SPINS)
+            )
+        if len(partners) > MAX_HETERO_PARTNERS:
+            raise SpectrumError(
+                "%d coupled nuclei of other elements is %d simulations, too many "
+                'here (the limit is %d). Use method="first_order".'
+                % (len(partners), 2 ** len(partners), MAX_HETERO_PARTNERS)
+            )
+        spin_set = [index for index, group in enumerate(sets) for _ in group]
+        n = len(spin_set)
+        j_spins = [[j_sets[spin_set[a]][spin_set[b]] for b in range(n)] for a in range(n)]
+        for state in range(2 ** len(partners)):
+            offsets = [
+                sum(
+                    j_hetero[index][k] * (0.5 if state >> k & 1 else -0.5)
+                    for k in range(len(partners))
+                )
+                for index in range(len(sets))
+            ]
+            larmor = [shift_sets[q] * frequency + offsets[q] for q in spin_set]
+            for freq, weight in _exact_lines(larmor, j_spins):
+                lines.append((freq / frequency, weight / 2 ** len(partners)))
+    else:
+        for index, group in enumerate(sets):
+            pattern = [(shift_sets[index] * frequency, float(len(group)))]
+            for other, partner in enumerate(sets):
+                if other != index:
+                    pattern = _split(pattern, j_sets[index][other], len(partner))
+            for k in range(len(partners)):
+                pattern = _split(pattern, j_hetero[index][k], 1)
+            lines += [(freq / frequency, weight) for freq, weight in pattern]
+        close = [
+            (a, b)
+            for a in range(len(sets))
+            for b in range(a)
+            if abs(j_sets[a][b]) > 0.1
+            and abs(shift_sets[a] - shift_sets[b]) * frequency < 10.0 * abs(j_sets[a][b])
+        ]
+        if close:
+            warnings.append(
+                "first-order splitting was used where %d pair(s) of shifts are "
+                "within ten couplings of each other: the real multiplets lean "
+                'towards each other there, which method="exact" shows.' % len(close)
+            )
+    warnings.append(
+        "couplings to 13C and other dilute or quadrupolar nuclei are left out, "
+        "as they are from an ordinary spectrum."
+    )
+    return lines
+
+
+def _split(lines, coupling, partners):
+    """Each line split by `partners` equivalent spin-one-half nuclei."""
+    if partners == 0 or coupling == 0.0:
+        return lines
+    out = []
+    for freq, weight in lines:
+        for up in range(partners + 1):
+            share = math.comb(partners, up) / 2.0**partners
+            out.append((freq + coupling * (up - 0.5 * partners), weight * share))
+    return out
+
+
+def _exact_lines(frequencies, couplings):
+    """Transitions of coupled spin-one-half nuclei, as `(Hz, intensity)`.
+
+    The Hamiltonian ``sum_i nu_i Iz_i + sum_{i<j} J_ij I_i . I_j`` conserves
+    the total projection, so it is diagonalised one projection at a time and
+    the lines are the transitions between neighbouring projections, each as
+    strong as the square of the lowering operator's element between its two
+    states. Normalised so that the intensities sum to the number of nuclei.
+    """
+    try:
+        import numpy as np
+    except ImportError:
+        raise SpectrumError(
+            "the exact spin simulation needs numpy, which is not installed. "
+            'method="first_order" needs nothing.'
+        )
+    n = len(frequencies)
+    blocks = {}
+    for state in range(2**n):
+        blocks.setdefault(bin(state).count("1"), []).append(state)
+
+    def m(state, i):
+        return 0.5 if state >> i & 1 else -0.5
+
+    solved = {}
+    for up, states in blocks.items():
+        index = {state: k for k, state in enumerate(states)}
+        ham = np.zeros((len(states), len(states)))
+        for state, k in index.items():
+            energy = sum(frequencies[i] * m(state, i) for i in range(n))
+            for i in range(n):
+                for j in range(i):
+                    energy += couplings[i][j] * m(state, i) * m(state, j)
+                    if (state >> i & 1) != (state >> j & 1):
+                        flipped = state ^ (1 << i) ^ (1 << j)
+                        ham[index[flipped], k] += 0.5 * couplings[i][j]
+            ham[k, k] = energy
+        solved[up] = (index,) + tuple(np.linalg.eigh(ham))
+
+    lines = []
+    for up in range(1, n + 1):
+        upper_index, upper_e, upper_v = solved[up]
+        lower_index, lower_e, lower_v = solved[up - 1]
+        lowering = np.zeros((len(lower_index), len(upper_index)))
+        for state, k in upper_index.items():
+            for i in range(n):
+                if state >> i & 1:
+                    lowering[lower_index[state ^ (1 << i)], k] = 1.0
+        strength = (lower_v.T @ lowering @ upper_v) ** 2
+        for a in range(len(lower_e)):
+            for b in range(len(upper_e)):
+                if strength[a, b] > 1.0e-9:
+                    lines.append((float(upper_e[b] - lower_e[a]), float(strength[a, b])))
+    total = sum(weight for _, weight in lines)
+    # Combination lines, where several nuclei flip at once, are allowed and
+    # for coupled nuclei far apart in shift are a part in a billion: dropped.
+    return [
+        (freq, weight * n / total) for freq, weight in lines if weight * n / total > 1.0e-6
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -772,12 +1026,24 @@ def main(argv=None):
         "--peaks-up", action="store_true", help="draw infrared bands upwards"
     )
     parser.add_argument(
-        "--fwhm", type=float, help="cm^-1 for ir/raman, eV for uvvis, ppm for nmr"
+        "--fwhm",
+        type=float,
+        help="cm^-1 for ir/raman, eV for uvvis, ppm for nmr (Hz with --couplings)",
     )
     parser.add_argument("--nucleus", default="H", help="element of an nmr spectrum")
     parser.add_argument(
         "--reference",
         help="nmr: the reference shielding in ppm, or the reference's output file",
+    )
+    parser.add_argument(
+        "--couplings", help="nmr: output with spin_spin_coupling; splits the lines"
+    )
+    parser.add_argument(
+        "--frequency-mhz", type=float, default=400.0, help="nmr: of the observed nucleus"
+    )
+    parser.add_argument("--first-order", action="store_true", help="nmr: no numpy needed")
+    parser.add_argument(
+        "--hetero", action="append", default=[], help="nmr: another coupled element"
     )
     parser.add_argument(
         "--group",
@@ -809,9 +1075,17 @@ def main(argv=None):
                 pass
             groups = [[int(atom) for atom in group.split(",")] for group in args.group]
             if args.fwhm:
-                common["fwhm"] = args.fwhm
+                common["fwhm_hz" if args.couplings else "fwhm"] = args.fwhm
             result = nmr(
-                args.output, args.nucleus, reference=reference, groups=groups, **common
+                args.output,
+                args.nucleus,
+                reference=reference,
+                groups=groups,
+                couplings=args.couplings,
+                frequency_mhz=args.frequency_mhz,
+                hetero=args.hetero,
+                method="first_order" if args.first_order else "exact",
+                **common
             )
         elif args.kind == "uvvis":
             if args.fwhm:

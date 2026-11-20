@@ -33,7 +33,8 @@ or from a shell, with no Python written:
    python3 python/mqc/spectra.py raman output_water.json --laser-nm 785 --csv water_raman.csv
    python3 python/mqc/spectra.py uvvis output_benzene.json --unit ev --fwhm 0.3 --csv uv.csv
    python3 python/mqc/spectra.py nmr output_ethanol.json --nucleus H \
-       --reference output_tms.json --group 5,6,7 --group 8,9 --plot ethanol_1h.png
+       --reference output_tms.json --group 5,6,7 --group 8,9 \
+       --couplings output_ethanol_j.json --frequency-mhz 400 --plot ethanol_1h.png
 
 The command prints the sticks and writes the curve where ``--csv`` says.
 ``python/examples/spectra.py`` runs a Hessian and an excited-state deck on water
@@ -62,8 +63,9 @@ What each spectrum needs
      - ``excitation_energy_ev``, ``oscillator_strength``
    * - ``nmr``
      - ``"properties": {"nmr": {}}``, for the molecule and for the reference
-       compound; see :doc:`nmr_shielding`
-     - ``isotropic`` and ``element`` of each atom
+       compound; see :doc:`nmr_shielding`. For multiplets, also
+       ``"properties": {"spin_spin_coupling": {}}``
+     - ``isotropic`` and ``element`` of each atom; ``j_hz``
 
 An output without the section a spectrum needs is refused with the name of
 what to ask for.
@@ -192,8 +194,9 @@ NMR
 
 .. code-block:: python
 
-   spectra.nmr(source, nucleus="H", reference=None, groups=None, fwhm=0.02,
-               lineshape="lorentzian", xmin=None, xmax=None, points=4000)
+   spectra.nmr(source, nucleus="H", reference=None, groups=None,
+               couplings=None, frequency_mhz=400.0, hetero=None, method="exact",
+               fwhm=0.02, fwhm_hz=None, lineshape="lorentzian", ...)
 
 A calculation gives shieldings and a spectrum is drawn in shifts,
 
@@ -231,16 +234,80 @@ level this gives hydrogen lines at 1.24 ppm (three nuclei), 3.17 (two) and
 0.25 (the hydroxyl, gas phase), and carbon lines at 17.5 and 54.1 ppm. The
 measured values in solution are 1.2 and 3.7, and 18 and 58.
 
-Two things this is not:
+Without ``couplings`` every line is a singlet: the positions and the areas are
+a spectrum's and its multiplets are not.
 
-- **There are no spin-spin couplings, so every line is a singlet.** The
-  positions and the areas are a spectrum's; the triplet and quartet of an
-  ethyl group are not there. The couplings are a separate calculation that is
-  not implemented.
+Multiplets
+~~~~~~~~~~
+
+``couplings`` is the output of a run with ``properties.spin_spin_coupling``
+(see :doc:`spin_spin_coupling`) on the same molecule with the same atom order.
+It can be the same file as the shieldings or another one, which is the usual
+case: the couplings want a functional, and the shieldings here are
+Hartree-Fock.
+
+.. code-block:: python
+
+   spectra.nmr("output_ethanol_shieldings.json", "H",
+               reference="output_tms.json",
+               groups=[[5, 6, 7], [8, 9]],
+               couplings="output_ethanol_couplings.json",
+               frequency_mhz=400.0)
+
+A splitting is in hertz and a shift in ppm, so the picture depends on the
+spectrometer. ``frequency_mhz`` is the frequency of the *observed* nucleus:
+400 for hydrogen on a "400 MHz" instrument, 100.6 for carbon on the same one.
+The line width is then ``fwhm_hz``, one hertz unless given.
+
+``method="exact"`` diagonalises the spin Hamiltonian of the observed nuclei,
+
+.. math::
+
+   H = \sum_i \nu_i I_{z,i} + \sum_{i<j} J_{ij}\,\mathbf{I}_i\cdot\mathbf{I}_j
+
+one total projection at a time, and takes the lines from the transitions
+between neighbouring projections. That gives the leaning of two multiplets
+towards each other and every other second-order effect. It needs numpy and is
+limited to twelve nuclei, since the number of spin states doubles with each.
+
+``method="first_order"`` splits each line by its neighbours' counts -- two
+neighbours a 1:2:1 triplet, three a 1:3:3:1 quartet. It needs nothing and has
+no size limit, and is right only where the shifts are far apart compared with
+the couplings; where they are not, ``warnings`` says so.
+
+Either way a set in ``groups`` is treated as equivalent nuclei: one shift, and
+to each nucleus outside the set one coupling, the average over the set. The
+couplings inside the set then leave no trace, which is why the large geminal
+coupling of a methyl group never shows. For a methyl this averaging is also
+what the rotation does to its three different vicinal couplings.
+
+``hetero`` lists other elements whose nuclei split the lines too, such as
+``hetero=["F"]``. Only hydrogen, fluorine and phosphorus qualify: spin one
+half, and the whole of their element. **Couplings to carbon are left out**, as
+they are from an ordinary spectrum, because :sup:`13`\ C is one carbon in
+ninety; a carbon spectrum drawn this way is the proton-decoupled one unless
+``hetero=["H"]`` is given.
+
+For ethanol, with shieldings at Hartree-Fock/cc-pVDZ and couplings at
+B3LYP/cc-pVTZ, the methyl line becomes a triplet and the methylene line a
+quartet with a spacing of 6.6 Hz, against 7.0 measured. Each is split once
+more, by 1.6 and 0.6 Hz, by the hydroxyl hydrogen; in most measured spectra
+that hydrogen exchanges between molecules too fast for the splitting to
+survive, and leaving atom 4 out of the molecule's couplings is not something
+this module does for you.
+
+What to keep in mind:
+
+- **Only the Fermi-contact term of each coupling is computed**, and no basis
+  set made for couplings is shipped. The pattern of a multiplet is reliable;
+  its width is good to ten or twenty per cent.
 - **The shieldings are closed-shell Hartree-Fock**, which is all
   ``properties.nmr`` computes. A hydroxyl or amine hydrogen is also moved by
   ppm by hydrogen bonding in solution, which a gas-phase molecule knows
   nothing about.
+- **A coupling belongs to one geometry.** A vicinal coupling depends on the
+  dihedral angle, and a flexible molecule shows the average over its
+  conformers, which one calculation does not give.
 
 The line width
 --------------
@@ -255,7 +322,8 @@ each band does not depend on it; the peak height does, inversely.
 What is not here
 ----------------
 
-- **NMR multiplets.** There are no spin-spin couplings; see `NMR`_.
+- **Exchange and conformational averaging in NMR** beyond the averaging of
+  a set of nuclei named in ``groups``.
 - **Anharmonicity.** Overtones, combination bands and Fermi resonances are
   absent; the frequencies are harmonic and ``scale`` is the only correction.
 - **Vibronic structure** of electronic bands, emission, and circular dichroism.
