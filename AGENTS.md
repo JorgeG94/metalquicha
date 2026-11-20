@@ -609,12 +609,13 @@ sweep skips a pair whose `A^2 + B^2` vanishes and converges on the gradient;
 converging on the rotation angle never terminates.
 
 Charge schemes are `mulliken`, `lowdin`, `chelpg`, `hirshfeld`, `mbis`; bond
-order schemes are `mayer` and `wiberg`. **Lowdin and Wiberg are Mulliken and
+order schemes are `mayer` and `wiberg_lowdin`. **Lowdin and Wiberg are Mulliken and
 Mayer in the symmetrically orthogonalised basis**: `lowdin_density` in
 `mqc_population_analysis` returns `S^1/2 D S^1/2`, and the existing routines
-are called with it and `identity_overlap`. `wiberg` was once refused by the
-schema, because Mayer's formula over non-orthogonal AOs was the only thing
-that could have answered it; it is never computed that way.
+are called with it and `identity_overlap`. **The bare `wiberg` is refused by
+the schema, by name**: an NBO analysis means the natural-atomic-orbital index
+by it, which is a different number and is not implemented, so the scheme
+here carries its basis in its name and the bare word is left for that one.
 
 `properties.density: "relaxed"` points `charges` and `bond_orders` at that
 same relaxed density; the default, `"scf"`, is the reference's whatever runs
