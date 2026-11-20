@@ -57,7 +57,7 @@ module mqc_czt_bridge
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_metric_dropped
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
-   use mqc_czt_raman, only: polarizability_derivatives
+   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -2716,10 +2716,18 @@ contains
                   real(dp), allocatable :: dalpha(:, :)
                   real(dp) :: alpha0(3, 3)
 
-                  call polarizability_derivatives(settings, fragment%element_numbers, &
-                                                  symbols, fragment%coordinates, nelec, &
-                                                  scf%density, accel_kind, diis_size, &
-                                                  scf_conv, alpha0, dalpha, raman_error)
+                  if (trim(settings%raman_method) == "displacements") then
+                     call polarizability_derivatives(settings, fragment%element_numbers, &
+                                                     symbols, fragment%coordinates, &
+                                                     nelec, scf%density, accel_kind, &
+                                                     diis_size, scf_conv, alpha0, &
+                                                     dalpha, raman_error)
+                  else
+                     call polarizability_derivatives_field(settings, mol, nelec, &
+                                                           scf%density, accel_kind, &
+                                                           diis_size, scf_conv, alpha0, &
+                                                           dalpha, raman_error, xc=xc)
+                  end if
                   if (raman_error%has_error()) then
                      call logger%warning("  Raman activities could not be computed: "// &
                                          raman_error%get_message())

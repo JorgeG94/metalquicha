@@ -263,10 +263,11 @@ contains
    function raman_keys() result(keys)
       !! Settings for the Raman activities
       !!
-      !! None: the object is the request, as `charges` is. It belongs to a
-      !! Hessian run, which the reader checks.
+      !! The object is the request, as `charges` is, and belongs to a Hessian
+      !! run, which the reader checks. `method` chooses which finite
+      !! difference supplies the polarizability derivatives.
       type(key_set_t) :: keys
-      keys%n_allowed = 0
+      call allow(keys, "method")
    end function raman_keys
 
    function fukui_keys() result(keys)

@@ -15,7 +15,7 @@ module test_mqc_czt_raman
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
-   use mqc_czt_raman, only: polarizability_derivatives
+   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_scf_convergence, only: scf_convergence_t
    use mqc_diis, only: ACCEL_DIIS
@@ -35,6 +35,8 @@ module test_mqc_czt_raman
                                        0.0_dp, -0.5980592160_dp, 0.0_dp]
    real(dp), parameter :: D_H2_X(6) = [7.8657959733_dp, -0.4342201375_dp, 1.0614212215_dp, &
                                        0.0_dp, -2.0744888267_dp, 0.0_dp]
+   real(dp), parameter :: FIELD_TOL = 1.0e-4_dp
+      !! The two routes' truncation errors, 3e-5 each, with room
    real(dp), parameter :: TOL = 2.0e-6_dp
       !! Two independent response solves at 1e-9, divided by a step of 5e-3.
 
@@ -44,7 +46,8 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
-                  new_unittest("water_derivatives_match_pyscf", test_water) &
+                  new_unittest("water_derivatives_match_pyscf", test_water), &
+                  new_unittest("finite_field_route_agrees", test_field) &
                   ]
    end subroutine collect_mqc_czt_raman_tests
 
@@ -117,6 +120,70 @@ contains
                  "the polarizability changed when the whole molecule was moved")
       call mol%destroy()
    end subroutine test_water
+
+   subroutine test_field(error)
+      !! The finite-field route against the same PySCF numbers and against
+      !! the displacement route.
+      !!
+      !! The two routes share nothing past the reference SCF: one differences
+      !! a polarizability over nuclear positions, the other differences a
+      !! gradient twice over field strengths. They are different finite
+      !! differences of the same third derivative, so they agree to the larger
+      !! of their two truncation errors and no better, and the bound here is
+      !! that error measured, not a tolerance chosen.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(cuest_scf_settings_t) :: settings
+      type(scf_convergence_t) :: conv
+      type(error_t) :: err
+      real(dp), allocatable :: by_field(:, :), by_moving(:, :)
+      real(dp) :: c(3, 3), alpha(3, 3), alpha_moving(3, 3)
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                       grad_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      settings%basis_set = "6-31g"
+      settings%max_iter = 200
+      call polarizability_derivatives_field(settings, mol, 10, scf%density, ACCEL_DIIS, 8, &
+                                            conv, alpha, by_field, err)
+      call check(error,.not. err%has_error(), "field route: "//err%get_full_trace())
+      if (allocated(error)) return
+      call polarizability_derivatives(settings, [8, 1, 1], ["O ", "H ", "H "], c, 10, &
+                                      scf%density, ACCEL_DIIS, 8, conv, alpha_moving, &
+                                      by_moving, err)
+      call check(error,.not. err%has_error(), "displacement route: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      write (*, "(4x,a,6f12.7)") "d/dz(O)  by field ", by_field(:, 3)
+      write (*, "(4x,a,6f12.7)") "d/dz(H1) by field ", by_field(:, 6)
+      write (*, "(4x,a,6f12.7)") "d/dx(H2) by field ", by_field(:, 7)
+      write (*, "(4x,a,es10.2)") "largest difference between the two routes ", &
+         maxval(abs(by_field - by_moving))
+      write (*, "(4x,a,es10.2)") "largest difference from PySCF            ", &
+         max(maxval(abs(by_field(:, 3) - D_O_Z)), maxval(abs(by_field(:, 6) - D_H1_Z)), &
+             maxval(abs(by_field(:, 7) - D_H2_X)))
+
+      call check(error, maxval(abs(alpha - alpha_moving)) < 1.0e-8_dp, &
+                 "the two routes report different polarizabilities")
+      if (allocated(error)) return
+      call check(error, maxval(abs(by_field - by_moving)) < FIELD_TOL, &
+                 "the finite-field derivatives do not match the displacement ones")
+      if (allocated(error)) return
+      call check(error, maxval(abs(by_field(:, 3) - D_O_Z)) < FIELD_TOL &
+                 .and. maxval(abs(by_field(:, 6) - D_H1_Z)) < FIELD_TOL &
+                 .and. maxval(abs(by_field(:, 7) - D_H2_X)) < FIELD_TOL, &
+                 "the finite-field derivatives do not match PySCF's")
+      call mol%destroy()
+   end subroutine test_field
 
 end module test_mqc_czt_raman
 

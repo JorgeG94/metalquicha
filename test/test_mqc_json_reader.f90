@@ -4068,6 +4068,29 @@ contains
       call check(error, parse_error%has_error() .and. &
                  index(parse_error%get_message(), "Hessian") > 0, &
                  "properties.raman on an energy run was accepted")
+      if (allocated(error)) return
+
+      ! The default method is the finite-field one, the other is selectable,
+      ! and a third is refused with both names in the message.
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {}}')
+      call read_deck(config, parse_error)
+      call check(error, config%raman_method == "field", &
+                 "the Raman method must default to the finite-field one")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {"method": "displacements"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error() &
+                 .and. config%raman_method == "displacements", &
+                 "properties.raman.method was not read")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {"method": "analytic"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "displacements") > 0, &
+                 "an unknown Raman method was accepted")
    end subroutine test_raman_request
 
    subroutine test_maxiter_named(error)

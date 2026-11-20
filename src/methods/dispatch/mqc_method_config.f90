@@ -371,6 +371,9 @@ module mqc_method_config
          !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: raman = .false.
          !! `properties.raman` asked for Raman activities with the Hessian.
+      character(len=16) :: raman_method = "field"
+         !! "field": the gradient differenced over electric fields.
+         !! "displacements": the polarizability over nuclear positions.
       character(len=:), allocatable :: bond_order_scheme
          !! Allocated when `properties.bond_orders` asked for bond orders over
          !! the converged density; "mayer". Unallocated means none, for the

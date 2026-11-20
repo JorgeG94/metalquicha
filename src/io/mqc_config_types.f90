@@ -136,6 +136,9 @@ module mqc_config_types
       logical :: raman = .false.
          !! `properties.raman` was given: Raman activities beside the
          !! frequencies of a Hessian run.
+      character(len=:), allocatable :: raman_method
+         !! `properties.raman.method`: "field" or "displacements". Set to
+         !! "field" before the deck is read.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

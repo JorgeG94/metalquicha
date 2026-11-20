@@ -231,6 +231,19 @@ contains
       end if
       ! The object is the request; it has no settings to read.
       call json%info("properties.raman", found=config%raman)
+      config%raman_method = "field"
+      call optional_string(json, "properties.raman.method", config%raman_method)
+      select case (trim(config%raman_method))
+      case ("field", "displacements")
+         continue
+      case default
+         call error%set(ERROR_VALIDATION, "properties.raman.method is '"// &
+                        trim(config%raman_method)//"'. Accepted: 'field' (the "// &
+                        "default: the gradient differenced over electric fields) and "// &
+                        "'displacements' (the polarizability differenced over "// &
+                        "nuclear positions).")
+         return
+      end select
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &

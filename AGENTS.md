@@ -386,9 +386,19 @@ correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
 Raman activities are `properties.raman` on a Hessian deck, closed-shell HF or
-KS with exact integrals. `mqc_czt_raman` differences `static_polarizability`
-over `6N` displaced geometries, each a fresh molecule, SCF and response solve,
-and the bridge calls it on the analytic-Hessian branch only;
+KS with exact integrals. `mqc_czt_raman` has two routes to the polarizability's
+Cartesian derivatives. The default, `polarizability_derivatives_field`,
+differences the analytic gradient twice over twelve electric fields --
+thirteen SCFs and gradients whatever the molecule's size, the field entering
+through `run_czt_rhf`'s `h_extra` and its own gradient term added by hand,
+since `czt_scf_gradient` does not know about it. The other,
+`polarizability_derivatives`, differences `static_polarizability`
+over `6N` displaced geometries, each a fresh molecule, SCF and response solve.
+**The mixed second difference does not vanish where symmetry says the
+derivative does**: its error carries `F_k^2 F_l^2` terms, which are even, so
+a small nonzero `xy` component is truncation and not noise -- it falls by
+four when the field is halved. The bridge calls either on the
+analytic-Hessian branch only;
 `compute_raman_activities` in `mqc_vibrational_analysis` projects the result
 on the modes beside the IR intensities. Two things cost time to find. **The
 displaced SCFs need an orbital gradient of 1e-10**: at 1e-8 the derivatives
