@@ -19,7 +19,8 @@ excited state. A spectrum is those sticks each given a line shape and added up,
 with the strength converted to what an instrument reports. This module does
 that and nothing else. It runs no calculation, imports nothing from the rest of
 the package and needs only the standard library, so it works on a machine with
-no build; `plot` alone needs matplotlib, and says so when it is missing.
+no build. Two things ask for more, and say so when it is missing: `plot` needs
+matplotlib, and the exact simulation of NMR multiplets needs numpy.
 
 What is read, from the JSON a run writes:
 
@@ -48,7 +49,9 @@ Units of what comes back:
     The area under a band over wavenumber is ``f / 4.32e-9``.
   * **nmr**: nuclei per ppm against the chemical shift in ppm, so the area
     under a line is the number of nuclei in it. Shifts are against a
-    reference shielding that has to be supplied; see `nmr`.
+    reference shielding that has to be supplied, and with the couplings of a
+    `properties.spin_spin_coupling` run the lines are split into their
+    multiplets; see `nmr`.
 
 The line width is not computed by anything here. It is a parameter standing for
 everything the calculation left out -- lifetime, solvent, temperature, the
