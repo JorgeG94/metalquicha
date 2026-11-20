@@ -1216,12 +1216,23 @@ contains
 
       call core%get(request, "scheme", name)
       select case (lowered(trim(adjustl(name))))
-      case ("mayer", "wiberg")
+      case ("mayer", "wiberg_lowdin")
+      case ("wiberg")
+         ! Refused by name and not aliased. A Wiberg index is quoted from at
+         ! least three bases -- natural atomic orbitals, Lowdin's, a
+         ! semi-empirical minimal one -- and they are different numbers, so
+         ! the scheme's name says which and the bare word is left unclaimed.
+         call error%set(ERROR_VALIDATION, "properties.bond_orders.scheme is "// &
+                        "'wiberg', which names more than one quantity. The one "// &
+                        "computed here is in Lowdin's orthonormal basis: ask for "// &
+                        "'wiberg_lowdin'. It is not the natural-atomic-orbital "// &
+                        "Wiberg index an NBO analysis prints, which is not "// &
+                        "implemented.")
       case default
          call error%set(ERROR_VALIDATION, "properties.bond_orders.scheme is '"// &
                         trim(name)//"'. The schemes here are 'mayer', over the "// &
-                        "converged density and the AO overlap, and 'wiberg', the "// &
-                        "sum of squared density elements in Lowdin's orthonormal "// &
+                        "converged density and the AO overlap, and 'wiberg_lowdin', "// &
+                        "the sum of squared density elements in Lowdin's orthonormal "// &
                         "basis. The quasi-atomic bonding picture is "// &
                         "properties.bonding_analysis.type = 'gms_quao', and the "// &
                         "semi-empirical Wiberg-Mayer orders come from an xTB single "// &

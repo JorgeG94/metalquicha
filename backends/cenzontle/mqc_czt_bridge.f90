@@ -2393,7 +2393,7 @@ contains
                else
                   call mayer_bond_orders(mol, scf%density, s_bond, orders, analysis_error)
                end if
-            case ("wiberg")
+            case ("wiberg_lowdin")
                call mol%overlap(s_bond)
                if (allocated(scf%density_beta)) then
                   call wiberg_bond_orders_open_shell(mol, scf%density, scf%density_beta, &
@@ -2404,7 +2404,7 @@ contains
             case default
                call analysis_error%set(ERROR_VALIDATION, "unknown bond order scheme '"// &
                                        trim(settings%bond_order_scheme)// &
-                                       "'; expected 'mayer' or 'wiberg'.")
+                                       "'; expected 'mayer' or 'wiberg_lowdin'.")
             end select
 
             if (analysis_error%has_error()) then
@@ -3708,13 +3708,13 @@ contains
          case ("mayer")
             call mol%overlap(s_bond)
             call mayer_bond_orders(mol, total_density, s_bond, orders, bo_error)
-         case ("wiberg")
+         case ("wiberg_lowdin")
             call mol%overlap(s_bond)
             call wiberg_bond_orders(mol, total_density, s_bond, orders, bo_error)
          case default
             call bo_error%set(ERROR_VALIDATION, "unknown bond order scheme '"// &
                               trim(settings%bond_order_scheme)// &
-                              "'; expected 'mayer' or 'wiberg'.")
+                              "'; expected 'mayer' or 'wiberg_lowdin'.")
          end select
          if (bo_error%has_error()) then
             call logger%warning("  bond orders could not be computed: "// &
@@ -3736,7 +3736,7 @@ contains
          character(len=:), allocatable :: heading
 
          select case (trim(scheme))
-         case ("wiberg")
+         case ("wiberg_lowdin")
             heading = "Wiberg (Lowdin basis)"
          case default
             heading = "Mayer"
