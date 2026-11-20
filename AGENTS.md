@@ -592,6 +592,13 @@ report says when one strays. Conventional, spin-scaled and unrestricted MP2,
 coupled cluster, and MP2 under PCM `pte` are refused by name. CASSCF reports
 its own active-space occupations and does not go through this.
 
+`properties.density: "relaxed"` points `charges` and `bond_orders` at that
+same relaxed density; the default, `"scf"`, is the reference's whatever runs
+on top, and `result%analysis_density` (the `density` field of both output
+sections) says which. **The reference's dipole is withheld after a correlated
+method on purpose**; the relaxed density's is published whenever that density
+is built, through `publish_dipole` in the bridge.
+
 ## Dependencies
 
 | Library | Purpose |

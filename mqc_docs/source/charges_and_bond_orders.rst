@@ -514,6 +514,64 @@ index would mix a change of density with a change of partition.
 ``properties.fukui`` refuses ``"mbis"`` and points at ``"hirshfeld"``, whose
 weights are the same for every state.
 
+Which density: the reference's, or the correlated one
+-----------------------------------------------------
+
+Charges and bond orders partition a density, and after a correlated method
+there are two. By default it is the reference's -- the Hartree-Fock density
+under an MP2 deck -- and both sections of the output say so in a ``density``
+field. ``properties.density`` chooses:
+
+.. code-block:: json
+
+   "model": {"method": "ri-mp2", "basis": "cc-pvdz", "aux_basis": "cc-pvdz-rifit"},
+   "properties": {
+     "density": "relaxed",
+     "charges": {"scheme": "mulliken"},
+     "bond_orders": {}
+   }
+
+``"relaxed"`` partitions the relaxed MP2 density instead: the reference's plus
+the correlation contribution, with the orbital response from the Z-vector
+equations. It is the density whose trace with an operator is the derivative of
+the MP2 energy, and so the one a correlated charge or bond order should come
+from. Every charge scheme takes it; the bond orders are Mayer's closed-shell
+expression applied to a density that is no longer idempotent, which is the
+usual definition for a correlated wave function.
+
+Water at RI-MP2/cc-pVDZ, frozen core:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 30 30
+
+   * -
+     - ``scf``
+     - ``relaxed``
+   * - Mulliken charge on O
+     - -0.3145
+     - -0.2922
+   * - Mayer O--H bond order
+     - 1.0179
+     - 0.9855
+
+Correlation moves density back from oxygen toward the hydrogens and puts
+occupation into antibonding orbitals, so the molecule comes out less polar and
+its bonds a little weaker than Hartree-Fock says. Both columns agree with the
+same quantities computed from PySCF's densities, the relaxed one being
+``pyscf.mp.dfmp2_native``'s, to :math:`10^{-8}`.
+
+**The dipole comes with it.** A correlated run reports no dipole by default,
+on purpose: the reference's is the wrong one, and a missing number is noticed
+where a plausible wrong one is not. Whenever the relaxed density is built --
+for this, for :doc:`natural_orbitals`, or for PTD solvation
+(:doc:`continuum_solvation`) -- its dipole is the right one and is reported.
+
+``"relaxed"`` exists for closed-shell ``ri-mp2`` only. Conventional,
+spin-scaled and unrestricted MP2 and coupled cluster build no relaxed density
+on this path and are refused, as is a deck with no correlated method at all,
+and MP2 under ``keywords.pcm.correlation: "pte"``.
+
 Requirements
 ------------
 

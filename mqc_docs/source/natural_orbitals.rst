@@ -47,7 +47,9 @@ The most complete one-particle density the method has, and the output names it:
        to know in advance which kind of reference it will get.
 
 Occupations of different densities are not comparable with one another, which
-is why the name travels with the numbers.
+is why the name travels with the numbers. The charges and bond orders can be
+pointed at the same relaxed density with ``properties.density``; see
+:doc:`charges_and_bond_orders`.
 
 What is reported
 ----------------

@@ -1679,6 +1679,31 @@ contains
                       two_atoms(), '"properties": {"natural_orbitals": {"threshold": 0.02}}')
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), "an unknown key inside it must be refused")
+      if (allocated(error)) return
+
+      ! `properties.density`: which density the charges and bond orders use.
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", "", "", two_atoms(), &
+                      '"properties": {"density": "Relaxed", "charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%properties_density), "relaxed")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%properties_density), "scf", &
+                 "unnamed, the reference density must stay the default")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"density": "unrelaxed", "charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown density must be refused")
    end subroutine test_natural_orbitals
 
    subroutine test_pcm_correlation(error)
