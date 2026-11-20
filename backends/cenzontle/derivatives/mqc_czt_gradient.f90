@@ -80,6 +80,9 @@ module mqc_czt_gradient
    public :: xc_potential_gradient
    public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
    public :: fitted_reference_gradient
+   public :: two_electron_gradient
+      !! The two-electron term from any pair of spin densities, which the
+      !! unrestricted correlated gradients contract a relaxed density through
    public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
 
    ! Which one-electron derivative `one_electron_deriv` should build.
