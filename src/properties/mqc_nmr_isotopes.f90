@@ -16,8 +16,8 @@ module mqc_nmr_isotopes
    integer, parameter :: N_TABLE = 17
    integer, parameter :: LABEL_LEN = 5
    character(len=LABEL_LEN), parameter :: LABELS(N_TABLE) = [character(len=LABEL_LEN) :: &
-      "1H", "3He", "7Li", "9Be", "11B", "13C", "15N", "17O", "19F", "21Ne", "23Na", "25Mg", &
-      "27Al", "29Si", "31P", "33S", "35Cl"]
+                                   "1H", "3He", "7Li", "9Be", "11B", "13C", "15N", "17O", "19F", "21Ne", "23Na", "25Mg", &
+                                                             "27Al", "29Si", "31P", "33S", "35Cl"]
    real(dp), parameter :: G_FACTORS(N_TABLE) = [ &
                           5.5856946893_dp, -4.255250615_dp, 2.170951_dp, -0.784993_dp, &
                           1.792433_dp, 1.4048236_dp, -0.56637768_dp, -0.757516_dp, &
