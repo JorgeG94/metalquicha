@@ -219,7 +219,8 @@ contains
 
                      call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
                                                   frequencies, n_at, n_modes, thermo_result, &
-                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
+                                               temperature=config%hessian%temperature, pressure=config%hessian%pressure, &
+                                                  spin_multiplicity=sys_geom%multiplicity)
 
                      ! Print vibrational analysis to log
                      if (allocated(ir_intensities)) then
@@ -229,14 +230,16 @@ contains
                                                         ir_intensities=ir_intensities, &
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
-                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
+                                               temperature=config%hessian%temperature, pressure=config%hessian%pressure, &
+                                                        spin_multiplicity=sys_geom%multiplicity)
                      else
                         call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                         cart_disp, sys_geom%element_numbers, &
                                                         force_constants_mdyne=fc_mdyne, &
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
-                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
+                                               temperature=config%hessian%temperature, pressure=config%hessian%pressure, &
+                                                        spin_multiplicity=sys_geom%multiplicity)
                      end if
 
                      ! Populate json_data if present (for centralized JSON output)

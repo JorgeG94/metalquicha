@@ -253,7 +253,8 @@ contains
                n_at = size(sys_geom%element_numbers)
                n_modes = size(frequencies)
                call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
-                                            frequencies, n_at, n_modes, thermo_result)
+                                            frequencies, n_at, n_modes, thermo_result, &
+                                            spin_multiplicity=sys_geom%multiplicity)
 
                ! Print vibrational analysis to log
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
@@ -261,7 +262,8 @@ contains
                                                force_constants_mdyne=fc_mdyne, &
                                                ir_intensities=ir_intensities, &
                                                coordinates=sys_geom%coordinates, &
-                                               electronic_energy=total_energy)
+                                               electronic_energy=total_energy, &
+                                               spin_multiplicity=sys_geom%multiplicity)
 
                ! Build temporary mbe_result for JSON output
                gmbe_result%total_energy = total_energy
@@ -1045,7 +1047,8 @@ contains
                n_at = size(sys_geom%element_numbers)
                n_modes = size(frequencies)
                call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
-                                            frequencies, n_at, n_modes, thermo_result)
+                                            frequencies, n_at, n_modes, thermo_result, &
+                                            spin_multiplicity=sys_geom%multiplicity)
 
                ! Print vibrational analysis to log
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
@@ -1053,7 +1056,8 @@ contains
                                                force_constants_mdyne=fc_mdyne, &
                                                ir_intensities=ir_intensities, &
                                                coordinates=sys_geom%coordinates, &
-                                               electronic_energy=total_energy)
+                                               electronic_energy=total_energy, &
+                                               spin_multiplicity=sys_geom%multiplicity)
 
                ! Build temporary mbe_result for JSON output
                gmbe_result%total_energy = total_energy
