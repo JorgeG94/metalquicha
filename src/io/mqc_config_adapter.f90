@@ -432,6 +432,7 @@ contains
          driver_config%method_config%properties%bond_order_scheme = &
             mqc_config%bond_order_scheme
       end if
+      driver_config%method_config%properties%natural_orbitals = mqc_config%natural_orbitals
       if (allocated(mqc_config%bonding_analysis)) then
          driver_config%method_config%properties%bonding_analysis = &
             mqc_config%bonding_analysis

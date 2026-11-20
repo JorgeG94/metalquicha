@@ -260,6 +260,13 @@ module mqc_json_output_types
       real(dp), allocatable :: bond_order_valences(:)
       character(len=16) :: bond_order_scheme = ""
       logical :: has_bond_orders = .false.
+      ! Natural occupations, with the name of the density they belong to.
+      real(dp), allocatable :: natural_occupations(:)
+      character(len=32) :: natural_orbital_density = ""
+      real(dp) :: natural_unpaired_linear = 0.0_dp
+      real(dp) :: natural_unpaired_quadratic = 0.0_dp
+      integer :: natural_fractional = 0
+      logical :: has_natural_orbitals = .false.
       real(dp), allocatable :: fukui_plus(:), fukui_minus(:), fukui_dual(:)
       real(dp) :: fukui_ip = 0.0_dp
       real(dp) :: fukui_ea = 0.0_dp
@@ -620,6 +627,7 @@ contains
       this%has_ieda = .false.
       this%has_fukui = .false.
       this%has_bond_orders = .false.
+      this%has_natural_orbitals = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.

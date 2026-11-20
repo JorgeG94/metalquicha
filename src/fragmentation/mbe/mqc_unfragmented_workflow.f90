@@ -459,6 +459,14 @@ contains
                json_data%bond_order_scheme = result%bond_order_scheme
                json_data%has_bond_orders = .true.
             end if
+            if (result%has_natural_orbitals) then
+               json_data%natural_occupations = result%natural_occupations
+               json_data%natural_orbital_density = result%natural_orbital_density
+               json_data%natural_unpaired_linear = result%natural_unpaired_linear
+               json_data%natural_unpaired_quadratic = result%natural_unpaired_quadratic
+               json_data%natural_fractional = result%natural_fractional
+               json_data%has_natural_orbitals = .true.
+            end if
 
             ! Where the molecule reacts, when `properties.fukui` asked. Carried
             ! per atom rather than reduced to "the most reactive site": ranking

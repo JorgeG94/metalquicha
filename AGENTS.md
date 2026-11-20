@@ -574,6 +574,24 @@ exact-reference case would miss PySCF. `test_mqc_czt_mp2` holds the density to
 a finite-field derivative. PTED needs the surface-charge response in the
 Z-vector and is not implemented.
 
+## Analyses on a converged wave function
+
+Under `properties`, beside `keywords`: `bonding_analysis` (the quasi-atomic
+analysis), `charges`, `bond_orders`, `fukui` and `natural_orbitals`. None
+changes an energy, and a failure in one is a warning, not an error.
+
+`properties.natural_orbitals` diagonalises the most complete one-particle
+density the method has (`mqc_czt_natural_orbitals`, density in the AO basis,
+overlap orthogonalised canonically): the spin-summed density of an
+unrestricted reference, or the relaxed density of closed-shell `ri-mp2` --
+the same `relaxed_density` PTD uses, fetched once when both ask. The name of
+the density is stored beside the occupations because occupations of different
+densities are not comparable. **A relaxed density's occupations are not bound
+to [0, 2]**; the summary clamps them for the unpaired-electron counts and the
+report says when one strays. Conventional, spin-scaled and unrestricted MP2,
+coupled cluster, and MP2 under PCM `pte` are refused by name. CASSCF reports
+its own active-space occupations and does not go through this.
+
 ## Dependencies
 
 | Library | Purpose |

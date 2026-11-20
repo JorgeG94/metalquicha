@@ -114,6 +114,7 @@ contains
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("pcm_correlation_scheme", test_pcm_correlation), &
+                  new_unittest("natural_orbitals_property", test_natural_orbitals), &
                   new_unittest("terco_keeps_pcm", test_terco_keeps_pcm), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("dft_dispersion", test_dft_dispersion), &
@@ -1649,6 +1650,36 @@ contains
       call check(error,.not. config%pcm_enabled, &
                  "without the block the calculation must stay in the gas phase")
    end subroutine test_pcm_keywords
+
+   subroutine test_natural_orbitals(error)
+      !! properties.natural_orbitals: the object is the request
+      !!
+      !! It takes no settings, so presence switches it on, absence leaves it
+      !! off, and a key inside it is a typo the schema must stop.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"natural_orbitals": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%natural_orbitals, "naming the object must request them")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%natural_orbitals, "absent, it must stay off")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"natural_orbitals": {"threshold": 0.02}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown key inside it must be refused")
+   end subroutine test_natural_orbitals
 
    subroutine test_pcm_correlation(error)
       !! keywords.pcm.correlation: read, case-folded, defaulted, and refused

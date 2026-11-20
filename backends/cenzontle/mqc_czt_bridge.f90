@@ -1160,6 +1160,10 @@ contains
       !! Closed-shell HF for one fragment, on the CPU
       use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
                                      mayer_valences, print_mayer_report
+      use mqc_czt_natural_orbitals, only: natural_occupation_summary_t, &
+                                          density_natural_orbitals, &
+                                          summarize_natural_occupations, &
+                                          print_natural_orbital_report
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
@@ -1241,6 +1245,42 @@ contains
                      .or. settings%unrestricted
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
+
+      ! Natural orbitals are those of the most complete one-particle density
+      ! the method has. For a correlated method that is a relaxed density, and
+      ! only closed-shell RI-MP2 builds one here; the rest are refused rather
+      ! than handed the reference's occupations under a correlated heading.
+      if (settings%natural_orbitals) then
+         if (settings%run_cc) then
+            call result%error%set(ERROR_VALIDATION, "properties.natural_orbitals with "// &
+                                  "coupled cluster: no coupled-cluster one-particle "// &
+                                  "density is exposed for analysis. Use 'ri-mp2', or "// &
+                                  "ask for the reference's on a Hartree-Fock deck.")
+            result%has_error = .true.
+            return
+         end if
+         if (settings%run_mp2) then
+            if (.not. settings%corr_density_fitting .or. unrestricted &
+                .or. settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp) then
+               call result%error%set(ERROR_VALIDATION, "properties.natural_orbitals "// &
+                                     "over MP2 diagonalises the relaxed MP2 density, "// &
+                                     "which is built for closed-shell 'ri-mp2' only -- "// &
+                                     "not conventional, spin-scaled or unrestricted "// &
+                                     "MP2.")
+               result%has_error = .true.
+               return
+            end if
+            if (pcm_pte) then
+               call result%error%set(ERROR_VALIDATION, "properties.natural_orbitals "// &
+                                     "over MP2 under keywords.pcm.correlation 'pte': "// &
+                                     "the relaxed density's response equations do not "// &
+                                     "carry the continuum. Use 'ptd', whose density is "// &
+                                     "the gas-phase one, or no continuum.")
+               result%has_error = .true.
+               return
+            end if
+         end if
+      end if
 
       if (do_gradient .and. settings%run_cc) then
          block
@@ -2328,6 +2368,14 @@ contains
       ! the branch below is on the *reference*, not on the multiplicity: an
       ! unrestricted singlet takes the open-shell entry and gets the same
       ! answer, which is the point.
+      if (settings%natural_orbitals .and. .not. settings%run_mp2) then
+         if (allocated(scf%density_beta)) then
+            call report_natural_orbitals(scf%density + scf%density_beta, "unrestricted scf")
+         else
+            call report_natural_orbitals(scf%density, "scf")
+         end if
+      end if
+
       if (allocated(settings%bond_order_scheme)) then
          block
             real(dp), allocatable :: orders(:, :), valences(:), s_bond(:, :)
@@ -2831,12 +2879,12 @@ contains
             ! gradient's default is the fitted one. That default is worth
             ! 2.4e-7 hartree in this energy on water, and here nothing is
             ! saved by it that the exact SCF had not already spent.
-            if (pcm_ptd) then
+            if (pcm_ptd .or. settings%natural_orbitals) then
                block
                   real(dp), allocatable :: relaxed(:, :), v_solv(:, :), no_gradient(:, :)
                   real(dp) :: g_solv
 
-                  call logger%info("  computing the relaxed MP2 density for the continuum")
+                  call logger%info("  computing the relaxed MP2 density")
                   call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
                   if (.not. error%has_error()) then
                      call czt_ri_mp2_gradient(mol, corr_aux, scf%orbitals, &
@@ -2847,21 +2895,26 @@ contains
                                               relaxed_density=relaxed)
                      call corr_aux%destroy()
                   end if
-                  if (.not. error%has_error()) then
+                  if (pcm_ptd .and. .not. error%has_error()) then
                      allocate (v_solv(mol%nao, mol%nao))
                      call pcm_ctx%operator_matrix(mol, relaxed, v_solv, g_solv, error)
                   end if
                   if (error%has_error()) then
-                     call result%error%set(ERROR_VALIDATION, "PTD solvation: "// &
+                     call result%error%set(ERROR_VALIDATION, "relaxed MP2 density: "// &
                                            error%get_message())
                      result%has_error = .true.
                      call mol%destroy()
                      return
                   end if
-                  result%energy%solvation = g_solv
-                  write (line, "(a,f18.10,a,f9.4)") "    continuum (PTD): G_solv = ", &
-                     g_solv, "   total surface charge ", pcm_ctx%q_total
-                  call logger%info(trim(line))
+                  if (pcm_ptd) then
+                     result%energy%solvation = g_solv
+                     write (line, "(a,f18.10,a,f9.4)") "    continuum (PTD): G_solv = ", &
+                        g_solv, "   total surface charge ", pcm_ctx%q_total
+                     call logger%info(trim(line))
+                  end if
+                  if (settings%natural_orbitals) then
+                     call report_natural_orbitals(relaxed, "ri-mp2 relaxed")
+                  end if
                end block
             end if
 
@@ -3606,6 +3659,38 @@ contains
 
       if (kohn_sham) call xc%destroy()
       call mol%destroy()
+
+   contains
+
+      subroutine report_natural_orbitals(total_density, source)
+         !! Diagonalise a total density, print its occupations and store them
+         !!
+         !! A failure is a warning and not an error, as for every analysis
+         !! here: the energy is already right.
+         real(dp), intent(in) :: total_density(:, :)
+         character(len=*), intent(in) :: source
+            !! Which density this is; stored beside the occupations
+
+         real(dp), allocatable :: s_ao(:, :), natural(:, :), occupations(:)
+         type(natural_occupation_summary_t) :: summary
+         type(error_t) :: no_error
+
+         call mol%overlap(s_ao)
+         call density_natural_orbitals(total_density, s_ao, natural, occupations, no_error)
+         if (no_error%has_error()) then
+            call logger%warning("  natural orbitals could not be computed: "// &
+                                no_error%get_message())
+            return
+         end if
+         call summarize_natural_occupations(occupations, summary)
+         call print_natural_orbital_report(occupations, summary, source)
+         call move_alloc(occupations, result%natural_occupations)
+         result%natural_orbital_density = source
+         result%natural_unpaired_linear = summary%unpaired_linear
+         result%natural_unpaired_quadratic = summary%unpaired_quadratic
+         result%natural_fractional = summary%n_fractional
+         result%has_natural_orbitals = .true.
+      end subroutine report_natural_orbitals
    end subroutine run_czt_hf
 
    function cc_gradient_decline_reason(settings, unrestricted) result(reason)

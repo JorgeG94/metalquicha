@@ -223,6 +223,8 @@ contains
       ! And again: the object is the request, `scheme` only says which
       ! definition, defaulted here so the scheme the run used is a value in the
       ! config and travels into the report and the JSON beside the numbers.
+      ! The object is the request, as for `charges`; it has no settings yet.
+      call json%info("properties.natural_orbitals", found=config%natural_orbitals)
       call json%info("properties.bond_orders", found=found_bond_orders)
       if (found_bond_orders) then
          config%bond_order_scheme = "mayer"

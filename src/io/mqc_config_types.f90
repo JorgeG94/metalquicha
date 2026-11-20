@@ -133,6 +133,10 @@ module mqc_config_types
          !! atomic partial charges; "mulliken" (the default), "chelpg",
          !! "hirshfeld" or "mbis" chooses how the converged density is
          !! partitioned.
+      logical :: natural_orbitals = .false.
+         !! `properties.natural_orbitals` is present: report the natural
+         !! occupations of the most complete one-particle density the method
+         !! has.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

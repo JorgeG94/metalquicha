@@ -94,6 +94,8 @@ contains
                                    charges_keys(), error)
       call check_grandchild_object(core, root, "properties", "bond_orders", &
                                    bond_orders_keys(), error)
+      call check_grandchild_object(core, root, "properties", "natural_orbitals", &
+                                   natural_orbitals_keys(), error)
       call check_bond_orders(core, root, error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
@@ -256,6 +258,7 @@ contains
       call allow(keys, "fukui")
       call allow(keys, "charges")
       call allow(keys, "bond_orders")
+      call allow(keys, "natural_orbitals")
    end function properties_keys
 
    function fukui_keys() result(keys)
@@ -323,6 +326,12 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "scheme")
    end function charges_keys
+
+   function natural_orbitals_keys() result(keys)
+      !! `properties.natural_orbitals`: the object is the request and takes no
+      !! settings, so anything inside it is a typo
+      type(key_set_t) :: keys
+   end function natural_orbitals_keys
 
    function bond_orders_keys() result(keys)
       !! Settings for the bond orders over the converged density

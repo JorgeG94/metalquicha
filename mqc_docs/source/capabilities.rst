@@ -673,6 +673,11 @@ four.
   Hirshfeld or MBIS spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
   because that scheme fits the electrostatic potential and the total density
   alone determines it. ``properties.charges``.
+- **Natural orbitals**: the occupations of the orbitals that diagonalise the
+  most complete one-particle density the method has -- the spin-summed density
+  of an unrestricted reference, or the relaxed density of closed-shell
+  RI-MP2 -- with two counts of effectively unpaired electrons.
+  ``properties.natural_orbitals``; see :doc:`natural_orbitals`.
 - **Mayer bond orders**, over the converged density and the AO overlap:
   ``B_AB = sum_{mu in A, nu in B} (DS)_mu,nu (DS)_nu,mu`` for a closed shell,
   and a spin-resolved sum -- not that expression with the total density -- for

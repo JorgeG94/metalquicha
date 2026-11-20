@@ -196,6 +196,7 @@ contains
       call write_ieda_section(json, main_obj, data)
       call write_charges_section(json, main_obj, data)
       call write_bond_orders_section(json, main_obj, data)
+      call write_natural_orbitals_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
@@ -651,6 +652,31 @@ contains
          end if
       end do
    end subroutine write_charges_section
+
+   subroutine write_natural_orbitals_section(json, parent, data)
+      !! Natural occupations, and the counts read off them
+      !!
+      !! Every occupation is written, not only the fractional ones: which
+      !! orbitals count as active is the reader's decision, and the window
+      !! behind `n_fractional` is one convention among several.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section
+
+      if (.not. data%has_natural_orbitals) return
+      if (.not. allocated(data%natural_occupations)) return
+
+      call json%create_object(section, "natural_orbitals")
+      call json%add(parent, section)
+      call json%add(section, "density", trim(data%natural_orbital_density))
+      call json%add(section, "occupations", data%natural_occupations)
+      call json%add(section, "unpaired_electrons_linear", data%natural_unpaired_linear)
+      call json%add(section, "unpaired_electrons_quadratic", &
+                    data%natural_unpaired_quadratic)
+      call json%add(section, "n_fractional", data%natural_fractional)
+   end subroutine write_natural_orbitals_section
 
    subroutine write_bond_orders_section(json, parent, data)
       !! Bond orders per atom pair, with the valence they sum to

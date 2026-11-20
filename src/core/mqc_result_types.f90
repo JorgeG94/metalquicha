@@ -134,6 +134,21 @@ module mqc_result_types
       character(len=16) :: bond_order_scheme = ""
          !! Which definition produced them: "mayer" or "xtb". Empty means
          !! nothing has.
+      real(dp), allocatable :: natural_occupations(:)
+         !! Occupations of the natural orbitals, descending, when
+         !! `properties.natural_orbitals` asked. One per retained orbital, both
+         !! spins summed, so between zero and two.
+      character(len=32) :: natural_orbital_density = ""
+         !! Which density they diagonalise: "scf", "unrestricted scf" or
+         !! "ri-mp2 relaxed". Occupations of different densities are not
+         !! comparable, so the name travels with them.
+      real(dp) :: natural_unpaired_linear = 0.0_dp
+         !! `sum min(n, 2 - n)` over those occupations
+      real(dp) :: natural_unpaired_quadratic = 0.0_dp
+         !! `sum n^2 (2 - n)^2` over them
+      integer :: natural_fractional = 0
+         !! How many lie between 0.02 and 1.98
+      logical :: has_natural_orbitals = .false.
 
       ! Atomic partial charges, when `properties.charges` asked for them.
       real(dp), allocatable :: atomic_charges(:)
@@ -501,6 +516,8 @@ contains
       ! while `has_bond_orders` still says they are current.
       class(calculation_result_t), intent(inout) :: this
       if (allocated(this%gradient)) deallocate (this%gradient)
+      if (allocated(this%natural_occupations)) deallocate (this%natural_occupations)
+      this%has_natural_orbitals = .false.
       if (allocated(this%sigma)) deallocate (this%sigma)
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
