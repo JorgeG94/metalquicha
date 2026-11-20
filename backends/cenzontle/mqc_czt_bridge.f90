@@ -57,7 +57,8 @@ module mqc_czt_bridge
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_metric_dropped
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
-   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field
+   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field, &
+                            polarizability_derivatives_analytic
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -2722,7 +2723,19 @@ contains
                                                      nelec, scf%density, accel_kind, &
                                                      diis_size, scf_conv, alpha0, &
                                                      dalpha, raman_error)
+                  else if (trim(settings%raman_method) == "analytic" &
+                           .and. .not. xc%active) then
+                     call polarizability_derivatives_analytic(mol, scf%orbitals, &
+                                                              scf%orbital_energies, &
+                                                              scf%n_occupied, alpha0, &
+                                                              dalpha, raman_error)
                   else
+                     ! The analytic route needs a functional's third
+                     ! derivative, which is not built.
+                     if (trim(settings%raman_method) == "analytic") then
+                        call logger%info("  Raman: no analytic route under a "// &
+                                         "functional; taking the finite-field one")
+                     end if
                      call polarizability_derivatives_field(settings, mol, nelec, &
                                                            scf%density, accel_kind, &
                                                            diis_size, scf_conv, alpha0, &

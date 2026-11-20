@@ -15,7 +15,8 @@ module test_mqc_czt_raman
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
-   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field
+   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field, &
+                            polarizability_derivatives_analytic
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_scf_convergence, only: scf_convergence_t
    use mqc_diis, only: ACCEL_DIIS
@@ -39,6 +40,18 @@ module test_mqc_czt_raman
       !! The two routes' truncation errors, 3e-5 each, with room
    real(dp), parameter :: TOL = 2.0e-6_dp
       !! Two independent response solves at 1e-9, divided by a step of 5e-3.
+   ! The same three columns with the step's error removed: PySCF's
+   ! polarizability differenced at 1e-2 and 5e-3 Bohr and extrapolated to zero.
+   real(dp), parameter :: X_O_Z(6) = [-0.0629616879_dp, 0.3506727893_dp, -7.9166845431_dp, &
+                                      0.0_dp, -1.3439660108_dp, 0.0_dp]
+   real(dp), parameter :: X_H1_Z(6) = [0.3723987273_dp, -0.4427983667_dp, 8.5097162996_dp, &
+                                       0.0_dp, -0.5980602745_dp, 0.0_dp]
+   real(dp), parameter :: X_H2_X(6) = [7.8657824311_dp, -0.4342248504_dp, 1.0614212240_dp, &
+                                       0.0_dp, -2.0744928878_dp, 0.0_dp]
+   real(dp), parameter :: ANALYTIC_TOL = 1.0e-6_dp
+      !! The extrapolated reference's own remaining error; 3.5e-7 measured
+   real(dp), parameter :: SUM_RULE_TOL = 1.0e-7_dp
+      !! What the analytic route leaves of an exact zero
 
 contains
 
@@ -47,7 +60,8 @@ contains
 
       testsuite = [ &
                   new_unittest("water_derivatives_match_pyscf", test_water), &
-                  new_unittest("finite_field_route_agrees", test_field) &
+                  new_unittest("finite_field_route_agrees", test_field), &
+                  new_unittest("analytic_route_agrees", test_analytic) &
                   ]
    end subroutine collect_mqc_czt_raman_tests
 
@@ -184,6 +198,72 @@ contains
                  "the finite-field derivatives do not match PySCF's")
       call mol%destroy()
    end subroutine test_field
+
+   subroutine test_analytic(error)
+      !! The analytic derivatives, which difference nothing.
+      !!
+      !! Two checks of different kinds. PySCF's differenced polarizabilities
+      !! carry a truncation error of 3e-5, more than this route's own, so the
+      !! reference is those differences at two steps extrapolated to zero.
+      !! The translational sum rule needs no reference: moving every atom
+      !! together moves nothing, so each component's derivatives sum to zero
+      !! over the atoms, and for a finite difference that sum is its
+      !! truncation error while here it is the response solves' residual.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: d(:, :)
+      real(dp) :: c(3, 3), alpha(3, 3), drift
+      integer :: comp
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                       grad_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                               scf%n_occupied, alpha, d, err)
+      call check(error,.not. err%has_error(), "analytic route: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      drift = 0.0_dp
+      do comp = 1, 3
+         drift = max(drift, maxval(abs(d(:, comp) + d(:, 3 + comp) + d(:, 6 + comp))))
+      end do
+      write (*, "(4x,a,6f12.7)") "d/dz(O)  analytic ", d(:, 3)
+      write (*, "(4x,a,6f12.7)") "d/dz(H1) analytic ", d(:, 6)
+      write (*, "(4x,a,6f12.7)") "d/dx(H2) analytic ", d(:, 7)
+      write (*, "(4x,a,es10.2)") "worst difference from PySCF, extrapolated:  ", &
+         max(maxval(abs(d(:, 3) - X_O_Z)), maxval(abs(d(:, 6) - X_H1_Z)), &
+             maxval(abs(d(:, 7) - X_H2_X)))
+      write (*, "(4x,a,es10.2)") "translational sum rule:                    ", drift
+
+      call check(error, abs(alpha(1, 1) - ALPHA_REF(1)) < TOL &
+                 .and. abs(alpha(2, 2) - ALPHA_REF(2)) < TOL &
+                 .and. abs(alpha(3, 3) - ALPHA_REF(3)) < TOL &
+                 .and. abs(alpha(1, 3) - ALPHA_REF(4)) < TOL, &
+                 "the polarizability does not match PySCF's")
+      if (allocated(error)) return
+      call check(error, maxval(abs(d(:, 3) - X_O_Z)) < ANALYTIC_TOL &
+                 .and. maxval(abs(d(:, 6) - X_H1_Z)) < ANALYTIC_TOL &
+                 .and. maxval(abs(d(:, 7) - X_H2_X)) < ANALYTIC_TOL, &
+                 "the analytic derivatives do not match PySCF's")
+      if (allocated(error)) return
+      call check(error, drift < SUM_RULE_TOL, &
+                 "the analytic derivatives do not sum to zero over the atoms")
+      if (allocated(error)) return
+      ! Symmetry forbids these outright, and with nothing differenced they
+      ! are zero rather than a truncation error.
+      call check(error, abs(d(4, 3)) < SUM_RULE_TOL .and. abs(d(6, 3)) < SUM_RULE_TOL, &
+                 "a component symmetry forbids is not zero")
+   end subroutine test_analytic
 
 end module test_mqc_czt_raman
 

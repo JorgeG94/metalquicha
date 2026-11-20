@@ -4070,13 +4070,13 @@ contains
                  "properties.raman on an energy run was accepted")
       if (allocated(error)) return
 
-      ! The default method is the finite-field one, the other is selectable,
-      ! and a third is refused with both names in the message.
+      ! The default method is the analytic one, the others are selectable,
+      ! and an unknown one is refused with the names in the message.
       call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
                       root='"properties": {"raman": {}}')
       call read_deck(config, parse_error)
-      call check(error, config%raman_method == "field", &
-                 "the Raman method must default to the finite-field one")
+      call check(error, config%raman_method == "analytic", &
+                 "the Raman method must default to the analytic one")
       if (allocated(error)) return
       call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
                       root='"properties": {"raman": {"method": "displacements"}}')
@@ -4086,7 +4086,7 @@ contains
                  "properties.raman.method was not read")
       if (allocated(error)) return
       call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
-                      root='"properties": {"raman": {"method": "analytic"}}')
+                      root='"properties": {"raman": {"method": "numerical"}}')
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error() .and. &
                  index(parse_error%get_message(), "displacements") > 0, &

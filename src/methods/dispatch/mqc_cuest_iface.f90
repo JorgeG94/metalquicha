@@ -104,8 +104,8 @@ module mqc_cuest_iface
          !! none were asked for.
       logical :: raman = .false.
          !! Raman activities from `properties.raman`; the CPU backend only.
-      character(len=16) :: raman_method = "field"
-         !! Which finite difference: "field" or "displacements"
+      character(len=16) :: raman_method = "analytic"
+         !! "analytic", or which finite difference: "field" or "displacements"
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
