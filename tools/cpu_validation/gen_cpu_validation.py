@@ -550,6 +550,7 @@ HAND_MAINTAINED = {
     "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f0_pte_cpcm.json",
     "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f1_ptd_iefpcm.json",
     "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f1_pte_iefpcm_dfref.json",
+    "cpu/mqc/pcm/cpu_w1_cation_cc-pvdz_rimp2_f1_pte_iefpcm.json",
     # Same reasoning, and the identity is the whole point here: propane cut at
     # both C-C bonds, expanded to its fragment count, has to reproduce the
     # unfragmented energy however the bonds were detached. It does, to 1.2e-12.

@@ -4822,6 +4822,14 @@
             "reference_note": "PySCF: DF-MP2 with the deck's auxiliary basis on a Hartree-Fock reference converged inside pyscf.solvent.pcm (lebedev_order 29, radii_table 1.2 * Bondi), total = solvated SCF + E(2). The reaction field stays the reference's."
         },
         {
+            "name": "RI-MP2 over UHF, H2O+ cc-pvdz/cc-pvdz-rifit frozen 1 in IEFPCM eps 78.3553, PTE (CPU)",
+            "input": "inputs/cpu/mqc/pcm/cpu_w1_cation_cc-pvdz_rimp2_f1_pte_iefpcm.json",
+            "expected_energy": -75.923510423933,
+            "tolerance": 1e-08,
+            "type": "unfragmented",
+            "reference_note": "PySCF: DFUMP2 with the deck's auxiliary basis on a UHF reference converged in pyscf.solvent.pcm (IEF-PCM, lebedev_order 29, radii_table 1.2 * Bondi) with conv_tol_grad 1e-9. The open-shell PTE case: both spin Fock matrices carry the reaction field and the unrestricted MP2 reads their orbital energies. OH was tried first and is not used: PySCF's own solvated UHF for it does not converge below 1e-7, which is where the two codes then differ."
+        },
+        {
             "name": "FMO2 water trimer 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fmo/fmo_water3.json",
             "expected_energy": -227.970541160128,

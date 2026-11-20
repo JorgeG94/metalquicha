@@ -267,7 +267,7 @@ refused. ``keywords.pcm.correlation`` takes one of two:
    the one the Hartree-Fock density produced; the correlation never changes
    it. The total is the solvated SCF energy plus :math:`E^{(2)}`. Any MP2
    here runs under it: conventional or fitted, spin-scaled or not, frozen core
-   or not.
+   or not, closed shell or unrestricted.
 
 ``"ptd"``
    The reference and MP2 both run in the gas phase. The continuum is then
