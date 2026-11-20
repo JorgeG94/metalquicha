@@ -420,6 +420,22 @@ contains
             config%pcm_method = pcm_method_text
          end if
       end block
+      block
+         character(len=:), allocatable :: scheme_text
+         logical :: scheme_named
+         call json%get("keywords.pcm.correlation", scheme_text, scheme_named)
+         if (scheme_named .and. allocated(scheme_text)) then
+            scheme_text = to_lower(trim(scheme_text))
+            select case (scheme_text)
+            case ("none", "pte", "ptd")
+               config%pcm_correlation = scheme_text
+            case default
+               call error%set(ERROR_VALIDATION, "keywords.pcm.correlation '"// &
+                              scheme_text//"' is not one of 'none', 'pte' or 'ptd'")
+               return
+            end select
+         end if
+      end block
       call optional_real(json, "keywords.pcm.dielectric", config%pcm_dielectric)
       call optional_int(json, "keywords.pcm.angular_points", config%pcm_angular_points)
       call optional_real(json, "keywords.pcm.radii_scale", config%pcm_radii_scale)

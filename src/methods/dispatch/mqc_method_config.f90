@@ -338,6 +338,14 @@ module mqc_method_config
          !! named, not defaulted per backend. Only the CPU path reads it;
          !! cuEST's solver is fixed and refuses "iefpcm" rather than
          !! substituting.
+      character(len=16) :: correlation = "none"
+         !! How a correlated method meets the continuum. "none" refuses the
+         !! combination. "pte": the reference is solvated and the correlation
+         !! runs on its orbitals, the reaction field staying the reference's.
+         !! "ptd": reference and correlation run in the gas phase, and the
+         !! solvation free energy is then evaluated once with the relaxed
+         !! correlated density. Two different energies; only the CPU path
+         !! reads it.
       real(dp) :: dielectric = -1.0_dp
          !! Solvent dielectric. No solvent-name table on this path, on purpose:
          !! see `mqc_config_types`.

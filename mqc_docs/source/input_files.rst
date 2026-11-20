@@ -587,6 +587,13 @@ succeed. This section is the keyword reference.
 Naming the block is what turns solvation on -- there is no separate flag, because
 a deck that states a dielectric wants solvent and two switches could disagree.
 
+- ``correlation``: how an MP2 method meets the continuum, ``"pte"`` or
+  ``"ptd"``. There is no default: MP2 with ``keywords.pcm`` and no scheme is
+  refused, because the two give different energies. ``"pte"`` solvates the
+  reference and leaves the reaction field at the Hartree-Fock level;
+  ``"ptd"`` runs the reference and ``ri-mp2`` in the gas phase and evaluates
+  the solvation once with the relaxed MP2 density. CPU backend only. See
+  :doc:`continuum_solvation`.
 - ``method``: which continuum model the surface charges solve. ``"cpcm"``
   (conductor-like, the default) or ``"iefpcm"`` (the integral equation
   formalism) on the CPU backend. They are different models with different

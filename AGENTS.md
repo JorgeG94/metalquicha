@@ -539,6 +539,20 @@ Continuum solvation on the CPU ab initio path (`mqc_czt_pcm.f90`):
 Both work with Hartree-Fock and DFT, restricted and unrestricted; see
 `mqc_docs/source/continuum_solvation.rst`. 40+ solvents.
 
+**MP2 in a continuum needs `keywords.pcm.correlation`**, and without it is
+refused: `"pte"` solvates the reference and runs any MP2 on its orbitals;
+`"ptd"` runs the reference and closed-shell `ri-mp2` in the gas phase, then
+solves the continuum once against the relaxed MP2 density and adds that as
+`energy%solvation` (`solvation_energy` in the output). The context is built
+and then switched off for the SCF (`pcm_ctx%enabled = .false.`), so anything
+else that reads it under PTD sees the gas phase. The relaxed density is
+`czt_ri_mp2_gradient(..., relaxed_density=)`, which returns before any
+derivative integral, with `fit_response` following the reference: **the
+gradient's default fitted response is 2.4e-7 hartree off here** and is why an
+exact-reference case would miss PySCF. `test_mqc_czt_mp2` holds the density to
+a finite-field derivative. PTED needs the surface-charge response in the
+Z-vector and is not implemented.
+
 ## Dependencies
 
 | Library | Purpose |

@@ -264,7 +264,9 @@ Implicit solvation models account for solvent effects without explicit solvent m
   Lebedev points per sphere, the same switching function, the same fitted
   per-point Gaussian exponents -- so the two can be compared directly. cuEST
   runs C-PCM only, validated against PySCF's, and refuses ``iefpcm``. terco
-  runs both, on the CPU backend's own cavity radii. See
+  runs both, on the CPU backend's own cavity radii. MP2 runs in the
+  continuum under a named scheme, ``keywords.pcm.correlation``: ``pte`` for
+  any MP2, ``ptd`` for closed-shell RI-MP2 with its relaxed density. See
   :doc:`continuum_solvation`.
 - **ALPB**: Analytical Linearized Poisson-Boltzmann (xTB; recommended for GFN2-xTB)
 - **GBSA**: Generalized Born with Solvent-Accessible Surface Area (xTB)

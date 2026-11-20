@@ -113,6 +113,7 @@ contains
                   new_unittest("system_gpu_conflicts_with_backend", test_gpu_conflict), &
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
+                  new_unittest("pcm_correlation_scheme", test_pcm_correlation), &
                   new_unittest("terco_keeps_pcm", test_terco_keeps_pcm), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("dft_dispersion", test_dft_dispersion), &
@@ -1648,6 +1649,51 @@ contains
       call check(error,.not. config%pcm_enabled, &
                  "without the block the calculation must stay in the gas phase")
    end subroutine test_pcm_keywords
+
+   subroutine test_pcm_correlation(error)
+      !! keywords.pcm.correlation: read, case-folded, defaulted, and refused
+      !!
+      !! The scheme decides which density the solvent answers, so a spelling
+      !! the reader does not know must stop the deck rather than fall back to
+      !! one of the two energies.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "correlation": "PTD"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%pcm_correlation), "ptd")
+      if (allocated(error)) return
+
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "correlation": "pte"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%pcm_correlation), "pte")
+      if (allocated(error)) return
+
+      ! Unnamed, it is "none": the combination stays refused downstream.
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%pcm_correlation), "none")
+      if (allocated(error)) return
+
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "correlation": "pted"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a scheme that is not implemented must be refused by the reader")
+   end subroutine test_pcm_correlation
 
    subroutine test_terco_keeps_pcm(error)
       !! A continuum asked of terco reaches the driver

@@ -86,7 +86,7 @@ module mqc_result_types
    type :: energy_t
       !! Container for quantum chemistry energy components
       !!
-      !! The total is `scf + dispersion + dh_pt2 + mp2%total() + cc%total()`.
+      !! The total is `scf + dispersion + dh_pt2 + solvation + mp2%total() + cc%total()`.
       real(dp) :: scf = 0.0_dp           !! SCF/HF/KS reference energy (Hartree)
       real(dp) :: dispersion = 0.0_dp
          !! Empirical dispersion, from `keywords.dft.dispersion`. Kept out of
@@ -96,6 +96,11 @@ module mqc_result_types
          !! without it.
       real(dp) :: dh_pt2 = 0.0_dp
          !! The perturbative part of a double hybrid's *functional*.
+      real(dp) :: solvation = 0.0_dp
+         !! A continuum's free energy evaluated once, after the wave function,
+         !! with a density the SCF did not converge -- `keywords.pcm.correlation
+         !! "ptd"`. Zero whenever the continuum was part of the SCF, whose
+         !! energy then carries it inside `scf`.
       type(mp2_energy_t) :: mp2          !! MP2 correlation components
       type(cc_energy_t) :: cc            !! Coupled cluster correlation components
       ! add more as needed, also need to modify the total energy function
@@ -473,7 +478,8 @@ contains
       real(dp) :: total
 
       ! this line needs to me modified if more components are added
-      total = this%scf + this%dispersion + this%dh_pt2 + this%mp2%total() + this%cc%total()
+      total = this%scf + this%dispersion + this%dh_pt2 + this%solvation &
+              + this%mp2%total() + this%cc%total()
    end function energy_total
 
    subroutine energy_reset(this)
@@ -482,6 +488,7 @@ contains
       this%scf = 0.0_dp
       this%dispersion = 0.0_dp
       this%dh_pt2 = 0.0_dp
+      this%solvation = 0.0_dp
       call this%mp2%reset()
       call this%cc%reset()
    end subroutine energy_reset
@@ -767,6 +774,7 @@ contains
       call send(comm, result%energy%scf, dest, tag)
       call send(comm, result%energy%dispersion, dest, tag)
       call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%solvation, dest, tag)
       call send(comm, result%energy%mp2%ss_scale, dest, tag)
       call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
@@ -872,6 +880,7 @@ contains
       ! Send other energy components (blocking to avoid needing multiple request handles)
       call send(comm, result%energy%dispersion, dest, tag)
       call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%solvation, dest, tag)
       call send(comm, result%energy%mp2%ss_scale, dest, tag)
       call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
@@ -985,6 +994,7 @@ contains
       call recv(comm, result%energy%scf, source, tag, status)
       call recv(comm, result%energy%dispersion, source, tag, status)
       call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%solvation, source, tag, status)
       call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
       call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
@@ -1106,6 +1116,7 @@ contains
       ! Receive other energy components (blocking to avoid needing multiple request handles)
       call recv(comm, result%energy%dispersion, source, tag, status)
       call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%solvation, source, tag, status)
       call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
       call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)

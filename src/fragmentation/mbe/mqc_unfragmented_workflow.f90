@@ -105,6 +105,10 @@ contains
                write (result_line, "(a,f25.15)") "    dispersion:     ", result%energy%dispersion
                call logger%info(trim(result_line))
             end if
+            if (result%energy%solvation /= 0.0_dp) then
+               write (result_line, "(a,f25.15)") "    solvation:      ", result%energy%solvation
+               call logger%info(trim(result_line))
+            end if
          end if
 
          if (result%has_dipole) then
@@ -254,6 +258,10 @@ contains
                         if (result%energy%dispersion /= 0.0_dp) then
                            json_data%dispersion_energy = result%energy%dispersion
                            json_data%has_dispersion = .true.
+                        end if
+                        if (result%energy%solvation /= 0.0_dp) then
+                           json_data%solvation_energy = result%energy%solvation
+                           json_data%has_solvation = .true.
                         end if
 
                         ! The excited-state spectrum, when
@@ -474,6 +482,10 @@ contains
             if (result%energy%dispersion /= 0.0_dp) then
                json_data%dispersion_energy = result%energy%dispersion
                json_data%has_dispersion = .true.
+            end if
+            if (result%energy%solvation /= 0.0_dp) then
+               json_data%solvation_energy = result%energy%solvation
+               json_data%has_solvation = .true.
             end if
 
             ! The excited-state spectrum, when `keywords.excited_states` asked

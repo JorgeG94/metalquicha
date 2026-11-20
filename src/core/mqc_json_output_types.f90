@@ -65,6 +65,10 @@ module mqc_json_output_types
          !! compared with a published DFT-D number, and a later reader cannot
          !! tell whether a run had one at all.
       logical :: has_dispersion = .false.
+      real(dp) :: solvation_energy = 0.0_dp
+         !! The continuum free energy evaluated after the wave function
+         !! (`keywords.pcm.correlation "ptd"`), beside the total it is inside.
+      logical :: has_solvation = .false.
       real(dp), allocatable :: gradient(:, :)     !! (3, natoms)
       real(dp), allocatable :: hessian(:, :)      !! (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)          !! (3)
@@ -580,6 +584,8 @@ contains
       this%total_energy = 0.0_dp
       this%dispersion_energy = 0.0_dp
       this%has_dispersion = .false.
+      this%solvation_energy = 0.0_dp
+      this%has_solvation = .false.
       this%has_energy = .false.
       this%has_gradient = .false.
       this%has_hessian = .false.

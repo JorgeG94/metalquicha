@@ -1188,6 +1188,8 @@ contains
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
+      logical :: pcm_pte, pcm_ptd
+         !! Which `keywords.pcm.correlation` scheme a solvated MP2 runs under
       logical :: df_analytic
       logical :: full_rank
       logical :: mp2_df_reference
@@ -1237,6 +1239,8 @@ contains
       ! keyword says.
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
+      pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
+      pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
       if (do_gradient .and. settings%run_cc) then
          block
@@ -1268,16 +1272,67 @@ contains
             result%has_error = .true.
             return
          end if
-         if (settings%run_mp2 .or. settings%run_cc) then
-            call result%error%set(ERROR_VALIDATION, "correlation on top of a solvated "// &
-                                  "reference is not implemented on the CPU backend: the "// &
-                                  "orbitals would carry the continuum while the "// &
-                                  "correlation treatment ignored it, and which scheme "// &
-                                  "that amounts to should be chosen, not implied. Run "// &
-                                  "the SCF with keywords.pcm, or the correlation "// &
-                                  "without it.")
+         if (settings%run_cc) then
+            call result%error%set(ERROR_VALIDATION, "coupled cluster with a continuum "// &
+                                  "solvent is not implemented on the CPU backend. "// &
+                                  "keywords.pcm.correlation covers MP2 only. Run the "// &
+                                  "SCF with keywords.pcm, or the correlation without it.")
             result%has_error = .true.
             return
+         end if
+         if (settings%run_mp2 .and. .not. (pcm_pte .or. pcm_ptd)) then
+            call result%error%set(ERROR_VALIDATION, "MP2 with a continuum solvent needs "// &
+                                  "the scheme named: which density the solvent responds "// &
+                                  "to is a choice, and the two give different energies. "// &
+                                  "Set keywords.pcm.correlation to 'pte' (solvated "// &
+                                  "reference, reaction field left at the Hartree-Fock "// &
+                                  "level) or 'ptd' (gas-phase MP2, solvation evaluated "// &
+                                  "with its relaxed density).")
+            result%has_error = .true.
+            return
+         end if
+         if ((pcm_pte .or. pcm_ptd) .and. .not. settings%run_mp2) then
+            call result%error%set(ERROR_VALIDATION, "keywords.pcm.correlation '"// &
+                                  trim(settings%pcm%correlation)//"' names how a "// &
+                                  "correlated method meets the continuum, and this "// &
+                                  "calculation runs none. Remove it, or use an MP2 "// &
+                                  "method.")
+            result%has_error = .true.
+            return
+         end if
+         if (pcm_ptd) then
+            ! The relaxed density is the unscaled fitted MP2's, closed shell.
+            if (.not. settings%corr_density_fitting) then
+               call result%error%set(ERROR_VALIDATION, "keywords.pcm.correlation 'ptd' "// &
+                                     "takes the relaxed density from the fitted MP2 "// &
+                                     "gradient code. Use method 'ri-mp2' with an "// &
+                                     "auxiliary basis.")
+               result%has_error = .true.
+               return
+            end if
+            if (settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp) then
+               call result%error%set(ERROR_VALIDATION, "keywords.pcm.correlation 'ptd' "// &
+                                     "needs the relaxed density of the energy it "// &
+                                     "solvates, and a spin-scaled MP2 has none built. "// &
+                                     "Use 'ri-mp2', or 'pte', which needs no density.")
+               result%has_error = .true.
+               return
+            end if
+            if (unrestricted) then
+               call result%error%set(ERROR_VALIDATION, "keywords.pcm.correlation 'ptd' "// &
+                                     "needs a closed-shell reference: the unrestricted "// &
+                                     "MP2 relaxed density is not built.")
+               result%has_error = .true.
+               return
+            end if
+            if (allocated(settings%fukui_population)) then
+               call result%error%set(ERROR_VALIDATION, "Fukui functions with "// &
+                                     "keywords.pcm.correlation 'ptd': the reference "// &
+                                     "and its ions would run in the gas phase. Use "// &
+                                     "'pte'.")
+               result%has_error = .true.
+               return
+            end if
          end if
          ! The Fukui ions take the same continuum the neutral did, and it is
          ! equilibrium solvation in all three states, so what comes out is the
@@ -1714,6 +1769,17 @@ contains
          write (line, "(a,i0,a,i0,a)") "    continuum: ", pcm_ctx%surface%n_points, &
             " surface points kept, ", pcm_ctx%surface%n_discarded, " buried"
          call logger%info(trim(line))
+         ! PTD: the cavity is built, and then kept out of the SCF. The
+         ! reference and the correlation run in the gas phase and the surface
+         ! charges are solved once, afterwards, against the relaxed density.
+         if (pcm_ptd) then
+            pcm_ctx%enabled = .false.
+            call logger%info("    continuum: PTD -- gas-phase reference and MP2, "// &
+                             "solvation evaluated with the relaxed MP2 density")
+         else if (pcm_pte) then
+            call logger%info("    continuum: PTE -- MP2 on the solvated reference, "// &
+                             "reaction field left at the Hartree-Fock level")
+         end if
       end if
 
       ! Density fitting is asked for, not inferred: `aux_basis_set` carries a
@@ -1850,7 +1916,7 @@ contains
       result%energy%scf = scf%energy
       result%has_energy = .true.
       call frontier_summary(scf)
-      if (settings%pcm%enabled) then
+      if (settings%pcm%enabled .and. .not. pcm_ptd) then
          write (line, "(a,f18.10,a,f9.4)") "    continuum: E_diel = ", scf%pcm_energy, &
             "   total surface charge ", scf%pcm_charge
          call logger%info(trim(line))
@@ -2720,6 +2786,50 @@ contains
             ! `mqc_czt_mp2`. That check existed and had unit tests but no
             ! production caller, so the sum was never actually looked at.
             call result%energy%mp2%check_stability()
+
+            ! PTD: the solvation free energy of the relaxed MP2 density, solved
+            ! once. The density is what the fitted gradient contracts
+            ! one-electron derivatives with, taken from that code and stopped
+            ! before any derivative integral is built.
+            !
+            ! The Z-vector is solved against the operator the reference was
+            ! converged with -- exact for an exact reference, where the
+            ! gradient's default is the fitted one. That default is worth
+            ! 2.4e-7 hartree in this energy on water, and here nothing is
+            ! saved by it that the exact SCF had not already spent.
+            if (pcm_ptd) then
+               block
+                  real(dp), allocatable :: relaxed(:, :), v_solv(:, :), no_gradient(:, :)
+                  real(dp) :: g_solv
+
+                  call logger%info("  computing the relaxed MP2 density for the continuum")
+                  call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+                  if (.not. error%has_error()) then
+                     call czt_ri_mp2_gradient(mol, corr_aux, scf%orbitals, &
+                                              scf%orbital_energies, nelec/2, &
+                                              no_gradient, error, n_frozen=frozen, &
+                                              fitted_reference=settings%density_fitting, &
+                                              fit_response=settings%density_fitting, &
+                                              relaxed_density=relaxed)
+                     call corr_aux%destroy()
+                  end if
+                  if (.not. error%has_error()) then
+                     allocate (v_solv(mol%nao, mol%nao))
+                     call pcm_ctx%operator_matrix(mol, relaxed, v_solv, g_solv, error)
+                  end if
+                  if (error%has_error()) then
+                     call result%error%set(ERROR_VALIDATION, "PTD solvation: "// &
+                                           error%get_message())
+                     result%has_error = .true.
+                     call mol%destroy()
+                     return
+                  end if
+                  result%energy%solvation = g_solv
+                  write (line, "(a,f18.10,a,f9.4)") "    continuum (PTD): G_solv = ", &
+                     g_solv, "   total surface charge ", pcm_ctx%q_total
+                  call logger%info(trim(line))
+               end block
+            end if
 
             ! The gradient of what was just computed, and only where that is
             ! literally true: a scaled MP2 is a different energy, and its

@@ -252,6 +252,69 @@ few tenths of an electronvolt.
 The cavity is built once from the geometry and reused by all three states,
 since the nuclei do not move between them.
 
+MP2 in a continuum
+------------------
+
+A correlated method does not have one obvious way to meet a continuum. The
+surface charges answer a density, and there are two on offer -- the
+reference's and the correlated one -- so the scheme is named in the deck
+rather than implied, and an ``mp2`` deck with ``keywords.pcm`` and no scheme is
+refused. ``keywords.pcm.correlation`` takes one of two:
+
+``"pte"``
+   The reference is converged inside the continuum, as any solvated SCF is,
+   and MP2 runs on its orbitals and orbital energies. The reaction field stays
+   the one the Hartree-Fock density produced; the correlation never changes
+   it. The total is the solvated SCF energy plus :math:`E^{(2)}`. Any MP2
+   here runs under it: conventional or fitted, spin-scaled or not, frozen core
+   or not.
+
+``"ptd"``
+   The reference and MP2 both run in the gas phase. The continuum is then
+   solved once, against the relaxed MP2 one-particle density, and its free
+   energy is added:
+
+   .. math::
+
+      G = E_{\mathrm{MP2}}^{\mathrm{gas}}
+          + \tfrac{1}{2}\, \mathbf{q}[P^{\mathrm{MP2}}] \cdot
+            \mathbf{V}[P^{\mathrm{MP2}}]
+
+   The solvent sees the correlated charge distribution, and the wave function
+   is not polarised by it. The second term is reported on its own as
+   ``solvation_energy`` in the output, inside the total. It needs the relaxed
+   density, which comes from the fitted MP2 gradient code, so this scheme is
+   for ``ri-mp2`` over a closed shell, with or without a frozen core and over
+   an exact or a density-fitted reference.
+
+The two are different energies. For water in cc-pVDZ in C-PCM water, PTE gives
+-76.238367 hartree and PTD -76.237683. PTED, which iterates the second scheme
+until the reaction field and the correlated density agree, is not implemented:
+it needs the response of the surface charges inside the Z-vector equations.
+
+.. code-block:: json
+
+   {
+     "model": {"method": "ri-mp2", "basis": "cc-pvdz", "aux_basis": "cc-pvdz-rifit"},
+     "keywords": {
+       "pcm": {"method": "cpcm", "dielectric": 78.3553, "correlation": "ptd"}
+     }
+   }
+
+The relaxed density is checked two ways. Its trace with a one-electron operator
+is held to a finite-field derivative of the RI-MP2 energy, to nine figures, in
+``test_mqc_czt_mp2``. And both schemes are held to PySCF: a DF-MP2 on a
+reference converged in ``pyscf.solvent.pcm`` for PTE, and for PTD the
+continuum's energy for ``pyscf.mp.dfmp2_native``'s relaxed density, each within
+:math:`10^{-10}` hartree.
+
+One detail decides whether those agree. The Z-vector behind the relaxed
+density is solved against the operator the reference was converged with: exact
+integrals for an exact reference. The fitted gradient's own default is the
+fitted operator, which is cheaper and moves a gradient by less than the fit
+does, but it moves this energy by :math:`2.4\times10^{-7}` hartree on water
+and is not used here.
+
 What is refused, and why
 ------------------------
 
@@ -264,11 +327,14 @@ the output to say so.
   term is built. An analytic gradient without them would be missing the
   solvent's pull on every atom. Run the energy on the CPU, or the gradient on
   cuEST, which has it.
-- **Correlation on a solvated reference** -- MP2, coupled cluster, and the
-  double hybrids, whose perturbative term is an MP2 by another spelling. The
-  orbitals would carry the continuum while the correlation treatment ignored
-  it; whether that is the PTE scheme or an inconsistency should be a decision,
-  not an accident.
+- **MP2 with no scheme named**, for the reason above: whether the solvent
+  answers the reference's density or the correlated one is a decision, not an
+  accident.
+- **Coupled cluster and the double hybrids** in a continuum. The double
+  hybrid's perturbative term is an MP2 by another spelling, but its reference
+  is Kohn-Sham and neither scheme has been validated over one.
+- **PTD beyond closed-shell RI-MP2**: conventional or spin-scaled MP2, whose
+  relaxed densities this path does not produce, and an open shell.
 - **The bonding energy decomposition**, which rebuilds atom energies from
   gas-phase operators and would drop the dielectric term without saying so.
 - **The analytic Hessian** quietly stands down rather than refusing: a solvated
