@@ -65,8 +65,8 @@ of the symmetrised tensor with :math:`\sigma_{33}` the one furthest from the
 isotropic value. At the ``verbose`` logger level the full tensors are printed
 too.
 
-The output file carries everything under ``nmr_shielding``: for each atom
-``isotropic``, ``anisotropy``, the ``tensor`` as three rows, and its
+The output file carries everything under ``nmr_shielding``: for each atom its
+number ``atom`` (from one) and ``element``, ``isotropic``, ``anisotropy``, the ``tensor`` as three rows, and its
 ``diamagnetic`` and ``paramagnetic`` parts.
 
 **The tensor is not symmetric.** Its first index is the field's direction and

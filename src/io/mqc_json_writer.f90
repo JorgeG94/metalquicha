@@ -654,7 +654,8 @@ contains
    subroutine write_nmr_section(json, parent, data)
       !! Nuclear magnetic shielding per nucleus, in ppm
       !!
-      !! One entry per atom: the isotropic value and the anisotropy a
+      !! One entry per atom, numbered from one with its element: the
+      !! isotropic value and the anisotropy a
       !! spectrum is read from, and the whole tensor as three rows, the row
       !! being the field's direction. The tensor is not symmetric, so the
       !! rows are written as they are and not symmetrised. The two parts are
@@ -679,6 +680,8 @@ contains
          call shielding_summary(data%nmr_shielding(:, :, iatom), iso, aniso)
          call json%create_object(atom, "")
          call json%add(atoms, atom)
+         call json%add(atom, "atom", iatom)
+         call json%add(atom, "element", trim(element_of(data, iatom)))
          call json%add(atom, "isotropic", iso)
          call json%add(atom, "anisotropy", aniso)
          call add_tensor(atom, "tensor", data%nmr_shielding(:, :, iatom))
