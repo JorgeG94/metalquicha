@@ -2977,16 +2977,28 @@ contains
                  "a misspelled key inside properties.bond_orders should be refused")
       if (allocated(error)) return
 
-      ! 'wiberg' used to be refused here, because the only thing that could
-      ! have answered it was Mayer's formula over non-orthogonal AOs. It is
-      ! now its own scheme, computed in Lowdin's orthonormal basis, so it is
-      ! accepted and stored under its own name -- never as Mayer.
+      ! The Wiberg index in Lowdin's orthonormal basis is its own scheme,
+      ! stored under its own name -- never as Mayer.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
-                      two_atoms(), '"properties": {"bond_orders": {"scheme": "wiberg"}}')
+                      two_atoms(), &
+                      '"properties": {"bond_orders": {"scheme": "wiberg_lowdin"}}')
       call read_deck(config, parse_error)
       call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
-      call check(error, trim(config%bond_order_scheme), "wiberg")
+      call check(error, trim(config%bond_order_scheme), "wiberg_lowdin")
+      if (allocated(error)) return
+
+      ! The bare word is refused, and the refusal names the scheme to ask
+      ! for. "Wiberg" is quoted from natural atomic orbitals, from Lowdin's
+      ! basis and from semi-empirical minimal ones, three different numbers;
+      ! accepting it would hand a reader comparing against an NBO output a
+      ! value that looks wrong and is merely something else.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {"scheme": "wiberg"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "wiberg_lowdin") > 0, &
+                 "the bare scheme 'wiberg' must be refused and point at 'wiberg_lowdin'")
       if (allocated(error)) return
 
       ! And a scheme nobody implements.

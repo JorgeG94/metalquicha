@@ -683,9 +683,10 @@ four.
   of an unrestricted reference, or the relaxed density of closed-shell
   RI-MP2 -- with two counts of effectively unpaired electrons.
   ``properties.natural_orbitals``; see :doc:`natural_orbitals`.
-- **Wiberg bond orders**, ``"scheme": "wiberg"`` under
-  ``properties.bond_orders``: the same sum of squares as Mayer's, taken in
-  Lowdin's orthonormal basis.
+- **Wiberg bond orders in Lowdin's basis**, ``"scheme": "wiberg_lowdin"``
+  under ``properties.bond_orders``: the same sum of squares as Mayer's, taken
+  in Lowdin's orthonormal basis. The bare ``"wiberg"`` is refused, since an
+  NBO analysis means the natural-atomic-orbital one by it.
 - **Mayer bond orders**, over the converged density and the AO overlap:
   ``B_AB = sum_{mu in A, nu in B} (DS)_mu,nu (DS)_nu,mu`` for a closed shell,
   and a spin-resolved sum -- not that expression with the total density -- for

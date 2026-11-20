@@ -34,8 +34,8 @@ Quantity                Where                             What it is
 **Mayer**               ``properties.bond_orders``, or    The same definition over the
                         ``compute_bond_orders("mayer")``  converged ab initio density and
                                                           the AO overlap
-**Wiberg**              ``properties.bond_orders`` with   The sum of squared density
-                        ``"scheme": "wiberg"``            elements between two atoms, in
+**Wiberg (Lowdin)**     ``properties.bond_orders`` with   The sum of squared density
+                        ``"scheme": "wiberg_lowdin"``     elements between two atoms, in
                                                           Lowdin's orthonormal basis
 **QUAO kinetic**        ``properties.bonding_analysis``   Ruedenberg's definition in the
                                                           orthonormal quasi-atomic basis,
@@ -52,10 +52,19 @@ decomposition and a table of which quasi-atomic orbitals are involved.
 Wiberg's bond order, in the strict sense, is Mayer's sum of squares in an
 *orthonormal* basis, where ``S`` is the identity and the ``D S`` product
 collapses. Over non-orthogonal atomic orbitals it is not Wiberg's quantity and
-not anyone else's, so it is never computed that way. ``"scheme": "wiberg"``
-orthogonalises the atomic orbitals symmetrically first -- Lowdin's
-:math:`S^{1/2} D S^{1/2}` -- which is what a Wiberg index out of an ab initio
-calculation ordinarily means:
+not anyone else's, so it is never computed that way.
+``"scheme": "wiberg_lowdin"`` orthogonalises the atomic orbitals symmetrically
+first -- Lowdin's :math:`S^{1/2} D S^{1/2}`.
+
+**The scheme is named for its basis, and the bare ``"wiberg"`` is refused.** A
+Wiberg index is quoted from more than one orthonormal basis and the numbers
+differ: an NBO analysis prints it over natural atomic orbitals, which is the
+one most papers mean; this one is over Lowdin's; xTB's is over its own minimal
+basis. Asking for ``"wiberg"`` returns an error naming ``"wiberg_lowdin"``
+rather than a number that would be compared against the wrong thing. The
+natural-atomic-orbital index is not implemented.
+
+The Lowdin form is:
 
 .. math::
 
