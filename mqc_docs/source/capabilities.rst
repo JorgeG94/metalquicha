@@ -180,6 +180,9 @@ is GAMESS. The work is threaded with OpenMP throughout.
   conventional or density-fitted perturbative terms. The energy works for
   restricted and unrestricted references. The gradient and the Hessian need a
   closed shell (below).
+- **Nuclear magnetic shielding**: the shielding tensor of every nucleus over
+  gauge-including atomic orbitals, with its isotropic value and anisotropy.
+  Closed-shell Hartree-Fock. ``properties.nmr``; see :doc:`nmr_shielding`.
 - **Empirical dispersion**: ``keywords.dft.dispersion`` adds D3(BJ)
   (``"d3bj"``) or D4 with its three-body term (``"d4"``) to a Kohn-Sham energy
   and gradient. The values come from simple-dftd3 and dftd4. Both are LGPL, so

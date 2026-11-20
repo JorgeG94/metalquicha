@@ -323,6 +323,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_uhf)
   target_link_libraries(test_mqc_czt_uhf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Nuclear magnetic shielding tensors over gauge-including orbitals: PySCF's
+  # tensors element by element, and invariance to moving the molecule.
+  addtest(mqc_czt_nmr)
+  target_link_libraries(test_mqc_czt_nmr PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins
   # them.

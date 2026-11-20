@@ -1110,6 +1110,10 @@ contains
       type(error_t) :: analysis_error
       logical :: open_shell
 
+      if (settings%nmr_shielding) then
+         call logger%warning("  shieldings could not be computed: properties.nmr is "// &
+                             "not forwarded to terco. Run it on the CPU backend.")
+      end if
       if (.not. allocated(settings%charges_scheme) .and. &
           .not. allocated(settings%bond_order_scheme)) return
 

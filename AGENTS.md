@@ -385,6 +385,28 @@ separately. meta-GGA, VV10, density fitting, PCM, capped fragments, a
 correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
+NMR shieldings are `properties.nmr` on an energy deck: the shielding tensor
+of every nucleus over gauge-including (London) orbitals, closed-shell
+Hartree-Fock with exact integrals, everything else refused by name. Two
+modules. `mqc_czt_giao` is the integrals, and **reaches libfint's generated
+functions directly** (`cint_gen_intor1`, `cint_gen_intor2`, `cint_workspace`)
+because `libcint_fortran` does not export the field-derivative integrals; it
+is the only module that does, and the one to change when libfint exports
+them. **A workspace made private by OpenMP has to have `ws%opt => null()`
+set by hand** -- gfortran does not default-initialise the copy, and the
+integral driver reads that pointer first. `mqc_czt_nmr` is the physics, term
+for term `pyscf.prop.nmr.rhf`: the field is an imaginary antisymmetric
+perturbation, so the coupled-perturbed operator is exchange only
+(`response_mean_field` with `minus`), and the occupied-occupied block of the
+first-order coefficients is fixed at `-s1/2`. **The tensor is not
+symmetric**, first index the field and second the nuclear moment, and a
+transposed result passes any symmetric check. The reference is
+`pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
+packaged response callback assumes three vectors a call and fails under
+current PySCF; pass it one that reshapes to any count. The two-electron
+field derivative computes every shell quartet with no screening. See
+`mqc_docs/source/nmr_shielding.rst`.
+
 RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
 `keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
 exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a

@@ -133,6 +133,9 @@ module mqc_config_types
          !! atomic partial charges; "mulliken" (the default), "chelpg",
          !! "hirshfeld" or "mbis" chooses how the converged density is
          !! partitioned.
+      logical :: nmr_shielding = .false.
+         !! `properties.nmr` was given: nuclear magnetic shielding tensors of
+         !! every nucleus, over gauge-including orbitals.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

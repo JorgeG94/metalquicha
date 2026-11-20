@@ -443,6 +443,15 @@ contains
             ! whole, plus the valence it sums to: the valence is what a reader
             ! looks at and the matrix is what a consumer filters, and neither
             ! can be recovered from the other after the fact.
+            if (allocated(result%nmr_shielding)) then
+               json_data%nmr_shielding = result%nmr_shielding
+               if (allocated(result%nmr_diamagnetic)) then
+                  json_data%nmr_diamagnetic = result%nmr_diamagnetic
+               end if
+               if (allocated(result%nmr_paramagnetic)) then
+                  json_data%nmr_paramagnetic = result%nmr_paramagnetic
+               end if
+            end if
             if (result%has_bond_orders) then
                json_data%bond_orders = result%bond_orders
                if (allocated(result%bond_order_valences)) then

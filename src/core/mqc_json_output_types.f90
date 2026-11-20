@@ -256,6 +256,8 @@ module mqc_json_output_types
       real(dp), allocatable :: bond_order_valences(:)
       character(len=16) :: bond_order_scheme = ""
       logical :: has_bond_orders = .false.
+      real(dp), allocatable :: nmr_shielding(:, :, :)
+      real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
       real(dp), allocatable :: fukui_plus(:), fukui_minus(:), fukui_dual(:)
       real(dp) :: fukui_ip = 0.0_dp
       real(dp) :: fukui_ea = 0.0_dp

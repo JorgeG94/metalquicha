@@ -143,6 +143,7 @@ contains
                                test_fukui_scf_guess_spelling), &
                   new_unittest("scf_maxiter_named_flag", test_maxiter_named), &
                   new_unittest("scf_convergence_metric", test_convergence_metric), &
+                  new_unittest("nmr_property_request", test_nmr_request), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -4035,6 +4036,37 @@ contains
       call check(error,.not. allocated(config%scf_convergence_metric), &
                  "an unmentioned metric must not be invented")
    end subroutine test_convergence_metric
+
+   subroutine test_nmr_request(error)
+      !! `properties.nmr` is a request by its presence, like `charges`: an
+      !! empty object asks for shieldings, an absent one does not, and it
+      !! takes no settings, so a key inside it is refused rather than ignored.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%nmr_shielding, "shieldings must be off by default")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"nmr": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%nmr_shielding, "properties.nmr was not read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"nmr": {"gauge": "common"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown key under properties.nmr was accepted")
+   end subroutine test_nmr_request
 
    subroutine test_maxiter_named(error)
       !! Whether the deck named `keywords.scf.maxiter`, not just its value

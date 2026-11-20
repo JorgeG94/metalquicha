@@ -129,6 +129,12 @@ module mqc_result_types
       character(len=16) :: bond_order_scheme = ""
          !! Which definition produced them: "mayer" or "xtb". Empty means
          !! nothing has.
+      real(dp), allocatable :: nmr_shielding(:, :, :)
+         !! (3, 3, natoms) nuclear magnetic shielding tensors in ppm, when
+         !! `properties.nmr` asked. First index the field's direction, second
+         !! the nuclear moment's; not symmetric.
+      real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
+         !! Its two parts, same shape. Only their sum is gauge independent.
 
       ! Atomic partial charges, when `properties.charges` asked for them.
       real(dp), allocatable :: atomic_charges(:)

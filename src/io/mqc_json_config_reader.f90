@@ -229,6 +229,8 @@ contains
          call optional_string(json, "properties.bond_orders.scheme", &
                               config%bond_order_scheme)
       end if
+      ! The object is the request; it has no settings to read.
+      call json%info("properties.nmr", found=config%nmr_shielding)
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &
