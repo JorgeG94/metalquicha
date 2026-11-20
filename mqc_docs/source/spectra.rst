@@ -76,6 +76,11 @@ Each function returns a ``Spectrum``:
 
 ``plot`` draws the curve with the sticks on a second axis, and a vibrational
 spectrum with the wavenumber falling to the right, as the instruments draw it.
+**An infrared spectrum is drawn with its bands hanging from the top**, the way
+a transmittance spectrum shows them; what is plotted is still the
+absorptivity, on an inverted axis. ``peaks_down=False`` (``--peaks-up`` on the
+command line) draws it the other way, and ``peaks_down=True`` inverts any
+other spectrum.
 Pass ``ax`` to draw into a figure of your own, for instance to overlay an
 experiment.
 

@@ -192,12 +192,15 @@ class Spectrum:
                 for x, y in self.sticks:
                     handle.write("%.6f,%.8e\n" % (x, y))
 
-    def plot(self, path=None, ax=None, sticks=True, **line_kwargs):
+    def plot(self, path=None, ax=None, sticks=True, peaks_down=None, **line_kwargs):
         """Draw the curve with matplotlib, with the sticks on a second axis.
 
         Returns the axes. `path` saves the figure; `ax` draws into axes of
         the caller's. A vibrational spectrum is drawn with the wavenumber
-        falling to the right, as the instruments draw it.
+        falling to the right, as the instruments draw it, and an infrared
+        one with its bands hanging from the top, as a transmittance spectrum
+        shows them. `peaks_down` overrides that either way; the quantity
+        plotted is the absorptivity whichever way up it is drawn.
         """
         try:
             import matplotlib
@@ -210,6 +213,8 @@ class Spectrum:
                 "plot needs matplotlib, which is not installed. to_csv writes the "
                 "same curve for any other plotting program."
             )
+        if peaks_down is None:
+            peaks_down = self.kind == "ir"
         figure = None
         if ax is None:
             figure, ax = plt.subplots(figsize=(7.0, 4.0))
@@ -228,11 +233,15 @@ class Spectrum:
             )
             twin.set_ylabel(self.stick_label)
             twin.set_ylim(bottom=0.0)
+            if peaks_down:
+                twin.invert_yaxis()
             ax.set_zorder(twin.get_zorder() + 1)
             ax.patch.set_visible(False)
         ax.set_xlim(self.x[0], self.x[-1])
         if self.kind in ("ir", "raman"):
             ax.invert_xaxis()
+        if peaks_down:
+            ax.invert_yaxis()
         if figure is not None:
             figure.tight_layout()
             if path is not None:
@@ -615,6 +624,9 @@ def main(argv=None):
     parser.add_argument("--csv", help="write the curve here")
     parser.add_argument("--sticks", help="write the sticks here (needs --csv)")
     parser.add_argument("--plot", help="write a figure here (needs matplotlib)")
+    parser.add_argument(
+        "--peaks-up", action="store_true", help="draw infrared bands upwards"
+    )
     parser.add_argument("--fwhm", type=float, help="cm^-1 for ir/raman, eV for uvvis")
     parser.add_argument("--lineshape", choices=LINESHAPES)
     parser.add_argument("--scale", type=float, default=1.0, help="frequency scale")
@@ -659,7 +671,7 @@ def main(argv=None):
         if args.csv:
             result.to_csv(args.csv, sticks_path=args.sticks)
         if args.plot:
-            result.plot(args.plot)
+            result.plot(args.plot, peaks_down=False if args.peaks_up else None)
     except (SpectrumError, OSError) as problem:
         sys.stderr.write("spectra: %s\n" % problem)
         return 1
