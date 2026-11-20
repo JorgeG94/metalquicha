@@ -243,6 +243,98 @@ def test_uvvis_axis_units_agree_with_one_another():
     assert close(shifted.sticks[0][0], 4.5)
 
 
+# -- NMR --------------------------------------------------------------------
+
+
+def nmr_output(shieldings):
+    atoms = [
+        {"atom": k + 1, "element": element, "isotropic": value, "anisotropy": 0.0}
+        for k, (element, value) in enumerate(shieldings)
+    ]
+    return {"x": {"nmr_shielding": {"units": "ppm", "gauge": "giao", "atoms": atoms}}}
+
+
+def ethanol_like():
+    """Two carbons, a methyl whose three hydrogens differ, a CH2 and an OH."""
+    return nmr_output(
+        [
+            ("C", 180.0),
+            ("C", 150.0),
+            ("O", 300.0),
+            ("H", 31.0),
+            ("H", 31.2),
+            ("H", 31.4),
+            ("H", 28.5),
+            ("H", 28.5),
+            ("H", 31.9),
+        ]
+    )
+
+
+def test_nmr_shifts_are_reference_minus_shielding():
+    reference = nmr_output([("Si", 450.0), ("C", 200.0), ("H", 32.0), ("H", 32.0)])
+    carbon = spectra.nmr(ethanol_like(), "C", reference=reference)
+    assert [round(s[0], 9) for s in carbon.sticks] == [20.0, 50.0]
+    assert [s[1] for s in carbon.sticks] == [1.0, 1.0]
+    # A number is the same reference without the file.
+    same = spectra.nmr(ethanol_like(), "C", reference=200.0)
+    assert same.sticks == carbon.sticks
+    # The two equal CH2 shieldings are one line of two nuclei; the rest stand alone.
+    proton = spectra.nmr(ethanol_like(), "H", reference=reference)
+    assert [(round(p, 9), n) for p, n in proton.sticks] == [
+        (0.1, 1.0),
+        (0.6, 1.0),
+        (0.8, 1.0),
+        (1.0, 1.0),
+        (3.5, 2.0),
+    ]
+
+
+def test_nmr_groups_average_a_methyl_and_areas_count_nuclei():
+    result = spectra.nmr(
+        ethanol_like(), "H", reference=32.0, groups=[[4, 5, 6]], fwhm=0.01, points=40000
+    )
+    assert [(round(p, 9), n) for p, n in result.sticks] == [
+        (0.1, 1.0),
+        (0.8, 3.0),
+        (3.5, 2.0),
+    ]
+    # Six hydrogens in all; the Lorentzian tails outside the window are the rest.
+    total = area(result.x, result.y)
+    assert 5.8 < total < 6.0, total
+    tallest = result.peaks()[0]
+    assert close(tallest[0], 0.8, abs_tol=1.0e-3)
+    assert any("singlet" in w for w in result.warnings)
+
+
+def test_nmr_reference_spread_is_reported_and_bad_input_refused():
+    uneven = nmr_output([("H", 32.0), ("H", 32.2)])
+    result = spectra.nmr(ethanol_like(), "H", reference=uneven)
+    assert any("averaged to 32.100" in w for w in result.warnings), result.warnings
+    for call, needle in (
+        (lambda: spectra.nmr(ethanol_like(), "H"), "reference"),
+        (lambda: spectra.nmr(ethanol_like(), "N", reference=1.0), "no N nucleus"),
+        (lambda: spectra.nmr(ethanol_like(), "H", reference=1.0, groups=[[1, 4]]), "group"),
+        (
+            lambda: spectra.nmr(ethanol_like(), "H", reference=1.0, groups=[[4, 5], [5, 6]]),
+            "more than one group",
+        ),
+        (lambda: spectra.nmr(vibrational_output(), "H", reference=1.0), "properties"),
+        (
+            lambda: spectra.nmr(
+                {"x": {"nmr_shielding": {"atoms": [{"isotropic": 1.0}]}}}, "H", reference=1.0
+            ),
+            "no element",
+        ),
+    ):
+        try:
+            call()
+        except spectra.SpectrumError as problem:
+            assert needle in str(problem), problem
+        else:
+            raise AssertionError("accepted what it should have refused: " + needle)
+
+
 # -- files ------------------------------------------------------------------
 
 

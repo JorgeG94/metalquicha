@@ -8,6 +8,7 @@
 
     raman = spectra.raman("output_water.json", laser_nm=532.0)
     uv = spectra.uvvis("output_benzene.json", fwhm_ev=0.4, unit="nm")
+    h1 = spectra.nmr("output_ethanol.json", "H", reference="output_tms.json")
 
 or, with no Python written at all,
 
@@ -31,6 +32,7 @@ What is read, from the JSON a run writes:
             ``raman_activities_A4_amu``                 ``properties.raman``
   uvvis     ``excitation_energy_ev``,                   ``keywords.excited_states``
             ``oscillator_strength``
+  nmr       ``isotropic`` and ``element`` per atom      ``properties.nmr``
   ========  ==========================================  ======================
 
 Units of what comes back:
@@ -44,18 +46,22 @@ Units of what comes back:
     fourth power and the thermal population of the mode, see `raman`.
   * **uvvis**: molar absorptivity, L mol^-1 cm^-1, against eV, nm or cm^-1.
     The area under a band over wavenumber is ``f / 4.32e-9``.
+  * **nmr**: nuclei per ppm against the chemical shift in ppm, so the area
+    under a line is the number of nuclei in it. Shifts are against a
+    reference shielding that has to be supplied; see `nmr`.
 
 The line width is not computed by anything here. It is a parameter standing for
 everything the calculation left out -- lifetime, solvent, temperature, the
 vibrational structure of an electronic band -- and the defaults (20 cm^-1 for a
-vibration, 0.4 eV for an electronic band) are conventions, not predictions.
+vibration, 0.4 eV for an electronic band, 0.02 ppm for a nucleus) are
+conventions, not predictions.
 """
 
 import json
 import math
 import sys
 
-__all__ = ["Spectrum", "SpectrumError", "ir", "raman", "uvvis", "load"]
+__all__ = ["Spectrum", "SpectrumError", "ir", "raman", "uvvis", "nmr", "load"]
 
 
 # -- constants --------------------------------------------------------------
@@ -197,7 +203,8 @@ class Spectrum:
 
         Returns the axes. `path` saves the figure; `ax` draws into axes of
         the caller's. A vibrational spectrum is drawn with the wavenumber
-        falling to the right, as the instruments draw it, and an infrared
+        falling to the right and an NMR one with the shift falling to the
+        right, as the instruments draw them, and an infrared
         one with its bands hanging from the top, as a transmittance spectrum
         shows them. `peaks_down` overrides that either way; the quantity
         plotted is the absorptivity whichever way up it is drawn.
@@ -238,7 +245,7 @@ class Spectrum:
             ax.set_zorder(twin.get_zorder() + 1)
             ax.patch.set_visible(False)
         ax.set_xlim(self.x[0], self.x[-1])
-        if self.kind in ("ir", "raman"):
+        if self.kind in ("ir", "raman", "nmr"):
             ax.invert_xaxis()
         if peaks_down:
             ax.invert_yaxis()
@@ -607,6 +614,143 @@ def _ev_to_nm(value):
     return 1.0e7 / (value * EV_TO_CM1)
 
 
+def _shieldings(source, nucleus):
+    """`(atom, isotropic shielding)` for every atom of element `nucleus`."""
+    block = _find(load(source), "nmr_shielding")
+    if block is None or "atoms" not in block:
+        raise SpectrumError(
+            'the output has no "nmr_shielding" section. An NMR spectrum needs '
+            '"properties": {"nmr": {}} on the run.'
+        )
+    atoms = block["atoms"]
+    if atoms and "element" not in atoms[0]:
+        raise SpectrumError(
+            "the shieldings in this output carry no element, so the nuclei "
+            "cannot be picked out. Rerun with a current build."
+        )
+    wanted = nucleus.strip().lower()
+    return [
+        (entry.get("atom", index + 1), entry["isotropic"])
+        for index, entry in enumerate(atoms)
+        if entry["element"].strip().lower() == wanted
+    ]
+
+
+def nmr(
+    source,
+    nucleus="H",
+    reference=None,
+    groups=None,
+    fwhm=0.02,
+    lineshape="lorentzian",
+    xmin=None,
+    xmax=None,
+    points=4000,
+):
+    """The NMR spectrum of one element, as chemical shifts without couplings.
+
+    A calculation gives shieldings; a spectrum is drawn in shifts,
+
+        delta = sigma_reference - sigma
+
+    so `reference` is required. It is either the reference compound's
+    shielding in ppm, or the output of an NMR run on the reference compound
+    -- tetramethylsilane for H, C and Si -- in which case the shieldings of
+    its `nucleus` atoms are averaged. **The reference has to come from the
+    same method and basis**: the errors of a shielding largely cancel in the
+    difference, and only then.
+
+    `groups` is a list of lists of atom numbers, counted from one as the
+    output counts them, whose shieldings are averaged before anything else.
+    That is how the three hydrogens of a rotating methyl group become one
+    line: the calculation is of one frozen geometry and gives them three
+    shifts, the experiment sees their average. Atoms in no group stand alone.
+
+    **There are no spin-spin couplings**, so every line is a singlet: the
+    positions and the areas are a spectrum's, its multiplets are not. `fwhm`
+    is in ppm.
+    """
+    if reference is None:
+        raise SpectrumError(
+            "nmr needs a reference: the reference compound's shielding in ppm, "
+            "or the output of an NMR run on it at the same method and basis."
+        )
+    if points < 2:
+        raise SpectrumError("points must be at least 2, got %r" % (points,))
+    shieldings = _shieldings(source, nucleus)
+    if not shieldings:
+        raise SpectrumError("the output has no %s nucleus" % nucleus)
+    warnings = []
+    if isinstance(reference, (int, float)):
+        sigma_ref = float(reference)
+    else:
+        in_reference = _shieldings(reference, nucleus)
+        if not in_reference:
+            raise SpectrumError("the reference output has no %s nucleus" % nucleus)
+        values = [value for _, value in in_reference]
+        sigma_ref = sum(values) / len(values)
+        spread = max(values) - min(values)
+        if spread > 0.05:
+            warnings.append(
+                "the %d %s shieldings of the reference differ by %.2f ppm and "
+                "were averaged to %.3f ppm." % (len(values), nucleus, spread, sigma_ref)
+            )
+
+    by_atom = dict(shieldings)
+    lines = []  # (shift, number of nuclei)
+    grouped = set()
+    for group in groups or []:
+        missing = [atom for atom in group if atom not in by_atom]
+        if missing or not group:
+            raise SpectrumError(
+                "group %r names atoms that are not %s nuclei of this output: %r"
+                % (list(group), nucleus, missing)
+            )
+        if grouped.intersection(group):
+            raise SpectrumError("an atom is in more than one group: %r" % (list(group),))
+        grouped.update(group)
+        mean = sum(by_atom[atom] for atom in group) / len(group)
+        lines.append((sigma_ref - mean, float(len(group))))
+    for atom, value in shieldings:
+        if atom not in grouped:
+            lines.append((sigma_ref - value, 1.0))
+
+    # Nuclei whose shifts agree to well inside a line width are one line, so
+    # the sticks read as the spectrum does.
+    lines.sort()
+    merged = []
+    for shift, count in lines:
+        if merged and abs(shift - merged[-1][0]) < 1.0e-4:
+            total = merged[-1][1] + count
+            merged[-1] = ((merged[-1][0] * merged[-1][1] + shift * count) / total, total)
+        else:
+            merged.append((shift, count))
+    positions = [line[0] for line in merged]
+    counts = [line[1] for line in merged]
+
+    pad = max(25.0 * fwhm, 0.1 * (max(positions) - min(positions)))
+    lo = min(positions) - pad if xmin is None else xmin
+    hi = max(positions) + pad if xmax is None else xmax
+    if not hi > lo:
+        raise SpectrumError("the range is empty: %r to %r" % (lo, hi))
+    grid = [lo + k * (hi - lo) / (points - 1) for k in range(points)]
+    curve = _broaden(positions, counts, grid, fwhm, lineshape)
+    warnings.append(
+        "no spin-spin couplings: every line is a singlet, and nuclei that "
+        "exchange are separate lines unless grouped."
+    )
+    return Spectrum(
+        "nmr",
+        grid,
+        curve,
+        list(zip(positions, counts)),
+        "%s chemical shift / ppm" % nucleus,
+        "nuclei per ppm",
+        "nuclei",
+        warnings,
+    )
+
+
 # ---------------------------------------------------------------------------
 #  Command line
 # ---------------------------------------------------------------------------
@@ -619,7 +763,7 @@ def main(argv=None):
         prog="spectra.py",
         description="Broaden the lines in a metalquicha output into a spectrum.",
     )
-    parser.add_argument("kind", choices=("ir", "raman", "uvvis"))
+    parser.add_argument("kind", choices=("ir", "raman", "uvvis", "nmr"))
     parser.add_argument("output", help="the output_<name>.json of the run")
     parser.add_argument("--csv", help="write the curve here")
     parser.add_argument("--sticks", help="write the sticks here (needs --csv)")
@@ -627,7 +771,20 @@ def main(argv=None):
     parser.add_argument(
         "--peaks-up", action="store_true", help="draw infrared bands upwards"
     )
-    parser.add_argument("--fwhm", type=float, help="cm^-1 for ir/raman, eV for uvvis")
+    parser.add_argument(
+        "--fwhm", type=float, help="cm^-1 for ir/raman, eV for uvvis, ppm for nmr"
+    )
+    parser.add_argument("--nucleus", default="H", help="element of an nmr spectrum")
+    parser.add_argument(
+        "--reference",
+        help="nmr: the reference shielding in ppm, or the reference's output file",
+    )
+    parser.add_argument(
+        "--group",
+        action="append",
+        default=[],
+        help="nmr: atoms averaged into one line, e.g. 3,4,5 (repeatable)",
+    )
     parser.add_argument("--lineshape", choices=LINESHAPES)
     parser.add_argument("--scale", type=float, default=1.0, help="frequency scale")
     parser.add_argument("--laser-nm", type=float, default=532.0)
@@ -644,7 +801,19 @@ def main(argv=None):
     if args.lineshape:
         common["lineshape"] = args.lineshape
     try:
-        if args.kind == "uvvis":
+        if args.kind == "nmr":
+            reference = args.reference
+            try:
+                reference = float(reference)
+            except (TypeError, ValueError):
+                pass
+            groups = [[int(atom) for atom in group.split(",")] for group in args.group]
+            if args.fwhm:
+                common["fwhm"] = args.fwhm
+            result = nmr(
+                args.output, args.nucleus, reference=reference, groups=groups, **common
+            )
+        elif args.kind == "uvvis":
             if args.fwhm:
                 common["fwhm_ev"] = args.fwhm
             result = uvvis(

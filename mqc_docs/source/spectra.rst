@@ -4,8 +4,8 @@ Plotting spectra
 
 A calculation writes *sticks*: a position and a strength for each vibration or
 excited state. ``mqc.spectra`` turns the sticks in an output file into a curve
-that can be laid over a measured spectrum -- infrared, Raman, or UV-vis -- with
-the strength converted to what an instrument reports.
+that can be laid over a measured spectrum -- infrared, Raman, UV-vis or NMR --
+with the strength converted to what an instrument reports.
 
 It runs no calculation and changes nothing in the Fortran. It reads the JSON a
 run wrote, imports nothing from the rest of the package and needs only the
@@ -23,6 +23,7 @@ plotting program.
 
    raman = spectra.raman("output_water.json", laser_nm=532.0)
    uv = spectra.uvvis("output_benzene.json", fwhm_ev=0.4, unit="nm")
+   h1 = spectra.nmr("output_ethanol.json", "H", reference="output_tms.json")
 
 or from a shell, with no Python written:
 
@@ -31,6 +32,8 @@ or from a shell, with no Python written:
    python3 python/mqc/spectra.py ir output_water.json --csv water_ir.csv --plot water_ir.png
    python3 python/mqc/spectra.py raman output_water.json --laser-nm 785 --csv water_raman.csv
    python3 python/mqc/spectra.py uvvis output_benzene.json --unit ev --fwhm 0.3 --csv uv.csv
+   python3 python/mqc/spectra.py nmr output_ethanol.json --nucleus H \
+       --reference output_tms.json --group 5,6,7 --group 8,9 --plot ethanol_1h.png
 
 The command prints the sticks and writes the curve where ``--csv`` says.
 ``python/examples/spectra.py`` runs a Hessian and an excited-state deck on water
@@ -57,6 +60,10 @@ What each spectrum needs
      - ``"driver": "Energy"`` with ``keywords.excited_states``; see
        :doc:`excited_states`
      - ``excitation_energy_ev``, ``oscillator_strength``
+   * - ``nmr``
+     - ``"properties": {"nmr": {}}``, for the molecule and for the reference
+       compound; see :doc:`nmr_shielding`
+     - ``isotropic`` and ``element`` of each atom
 
 An output without the section a spectrum needs is refused with the name of
 what to ask for.
@@ -180,20 +187,75 @@ Three things to keep in mind when reading the result:
 ``shift_ev`` adds a constant to every excitation energy, for the rigid shift a
 method's systematic error is often corrected by.
 
+NMR
+---
+
+.. code-block:: python
+
+   spectra.nmr(source, nucleus="H", reference=None, groups=None, fwhm=0.02,
+               lineshape="lorentzian", xmin=None, xmax=None, points=4000)
+
+A calculation gives shieldings and a spectrum is drawn in shifts,
+
+.. math::
+
+   \delta = \sigma_\text{ref} - \sigma
+
+so ``reference`` is required: either the reference compound's shielding in
+ppm, or the output of an NMR run on the reference compound, whose ``nucleus``
+shieldings are then averaged. For H, C and Si that compound is
+tetramethylsilane. **Run the reference at the same method and basis as the
+molecule.** A shielding's error is tens of ppm and mostly the same for every
+nucleus of an element, so it cancels in the difference, and only when both
+numbers carry it.
+
+The curve is in nuclei per ppm against the shift, so the area under a line is
+the number of nuclei in it, and the axis runs downfield to the left.
+
+``groups`` averages nuclei that exchange. The calculation is of one frozen
+geometry, in which the three hydrogens of a methyl group are in three
+different places and have three shifts; the experiment sees one line at their
+average, because the group rotates. List the atom numbers of each such set,
+counted from one as the output counts them:
+
+.. code-block:: python
+
+   spectra.nmr("output_ethanol.json", "H", reference="output_tms.json",
+               groups=[[5, 6, 7], [8, 9]])
+
+Atoms in no group stand alone, and nuclei whose shifts coincide are reported as
+one line with their count.
+
+For ethanol at Hartree-Fock/cc-pVDZ against tetramethylsilane at the same
+level this gives hydrogen lines at 1.24 ppm (three nuclei), 3.17 (two) and
+0.25 (the hydroxyl, gas phase), and carbon lines at 17.5 and 54.1 ppm. The
+measured values in solution are 1.2 and 3.7, and 18 and 58.
+
+Two things this is not:
+
+- **There are no spin-spin couplings, so every line is a singlet.** The
+  positions and the areas are a spectrum's; the triplet and quartet of an
+  ethyl group are not there. The couplings are a separate calculation that is
+  not implemented.
+- **The shieldings are closed-shell Hartree-Fock**, which is all
+  ``properties.nmr`` computes. A hydroxyl or amine hydrogen is also moved by
+  ppm by hydrogen bonding in solution, which a gas-phase molecule knows
+  nothing about.
+
 The line width
 --------------
 
 Nothing here computes a line width. It stands for everything the calculation
 left out -- the lifetime, the solvent, the temperature, the vibrational
 structure of an electronic band -- and the defaults, 20 cm\ :sup:`-1` for a
-vibration and 0.4 eV for an electronic band, are conventions. The area under
+vibration, 0.4 eV for an electronic band and 0.02 ppm for a nucleus, are
+conventions. The area under
 each band does not depend on it; the peak height does, inversely.
 
 What is not here
 ----------------
 
-- **NMR.** Shieldings are not a spectrum without a reference and spin-spin
-  couplings.
+- **NMR multiplets.** There are no spin-spin couplings; see `NMR`_.
 - **Anharmonicity.** Overtones, combination bands and Fermi resonances are
   absent; the frequencies are harmonic and ``scale`` is the only correction.
 - **Vibronic structure** of electronic bands, emission, and circular dichroism.
