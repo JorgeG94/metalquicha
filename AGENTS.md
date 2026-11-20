@@ -275,10 +275,19 @@ its heavy atom first passes.
 The methods:
 
 - `HF` - restricted and unrestricted; direct, in-core, or density-fitted
+  The unrestricted fitted build is `build_fock_df_uhf`: the restricted
+  `build_fock_df` called once for J on the total density and once per spin
+  for K, with each spin density's eigenvectors standing in for orbitals, so
+  it is right for a guess or a mixed density too. Always the dense tensor.
+  Coupled cluster and a double hybrid over a fitted unrestricted reference
+  are refused by name; a range-separated open-shell gradient is refused
+  fitted or not.
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
-- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
+- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - restricted, or unrestricted as an
+  energy only (`run_czt_ump2`, `run_czt_uri_mp2`, exact or fitted reference;
+  frozen orbitals are counted per spin). Gradients and Hessians are RHF only.
   Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
   allowed), and a double hybrid's perturbative term, fitted when
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
@@ -485,16 +494,24 @@ Things to know before touching any of it:
 - **DIIS first, always.** A Newton step from an initial guess diverges. The
   handover is at `keywords.scf.soscf_start` on the commutator, defaulting to
   1e-2, and the iteration it happened at is reported.
-- **Refused, not approximated**: unrestricted (open-shell rotation space),
-  a continuum solvent (no surface-charge response in the Hessian), and a Fock
-  projector (forbidden rotations are not excluded from the parameter space).
-  Restricted Kohn-Sham *is* supported, through the same kernel the analytic
-  Hessian's coupled-perturbed solve uses.
+- **Refused, not approximated**: a continuum solvent (no surface-charge
+  response in the Hessian), and a Fock projector (forbidden rotations are not
+  excluded from the parameter space). Restricted Kohn-Sham *is* supported,
+  through the same kernel the analytic Hessian's coupled-perturbed solve uses.
+- **Unrestricted is `run_soscf_phase_uhf`**, over one vector of alpha's
+  rotations and then beta's. Its Hessian is `uhf_rotation_hessian_t` in
+  `mqc_czt_soscf`: twice `response_product_uhf`'s spin-blocked `(A+B)`, with
+  the gradient `2 F_ai` per spin, both fixed by finite differences in
+  `test_mqc_czt_soscf`. Direct builds only: a fitted or stored-integral
+  unrestricted SCF is refused. It searches the spin-symmetry-breaking
+  rotations, so a singlet run unrestricted can leave the restricted solution:
+  the stretched N2 below goes to -108.7504, 0.179 below the restricted
+  minimum. `keywords.scf.stability` is still closed-shell only.
 
 ### Geometric direct minimisation
 
-`keywords.scf.gdm` (or `accelerator: "gdm"`) is the third way to finish a
-closed-shell SCF: DIIS opens, and below `gdm_start` (1e-1) an L-BFGS
+`keywords.scf.gdm` (or `accelerator: "gdm"`) is the third way to finish an
+SCF, restricted or unrestricted: DIIS opens, and below `gdm_start` (1e-1) an L-BFGS
 minimisation over the orbital rotations takes over, one Fock build per step, a
 step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
 
@@ -511,10 +528,14 @@ step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
   make the history meaningless. Once, at the end.
 - **It is a minimiser, not a saddle escape.** On the stretched N2 below it
   lands on DIIS's saddle, and `gdm/n2_stretched_gdm` pins that on purpose.
-- Refused by name: with `second_order`, unrestricted, COSX (the energy is not
+- `run_gdm_phase_uhf` is the same loop over two spins: one vector, alpha's
+  rotations then beta's, one history, gradient `2 F_ai` per spin with the
+  preconditioner's factor two to match. **A change to one phase's accept or
+  restart logic belongs in the other.**
+- Refused by name: with `second_order`, COSX (the energy is not
   variational, so the Fock matrix is not its gradient), PCM, a Fock projector
   and cuEST. On the terco backend the request is forwarded to terco's own GDM
-  (`trc_set_gdm`), which also takes an unrestricted reference.
+  (`trc_set_gdm`).
 
 **A real case where DIIS is not enough**, worth keeping in mind as the thing
 these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the
@@ -728,7 +749,7 @@ with `../../../`. The CPU suite is **generated** - edit
 under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
-df-dft df-hf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
+df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice

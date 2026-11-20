@@ -1026,7 +1026,7 @@ SCF Options
 - ``stability_tolerance``: Root-mean-square residual at which that analysis
   accepts its lowest eigenpair (default: 1e-6).
 - ``stability_maxiter``: Davidson iterations it may take (default: 100).
-- ``second_order``: converge the closed-shell SCF by trust-region Newton on the
+- ``second_order``: converge the SCF, restricted or unrestricted, by trust-region Newton on the
   orbital rotations once DIIS has brought it close (default: false).
   ``accelerator: "soscf"`` is the same request under the other keyword; either
   one turns it on and neither can turn the other off. See
@@ -1034,7 +1034,7 @@ SCF Options
 - ``soscf_start``: the commutator :math:`\max|FDS - SDF|` at which that
   handover happens (default: 1e-2). It governs both routes -- naming ``soscf``
   as the accelerator does not skip the DIIS opening, because nothing can.
-- ``gdm``: finish the closed-shell SCF by geometric direct minimisation --
+- ``gdm``: finish the SCF, restricted or unrestricted, by geometric direct minimisation --
   L-BFGS on the orbital rotations, one Fock build a step, a step kept only if
   the energy did not rise -- once DIIS has brought it close (default: false).
   ``accelerator: "gdm"`` is the same request. Refused together with

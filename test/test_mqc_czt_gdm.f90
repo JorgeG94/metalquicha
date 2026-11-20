@@ -20,7 +20,7 @@ module test_mqc_czt_gdm
    use mqc_error, only: error_t
    use mqc_scf_convergence, only: scf_convergence_t, CONV_METRIC_COMMUTATOR
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_CORE
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf, SCF_GUESS_CORE
    use mqc_diis, only: parse_accelerator_name, ACCEL_DIIS
    use mqc_scf_types, only: scf_numerics_t
    implicit none
@@ -51,7 +51,13 @@ contains
                                test_accelerator_name), &
                   new_unittest("gdm_and_second_order_together_are_refused", &
                                test_refuses_both), &
-                  new_unittest("gdm_refuses_a_continuum_solvent", test_refuses_pcm) &
+                  new_unittest("gdm_refuses_a_continuum_solvent", test_refuses_pcm), &
+                  new_unittest("unrestricted_gdm_on_a_closed_shell_is_restricted_gdm", &
+                               test_unrestricted_closed_shell), &
+                  new_unittest("unrestricted_gdm_lands_where_diis_lands", &
+                               test_unrestricted_same_energy), &
+                  new_unittest("unrestricted_gdm_started_at_once_still_gets_there", &
+                               test_unrestricted_early_start) &
                   ]
    end subroutine collect_mqc_czt_gdm_tests
 
@@ -98,6 +104,131 @@ contains
                           gdm_start=gdm_start, guess=guess)
       end if
    end subroutine water
+
+   subroutine water_unrestricted(mol, scf, err, nelec, multiplicity, gdm, gdm_start)
+      !! The same molecule through the unrestricted driver, at the same
+      !! threshold. Nine electrons as a doublet is the cation.
+      type(czt_molecule_t), intent(out) :: mol
+      type(rhf_result_t), intent(out) :: scf
+      type(error_t), intent(inout) :: err
+      integer, intent(in) :: nelec, multiplicity
+      logical, intent(in), optional :: gdm
+      real(dp), intent(in), optional :: gdm_start
+
+      type(scf_convergence_t) :: conv
+
+      call water_molecule(mol, err)
+      if (err%has_error()) return
+      conv%metric = CONV_METRIC_COMMUTATOR
+      conv%tolerance = 1.0e-9_dp
+      call run_czt_uhf(mol, nelec, multiplicity, 300, 1.0e-12_dp, 1.0e-10_dp, .false., &
+                       scf, err, in_core=.true., convergence=conv, gdm=gdm, &
+                       gdm_start=gdm_start)
+   end subroutine water_unrestricted
+
+   subroutine test_unrestricted_closed_shell(error)
+      !! Equal spins: the two-spin minimisation must find the restricted energy
+      !!
+      !! The per-spin gradient is `2 F_ai` where the restricted one is `4 F_ai`
+      !! over half as many variables, and the preconditioner's factor follows
+      !! it. A singlet is where a slip in either shows as a wrong energy or a
+      !! stall rather than as "another open-shell solution".
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol_r, mol_u
+      type(rhf_result_t) :: r, u
+      type(error_t) :: err
+
+      call water(mol_r, r, err)
+      call check(error,.not. err%has_error() .and. r%converged, "RHF did not converge")
+      if (allocated(error)) return
+      call water_unrestricted(mol_u, u, err, 10, 1, gdm=.true.)
+      call check(error,.not. err%has_error(), "the run failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, u%converged, "unrestricted direct minimisation did not converge")
+      if (allocated(error)) return
+      call check(error, u%gdm_started_at > 0 .and. u%gdm_iterations > 0, &
+                 "direct minimisation never took a step")
+      if (allocated(error)) return
+      write (*, "(a,i0,a,i0,a,es10.2)") "    DIIS then ", u%gdm_iterations, &
+         " steps, ", u%gdm_rejected, " rejected; E(ugdm) - E(rhf) = ", u%energy - r%energy
+      call check(error, abs(u%energy - r%energy) < TOL_ENERGY, &
+                 "unrestricted direct minimisation missed the restricted energy")
+      call mol_r%destroy()
+      call mol_u%destroy()
+   end subroutine test_unrestricted_closed_shell
+
+   subroutine test_unrestricted_same_energy(error)
+      !! The water cation, a doublet: the same minimum as DIIS
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol_diis, mol_gdm
+      type(rhf_result_t) :: diis, gdm
+      type(error_t) :: err
+
+      call water_unrestricted(mol_diis, diis, err, 9, 2)
+      call check(error,.not. err%has_error() .and. diis%converged, "DIIS did not converge")
+      if (allocated(error)) return
+      call water_unrestricted(mol_gdm, gdm, err, 9, 2, gdm=.true.)
+      call check(error,.not. err%has_error(), "the run failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, gdm%converged, "direct minimisation did not converge")
+      if (allocated(error)) return
+      call check(error, gdm%gdm_started_at > 0, "direct minimisation never took over")
+      if (allocated(error)) return
+      call check(error, gdm%gdm_iterations > 0, "the phase took no step")
+      if (allocated(error)) return
+      call check(error,.not. gdm%gdm_stalled, "the phase reported a stall")
+      if (allocated(error)) return
+      call check(error, gdm%gdm_off_aufbau == 0, "the phase ended off the aufbau occupation")
+      if (allocated(error)) return
+      write (*, "(a,i0,a,i0,a,es10.2)") "    DIIS then ", gdm%gdm_iterations, &
+         " steps, ", gdm%gdm_rejected, " rejected; E(gdm) - E(diis) = ", &
+         gdm%energy - diis%energy
+      call check(error, abs(gdm%energy - diis%energy) < TOL_ENERGY, &
+                 "direct minimisation and DIIS reached different energies")
+      if (allocated(error)) return
+      ! The orbital energies must be the canonical ones, in both spins: the
+      ! phase semicanonicalises once at the end and reports those.
+      call check(error, maxval(abs(gdm%orbital_energies - diis%orbital_energies)) < 1.0e-6_dp, &
+                 "the alpha orbital energies are not the canonical ones")
+      if (allocated(error)) return
+      call check(error, maxval(abs(gdm%orbital_energies_beta &
+                                   - diis%orbital_energies_beta)) < 1.0e-6_dp, &
+                 "the beta orbital energies are not the canonical ones")
+      call mol_diis%destroy()
+      call mol_gdm%destroy()
+   end subroutine test_unrestricted_same_energy
+
+   subroutine test_unrestricted_early_start(error)
+      !! Handed over after one DIIS iteration, far from convergence
+      !!
+      !! Here the history, the halving and the restart all get used, where a
+      !! handover at the default threshold needs a handful of clean steps.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol_diis, mol_gdm
+      type(rhf_result_t) :: diis, gdm
+      type(error_t) :: err
+
+      call water_unrestricted(mol_diis, diis, err, 9, 2)
+      call check(error,.not. err%has_error() .and. diis%converged, "DIIS did not converge")
+      if (allocated(error)) return
+      call water_unrestricted(mol_gdm, gdm, err, 9, 2, gdm=.true., gdm_start=START_AT_ONCE)
+      call check(error,.not. err%has_error(), "the run failed: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, gdm%gdm_started_at == 1, "the handover was not after iteration 1")
+      if (allocated(error)) return
+      call check(error, gdm%converged, "direct minimisation did not converge")
+      if (allocated(error)) return
+      write (*, "(a,i0,a,i0,a,es10.2)") "    from iteration 1: ", gdm%gdm_iterations, &
+         " steps, ", gdm%gdm_rejected, " rejected; E(gdm) - E(diis) = ", &
+         gdm%energy - diis%energy
+      call check(error, abs(gdm%energy - diis%energy) < TOL_ENERGY, &
+                 "an early start reached a different energy")
+      call mol_diis%destroy()
+      call mol_gdm%destroy()
+   end subroutine test_unrestricted_early_start
 
    subroutine test_same_energy_as_diis(error)
       !! The same minimum, by a different route

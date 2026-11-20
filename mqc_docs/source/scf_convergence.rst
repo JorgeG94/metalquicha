@@ -502,14 +502,39 @@ and where the answer has to be a minimum rather than merely a stationary point.
 mechanics -- semicanonicalisation, the Krylov solve, the trust-region
 backtracking -- and the full measurement table.
 
+An unrestricted reference
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An open shell takes the same Newton phase over both spins' rotations at once:
+the gradient is :math:`2 F_{ai}` in each spin, the Hessian twice the
+spin-blocked :math:`(A+B)`, and one Newton solve covers both because the
+Coulomb field couples them. Hartree-Fock and Kohn-Sham through a
+range-separated hybrid.
+
+The space it searches includes the rotations that break spin symmetry, which
+the closed-shell phase cannot reach. N\ :sub:`2` at 1.6 A in 6-31G is the
+example. Restricted, ``second_order`` reaches -108.5718 hartree, a minimum
+among closed-shell determinants. Run with ``model.unrestricted`` it finds that
+point is a saddle, follows the negative curvature out, and converges on the
+broken-symmetry solution at -108.7504 hartree with
+:math:`\langle S^2 \rangle = 2.018` -- 0.179 hartree lower, and the energy
+PySCF reaches by repeated stability analysis. Unrestricted DIIS from the same
+guess stays at -108.5516: the rotation that breaks the symmetry has no
+gradient, so nothing first-order ever takes it.
+
+An exact zero of the curvature is not a saddle. OH has one, the rotation
+between its two degenerate :math:`\pi` orbitals, and converges normally.
+
 What it will not do
 ^^^^^^^^^^^^^^^^^^^
 
 Each of these is refused by name, before the SCF runs, rather than approximated
 or silently demoted to DIIS.
 
-- **An unrestricted reference.** The rotations parametrised here are the
-  closed-shell ones; the open-shell space is larger and is not implemented.
+- **A density-fitted or stored-integral unrestricted reference.** An
+  unrestricted reference itself is supported -- see below -- but its
+  Hessian-vector products come from the direct build, and over a fitted SCF
+  they would be the curvature of a different energy.
 - **A continuum solvent.** The orbital-rotation Hessian carries no response of
   the surface charges, so the step would be taken on the curvature of a
   different energy than the one being minimised. See
@@ -744,7 +769,6 @@ highest occupied one. That is checked at the end and warned about; lower
 **Refused, by name:**
 
 - together with ``second_order``: each finishes the SCF, and only one can;
-- an unrestricted reference: the phase is written for a closed shell;
 - chain-of-spheres exchange: that energy is not variational in the orbitals,
   so its Fock matrix is not the gradient of the energy a step is judged on;
 - a continuum solvent: the phase rebuilds the Fock matrix itself, and its
@@ -752,6 +776,23 @@ highest occupied one. That is checked at the end and warned about; lower
 - a Fock projector: the rotations it forbids are not excluded from the step;
 - the cuEST backend.
 
+An unrestricted reference
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An open shell is minimised over both spins' rotations at once. One vector
+holds alpha's occupied-virtual pairs and then beta's, and there is one history
+and one accept rule over it, because there is one energy. The gradient is
+:math:`2 F_{ai}` in each spin where the closed shell's is :math:`4 F_{ai}`, and
+the preconditioner follows it. Everything above holds unchanged, the two
+warnings included: the occupation check is made per spin.
+
+OH, triplet O\ :sub:`2` and CH\ :sub:`3` in cc-pVDZ -- Hartree-Fock, B3LYP,
+:math:`\omega`\ B97X, and PBE over a density-fitted reference -- each reach
+DIIS's energy within :math:`10^{-12}` hartree. OH from the core guess with the
+minimisation started after one iteration is the cautionary case: it converges,
+0.92 hartree too high, on the occupation that first diagonalisation chose, and
+the warning above is what says so.
+
 On the terco backend the request is forwarded to terco's own implementation,
-with the same two thresholds. That one also runs unrestricted references, and
-has refusals of its own -- symmetry among them -- which it reports itself.
+with the same two thresholds. That one has refusals of its own -- symmetry
+among them -- which it reports itself.

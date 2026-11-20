@@ -4861,6 +4861,57 @@
             "reference_note": "n2_stretched_saddle with keywords.scf.gdm added, and deliberately the same reference energy: the saddle's. Direct minimisation is a minimiser along directions whose gradient is not zero, and the mode that leaves this saddle has a zero gradient by symmetry, so it converges where DIIS does. keywords.scf.second_order is what escapes (n2_stretched_second_order, 0.020 hartree lower). If this deck ever lands on the minimum, the phase has started taking steps it has no gradient for."
         },
         {
+            "name": "UHF OH cc-pvdz converged by geometric direct minimisation (CPU)",
+            "input": "inputs/cpu/mqc/gdm/oh_cc-pvdz_uhf_gdm.json",
+            "expected_energy": -75.393846033475,
+            "tolerance": 1e-08,
+            "type": "unfragmented",
+            "reference_note": "the reference is the one UHF OH cc-pvdz is held to, PySCF's: keywords.scf.gdm on an open shell minimises over both spins' rotations at once, with one history, and has to reach the minimum DIIS does. test_mqc_czt_gdm reads the phase's counters; this deck is the path from a deck through the bridge, which used to refuse the request for an unrestricted reference."
+        },
+        {
+            "name": "UKS B3LYP CH3 cc-pvdz grid 3 converged by geometric direct minimisation (CPU)",
+            "input": "inputs/cpu/mqc/gdm/ch3_cc-pvdz_b3lyp_gdm.json",
+            "expected_energy": -39.838786859584,
+            "tolerance": 1e-08,
+            "requires": "libxc",
+            "type": "unfragmented",
+            "reference_note": "the reference is UKS B3LYP CH3 cc-pvdz grid 3's, PySCF's. Unrestricted Kohn-Sham with exact exchange: the energy the accept rule judges carries E_xc and a fraction of each spin's exchange, so a step judged on the mean-field trace alone would show here."
+        },
+        {
+            "name": "UKS PBE O2 cc-pvdz density fitted, converged by geometric direct minimisation (CPU)",
+            "input": "inputs/cpu/mqc/gdm/o2_cc-pvdz_pbe_df_gdm.json",
+            "expected_energy": -150.193299653418,
+            "tolerance": 1e-08,
+            "requires": "libxc",
+            "type": "unfragmented",
+            "reference_note": "the reference is the fitted UKS PBE triplet O2 case's, PySCF's. A triplet, so the two spins' rotation spaces differ in size, and fitted, so every trial's Fock matrices come from the fitted unrestricted build."
+        },
+        {
+            "name": "UHF OH cc-pvdz converged by the second-order SCF (CPU)",
+            "input": "inputs/cpu/mqc/soscf/oh_cc-pvdz_uhf_second_order.json",
+            "expected_energy": -75.393846033475,
+            "tolerance": 1e-08,
+            "type": "unfragmented",
+            "reference_note": "the reference is the one UHF OH cc-pvdz is held to, PySCF's: the unrestricted Newton phase has to reach the minimum DIIS does. OH is also the case with an exact zero mode, the rotation between the degenerate pi orbitals of which one holds the unpaired electron, so the Hessian's lowest curvature here is zero to rounding and the one-sided saddle test must not read that as a saddle."
+        },
+        {
+            "name": "UKS B3LYP CH3 cc-pvdz grid 3 converged by the second-order SCF (CPU)",
+            "input": "inputs/cpu/mqc/soscf/ch3_cc-pvdz_b3lyp_second_order.json",
+            "expected_energy": -39.838786859584,
+            "tolerance": 1e-08,
+            "requires": "libxc",
+            "type": "unfragmented",
+            "reference_note": "the reference is UKS B3LYP CH3 cc-pvdz grid 3's, PySCF's. Kohn-Sham with exact exchange: the Hessian-vector products carry the spin-polarised kernel and a fraction of each spin's exchange, and a wrong one of either still converges, slowly, so test_mqc_czt_soscf's finite differences are what fix them; this deck is the path from a deck."
+        },
+        {
+            "name": "UHF N2 6-31G at 1.6 A, the second-order SCF leaves the restricted solution (CPU)",
+            "input": "inputs/cpu/mqc/soscf/n2_stretched_unrestricted_second_order.json",
+            "expected_energy": -108.750383884639,
+            "tolerance": 1e-08,
+            "type": "unfragmented",
+            "reference_note": "n2_stretched_second_order run unrestricted. The closed-shell Newton phase reaches the restricted minimum at -108.5718; the unrestricted one searches the spin-symmetry-breaking rotations too, finds that minimum is a saddle among them, and follows the negative curvature to the broken-symmetry solution 0.179 hartree lower, with <S^2> = 2.018. The reference is PySCF's UHF after repeated stability analysis and re-optimisation until it reports a stable solution. Unrestricted DIIS from the same guess never leaves the restricted saddle at -108.5516, because the rotation that breaks the symmetry has no gradient."
+        },
+        {
             "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
             "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1.json",
             "expected_energy": -456.004182668797,
@@ -7811,6 +7862,222 @@
             ],
             "hessian_tolerance": 0.00015,
             "requires": "libxc",
+            "type": "unfragmented"
+        },
+        {
+            "name": "UHF OH cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_oh_cc-pvdz_m2.json",
+            "expected_energy": -75.393822270088,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UHF O2 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_o2_cc-pvdz_m3.json",
+            "expected_energy": -149.627612072091,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UKS SVWN CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_svwn.json",
+            "expected_energy": -39.421155603672,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS PBE CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_pbe.json",
+            "expected_energy": -39.769172368326,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS B3LYP CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_b3lyp.json",
+            "expected_energy": -39.838814020412,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS WB97X CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_wb97x.json",
+            "expected_energy": -39.820550598085,
+            "type": "unfragmented",
+            "requires": "libxc",
+            "tolerance": 1e-08
+        },
+        {
+            "name": "UKS PBE O2 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_o2_cc-pvdz_m3_pbe.json",
+            "expected_energy": -150.193299653418,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "UHF gradient OH cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_oh_cc-pvdz_m2_grad.json",
+            "expected_energy": -75.393822270088,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    0.0,
+                    -0.0,
+                    -0.012387295411
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.012387295411
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "UHF gradient O2 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_o2_cc-pvdz_m3_grad.json",
+            "expected_energy": -149.627612072091,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    -0.093153458148
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.093153458148
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "UKS PBE gradient CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_pbe_grad.json",
+            "expected_energy": -39.769172368326,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -1.25204e-07,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    -0.013299971736,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.00665004847,
+                    -0.011517821404,
+                    -0.0
+                ],
+                [
+                    0.00665004847,
+                    0.011517821404,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "requires": "libxc"
+        },
+        {
+            "name": "UKS B3LYP gradient CH3 cc-pvdz density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/df-uhf/cpu_ch3_cc-pvdz_m2_b3lyp_grad.json",
+            "expected_energy": -39.838814020412,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -6.40785e-07,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    -0.00845246313,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.004226551957,
+                    -0.007319568371,
+                    -0.0
+                ],
+                [
+                    0.004226551957,
+                    0.007319568371,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "requires": "libxc"
+        },
+        {
+            "name": "MP2 over UHF OH cc-pvdz multiplicity 2 frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_oh_cc-pvdz_mp2_f0_m2.json",
+            "expected_energy": -75.544845082627,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 over UHF OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_oh_cc-pvdz_mp2_f1_m2.json",
+            "expected_energy": -75.542821964246,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 over UHF CH3 cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_ch3_cc-pvdz_mp2_f1_m2.json",
+            "expected_energy": -39.690405538191,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 over UHF O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/mp2/cpu_o2_cc-pvdz_mp2_f2_m3.json",
+            "expected_energy": -149.97247295603,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SCS-MP2 over UHF OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/scs-mp2/cpu_oh_cc-pvdz_scsmp2_f1_m2.json",
+            "expected_energy": -75.541279320512,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SOS-MP2 over UHF OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/sos-mp2/cpu_oh_cc-pvdz_sosmp2_f1_m2.json",
+            "expected_energy": -75.540507998645,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit OH cc-pvdz multiplicity 2 frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_oh_cc-pvdz_rimp2_f0_m2.json",
+            "expected_energy": -75.544839306223,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit CH3 cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_ch3_cc-pvdz_rimp2_f1_m2.json",
+            "expected_energy": -39.690372710832,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_o2_cc-pvdz_rimp2_f2_m3.json",
+            "expected_energy": -149.972597962165,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit, fitted reference OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_oh_cc-pvdz_rimp2_f1_m2_dfref.json",
+            "expected_energy": -75.543902446269,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 over UHF/cc-pvdz-rifit, fitted reference O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_o2_cc-pvdz_rimp2_f2_m3_dfref.json",
+            "expected_energy": -149.974251074308,
             "type": "unfragmented"
         }
     ]

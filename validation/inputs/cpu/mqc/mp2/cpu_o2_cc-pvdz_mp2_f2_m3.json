@@ -1,0 +1,33 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/o2.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 3
+        }
+    ],
+    "model": {
+        "method": "mp2",
+        "basis": "cc-pvdz"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-12
+        },
+        "correlation": {
+            "freeze_core": true,
+            "n_frozen_core": 2
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}
