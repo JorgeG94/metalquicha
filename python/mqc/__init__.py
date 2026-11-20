@@ -48,6 +48,7 @@ __all__ = [
     "DRIVERS",
     "pka",
     "bde",
+    "spectra",
 ]
 
 HARTREE_TO_EV = 27.211386245988
@@ -1525,4 +1526,4 @@ def _merge(into, extra):
 # Last, because `pka` and `bde` reach back for `MBE`, `System` and `_check_label` and
 # those have to exist by the time they are called; their arithmetic imports nothing
 # from here.
-from . import bde, pka  # noqa: E402
+from . import bde, pka, spectra  # noqa: E402
