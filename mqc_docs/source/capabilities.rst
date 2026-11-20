@@ -665,7 +665,7 @@ four.
   two ions unrestricted, and condensed onto atoms by a population scheme
   (``population``: ``hirshfeld``, the default, ``chelpg`` or ``mulliken``).
   ``properties.fukui``.
-- **Atomic charges**, Mulliken, CHELPG, Hirshfeld or MBIS, partitioning the density the
+- **Atomic charges**, Mulliken, Lowdin, CHELPG, Hirshfeld or MBIS, partitioning the density the
   calculation already converged -- Hartree-Fock or any Kohn-Sham functional,
   restricted or unrestricted, at no cost beyond the SCF that was going to run
   anyway. The object is the request and ``scheme`` only says how, so
@@ -678,6 +678,9 @@ four.
   of an unrestricted reference, or the relaxed density of closed-shell
   RI-MP2 -- with two counts of effectively unpaired electrons.
   ``properties.natural_orbitals``; see :doc:`natural_orbitals`.
+- **Wiberg bond orders**, ``"scheme": "wiberg"`` under
+  ``properties.bond_orders``: the same sum of squares as Mayer's, taken in
+  Lowdin's orthonormal basis.
 - **Mayer bond orders**, over the converged density and the AO overlap:
   ``B_AB = sum_{mu in A, nu in B} (DS)_mu,nu (DS)_nu,mu`` for a closed shell,
   and a spin-resolved sum -- not that expression with the total density -- for

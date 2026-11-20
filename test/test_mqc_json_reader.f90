@@ -2938,13 +2938,24 @@ contains
                  "a misspelled key inside properties.bond_orders should be refused")
       if (allocated(error)) return
 
-      ! And a scheme that names a different quantity.
+      ! 'wiberg' used to be refused here, because the only thing that could
+      ! have answered it was Mayer's formula over non-orthogonal AOs. It is
+      ! now its own scheme, computed in Lowdin's orthonormal basis, so it is
+      ! accepted and stored under its own name -- never as Mayer.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
                       two_atoms(), '"properties": {"bond_orders": {"scheme": "wiberg"}}')
       call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%bond_order_scheme), "wiberg")
+      if (allocated(error)) return
+
+      ! And a scheme nobody implements.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {"scheme": "nalewajski"}}')
+      call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
-                 "'wiberg' names a bond order in an orthonormal basis and must be "// &
-                 "refused rather than silently run as Mayer")
+                 "an unknown bond order scheme must be refused, not run as Mayer")
    end subroutine test_bond_orders_property
 
    subroutine test_bonding_analysis(error)

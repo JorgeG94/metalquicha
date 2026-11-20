@@ -1216,14 +1216,13 @@ contains
 
       call core%get(request, "scheme", name)
       select case (lowered(trim(adjustl(name))))
-      case ("mayer")
+      case ("mayer", "wiberg")
       case default
          call error%set(ERROR_VALIDATION, "properties.bond_orders.scheme is '"// &
-                        trim(name)//"'. The one scheme here is 'mayer', over the "// &
-                        "converged density and the AO overlap. Wiberg's order is the "// &
-                        "same sum in an orthonormal basis and is meaningless over "// &
-                        "non-orthogonal AOs, so it is not offered under that name; "// &
-                        "the quasi-atomic bonding picture is "// &
+                        trim(name)//"'. The schemes here are 'mayer', over the "// &
+                        "converged density and the AO overlap, and 'wiberg', the "// &
+                        "sum of squared density elements in Lowdin's orthonormal "// &
+                        "basis. The quasi-atomic bonding picture is "// &
                         "properties.bonding_analysis.type = 'gms_quao', and the "// &
                         "semi-empirical Wiberg-Mayer orders come from an xTB single "// &
                         "point through the Python interface.")

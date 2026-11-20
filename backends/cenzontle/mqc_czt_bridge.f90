@@ -1159,7 +1159,8 @@ contains
    subroutine run_czt_hf(settings, fragment, result, want_gradient, want_hessian)
       !! Closed-shell HF for one fragment, on the CPU
       use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
-                                     mayer_valences, print_mayer_report
+                                     mayer_valences, print_mayer_report, &
+                                     wiberg_bond_orders, wiberg_bond_orders_open_shell
       use mqc_czt_natural_orbitals, only: natural_occupation_summary_t, &
                                           density_natural_orbitals, &
                                           summarize_natural_occupations, &
@@ -2392,10 +2393,18 @@ contains
                else
                   call mayer_bond_orders(mol, scf%density, s_bond, orders, analysis_error)
                end if
+            case ("wiberg")
+               call mol%overlap(s_bond)
+               if (allocated(scf%density_beta)) then
+                  call wiberg_bond_orders_open_shell(mol, scf%density, scf%density_beta, &
+                                                     s_bond, orders, analysis_error)
+               else
+                  call wiberg_bond_orders(mol, scf%density, s_bond, orders, analysis_error)
+               end if
             case default
                call analysis_error%set(ERROR_VALIDATION, "unknown bond order scheme '"// &
                                        trim(settings%bond_order_scheme)// &
-                                       "'; expected 'mayer'.")
+                                       "'; expected 'mayer' or 'wiberg'.")
             end select
 
             if (analysis_error%has_error()) then
@@ -2403,7 +2412,8 @@ contains
                                    analysis_error%get_message())
             else
                call mayer_valences(orders, valences)
-               call print_mayer_report(orders, valences, symbols)
+               call print_mayer_report(orders, valences, symbols, &
+                                       scheme=bond_order_heading(settings%bond_order_scheme))
                call move_alloc(orders, result%bond_orders)
                call move_alloc(valences, result%bond_order_valences)
                result%bond_order_scheme = trim(settings%bond_order_scheme)
@@ -3698,9 +3708,13 @@ contains
          case ("mayer")
             call mol%overlap(s_bond)
             call mayer_bond_orders(mol, total_density, s_bond, orders, bo_error)
+         case ("wiberg")
+            call mol%overlap(s_bond)
+            call wiberg_bond_orders(mol, total_density, s_bond, orders, bo_error)
          case default
             call bo_error%set(ERROR_VALIDATION, "unknown bond order scheme '"// &
-                              trim(settings%bond_order_scheme)//"'; expected 'mayer'.")
+                              trim(settings%bond_order_scheme)// &
+                              "'; expected 'mayer' or 'wiberg'.")
          end select
          if (bo_error%has_error()) then
             call logger%warning("  bond orders could not be computed: "// &
@@ -3708,12 +3722,26 @@ contains
             return
          end if
          call mayer_valences(orders, valences)
-         call print_mayer_report(orders, valences, symbols)
+         call print_mayer_report(orders, valences, symbols, &
+                                 scheme=bond_order_heading(settings%bond_order_scheme))
          call move_alloc(orders, result%bond_orders)
          call move_alloc(valences, result%bond_order_valences)
          result%bond_order_scheme = trim(settings%bond_order_scheme)
          result%has_bond_orders = .true.
       end subroutine report_relaxed_bond_orders
+
+      function bond_order_heading(scheme) result(heading)
+         !! The scheme's name as the report prints it
+         character(len=*), intent(in) :: scheme
+         character(len=:), allocatable :: heading
+
+         select case (trim(scheme))
+         case ("wiberg")
+            heading = "Wiberg (Lowdin basis)"
+         case default
+            heading = "Mayer"
+         end select
+      end function bond_order_heading
 
       subroutine publish_dipole(total_density)
          !! The dipole moment of a total density, in atomic units, origin at zero
@@ -4843,7 +4871,9 @@ contains
       !! or another one, as long as it is over `mol`'s AO basis. `spin_density`
       !! present is an open shell, and adds the spin populations the scheme
       !! gives for nothing. A failure is a warning: the energy stands.
-      use mqc_czt_charges, only: mulliken_charges, chelpg_charges, mulliken_spin_populations
+      use mqc_czt_charges, only: mulliken_charges, chelpg_charges, &
+                                 mulliken_spin_populations, lowdin_charges, &
+                                 lowdin_spin_populations
       use mqc_czt_hirshfeld, only: hirshfeld_populations
       use mqc_czt_mbis, only: mbis_populations
       type(cuest_scf_settings_t), intent(in) :: settings
@@ -4866,6 +4896,12 @@ contains
          ! open shell actually wants: where the unpaired density sits.
          if (open_shell .and. .not. analysis_error%has_error()) then
             call mulliken_spin_populations(mol, spin_density, s_ao, q_spin, analysis_error)
+         end if
+      case ("lowdin")
+         call mol%overlap(s_ao)
+         call lowdin_charges(mol, total_density, s_ao, q, analysis_error)
+         if (open_shell .and. .not. analysis_error%has_error()) then
+            call lowdin_spin_populations(mol, spin_density, s_ao, q_spin, analysis_error)
          end if
       case ("chelpg")
          ! The fit is solved under a total-charge constraint, so the fragment's
@@ -4894,8 +4930,8 @@ contains
       case default
          call analysis_error%set(ERROR_VALIDATION, "unknown charge scheme '"// &
                                  trim(settings%charges_scheme)// &
-                                 "'; expected 'mulliken', 'chelpg', 'hirshfeld' "// &
-                                 "or 'mbis'.")
+                                 "'; expected 'mulliken', 'lowdin', 'chelpg', "// &
+                                 "'hirshfeld' or 'mbis'.")
       end select
 
       if (analysis_error%has_error()) then

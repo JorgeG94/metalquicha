@@ -18,12 +18,12 @@ costs no second SCF. Those are ``properties.charges`` and
 ``properties.bond_orders``, below, and they are the ones to reach for unless you
 are in the trial-partition loop.
 
-Three things called bond orders
--------------------------------
+Four things called bond orders
+------------------------------
 
-Before any of the numbers: this code computes three different quantities under
+Before any of the numbers: this code computes four different quantities under
 that name, they do not agree beyond a trend, and none of them is an
-approximation to either of the others.
+approximation to any of the others.
 
 ======================  ================================  ================================
 Quantity                Where                             What it is
@@ -34,6 +34,9 @@ Quantity                Where                             What it is
 **Mayer**               ``properties.bond_orders``, or    The same definition over the
                         ``compute_bond_orders("mayer")``  converged ab initio density and
                                                           the AO overlap
+**Wiberg**              ``properties.bond_orders`` with   The sum of squared density
+                        ``"scheme": "wiberg"``            elements between two atoms, in
+                                                          Lowdin's orthonormal basis
 **QUAO kinetic**        ``properties.bonding_analysis``   Ruedenberg's definition in the
                                                           orthonormal quasi-atomic basis,
                                                           plus an energy-like partner
@@ -46,12 +49,28 @@ bonding of a calculation you were running anyway. The QUAO analysis is for
 **taking a bonding picture apart** -- it comes with orbitals, an energy
 decomposition and a table of which quasi-atomic orbitals are involved.
 
-Wiberg's bond order, in the strict sense, is this same sum of squares in an
+Wiberg's bond order, in the strict sense, is Mayer's sum of squares in an
 *orthonormal* basis, where ``S`` is the identity and the ``D S`` product
 collapses. Over non-orthogonal atomic orbitals it is not Wiberg's quantity and
-not anyone else's, so ``properties.bond_orders`` refuses ``"wiberg"`` by name
-rather than quietly computing Mayer's. Over the quasi-atomic basis, which *is*
-orthonormal, the QUAO analysis's population bond order already is it.
+not anyone else's, so it is never computed that way. ``"scheme": "wiberg"``
+orthogonalises the atomic orbitals symmetrically first -- Lowdin's
+:math:`S^{1/2} D S^{1/2}` -- which is what a Wiberg index out of an ab initio
+calculation ordinarily means:
+
+.. math::
+
+   W_{AB} = \sum_{\mu \in A} \sum_{\nu \in B}
+            \left(S^{1/2} D S^{1/2}\right)_{\mu\nu}^{2}
+
+and, for an open shell, twice the sum of the same expression over the two spin
+densities. Each orthonormal function is the closest one to the atomic function
+it came from, so it still belongs to that function's atom.
+
+It is a different number from Mayer's and neither is the right one. On water
+in cc-pVDZ at Hartree-Fock the O--H order is 1.018 by Mayer and 1.061 by
+Wiberg; on triplet O\ :sub:`2` Mayer gives 2.00 and Wiberg 2.24. Over the
+quasi-atomic basis, which is orthonormal by construction, the QUAO analysis's
+population bond order is the same sum again.
 
 Mayer bond orders
 -----------------
@@ -232,8 +251,18 @@ caution the xTB section already gives for a different reason.
 Atomic charges
 --------------
 
-Mulliken, CHELPG, Hirshfeld and MBIS partial charges. Through the Python interface,
-from an RHF density; through a deck, from whatever reference the deck converged.
+Mulliken, Lowdin, CHELPG, Hirshfeld and MBIS partial charges. Through the Python
+interface, from an RHF density; through a deck, from whatever reference the deck
+converged.
+
+**Lowdin charges** (``"scheme": "lowdin"``, deck only) are Mulliken's partition
+in the same symmetrically orthogonalised basis the Wiberg index uses:
+:math:`q_A = Z_A - \sum_{\mu \in A} (S^{1/2} D S^{1/2})_{\mu\mu}`. There is no
+overlap population to divide, so no function's population can go negative, and
+they move less with the basis than Mulliken's. The price is that each atom's
+functions are mixed with its neighbours' before anything is counted. On water
+in cc-pVDZ oxygen is -0.314 by Mulliken and -0.483 by Lowdin. An unrestricted
+reference gets Lowdin spin populations as well.
 
 From the Python interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~
