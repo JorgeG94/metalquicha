@@ -3326,7 +3326,8 @@ def mqc_ri_mp2_hessian(atoms, basis, aux, frozen=0):
 
 
 def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
-                   level=GRADIENT_GRID_LEVEL, ecp="", tight=False):
+                   level=GRADIENT_GRID_LEVEL, ecp="", tight=False,
+                   restricted_open=False):
     """Reference energy and analytic nuclear gradient, in Hartree/Bohr.
 
     Two things here are not defaults and both matter. The gradient modules have
@@ -3366,10 +3367,14 @@ def pyscf_gradient(atoms, basis, aux="", functional="", multiplicity=1,
     unrestricted = multiplicity != 1
     if functional:
         mf = dft.UKS(mol) if unrestricted else dft.RKS(mol)
+        if restricted_open and unrestricted:
+            mf = dft.ROKS(mol)
         mf.xc = functional
         mf.grids.level = level
     else:
         mf = scf.UHF(mol) if unrestricted else scf.RHF(mol)
+        if restricted_open and unrestricted:
+            mf = scf.ROHF(mol)
     if aux:
         mf = df.density_fit(mf, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
     mf.conv_tol = 1e-12
@@ -4394,6 +4399,85 @@ def df_unrestricted_entries(written, dry_run):
     return entries
 
 
+# Restricted open-shell references: (molecule, basis, auxiliary, functional,
+# multiplicity, driver). The reference is PySCF's ROHF and ROKS, whose
+# effective Fock matrix is Roothaan's, as here; the energy does not depend on
+# that choice and the gradient is taken from the converged densities, so the
+# bounds are the unrestricted cases'.
+#
+# No hydroxyl radical under a pure functional: its singly occupied orbital is
+# one of a degenerate pair, and neither this program nor PySCF converges a
+# restricted open-shell Kohn-Sham SCF for it by DIIS.
+ROHF_CASES = [
+    ("oh", "cc-pvdz", "", "", 2, "Energy"),
+    ("ch3", "cc-pvdz", "", "", 2, "Energy"),
+    ("o2", "cc-pvdz", "", "", 3, "Energy"),
+    ("ch3", "6-31g*", "", "", 2, "Energy"),
+    ("ch3", "cc-pvdz", "", "pbe", 2, "Energy"),
+    ("ch3", "cc-pvdz", "", "b3lyp", 2, "Energy"),
+    ("o2", "cc-pvdz", "", "pbe0", 3, "Energy"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "", 2, "Energy"),
+    ("o2", "cc-pvdz", "def2-universal-jkfit", "pbe0", 3, "Energy"),
+    ("ch3", "cc-pvdz", "", "", 2, "Gradient"),
+    ("o2", "cc-pvdz", "", "", 3, "Gradient"),
+    ("ch3", "cc-pvdz", "", "b3lyp", 2, "Gradient"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "", 2, "Gradient"),
+    ("o2", "cc-pvdz", "def2-universal-jkfit", "pbe0", 3, "Gradient"),
+]
+
+
+def rohf_entries(written, dry_run):
+    """Write the restricted open-shell decks and return their manifest entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    for name, basis, aux, functional, mult, driver in ROHF_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_gradient(
+            mol.atoms, basis, aux=aux, functional=functional, multiplicity=mult,
+            tight=True, restricted_open=True)
+        tag = f"{normalize_basis_name(basis)}_m{mult}"
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        if aux:
+            tag += "_df"
+        if driver == "Gradient":
+            tag += "_grad"
+        deck = deck_for(f"{CPU_MQC}/rohf", f"cpu_{name}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, multiplicity=mult,
+                          method="dft" if functional else "hf")
+            d["model"]["restricted_open"] = True
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
+            d["driver"] = driver
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        theory = f"ROKS {functional.upper()}" if functional else "ROHF"
+        fitted = f" density fitted with {aux}" if aux else ""
+        entry = {
+            "name": f"{theory} {'gradient ' if driver == 'Gradient' else ''}"
+                    f"{mol.label} {basis} multiplicity {mult}{fitted} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        }
+        if driver == "Gradient":
+            entry["expected_gradient"] = [[round(c, 12) for c in atom]
+                                          for atom in gradient]
+            entry["gradient_tolerance"] = _gradient_tolerance(functional, aux)
+            entry["check_translation"] = True
+        if functional:
+            entry["requires"] = "libxc"
+        entries.append(entry)
+        print(f"{mol.label:6s} {basis:12s} {theory:10s} {driver:8s} mult={mult} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
 def df_hessian_entries(written, dry_run):
     """Write the fitted-reference Hessian decks and return their manifest entries.
 
@@ -4588,6 +4672,10 @@ def main():
                     help="write only the unrestricted MP2 decks and splice "
                          "their entries into the existing manifest, leaving "
                          "every other entry and deck untouched")
+    ap.add_argument("--only-rohf", action="store_true",
+                    help="write only the restricted open-shell decks and "
+                         "splice their entries into the existing manifest, "
+                         "leaving every other entry and deck untouched")
     ap.add_argument("--only-df-unrestricted", action="store_true",
                     help="write only the fitted unrestricted decks and splice "
                          "their entries into the existing manifest, leaving "
@@ -4705,6 +4793,24 @@ def main():
             else:
                 mol.xyz = f"sample_inputs/{name}.xyz"
         entries = ump2_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_rohf:
+        for name in {c[0] for c in ROHF_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = rohf_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -5927,6 +6033,7 @@ def main():
     tests.extend(counterpoise_entries(written, args.dry_run))
     tests.extend(df_hessian_entries(written, args.dry_run))
     tests.extend(df_unrestricted_entries(written, args.dry_run))
+    tests.extend(rohf_entries(written, args.dry_run))
     tests.extend(ump2_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
     tests.extend(df_ri_hessian_entries(written, args.dry_run))

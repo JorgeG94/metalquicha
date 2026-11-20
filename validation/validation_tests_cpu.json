@@ -8079,6 +8079,196 @@
             "input": "inputs/cpu/mqc/ri-mp2/cpu_o2_cc-pvdz_rimp2_f2_m3_dfref.json",
             "expected_energy": -149.974251074308,
             "type": "unfragmented"
+        },
+        {
+            "name": "ROHF OH cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_oh_cc-pvdz_m2.json",
+            "expected_energy": -75.390010389244,
+            "type": "unfragmented"
+        },
+        {
+            "name": "ROHF CH3 cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2.json",
+            "expected_energy": -39.559637671528,
+            "type": "unfragmented"
+        },
+        {
+            "name": "ROHF O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_o2_cc-pvdz_m3.json",
+            "expected_energy": -149.608084466164,
+            "type": "unfragmented"
+        },
+        {
+            "name": "ROHF CH3 6-31g* multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_6-31g_st__m2.json",
+            "expected_energy": -39.554586598598,
+            "type": "unfragmented"
+        },
+        {
+            "name": "ROKS PBE CH3 cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2_pbe.json",
+            "expected_energy": -39.767702928248,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "ROKS B3LYP CH3 cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2_b3lyp.json",
+            "expected_energy": -39.837358815189,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "ROKS PBE0 O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_o2_cc-pvdz_m3_pbe0.json",
+            "expected_energy": -150.177564952277,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "ROHF CH3 cc-pvdz multiplicity 2 density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2_df.json",
+            "expected_energy": -39.559642372498,
+            "type": "unfragmented"
+        },
+        {
+            "name": "ROKS PBE0 O2 cc-pvdz multiplicity 3 density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_o2_cc-pvdz_m3_pbe0_df.json",
+            "expected_energy": -150.177559140693,
+            "type": "unfragmented",
+            "requires": "libxc"
+        },
+        {
+            "name": "ROHF gradient CH3 cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2_grad.json",
+            "expected_energy": -39.559637671528,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                [
+                    -0.000623939406,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.000311969703,
+                    -0.000540347376,
+                    0.0
+                ],
+                [
+                    0.000311969703,
+                    0.000540347376,
+                    -0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "ROHF gradient O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_o2_cc-pvdz_m3_grad.json",
+            "expected_energy": -149.608084466164,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -0.0,
+                    0.0,
+                    -0.103187150122
+                ],
+                [
+                    0.0,
+                    -0.0,
+                    0.103187150122
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "ROKS B3LYP gradient CH3 cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2_b3lyp_grad.json",
+            "expected_energy": -39.837358815189,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -6.37439e-07,
+                    0.0,
+                    0.0
+                ],
+                [
+                    -0.008111389679,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.004056013559,
+                    -0.007024187094,
+                    0.0
+                ],
+                [
+                    0.004056013559,
+                    0.007024187094,
+                    -0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "requires": "libxc"
+        },
+        {
+            "name": "ROHF gradient CH3 cc-pvdz multiplicity 2 density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_ch3_cc-pvdz_m2_df_grad.json",
+            "expected_energy": -39.559642372498,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    -0.000642099152,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.000321049576,
+                    -0.000556074177,
+                    -0.0
+                ],
+                [
+                    0.000321049576,
+                    0.000556074177,
+                    -0.0
+                ]
+            ],
+            "gradient_tolerance": 1e-08,
+            "check_translation": true
+        },
+        {
+            "name": "ROKS PBE0 gradient O2 cc-pvdz multiplicity 3 density fitted with def2-universal-jkfit (CPU)",
+            "input": "inputs/cpu/mqc/rohf/cpu_o2_cc-pvdz_m3_pbe0_df_grad.json",
+            "expected_energy": -150.177559140693,
+            "type": "unfragmented",
+            "expected_gradient": [
+                [
+                    0.0,
+                    -0.0,
+                    -0.019847345853
+                ],
+                [
+                    -0.0,
+                    -0.0,
+                    0.019847345853
+                ]
+            ],
+            "gradient_tolerance": 1e-07,
+            "check_translation": true,
+            "requires": "libxc"
         }
     ]
 }

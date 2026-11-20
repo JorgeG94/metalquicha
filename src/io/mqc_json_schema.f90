@@ -204,6 +204,7 @@ contains
       ! belongs with `method` and `functional`. `check_object` tells a deck
       ! using the old spelling where it went.
       call allow(keys, "unrestricted")
+      call allow(keys, "restricted_open")
       call require(keys, "method")
    end function model_keys
 

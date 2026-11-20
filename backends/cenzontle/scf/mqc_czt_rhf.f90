@@ -83,6 +83,7 @@ module mqc_czt_rhf
    public :: rhf_result_t
    public :: run_czt_rhf
    public :: run_czt_uhf
+   public :: roothaan_fock             !! Roothaan's effective Fock matrix for a restricted open shell
    public :: set_df_jfit_enabled      !! Testing switch: false forces the dense fitted tensor for pure functionals
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
    public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
@@ -343,6 +344,10 @@ module mqc_czt_rhf
       real(dp) :: e_elec = 0.0_dp
       real(dp) :: e_old = 0.0_dp             !! Previous iteration's, for dE
       real(dp) :: drms_prev = huge(1.0_dp)   !! Drives the level-shift taper
+      logical :: rohf = .false.
+         !! Restricted open shell: both spins share one set of orbitals, the
+         !! eigenvectors of Roothaan's effective Fock matrix. `fock_a` then
+         !! holds that matrix from the extrapolation on, and `fock_b` a copy.
       type(diis_state_t) :: diis
       type(incremental_state_t) :: incr
    end type uhf_state_t
@@ -1587,8 +1592,18 @@ contains
       t_fock_iter = clk%seconds_of(STAGE_FOCK) - t_fock_iter
       t_xc_iter = clk%seconds_of(STAGE_XC) - t_xc_iter
 
-      call commutator(st%fock_a, st%d_a, s, x, st%err_a)
-      call commutator(st%fock_b, st%d_b, s, x, st%err_b)
+      if (st%rohf) then
+         ! One matrix and one error for both spins. The error is against the
+         ! total density: in the orbital basis that density is diagonal with
+         ! occupations two, one and zero, and commutes with the effective
+         ! Fock matrix exactly when its three off-diagonal blocks vanish.
+         call roothaan_fock(st%fock_a, st%fock_b, st%d_a, st%d_b, s)
+         call commutator(st%fock_a, st%d_a + st%d_b, s, x, st%err_a)
+         st%err_b = st%err_a
+      else
+         call commutator(st%fock_a, st%d_a, s, x, st%err_a)
+         call commutator(st%fock_b, st%d_b, s, x, st%err_b)
+      end if
       st%fock_flat(1:nsq) = reshape(st%fock_a, [nsq])
       st%fock_flat(nsq + 1:2*nsq) = reshape(st%fock_b, [nsq])
       st%err_flat(1:msq) = reshape(st%err_a, [msq])
@@ -1631,8 +1646,15 @@ contains
 
       call diagonalize(st%fock_a, x, n_ao, n_mo, st%coeff_a, st%eig_a, error)
       if (error%has_error()) return
-      call diagonalize(st%fock_b, x, n_ao, n_mo, st%coeff_b, st%eig_b, error)
-      if (error%has_error()) return
+      if (st%rohf) then
+         ! `fock_a` is the effective matrix, shifted against alpha's virtual
+         ! projector if at all; beta takes the same orbitals.
+         st%coeff_b = st%coeff_a
+         st%eig_b = st%eig_a
+      else
+         call diagonalize(st%fock_b, x, n_ao, n_mo, st%coeff_b, st%eig_b, error)
+         if (error%has_error()) return
+      end if
       call build_density_spin(st%coeff_a, n_alpha, st%d_a)
       call build_density_spin(st%coeff_b, n_beta, st%d_b)
       t_rest_iter = t_rest_iter - clk%seconds_of(STAGE_DIAG)
@@ -2872,7 +2894,7 @@ contains
                           guess, guess_density_alpha, guess_density_beta, xc, pcm, &
                           level_shift, linear_dependence, accelerator, grad_tol, &
                           incremental_fock, convergence, scf, aux, gdm, gdm_start, &
-                          gdm_max_rotation, second_order, soscf_start)
+                          gdm_max_rotation, second_order, soscf_start, restricted_open)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -2903,6 +2925,15 @@ contains
       real(dp), intent(in), optional :: soscf_start
          !! The commutator at which that happens. Absent or not positive
          !! leaves the default.
+      logical, intent(in), optional :: restricted_open
+         !! Restricted open-shell Hartree-Fock or Kohn-Sham: the two spins
+         !! share their orbital spaces, alpha filling `n_alpha` orbitals and
+         !! beta the first `n_beta` of them. The energy is the unrestricted
+         !! expression at those densities. The result is shaped as an
+         !! unrestricted one -- two densities, two sets of orbitals and
+         !! energies -- with each spin's orbitals diagonalising that spin's
+         !! own Fock matrix within its occupied and within its virtual block.
+         !! The two sets span the same spaces and are not the same vectors.
       integer, intent(in) :: nelec
       integer, intent(in) :: multiplicity   !! 2S+1
       integer, intent(in) :: max_iter
@@ -3072,11 +3103,11 @@ contains
          else
             call logger%info("  basis functions: "//to_char(n_ao)//"  (spherical, 5d/7f)")
          end if
-         call logger%info("  unrestricted: charge = "// &
+         call logger%info("  "//reference_label()//": charge = "// &
                           to_char(nint(sum(mol%charges)) - nelec)// &
                           "  multiplicity = "//to_char(multiplicity)// &
                           "  electrons = "//to_char(nelec))
-         call logger%info("  unrestricted: n_alpha = "//to_char(n_alpha)// &
+         call logger%info("  "//reference_label()//": n_alpha = "//to_char(n_alpha)// &
                           "  n_beta = "//to_char(n_beta))
       end if
 
@@ -3196,6 +3227,29 @@ contains
                         "DIIS started, and only one of them can. Choose one.")
          return
       end if
+      st%rohf = .false.
+      if (present(restricted_open)) st%rohf = restricted_open
+      if (st%rohf) then
+         ! Both finish an SCF over independent alpha and beta rotations, which
+         ! is the freedom a restricted open shell does not have.
+         if (use_gdm .or. use_soscf) then
+            call error%set(ERROR_VALIDATION, "model.restricted_open with "// &
+                           "keywords.scf.gdm or keywords.scf.second_order: both "// &
+                           "rotate the alpha and beta orbitals independently, and a "// &
+                           "restricted open shell has one set. Converge it by DIIS.")
+            return
+         end if
+         ! The energy-based schemes interpolate Fock matrices against the
+         ! energy they are the gradient of; Roothaan's effective matrix is the
+         ! gradient of nothing.
+         if (accel /= ACCEL_DIIS) then
+            call error%set(ERROR_VALIDATION, "model.restricted_open with an "// &
+                           "energy-based SCF accelerator: the matrix a restricted "// &
+                           "open shell diagonalises is not the derivative of its "// &
+                           "energy. Use keywords.scf.accelerator: diis.")
+            return
+         end if
+      end if
       call st%diis%init(diis_size, 2*nsq, 2*msq, &
                         energy_based=(accel /= ACCEL_DIIS))
 
@@ -3236,10 +3290,26 @@ contains
          return
       end select
 
-      call diagonalize(st%fock_a, x, n_ao, n_mo, st%coeff_a, st%eig_a, error)
-      if (error%has_error()) return
-      call diagonalize(st%fock_b, x, n_ao, n_mo, st%coeff_b, st%eig_b, error)
-      if (error%has_error()) return
+      if (st%rohf) then
+         ! An atomic guess arrives as two different Fock matrices; the
+         ! symmetric ones are already one. Either way one diagonalisation.
+         select case (guess_kind)
+         case (SCF_GUESS_SAC, SCF_GUESS_SAD, SCF_GUESS_PROJ, SCF_GUESS_MINAO)
+            call roothaan_fock(st%fock_a, st%fock_b, st%d_a, st%d_b, s)
+         case default
+            ! Core, GWH and SAP set both spins to one matrix above.
+            continue
+         end select
+         call diagonalize(st%fock_a, x, n_ao, n_mo, st%coeff_a, st%eig_a, error)
+         if (error%has_error()) return
+         st%coeff_b = st%coeff_a
+         st%eig_b = st%eig_a
+      else
+         call diagonalize(st%fock_a, x, n_ao, n_mo, st%coeff_a, st%eig_a, error)
+         if (error%has_error()) return
+         call diagonalize(st%fock_b, x, n_ao, n_mo, st%coeff_b, st%eig_b, error)
+         if (error%has_error()) return
+      end if
       call build_density_spin(st%coeff_a, n_alpha, st%d_a)
       call build_density_spin(st%coeff_b, n_beta, st%d_b)
 
@@ -3361,6 +3431,23 @@ contains
          result%pcm_energy = e_pcm
          result%pcm_charge = pcm%q_total
       end if
+      if (st%rohf) then
+         ! Each spin's orbitals are rotated to diagonalise that spin's own
+         ! Fock matrix within its occupied and within its virtual block. No
+         ! density moves. It is what lets everything downstream treat this as
+         ! an unrestricted result: `C_occ eps C_occ^T` is then `D F D` for
+         ! each spin, and their sum is the energy-weighted density of the
+         ! restricted open-shell energy, because the blocks in which it
+         ! differs from the Lagrangian's are the ones that vanish at
+         ! convergence.
+         if (use_pcm) then
+            st%fock_a = st%fock_a + st%v_pcm
+            st%fock_b = st%fock_b + st%v_pcm
+         end if
+         call spin_semicanonical(st%fock_a, n_alpha, st%coeff_a, st%eig_a)
+         call spin_semicanonical(st%fock_b, n_beta, st%coeff_b, st%eig_b)
+         if (error%has_error()) return
+      end if
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
       result%n_occupied = n_alpha
@@ -3397,7 +3484,86 @@ contains
       call move_alloc(st%coeff_b, result%orbitals_beta)
       call move_alloc(st%d_b, result%density_beta)
       call st%diis%destroy()
+
+   contains
+
+      function reference_label() result(label)
+         !! What the log calls this wavefunction
+         character(len=:), allocatable :: label
+
+         label = "unrestricted"
+         if (present(restricted_open)) then
+            if (restricted_open) label = "restricted open shell"
+         end if
+      end function reference_label
+
+      subroutine spin_semicanonical(fock_ao, n_occ, coeff, energies)
+         !! One spin's Fock matrix diagonalised within its occupied and its
+         !! virtual block; an empty spin is all virtual and left as it is
+         real(dp), intent(in) :: fock_ao(:, :)
+         integer, intent(in) :: n_occ
+         real(dp), allocatable, intent(inout) :: coeff(:, :), energies(:)
+
+         real(dp), allocatable :: fock_mo(:, :), eps(:)
+
+         if (n_occ == 0 .or. n_occ == n_mo) return
+         call soscf_semicanonicalize(fock_ao, coeff, n_occ, fock_mo, eps, error)
+         if (error%has_error()) return
+         energies = eps
+      end subroutine spin_semicanonical
    end subroutine run_czt_uhf
+
+   subroutine roothaan_fock(fock_a, fock_b, d_a, d_b, s)
+      !! Replace both spins' Fock matrices by Roothaan's effective one
+      !!
+      !! With `Fc = (Fa + Fb)/2` and the projectors onto the doubly occupied,
+      !! singly occupied and virtual spaces, `Pc = Db S`, `Po = (Da - Db) S`,
+      !! `Pv = 1 - Da S`:
+      !!
+      !!              closed   open   virtual
+      !!     closed     Fc      Fb      Fc
+      !!     open       Fb      Fc      Fa
+      !!     virtual    Fc      Fa      Fc
+      !!
+      !! Its off-diagonal blocks are the three conditions a restricted
+      !! open-shell energy is stationary under; the diagonal blocks are a
+      !! choice, this one Roothaan's, and move no density.
+      real(dp), intent(inout) :: fock_a(:, :), fock_b(:, :)
+         !! In: each spin's own. Out: the effective matrix, in both.
+      real(dp), intent(in) :: d_a(:, :), d_b(:, :), s(:, :)
+
+      real(dp), allocatable :: fc(:, :), pc(:, :), po(:, :), pv(:, :), eff(:, :)
+      integer :: n, i
+
+      n = size(s, 1)
+      allocate (fc(n, n), pc(n, n), po(n, n), pv(n, n), eff(n, n))
+      fc = 0.5_dp*(fock_a + fock_b)
+      call pic_gemm(d_b, s, pc, beta=0.0_dp)
+      call pic_gemm(d_a, s, pv, beta=0.0_dp)
+      po = pv - pc
+      pv = -pv
+      do i = 1, n
+         pv(i, i) = pv(i, i) + 1.0_dp
+      end do
+      ! Half of each diagonal block and the whole of each block below the
+      ! diagonal; adding the transpose completes it.
+      eff = 0.5_dp*(sandwich(pc, fc, pc) + sandwich(po, fc, po) + sandwich(pv, fc, pv)) &
+            + sandwich(po, fock_b, pc) + sandwich(po, fock_a, pv) + sandwich(pv, fc, pc)
+      fock_a = eff + transpose(eff)
+      fock_b = fock_a
+
+   contains
+
+      function sandwich(left, mid, right) result(out)
+         !! `left^T mid right`
+         real(dp), intent(in) :: left(:, :), mid(:, :), right(:, :)
+         real(dp) :: out(size(left, 2), size(right, 2))
+         real(dp) :: work(size(mid, 1), size(right, 2))
+
+         call pic_gemm(mid, right, work, beta=0.0_dp)
+         call pic_gemm(left, work, out, transa="T", beta=0.0_dp)
+      end function sandwich
+   end subroutine roothaan_fock
 
    subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
                             fock, e_elec, error, clk, screening, incr, bmat_lr, jfit, cosx, &
