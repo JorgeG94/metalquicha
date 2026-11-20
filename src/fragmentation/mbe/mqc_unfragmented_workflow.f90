@@ -169,6 +169,7 @@ contains
                real(dp), allocatable :: frequencies(:), eigenvalues(:), projected_hessian(:, :)
                real(dp), allocatable :: reduced_masses(:), force_constants(:)
                real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:), ir_intensities(:)
+               real(dp), allocatable :: raman_activities(:), raman_depolarization(:)
                integer :: ii, jj
 
                ! First get projected Hessian for verbose output
@@ -199,7 +200,24 @@ contains
                                                     project_trans_rot=.true., &
                                                     force_constants_mdyne=fc_mdyne, &
                                                     dipole_derivatives=result%dipole_derivatives, &
-                                                    ir_intensities=ir_intensities)
+                                                    ir_intensities=ir_intensities, &
+                                                    polarizability_derivatives= &
+                                                    result%polarizability_derivatives, &
+                                                    raman_activities=raman_activities, &
+                                                    raman_depolarization=raman_depolarization)
+               else if (allocated(result%polarizability_derivatives)) then
+                  ! Reached only without dipole derivatives, which every route
+                  ! that builds polarizability derivatives also builds; kept so
+                  ! a Raman request is never silently dropped.
+                  call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
+                                                    reduced_masses, force_constants, cart_disp, &
+                                                    coordinates=sys_geom%coordinates, &
+                                                    project_trans_rot=.true., &
+                                                    force_constants_mdyne=fc_mdyne, &
+                                                    polarizability_derivatives= &
+                                                    result%polarizability_derivatives, &
+                                                    raman_activities=raman_activities, &
+                                                    raman_depolarization=raman_depolarization)
                else
                   call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
                                                     reduced_masses, force_constants, cart_disp, &
@@ -223,13 +241,17 @@ contains
 
                      ! Print vibrational analysis to log
                      if (allocated(ir_intensities)) then
+                        ! An unallocated Raman array is an absent argument.
                         call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                         cart_disp, sys_geom%element_numbers, &
                                                         force_constants_mdyne=fc_mdyne, &
                                                         ir_intensities=ir_intensities, &
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
-                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
+                                                        temperature=config%hessian%temperature, &
+                                                        pressure=config%hessian%pressure, &
+                                                        raman_activities=raman_activities, &
+                                                        raman_depolarization=raman_depolarization)
                      else
                         call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                         cart_disp, sys_geom%element_numbers, &
@@ -337,6 +359,16 @@ contains
                         json_data%force_constants = fc_mdyne
                         json_data%thermo = thermo_result
 
+                        if (allocated(raman_activities)) then
+                           json_data%raman_activities = raman_activities
+                           if (allocated(raman_depolarization)) then
+                              json_data%raman_depolarization = raman_depolarization
+                           end if
+                        end if
+                        if (result%has_polarizability) then
+                           json_data%polarizability = result%polarizability
+                           json_data%has_polarizability = .true.
+                        end if
                         if (allocated(ir_intensities)) then
                            allocate (json_data%ir_intensities(n_modes))
                            json_data%ir_intensities = ir_intensities

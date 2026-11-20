@@ -102,6 +102,8 @@ module mqc_cuest_iface
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for.
+      logical :: raman = .false.
+         !! Raman activities from `properties.raman`; the CPU backend only.
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -251,6 +253,7 @@ contains
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
+      settings%raman = properties%raman
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)

@@ -114,6 +114,11 @@ module mqc_result_types
       real(dp), allocatable :: hessian(:, :)    !! Energy hessian (future implementation)
       real(dp), allocatable :: dipole(:)        !! Dipole moment vector (3) (Debye)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3N) in a.u. for IR intensities
+      real(dp), allocatable :: polarizability_derivatives(:, :)
+         !! (6, 3N) in Bohr^2, components xx, yy, zz, xy, xz, yz, for Raman
+         !! activities; allocated when `properties.raman` asked
+      real(dp) :: polarizability(3, 3) = 0.0_dp   !! Static, Bohr^3
+      logical :: has_polarizability = .false.
       real(dp), allocatable :: bond_orders(:, :)
          !! Bond orders, (natoms, natoms), symmetric with a zero diagonal.
          !!

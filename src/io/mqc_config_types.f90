@@ -133,6 +133,9 @@ module mqc_config_types
          !! atomic partial charges; "mulliken" (the default), "chelpg",
          !! "hirshfeld" or "mbis" chooses how the converged density is
          !! partitioned.
+      logical :: raman = .false.
+         !! `properties.raman` was given: Raman activities beside the
+         !! frequencies of a Hessian run.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

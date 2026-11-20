@@ -323,6 +323,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_uhf)
   target_link_libraries(test_mqc_czt_uhf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Cartesian polarizability derivatives for Raman activities: PySCF's
+  # differenced polarizability, and the translational sum rule.
+  addtest(mqc_czt_raman)
+  target_link_libraries(test_mqc_czt_raman PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins
   # them.

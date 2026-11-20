@@ -1219,8 +1219,8 @@ contains
       type(json_value), pointer :: moi_obj, rot_obj, pf_obj, contrib_obj, table_obj
       type(json_value), pointer :: trans_obj, rot_contrib, vib_contrib, elec_obj
       type(json_value), pointer :: vib_row, rot_row, int_row, tr_row, tot_row
-      type(json_value), pointer :: thermal_obj, total_e_obj
-      integer :: io_stat, iunit
+      type(json_value), pointer :: thermal_obj, total_e_obj, pol_rows
+      integer :: io_stat, iunit, ipol
       character(len=256) :: output_file, basename
       real(dp) :: pV_cal, H_vib_cal, H_rot_cal, H_trans_cal, H_total_cal
       real(dp) :: Cv_total, S_total, S_total_J, H_int_cal, Cv_int, S_int, S_int_J, Cp_trans
@@ -1299,6 +1299,19 @@ contains
       end if
       if (allocated(data%force_constants)) then
          call json%add(vib_obj, "force_constants_mdyne_ang", data%force_constants)
+      end if
+      if (allocated(data%raman_activities)) then
+         call json%add(vib_obj, "raman_activities_A4_amu", data%raman_activities)
+      end if
+      if (allocated(data%raman_depolarization)) then
+         call json%add(vib_obj, "raman_depolarization_ratios", data%raman_depolarization)
+      end if
+      if (data%has_polarizability) then
+         call json%create_array(pol_rows, "polarizability_bohr3")
+         call json%add(vib_obj, pol_rows)
+         do ipol = 1, 3
+            call json%add(pol_rows, "", data%polarizability(ipol, :))
+         end do
       end if
       if (data%has_ir_intensities .and. allocated(data%ir_intensities)) then
          call json%add(vib_obj, "ir_intensities_km_mol", data%ir_intensities)

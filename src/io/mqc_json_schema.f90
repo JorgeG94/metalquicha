@@ -95,6 +95,7 @@ contains
       call check_grandchild_object(core, root, "properties", "bond_orders", &
                                    bond_orders_keys(), error)
       call check_bond_orders(core, root, error)
+      call check_grandchild_object(core, root, "properties", "raman", raman_keys(), error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
@@ -256,7 +257,17 @@ contains
       call allow(keys, "fukui")
       call allow(keys, "charges")
       call allow(keys, "bond_orders")
+      call allow(keys, "raman")
    end function properties_keys
+
+   function raman_keys() result(keys)
+      !! Settings for the Raman activities
+      !!
+      !! None: the object is the request, as `charges` is. It belongs to a
+      !! Hessian run, which the reader checks.
+      type(key_set_t) :: keys
+      keys%n_allowed = 0
+   end function raman_keys
 
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis
