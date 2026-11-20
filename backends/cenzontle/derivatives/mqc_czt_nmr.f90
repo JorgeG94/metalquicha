@@ -25,7 +25,9 @@ module mqc_czt_nmr
    use pic_blas_interfaces, only: pic_gemm
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_integrals, only: czt_molecule_t
+   use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
+   use mqc_czt_ao, only: eval_ao_block, AO_POINT_BLOCK
+   use mqc_czt_xc, only: xc_context_t, xc_grid_gga_quantities
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_response_product, only: response_mean_field
    use mqc_nmr_summary, only: shielding_summary
@@ -52,7 +54,7 @@ module mqc_czt_nmr
 contains
 
    subroutine czt_nmr_shielding(mol, coeff, orbital_energies, n_occ, shielding, error, &
-                                diamagnetic, paramagnetic)
+                                diamagnetic, paramagnetic, xc)
       !! Shielding tensors of every nucleus, in parts per million
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)             !! (n_ao, n_mo), canonical
@@ -66,6 +68,9 @@ contains
       real(dp), allocatable, intent(out), optional :: paramagnetic(:, :, :)
          !! The two parts, same shape and units. Only their sum is a physical
          !! quantity: the split depends on the gauge choice.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! The reference's functional. Absent or inactive is Hartree-Fock.
+         !! LDA, GGA and their global hybrids.
 
       real(dp), allocatable :: density(:, :), h10(:, :, :), s10(:, :, :), work(:, :, :)
       real(dp), allocatable :: vj(:, :, :), vk(:, :, :), bounds(:, :)
@@ -73,8 +78,9 @@ contains
       real(dp), allocatable :: dia(:, :, :), para(:, :, :), a11(:, :, :), a01(:, :, :)
       real(dp), allocatable :: half(:, :)
       real(dp) :: tensor(3, 3)
-      real(dp) :: trace
+      real(dp) :: trace, exchange
       integer :: n_ao, n_mo, n_vir, x, y, iatom, i
+      logical :: kohn_sham
 
       if (error%has_error()) return
       n_ao = mol%nao
@@ -89,6 +95,33 @@ contains
          call error%set(ERROR_VALIDATION, "shieldings are not available with an "// &
                         "effective core potential: its field derivative is not built")
          return
+      end if
+
+      ! Hartree-Fock keeps all of its exchange and a functional the fraction
+      ! it declares, in the first-order Fock matrix and in the response alike.
+      kohn_sham = .false.
+      if (present(xc)) kohn_sham = xc%active
+      exchange = 1.0_dp
+      if (kohn_sham) then
+         exchange = xc%exx_fraction
+         if (xc%any_mgga) then
+            call error%set(ERROR_VALIDATION, "shieldings are not available with a "// &
+                           "meta-GGA: its kinetic energy density depends on the "// &
+                           "gauge, and that dependence is not built")
+            return
+         end if
+         if (xc%range_separated) then
+            call error%set(ERROR_VALIDATION, "shieldings are not available with a "// &
+                           "range-separated functional: the field derivative of the "// &
+                           "attenuated exchange integrals is not built")
+            return
+         end if
+         if (abs(xc%nlc_b) > 0.0_dp .or. abs(xc%nlc_c) > 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "shieldings are not available with a "// &
+                           "non-local correlation functional: its potential over "// &
+                           "gauge-including orbitals is not built")
+            return
+         end if
       end if
 
       allocate (density(n_ao, n_ao))
@@ -107,9 +140,14 @@ contains
       if (error%has_error()) return
       do x = 1, 3
          h10(:, :, x) = h10(:, :, x) - vj(:, :, x) &
-                        + 0.5_dp*(vk(:, :, x) - transpose(vk(:, :, x)))
+                        + 0.5_dp*exchange*(vk(:, :, x) - transpose(vk(:, :, x)))
       end do
       deallocate (vj, vk)
+      if (kohn_sham) then
+         call giao_xc_potential(xc, mol, density, work, error)
+         if (error%has_error()) return
+         h10 = h10 - work
+      end if
       call giao_one_electron(mol, GIAO_NUC, work, error)
       if (error%has_error()) return
       h10 = h10 - work
@@ -134,7 +172,7 @@ contains
       call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
       call solve_field_response(mol, coeff, orbital_energies, n_occ, bounds, h1, s1, &
-                                mo1, error)
+                                exchange, mo1, error)
       if (error%has_error()) return
 
       ! The first-order density's generator, twice for the two electrons an
@@ -187,7 +225,8 @@ contains
       if (present(paramagnetic)) call move_alloc(para, paramagnetic)
    end subroutine czt_nmr_shielding
 
-   subroutine solve_field_response(mol, coeff, eps, n_occ, bounds, h1, s1, mo1, error)
+   subroutine solve_field_response(mol, coeff, eps, n_occ, bounds, h1, s1, exchange, &
+                                   mo1, error)
       !! The imaginary first-order orbital coefficients, one set per direction
       !!
       !! The occupied-occupied block is fixed by the first-order overlap,
@@ -203,6 +242,11 @@ contains
       integer, intent(in) :: n_occ
       real(dp), intent(in) :: bounds(:, :)
       real(dp), intent(in) :: h1(:, :, :), s1(:, :, :)   !! (n_mo, n_occ, 3)
+      real(dp), intent(in) :: exchange
+         !! The fraction of exact exchange the reference keeps. At zero, a
+         !! pure functional, the field induces no potential -- a functional
+         !! of the density alone does not see the current it drives -- and
+         !! the equations are solved by the orbital-energy gaps in one step.
       real(dp), allocatable, intent(out) :: mo1(:, :, :)   !! (n_mo, n_occ, 3)
       type(error_t), intent(inout) :: error
 
@@ -232,7 +276,7 @@ contains
 
       ! Right-hand side: the perturbation, and the response to the fixed
       ! occupied-occupied block.
-      call exchange_response(mol, coeff, n_occ, bounds, mo1, v, error)
+      call exchange_response(mol, coeff, n_occ, bounds, exchange, mo1, v, error)
       if (error%has_error()) return
       allocate (rhs(n, 3), resid(n, 3))
       do x = 1, 3
@@ -277,7 +321,7 @@ contains
          end do
          if (.not. any(active)) exit
 
-         call exchange_response(mol, coeff, n_occ, bounds, full, v, error)
+         call exchange_response(mol, coeff, n_occ, bounds, exchange, full, v, error)
          if (error%has_error()) return
          do x = 1, 3
             if (.not. active(x)) cycle
@@ -311,7 +355,7 @@ contains
       call logger%verbose(trim(line))
    end subroutine solve_field_response
 
-   subroutine exchange_response(mol, coeff, n_occ, bounds, mo1, v, error)
+   subroutine exchange_response(mol, coeff, n_occ, bounds, exchange, mo1, v, error)
       !! The exchange response to a set of first-order coefficients
       !!
       !! The density is `M - M^T` with `M = C (2 mo1) C_occ^T`: antisymmetric,
@@ -322,6 +366,7 @@ contains
       real(dp), intent(in) :: coeff(:, :)
       integer, intent(in) :: n_occ
       real(dp), intent(in) :: bounds(:, :)
+      real(dp), intent(in) :: exchange   !! Fraction of exact exchange; zero returns zero
       real(dp), intent(in) :: mo1(:, :, :)                 !! (n_mo, n_occ, 3)
       real(dp), allocatable, intent(out) :: v(:, :, :)     !! (n_mo, n_occ, 3)
       type(error_t), intent(inout) :: error
@@ -331,6 +376,11 @@ contains
 
       n_ao = size(coeff, 1)
       n_mo = size(coeff, 2)
+      if (abs(exchange) <= 0.0_dp) then
+         allocate (v(n_mo, n_occ, 3))
+         v = 0.0_dp
+         return
+      end if
       allocate (dens(n_ao, n_ao, 3), half(n_ao, n_occ), zero_h(n_ao, n_ao))
       zero_h = 0.0_dp
       do x = 1, 3
@@ -339,7 +389,7 @@ contains
          dens(:, :, x) = dens(:, :, x) - transpose(dens(:, :, x))
       end do
       call response_mean_field(mol, dens, zero_h, g, error, minus=.true., bounds=bounds, &
-                               k_scale=1.0_dp)
+                               k_scale=exchange)
       if (error%has_error()) return
       allocate (v(n_mo, n_occ, 3))
       do x = 1, 3
@@ -347,6 +397,139 @@ contains
          call pic_gemm(coeff, half, v(:, :, x), transa="T", beta=0.0_dp)
       end do
    end subroutine exchange_response
+
+   subroutine giao_xc_potential(xc, mol, density, vmat, error)
+      !! The exchange-correlation potential's first-order matrix in the field
+      !!
+      !! The potential itself does not respond: it is a functional of the
+      !! density, which a magnetic field leaves alone at first order. What
+      !! is left is the gauge factor each basis function carries, whose field
+      !! derivative at a point `r` for a function centred at `R` is
+      !! `(1/2) (R x r) chi(r)`, in units of `i`. So the matrix is the
+      !! potential between a function and another's derivative, less its
+      !! transpose, and for a GGA the gradient of that derivative as well.
+      !! `get_vxc_giao` of `pyscf.prop.nmr.rks`.
+      type(xc_context_t), intent(inout) :: xc
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! Total, closed shell
+      real(dp), allocatable, intent(out) :: vmat(:, :, :)
+         !! (n_ao, n_ao, 3), antisymmetric, last index the field's direction
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), exc(:), vrho(:), gcoef(:, :)
+      real(dp), allocatable :: ao(:, :), aog(:, :, :), aow(:, :), ig(:, :), dig(:, :)
+      real(dp), allocatable :: centre(:, :), part(:, :)
+      integer, allocatable :: offsets(:), counts(:)
+      real(dp) :: r(3), cross(3), wv(3)
+      real(dp) :: w0
+      integer :: n_ao, npts, g0, g1, nb, p, u, a, b, iatom
+
+      if (error%has_error()) return
+      n_ao = mol%nao
+      npts = xc%grid%n_points
+      call xc_grid_gga_quantities(xc, mol, density, rho, exc, vrho, gcoef, error)
+      if (error%has_error()) return
+
+      ! Where each basis function sits.
+      allocate (offsets(mol%natm), counts(mol%natm), centre(3, n_ao))
+      call atom_ao_blocks(mol, offsets, counts)
+      do iatom = 1, mol%natm
+         do u = offsets(iatom) + 1, offsets(iatom) + counts(iatom)
+            centre(:, u) = mol%coords(:, iatom)
+         end do
+      end do
+
+      allocate (vmat(n_ao, n_ao, 3), part(n_ao, n_ao))
+      vmat = 0.0_dp
+      do g0 = 1, npts, AO_POINT_BLOCK
+         g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
+         nb = g1 - g0 + 1
+         if (xc%any_gga) then
+            call eval_ao_block(mol, xc%grid%coords(:, g0:g1), ao, error, grad=aog)
+         else
+            call eval_ao_block(mol, xc%grid%coords(:, g0:g1), ao, error)
+         end if
+         if (error%has_error()) return
+         if (allocated(aow)) then
+            if (size(aow, 1) /= nb) deallocate (aow, ig, dig)
+         end if
+         if (.not. allocated(aow)) allocate (aow(nb, n_ao), ig(nb, n_ao), dig(nb, n_ao))
+
+         ! The function weighted by the potential: `w v chi`, and for a GGA
+         ! `w (dE/d grad rho) . grad chi` beside it.
+         do u = 1, n_ao
+            do p = 1, nb
+               aow(p, u) = xc%grid%weights(g0 + p - 1)*vrho(g0 + p - 1)*ao(p, u)
+            end do
+         end do
+         if (xc%any_gga) then
+            do a = 1, 3
+               do u = 1, n_ao
+                  do p = 1, nb
+                     aow(p, u) = aow(p, u) + xc%grid%weights(g0 + p - 1) &
+                                 *gcoef(g0 + p - 1, a)*aog(p, u, a)
+                  end do
+               end do
+            end do
+         end if
+
+         do b = 1, 3
+            ! The gauge derivative of every function along this direction,
+            ! and for a GGA its gradient contracted with `w dE/d grad rho`.
+            do u = 1, n_ao
+               do p = 1, nb
+                  r = xc%grid%coords(:, g0 + p - 1)
+                  cross = cross_product(centre(:, u), r)
+                  ig(p, u) = 0.5_dp*cross(b)*ao(p, u)
+                  if (xc%any_gga) then
+                     w0 = xc%grid%weights(g0 + p - 1)
+                     wv = w0*gcoef(g0 + p - 1, :)
+                     ! d/dr_a of (R x r)_b is (R x e_a)_b.
+                     dig(p, u) = 0.5_dp*(dot_product(wv, cross_with_axes(centre(:, u), b)) &
+                                         *ao(p, u) &
+                                         + cross(b)*(wv(1)*aog(p, u, 1) + wv(2)*aog(p, u, 2) &
+                                                     + wv(3)*aog(p, u, 3)))
+                  end if
+               end do
+            end do
+            call pic_gemm(aow, ig, part, transa="T", beta=0.0_dp)
+            vmat(:, :, b) = vmat(:, :, b) + part
+            if (xc%any_gga) then
+               call pic_gemm(ao, dig, part, transa="T", beta=0.0_dp)
+               vmat(:, :, b) = vmat(:, :, b) + part
+            end if
+         end do
+      end do
+      do b = 1, 3
+         vmat(:, :, b) = vmat(:, :, b) - transpose(vmat(:, :, b))
+      end do
+   end subroutine giao_xc_potential
+
+   pure function cross_product(a, b) result(c)
+      real(dp), intent(in) :: a(3), b(3)
+      real(dp) :: c(3)
+
+      c(1) = a(2)*b(3) - a(3)*b(2)
+      c(2) = a(3)*b(1) - a(1)*b(3)
+      c(3) = a(1)*b(2) - a(2)*b(1)
+   end function cross_product
+
+   pure function cross_with_axes(a, component) result(c)
+      !! `(a x e_k)_component` for the three unit vectors `e_k`
+      real(dp), intent(in) :: a(3)
+      integer, intent(in) :: component
+      real(dp) :: c(3)
+
+      real(dp) :: unit(3), full(3)
+      integer :: k
+
+      do k = 1, 3
+         unit = 0.0_dp
+         unit(k) = 1.0_dp
+         full = cross_product(a, unit)
+         c(k) = full(component)
+      end do
+   end function cross_with_axes
 
    subroutine solve_small(matrix, rhs, x, singular)
       !! A small dense system by elimination with partial pivoting

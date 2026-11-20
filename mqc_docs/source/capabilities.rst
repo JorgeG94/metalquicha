@@ -182,7 +182,8 @@ is GAMESS. The work is threaded with OpenMP throughout.
   closed shell (below).
 - **Nuclear magnetic shielding**: the shielding tensor of every nucleus over
   gauge-including atomic orbitals, with its isotropic value and anisotropy.
-  Closed-shell Hartree-Fock. ``properties.nmr``; see :doc:`nmr_shielding`.
+  Closed-shell Hartree-Fock, and Kohn-Sham with an LDA, a GGA or a global
+  hybrid. ``properties.nmr``; see :doc:`nmr_shielding`.
 - **Spin-spin couplings**: the indirect nuclear coupling constants that split
   an NMR line, Fermi-contact term, in hertz for the observed isotopes and as
   reduced couplings. Closed-shell Hartree-Fock and Kohn-Sham.
