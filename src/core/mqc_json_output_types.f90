@@ -250,6 +250,7 @@ module mqc_json_output_types
       logical :: has_ieda = .false.
       real(dp), allocatable :: atomic_charges(:)
       real(dp), allocatable :: spin_populations(:)
+      character(len=32) :: analysis_density = ""
       character(len=16) :: charge_scheme = ""
       logical :: has_charges = .false.
       ! Bond orders over a converged density, when `properties.bond_orders`

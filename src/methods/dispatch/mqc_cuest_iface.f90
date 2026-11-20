@@ -104,6 +104,8 @@ module mqc_cuest_iface
          !! none were asked for.
       logical :: natural_orbitals = .false.
          !! Natural occupations from `properties.natural_orbitals`
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: "scf" or "relaxed"
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -254,6 +256,7 @@ contains
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
       settings%natural_orbitals = properties%natural_orbitals
+      settings%properties_density = properties%density
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)

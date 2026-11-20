@@ -632,6 +632,9 @@ contains
       call json%create_object(section, "atomic_charges")
       call json%add(parent, section)
       call json%add(section, "scheme", trim(data%charge_scheme))
+      if (len_trim(data%analysis_density) > 0) then
+         call json%add(section, "density", trim(data%analysis_density))
+      end if
       ! What the column has to add up to, so a consumer can check rather than
       ! trust. Mulliken satisfies it as a trace identity and CHELPG as the
       ! constraint its fit is solved under, so a mismatch is a bookkeeping bug
@@ -707,6 +710,9 @@ contains
       call json%create_object(section, "bond_orders")
       call json%add(parent, section)
       call json%add(section, "scheme", trim(data%bond_order_scheme))
+      if (len_trim(data%analysis_density) > 0) then
+         call json%add(section, "density", trim(data%analysis_density))
+      end if
 
       ! Row by row, symmetric, zero on the diagonal -- an atom is not bonded
       ! to itself and the diagonal of this matrix is a different quantity.

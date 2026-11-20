@@ -259,6 +259,7 @@ contains
       call allow(keys, "charges")
       call allow(keys, "bond_orders")
       call allow(keys, "natural_orbitals")
+      call allow(keys, "density")
    end function properties_keys
 
    function fukui_keys() result(keys)

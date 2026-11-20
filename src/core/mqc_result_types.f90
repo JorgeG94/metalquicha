@@ -159,6 +159,9 @@ module mqc_result_types
          !! sums to `n_alpha - n_beta`. Allocated only for an unrestricted
          !! reference under Mulliken; CHELPG fits the electrostatic potential,
          !! which has no spin analogue.
+      character(len=32) :: analysis_density = ""
+         !! Which density the charges and bond orders partitioned: "scf" or
+         !! "ri-mp2 relaxed". Empty when neither was computed.
       character(len=16) :: charge_scheme = ""
          !! Which partition produced them. Two schemes disagree by design, so a
          !! charge without its scheme is not interpretable.

@@ -133,6 +133,10 @@ module mqc_config_types
          !! atomic partial charges; "mulliken" (the default), "chelpg",
          !! "hirshfeld" or "mbis" chooses how the converged density is
          !! partitioned.
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: which one-particle density the charges and
+         !! bond orders partition, "scf" or "relaxed". See
+         !! `properties_config_t`.
       logical :: natural_orbitals = .false.
          !! `properties.natural_orbitals` is present: report the natural
          !! occupations of the most complete one-particle density the method

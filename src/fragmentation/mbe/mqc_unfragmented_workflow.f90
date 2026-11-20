@@ -444,6 +444,7 @@ contains
                   json_data%spin_populations = result%spin_populations
                end if
                json_data%charge_scheme = result%charge_scheme
+               json_data%analysis_density = result%analysis_density
                json_data%has_charges = .true.
             end if
 
@@ -457,6 +458,7 @@ contains
                   json_data%bond_order_valences = result%bond_order_valences
                end if
                json_data%bond_order_scheme = result%bond_order_scheme
+               json_data%analysis_density = result%analysis_density
                json_data%has_bond_orders = .true.
             end if
             if (result%has_natural_orbitals) then

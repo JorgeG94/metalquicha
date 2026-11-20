@@ -379,6 +379,11 @@ module mqc_method_config
          !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: natural_orbitals = .false.
          !! `properties.natural_orbitals` asked for natural occupations
+      character(len=16) :: density = "scf"
+         !! Which density `charges` and `bond_orders` partition. "scf" is the
+         !! reference's, whatever method runs on top of it. "relaxed" is the
+         !! correlated method's relaxed density, which exists for closed-shell
+         !! `ri-mp2` only.
       character(len=:), allocatable :: bond_order_scheme
          !! Allocated when `properties.bond_orders` asked for bond orders over
          !! the converged density; "mayer". Unallocated means none, for the

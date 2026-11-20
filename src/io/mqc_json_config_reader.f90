@@ -225,6 +225,22 @@ contains
       ! config and travels into the report and the JSON beside the numbers.
       ! The object is the request, as for `charges`; it has no settings yet.
       call json%info("properties.natural_orbitals", found=config%natural_orbitals)
+      block
+         character(len=:), allocatable :: density_text
+         logical :: density_named
+         call json%get("properties.density", density_text, density_named)
+         if (density_named .and. allocated(density_text)) then
+            density_text = to_lower(trim(density_text))
+            select case (density_text)
+            case ("scf", "relaxed")
+               config%properties_density = density_text
+            case default
+               call error%set(ERROR_VALIDATION, "properties.density '"//density_text// &
+                              "' is not 'scf' or 'relaxed'")
+               return
+            end select
+         end if
+      end block
       call json%info("properties.bond_orders", found=found_bond_orders)
       if (found_bond_orders) then
          config%bond_order_scheme = "mayer"

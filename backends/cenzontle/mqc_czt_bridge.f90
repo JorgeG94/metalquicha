@@ -1193,6 +1193,8 @@ contains
       logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
       logical :: pcm_pte, pcm_ptd
+      logical :: relaxed_analysis
+         !! `properties.density` is "relaxed" and charges or bond orders were asked for
          !! Which `keywords.pcm.correlation` scheme a solvated MP2 runs under
       logical :: df_analytic
       logical :: full_rank
@@ -1247,10 +1249,23 @@ contains
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
       ! Natural orbitals are those of the most complete one-particle density
-      ! the method has. For a correlated method that is a relaxed density, and
-      ! only closed-shell RI-MP2 builds one here; the rest are refused rather
-      ! than handed the reference's occupations under a correlated heading.
-      if (settings%natural_orbitals) then
+      ! the method has, and `properties.density: "relaxed"` asks the charges
+      ! and bond orders for the same one. For a correlated method that is a
+      ! relaxed density, and only closed-shell RI-MP2 builds one here; the
+      ! rest are refused rather than handed the reference's numbers under a
+      ! correlated heading.
+      relaxed_analysis = trim(settings%properties_density) == "relaxed" &
+                         .and. (allocated(settings%charges_scheme) &
+                                .or. allocated(settings%bond_order_scheme))
+      if (trim(settings%properties_density) == "relaxed" .and. .not. settings%run_mp2) then
+         call result%error%set(ERROR_VALIDATION, "properties.density 'relaxed' names a "// &
+                               "correlated method's relaxed density, and this "// &
+                               "calculation has none: it is built for closed-shell "// &
+                               "'ri-mp2' only. Remove it to analyse the reference.")
+         result%has_error = .true.
+         return
+      end if
+      if (settings%natural_orbitals .or. relaxed_analysis) then
          if (settings%run_cc) then
             call result%error%set(ERROR_VALIDATION, "properties.natural_orbitals with "// &
                                   "coupled cluster: no coupled-cluster one-particle "// &
@@ -1262,17 +1277,17 @@ contains
          if (settings%run_mp2) then
             if (.not. settings%corr_density_fitting .or. unrestricted &
                 .or. settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp) then
-               call result%error%set(ERROR_VALIDATION, "properties.natural_orbitals "// &
-                                     "over MP2 diagonalises the relaxed MP2 density, "// &
-                                     "which is built for closed-shell 'ri-mp2' only -- "// &
-                                     "not conventional, spin-scaled or unrestricted "// &
-                                     "MP2.")
+               call result%error%set(ERROR_VALIDATION, "an analysis of the relaxed MP2 "// &
+                                     "density (properties.natural_orbitals, or "// &
+                                     "properties.density 'relaxed') needs closed-shell "// &
+                                     "'ri-mp2': conventional, spin-scaled and "// &
+                                     "unrestricted MP2 build no relaxed density here.")
                result%has_error = .true.
                return
             end if
             if (pcm_pte) then
-               call result%error%set(ERROR_VALIDATION, "properties.natural_orbitals "// &
-                                     "over MP2 under keywords.pcm.correlation 'pte': "// &
+               call result%error%set(ERROR_VALIDATION, "an analysis of the relaxed MP2 "// &
+                                     "density under keywords.pcm.correlation 'pte': "// &
                                      "the relaxed density's response equations do not "// &
                                      "carry the continuum. Use 'ptd', whose density is "// &
                                      "the gas-phase one, or no continuum.")
@@ -1280,21 +1295,6 @@ contains
                return
             end if
          end if
-      end if
-
-      if (do_gradient .and. settings%run_cc) then
-         block
-            character(len=:), allocatable :: why
-            why = cc_gradient_decline_reason(settings, unrestricted)
-            if (len(why) > 0) then
-               call result%error%set(ERROR_VALIDATION, "the coupled cluster gradient is "// &
-                                     "implemented for RI-CCSD and RI-CCSD(T) over a closed-shell "// &
-                                     "reference with exact integrals, and not for "// &
-                                     why//". Run that as an energy.")
-               result%has_error = .true.
-               return
-            end if
-         end block
       end if
 
       ! Continuum solvation on this backend is an *energy*: the surface charges
@@ -2344,7 +2344,8 @@ contains
       ! matrix, and the converged one is already here. That is why this costs
       ! no second SCF: a deck asking for charges is asking for the charges *of
       ! the calculation it ran*, not of a Hartree-Fock stand-in for it.
-      if (allocated(settings%charges_scheme)) then
+      if (allocated(settings%charges_scheme) .and. .not. relaxed_analysis) then
+         result%analysis_density = "scf"
          if (allocated(scf%density_beta)) then
             call run_czt_atomic_charges(settings, mol, fragment%charge, &
                                         scf%density + scf%density_beta, result, &
@@ -2376,7 +2377,8 @@ contains
          end if
       end if
 
-      if (allocated(settings%bond_order_scheme)) then
+      if (allocated(settings%bond_order_scheme) .and. .not. relaxed_analysis) then
+         result%analysis_density = "scf"
          block
             real(dp), allocatable :: orders(:, :), valences(:), s_bond(:, :)
 
@@ -2879,7 +2881,7 @@ contains
             ! gradient's default is the fitted one. That default is worth
             ! 2.4e-7 hartree in this energy on water, and here nothing is
             ! saved by it that the exact SCF had not already spent.
-            if (pcm_ptd .or. settings%natural_orbitals) then
+            if (pcm_ptd .or. settings%natural_orbitals .or. relaxed_analysis) then
                block
                   real(dp), allocatable :: relaxed(:, :), v_solv(:, :), no_gradient(:, :)
                   real(dp) :: g_solv
@@ -2915,6 +2917,23 @@ contains
                   if (settings%natural_orbitals) then
                      call report_natural_orbitals(relaxed, "ri-mp2 relaxed")
                   end if
+                  if (relaxed_analysis) then
+                     result%analysis_density = "ri-mp2 relaxed"
+                     call logger%info("  charges and bond orders below are of the "// &
+                                      "relaxed MP2 density")
+                     if (allocated(settings%charges_scheme)) then
+                        call run_czt_atomic_charges(settings, mol, fragment%charge, &
+                                                    relaxed, result)
+                     end if
+                     if (allocated(settings%bond_order_scheme)) then
+                        call report_relaxed_bond_orders(relaxed)
+                     end if
+                  end if
+                  ! The dipole of the density the MP2 energy is the derivative
+                  ! of. The reference's is deliberately not published after a
+                  ! correlated method -- see the dipole block below -- and this
+                  ! is the one that may be.
+                  call publish_dipole(relaxed)
                end block
             end if
 
@@ -3661,6 +3680,62 @@ contains
       call mol%destroy()
 
    contains
+
+      subroutine report_relaxed_bond_orders(total_density)
+         !! Mayer bond orders of a closed-shell correlated density
+         !!
+         !! The closed-shell expression, `sum (DS)_mu,nu (DS)_nu,mu` over the
+         !! two atoms' functions, applied to a density that is not idempotent.
+         !! That is the usual definition for a correlated wave function; the
+         !! orders come out below the reference's because occupation has moved
+         !! into antibonding orbitals.
+         real(dp), intent(in) :: total_density(:, :)
+
+         real(dp), allocatable :: orders(:, :), valences(:), s_bond(:, :)
+         type(error_t) :: bo_error
+
+         select case (trim(settings%bond_order_scheme))
+         case ("mayer")
+            call mol%overlap(s_bond)
+            call mayer_bond_orders(mol, total_density, s_bond, orders, bo_error)
+         case default
+            call bo_error%set(ERROR_VALIDATION, "unknown bond order scheme '"// &
+                              trim(settings%bond_order_scheme)//"'; expected 'mayer'.")
+         end select
+         if (bo_error%has_error()) then
+            call logger%warning("  bond orders could not be computed: "// &
+                                bo_error%get_message())
+            return
+         end if
+         call mayer_valences(orders, valences)
+         call print_mayer_report(orders, valences, symbols)
+         call move_alloc(orders, result%bond_orders)
+         call move_alloc(valences, result%bond_order_valences)
+         result%bond_order_scheme = trim(settings%bond_order_scheme)
+         result%has_bond_orders = .true.
+      end subroutine report_relaxed_bond_orders
+
+      subroutine publish_dipole(total_density)
+         !! The dipole moment of a total density, in atomic units, origin at zero
+         real(dp), intent(in) :: total_density(:, :)
+
+         real(dp), allocatable :: dip_ao(:, :, :)
+         real(dp) :: mu(3)
+         type(error_t) :: dip_error
+         integer :: comp, iat
+
+         call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip_ao, dip_error)
+         ! A convenience, not the calculation: losing it must not fail the run.
+         if (dip_error%has_error()) return
+         do comp = 1, 3
+            mu(comp) = -sum(total_density*dip_ao(:, :, comp))
+         end do
+         do iat = 1, mol%natm
+            mu = mu + mol%charges(iat)*mol%coords(:, iat)
+         end do
+         result%dipole = mu
+         result%has_dipole = .true.
+      end subroutine publish_dipole
 
       subroutine report_natural_orbitals(total_density, source)
          !! Diagonalise a total density, print its occupations and store them
