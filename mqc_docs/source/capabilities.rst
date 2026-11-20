@@ -144,11 +144,12 @@ is GAMESS. The work is threaded with OpenMP throughout.
   the basis. Energies and analytic gradients; a Hessian is taken by
   differences of the gradient.
 - **MP2**: conventional and density-fitted (RI-MP2), with SCS and SOS scaling.
-  The same- and opposite-spin components are kept separately. The reference
-  must be restricted. ``freeze_core`` is on by default. Unrestricted MP2 is
-  only computed internally, for the perturbative term of an open-shell double
-  hybrid and for Fukui functions. An ``mp2`` deck over an open shell is
-  refused.
+  The same- and opposite-spin components are kept separately. ``freeze_core``
+  is on by default. An open shell runs over an unrestricted reference, exact
+  or density-fitted, as an energy: same-spin is then the alpha-alpha and
+  beta-beta blocks together and opposite-spin the mixed one, and frozen
+  orbitals are counted per spin. The gradient and the Hessian need a
+  restricted reference.
 - **Coupled cluster**: CCSD and CCSD(T) over a restricted or an unrestricted
   reference. Two formulations for the closed-shell case -- spin-adapted over
   spatial orbitals by default, and spin orbitals for checking it against
@@ -531,10 +532,11 @@ number computed from a formula that does not apply:
      - The second exchange derivative at the screened omega comes from fitting
        a second tensor against ``erf(omega r)/r``; the exact-ERI path has no
        equivalent second pass. Give an auxiliary basis
-   * - Unrestricted density fitting, Hartree-Fock or Kohn-Sham
-     - The fitted J and K are written for one density, so this is refused for
-       the energy and therefore for the gradient. The fitted *gradient* does
-       carry both spin channels already -- it is the SCF that is missing
+   * - Correlation over a density-fitted unrestricted reference
+     - The fitted unrestricted SCF and its gradient are implemented,
+       Hartree-Fock and Kohn-Sham through a range-separated hybrid, and MP2
+       runs over one. Coupled cluster and a double hybrid over one are
+       refused: neither has been validated there
    * - Spin-scaled MP2 (SCS, SOS)
      - The amplitudes enter the response equations, where the two spin cases
        are no longer separable, so the scaled gradient is not the unscaled one
@@ -945,11 +947,13 @@ does not apply.
    carries much of the effect for the valence, which is why ECPs are used on
    heavy elements as much for that as for the cost. It is not a relativistic
    Hamiltonian and does not become one
-2. **Open-shell correlation**: MP2 and the double-hybrid derivatives need a
-   restricted reference. Coupled cluster does not, but density-fitted coupled
-   cluster does. Unrestricted density fitting is refused for the SCF itself,
-   Hartree-Fock or Kohn-Sham. An open-shell double hybrid has an energy and no
-   gradient
+2. **Open-shell correlation**: unrestricted MP2 is an energy only, and the
+   MP2 and double-hybrid derivatives need a restricted reference. Coupled
+   cluster takes an unrestricted reference, but density-fitted coupled cluster
+   does not. An unrestricted SCF can be density-fitted, Hartree-Fock or
+   Kohn-Sham, energy and gradient; MP2 runs over that fitted reference, and
+   coupled cluster and a double hybrid do not. An open-shell double hybrid has
+   an energy and no gradient
 3. **Multireference dynamic correlation**: CASSCF and ORMAS-SCF give the
    reference, and there is no NEVPT2, CASPT2 or MRCI on top of it. The
    multiconfigurational path also needs an even electron count, because it
@@ -976,9 +980,10 @@ does not apply.
    real singlet (RHF to RHF) instability. Triplet (RHF to UHF) and complex
    instabilities are not looked for
 8. **SCF convergence aids**: there is no damping and no Fermi smearing (xTB has
-   its own electronic temperature). The second-order SCF is closed-shell
-   restricted only, and refuses a continuum solvent or a frozen-orbital
-   projector rather than approximating either. All the aids are CPU-path: the
+   its own electronic temperature). The second-order SCF runs restricted and
+   unrestricted (the latter over the direct build only), and refuses a
+   continuum solvent or a frozen-orbital projector rather than approximating
+   either. All the aids are CPU-path: the
    cuEST backend refuses every accelerator but ``diis``, and refuses
    ``level_shift``, by name. See :doc:`scf_convergence`
 9. **Embedded fragment methods** (FMO, EE-MBE, EFMO): energies only and closed
@@ -1011,9 +1016,8 @@ Planned Features
      unrestricted reference; the fitted one does not, because its three-index
      block carries no spin blocks, and a deck asking for both is refused rather
      than given the restricted answer built from the alpha orbitals
-   - Unrestricted MP2 as a method in its own right, rather than only inside a
-     double hybrid, and the open-shell double-hybrid gradient that needs its
-     relaxed density
+   - The unrestricted MP2 gradient, and the open-shell double-hybrid gradient
+     that needs the same relaxed density
    - Multireference perturbation theory (NEVPT2) on top of CASSCF
    - Excited-state gradients. The Z-vector pieces mostly exist; the assembly
      does not

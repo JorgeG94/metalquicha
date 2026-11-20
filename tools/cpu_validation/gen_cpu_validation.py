@@ -398,6 +398,12 @@ HAND_MAINTAINED = {
     "cpu/mqc/gdm/water_cc-pvdz_gdm.json",
     "cpu/mqc/gdm/water_cc-pvdz_pbe_gdm.json",
     "cpu/mqc/gdm/n2_stretched_gdm.json",
+    "cpu/mqc/gdm/oh_cc-pvdz_uhf_gdm.json",
+    "cpu/mqc/gdm/ch3_cc-pvdz_b3lyp_gdm.json",
+    "cpu/mqc/gdm/o2_cc-pvdz_pbe_df_gdm.json",
+    "cpu/mqc/soscf/oh_cc-pvdz_uhf_second_order.json",
+    "cpu/mqc/soscf/ch3_cc-pvdz_b3lyp_second_order.json",
+    "cpu/mqc/soscf/n2_stretched_unrestricted_second_order.json",
     # The double hybrid's Hessian on a basis with d functions, whose reference is
     # *ours*. Not because none could be generated but because none can be
     # generated well: differencing a pinned-grid PySCF energy -- the construction
@@ -3758,6 +3764,57 @@ PRESERVED_TESTS = [
         "reference_note": "n2_stretched_saddle with keywords.scf.gdm added, and deliberately the same reference energy: the saddle's. Direct minimisation is a minimiser along directions whose gradient is not zero, and the mode that leaves this saddle has a zero gradient by symmetry, so it converges where DIIS does. keywords.scf.second_order is what escapes (n2_stretched_second_order, 0.020 hartree lower). If this deck ever lands on the minimum, the phase has started taking steps it has no gradient for.",
     },
     {
+        "name": "UHF OH cc-pvdz converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/oh_cc-pvdz_uhf_gdm.json",
+        "expected_energy": -75.393846033475,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "the reference is the one UHF OH cc-pvdz is held to, PySCF's: keywords.scf.gdm on an open shell minimises over both spins' rotations at once, with one history, and has to reach the minimum DIIS does. test_mqc_czt_gdm reads the phase's counters; this deck is the path from a deck through the bridge, which used to refuse the request for an unrestricted reference.",
+    },
+    {
+        "name": "UKS B3LYP CH3 cc-pvdz grid 3 converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/ch3_cc-pvdz_b3lyp_gdm.json",
+        "expected_energy": -39.838786859584,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is UKS B3LYP CH3 cc-pvdz grid 3's, PySCF's. Unrestricted Kohn-Sham with exact exchange: the energy the accept rule judges carries E_xc and a fraction of each spin's exchange, so a step judged on the mean-field trace alone would show here.",
+    },
+    {
+        "name": "UKS PBE O2 cc-pvdz density fitted, converged by geometric direct minimisation (CPU)",
+        "input": "inputs/cpu/mqc/gdm/o2_cc-pvdz_pbe_df_gdm.json",
+        "expected_energy": -150.193299653418,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is the fitted UKS PBE triplet O2 case's, PySCF's. A triplet, so the two spins' rotation spaces differ in size, and fitted, so every trial's Fock matrices come from the fitted unrestricted build.",
+    },
+    {
+        "name": "UHF OH cc-pvdz converged by the second-order SCF (CPU)",
+        "input": "inputs/cpu/mqc/soscf/oh_cc-pvdz_uhf_second_order.json",
+        "expected_energy": -75.393846033475,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "the reference is the one UHF OH cc-pvdz is held to, PySCF's: the unrestricted Newton phase has to reach the minimum DIIS does. OH is also the case with an exact zero mode, the rotation between the degenerate pi orbitals of which one holds the unpaired electron, so the Hessian's lowest curvature here is zero to rounding and the one-sided saddle test must not read that as a saddle.",
+    },
+    {
+        "name": "UKS B3LYP CH3 cc-pvdz grid 3 converged by the second-order SCF (CPU)",
+        "input": "inputs/cpu/mqc/soscf/ch3_cc-pvdz_b3lyp_second_order.json",
+        "expected_energy": -39.838786859584,
+        "tolerance": 1e-08,
+        "requires": "libxc",
+        "type": "unfragmented",
+        "reference_note": "the reference is UKS B3LYP CH3 cc-pvdz grid 3's, PySCF's. Kohn-Sham with exact exchange: the Hessian-vector products carry the spin-polarised kernel and a fraction of each spin's exchange, and a wrong one of either still converges, slowly, so test_mqc_czt_soscf's finite differences are what fix them; this deck is the path from a deck.",
+    },
+    {
+        "name": "UHF N2 6-31G at 1.6 A, the second-order SCF leaves the restricted solution (CPU)",
+        "input": "inputs/cpu/mqc/soscf/n2_stretched_unrestricted_second_order.json",
+        "expected_energy": -108.750383884639,
+        "tolerance": 1e-08,
+        "type": "unfragmented",
+        "reference_note": "n2_stretched_second_order run unrestricted. The closed-shell Newton phase reaches the restricted minimum at -108.5718; the unrestricted one searches the spin-symmetry-breaking rotations too, finds that minimum is a saddle among them, and follows the negative curvature to the broken-symmetry solution 0.179 hartree lower, with <S^2> = 2.018. The reference is PySCF's UHF after repeated stability analysis and re-optimisation until it reports a stable solution. Unrestricted DIIS from the same guess never leaves the restricted saddle at -108.5516, because the rotation that breaks the symmetry has no gradient.",
+    },
+    {
         "name": "EFMO water prism 6-31G rcut 1.0, mixed QM/EFP (CPU)",
         "input": "inputs/cpu/mqc/efmo/efmo_prism_rcut1.json",
         "expected_energy": -456.004182668797,
@@ -4163,6 +4220,188 @@ def counterpoise_entries(written, dry_run):
     return entries
 
 
+# MP2 over an unrestricted reference: (molecule, basis, method, frozen,
+# multiplicity, auxiliary, fitted reference). `frozen` is orbitals per spin.
+# The scaled variants are here for the reason they are in `MP2_CASES`: same-spin
+# is the alpha-alpha and beta-beta blocks together and opposite-spin the mixed
+# one, and only an end-to-end case shows the scaling reached them that way. The
+# last two fit the reference as well, which no restricted case can reach.
+UMP2_CASES = [
+    ("oh", "cc-pvdz", "mp2", 0, 2, "", False),
+    ("oh", "cc-pvdz", "mp2", 1, 2, "", False),
+    ("ch3", "cc-pvdz", "mp2", 1, 2, "", False),
+    ("o2", "cc-pvdz", "mp2", 2, 3, "", False),
+    ("oh", "cc-pvdz", "scs-mp2", 1, 2, "", False),
+    ("oh", "cc-pvdz", "sos-mp2", 1, 2, "", False),
+    ("oh", "cc-pvdz", "ri-mp2", 0, 2, "cc-pvdz-rifit", False),
+    ("ch3", "cc-pvdz", "ri-mp2", 1, 2, "cc-pvdz-rifit", False),
+    ("o2", "cc-pvdz", "ri-mp2", 2, 3, "cc-pvdz-rifit", False),
+    ("oh", "cc-pvdz", "ri-mp2", 1, 2, "cc-pvdz-rifit", True),
+    ("o2", "cc-pvdz", "ri-mp2", 2, 3, "cc-pvdz-rifit", True),
+]
+
+
+def pyscf_ump2(atoms, basis, method, frozen, multiplicity, aux="", fitted_reference=False):
+    """Reference MP2 total energy over UHF, scaled the way the method name says.
+
+    `ri-mp2` is PySCF's own fitted unrestricted MP2 with the deck's auxiliary
+    basis, for the reason `pyscf_ri_mp2` gives. `fitted_reference` fits the
+    Hartree-Fock reference with that same basis, as the deck's one
+    `model.aux_basis` does.
+    """
+    from pyscf import gto, scf, mp
+    from pyscf.mp import dfump2
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = multiplicity - 1
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    auxbasis = {s: bse_to_pyscf(aux, s) for s in symbols} if aux else None
+    mf = scf.UHF(mol)
+    if fitted_reference:
+        mf = mf.density_fit(auxbasis=auxbasis)
+    mf.conv_tol = 1e-12
+    mf.conv_tol_grad = 1e-9
+    mf.max_cycle = 200
+    escf = mf.kernel()
+    if not mf.converged:
+        raise SystemExit(f"PySCF UHF did not converge for {basis}")
+    if method == "ri-mp2":
+        pt = dfump2.DFUMP2(mf, frozen=frozen)
+        pt.with_df = pt.with_df.__class__(mol, auxbasis=auxbasis)
+        pt.kernel()
+        ecorr = pt.e_corr
+    else:
+        pt = mp.UMP2(mf, frozen=frozen)
+        pt.kernel()
+        if method == "scs-mp2":
+            ecorr = 1.2*pt.e_corr_os + pt.e_corr_ss/3.0
+        elif method == "sos-mp2":
+            ecorr = 1.3*pt.e_corr_os
+        else:
+            ecorr = pt.e_corr
+    return float(escf + ecorr), mol.nao
+
+
+def ump2_entries(written, dry_run):
+    """Write the unrestricted MP2 decks and return their manifest entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    for name, basis, method, frozen, mult, aux, fit_ref in UMP2_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_ump2(mol.atoms, basis, method, frozen, mult, aux=aux,
+                                 fitted_reference=fit_ref)
+        tag = f"{normalize_basis_name(basis)}_{method.replace('-', '')}_f{frozen}_m{mult}"
+        if fit_ref:
+            tag += "_dfref"
+        deck = deck_for(f"{CPU_MQC}/{method}", f"cpu_{name}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, method=method, aux=aux,
+                          aux_only=not fit_ref, multiplicity=mult,
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen})
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        what = f"{method.upper()} over UHF"
+        if aux:
+            what += f"/{aux}"
+        if fit_ref:
+            what += ", fitted reference"
+        entries.append({
+            "name": f"{what} {mol.label} {basis} multiplicity {mult} "
+                    f"frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} U{method:8s} frozen={frozen} mult={mult} "
+              f"fitref={fit_ref} nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
+# Density-fitted unrestricted references: (molecule, basis, auxiliary,
+# functional, multiplicity, driver). PySCF fits J and K with the same auxiliary
+# basis, so these are held to the suite's ordinary bounds rather than to a
+# fitting error. The range-separated case is an energy only: the open-shell
+# gradient of one is refused, fitted or not.
+DF_UNRESTRICTED_CASES = [
+    ("oh", "cc-pvdz", "def2-universal-jkfit", "", 2, "Energy"),
+    ("o2", "cc-pvdz", "def2-universal-jkfit", "", 3, "Energy"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "svwn", 2, "Energy"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "pbe", 2, "Energy"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "b3lyp", 2, "Energy"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "wb97x", 2, "Energy"),
+    ("o2", "cc-pvdz", "def2-universal-jkfit", "pbe", 3, "Energy"),
+    ("oh", "cc-pvdz", "def2-universal-jkfit", "", 2, "Gradient"),
+    ("o2", "cc-pvdz", "def2-universal-jkfit", "", 3, "Gradient"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "pbe", 2, "Gradient"),
+    ("ch3", "cc-pvdz", "def2-universal-jkfit", "b3lyp", 2, "Gradient"),
+]
+
+
+def df_unrestricted_entries(written, dry_run):
+    """Write the fitted unrestricted decks and return their manifest entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    for name, basis, aux, functional, mult, driver in DF_UNRESTRICTED_CASES:
+        mol = MOLECULES[name]
+        # One routine for both drivers, so an energy case and a gradient case
+        # of one system are the same SCF on the reference's side too.
+        energy, gradient, nao = pyscf_gradient(
+            mol.atoms, basis, aux=aux, functional=functional, multiplicity=mult,
+            tight=True)
+        tag = f"{normalize_basis_name(basis)}_m{mult}"
+        if functional:
+            tag += "_" + functional.replace("-", "")
+        if driver == "Gradient":
+            tag += "_grad"
+        deck = deck_for(f"{CPU_MQC}/df-uhf", f"cpu_{name}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, aux=aux, multiplicity=mult,
+                          method="dft" if functional else "hf")
+            if functional:
+                d["model"]["functional"] = functional
+                d["keywords"]["dft"] = {"grid_level": GRADIENT_GRID_LEVEL}
+            d["driver"] = driver
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        theory = f"UKS {functional.upper()}" if functional else "UHF"
+        entry = {
+            "name": f"{theory} {'gradient ' if driver == 'Gradient' else ''}"
+                    f"{mol.label} {basis} density fitted with {aux} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        }
+        if driver == "Gradient":
+            entry["expected_gradient"] = [[round(c, 12) for c in atom]
+                                          for atom in gradient]
+            entry["gradient_tolerance"] = _gradient_tolerance(functional, aux)
+            entry["check_translation"] = True
+        if functional:
+            entry["requires"] = "libxc"
+        # The bound the restricted fitted case carries, for the reason given
+        # at `DF_RSH_ENERGY_TOLERANCE`. Measured here: 2.3e-9.
+        if functional in RSH_FUNCTIONALS and driver == "Energy":
+            entry["tolerance"] = DF_RSH_ENERGY_TOLERANCE
+        entries.append(entry)
+        print(f"{mol.label:6s} {basis:12s} DF-{theory:10s} {driver:8s} mult={mult} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
 def df_hessian_entries(written, dry_run):
     """Write the fitted-reference Hessian decks and return their manifest entries.
 
@@ -4353,6 +4592,14 @@ def main():
                     help="write only the gradient decks over an ECP and splice "
                          "their entries into the existing manifest, leaving "
                          "every other entry and deck untouched")
+    ap.add_argument("--only-ump2", action="store_true",
+                    help="write only the unrestricted MP2 decks and splice "
+                         "their entries into the existing manifest, leaving "
+                         "every other entry and deck untouched")
+    ap.add_argument("--only-df-unrestricted", action="store_true",
+                    help="write only the fitted unrestricted decks and splice "
+                         "their entries into the existing manifest, leaving "
+                         "every other entry and deck untouched")
     ap.add_argument("--only-df-hessian", action="store_true",
                     help="write only the fitted-reference Hessian decks and "
                          "splice their entries into the existing manifest, "
@@ -4448,6 +4695,42 @@ def main():
                 if not args.dry_run and not (INPUTS / mol.xyz).exists():
                     write_xyz(INPUTS / mol.xyz, mol)
         entries = ecp_gradient_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_ump2:
+        for name in {c[0] for c in UMP2_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = ump2_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_df_unrestricted:
+        for name in {c[0] for c in DF_UNRESTRICTED_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = df_unrestricted_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -5651,6 +5934,8 @@ def main():
     tests.extend(excited_entries(written, args.dry_run))
     tests.extend(counterpoise_entries(written, args.dry_run))
     tests.extend(df_hessian_entries(written, args.dry_run))
+    tests.extend(df_unrestricted_entries(written, args.dry_run))
+    tests.extend(ump2_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
     tests.extend(df_ri_hessian_entries(written, args.dry_run))
     tests.extend(cosx_entries(written, args.dry_run))

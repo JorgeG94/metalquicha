@@ -85,7 +85,7 @@ module mqc_scf_types
          !! backend's own default, as `grad_tol` and `linear_dependence` do
          !! above.
       logical :: gdm = .false.
-         !! `keywords.scf.gdm`. Finish the closed-shell SCF by geometric direct
+         !! `keywords.scf.gdm`. Finish the SCF by geometric direct
          !! minimisation once DIIS has brought the commutator below
          !! `gdm_start`: L-BFGS on the orbital rotations, one Fock build a
          !! step, a step kept only if the energy did not rise.

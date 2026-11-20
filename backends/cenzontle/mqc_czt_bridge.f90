@@ -1369,11 +1369,14 @@ contains
          end block
       end if
 
-      if (unrestricted .and. settings%density_fitting) then
-         call result%error%set(ERROR_VALIDATION, "unrestricted density fitting is not "// &
-                               "implemented on the CPU backend: the fitted J and K are "// &
-                               "written for one density. Run unrestricted without "// &
-                               "density_fitting, or restricted with it.")
+      ! A fitted unrestricted reference is an SCF and its gradient. Nothing
+      ! correlated has been run over one, so those are refused by name rather
+      ! than handed orbitals whose Fock matrix they would rebuild from exact
+      ! integrals.
+      if (unrestricted .and. settings%density_fitting .and. settings%run_cc) then
+         call result%error%set(ERROR_VALIDATION, "coupled cluster over a density-fitted "// &
+                               "unrestricted reference is not implemented. Run the "// &
+                               "reference without keywords.scf.density_fitting.")
          result%has_error = .true.
          return
       end if
@@ -1391,17 +1394,14 @@ contains
          return
       end if
 
-      ! And MP2 for the same reason. The transform takes one set of orbitals
-      ! and an occupied count, so an unrestricted reference would give it the
-      ! alpha orbitals and `nelec/2`, which for an odd electron count
-      ! truncates and returns a converged energy over the wrong occupation.
-      if (settings%run_mp2 .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "MP2 on the CPU backend needs a "// &
-                               "restricted reference: the four-index transform takes one "// &
-                               "set of orbitals with an occupied count, and an "// &
-                               "unrestricted reference needs separate alpha and beta "// &
-                               "transforms. Run a closed-shell system, or use density "// &
-                               "functional theory, which is unrestricted here.")
+      ! Unrestricted MP2 is an energy. Its gradient needs an unrestricted
+      ! relaxed density and a spin-resolved response, neither of which is
+      ! built, and the semi-numerical Hessian differences that gradient.
+      if (settings%run_mp2 .and. unrestricted .and. (do_gradient .or. do_hessian)) then
+         call result%error%set(ERROR_VALIDATION, "MP2 over an unrestricted reference "// &
+                               "is implemented as an energy only: its gradient needs "// &
+                               "an unrestricted relaxed density and a spin-resolved "// &
+                               "response, which are not built. Set driver to 'Energy'.")
          result%has_error = .true.
          return
       end if
@@ -1489,21 +1489,13 @@ contains
       ! Refused before the SCF, for the reason the stability refusals above are:
       ! a deck should not discover at the end of a converged calculation that
       ! the thing it asked for was never possible.
-      if (use_second_order .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "the second-order SCF "// &
-                               "parametrises the closed-shell orbital rotations, and "// &
-                               "this reference is unrestricted; the open-shell "// &
-                               "rotation space is larger and is not implemented. "// &
-                               "Converge this one by DIIS.")
-         result%has_error = .true.
-         call mol%destroy()
-         return
-      end if
-
-      if (use_gdm .and. unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "geometric direct minimisation is "// &
-                               "implemented here for a closed shell, and this "// &
-                               "reference is unrestricted. Converge this one by DIIS.")
+      if (use_second_order .and. unrestricted .and. settings%density_fitting) then
+         call result%error%set(ERROR_VALIDATION, "the second-order SCF over an "// &
+                               "unrestricted reference takes its Hessian-vector "// &
+                               "products from the direct build, which over a fitted "// &
+                               "SCF would be the curvature of a different energy. "// &
+                               "Run without keywords.scf.density_fitting, or "// &
+                               "converge this one by DIIS or keywords.scf.gdm.")
          result%has_error = .true.
          call mol%destroy()
          return
@@ -1574,6 +1566,18 @@ contains
                                   "with a double hybrid: the perturbative term would "// &
                                   "run on a reference converged with a different "// &
                                   "exchange. Set keywords.scf.exchange to 'exact'.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
+         ! Nothing in the perturbative term reads the fit, so this would run;
+         ! it is refused because no number from it has been checked.
+         if (unrestricted .and. settings%density_fitting .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "a double hybrid over a "// &
+                                  "density-fitted unrestricted reference has not been "// &
+                                  "validated and is refused. Run the reference without "// &
+                                  "keywords.scf.density_fitting.")
             result%has_error = .true.
             if (kohn_sham) call xc%destroy()
             call mol%destroy()
@@ -1822,7 +1826,21 @@ contains
          ! a full copy of the tensor to keep, so it is asked for only when
          ! something downstream will transform them.
          keep_fit = reuse_scf_fit(settings)
-         if (keep_fit) then
+         if (unrestricted) then
+            call run_czt_uhf(mol, nelec, fragment%multiplicity, settings%max_iter, &
+                             settings%energy_tol, settings%density_tol, settings%verbose, &
+                             scf, error, diis_vectors=diis_size, guess=guess_kind, &
+                             guess_density_alpha=guess_a, guess_density_beta=guess_b, &
+                             xc=xc, pcm=pcm_ctx, level_shift=settings%level_shift, &
+                             accelerator=accel_kind, &
+                             linear_dependence=settings%linear_dependence, &
+                             incremental_fock=settings%incremental_fock, &
+                             grad_tol=settings%grad_tol, convergence=scf_conv, aux=aux, &
+                             gdm=use_gdm, gdm_start=settings%gdm_start, &
+                             gdm_max_rotation=settings%gdm_max_rotation, &
+                             second_order=use_second_order, &
+                             soscf_start=settings%soscf_start)
+         else if (keep_fit) then
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
                              aux=aux, diis_vectors=diis_size, guess=guess_kind, &
@@ -1864,7 +1882,11 @@ contains
                           pcm=pcm_ctx, level_shift=settings%level_shift, accelerator=accel_kind, &
                           linear_dependence=settings%linear_dependence, &
                           incremental_fock=settings%incremental_fock, &
-                          grad_tol=settings%grad_tol, convergence=scf_conv)
+                          grad_tol=settings%grad_tol, convergence=scf_conv, &
+                          gdm=use_gdm, gdm_start=settings%gdm_start, &
+                          gdm_max_rotation=settings%gdm_max_rotation, &
+                          second_order=use_second_order, &
+                          soscf_start=settings%soscf_start)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration. The threshold is memory alone: the stored
@@ -2751,7 +2773,14 @@ contains
                   call mol%destroy()
                   return
                end if
-               if (allocated(scf_b_ao)) then
+               if (unrestricted) then
+                  ! The SCF's own per-spin counts: `nelec/2` is not an occupied
+                  ! count for an open shell.
+                  call run_czt_uri_mp2(mol, corr_aux, scf%orbitals, scf%orbitals_beta, &
+                                       scf%orbital_energies, scf%orbital_energies_beta, &
+                                       scf%n_occupied, scf%n_occupied_beta, &
+                                       scf%energy, mp2, error, n_frozen=frozen)
+               else if (allocated(scf_b_ao)) then
                   call run_czt_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
                                       nelec/2, scf%energy, mp2, error, &
                                       n_frozen=frozen, b_ao_in=scf_b_ao)
@@ -2764,6 +2793,11 @@ contains
                ! and the gradient below builds its own.
                if (allocated(scf_b_ao)) deallocate (scf_b_ao)
                call corr_aux%destroy()
+            else if (unrestricted) then
+               call run_czt_ump2(mol, scf%orbitals, scf%orbitals_beta, &
+                                 scf%orbital_energies, scf%orbital_energies_beta, &
+                                 scf%n_occupied, scf%n_occupied_beta, &
+                                 scf%energy, mp2, error, n_frozen=frozen)
             else
                call run_czt_mp2(mol, scf%orbitals, scf%orbital_energies, &
                                 nelec/2, scf%energy, mp2, error, &
