@@ -136,6 +136,9 @@ module mqc_config_types
       logical :: nmr_shielding = .false.
          !! `properties.nmr` was given: nuclear magnetic shielding tensors of
          !! every nucleus, over gauge-including orbitals.
+      logical :: spin_spin_coupling = .false.
+         !! `properties.spin_spin_coupling` was given: the indirect nuclear
+         !! spin-spin couplings, Fermi-contact term.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the

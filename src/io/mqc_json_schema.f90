@@ -96,6 +96,8 @@ contains
                                    bond_orders_keys(), error)
       call check_bond_orders(core, root, error)
       call check_grandchild_object(core, root, "properties", "nmr", nmr_keys(), error)
+      call check_grandchild_object(core, root, "properties", "spin_spin_coupling", &
+                                   nmr_keys(), error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
@@ -258,13 +260,15 @@ contains
       call allow(keys, "charges")
       call allow(keys, "bond_orders")
       call allow(keys, "nmr")
+      call allow(keys, "spin_spin_coupling")
    end function properties_keys
 
    function nmr_keys() result(keys)
       !! Settings for the nuclear magnetic shieldings
       !!
       !! None yet: the object is the request, as `charges` is, and every
-      !! nucleus is shielded over gauge-including orbitals.
+      !! nucleus is shielded over gauge-including orbitals. The spin-spin
+      !! couplings are asked for the same way and share this empty set.
       type(key_set_t) :: keys
       keys%n_allowed = 0
    end function nmr_keys

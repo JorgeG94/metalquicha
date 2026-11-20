@@ -327,6 +327,11 @@ if(MQC_ENABLE_CZT)
   # tensors element by element, and invariance to moving the molecule.
   addtest(mqc_czt_nmr)
   target_link_libraries(test_mqc_czt_nmr PRIVATE ${MQC_INTEGRALS_LIBS})
+  # Indirect spin-spin couplings, Fermi-contact term: PySCF's reduced couplings
+  # at Hartree-Fock and at B3LYP, the latter skipped without libxc.
+  addtest(mqc_czt_spin_coupling)
+  target_link_libraries(test_mqc_czt_spin_coupling
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins

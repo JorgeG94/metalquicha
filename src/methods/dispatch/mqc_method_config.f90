@@ -371,6 +371,8 @@ module mqc_method_config
          !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: nmr_shielding = .false.
          !! `properties.nmr` asked for nuclear magnetic shielding tensors.
+      logical :: spin_spin_coupling = .false.
+         !! `properties.spin_spin_coupling` asked for the J couplings.
       character(len=:), allocatable :: bond_order_scheme
          !! Allocated when `properties.bond_orders` asked for bond orders over
          !! the converged density; "mayer". Unallocated means none, for the

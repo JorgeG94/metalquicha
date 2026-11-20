@@ -134,6 +134,10 @@ module mqc_result_types
          !! `properties.nmr` asked. First index the field's direction, second
          !! the nuclear moment's; not symmetric.
       real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
+      real(dp), allocatable :: spin_spin_coupling(:, :)
+         !! (n_atoms, n_atoms) reduced indirect spin-spin couplings in atomic
+         !! units, Fermi-contact term, from `properties.spin_spin_coupling`.
+         !! Symmetric, zero on the diagonal; unallocated when not asked for.
          !! Its two parts, same shape. Only their sum is gauge independent.
 
       ! Atomic partial charges, when `properties.charges` asked for them.

@@ -105,6 +105,8 @@ module mqc_cuest_iface
       logical :: nmr_shielding = .false.
          !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
          !! backend only.
+      logical :: spin_spin_coupling = .false.
+         !! Fermi-contact couplings from `properties.spin_spin_coupling`
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -255,6 +257,7 @@ contains
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
       settings%nmr_shielding = properties%nmr_shielding
+      settings%spin_spin_coupling = properties%spin_spin_coupling
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)

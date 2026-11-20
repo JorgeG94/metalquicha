@@ -231,6 +231,7 @@ contains
       end if
       ! The object is the request; it has no settings to read.
       call json%info("properties.nmr", found=config%nmr_shielding)
+      call json%info("properties.spin_spin_coupling", found=config%spin_spin_coupling)
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &

@@ -429,6 +429,8 @@ contains
             mqc_config%charges_scheme
       end if
       driver_config%method_config%properties%nmr_shielding = mqc_config%nmr_shielding
+      driver_config%method_config%properties%spin_spin_coupling = &
+         mqc_config%spin_spin_coupling
       if (allocated(mqc_config%bond_order_scheme)) then
          driver_config%method_config%properties%bond_order_scheme = &
             mqc_config%bond_order_scheme

@@ -407,6 +407,22 @@ current PySCF; pass it one that reshapes to any count. The two-electron
 field derivative computes every shell quartet with no screening. See
 `mqc_docs/source/nmr_shielding.rst`.
 
+Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
+because they run under a functional and the shieldings do not.
+`mqc_czt_spin_coupling` computes **the Fermi-contact term only**, term for
+term `pyscf.prop.ssc`'s `make_fc`: the right-hand side for nucleus `A` is
+`(4 pi / 3) phi_a(R_A) phi_i(R_A)`, from `eval_ao_block` at the nuclei, and
+the response is a *triplet* one, through `cphf_solve(..., triplet=.true.)`.
+**That flag has to reach `xc_kernel_cache_fill` as well as the operator**: a
+cache filled for singlets is refused by the triplet kernel, which is how it
+was found. A triplet-unstable reference makes the operator indefinite and the
+solve says so; at Hartree-Fock that is common and is the method's failure,
+not a bug. What is stored is the reduced coupling in atomic units;
+`mqc_nmr_isotopes` holds the observed isotope and g factor per element (13C,
+not 12C) and turns it into hertz in the writer. **No basis set made for
+couplings is in `basis_sets/`**, and the contact term is the property most
+sensitive to that. See `mqc_docs/source/spin_spin_coupling.rst`.
+
 RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
 `keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
 exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a
